@@ -21,9 +21,9 @@ use crate::{KeystoreError, RecursiveError, Result, Session, mls::conversation::I
 /// in-memory state mutated during the aborted transaction would diverge from
 /// the keystore.
 pub(crate) struct MlsConversationCache {
-    // `Arc<RwLock<_>>` is required here so that `ConversationGuard` can
+    // `Arc<_>` is required here so that `ConversationGuard` can
     // hold a handle that outlives any single cache lookup.
-    entries: LruMap<ConversationId, Arc<RwLock<ImmutableConversation>>, ByLength>,
+    entries: LruMap<ConversationId, Arc<ImmutableConversation>, ByLength>,
 }
 
 impl MlsConversationCache {
@@ -46,7 +46,7 @@ impl MlsConversationCache {
         id: &ConversationIdRef,
         keystore: &Database,
         session: Session,
-    ) -> Result<Option<Arc<RwLock<ImmutableConversation>>>> {
+    ) -> Result<Option<Arc<ImmutableConversation>>> {
         if let Some(entry) = self.entries.get(id) {
             return Ok(Some(entry.clone()));
         }
@@ -61,7 +61,7 @@ impl MlsConversationCache {
             return Ok(None);
         };
 
-        if !conversation.group.is_active() {
+        if !conversation.group().await.is_active() {
             keystore
                 .remove_borrowed::<PersistedMlsGroup>(id.as_ref())
                 .await
@@ -70,21 +70,21 @@ impl MlsConversationCache {
         }
 
         let key = conversation.id().to_owned();
-        let handle = Arc::new(RwLock::new(conversation));
+        let handle = Arc::new(conversation);
         self.entries.insert(key, handle.clone());
         Ok(Some(handle))
     }
 
     /// Inserts a freshly-created conversation and returns the cached handle.
-    pub(crate) fn insert(&mut self, conversation: ImmutableConversation) -> Arc<RwLock<ImmutableConversation>> {
+    pub(crate) fn insert(&mut self, conversation: ImmutableConversation) -> Arc<ImmutableConversation> {
         let key = conversation.id().to_owned();
-        let handle = Arc::new(RwLock::new(conversation));
+        let handle = Arc::new(conversation);
         self.entries.insert(key, handle.clone());
         handle
     }
 
     /// Removes an entry from the cache, if present.
-    pub(crate) fn remove(&mut self, id: &ConversationIdRef) -> Option<Arc<RwLock<ImmutableConversation>>> {
+    pub(crate) fn remove(&mut self, id: &ConversationIdRef) -> Option<Arc<ImmutableConversation>> {
         self.entries.remove(id)
     }
 

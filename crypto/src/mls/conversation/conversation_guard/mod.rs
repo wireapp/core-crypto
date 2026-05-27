@@ -10,7 +10,7 @@ mod wipe;
 
 use std::sync::Arc;
 
-use async_lock::{RwLock, RwLockReadGuard, RwLockReadGuardArc};
+use async_lock::RwLockReadGuardArc;
 use core_crypto_keystore::Database;
 use openmls::prelude::group_info::GroupInfo;
 
@@ -31,7 +31,7 @@ use crate::{
 /// `MlsConversation` API on `TransactionContext`.
 #[derive(Debug)]
 pub struct ConversationGuard {
-    inner: Arc<RwLock<ImmutableConversation>>,
+    inner: Arc<ImmutableConversation>,
     tx_context: TransactionContext,
 }
 
@@ -67,8 +67,8 @@ impl ConversationGuard {
     }
 
     /// Get access to the inner, immutable conversation
-    async fn inner(&self) -> RwLockReadGuardArc<ImmutableConversation> {
-        self.inner.read_arc().await
+    pub(crate) async fn inner(&self) -> &ImmutableConversation {
+        &self.inner
     }
 
     pub(crate) async fn credential(&self) -> Result<Arc<Credential>> {

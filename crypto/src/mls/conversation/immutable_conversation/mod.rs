@@ -6,17 +6,18 @@ mod e2ei;
 mod history_sharing;
 mod persistence;
 
+use async_lock::{RwLock, RwLockReadGuard};
 use openmls::group::MlsGroup;
 
-use super::{ConversationIdRef, ConversationWithMls, Error, ExternalSenderKey, MlsConversation, Result, SecretKey};
+use super::{ConversationIdRef, Error, ExternalSenderKey, Result, SecretKey};
 use crate::{CipherSuite, ConversationId, CredentialRef, MlsConversationConfiguration, MlsError, Session};
 
 /// An ImmutableConversation exposes the read-only interface of an MLS conversation.
-#[derive(Debug)]
+#[derive(Debug, derive_more::Constructor)]
 pub struct ImmutableConversation {
-    pub(crate) id: ConversationId,
-    pub(crate) group: MlsGroup,
-    pub(crate) configuration: MlsConversationConfiguration,
+    id: ConversationId,
+    group: RwLock<MlsGroup>,
+    configuration: MlsConversationConfiguration,
     session: Session,
 }
 
@@ -26,9 +27,19 @@ impl ImmutableConversation {
         ConversationIdRef::new(&self.id)
     }
 
+    /// Returns an immutable guard over the underlying MLS group
+    pub async fn group(&self) -> RwLockReadGuard<MlsGroup> {
+        self.group.read().await
+    }
+
+    /// Returns the conversation's configuration
+    pub fn configuration(&self) -> &MlsConversationConfiguration {
+        &self.configuration
+    }
+
     /// Returns current epoch of the MLS group
-    pub fn epoch(&self) -> u64 {
-        self.group.epoch().as_u64()
+    pub async fn epoch(&self) -> u64 {
+        self.group().await.epoch().as_u64()
     }
 
     /// Returns this conversation's cipher suite
@@ -53,10 +64,11 @@ impl ImmutableConversation {
     ///
     /// # Errors
     /// OpenMls secret generation error
-    pub fn export_secret_key(&self, key_length: usize) -> Result<SecretKey> {
+    pub async fn export_secret_key(&self, key_length: usize) -> Result<SecretKey> {
         const EXPORTER_LABEL: &str = "exporter";
         const EXPORTER_CONTEXT: &[u8] = &[];
-        self.group
+        self.group()
+            .await
             .export_secret(
                 &self.session.crypto_provider,
                 EXPORTER_LABEL,
@@ -68,11 +80,12 @@ impl ImmutableConversation {
             .map_err(Into::into)
     }
 
-    /// Returns the raw public key of the single external sender present in this group.
+    /// Returns the raw public key of the first external sender present in this group.
+    ///
     /// This should be used to initialize a subconversation
-    pub fn get_external_sender(&self) -> Result<ExternalSenderKey> {
-        let ext_senders = self
-            .group
+    pub async fn get_external_sender(&self) -> Result<ExternalSenderKey> {
+        let group = self.group().await;
+        let ext_senders = group
             .group_context_extensions()
             .external_senders()
             .ok_or(Error::MissingExternalSenderExtension)?;
@@ -83,25 +96,29 @@ impl ImmutableConversation {
 }
 
 #[cfg(test)]
-pub mod test_utils {
+mod test_utils {
     use openmls::prelude::SignaturePublicKey;
 
     use super::*;
 
     impl ImmutableConversation {
-        pub fn signature_keys(&self) -> impl Iterator<Item = SignaturePublicKey> + '_ {
-            self.group
+        pub async fn signature_keys(&self) -> Vec<SignaturePublicKey> {
+            let group = self.group().await;
+            group
                 .members()
                 .map(|m| m.signature_key)
                 .map(|mpk| SignaturePublicKey::from(mpk.as_slice()))
+                .collect()
         }
 
-        pub fn encryption_keys(&self) -> impl Iterator<Item = Vec<u8>> + '_ {
-            self.group.members().map(|m| m.encryption_key)
+        pub async fn encryption_keys(&self) -> Vec<Vec<u8>> {
+            let group = self.group().await;
+            group.members().map(|m| m.encryption_key).collect()
         }
 
-        pub fn extensions(&self) -> &openmls::prelude::Extensions {
-            self.group.export_group_context().extensions()
+        pub async fn extensions(&self) -> openmls::prelude::Extensions {
+            let group = self.group().await;
+            group.export_group_context().extensions().to_owned()
         }
     }
 }
