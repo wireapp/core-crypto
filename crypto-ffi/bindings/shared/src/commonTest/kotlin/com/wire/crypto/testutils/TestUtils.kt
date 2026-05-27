@@ -156,8 +156,8 @@ suspend fun newDatabase(): Database {
 
 suspend fun createConversation(cc: CoreCrypto): ConversationId {
     val conversationId = genConversationId()
+    val credentialRef = cc.getCredentials().last()
     cc.transaction { ctx ->
-        val credentialRef = ctx.`getCredentials`().last()
         ctx.createConversation(conversationId, credentialRef)
     }
     return conversationId
@@ -173,8 +173,8 @@ suspend fun invite(cc1: CoreCrypto, cc2: CoreCrypto, conversationId: Conversatio
 }
 
 suspend fun generateKeyPackage(cc: CoreCrypto): KeyPackage {
+    val credentialRef = cc.getCredentials().last()
     return cc.transaction { ctx ->
-        val credentialRef = ctx.getCredentials().last()
         ctx.generateKeyPackage(credentialRef)
     }
 }

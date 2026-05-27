@@ -21,15 +21,12 @@ class ExternalSenderTest {
     fun parseJwk_produces_a_sender_usable_in_createConversation() = runTest {
         val externalSender = ExternalSender.parseJwk(FIXTURE_JWK)
         val alice = ccInit()
+        val credentials = alice.findCredentials(
+            ciphersuite = CIPHERSUITE_DEFAULT,
+            credentialType = CREDENTIAL_TYPE_DEFAULT,
+        )
 
         val retrievedKey = alice.transaction { ctx ->
-            val credentials = ctx.findCredentials(
-                clientId = null,
-                publicKey = null,
-                ciphersuite = CIPHERSUITE_DEFAULT,
-                credentialType = CREDENTIAL_TYPE_DEFAULT,
-                earliestValidity = null,
-            )
             ctx.createConversation(id, credentials.last(), externalSender)
             ctx.getExternalSender(id)
         }
