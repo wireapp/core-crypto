@@ -53,18 +53,6 @@ pub struct Session {
     pub(crate) conversation_cache: Arc<Mutex<MlsConversationCache>>,
 }
 
-#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
-impl HasSessionAndCrypto for Session {
-    async fn session(&self) -> mls::Result<Session> {
-        Ok(self.clone())
-    }
-
-    async fn crypto_provider(&self) -> mls::Result<MlsCryptoProvider> {
-        Ok(self.crypto_provider.clone())
-    }
-}
-
 impl Session {
     /// Create a new `Session`
     pub fn new(

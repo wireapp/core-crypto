@@ -11,7 +11,7 @@ use wire_e2e_identity::pki_env::PkiEnvironment;
 
 use crate::{
     ClientId, ConversationId, CoreCrypto, KeystoreError, MlsError, MlsTransport, RecursiveError, Session,
-    mls::{self, HasSessionAndCrypto, conversation_cache::MlsConversationCache},
+    mls::{self, conversation_cache::MlsConversationCache},
     mls_provider::{Database, MlsCryptoProvider},
 };
 pub mod conversation;
@@ -53,24 +53,6 @@ impl CoreCrypto {
     /// in a single database transaction.
     pub async fn new_transaction(self: &Arc<Self>) -> Result<TransactionContext> {
         TransactionContext::new(self.clone()).await
-    }
-}
-
-#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
-impl HasSessionAndCrypto for TransactionContext {
-    async fn session(&self) -> crate::mls::Result<Session> {
-        self.session()
-            .await
-            .map_err(RecursiveError::transaction("getting mls client"))
-            .map_err(Into::into)
-    }
-
-    async fn crypto_provider(&self) -> crate::mls::Result<MlsCryptoProvider> {
-        self.mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))
-            .map_err(Into::into)
     }
 }
 

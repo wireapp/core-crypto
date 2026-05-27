@@ -35,21 +35,6 @@ pub struct ConversationGuard {
     tx_context: TransactionContext,
 }
 
-#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
-impl<'inner> ConversationWithMls<'inner> for ConversationGuard {
-    type Context = TransactionContext;
-    type Conversation = RwLockReadGuard<'inner, MlsConversation>;
-
-    async fn context(&self) -> Result<TransactionContext> {
-        Ok(self.tx_context.clone())
-    }
-
-    async fn conversation(&'inner self) -> RwLockReadGuard<'inner, MlsConversation> {
-        unimplemented!("we will remove this trait shortly")
-    }
-}
-
 impl ConversationGuard {
     pub(crate) fn new(inner: Arc<RwLock<ImmutableConversation>>, tx_context: TransactionContext) -> Self {
         Self { inner, tx_context }

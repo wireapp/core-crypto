@@ -1,5 +1,3 @@
-use crate::{Session, mls_provider::MlsCryptoProvider};
-
 pub(crate) mod ciphersuite;
 pub mod conversation;
 pub(crate) mod conversation_cache;
@@ -12,13 +10,6 @@ pub(crate) mod session;
 pub use error::{Error, Result};
 pub use external_sender::ExternalSender;
 pub use session::{EpochObserver, HistoryObserver};
-
-#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
-pub(crate) trait HasSessionAndCrypto: Send {
-    async fn session(&self) -> Result<Session>;
-    async fn crypto_provider(&self) -> Result<MlsCryptoProvider>;
-}
 
 #[cfg(test)]
 mod tests {
