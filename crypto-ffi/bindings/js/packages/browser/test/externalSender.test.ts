@@ -28,8 +28,8 @@ describe("external sender", () => {
 
                 const alice = await window.helpers.ccInit();
                 const conversationId = window.helpers.newConversationId();
+                const [credentialRef] = await alice.getCredentials();
                 const retrievedKey = await alice.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.getCredentials();
                     await ctx.createConversation(
                         conversationId,
                         credentialRef!,

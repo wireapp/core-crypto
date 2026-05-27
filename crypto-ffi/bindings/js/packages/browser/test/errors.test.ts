@@ -30,10 +30,10 @@ describe("core crypto errors", () => {
             const MlsError = window.ccModule.MlsError;
 
             try {
+                const [credentialRef] = await cc.findCredentials({
+                    credentialType: window.ccModule.CredentialType.Basic,
+                });
                 await cc.transaction(async (cx) => {
-                    const [credentialRef] = await cx.findCredentials({
-                        credentialType: window.ccModule.CredentialType.Basic,
-                    });
                     await cx.createConversation(conversationId, credentialRef!);
                 });
                 return {
@@ -128,7 +128,7 @@ it("should build correctly when constructed by ubrn", async () => {
         try {
             await cc.transaction(async (cx) => {
                 // pass in a string argument instead of a `ConversationId` instance
-                const [credentialRef] = await cx.findCredentials({
+                const [credentialRef] = await cc.findCredentials({
                     credentialType: window.ccModule.CredentialType.Basic,
                 });
                 await cx.createConversation(
@@ -160,10 +160,10 @@ describe("Error type mapping", () => {
             const conversationId = await window.helpers.createConversation(cc);
 
             try {
+                const [credentialRef] = await cc.findCredentials({
+                    credentialType: window.ccModule.CredentialType.Basic,
+                });
                 await cc.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.findCredentials({
-                        credentialType: window.ccModule.CredentialType.Basic,
-                    });
                     await ctx.createConversation(
                         conversationId,
                         credentialRef!

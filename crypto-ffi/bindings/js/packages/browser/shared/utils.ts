@@ -110,11 +110,11 @@ export async function sharedSetup() {
                 if (cipherSuite === undefined) {
                     cipherSuite = window.defaultCipherSuite;
                 }
+                const [credentialRef] = await cc.findCredentials({
+                    ciphersuite: cipherSuite,
+                    credentialType: window.ccModule.CredentialType.Basic,
+                });
                 return await cc.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.findCredentials({
-                        ciphersuite: cipherSuite,
-                        credentialType: window.ccModule.CredentialType.Basic,
-                    });
                     return await ctx.generateKeyPackage(credentialRef!);
                 });
             }
@@ -210,8 +210,8 @@ export async function sharedSetup() {
                 cc: CoreCrypto
             ): Promise<ConversationId> {
                 const conversationId = window.helpers.newConversationId();
+                const [credentialRef] = await cc.getCredentials();
                 await cc.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.getCredentials();
                     await ctx.createConversation(
                         conversationId,
                         credentialRef!

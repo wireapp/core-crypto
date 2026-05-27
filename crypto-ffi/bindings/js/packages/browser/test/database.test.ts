@@ -110,7 +110,7 @@ describe("database", () => {
                 );
             });
             const pubkey1 = (
-                await cc.transaction((ctx) => ctx.findCredentials({ clientId }))
+                await cc.findCredentials({ clientId })
             )[0]!.publicKeyHash();
 
             const newKeyBytes = new Uint8Array(32);
@@ -126,12 +126,12 @@ describe("database", () => {
             }
 
             cc = window.ccModule.CoreCrypto.new(database);
-            const pubkey2 = await cc.transaction(async (ctx) => {
+            await cc.transaction(async (ctx) => {
                 await ctx.mlsInit(clientId, window.deliveryService);
-                return (
-                    await ctx.findCredentials({ clientId })
-                )[0]!.publicKeyHash();
             });
+            const pubkey2 = (
+                await cc.findCredentials({ clientId })
+            )[0]!.publicKeyHash();
             await database.close();
 
             return [JSON.stringify(pubkey1), JSON.stringify(pubkey2)];
