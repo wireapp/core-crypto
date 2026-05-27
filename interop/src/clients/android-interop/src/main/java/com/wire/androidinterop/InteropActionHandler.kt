@@ -89,14 +89,14 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
             }
 
             is InteropAction.MLS.GetKeyPackage -> {
+                val credential = coreCrypto.findCredentials(
+                    ciphersuite = ciphersuiteFromU16(action.ciphersuite.toUShort()),
+                    clientId = null,
+                    publicKey = null,
+                    credentialType = null,
+                    earliestValidity = null
+                ).first()
                 coreCrypto.transaction { context ->
-                    val credential = context.findCredentials(
-                        ciphersuite = ciphersuiteFromU16(action.ciphersuite.toUShort()),
-                        clientId = null,
-                        publicKey = null,
-                        credentialType = null,
-                        earliestValidity = null
-                    ).first()
                     context.generateKeyPackage(credential, null)
                 }.let {
                     Result.success(Base64.Default.encode(it.serialize()))

@@ -59,9 +59,9 @@ export async function ccNew() {
 }
 
 export async function getKeyPackage() {
+    const credentials = await window.cc.findCredentials({ ciphersuite: window.ciphersuite, credentialType: window.credentialType });
+    const credential = credentials[0]
     const kp = await window.cc.transaction(async (ctx) => {
-        const credentials = await ctx.findCredentials({ ciphersuite: window.ciphersuite, credentialType: window.credentialType });
-        const credential = credentials[0]
         return await ctx.generateKeyPackage(credential)
     });
 
@@ -75,9 +75,10 @@ export async function addClient() {
     const keyPackage = new KeyPackage(Uint8Array.from(Object.values(kp)));
 
     if (!window.cc.conversationExists(conversationId)) {
+        const credentials = await window.cc.findCredentials({ ciphersuite: window.ciphersuite, credentialType: window.credentialType });
+        const credential = credentials[0]
         await window.cc.transaction(async (ctx) => {
-            const credentials = await ctx.findCredentials({ ciphersuite: window.ciphersuite, credentialType: window.credentialType });
-            const credential = credentials[0]
+
             await ctx.createConversation(conversationId, credential)
         });
     }
