@@ -15,6 +15,7 @@ $dokka.location:com.wire.crypto//inMemoryDatabase/#com.wire.crypto.DatabaseKey/P
 $dokka.location:com.wire.crypto//lift/com.wire.crypto.CoreCryptoFfi#/PointingToDeclaration/-core-crypto/com.wire.crypto/lift.html
 $dokka.location:com.wire.crypto//migrateDatabaseKeyTypeToBytes/#kotlin.String#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/migrate-database-key-type-to-bytes.html
 $dokka.location:com.wire.crypto//new/com.wire.crypto.PkiEnvironment.Companion#com.wire.crypto.PkiEnvironmentHooks#com.wire.crypto.Database/PointingToDeclaration/-core-crypto/com.wire.crypto/new.html
+$dokka.location:com.wire.crypto//newFromCredentialRef/com.wire.crypto.X509CredentialAcquisition.Companion#com.wire.crypto.PkiEnvironment#com.wire.crypto.X509CredentialAcquisitionConfiguration#com.wire.crypto.CredentialRef#com.wire.crypto.Database?/PointingToDeclaration/-core-crypto/com.wire.crypto/new-from-credential-ref.html
 $dokka.location:com.wire.crypto//open/com.wire.crypto.Database.Companion#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/open.html
 $dokka.location:com.wire.crypto//open/com.wire.crypto.Database.Companion#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/open.html
 $dokka.location:com.wire.crypto//openDatabase/#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/open-database.html
@@ -30,6 +31,7 @@ $dokka.location:com.wire.crypto//toMLSKeyPackage/kotlin.ByteArray#/PointingToDec
 $dokka.location:com.wire.crypto//toWelcome/kotlin.ByteArray#/PointingToDeclaration/-core-crypto/com.wire.crypto/to-welcome.html
 $dokka.location:com.wire.crypto//uniffiForeignFutureHandleCount/#/PointingToDeclaration/-core-crypto/com.wire.crypto/uniffi-foreign-future-handle-count.html
 $dokka.location:com.wire.crypto//version/#/PointingToDeclaration/-core-crypto/com.wire.crypto/version.html
+$dokka.location:com.wire.crypto//x509CredentialAcquisitionNewFromCredentialRef/#com.wire.crypto.PkiEnvironment#com.wire.crypto.X509CredentialAcquisitionConfiguration#com.wire.crypto.CredentialRef#com.wire.crypto.Database?/PointingToDeclaration/-core-crypto/com.wire.crypto/x509-credential-acquisition-new-from-credential-ref.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-companion/index.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage///PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/index.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage/BufferedDecryptedMessage/#kotlin.ByteArray?#kotlin.Boolean#kotlin.ULong?#com.wire.crypto.ClientId?#com.wire.crypto.WireIdentity/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-buffered-decrypted-message.html
@@ -283,6 +285,7 @@ $dokka.location:com.wire.crypto/CoreCryptoFfi/proteusFingerprint/#/PointingToDec
 $dokka.location:com.wire.crypto/CoreCryptoFfi/proteusFingerprintLocal/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/proteus-fingerprint-local.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/proteusFingerprintRemote/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/proteus-fingerprint-remote.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/proteusSessionExists/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/proteus-session-exists.html
+$dokka.location:com.wire.crypto/CoreCryptoFfi/publicKey/#com.wire.crypto.CredentialRef/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/public-key.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/registerEpochObserver/#com.wire.crypto.EpochObserver/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/register-epoch-observer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/registerHistoryObserver/#com.wire.crypto.HistoryObserver/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/register-history-observer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/setPkiEnvironment/#com.wire.crypto.PkiEnvironment?/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/set-pki-environment.html
@@ -308,6 +311,7 @@ $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/proteusFingerprint/#/Poin
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/proteusFingerprintLocal/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/proteus-fingerprint-local.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/proteusFingerprintRemote/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/proteus-fingerprint-remote.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/proteusSessionExists/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/proteus-session-exists.html
+$dokka.location:com.wire.crypto/CoreCryptoFfiInterface/publicKey/#com.wire.crypto.CredentialRef/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/public-key.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/registerEpochObserver/#com.wire.crypto.EpochObserver/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/register-epoch-observer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/registerHistoryObserver/#com.wire.crypto.HistoryObserver/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/register-history-observer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/setPkiEnvironment/#com.wire.crypto.PkiEnvironment?/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/set-pki-environment.html
