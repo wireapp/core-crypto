@@ -66,8 +66,8 @@ impl From<JwsAlgorithm> for FfiCiphersuite {
 /// Configuration for an X509 credential acquisition flow.
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct X509CredentialAcquisitionConfiguration {
-    /// ACME server hostname.
-    pub acme_url: String,
+    /// ACME directory URL.
+    pub acme_directory_url: String,
     /// Ciphersuite of the acquired credential.
     pub ciphersuite: FfiCiphersuite,
     /// User-visible display name.
@@ -92,7 +92,7 @@ impl X509CredentialAcquisitionConfiguration {
         let sign_alg: JwsAlgorithm = self.ciphersuite.try_into()?;
 
         Ok(wire_e2e_identity::acquisition::X509CredentialConfiguration {
-            acme_url: self.acme_url,
+            acme_directory_url: self.acme_directory_url,
             sign_alg,
             hash_alg: HashAlgorithm::SHA256,
             display_name: self.display_name,

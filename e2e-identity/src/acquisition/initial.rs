@@ -24,7 +24,7 @@ impl X509CredentialAcquisition<states::Initialized> {
             "created acquisition({:?}), sign_alg = {}, acme_url = {}",
             Obfuscated::from(&sign_kp),
             config.sign_alg,
-            config.acme_url
+            config.acme_directory_url
         );
         Ok(Self {
             pki_env,
@@ -52,7 +52,7 @@ impl X509CredentialAcquisition<states::Initialized> {
             "created acquisition from existing {:?}, sign_alg = {}, acme_url = {}",
             Obfuscated::from(&sign_kp),
             config.sign_alg,
-            config.acme_url
+            config.acme_directory_url
         );
 
         Ok(Self {

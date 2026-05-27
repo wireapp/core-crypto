@@ -1,5 +1,6 @@
 use obfuscate::Obfuscated;
 use rusty_jwt_tools::prelude::{Dpop, Handle, Htm, RustyJwtTools};
+use url::Url;
 
 use super::{Result, X509CredentialAcquisition, get_header, states};
 use crate::{
@@ -64,7 +65,11 @@ impl X509CredentialAcquisition<states::Initialized> {
         // Get the ACME server directory via `GET /acme/{provisioner-name}/directory`.
         //
         // See [RFC 8555 Section 7.1.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1)
-        let url = self.acme_url("directory");
+        let url: Url = self
+            .config
+            .acme_directory_url
+            .parse()
+            .expect("valid ACME directory URL");
 
         let resp = hooks
             .http_request(HttpMethod::Get, url.to_string(), vec![], vec![])
@@ -89,9 +94,7 @@ impl X509CredentialAcquisition<states::Initialized> {
         //
         // See [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3).
         let account_request = RustyAcme::new_account_request(&directory, self.config.sign_alg, &self.acme_kp, nonce)?;
-        let (nonce, response) = self
-            .acme_request(&self.acme_url("new-account"), &account_request)
-            .await?;
+        let (nonce, response) = self.acme_request(&directory.new_account, &account_request).await?;
         let acme_account = RustyAcme::new_account_response(response)?;
         log::debug!(
             "acquisition({:?}): created a new ACME account",
@@ -112,7 +115,7 @@ impl X509CredentialAcquisition<states::Initialized> {
             &self.acme_kp,
             nonce,
         )?;
-        let (nonce, response) = self.acme_request(&self.acme_url("new-order"), &order_request).await?;
+        let (nonce, response) = self.acme_request(&directory.new_order, &order_request).await?;
         let order = RustyAcme::new_order_response(response)?;
         log::debug!(
             "acquisition({:?}): created a new ACME order",

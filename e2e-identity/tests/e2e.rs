@@ -179,7 +179,7 @@ async fn prepare_pki_env_and_config(
     };
 
     let acme = utils::stepca::start_acme_server(&ca_cfg).await;
-    let acme_url = acme.socket.to_string();
+    let acme_url = format!("https://{}/acme/wire/directory", acme.socket);
     let acme_cert = x509_cert::Certificate::from_pem(acme.ca_cert.to_string()).unwrap();
 
     // configure DNS mappings
@@ -194,7 +194,7 @@ async fn prepare_pki_env_and_config(
     let device_id = format!("{:x}", client_id.device_id);
 
     let config = X509CredentialConfiguration {
-        acme_url,
+        acme_directory_url: acme_url,
         sign_alg,
         hash_alg: HashAlgorithm::SHA256,
         display_name: "Alice Smith".into(),

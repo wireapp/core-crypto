@@ -27,7 +27,7 @@ pub use serialization::ClientIdDef;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct X509CredentialConfiguration {
-    pub acme_url: String,
+    pub acme_directory_url: String,
     pub sign_alg: JwsAlgorithm,
     pub hash_alg: HashAlgorithm,
     pub display_name: String,
@@ -142,11 +142,5 @@ impl<T: std::fmt::Debug> X509CredentialAcquisition<T> {
 
         let nonce = get_header(&response, "replay-nonce")?;
         Ok((nonce, response.json()?))
-    }
-
-    fn acme_url(&self, path: &str) -> Url {
-        format!("https://{}/acme/wire/{path}", self.config.acme_url)
-            .parse()
-            .expect("valid URL")
     }
 }
