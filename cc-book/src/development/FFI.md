@@ -1,27 +1,6 @@
 # CoreCrypto FFI Details
 
-## Rust Docs
-
-- [Rust](/core-crypto/main/rust/core_crypto/)
-
-These docs are most useful for Core-Crypto developers working internally, but may be useful for client developers
-looking for additional insights on implementation.
-
-## Bindings Docs
-
-- [Typescript](/core-crypto/main/typescript)
-- [Kotlin](/core-crypto/main/kotlin)
-- [Swift](/core-crypto/main/swift)
-
-## Naming conventions table
-
-| Item                | Rust         | Swift        | Kotlin       | TypeScript   |
-| ------------------- | ------------ | ------------ | ------------ | ------------ |
-| Methods/Functions   | `snake_case` | `camelCase`  | `camelCase`  | `camelCase`  |
-| Variables/Arguments | `snake_case` | `camelCase`  | `camelCase`  | `camelCase`  |
-| Classes/Interfaces  | `PascalCase` | `PascalCase` | `PascalCase` | `PascalCase` |
-
-## Types equivalence table
+## Data Types equivalence
 
 | Rust                    | Swift                              | Kotlin                     | TypeScript                               |
 | ----------------------- | ---------------------------------- | -------------------------- | ---------------------------------------- |

@@ -1,17 +1,10 @@
 # CoreCrypto Keystore Implementation
 
-## Goals
+Provides a persistent data storage layer with encryption at-rest.
 
-- Some sort of persistent data storage layer
-- Encryption at-rest of the persisted keying material
-- Compatibility with target libraries storage traits (i.e. OpenMLS & Proteus)
-- Compatibility with our preferred targets (native, iOS, Android, Web browsers via WebAssembly)
+## Native (iOS, Android, Ts-Native)
 
-## Targets
-
-### Native - iOS - Android (aka Generic)
-
-Nothing very fancy, pretty much everything is handed off to SQLCipher
+Pretty much everything is handed off to SQLCipher:
 
 - Backing store: Encrypted SQLite database (with [SQLCipher](https://www.zetetic.net/sqlcipher/))
 - Encryption: AES256-CBC with per-page IV (provided by [SQLCipher](https://www.zetetic.net/sqlcipher/)).
@@ -21,7 +14,34 @@ Nothing very fancy, pretty much everything is handed off to SQLCipher
 - Crypto primitives provider: [OpenSSL](https://www.openssl.org/)
 - PRNG provider: [OpenSSL](https://www.openssl.org/)
 
-### WASM
+```mermaid
+graph LR
+    RS[Rusqlite] --> S[SQLCipher]
+    SC{AES-256-CBC}
+    S -.->|Encrypts| SC
+    SC -.->|Decrypts| S
+    SC -->|Stores| SF[File]
+```
+
+See [SQLCipher design](https://www.zetetic.net/sqlcipher/design/)
+
+Summary:
+
+- SQLCipher's file page size by default is 4096 bytes
+- When using a passphrase (our case), the provided passphrase is derived using PBKDF2-HMAC-SHA512. <br /> The salt of
+  this KDF is stored in the 16 first bytes of the file.
+  - Note: This cannot be kept as-is on iOS as iOS needs to be able to read the first 16-32 bytes of SQLite databases to
+    "magically" guess they are SQLite databases<br /> and to allow reading them from the background. This is very useful
+    in the case of background work on iOS such as encrypted data in notifications needing access to the keystore.<br />
+- Each page is encrypted or decrypted on-the-fly using AES256-CBC
+  - Provided by OpenSSL -`v1.1.1p` as of 29/06/22- in our case, but the crypto provider can be changed to NSS,
+    LibTomCrypt or Security.framework
+- Each page is written with a unique, random IV (*initialization vector*). This IV is regenerated on each page write.
+  This IV is appended at the end of each page.
+- Page ciphertexts are authenticated using an authentication tag using HMAC-SHA512. This tag is also appended at the
+  each of the page.
+
+## WASM
 
 - Backing store: `IndexedDB` (with the [`idb`](https://crates.io/crates/idb) crate)
 - Encryption: AES256-GCM Value-Level-Encryption with random, non-reused 96-bits nonces and embedded authentication tag
@@ -35,55 +55,16 @@ Nothing very fancy, pretty much everything is handed off to SQLCipher
 - PRNG provider: [`rand`](https://crates.io/crates/rand) crate with [`getrandom`](https://crates.io/crates/getrandom)
   (uses [Crypto.getRandomValues](https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues) under the hood)
 
-## Implementation details
-
-### Overview
-
 ```mermaid
-graph TD
-    subgraph KS [Keystore]
-        subgraph w [WASM]
-            B(Keystore Entities)
-            C{AES-256-GCM} -->|Stores| R[Rexie]
-            B -.->|Encrypts| C
-            C -.->|Decrypts| B
-            R -.-> I[IndexedDB]
-        end
-
-        subgraph g [Generic]
-            RS[Rusqlite] --> S[SQLCipher]
-            SC{AES-256-CBC}
-            S -.->|Encrypts| SC
-            SC -.->|Decrypts| S
-            SC -->|Stores| SF[File]
-        end
-    end
+graph LR
+    direction LR
+    B(Keystore Entities)
+    C{AES-256-GCM} -->|Stores| I[IndexedDB]
+    B -.->|Encrypts| C
+    C -.->|Decrypts| B
 ```
 
-### Native
-
-See [SQLCipher design](https://www.zetetic.net/sqlcipher/design/)
-
-Summary:
-
-- SQLCipher's file page size by default is 4096 bytes
-- When using a passphrase (our case), the provided passphrase is derived using PBKDF2-HMAC-SHA512. <br /> The salt of
-  this KDF is stored in the 16 first bytes of the file.
-  - Note: This cannot be kept as-is on iOS as iOS needs to be able to read the first 16-32 bytes of SQLite databases to
-    "magically" guess they are SQLite databases<br /> and to allow reading them from the background. This is very useful
-    in the case of background work on iOS such as encrypted data in notifications needing access to the keystore.<br />
-    It's also used for working with a Watch App.
-- Each page is encrypted or decrypted on-the-fly using AES256-CBC
-  - Provided by OpenSSL -`v1.1.1p` as of 29/06/22- in our case, but the crypto provider can be changed to NSS,
-    LibTomCrypt or Security.framework
-- Each page is written with a unique, random IV (*initialization vector*). This IV is regenerated on each page write.
-  This IV is appended at the end of each page.
-- Page ciphertexts are authenticated using an authentication tag using HMAC-SHA512. This tag is also appended at the
-  each of the page.
-
-### WASM
-
-#### How the value-level encryption works
+### How the value-level encryption works
 
 - Consumers of the library are required to provide 32 bytes, generated by a CSPRNG or a hardware RNG, to be used as an
   AES-256 key <br />

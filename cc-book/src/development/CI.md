@@ -1,19 +1,6 @@
 # CI Builds via GNU make and GitHub Actions
 
-## Contents
-
-<!-- mdformat-toc start --slug=github --no-anchors --maxlevel=6 --minlevel=2 -->
-
-- [Contents](#contents)
-- [Make-based actions & workflows in `core-crypto`](#make-based-actions--workflows-in-core-crypto)
-- [Generic `make` action](#generic-make-action)
-  - [File Hashes of Dependencies](#file-hashes-of-dependencies)
-  - [Artifact Caching](#artifact-caching)
-- [Specialized `make` actions](#specialized-make-actions)
-
-<!-- mdformat-toc end -->
-
-## Make-based actions & workflows in `core-crypto`
+## Make-based actions & workflows
 
 Our CI pipeline is heavily driven by make rules (in the root [`Makefile`](../Makefile)). To avoid duplicating logic, the
 CI uses small GitHub composite actions that invoke specific make targets with consistent artifact caching via GitHub
