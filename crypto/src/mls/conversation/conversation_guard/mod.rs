@@ -66,11 +66,6 @@ impl ConversationGuard {
             .map_err(Into::into)
     }
 
-    /// Get access to the inner, immutable conversation
-    pub(crate) async fn inner(&self) -> &ImmutableConversation {
-        &self.inner
-    }
-
     pub(crate) async fn credential(&self) -> Result<Arc<Credential>> {
         self.inner()
             .await
@@ -82,6 +77,14 @@ impl ConversationGuard {
     fn group_info(group_info: Option<GroupInfo>) -> Result<MlsGroupInfoBundle> {
         let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
         MlsGroupInfoBundle::try_new_full_plaintext(group_info)
+    }
+}
+
+impl std::ops::Deref for ConversationGuard {
+    type Target = ImmutableConversation;
+
+    fn deref(&self) -> &Self::Target {
+        &*self.inner
     }
 }
 
