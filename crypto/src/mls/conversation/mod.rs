@@ -22,8 +22,6 @@ mod orphan_welcome;
 pub(crate) mod pending_conversation;
 mod welcome;
 
-use std::ops::Deref;
-
 pub use self::{
     conversation_guard::ConversationGuard,
     error::{Error, Result},
@@ -31,11 +29,7 @@ pub use self::{
     immutable_conversation::ImmutableConversation,
     welcome::WelcomeMessage,
 };
-use crate::{
-    RecursiveError, bytes_wrapper,
-    mls::{HasSessionAndCrypto, Session},
-    mls_provider::MlsCryptoProvider,
-};
+use crate::bytes_wrapper;
 
 bytes_wrapper!(
     /// A secret key derived from the group secret.
@@ -52,40 +46,6 @@ bytes_wrapper!(
     #[derive(Clone)]
     ExternalSenderKey
 );
-
-/// The base layer for [Conversation].
-/// The trait is only exposed internally.
-#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
-pub(crate) trait ConversationWithMls<'a> {
-    /// [`Session`] and [`TransactionContext`][crate::transaction_context::TransactionContext] both implement
-    /// [`HasSessionAndCrypto`].
-    type Context: HasSessionAndCrypto;
-
-    type Conversation: Deref<Target = ImmutableConversation> + Send;
-
-    async fn context(&self) -> Result<Self::Context>;
-
-    async fn conversation(&'a self) -> Self::Conversation;
-
-    async fn crypto_provider(&self) -> Result<MlsCryptoProvider> {
-        self.context()
-            .await?
-            .crypto_provider()
-            .await
-            .map_err(RecursiveError::mls("getting mls provider"))
-            .map_err(Into::into)
-    }
-
-    async fn session(&self) -> Result<Session> {
-        self.context()
-            .await?
-            .session()
-            .await
-            .map_err(RecursiveError::mls("getting mls client"))
-            .map_err(Into::into)
-    }
-}
 
 #[cfg(test)]
 mod tests {
