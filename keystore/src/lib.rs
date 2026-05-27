@@ -1,6 +1,3 @@
-#![doc = include_str!("../README.md")]
-#![doc = include_str!("../../docs/KEYSTORE_IMPLEMENTATION.md")]
-
 pub mod connection;
 mod database_key;
 pub mod entities;
