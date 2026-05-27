@@ -624,6 +624,39 @@
                 <li class="item">
                   <div>
                     <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC3FfiC15findCredentials8clientId9publicKey11ciphersuite14credentialType16earliestValiditySayAA13CredentialRefCGAA06ClientI0CSg_10Foundation4DataVSgAA11CipherSuiteOSgAA0qN0OSgs6UInt64VSgtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/findCredentials(clientId:publicKey:ciphersuite:credentialType:earliestValidity:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC3FfiC15findCredentials8clientId9publicKey11ciphersuite14credentialType16earliestValiditySayAA13CredentialRefCGAA06ClientI0CSg_10Foundation4DataVSgAA11CipherSuiteOSgAA0qN0OSgs6UInt64VSgtYaKF">findCredentials(clientId:<wbr>publicKey:<wbr>ciphersuite:<wbr>credentialType:<wbr>earliestValidity:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Get all credentials from this client which match the provided parameters.</p>
+
+<p>Parameters which are unset or <code>None</code> match anything. Those with a particular value find only credentials
+ matching that value.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">findCredentials</span><span class="p">(</span><span class="nv">clientId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">publicKey</span><span class="p">:</span> <span class="kt">Data</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">ciphersuite</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/CipherSuite.html">CipherSuite</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">credentialType</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/CredentialType.html">CredentialType</a></span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">,</span> <span class="nv">earliestValidity</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/CredentialRef.html">CredentialRef</a></span><span class="p">]</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
                     <a name="/s:20WireCoreCryptoUniffi0bC3FfiC12getClientIds14conversationIdSayAA0gJ0CGAA012ConversationJ0C_tYaKF"></a>
                     <a name="//apple_ref/swift/Method/getClientIds(conversationId:)" class="dashAnchor"></a>
                     <a class="token" href="#/s:20WireCoreCryptoUniffi0bC3FfiC12getClientIds14conversationIdSayAA0gJ0CGAA012ConversationJ0C_tYaKF">getClientIds(conversationId:<wbr>)</a>
@@ -645,6 +678,36 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">getClientIds</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></span><span class="p">]</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC3FfiC14getCredentialsSayAA13CredentialRefCGyYaKF"></a>
+                    <a name="//apple_ref/swift/Method/getCredentials()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC3FfiC14getCredentialsSayAA13CredentialRefCGyYaKF">getCredentials()</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Get all credentials from this client.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">getCredentials</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/CredentialRef.html">CredentialRef</a></span><span class="p">]</span></code></pre>
 
                         </div>
                       </div>

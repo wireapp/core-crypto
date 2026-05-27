@@ -72,7 +72,7 @@
 <a href=#72 id=72 data-nosnippet>72</a>        Box::pin(<span class="kw">async move </span>{
 <a href=#73 id=73 data-nosnippet>73</a>            <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice]).<span class="kw">await</span>;
 <a href=#74 id=74 data-nosnippet>74</a>            <span class="kw">let </span>id = conversation.id().clone();
-<a href=#75 id=75 data-nosnippet>75</a>            <span class="kw">let </span>credentials =alice.session().<span class="kw">await</span>.find_credentials(Default::default()).<span class="kw">await</span>.expect(<span class="string">"finding credentials"</span>);
+<a href=#75 id=75 data-nosnippet>75</a>            <span class="kw">let </span>credentials = alice.find_credentials(Default::default()).<span class="kw">await</span>.expect(<span class="string">"finding credentials"</span>);
 <a href=#76 id=76 data-nosnippet>76</a>            <span class="kw">let </span>credential = credentials.first().expect(<span class="string">"first credential"</span>);
 <a href=#77 id=77 data-nosnippet>77</a>
 <a href=#78 id=78 data-nosnippet>78</a>                <span class="comment">// creating a conversation should first verify that the conversation does not already exist ; only then create it
