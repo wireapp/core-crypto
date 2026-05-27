@@ -701,7 +701,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let acquisition = try X509CredentialAcquisition(
             pkiEnvironment: pkiEnvironment,
             config: X509CredentialAcquisitionConfiguration(
-                acmeUrl: "acme.example.com",
+                acmeDirectoryUrl: "acme.example.com/directory",
                 ciphersuite: ciphersuiteDefault(),
                 displayName: "Alice Smith",
                 clientId: clientId,
@@ -722,7 +722,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let clientId = ClientId(
             bytes: Data("LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com".utf8))
         let config = X509CredentialAcquisitionConfiguration(
-            acmeUrl: "acme.example.com",
+            acmeDirectoryUrl: "acme.example.com/directory",
             ciphersuite: ciphersuiteDefault(),
             displayName: "Alice Smith",
             clientId: clientId,

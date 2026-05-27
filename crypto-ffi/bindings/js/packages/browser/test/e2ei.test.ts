@@ -146,7 +146,7 @@ describe("end to end identity", () => {
             );
             const config =
                 window.ccModule.X509CredentialAcquisitionConfiguration.new({
-                    acmeUrl: "acme.example.com",
+                    acmeDirectoryUrl: "acme.example.com/directory",
                     ciphersuite: window.defaultCipherSuite,
                     displayName: "Alice Smith",
                     clientId,
@@ -180,7 +180,7 @@ describe("end to end identity", () => {
             );
             const config =
                 window.ccModule.X509CredentialAcquisitionConfiguration.new({
-                    acmeUrl: "acme.example.com",
+                    acmeDirectoryUrl: "acme.example.com/directory",
                     ciphersuite: window.defaultCipherSuite,
                     displayName: "Alice Smith",
                     clientId,
