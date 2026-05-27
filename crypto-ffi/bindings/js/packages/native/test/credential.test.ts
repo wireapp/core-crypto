@@ -28,9 +28,7 @@ describe("credentials", () => {
 
     test("credential can be added", async () => {
         const cc = await ccInit();
-        const allCredentials = await cc.transaction(async (ctx) => {
-            return await ctx.getCredentials();
-        });
+        const allCredentials = await cc.getCredentials();
         const [ref] = allCredentials;
         expect(ref).toBeDefined();
         expect(ref!.type()).toEqual(CredentialType.Basic);
@@ -43,17 +41,13 @@ describe("credentials", () => {
     test("credential can be removed", async () => {
         const cc = await ccInit();
 
-        const [ref] = await cc.transaction(async (ctx) => {
-            return await ctx.getCredentials();
-        });
+        const [ref] = await cc.getCredentials();
 
         await cc.transaction(async (ctx) => {
             return await ctx.removeCredential(ref!);
         });
 
-        const allCredentials = await cc.transaction(async (ctx) => {
-            return await ctx.getCredentials();
-        });
+        const allCredentials = await cc.getCredentials();
         expect(allCredentials.length).toBe(0);
     });
 
@@ -73,15 +67,11 @@ describe("credentials", () => {
             await ctx.addCredential(credential2);
         });
 
-        const results1 = await cc.transaction(async (ctx) => {
-            return await ctx.findCredentials({
-                ciphersuite: ciphersuite1,
-            });
+        const results1 = await cc.findCredentials({
+            ciphersuite: ciphersuite1,
         });
-        const results2 = await cc.transaction(async (ctx) => {
-            return await ctx.findCredentials({
-                ciphersuite: ciphersuite2,
-            });
+        const results2 = await cc.findCredentials({
+            ciphersuite: ciphersuite2,
         });
 
         expect(results1.length).toBe(1);

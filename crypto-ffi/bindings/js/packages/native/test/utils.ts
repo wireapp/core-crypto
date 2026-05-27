@@ -152,7 +152,7 @@ export async function generateKeyPackage(
         cipherSuite = DEFAULT_CIPHERSUITE;
     }
     return await cc.transaction(async (ctx) => {
-        const [credentialRef] = await ctx.findCredentials({
+        const [credentialRef] = await cc.findCredentials({
             ciphersuite: cipherSuite,
             credentialType: CredentialType.Basic,
         });
@@ -184,8 +184,8 @@ export async function createConversation(
     cc: CoreCrypto
 ): Promise<ConversationId> {
     const conversationId = randomConversationId();
+    const [credentialRef] = await cc.getCredentials();
     await cc.transaction(async (ctx) => {
-        const [credentialRef] = await ctx.getCredentials();
         await ctx.createConversation(conversationId, credentialRef!);
     });
     return conversationId;

@@ -24,8 +24,8 @@ describe("external sender", () => {
 
         const cc = await ccInit();
         const conversationId = randomConversationId();
+        const [credentialRef] = await cc.getCredentials();
         const retrievedKey = await cc.transaction(async (ctx) => {
-            const [credentialRef] = await ctx.getCredentials();
             await ctx.createConversation(
                 conversationId,
                 credentialRef!,
