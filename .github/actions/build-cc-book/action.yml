@@ -1,0 +1,24 @@
+name: build-cc-book
+description: Install and build the cc-book mdBook
+
+runs:
+  using: composite
+
+  steps:
+    - name: Install mdBook tools
+      uses: taiki-e/install-action@v2
+      with:
+        tool: |
+          mdbook
+          mdbook-langtabs
+          mdbook-mermaid
+
+    - name: Install mdBook plugins
+      shell: bash
+      run: |
+        mdbook-langtabs install ./cc-book
+        mdbook-mermaid install ./cc-book
+
+    - name: Build cc-book
+      shell: bash
+      run: mdbook build cc-book
