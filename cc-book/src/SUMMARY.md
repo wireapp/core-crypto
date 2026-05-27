@@ -17,3 +17,10 @@
   - [TypeScript](cc10/migration/typescript.md)
   - [Swift](cc10/migration/swift.md)
   - [Kotlin](cc10/migration/kotlin.md)
+
+# Development
+
+- [Architecture](development/ARCHITECTURE.md)
+- [Crypto Dependencies](development/CRYPTO_DEPENDENCIES.md)
+- [CI Builds via GNU make and GHA](development/CI.md)
+- [Manually Publishing Release Artifacts](development/MANUAL_PUBLISH.md)
