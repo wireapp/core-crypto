@@ -52,11 +52,11 @@ Allows other programming languages and platforms to embed and interact with `Cor
 | `u8`                    | `UInt8`                            | `UByte`                    | `number`                                 |
 | `u16`                   | `UInt16`                           | `UShort`                   | `number`                                 |
 | `u32`                   | `UInt32`                           | `UInt`                     | `number`                                 |
-| `u64`                   | `UInt64`                           | `ULong`                    | `number`                                 |
+| `u64`                   | `UInt64`                           | `ULong`                    | `bigint`                                 |
 | `i8`                    | `Int8`                             | `Byte`                     | `number`                                 |
 | `i16`                   | `Int16`                            | `Short`                    | `number`                                 |
 | `i32`                   | `Int32`                            | `Int`                      | `number`                                 |
-| `i64`                   | `Int64`                            | `Long`                     | `number`                                 |
+| `i64`                   | `Int64`                            | `Long`                     | `bigint`                                 |
 | `f32`                   | `Float`                            | `Float`                    | `number`                                 |
 | `f64`                   | `Double`                           | `Double`                   | `number`                                 |
 | `String` / `&str`       | `String`                           | `String`                   | `string`                                 |
@@ -67,6 +67,9 @@ Allows other programming languages and platforms to embed and interact with `Cor
 | `HashMap<String, T>`    | `Dictionary<String, T>`            | `Map<String, T>`           | `Record<string, T>`                      |
 | `()`                    | `nil`                              | `null`                     | `null`                                   |
 | `Result<T, E>`          | `func placeholder() throws E -> T` | `T placeholder() throws E` | `function placeholder(): T // @throws E` |
+
+For more information, see [UniFFI Docs](https://mozilla.github.io/uniffi-rs/next/types/builtin_types.html) and
+[UBRN Docs](https://jhugman.github.io/uniffi-bindgen-react-native/idioms/common-types.html)
 
 ## CoreCrypto
 
