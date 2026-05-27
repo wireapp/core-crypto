@@ -22,11 +22,8 @@ class ExternalSenderTest {
         val externalSender = ExternalSender.parseJwk(FIXTURE_JWK)
         val alice = ccInit()
         val credentials = alice.findCredentials(
-            clientId = null,
-            publicKey = null,
             ciphersuite = CIPHERSUITE_DEFAULT,
             credentialType = CREDENTIAL_TYPE_DEFAULT,
-            earliestValidity = null,
         )
 
         val retrievedKey = alice.transaction { ctx ->

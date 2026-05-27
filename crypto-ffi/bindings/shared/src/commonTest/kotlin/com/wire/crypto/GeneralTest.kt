@@ -115,7 +115,7 @@ class DatabaseKeyTest {
             ctx.mlsInit(clientId = clientId, transport)
             ctx.addCredential(Credential.basic(CIPHERSUITE_DEFAULT, clientId))
         }
-        val credentialRef1 = cc.findCredentials(clientId, null, null, null, null).first()
+        val credentialRef1 = cc.findCredentials(clientId = clientId).first()
         cc.close()
 
         val newKey = genDatabaseKey()
@@ -126,7 +126,7 @@ class DatabaseKeyTest {
         cc.transaction { ctx ->
             ctx.mlsInit(clientId = clientId, transport)
         }
-        val credentialRef2 = cc.findCredentials(clientId, null, null, null, null).first()
+        val credentialRef2 = cc.findCredentials(clientId = clientId).first()
         cc.close()
         assertContentEquals(credentialRef1.publicKeyHash(), credentialRef2.publicKeyHash())
 

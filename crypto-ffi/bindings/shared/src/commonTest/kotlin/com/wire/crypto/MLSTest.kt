@@ -136,7 +136,7 @@ class MLSTest {
     fun findCredentials_should_return_non_empty_result() = runTest {
         val clientId = genClientId()
         val alice = ccInit(CcInitOptions.WithBasicCredential(CIPHERSUITE_DEFAULT, clientId))
-        assertThat(alice.findCredentials(clientId, null, null, null, null)).isNotEmpty()
+        assertThat(alice.findCredentials(clientId = clientId)).isNotEmpty()
     }
 
     @Test
@@ -580,20 +580,8 @@ class MLSTest {
                 ctx.addCredential(credential2)
             }
 
-            val results1 = cc.findCredentials(
-                clientId = null,
-                publicKey = null,
-                ciphersuite = ciphersuite1,
-                credentialType = null,
-                earliestValidity = null
-            )
-            val results2 = cc.findCredentials(
-                clientId = null,
-                publicKey = null,
-                ciphersuite = ciphersuite2,
-                credentialType = null,
-                earliestValidity = null
-            )
+            val results1 = cc.findCredentials(ciphersuite = ciphersuite1)
+            val results2 = cc.findCredentials(ciphersuite = ciphersuite2)
 
             assertThat(results1).hasSize(1)
             assertThat(results2).hasSize(1)
