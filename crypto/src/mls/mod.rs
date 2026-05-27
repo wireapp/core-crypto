@@ -1,4 +1,4 @@
-use crate::{MlsConversation, Session, mls_provider::MlsCryptoProvider};
+use crate::{Session, mls_provider::MlsCryptoProvider};
 
 pub(crate) mod ciphersuite;
 pub mod conversation;

@@ -59,7 +59,7 @@ pub use crate::{
         ExternalSender,
         ciphersuite::CipherSuite,
         conversation::{
-            ConversationId, MlsConversation,
+            ConversationId,
             commit::MlsCommitBundle,
             config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
             conversation_guard::decrypt::{MlsBufferedDecryptMessage, MlsDecryptMessage},

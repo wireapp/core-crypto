@@ -1,12 +1,11 @@
 use core_crypto_keystore::{CryptoKeystoreMls as _, Database};
 use openmls::group::{InnerState, MlsGroup};
 
+use super::{ConversationGuard, Result};
 use crate::{
     KeystoreError, MlsConversationConfiguration, RecursiveError,
     mls::conversation::{ConversationIdRef, ImmutableConversation},
 };
-
-use super::{ConversationGuard, Result};
 
 impl ConversationGuard {
     /// Perform an operation on a mutable reference to the contained MLS group.
