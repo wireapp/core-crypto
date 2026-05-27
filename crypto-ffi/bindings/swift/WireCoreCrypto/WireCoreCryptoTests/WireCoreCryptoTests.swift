@@ -416,20 +416,8 @@ final class WireCoreCryptoTests: XCTestCase {
             _ = try await ctx.addCredential(credential: credential2)
         }
 
-        let results1 = try await alice.findCredentials(
-            clientId: nil,
-            publicKey: nil,
-            ciphersuite: ciphersuite1,
-            credentialType: nil,
-            earliestValidity: nil
-        )
-        let results2 = try await alice.findCredentials(
-            clientId: nil,
-            publicKey: nil,
-            ciphersuite: ciphersuite2,
-            credentialType: nil,
-            earliestValidity: nil
-        )
+        let results1 = try await alice.findCredentials(ciphersuite: ciphersuite1)
+        let results2 = try await alice.findCredentials(ciphersuite: ciphersuite2)
 
         XCTAssertEqual(results1.count, 1)
         XCTAssertEqual(results2.count, 1)
@@ -747,13 +735,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let coreCrypto = try await ccInit(
             options: .withBasicCredential(clientId: clientId, database: database))
 
-        let credentialRef = try await coreCrypto.findCredentials(
-            clientId: clientId,
-            publicKey: nil,
-            ciphersuite: nil,
-            credentialType: nil,
-            earliestValidity: nil
-        ).first!
+        let credentialRef = try await coreCrypto.findCredentials(clientId: clientId).first!
 
         let acquisition = try await X509CredentialAcquisition.newFromCredentialRef(
             pkiEnvironment: pkiEnvironment,
