@@ -1,5 +1,40 @@
 # CoreCrypto Architecture
 
+```mermaid
+block-beta
+
+columns 1
+
+block:system
+    Kotlin
+    Swift
+    TSN["TS Native"]
+    TSB["TS Browser"]
+end
+
+block:uniffi
+    UniFFI
+    UBRN
+end
+
+RUSTFFI["CoreCrypto FFI"]
+
+block:crypto
+    CRYPTO["Crypto<br/>MLS • Proteus"]
+    E2EI["E2E Identity"]
+end
+
+STORAGE["Storage"]
+block:database
+    Native["SQLite + SQLCipher"]
+    Browser["IndexedDB"]
+end
+
+classDef highlighted fill:#969,stroke:#333,stroke-width:3px;
+class TSB highlighted
+class Browser highlighted
+```
+
 ## CoreCryptoFFI
 
 Allows other programming languages and platforms to embed and interact with `CoreCrypto`
