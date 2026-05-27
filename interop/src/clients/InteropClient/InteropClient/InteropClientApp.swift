@@ -127,11 +127,8 @@ struct InteropClientApp: App {
         case .getKeyPackage(let ciphersuite):
             guard let coreCrypto else { throw InteropError.notInitialised }
             let credential = try await coreCrypto.findCredentials(
-                clientId: nil,
-                publicKey: nil,
                 ciphersuite: ciphersuiteFromU16(discriminant: ciphersuite),
-                credentialType: .basic,
-                earliestValidity: nil
+                credentialType: .basic
             ).first!
             let keyPackage = try await coreCrypto.transaction { ctx in
                 return try await ctx.generateKeyPackage(
@@ -150,11 +147,8 @@ struct InteropClientApp: App {
 
             try await coreCrypto.transaction { context in
                 let credentialRef = try await coreCrypto.findCredentials(
-                    clientId: nil,
-                    publicKey: nil,
                     ciphersuite: ciphersuite,
-                    credentialType: .basic,
-                    earliestValidity: nil
+                    credentialType: .basic
                 ).first!
                 if try await context.conversationExists(
                     conversationId: conversationId) == false
