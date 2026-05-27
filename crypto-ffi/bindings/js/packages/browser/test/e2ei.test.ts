@@ -196,9 +196,7 @@ describe("end to end identity", () => {
                 database,
             });
 
-            const [credentialRef] = await cc.transaction(
-                async (ctx) => await ctx.findCredentials({ clientId })
-            );
+            const [credentialRef] = await cc.findCredentials({ clientId });
 
             const acquisition =
                 await window.ccModule.X509CredentialAcquisition.newFromCredentialRef(

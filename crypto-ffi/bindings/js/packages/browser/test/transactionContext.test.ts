@@ -38,10 +38,7 @@ describe("transaction context", () => {
             });
 
             try {
-                await context!.findCredentials({
-                    ciphersuite: window.defaultCipherSuite,
-                    credentialType: window.ccModule.CredentialType.Basic,
-                });
+                await context!.getKeyPackages();
             } catch (err) {
                 const e = err as { context?: { context?: { msg?: string } } };
                 return {
@@ -78,15 +75,15 @@ describe("transaction context", () => {
             const CoreCryptoError = window.ccModule.CoreCryptoError;
             const MlsError = window.ccModule.MlsError;
 
+            const [credentialRef] = await cc.findCredentials({
+                credentialType: basicCredentialType,
+            });
             const expectedError = new Error("Message of expected error", {
                 cause: "This is expected!",
             });
             let thrownError;
             try {
                 await cc.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.findCredentials({
-                        credentialType: basicCredentialType,
-                    });
                     await ctx.createConversation(
                         conversationId,
                         credentialRef!
@@ -103,16 +100,10 @@ describe("transaction context", () => {
 
             // This would throw a "Conversation already exists" error, if the above transaction hadn't been rolled back.
             await cc.transaction(async (ctx) => {
-                const [credentialRef] = await ctx.findCredentials({
-                    credentialType: basicCredentialType,
-                });
                 await ctx.createConversation(conversationId, credentialRef!);
             });
             try {
                 await cc.transaction(async (ctx) => {
-                    const [credentialRef] = await ctx.findCredentials({
-                        credentialType: basicCredentialType,
-                    });
                     await ctx.createConversation(
                         conversationId,
                         credentialRef!

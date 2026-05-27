@@ -14,11 +14,7 @@ describe("client identity", () => {
     it("get client public key should work", async () => {
         const result = await browser.execute(async () => {
             const cc = await window.helpers.ccInit();
-            return (
-                await cc.transaction(async (ctx) => {
-                    return await ctx.getCredentials();
-                })
-            )[0]!.publicKeyHash().byteLength;
+            return (await cc.getCredentials())[0]!.publicKeyHash().byteLength;
         });
         await expect(result).toBe(32);
     });
