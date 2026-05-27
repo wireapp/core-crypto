@@ -106,10 +106,7 @@ internal class E2EITest {
         )
 
         val cc = ccInit(CcInitOptions.WithBasicCredential(clientId = clientId, database = db))
-
-        val credentialRef = cc.transaction { ctx ->
-            ctx.findCredentials(clientId = clientId).first()
-        }
+        val credentialRef = cc.findCredentials(clientId = clientId).first()
 
         val acquisition = X509CredentialAcquisition.newFromCredentialRef(pkiEnv, config, credentialRef)
 

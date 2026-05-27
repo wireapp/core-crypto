@@ -65,8 +65,8 @@ class MLSTest {
         val conversationId = genConversationId()
         val actualException =
             assertFailsWith<RuntimeException> {
+                val credentialRef = cc.getCredentials().last()
                 cc.transaction<Unit> { ctx ->
-                    val credentialRef = ctx.getCredentials().last()
                     ctx.createConversation(conversationId, credentialRef)
                     throw expectedException
                 }
@@ -77,10 +77,10 @@ class MLSTest {
         // see: https://hg.openjdk.org/jdk8u/jdk8u/jdk/file/6be37bafb11a/src/share/classes/java/util/concurrent/ForkJoinTask.java#l547
         assertEquals(expectedException.message, actualException.message)
 
+        val credentialRef = cc.getCredentials().last()
         // This would fail with a "Conversation already exists" exception, if the above
         // transaction hadn't been rolled back.
         cc.transaction { ctx ->
-            val credentialRef = ctx.getCredentials().last()
             ctx.createConversation(conversationId, credentialRef)
         }
     }
@@ -123,9 +123,9 @@ class MLSTest {
     fun errorTypeMapping_should_work() = runTest {
         val alice = ccInit()
         val conversationId = createConversation(alice)
+        val credentialRef = alice.getCredentials().last()
         val expectedException = assertFailsWith<CoreCryptoException.Mls> {
             alice.transaction { ctx ->
-                val credentialRef = ctx.`getCredentials`().last()
                 ctx.createConversation(conversationId, credentialRef)
             }
         }
@@ -136,7 +136,7 @@ class MLSTest {
     fun findCredentials_should_return_non_empty_result() = runTest {
         val clientId = genClientId()
         val alice = ccInit(CcInitOptions.WithBasicCredential(CIPHERSUITE_DEFAULT, clientId))
-        assertThat(alice.transaction { it.findCredentials(clientId, null, null, null, null) }).isNotEmpty()
+        assertThat(alice.findCredentials(clientId, null, null, null, null)).isNotEmpty()
     }
 
     @Test
@@ -144,8 +144,8 @@ class MLSTest {
         val alice = ccInit()
         val conversationId = genConversationId()
         assertThat(alice.transaction { ctx -> ctx.conversationExists(conversationId) }).isFalse()
+        val credentialRef = alice.getCredentials().last()
         alice.transaction { ctx ->
-            val credentialRef = ctx.getCredentials().last()
             ctx.createConversation(conversationId, credentialRef)
         }
         assertThat(alice.transaction { ctx -> ctx.conversationExists(conversationId) }).isTrue()
@@ -164,7 +164,7 @@ class MLSTest {
         assertThat(
             alice.transaction { ctx ->
 
-                val credentialRef = ctx.getCredentials().last()
+                val credentialRef = alice.getCredentials().last()
 
                 List(200U.toInt()) { _ -> ctx.generateKeyPackage(credentialRef) }
             }
@@ -538,7 +538,7 @@ class MLSTest {
         val scope = TestScope()
         return scope.runTest {
             val cc = ccInit()
-            val allCredentials = cc.transaction { ctx -> ctx.getCredentials() }
+            val allCredentials = cc.getCredentials()
             val ref = allCredentials.last()
             assertEquals(ref.type(), CredentialType.BASIC)
             assertNotEquals(ref.earliestValidity(), 0uL)
@@ -551,15 +551,13 @@ class MLSTest {
         val scope = TestScope()
         return scope.runTest {
             val cc = ccInit()
-            val ref = cc.transaction { ctx ->
-                ctx.`getCredentials`().last()
-            }
+            val ref = cc.getCredentials().last()
 
             cc.transaction { ctx ->
                 ctx.removeCredential(ref)
             }
 
-            val allCredentials = cc.transaction { ctx -> ctx.getCredentials() }
+            val allCredentials = cc.getCredentials()
             assertThat(allCredentials).hasSize(0)
         }
     }
@@ -582,24 +580,20 @@ class MLSTest {
                 ctx.addCredential(credential2)
             }
 
-            val results1 = cc.transaction { ctx ->
-                ctx.findCredentials(
-                    clientId = null,
-                    publicKey = null,
-                    ciphersuite = ciphersuite1,
-                    credentialType = null,
-                    earliestValidity = null
-                )
-            }
-            val results2 = cc.transaction { ctx ->
-                ctx.findCredentials(
-                    clientId = null,
-                    publicKey = null,
-                    ciphersuite = ciphersuite2,
-                    credentialType = null,
-                    earliestValidity = null
-                )
-            }
+            val results1 = cc.findCredentials(
+                clientId = null,
+                publicKey = null,
+                ciphersuite = ciphersuite1,
+                credentialType = null,
+                earliestValidity = null
+            )
+            val results2 = cc.findCredentials(
+                clientId = null,
+                publicKey = null,
+                ciphersuite = ciphersuite2,
+                credentialType = null,
+                earliestValidity = null
+            )
 
             assertThat(results1).hasSize(1)
             assertThat(results2).hasSize(1)
@@ -612,9 +606,7 @@ class MLSTest {
         val scope = TestScope()
         return scope.runTest {
             val cc = ccInit()
-            val credentialRef = cc.transaction { ctx ->
-                ctx.`getCredentials`().last()
-            }
+            val credentialRef = cc.getCredentials().last()
 
             val keyPackage = cc.transaction { ctx ->
                 ctx.generateKeyPackage(credentialRef)
