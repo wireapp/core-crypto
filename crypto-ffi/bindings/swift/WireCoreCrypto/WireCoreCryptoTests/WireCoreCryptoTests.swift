@@ -112,12 +112,11 @@ final class WireCoreCryptoTests: XCTestCase {
         try await database.updateKey(key: key)
 
         coreCrypto = try CoreCrypto(database: database)
-        let pubkey2 = try await coreCrypto.transaction { ctx in
+        try await coreCrypto.transaction { ctx in
             try await ctx.mlsInit(
                 clientId: clientId, transport: self.mockMlsTransport)
-            return try await ctx.getCredentials().first?.publicKeyHash()
-
         }
+        let pubkey2 = try await coreCrypto.getCredentials().first?.publicKeyHash()
         XCTAssertEqual(pubkey1, pubkey2)
     }
 
@@ -222,9 +221,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let coreCrypto = try await ccInit()
         let expectedError = MyError()
 
-        let credentialRef = try await coreCrypto.transaction { ctx in
-            return try await ctx.getCredentials().first!
-        }
+        let credentialRef = try await coreCrypto.getCredentials().first!
 
         let conversationId = genConversationId()
 
@@ -353,8 +350,8 @@ final class WireCoreCryptoTests: XCTestCase {
                 conversationId: conversationId.copyBytes()
             ))
 
+        let credentialRef = try await alice.getCredentials().first!
         try await alice.transaction { ctx in
-            let credentialRef = try await ctx.getCredentials().first!
             await self.XCTAssertThrowsErrorAsync(expectedError) {
                 try await ctx.createConversation(
                     conversationId: conversationId,
@@ -367,9 +364,7 @@ final class WireCoreCryptoTests: XCTestCase {
 
     func testFindCredentialsShouldReturnNonEmptyResult() async throws {
         let alice = try await ccInit()
-        let publicKey = try await alice.transaction { ctx in
-            try await ctx.getCredentials().first!.publicKeyHash()
-        }
+        let publicKey = try await alice.getCredentials().first!.publicKeyHash()
         XCTAssertNotNil(publicKey)
     }
 
@@ -384,9 +379,7 @@ final class WireCoreCryptoTests: XCTestCase {
     func testCanAddBasicCredential() async throws {
         let alice = try await ccInit()
 
-        let allCredentials = try await alice.transaction { ctx in
-            try await ctx.getCredentials()
-        }
+        let allCredentials = try await alice.getCredentials()
 
         let ref = allCredentials.first!
 
@@ -399,14 +392,12 @@ final class WireCoreCryptoTests: XCTestCase {
     func testCanRemoveBasicCredential() async throws {
         let alice = try await ccInit()
 
+        let ref = try await alice.getCredentials().first!
         try await alice.transaction { ctx in
-            let ref = try await ctx.getCredentials().first!
             try await ctx.removeCredential(credentialRef: ref)
         }
 
-        let allCredentials = try await alice.transaction { ctx in
-            try await ctx.getCredentials()
-        }
+        let allCredentials = try await alice.getCredentials()
         XCTAssertEqual(allCredentials.count, 0)
     }
 
@@ -425,24 +416,8 @@ final class WireCoreCryptoTests: XCTestCase {
             _ = try await ctx.addCredential(credential: credential2)
         }
 
-        let results1 = try await alice.transaction { ctx in
-            try await ctx.findCredentials(
-                clientId: nil,
-                publicKey: nil,
-                ciphersuite: ciphersuite1,
-                credentialType: nil,
-                earliestValidity: nil
-            )
-        }
-        let results2 = try await alice.transaction { ctx in
-            try await ctx.findCredentials(
-                clientId: nil,
-                publicKey: nil,
-                ciphersuite: ciphersuite2,
-                credentialType: nil,
-                earliestValidity: nil
-            )
-        }
+        let results1 = try await alice.findCredentials(ciphersuite: ciphersuite1)
+        let results2 = try await alice.findCredentials(ciphersuite: ciphersuite2)
 
         XCTAssertEqual(results1.count, 1)
         XCTAssertEqual(results2.count, 1)
@@ -453,9 +428,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let conversationId = genConversationId()
 
         let alice = try await ccInit()
-        let credentialRef = try await alice.transaction { ctx in
-            return try await ctx.getCredentials().first!
-        }
+        let credentialRef = try await alice.getCredentials().first!
 
         let resultBefore = try await alice.transaction { ctx in
             try await ctx.conversationExists(conversationId: conversationId)
@@ -762,15 +735,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let coreCrypto = try await ccInit(
             options: .withBasicCredential(clientId: clientId, database: database))
 
-        let credentialRef = try await coreCrypto.transaction { ctx in
-            try await ctx.findCredentials(
-                clientId: clientId,
-                publicKey: nil,
-                ciphersuite: nil,
-                credentialType: nil,
-                earliestValidity: nil
-            ).first!
-        }
+        let credentialRef = try await coreCrypto.findCredentials(clientId: clientId).first!
 
         let acquisition = try await X509CredentialAcquisition.newFromCredentialRef(
             pkiEnvironment: pkiEnvironment,
@@ -787,8 +752,8 @@ final class WireCoreCryptoTests: XCTestCase {
         let alice = try await ccInit()
         let conversationId = ConversationId(bytes: Data("ext-sender-jwk".utf8))
 
+        let credentialRef = try await alice.getCredentials().first!
         let retrievedKey = try await alice.transaction { ctx -> ExternalSenderKey in
-            let credentialRef = try await ctx.getCredentials().first!
             try await ctx.createConversation(
                 conversationId: conversationId,
                 credentialRef: credentialRef,
@@ -951,9 +916,9 @@ final class WireCoreCryptoTests: XCTestCase {
 
         let conversationId = genConversationId()
 
-        try await coreCrypto.transaction { ctx in
-            let credentialRef = try await ctx.getCredentials().last!
+        let credentialRef = try await coreCrypto.getCredentials().last!
 
+        try await coreCrypto.transaction { ctx in
             try await ctx.createConversation(
                 conversationId: conversationId,
                 credentialRef: credentialRef,
@@ -968,8 +933,8 @@ final class WireCoreCryptoTests: XCTestCase {
         coreCrypto: CoreCrypto
     ) async throws -> KeyPackage {
 
-        try await coreCrypto.transaction { ctx in
-            let credentialRef = try await ctx.getCredentials().last!
+        let credentialRef = try await coreCrypto.getCredentials().last!
+        return try await coreCrypto.transaction { ctx in
             return try await ctx.generateKeyPackage(credentialRef: credentialRef, lifetime: nil)
         }
     }
