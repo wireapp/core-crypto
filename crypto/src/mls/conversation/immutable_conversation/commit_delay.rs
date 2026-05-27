@@ -1,7 +1,7 @@
 use log::{debug, trace};
 use openmls::{messages::proposals::Proposal, prelude::LeafNodeIndex};
 
-use super::ConversationGuard;
+use super::ImmutableConversation;
 use crate::MlsError;
 
 /// These constants intend to ramp up the delay and flatten the curve for later positions
@@ -10,14 +10,14 @@ const DELAY_RAMP_UP_SUB: u64 = 106;
 const DELAY_POS_LINEAR_INCR: u64 = 15;
 const DELAY_POS_LINEAR_RANGE: std::ops::RangeInclusive<u64> = 1..=3;
 
-impl ConversationGuard {
+impl ImmutableConversation {
     /// Helps consumer by providing a deterministic delay in seconds for him to commit its pending proposal.
     /// It depends on the index of the client in the ratchet tree
     /// * `self_index` - ratchet tree index of self client
     /// * `epoch` - current group epoch
     /// * `nb_members` - number of clients in the group
-    pub async fn compute_next_commit_delay(&self) -> Option<u64> {
-        let group = &self.inner().await.group;
+    pub fn compute_next_commit_delay(&self) -> Option<u64> {
+        let group = &self.group;
 
         if group.pending_proposals().next().is_none() {
             trace!("No pending proposals, no delay needed");
@@ -95,35 +95,35 @@ mod tests {
     #[test]
     fn calculate_delay_single() {
         let (self_index, epoch, nb_members) = (0, 0, 1);
-        let delay = ConversationGuard::calculate_delay(self_index, epoch, nb_members);
+        let delay = ImmutableConversation::calculate_delay(self_index, epoch, nb_members);
         assert_eq!(delay, 0);
     }
 
     #[test]
     fn calculate_delay_max() {
         let (self_index, epoch, nb_members) = (u64::MAX, u64::MAX, u64::MAX);
-        let delay = ConversationGuard::calculate_delay(self_index, epoch, nb_members);
+        let delay = ImmutableConversation::calculate_delay(self_index, epoch, nb_members);
         assert_eq!(delay, 0);
     }
 
     #[test]
     fn calculate_delay_min() {
         let (self_index, epoch, nb_members) = (u64::MIN, u64::MIN, u64::MAX);
-        let delay = ConversationGuard::calculate_delay(self_index, epoch, nb_members);
+        let delay = ImmutableConversation::calculate_delay(self_index, epoch, nb_members);
         assert_eq!(delay, 0);
     }
 
     #[test]
     fn calculate_delay_zero_members() {
         let (self_index, epoch, nb_members) = (0, 0, u64::MIN);
-        let delay = ConversationGuard::calculate_delay(self_index, epoch, nb_members);
+        let delay = ImmutableConversation::calculate_delay(self_index, epoch, nb_members);
         assert_eq!(delay, 0);
     }
 
     #[test]
     fn calculate_delay_min_max() {
         let (self_index, epoch, nb_members) = (u64::MIN, u64::MAX, u64::MAX);
-        let delay = ConversationGuard::calculate_delay(self_index, epoch, nb_members);
+        let delay = ImmutableConversation::calculate_delay(self_index, epoch, nb_members);
         assert_eq!(delay, 0);
     }
 
@@ -148,7 +148,7 @@ mod tests {
         ];
 
         for (self_index, expected_delay) in indexes_delays {
-            let delay = ConversationGuard::calculate_delay(self_index, epoch, nb_members);
+            let delay = ImmutableConversation::calculate_delay(self_index, epoch, nb_members);
             assert_eq!(delay, expected_delay);
         }
     }

@@ -1,4 +1,5 @@
 mod clients;
+mod commit_delay;
 mod credential;
 mod duplicate;
 mod e2ei;

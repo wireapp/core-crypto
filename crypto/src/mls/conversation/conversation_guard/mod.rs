@@ -1,5 +1,4 @@
 mod commit;
-mod commit_delay;
 pub(crate) mod decrypt;
 mod encrypt;
 mod group_mutation;
