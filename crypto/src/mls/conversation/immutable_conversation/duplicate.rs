@@ -8,7 +8,7 @@ use super::{Error, ImmutableConversation, Result};
 use crate::MlsError;
 
 impl ImmutableConversation {
-    pub(crate) fn is_duplicate_message(&self, msg: &PublicMessageIn) -> Result<bool> {
+    pub(crate) async fn is_duplicate_message(&self, msg: &PublicMessageIn) -> Result<bool> {
         let (sender, content_type) = (msg.sender(), msg.body().content_type());
 
         match (content_type, sender) {
@@ -21,7 +21,8 @@ impl ImmutableConversation {
                 };
 
                 let group_ct = self
-                    .group
+                    .group()
+                    .await
                     .compute_confirmation_tag(&self.session.crypto_provider)
                     .map_err(MlsError::wrap("computing confirmation tag"))?;
                 Ok(msg_ct == &group_ct)
@@ -34,7 +35,11 @@ impl ImmutableConversation {
                 };
 
                 let proposal = Proposal::from(proposal.clone()); // TODO: eventually remove this clone 😮‍💨. Tracking issue: WPB-9622
-                let already_exists = self.group.pending_proposals().any(|pp| pp.proposal() == &proposal);
+                let already_exists = self
+                    .group()
+                    .await
+                    .pending_proposals()
+                    .any(|pp| pp.proposal() == &proposal);
                 Ok(already_exists)
             }
 

@@ -249,7 +249,7 @@ mod tests {
                 for _ in 0..2 {
                     for session in sessions.iter() {
                         let conversation = conversation.guard_of(session).await;
-                        check_identities_device_status(&conversation, &client_ids, &name_status).await;
+                        check_identities_device_status(&*conversation, &client_ids, &name_status).await;
                     }
                 }
             })
@@ -345,7 +345,7 @@ mod tests {
                 let expected_sizes = [2, 1];
 
                 for session in &sessions {
-                    all_identities_check(&conversation.guard_of(session).await, &user_ids, expected_sizes).await;
+                    all_identities_check(&*conversation.guard_of(session).await, &user_ids, expected_sizes).await;
                 }
             })
             .await

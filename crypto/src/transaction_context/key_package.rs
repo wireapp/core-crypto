@@ -45,7 +45,7 @@ impl TransactionContext {
             .key_package_lifetime(lifetime)
             .build(
                 config,
-                &self.mls_provider().await?,
+                &self.crypto_provider().await?,
                 &credential.signature_key_pair,
                 credential.to_mls_credential_with_key(),
             )

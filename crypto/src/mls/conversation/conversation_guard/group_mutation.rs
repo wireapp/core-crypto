@@ -38,21 +38,21 @@ impl ConversationGuard {
             .database()
             .await
             .map_err(RecursiveError::transaction("getting database from context"))?;
-        let mut guard = self.inner.write().await;
 
         let ImmutableConversation {
-            ref mut group,
-            ref id,
-            ref configuration,
+            group,
+            id,
+            configuration,
             ..
-        } = *guard;
-        let ok_result = operation(&database, group, id, configuration).await?;
+        } = &*self.inner;
+        let mut group = group.write().await;
+        let ok_result = operation(&database, &mut *group, id, configuration).await?;
 
         if group.state_changed() == InnerState::Changed {
             database
                 .mls_group_persist(
                     id,
-                    &core_crypto_keystore::ser(group).map_err(KeystoreError::wrap("serializing group state"))?,
+                    &core_crypto_keystore::ser(&*group).map_err(KeystoreError::wrap("serializing group state"))?,
                     None,
                 )
                 .await

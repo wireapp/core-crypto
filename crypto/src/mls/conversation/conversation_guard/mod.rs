@@ -10,36 +10,31 @@ mod wipe;
 
 use std::sync::Arc;
 
-use async_lock::RwLockReadGuardArc;
 use core_crypto_keystore::Database;
 use openmls::prelude::group_info::GroupInfo;
 
-use super::{ConversationWithMls, Error, MlsConversation, Result};
+use super::{Error, Result};
 use crate::{
-    LeafError, MlsCryptoProvider, MlsGroupInfoBundle, MlsTransport, RecursiveError,
-    mls::{HasSessionAndCrypto, conversation::ImmutableConversation, credential::Credential},
+    LeafError, MlsCryptoProvider, MlsGroupInfoBundle, MlsTransport, RecursiveError, Session,
+    mls::{conversation::ImmutableConversation, credential::Credential},
     transaction_context::TransactionContext,
 };
 
-/// A Conversation Guard wraps an [`Arc<RwLock<MlsConversation>>`].
+/// A Conversation Guard wraps an [`Arc<RwLock<ImmutableConversation>>`].
 ///
 /// The conversation is ultimately owned by the [conversation cache][crate::mls::conversation_cache::MlsConversationCache], but we take an `Arc`
 /// here so that we don't have to tie the lifetime of the guard to the cache.
 ///
 /// More generally, the conversation guard gives us convenient mutable accesses to a single
 /// conversation. This in turn means that we don't have to duplicate the entire
-/// `MlsConversation` API on `TransactionContext`.
-#[derive(Debug)]
+/// conversation API on `TransactionContext`.
+#[derive(Debug, derive_more::Constructor)]
 pub struct ConversationGuard {
     inner: Arc<ImmutableConversation>,
     tx_context: TransactionContext,
 }
 
 impl ConversationGuard {
-    pub(crate) fn new(inner: Arc<RwLock<ImmutableConversation>>, tx_context: TransactionContext) -> Self {
-        Self { inner, tx_context }
-    }
-
     async fn transport(&self) -> Result<Arc<dyn MlsTransport>> {
         self.tx_context
             .mls_transport()
@@ -60,18 +55,25 @@ impl ConversationGuard {
         self.tx_context
             .crypto_provider()
             .await
-            .map_err(RecursiveError::mls(
+            .map_err(RecursiveError::transaction(
                 "acquiring crypto provider for conversation guard from tx context",
             ))
             .map_err(Into::into)
     }
 
     pub(crate) async fn credential(&self) -> Result<Arc<Credential>> {
-        self.inner()
-            .await
-            .find_current_credential()
+        self.find_current_credential()
             .await
             .map_err(|_| Error::IdentityInitializationError)
+    }
+
+    /// Get access to the MLS session for this guard
+    pub(super) async fn session(&self) -> Result<Session> {
+        self.tx_context
+            .session()
+            .await
+            .map_err(RecursiveError::transaction("getting session from transaction context"))
+            .map_err(Into::into)
     }
 
     fn group_info(group_info: Option<GroupInfo>) -> Result<MlsGroupInfoBundle> {
@@ -97,8 +99,7 @@ mod test_utils {
         /// Replaces the MLS group in memory with the one from keystore.
         pub async fn drop_and_restore(&mut self) {
             let session = self.tx_context.session().await.unwrap();
-            let inner = self.inner().await;
-            let id = inner.id();
+            let id = self.id();
 
             let conversation = ImmutableConversation::load(session, id).await.unwrap().unwrap();
             self.tx_context.mls_groups().await.unwrap().insert(conversation);

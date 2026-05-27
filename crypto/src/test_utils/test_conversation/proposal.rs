@@ -4,7 +4,6 @@ use super::{
     super::{SessionContext, TestConversation},
     operation_guard::{AddGuard, OperationGuard, Proposal, TestOperation},
 };
-use crate::mls::conversation::{Conversation, ConversationWithMls as _};
 
 impl<'a> TestConversation<'a> {
     /// Propose inviting a member and notify all members.
@@ -17,11 +16,7 @@ impl<'a> TestConversation<'a> {
         let proposer = self.actor();
         let key_package = new_member.new_keypackage(self.case).await;
         let mut guard = self.guard().await;
-        let session = &proposer.session().await;
-        let proposal = guard
-            .conversation_mut(async |conversation| conversation.propose_add_member(session, key_package.into()).await)
-            .await
-            .unwrap();
+        let proposal = guard.propose_add_member(key_package.into()).await.unwrap();
         let proposer_index = self.member_index(proposer).await;
         OperationGuard::new(
             TestOperation::Add(AddGuard {
@@ -40,23 +35,19 @@ impl<'a> TestConversation<'a> {
 
     /// Propose removing the member.
     pub async fn remove_proposal(self, member: &'a SessionContext) -> OperationGuard<'a, Proposal> {
-        let proposer = self.actor();
         let mut guard = self.guard().await;
-        let session = &proposer.session().await;
         let member_id = member.session().await.id();
-        let proposal = guard
-            .conversation_mut(async |conversation| {
-                let member_index = conversation
-                    .group
+        let member_index = guard
+            .mutate_group_test(async |_, group, _, _| {
+                Ok(group
                     .members()
                     .find(|member| member.credential.identity() == member_id.as_slice())
                     .map(|member| member.index)
-                    .unwrap();
-                let proposal = conversation.propose_remove_member(session, member_index).await.unwrap();
-                Ok(proposal)
+                    .unwrap())
             })
             .await
             .unwrap();
+        let proposal = guard.propose_remove_member(member_index).await.unwrap();
 
         let proposer_index = self.actor_index();
         OperationGuard::new(TestOperation::Remove(member), proposal, self, [proposer_index])
@@ -97,9 +88,8 @@ impl<'a> TestConversation<'a> {
         let to_remove_index = self
             .guard()
             .await
-            .conversation()
-            .await
             .group()
+            .await
             .members()
             .find(|k| k.credential.identity() == client_id.as_slice())
             .unwrap()

@@ -3,7 +3,7 @@ use std::{collections::HashSet, marker::PhantomData};
 use openmls::prelude::MlsMessageOut;
 
 use super::{SessionContext, TestConversation};
-use crate::{CredentialRef, MlsDecryptMessage, mls::conversation::Conversation as _};
+use crate::{CredentialRef, MlsDecryptMessage};
 
 pub struct Commit;
 

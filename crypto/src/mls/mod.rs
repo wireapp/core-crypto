@@ -21,7 +21,6 @@ mod tests {
 
     mod conversation_epoch {
         use super::*;
-        use crate::mls::conversation::Conversation as _;
 
         #[apply(all_cred_cipher)]
         async fn can_get_newly_created_conversation_epoch(case: TestContext) {

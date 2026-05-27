@@ -10,16 +10,18 @@ impl super::ImmutableConversation {
     ///
     /// # Arguments
     /// * `conversation_id` - the group/conversation id
-    pub fn get_client_ids(&self) -> Vec<ClientId> {
-        self.group
+    pub async fn get_client_ids(&self) -> Vec<ClientId> {
+        self.group()
+            .await
             .members()
             .map(|kp| ClientId::from(kp.credential.identity().to_owned()))
             .collect()
     }
 
     /// Gather pending remove proposals
-    fn pending_removals(&self) -> Vec<LeafNodeIndex> {
-        self.group
+    async fn pending_removals(&self) -> Vec<LeafNodeIndex> {
+        self.group()
+            .await
             .pending_proposals()
             .filter_map(|proposal| match proposal.proposal() {
                 Proposal::Remove(remove) => Some(remove.removed()),
@@ -29,10 +31,11 @@ impl super::ImmutableConversation {
     }
 
     /// Get actual group members and subtract pending remove proposals
-    pub fn members_in_next_epoch(&self) -> Vec<ClientId> {
-        let pending_removals = self.pending_removals();
+    pub async fn members_in_next_epoch(&self) -> Vec<ClientId> {
+        let pending_removals = self.pending_removals().await;
         let existing_clients = self
-            .group
+            .group()
+            .await
             .members()
             .filter_map(|kp| {
                 if !pending_removals.contains(&kp.index) {

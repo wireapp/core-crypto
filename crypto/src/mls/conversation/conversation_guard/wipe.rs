@@ -41,8 +41,7 @@ impl ConversationGuard {
         })
         .await?;
 
-        let inner = self.inner.read().await;
-        let id = inner.id();
+        let id = self.id();
 
         provider
             .key_store()

@@ -7,7 +7,7 @@ use super::{CredentialType, MessageExt as _, MlsTransportTestExt, SessionContext
 use crate::{
     ConversationId, CredentialRef, E2eiConversationState, RecursiveError,
     mls::{
-        conversation::{Conversation, ConversationGuard, ConversationWithMls as _},
+        conversation::ConversationGuard,
         credential::{Credential, ext::CredentialExt as _},
     },
 };
@@ -85,8 +85,7 @@ impl<'a> TestConversation<'a> {
     pub(crate) async fn export_group_info(&self) -> VerifiableGroupInfo {
         let credential = self.credential().await;
         let conversation = self.guard().await;
-        let conversation = conversation.conversation().await;
-        let group = conversation.group();
+        let group = &conversation.group().await;
 
         let gi = group
             .export_group_info(
@@ -101,9 +100,8 @@ impl<'a> TestConversation<'a> {
     /// Find the actor's credential used in this conversation.
     pub(crate) async fn credential(&self) -> Arc<Credential> {
         let conversation = self.guard().await;
-        let conversation = conversation.conversation().await;
         conversation
-            .find_current_credential(&self.actor().session().await)
+            .find_current_credential()
             .await
             .expect("expecting credential")
     }
@@ -114,7 +112,7 @@ impl<'a> TestConversation<'a> {
 
         let member_counts_match = futures_util::future::join_all(self.members().map(async |member| {
             let member_guard = self.guard_of(member).await;
-            member_guard.conversation().await.members().len()
+            member_guard.members().await.len()
         }))
         .await
         .iter()
@@ -126,7 +124,7 @@ impl<'a> TestConversation<'a> {
     /// Let a conversation member provide the member count (according to their current state).
     pub async fn members_counted_by(&self, member: &SessionContext) -> usize {
         let member_guard = self.guard_of(member).await;
-        member_guard.conversation().await.members().len()
+        member_guard.members().await.len()
     }
 
     /// Check if all provided members are members, according to the state maintained in [Self].
@@ -293,19 +291,19 @@ impl<'a> TestConversation<'a> {
     /// The pending proposal count of a specific member
     pub async fn pending_proposal_count_of(&self, member: &SessionContext) -> usize {
         let guard = self.guard_of(member).await;
-        guard.conversation().await.group().pending_proposals().count()
+        guard.group().await.pending_proposals().count()
     }
 
     /// Check if the conversation has pending proposals
     pub async fn has_pending_proposals(&self) -> bool {
         let guard = self.guard().await;
-        guard.conversation().await.group().pending_proposals().next().is_some()
+        guard.group().await.pending_proposals().next().is_some()
     }
 
     /// Check if the conversation has a pending commit
     pub async fn has_pending_commit(&self) -> bool {
         let guard = self.guard().await;
-        guard.conversation().await.group().pending_commit().is_some()
+        guard.group().await.pending_commit().is_some()
     }
 
     async fn member_index(&self, member: &SessionContext) -> usize {
@@ -329,9 +327,8 @@ impl<'a> TestConversation<'a> {
         let client_id = self.actor().get_client_id().await;
         let guard = self.guard().await;
         guard
-            .conversation()
-            .await
             .group()
+            .await
             .members()
             .find(|k| k.credential.identity() == client_id.0.as_slice())
             .unwrap()

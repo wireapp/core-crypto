@@ -4,7 +4,7 @@ use openmls::framing::MlsMessageIn;
 use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize as _;
 
-use super::{ConversationGuard, ConversationWithMls as _, RecursionPolicy, Result};
+use super::{ConversationGuard, RecursionPolicy, Result};
 use crate::{KeystoreError, MlsDecryptMessage, mls::conversation::Error};
 
 impl ConversationGuard {
@@ -13,10 +13,9 @@ impl ConversationGuard {
     /// By storing the raw commit bytes and doing deserialization/decryption from scratch, we preserve all
     /// security guarantees. When we do restore, it's as though the commit had simply been received later.
     pub(super) async fn buffer_commit(&self, commit: impl AsRef<[u8]>) -> Result<()> {
-        let conversation = self.conversation().await;
-        info!(group_id = conversation.id(); "buffering commit");
+        info!(group_id = self.id().to_owned(); "buffering commit");
 
-        let buffered_commit = StoredBufferedCommit::new(conversation.id().to_bytes(), commit.as_ref().to_owned());
+        let buffered_commit = StoredBufferedCommit::new(self.id().to_bytes(), commit.as_ref().to_owned());
 
         self.crypto_provider()
             .await?
@@ -30,10 +29,9 @@ impl ConversationGuard {
     /// Retrieve the bytes of a pending commit.
     pub(super) async fn retrieve_buffered_commit(&self) -> Result<Option<Vec<u8>>> {
         let database = self.database().await?;
-        let conversation = self.conversation().await;
-        info!(group_id = conversation.id(); "attempting to retrieve buffered commit");
+        info!(group_id = self.id().to_owned(); "attempting to retrieve buffered commit");
         database
-            .get_borrowed::<StoredBufferedCommit>(conversation.id().as_ref())
+            .get_borrowed::<StoredBufferedCommit>(self.id().as_ref())
             .await
             .map(|option| option.map(StoredBufferedCommit::into_commit_data))
             .map_err(KeystoreError::wrap("attempting to retrieve buffered commit"))
@@ -51,9 +49,7 @@ impl ConversationGuard {
         commit: impl AsRef<[u8]>,
         recursion_policy: RecursionPolicy,
     ) -> Result<MlsDecryptMessage> {
-        let conversation = self.conversation().await;
-        info!(group_id = conversation.id(); "attempting to process buffered commit");
-        drop(conversation);
+        info!(group_id = self.id().to_owned(); "attempting to process buffered commit");
 
         let message =
             MlsMessageIn::tls_deserialize(&mut commit.as_ref()).map_err(Error::tls_deserialize("mls message in"))?;
@@ -63,11 +59,10 @@ impl ConversationGuard {
 
     /// Remove the buffered commit for this conversation; it has been applied.
     pub(super) async fn clear_buffered_commit(&self) -> Result<()> {
-        let conversation = self.conversation().await;
         let database = self.database().await?;
-        info!(group_id = conversation.id(); "attempting to delete buffered commit");
+        info!(group_id = self.id().to_owned(); "attempting to delete buffered commit");
         database
-            .remove_borrowed::<StoredBufferedCommit>(conversation.id().as_ref())
+            .remove_borrowed::<StoredBufferedCommit>(self.id().as_ref())
             .await
             .map_err(KeystoreError::wrap("attempting to clear buffered commit"))
             .map_err(Into::into)

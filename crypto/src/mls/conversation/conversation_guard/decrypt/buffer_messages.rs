@@ -11,7 +11,7 @@ use tls_codec::Deserialize;
 use super::{RecursionPolicy, Result};
 use crate::{
     KeystoreError, MlsBufferedDecryptMessage,
-    mls::conversation::{ConversationGuard, ConversationWithMls, Error},
+    mls::conversation::{ConversationGuard, Error},
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -25,9 +25,8 @@ pub(crate) enum MessageRestorePolicy {
 impl ConversationGuard {
     pub(super) async fn buffer_future_message(&self, message: impl AsRef<[u8]>) -> Result<()> {
         let database = self.database().await?;
-        let conversation = self.conversation().await;
         let pending_msg = MlsPendingMessage {
-            foreign_id: conversation.id().to_bytes(),
+            foreign_id: self.id().to_bytes(),
             message: message.as_ref().to_vec(),
         };
         database
@@ -40,7 +39,7 @@ impl ConversationGuard {
     async fn clear_pending_messages(&self) -> Result<()> {
         let database = self.database().await?;
         database
-            .remove_pending_messages_by_conversation_id(self.conversation().await.id())
+            .remove_pending_messages_by_conversation_id(self.id())
             .await
             .map_err(KeystoreError::wrap("removing pending mls messages"))
             .map_err(Into::into)
@@ -69,8 +68,7 @@ impl ConversationGuard {
         policy: MessageRestorePolicy,
     ) -> Result<Option<Vec<MlsBufferedDecryptMessage>>> {
         let result = async move {
-            let conversation = self.conversation().await;
-            let conversation_id = conversation.id();
+            let conversation_id = self.id();
             let database = self.database().await?;
             if policy == MessageRestorePolicy::ClearOnly {
                 self.clear_pending_messages().await?;
@@ -98,10 +96,7 @@ impl ConversationGuard {
             // luckily for us that's the exact same order as the [ContentType] enum
             pending_messages.sort_by_key(|(content_type, _)| *content_type);
 
-            info!(group_id = conversation_id; "Attempting to restore {} buffered messages", pending_messages.len());
-
-            // Need to drop conversation to allow borrowing `self` again.
-            drop(conversation);
+            info!(group_id = conversation_id.to_owned(); "Attempting to restore {} buffered messages", pending_messages.len());
 
             let mut decrypted_messages = Vec::with_capacity(pending_messages.len());
             for (_, m) in pending_messages {
@@ -134,9 +129,9 @@ mod tests {
         let conversation = conversation.update_unmerged().await.finish();
         let mut conversation = conversation.guard().await;
         // This should work, even though there is a pending commit!
-        assert!(conversation.conversation().await.group.pending_commit().is_some());
+        assert!(conversation.group().await.pending_commit().is_some());
         conversation.update_key_material().await.unwrap();
-        assert!(conversation.conversation().await.group.pending_commit().is_none());
+        assert!(conversation.group().await.pending_commit().is_none());
     }
 
     #[apply(all_cred_cipher)]

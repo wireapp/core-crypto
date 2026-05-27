@@ -24,7 +24,7 @@ impl ConversationGuard {
         };
 
         let is_commit = matches!(msg.content_type(), ContentType::Commit);
-        let own_index = self.inner().await.group.own_leaf_index();
+        let own_index = self.group().await.own_leaf_index();
         let is_self_sent = matches!(msg.sender(), Sender::Member(i) if i == &own_index);
         let is_own_commit = is_commit && is_self_sent;
 
@@ -44,7 +44,7 @@ impl ConversationGuard {
     }
 
     pub(crate) async fn handle_own_commit(&mut self, ct: &ConfirmationTag) -> Result<MlsDecryptMessage> {
-        let group = &self.inner().await.group;
+        let group = self.group().await;
         if group.pending_commit().is_none() {
             // This either means the DS replayed one of our commit OR we cleared a commit accepted by the DS
             // In both cases, CoreCrypto cannot be of any help since it cannot decrypt self commits
@@ -52,12 +52,13 @@ impl ConversationGuard {
             return Err(Error::SelfCommitIgnored);
         }
 
-        if !Self::eq_pending_commit(group, ct) {
+        if !Self::eq_pending_commit(&group, ct) {
             // this would mean we created a commit that got accepted by the DS but we cleared it locally
             // then somehow retried and created another commit. This is a manifest client error
             // and should be identified as such
             return Err(Error::ClearingPendingCommitError);
         }
+        drop(group);
 
         // incoming is from ourselves and it's the same as the local pending commit
         // => merge the pending commit & continue
@@ -77,10 +78,9 @@ impl ConversationGuard {
     pub(crate) async fn merge_pending_commit(&mut self) -> Result<MlsDecryptMessage> {
         self.commit_accepted().await?;
 
-        let inner = self.inner().await;
+        let group = self.group().await;
 
-        let own_leaf = inner
-            .group
+        let own_leaf = group
             .own_leaf()
             .ok_or(Error::MlsGroupInvalidState("own_leaf is None"))?;
 
@@ -91,16 +91,14 @@ impl ConversationGuard {
         };
         let pki_env = self.crypto_provider().await?.authentication_service().pki_env().await;
         let identity = own_leaf_credential_with_key
-            .extract_identity(self.inner().await.ciphersuite(), pki_env.as_deref())
+            .extract_identity(self.ciphersuite(), pki_env.as_deref())
             .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
-        let delay = self.compute_next_commit_delay().await;
-
         Ok(MlsDecryptMessage {
             identity,
-            delay,
-            is_active: inner.group.is_active(),
+            delay: self.compute_next_commit_delay().await,
+            is_active: self.group().await.is_active(),
             app_msg: None,
             sender_client_id: None,
             buffered_messages: None,
@@ -113,7 +111,7 @@ mod tests {
     use openmls::prelude::{ProcessMessageError, ValidationError};
 
     use super::super::super::error::Error;
-    use crate::{CredentialRef, MlsError, mls::conversation::Conversation as _, test_utils::*};
+    use crate::{CredentialRef, MlsError, test_utils::*};
 
     // If there’s a pending commit & it matches the incoming commit: mark pending commit as accepted
     #[apply(all_cred_cipher)]

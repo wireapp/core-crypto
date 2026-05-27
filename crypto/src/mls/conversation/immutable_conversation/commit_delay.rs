@@ -16,8 +16,8 @@ impl ImmutableConversation {
     /// * `self_index` - ratchet tree index of self client
     /// * `epoch` - current group epoch
     /// * `nb_members` - number of clients in the group
-    pub fn compute_next_commit_delay(&self) -> Option<u64> {
-        let group = &self.group;
+    pub async fn compute_next_commit_delay(&self) -> Option<u64> {
+        let group = self.group().await;
 
         if group.pending_proposals().next().is_none() {
             trace!("No pending proposals, no delay needed");

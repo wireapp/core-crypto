@@ -24,7 +24,7 @@ impl TransactionContext {
     /// See [crate::mls::session::Session::e2ei_verify_group_state].
     pub async fn e2ei_verify_group_state(&self, group_info: VerifiableGroupInfo) -> Result<E2eiConversationState> {
         let mls_provider = self
-            .mls_provider()
+            .crypto_provider()
             .await
             .map_err(RecursiveError::transaction("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();
@@ -34,7 +34,7 @@ impl TransactionContext {
         let Ok(rt) = group_info
             .take_ratchet_tree(
                 &self
-                    .mls_provider()
+                    .crypto_provider()
                     .await
                     .map_err(RecursiveError::transaction("getting mls provider"))?,
                 is_sender,
@@ -66,7 +66,7 @@ impl TransactionContext {
         let rt = group_info
             .take_ratchet_tree(
                 &self
-                    .mls_provider()
+                    .crypto_provider()
                     .await
                     .map_err(RecursiveError::transaction("getting mls provider"))?,
                 false,
@@ -74,7 +74,7 @@ impl TransactionContext {
             .await
             .map_err(MlsError::wrap("taking ratchet tree"))?;
         let mls_provider = self
-            .mls_provider()
+            .crypto_provider()
             .await
             .map_err(RecursiveError::transaction("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();

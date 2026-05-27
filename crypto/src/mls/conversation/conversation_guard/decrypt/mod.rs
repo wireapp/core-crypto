@@ -30,10 +30,7 @@ use tls_codec::Deserialize as _;
 use super::{ConversationGuard, Result};
 use crate::{
     ClientId, E2eiConversationState, MlsError, RecursiveError, Session, WireIdentity,
-    mls::{
-        conversation::{Conversation, ConversationWithMls, Error},
-        credential::ext::CredentialExt as _,
-    },
+    mls::{conversation::Error, credential::ext::CredentialExt as _},
 };
 
 /// Represents the potential items a consumer might require after passing us an encrypted message we
@@ -123,8 +120,8 @@ impl ConversationGuard {
         // bytes; here, we do.
         if let Err(Error::BufferedFutureMessage { message_epoch }) = decrypt_message_result {
             self.buffer_future_message(message.as_ref()).await?;
-            let conversation = self.conversation().await;
-            info!(group_id = conversation.id(); "Buffered future message from epoch {message_epoch}");
+            let conversation_id = self.id().to_owned();
+            info!(group_id = conversation_id; "Buffered future message from epoch {message_epoch}");
         }
         if let Err(Error::BufferedCommit) = decrypt_message_result {
             self.buffer_commit(message).await?;
@@ -189,7 +186,7 @@ impl ConversationGuard {
 
         let pki_env = provider.authentication_service().pki_env().await;
         let identity = credential
-            .extract_identity(self.ciphersuite().await, pki_env.as_deref())
+            .extract_identity(self.ciphersuite(), pki_env.as_deref())
             .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
@@ -197,9 +194,9 @@ impl ConversationGuard {
 
         let decrypted = match message.into_content() {
             ProcessedMessageContent::ApplicationMessage(app_msg) => {
-                let conversation = self.conversation().await;
+                let conversation = self;
                 debug!(
-                    group_id = conversation.id,
+                    group_id = conversation.id().to_owned(),
                     epoch = epoch.as_u64(),
                     sender_client_id = sender_client_id;
                     "Application message"
@@ -257,8 +254,7 @@ impl ConversationGuard {
                     }
                 }
 
-                let conversation = self.conversation().await;
-                let delay = conversation.compute_next_commit_delay();
+                let delay = self.compute_next_commit_delay().await;
 
                 MlsDecryptMessage {
                     app_msg: None,
@@ -371,11 +367,10 @@ impl ConversationGuard {
 
     async fn parse_message(&self, msg_in: MlsMessageIn) -> Result<ParsedMessage> {
         let mut is_duplicate = false;
-        let conversation = self.conversation().await;
-        let backend = self.crypto_provider().await?;
+
         let (protocol_message, content_type) = match msg_in.extract() {
             MlsMessageInBody::PublicMessage(m) => {
-                is_duplicate = conversation.is_duplicate_message(&backend, &m)?;
+                is_duplicate = self.is_duplicate_message(&m).await?;
                 let ct = m.content_type();
                 (ProtocolMessage::PublicMessage(m), ct)
             }
@@ -468,7 +463,7 @@ impl ConversationGuard {
                 })
                 .collect();
             let state = Session::compute_conversation_state(
-                self.ciphersuite().await,
+                self.ciphersuite(),
                 credentials.iter(),
                 crate::CredentialType::X509,
                 backend.authentication_service(),

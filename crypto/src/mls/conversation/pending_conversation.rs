@@ -14,10 +14,10 @@ use openmls::{
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize as _;
 
-use super::{ConversationWithMls, Error, Result};
+use super::{Error, Result};
 use crate::{
-    KeystoreError, LeafError, MlsBufferedDecryptMessage, MlsCommitBundle, MlsConversation,
-    MlsConversationConfiguration, MlsCustomConfiguration, MlsDecryptMessage, MlsError, RecursiveError,
+    KeystoreError, LeafError, MlsBufferedDecryptMessage, MlsCommitBundle, MlsConversationConfiguration,
+    MlsCustomConfiguration, MlsDecryptMessage, MlsError, RecursiveError,
     mls::{
         conversation::{ConversationIdRef, conversation_guard::decrypt::buffer_messages::MessageRestorePolicy},
         credential::ext::CredentialExt as _,
@@ -57,7 +57,7 @@ impl PendingConversation {
 
     async fn mls_provider(&self) -> Result<MlsCryptoProvider> {
         self.context
-            .mls_provider()
+            .crypto_provider()
             .await
             .map_err(RecursiveError::transaction("getting mls provider"))
             .map_err(Into::into)
@@ -168,8 +168,8 @@ impl PendingConversation {
             .conversation(id)
             .await
             .map_err(RecursiveError::transaction("getting conversation by id"))?;
-        let conversation = conversation.conversation().await;
-        let own_leaf = conversation.group.own_leaf().ok_or(LeafError::InternalMlsError)?;
+        let group = conversation.group().await;
+        let own_leaf = group.own_leaf().ok_or(LeafError::InternalMlsError)?;
 
         // We return self identity here, probably not necessary to check revocation
         let own_leaf_credential_with_key = CredentialWithKey {
@@ -185,8 +185,8 @@ impl PendingConversation {
 
         Ok(MlsDecryptMessage {
             app_msg: None,
-            is_active: conversation.group.is_active(),
-            delay: conversation.compute_next_commit_delay(),
+            is_active: conversation.group().await.is_active(),
+            delay: conversation.compute_next_commit_delay().await,
             sender_client_id: None,
             identity,
             buffered_messages,
@@ -236,25 +236,15 @@ impl PendingConversation {
         };
 
         // Persist the now usable MLS group in the keystore
-        let conversation = MlsConversation::from_mls_group(mls_group, configuration, &self.keystore().await?)
+        // This is the now merged conversation
+        let context = &self.context;
+        let mut conversation = context
+            .persist_conversation_from_mls_group(mls_group, configuration)
             .await
-            .map_err(RecursiveError::mls_conversation(
-                "constructing conversation from mls group",
+            .map_err(RecursiveError::transaction(
+                "persisting a pending conversation from mls group",
             ))?;
 
-        let context = &self.context;
-
-        context
-            .mls_groups()
-            .await
-            .map_err(RecursiveError::transaction("getting mls groups"))?
-            .insert(conversation);
-
-        // This is the now merged conversation
-        let mut conversation = context
-            .conversation(id)
-            .await
-            .map_err(RecursiveError::transaction("getting conversation by id"))?;
         let pending_messages = conversation
             .restore_pending_messages(restore_policy)
             .await

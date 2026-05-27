@@ -303,7 +303,7 @@ impl SessionContext {
     pub async fn rand_external_sender(&self, case: &TestContext) -> ExternalSender {
         let sc = case.signature_scheme();
 
-        let provider = self.transaction.mls_provider().await.unwrap();
+        let provider = self.transaction.crypto_provider().await.unwrap();
         let crypto = provider.crypto();
         let (_, pk) = crypto.signature_key_gen(sc).unwrap();
 

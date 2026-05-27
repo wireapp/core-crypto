@@ -32,9 +32,10 @@ impl super::ImmutableConversation {
     pub(crate) async fn find_current_credential(&self) -> Result<Arc<Credential>> {
         // if the group has pending proposals one of which is an own update proposal, we should take the credential from
         // there.
+        let group = self.group().await;
         let own_leaf =
-            Self::extract_own_updated_node_from_proposals(&self.group.own_leaf_index(), self.group.pending_proposals())
-                .or_else(|| self.group.own_leaf())
+            Self::extract_own_updated_node_from_proposals(&group.own_leaf_index(), group.pending_proposals())
+                .or_else(|| group.own_leaf())
                 .ok_or(LeafError::InternalMlsError)?;
         let credential = self
             .session
@@ -45,8 +46,11 @@ impl super::ImmutableConversation {
     }
 
     /// Returns all members credentials from the group/conversation
-    pub fn members(&self) -> HashMap<Vec<u8>, MlsCredential> {
-        self.group.members().fold(HashMap::new(), |mut acc, kp| {
+    pub async fn members(&self) -> HashMap<Vec<u8>, MlsCredential> {
+        // this fold is the compact way to express this:
+        // a normal `.map().collect()` would preserve later instances of duplicated keys,
+        // but this preserves the first instance of each key
+        self.group().await.members().fold(HashMap::new(), |mut acc, kp| {
             let credential = kp.credential;
             let id = credential.identity().to_vec();
             acc.entry(id).or_insert(credential);
@@ -55,8 +59,8 @@ impl super::ImmutableConversation {
     }
 
     /// Returns all members credentials with their signature public key from the group/conversation
-    pub fn members_with_key(&self) -> HashMap<Vec<u8>, CredentialWithKey> {
-        self.group.members().fold(HashMap::new(), |mut acc, kp| {
+    pub async fn members_with_key(&self) -> HashMap<Vec<u8>, CredentialWithKey> {
+        self.group().await.members().fold(HashMap::new(), |mut acc, kp| {
             let credential = kp.credential;
             let id = credential.identity().to_vec();
             let signature_key = SignaturePublicKey::from(kp.signature_key);
@@ -69,12 +73,14 @@ impl super::ImmutableConversation {
         })
     }
 
-    pub(crate) fn own_mls_credential(&self) -> Result<&MlsCredential> {
+    pub(crate) async fn own_mls_credential(&self) -> Result<MlsCredential> {
         let credential = self
-            .group
+            .group()
+            .await
             .own_leaf_node()
             .ok_or(Error::MlsGroupInvalidState("own_leaf_node not present in group"))?
-            .credential();
+            .credential()
+            .to_owned();
         Ok(credential)
     }
 }

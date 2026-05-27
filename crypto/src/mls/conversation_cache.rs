@@ -3,12 +3,13 @@
 
 use std::sync::Arc;
 
-use async_lock::RwLock;
-use core_crypto_keystore::{Database, entities::PersistedMlsGroup};
+use core_crypto_keystore::{Database, entities::PersistedMlsGroup, traits::FetchFromDatabase};
 use schnellru::{ByLength, LruMap};
 
 use super::conversation::{ConversationId, ConversationIdRef};
-use crate::{KeystoreError, RecursiveError, Result, Session, mls::conversation::ImmutableConversation};
+use crate::{
+    ImmutableDatabase, KeystoreError, RecursiveError, Result, Session, mls::conversation::ImmutableConversation,
+};
 
 /// LRU cache of live [`ImmutableConversation`]s, keyed by conversation id.
 ///
@@ -73,6 +74,21 @@ impl MlsConversationCache {
         let handle = Arc::new(conversation);
         self.entries.insert(key, handle.clone());
         Ok(Some(handle))
+    }
+
+    /// Returns `true` when a conversation with the given ID exists in the cache or the database.
+    ///
+    /// Does not load the converation into the cache or change the order of the LRU cache.
+    pub(crate) async fn exists(&self, id: &ConversationIdRef, database: &ImmutableDatabase) -> Result<bool> {
+        if self.entries.peek(id).is_some() {
+            return Ok(true);
+        }
+        database
+            .get_borrowed::<PersistedMlsGroup>(id.as_ref())
+            .await
+            .map(|maybe_entry| maybe_entry.is_some())
+            .map_err(KeystoreError::wrap("checking for existence of mls group"))
+            .map_err(Into::into)
     }
 
     /// Inserts a freshly-created conversation and returns the cached handle.

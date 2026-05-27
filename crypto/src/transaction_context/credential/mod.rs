@@ -3,7 +3,10 @@ mod check;
 use std::sync::Arc;
 
 use super::{Error, Result};
-use crate::{Credential, CredentialRef, MlsConversation, RecursiveError, transaction_context::TransactionContext};
+use crate::{
+    Credential, CredentialRef, RecursiveError, mls::conversation::ImmutableConversation,
+    transaction_context::TransactionContext,
+};
 
 impl TransactionContext {
     /// Add a credential to the database of this session without validating that its client ID matches the session
@@ -66,8 +69,9 @@ impl TransactionContext {
         // so whatever, linear scan over the credentials every time will have to do.
 
         // ensure this credential is not in use by any conversation
+        let session = self.session().await?;
         for (conversation_id, conversation) in
-            MlsConversation::load_all(&database)
+            ImmutableConversation::load_all(session)
                 .await
                 .map_err(RecursiveError::mls_conversation(
                     "loading all conversations to check if the credential to be removed is present",
@@ -75,8 +79,9 @@ impl TransactionContext {
         {
             let converation_credential = conversation
                 .own_mls_credential()
+                .await
                 .map_err(RecursiveError::mls_conversation("geting conversation credential"))?;
-            if credential.mls_credential() == converation_credential {
+            if credential.mls_credential() == &converation_credential {
                 return Err(Error::CredentialStillInUse(conversation_id));
             }
         }

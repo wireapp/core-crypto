@@ -85,7 +85,7 @@ mod tests {
             // make sure it's valid
             let _ = KeyPackageIn::from(kp.clone())
                 .standalone_validate(
-                    &cc.transaction.mls_provider().await.unwrap(),
+                    &cc.transaction.crypto_provider().await.unwrap(),
                     ProtocolVersion::Mls10,
                     true,
                 )

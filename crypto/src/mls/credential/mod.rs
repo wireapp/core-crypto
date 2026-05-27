@@ -208,7 +208,7 @@ mod tests {
     use super::{x509::CertificateBundle, *};
     use crate::{
         ClientIdentifier, CredentialType, E2eiConversationState,
-        mls::{conversation::Conversation as _, credential::x509::CertificatePrivateKey},
+        mls::credential::x509::CertificatePrivateKey,
         mls_provider::PkiKeypair,
         test_utils::{
             x509::{CertificateParams, X509TestChain},

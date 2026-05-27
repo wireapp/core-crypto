@@ -120,7 +120,7 @@ impl TransactionContext {
     }
 
     /// Clones all references that the [MlsCryptoProvider] comprises.
-    pub async fn mls_provider(&self) -> Result<MlsCryptoProvider> {
+    pub async fn crypto_provider(&self) -> Result<MlsCryptoProvider> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { core_crypto, .. } => core_crypto
                 .mls
@@ -295,7 +295,7 @@ impl TransactionContext {
     /// Generates a random byte array of the specified size
     pub async fn random_bytes(&self, len: usize) -> Result<Vec<u8>> {
         use openmls_traits::random::OpenMlsRand as _;
-        self.mls_provider()
+        self.crypto_provider()
             .await?
             .rand()
             .random_vec(len)

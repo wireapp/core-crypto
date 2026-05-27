@@ -31,9 +31,8 @@ impl ConversationGuard {
 
     pub(super) async fn merge_commit(&mut self) -> Result<()> {
         self.commit_accepted().await?;
-        let inner = self.inner().await;
-        let conversation_id = inner.id().to_owned();
-        let epoch = inner.epoch();
+        let conversation_id = self.id().to_owned();
+        let epoch = self.epoch().await;
 
         self.tx_context
             .queue_epoch_changed(conversation_id, epoch)
@@ -235,7 +234,7 @@ impl ConversationGuard {
     }
 
     pub(crate) async fn commit_pending_proposals_inner(&mut self) -> Result<Option<MlsCommitBundle>> {
-        if self.inner().await.group.pending_proposals().next().is_none() {
+        if self.group().await.pending_proposals().next().is_none() {
             return Ok(None);
         }
 

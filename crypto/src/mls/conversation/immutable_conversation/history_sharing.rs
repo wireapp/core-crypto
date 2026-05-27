@@ -18,6 +18,7 @@ impl super::ImmutableConversation {
     /// with [crate::HISTORY_CLIENT_ID_PREFIX].
     pub async fn is_history_sharing_enabled(&self) -> bool {
         self.get_client_ids()
+            .await
             .iter()
             .any(|client_id| client_id.starts_with(crate::ephemeral::HISTORY_CLIENT_ID_PREFIX.as_bytes()))
     }

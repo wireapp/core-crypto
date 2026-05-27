@@ -43,7 +43,7 @@ impl TransactionContext {
         group.set_state(InnerState::Persisted);
 
         // now that we're persisted, construct a conversation
-        let conversation = ImmutableConversation::new(id, group, configuration, session);
+        let conversation = ImmutableConversation::new(id, group.into(), configuration, session);
         let mut group_store = self.mls_groups().await?;
 
         let inner = group_store.insert(conversation);
@@ -66,7 +66,7 @@ impl TransactionContext {
                     "converting configuration to openmls default",
                 ))?;
 
-        let crypto_provider = self.mls_provider().await?;
+        let crypto_provider = self.crypto_provider().await?;
 
         let group = MlsGroup::new_from_welcome(&crypto_provider, &mls_group_config, welcome, None)
             .await

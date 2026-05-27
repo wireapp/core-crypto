@@ -164,9 +164,7 @@ mod tests {
     };
     use wire_e2e_identity::JwsAlgorithm;
 
-    use crate::{
-        ExternalSender, MlsConversationConfiguration, mls::conversation::ConversationWithMls as _, test_utils::*,
-    };
+    use crate::{ExternalSender, MlsConversationConfiguration, test_utils::*};
 
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn group_should_have_required_capabilities() {
@@ -176,9 +174,9 @@ mod tests {
         Box::pin(async move {
             let conversation = case.create_conversation([&session]).await;
             let guard = conversation.guard().await;
-            let group = guard.conversation().await;
+            let group = guard.group().await;
 
-            let capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
+            let capabilities = group.group_context_extensions().required_capabilities().unwrap();
 
             // see https://www.rfc-editor.org/rfc/rfc9420.html#section-11.1
             assert!(capabilities.extension_types().is_empty());
@@ -197,10 +195,10 @@ mod tests {
         Box::pin(async move {
             let conversation = case.create_conversation([&session]).await;
             let guard = conversation.guard().await;
-            let group = guard.conversation().await;
+            let group = guard.group().await;
 
             // verifying https://www.rfc-editor.org/rfc/rfc9420.html#section-7.2
-            let creator_capabilities = group.group.own_leaf().unwrap().capabilities();
+            let creator_capabilities = group.own_leaf().unwrap().capabilities();
 
             // https://www.rfc-editor.org/rfc/rfc9420.html#section-7.2-5.1.1
             // ProtocolVersion must be the default one
@@ -236,7 +234,7 @@ mod tests {
         Box::pin(async move {
             let (_sk, pk) = cc
                 .transaction
-                .mls_provider()
+                .crypto_provider()
                 .await
                 .unwrap()
                 .crypto()

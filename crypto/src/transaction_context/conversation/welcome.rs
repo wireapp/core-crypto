@@ -3,7 +3,7 @@
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 
 use super::{Error, Result, TransactionContext};
-use crate::{ConversationId, MlsConversation, MlsConversationConfiguration, RecursiveError};
+use crate::{ConversationId, MlsConversationConfiguration};
 
 impl TransactionContext {
     /// Create a conversation from a received MLS Welcome message
@@ -20,32 +20,22 @@ impl TransactionContext {
     /// * if the message can't be decrypted
     #[cfg_attr(test, crate::dispotent)]
     pub async fn process_welcome_message(&self, welcome: impl Into<MlsMessageIn>) -> Result<ConversationId> {
-        let database = &self.database().await?;
         let MlsMessageInBody::Welcome(welcome) = welcome.into().extract() else {
             return Err(Error::CallerError(
                 "the message provided to process_welcome_message was not a welcome message",
             ));
         };
-        let cs = welcome.ciphersuite().into();
+
         let configuration = MlsConversationConfiguration {
-            ciphersuite: cs,
+            ciphersuite: welcome.ciphersuite().into(),
             ..Default::default()
         };
-        let mls_provider = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
-        let mut mls_groups = self
-            .mls_groups()
-            .await
-            .map_err(RecursiveError::transaction("getting mls groups"))?;
-        let conversation =
-            MlsConversation::from_welcome_message(welcome, configuration, &mls_provider, database, &mut mls_groups)
-                .await
-                .map_err(RecursiveError::mls_conversation("creating conversation from welcome"))?;
 
-        let id = conversation.id.clone();
-        mls_groups.insert(conversation);
+        let conversation = self
+            .persist_conversation_from_welcome_message(welcome, configuration)
+            .await?;
+
+        let id = conversation.id().to_owned();
 
         Ok(id)
     }

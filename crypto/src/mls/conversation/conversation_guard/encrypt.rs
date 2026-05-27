@@ -22,7 +22,7 @@ impl ConversationGuard {
     pub async fn encrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<Vec<u8>> {
         #[cfg(debug_assertions)]
         {
-            let group = &self.inner().await.group;
+            let group = &self.group().await;
             debug_assert!(
                 group.pending_commit().is_none(),
                 "precondition failed; a pending commit exists"

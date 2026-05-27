@@ -64,7 +64,7 @@ impl TransactionContext {
         credential_ref: &CredentialRef,
     ) -> Result<(MlsCommitBundle, ConversationId, PendingConversation)> {
         let ciphersuite = group_info.ciphersuite().into();
-        let mls_provider = self.mls_provider().await?;
+        let mls_provider = self.crypto_provider().await?;
         let database = &self.database().await?;
         let credential = credential_ref
             .load(database)
@@ -133,10 +133,7 @@ mod tests {
     use core_crypto_keystore::CryptoKeystoreMls;
 
     use super::Error;
-    use crate::{
-        LeafError, MlsConversationConfiguration, mls::conversation::ConversationWithMls as _, test_utils::*,
-        transaction_context,
-    };
+    use crate::{LeafError, MlsConversationConfiguration, test_utils::*, transaction_context};
 
     #[apply(all_cred_cipher)]
     async fn join_by_external_commit_should_succeed(case: TestContext) {
@@ -374,22 +371,22 @@ mod tests {
 
         // we need an invalid GroupInfo; let's manufacture one.
         let group_info = {
-            let mut guard = conversation.guard().await;
+            let mut conversation = conversation.guard().await;
             let (ciphersuite, credential_type) = {
-                let conversation = guard.conversation().await;
                 let credential_type = conversation
-                    .group
+                    .group()
+                    .await
                     .credential()
                     .unwrap()
                     .credential_type()
                     .try_into()
                     .expect("case conversation has a known credential type");
-                let ciphersuite = conversation.group.ciphersuite();
+                let ciphersuite = conversation.group().await.ciphersuite();
                 (ciphersuite, credential_type)
             };
             let credential = alice.find_any_credential(ciphersuite.into(), credential_type).await;
-            let mls_provider = alice.transaction.mls_provider().await.unwrap();
-            guard
+            let mls_provider = alice.transaction.crypto_provider().await.unwrap();
+            conversation
                 .mutate_group_test(async move |_, group, _, _| {
                     let gi = group
                         .export_group_info(
@@ -428,8 +425,7 @@ mod tests {
                 .await
                 .guard_of(&bob)
                 .await;
-            let conversation = conversation.conversation().await;
-            let group = conversation.group();
+            let group = &conversation.group().await;
 
             let capabilities = group.group_context_extensions().required_capabilities().unwrap();
 

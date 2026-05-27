@@ -15,9 +15,9 @@ use crate::{CipherSuite, ConversationId, CredentialRef, MlsConversationConfigura
 /// An ImmutableConversation exposes the read-only interface of an MLS conversation.
 #[derive(Debug, derive_more::Constructor)]
 pub struct ImmutableConversation {
-    id: ConversationId,
-    group: RwLock<MlsGroup>,
-    configuration: MlsConversationConfiguration,
+    pub(in crate::mls::conversation) id: ConversationId,
+    pub(in crate::mls::conversation) group: RwLock<MlsGroup>,
+    pub(in crate::mls::conversation) configuration: MlsConversationConfiguration,
     session: Session,
 }
 
@@ -28,7 +28,7 @@ impl ImmutableConversation {
     }
 
     /// Returns an immutable guard over the underlying MLS group
-    pub async fn group(&self) -> RwLockReadGuard<MlsGroup> {
+    pub async fn group(&self) -> RwLockReadGuard<'_, MlsGroup> {
         self.group.read().await
     }
 

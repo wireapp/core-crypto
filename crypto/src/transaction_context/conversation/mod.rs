@@ -5,23 +5,38 @@ mod persistence;
 pub mod welcome;
 
 use core_crypto_keystore::{entities::PersistedMlsPendingGroup, traits::FetchFromDatabase as _};
+use openmls::group::MlsGroup;
 
 use super::{Error, Result, TransactionContext};
 use crate::{
-    CredentialRef, KeystoreError, LeafError, MlsConversation, MlsConversationConfiguration, RecursiveError,
+    CredentialRef, KeystoreError, LeafError, MlsConversationConfiguration, MlsError, RecursiveError,
     mls::conversation::{ConversationGuard, ConversationIdRef, pending_conversation::PendingConversation},
 };
 
 impl TransactionContext {
+    /// Checks if a given conversation id exists locally.
+    ///
+    /// Equivalent to `self.conversation(id)?.`
+    pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
+        let database = self.database().await?.into();
+        self.mls_groups()
+            .await?
+            .exists(id, &database)
+            .await
+            .map_err(RecursiveError::root("checking for conversation existence"))
+            .map_err(Into::into)
+    }
+
     /// Acquire a conversation guard.
     ///
     /// This helper struct permits mutations on a conversation.
     pub async fn conversation(&self, id: &ConversationIdRef) -> Result<ConversationGuard> {
         let keystore = self.database().await?;
+        let session = self.session().await?;
         let inner = self
             .mls_groups()
             .await?
-            .get_or_fetch(id, &keystore)
+            .get_or_fetch(id, &keystore, session)
             .await
             .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?;
 
@@ -61,30 +76,37 @@ impl TransactionContext {
         &self,
         id: &ConversationIdRef,
         credential_ref: &CredentialRef,
-        config: MlsConversationConfiguration,
+        configuration: MlsConversationConfiguration,
     ) -> Result<()> {
         let database = &self.database().await?;
-        let provider = &self.mls_provider().await?;
+        let provider = &self.crypto_provider().await?;
         if self.conversation_exists(id).await? || self.pending_conversation_exists(id).await? {
             return Err(LeafError::ConversationAlreadyExists(id.to_owned()).into());
         }
-        let conversation = MlsConversation::create(id.to_owned(), provider, database, credential_ref, config)
-            .await
-            .map_err(RecursiveError::mls_conversation("creating conversation"))?;
 
-        self.mls_groups().await?.insert(conversation);
+        let credential = credential_ref
+            .load(database)
+            .await
+            .map_err(RecursiveError::mls_credential_ref(
+                "loading credential from database to create new conversation",
+            ))?;
+
+        let config = configuration
+            .as_openmls_default_configuration()
+            .map_err(RecursiveError::mls_conversation("converting config to openmls default"))?;
+
+        let group = MlsGroup::new_with_group_id(
+            provider,
+            &credential.signature_key_pair,
+            &config,
+            openmls::prelude::GroupId::from_slice(id.as_ref()),
+            credential.to_mls_credential_with_key(),
+        )
+        .await
+        .map_err(MlsError::wrap("creating group with id"))?;
+
+        self.persist_conversation_from_mls_group(group, configuration).await?;
 
         Ok(())
-    }
-
-    /// Checks if a given conversation id exists locally
-    pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
-        self.mls_groups()
-            .await?
-            .get_or_fetch(id, &self.database().await?)
-            .await
-            .map(|option| option.is_some())
-            .map_err(RecursiveError::root("fetching conversation from mls groups by id"))
-            .map_err(Into::into)
     }
 }

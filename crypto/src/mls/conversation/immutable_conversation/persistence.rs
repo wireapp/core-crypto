@@ -18,6 +18,7 @@ impl ImmutableConversation {
             ciphersuite: group.ciphersuite().into(),
             ..Default::default()
         };
+        let group = group.into();
 
         Ok(Self {
             id,

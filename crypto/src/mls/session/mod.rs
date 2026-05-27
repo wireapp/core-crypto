@@ -19,7 +19,6 @@ use openmls_traits::OpenMlsCryptoProvider;
 use crate::{
     ClientId, HistorySecret, ImmutableDatabase, LeafError, MlsError, MlsTransport, RecursiveError,
     mls::{
-        self, HasSessionAndCrypto,
         conversation::{ConversationIdRef, ImmutableConversation},
         conversation_cache::MlsConversationCache,
     },

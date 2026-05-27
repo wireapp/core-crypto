@@ -44,9 +44,7 @@ impl MlsCommitBundle {
 #[cfg(test)]
 mod tests {
     use super::{Error, *};
-    use crate::{
-        mls::conversation::ConversationWithMls as _, test_utils::*, transaction_context::Error as TransactionError,
-    };
+    use crate::{test_utils::*, transaction_context::Error as TransactionError};
 
     mod add_members {
         use std::sync::Arc;
@@ -85,14 +83,7 @@ mod tests {
 
                 assert_eq!(*conversation.id(), id);
                 assert_eq!(
-                    conversation
-                        .guard()
-                        .await
-                        .conversation()
-                        .await
-                        .group
-                        .group_id()
-                        .as_slice(),
+                    conversation.guard().await.group().await.group_id().as_slice(),
                     id.as_ref()
                 );
                 assert_eq!(conversation.member_count().await, 2);
@@ -226,20 +217,8 @@ mod tests {
                 let conversation = case.create_conversation([&alice, &bob]).await;
                 let init_count = alice.transaction.count_entities().await;
 
-                let bob_keys = conversation
-                    .guard_of(&bob)
-                    .await
-                    .conversation()
-                    .await
-                    .encryption_keys()
-                    .collect::<Vec<Vec<u8>>>();
-                let alice_keys = conversation
-                    .guard()
-                    .await
-                    .conversation()
-                    .await
-                    .encryption_keys()
-                    .collect::<Vec<Vec<u8>>>();
+                let bob_keys = conversation.guard_of(&bob).await.encryption_keys().await;
+                let alice_keys = conversation.guard().await.encryption_keys().await;
                 assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
 
                 let alice_key = conversation.encryption_public_key().await;
@@ -249,22 +228,10 @@ mod tests {
                 let MlsCommitBundle { welcome, .. } = alice.mls_transport().await.latest_commit_bundle().await;
                 assert!(welcome.is_none());
 
-                let alice_new_keys = conversation
-                    .guard()
-                    .await
-                    .conversation()
-                    .await
-                    .encryption_keys()
-                    .collect::<Vec<Vec<u8>>>();
+                let alice_new_keys = conversation.guard().await.encryption_keys().await;
                 assert!(!alice_new_keys.contains(&alice_key));
 
-                let bob_new_keys = conversation
-                    .guard_of(&bob)
-                    .await
-                    .conversation()
-                    .await
-                    .encryption_keys()
-                    .collect::<Vec<Vec<u8>>>();
+                let bob_new_keys = conversation.guard_of(&bob).await.encryption_keys().await;
                 assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(a_key)));
 
                 // ensuring both can encrypt messages

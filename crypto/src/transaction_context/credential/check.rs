@@ -4,10 +4,13 @@ use x509_cert::Certificate;
 
 use super::{Error, Result};
 use crate::{
-    Credential, CredentialRef, CredentialType, KeystoreError, MlsConversation, RecursiveError,
-    mls::credential::{
-        crl::{CrlUris, extract_crl_uris_from_credentials, extract_crl_uris_from_group},
-        ext::CredentialExt as _,
+    Credential, CredentialRef, CredentialType, KeystoreError, RecursiveError,
+    mls::{
+        conversation::ImmutableConversation,
+        credential::{
+            crl::{CrlUris, extract_crl_uris_from_credentials, extract_crl_uris_from_group},
+            ext::CredentialExt as _,
+        },
     },
     transaction_context::TransactionContext,
 };
@@ -23,16 +26,16 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::mls_credential("getting all credentials"))?;
         let trust_anchors = env.get_trust_anchors().await;
-        let conversations_with_id =
-            MlsConversation::load_all(&database)
+
+        let session = self.session().await?;
+        let conversations =
+            ImmutableConversation::load_all(session)
                 .await
                 .map_err(RecursiveError::mls_conversation(
                     "loading all conversations to check if the credential to be removed is present",
                 ))?;
-        let conversations = conversations_with_id
-            .iter()
-            .map(|conversation_with_id| conversation_with_id.1);
-        let relevant_crl_uris = Self::get_crl_uris(trust_anchors.iter(), credentials.iter(), conversations).await?;
+        let relevant_crl_uris =
+            Self::get_crl_uris(trust_anchors.iter(), credentials.iter(), conversations.values()).await?;
 
         self.clean_up_irrelevant_crls(&relevant_crl_uris).await?;
 
@@ -71,7 +74,7 @@ impl TransactionContext {
     async fn get_crl_uris(
         trust_anchors: impl Iterator<Item = &Certificate>,
         credentials: impl Iterator<Item = &Credential>,
-        conversations: impl Iterator<Item = &MlsConversation>,
+        conversations: impl Iterator<Item = &ImmutableConversation>,
     ) -> Result<CrlUris> {
         let mls_credentials = credentials
             .filter(|credential| credential.credential_type == CredentialType::X509)
@@ -90,7 +93,7 @@ impl TransactionContext {
         }
 
         for conversation in conversations {
-            let uris_from_group = extract_crl_uris_from_group(conversation.group())
+            let uris_from_group = extract_crl_uris_from_group(&*conversation.group().await)
                 .map_err(RecursiveError::mls_credential("extracting CRL URLs from MLS groups"))?;
             crl_uris.extend(uris_from_group);
         }

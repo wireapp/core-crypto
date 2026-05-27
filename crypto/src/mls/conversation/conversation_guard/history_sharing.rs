@@ -4,10 +4,7 @@ use itertools::{Either, Itertools as _};
 use openmls::prelude::Sender;
 
 use super::{ConversationGuard, Error, Result};
-use crate::{
-    ClientIdRef, HistorySecret, MlsCommitBundle, RecursiveError,
-    mls::conversation::{Conversation as _, ConversationWithMls},
-};
+use crate::{ClientIdRef, HistorySecret, MlsCommitBundle, RecursiveError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum HistoryClientUpdateOutcome {
@@ -61,9 +58,10 @@ impl ConversationGuard {
         // client that won't be used. This means another history client is going to be added for this history era.
         // The library consumer is expected to detect that this old history client is invalid and overwrite it with
         // the new one.
+        let id = self.id().to_owned();
         self.session()
             .await?
-            .notify_new_history_client(self.conversation().await.id().clone(), &history_secret)
+            .notify_new_history_client(id, &history_secret)
             .await;
 
         // We already merged the commit above, so successfully sending the commit means we're in the correct state.
@@ -98,45 +96,52 @@ impl ConversationGuard {
             return Ok(HistoryClientUpdateOutcome::NoUpdateNeeded);
         }
 
-        let group = &self.inner().await.group;
-        let Some(pending_commit) = group.pending_commit() else {
-            return Err(Error::PendingCommitNotFound);
+        // this scope exists because we need to get read access to the group to do some more checks,
+        // but then we need to give up that access to drop all temporaries
+        // which reference the group so that we can get mutable access to `self` again
+        let (pending_commit, existing_history_clients) = {
+            let group = self.group().await;
+            let Some(pending_commit) = group.pending_commit() else {
+                return Err(Error::PendingCommitNotFound);
+            };
+
+            let removed_indices = pending_commit
+                .remove_proposals()
+                .map(|p| p.remove_proposal().removed())
+                .collect::<HashSet<_>>();
+            // If no one was removed, we can keep the existing history client.
+            if removed_indices.is_empty() {
+                return Ok(HistoryClientUpdateOutcome::NoUpdateNeeded);
+            }
+
+            // Distinguish between history clients and other clients for the following operations
+            let (existing_history_clients, other_clients): (HashSet<_>, HashSet<_>) =
+                group.members().partition_map(|member| {
+                    let is_history_client =
+                        crate::ephemeral::is_history_client(ClientIdRef::new(member.credential.identity()));
+                    let member_index = member.index;
+                    if is_history_client {
+                        Either::Left(member_index)
+                    } else {
+                        Either::Right(member_index)
+                    }
+                });
+
+            // If all history clients are being removed (e.g., when disabling history sharing), there's nothing to do.
+            if existing_history_clients
+                .iter()
+                .all(|index| removed_indices.contains(index))
+            {
+                return Ok(HistoryClientUpdateOutcome::NoUpdateNeeded);
+            }
+
+            // If no other clients are being removed, there is also nothig to do
+            if !other_clients.iter().any(|index| removed_indices.contains(index)) {
+                return Ok(HistoryClientUpdateOutcome::NoUpdateNeeded);
+            }
+
+            (pending_commit.clone(), existing_history_clients)
         };
-
-        let removed_indices = pending_commit
-            .remove_proposals()
-            .map(|p| p.remove_proposal().removed())
-            .collect::<HashSet<_>>();
-        // If no one was removed, we can keep the existing history client.
-        if removed_indices.is_empty() {
-            return Ok(HistoryClientUpdateOutcome::NoUpdateNeeded);
-        }
-
-        // Distinguish between history clients and other clients for the following operations
-        let (existing_history_clients, other_clients): (HashSet<_>, HashSet<_>) =
-            self.inner().await.group.members().partition_map(|member| {
-                let is_history_client =
-                    crate::ephemeral::is_history_client(ClientIdRef::new(member.credential.identity()));
-                let member_index = member.index;
-                if is_history_client {
-                    Either::Left(member_index)
-                } else {
-                    Either::Right(member_index)
-                }
-            });
-
-        // If all history clients are being removed (e.g., when disabling history sharing), there's nothing to do.
-        if existing_history_clients
-            .iter()
-            .all(|index| removed_indices.contains(index))
-        {
-            return Ok(HistoryClientUpdateOutcome::NoUpdateNeeded);
-        }
-
-        // If no other clients are being removed, there is also nothig to do
-        if !other_clients.iter().any(|index| removed_indices.contains(index)) {
-            return Ok(HistoryClientUpdateOutcome::NoUpdateNeeded);
-        }
 
         // If we're still here, all conditions are met to update the history client.
 
@@ -159,6 +164,7 @@ impl ConversationGuard {
         // propose to add a new history client
         self.propose_add_member(key_package).await?;
 
+        let group = self.group().await;
         proposals.extend(
             group
                 .pending_proposals()
@@ -166,6 +172,7 @@ impl ConversationGuard {
                 .map(|proposal| proposal.proposal())
                 .cloned(),
         );
+        drop(group);
 
         let commit = self
             .commit_inline_proposals(proposals)
@@ -185,7 +192,6 @@ mod tests {
 
     use crate::{
         ephemeral::HISTORY_CLIENT_ID_PREFIX,
-        mls::conversation::Conversation,
         test_utils::{TestContext, all_cred_cipher},
     };
 
