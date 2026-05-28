@@ -22,6 +22,8 @@ mod orphan_welcome;
 mod pending;
 mod welcome;
 
+pub(crate) use pending::PendingConversation;
+
 pub use self::{
     commit::CommitBundle,
     config::{ConversationConfiguration, CustomConfiguration, WirePolicy},
@@ -36,7 +38,6 @@ pub use self::{
     welcome::WelcomeMessage,
 };
 use crate::bytes_wrapper;
-pub(crate) use pending::PendingConversation;
 
 bytes_wrapper!(
     /// A secret key derived from the group secret.

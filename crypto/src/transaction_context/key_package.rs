@@ -7,7 +7,7 @@ use openmls::prelude::{CryptoConfig, Lifetime};
 
 use super::{Error, Result, TransactionContext};
 use crate::{
-    CredentialRef, Keypackage, KeypackageRef, KeystoreError, ConversationConfiguration, RecursiveError,
+    ConversationConfiguration, CredentialRef, Keypackage, KeypackageRef, KeystoreError, RecursiveError,
     mls::key_package::KeypackageExt as _,
 };
 

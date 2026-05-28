@@ -16,13 +16,13 @@ use tls_codec::Deserialize as _;
 
 use super::{Error, Result};
 use crate::{
-    KeystoreError, LeafError, BufferedDecryptedMessage, CommitBundle, ConversationConfiguration,
-    CustomConfiguration, DecryptedMessage, OpenMlsError, RecursiveError,
+    BufferedDecryptedMessage, CommitBundle, ConversationConfiguration, CustomConfiguration, DecryptedMessage,
+    KeystoreError, LeafError, OpenMlsError, RecursiveError,
     mls::{
         conversation::{ConversationIdRef, mutable::decrypt::buffer_messages::MessageRestorePolicy},
         credential::ext::CredentialExt as _,
     },
-    mls_provider::{Database, CryptoProvider},
+    mls_provider::{CryptoProvider, Database},
     transaction_context::TransactionContext,
 };
 

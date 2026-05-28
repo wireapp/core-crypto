@@ -30,7 +30,7 @@ use openmls::prelude::KeyPackageSecretEncapsulation;
 use crate::{
     CipherSuite, ClientId, ClientIdRef, CoreCrypto, CoreCryptoTransportNotImplementedProvider, Credential, Error,
     OpenMlsError, RecursiveError, Result, Session,
-    mls_provider::{DatabaseKey, CryptoProvider},
+    mls_provider::{CryptoProvider, DatabaseKey},
 };
 
 /// We always instantiate history clients with this prefix in their client id, so

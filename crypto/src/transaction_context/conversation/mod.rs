@@ -9,7 +9,7 @@ use openmls::group::MlsGroup;
 
 use super::{Error, Result, TransactionContext};
 use crate::{
-    CredentialRef, KeystoreError, LeafError, ConversationConfiguration, OpenMlsError, RecursiveError,
+    ConversationConfiguration, CredentialRef, KeystoreError, LeafError, OpenMlsError, RecursiveError,
     mls::conversation::{ConversationIdRef, ConversationMut, PendingConversation},
 };
 

@@ -5,7 +5,7 @@ use openmls::group::MlsGroup;
 
 use super::Result;
 use crate::{
-    ConversationId, KeystoreError, ConversationConfiguration, Session, mls::conversation::ImmutableConversation,
+    ConversationConfiguration, ConversationId, KeystoreError, Session, mls::conversation::ImmutableConversation,
 };
 
 impl ImmutableConversation {

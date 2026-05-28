@@ -17,12 +17,12 @@ pub use history_observer::HistoryObserver;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::{
-    ClientId, HistorySecret, ImmutableDatabase, LeafError, OpenMlsError, MlsTransport, RecursiveError,
+    ClientId, HistorySecret, ImmutableDatabase, LeafError, MlsTransport, OpenMlsError, RecursiveError,
     mls::{
         conversation::{ConversationIdRef, ImmutableConversation},
         conversation_cache::ConversationCache,
     },
-    mls_provider::{EntropySeed, CryptoProvider},
+    mls_provider::{CryptoProvider, EntropySeed},
 };
 
 /// A MLS Session enables a user device to communicate via the MLS protocol.

@@ -5,7 +5,7 @@ use openmls::{
 };
 
 use crate::{
-    ConversationId, KeystoreError, LeafError, ConversationConfiguration, OpenMlsError, RecursiveError,
+    ConversationConfiguration, ConversationId, KeystoreError, LeafError, OpenMlsError, RecursiveError,
     mls::conversation::{ConversationMut, Error as ConversationError, ImmutableConversation},
     transaction_context::{Result, TransactionContext},
 };

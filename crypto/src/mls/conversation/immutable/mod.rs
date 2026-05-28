@@ -10,7 +10,7 @@ use async_lock::{RwLock, RwLockReadGuard};
 use openmls::group::MlsGroup;
 
 use super::{ConversationIdRef, Error, ExternalSenderKey, Result, SecretKey};
-use crate::{CipherSuite, ConversationId, CredentialRef, ConversationConfiguration, OpenMlsError, Session};
+use crate::{CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, OpenMlsError, Session};
 
 /// An ImmutableConversation exposes the read-only interface of an MLS conversation.
 #[derive(Debug, derive_more::Constructor)]

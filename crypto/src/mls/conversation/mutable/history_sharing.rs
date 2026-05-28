@@ -4,7 +4,7 @@ use itertools::{Either, Itertools as _};
 use openmls::prelude::Sender;
 
 use super::{ConversationMut, Error, Result};
-use crate::{ClientIdRef, HistorySecret, CommitBundle, RecursiveError};
+use crate::{ClientIdRef, CommitBundle, HistorySecret, RecursiveError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum HistoryClientUpdateOutcome {

@@ -10,7 +10,7 @@ use tls_codec::Deserialize;
 
 use super::{RecursionPolicy, Result};
 use crate::{
-    KeystoreError, BufferedDecryptedMessage,
+    BufferedDecryptedMessage, KeystoreError,
     mls::conversation::{ConversationMut, Error},
 };
 
@@ -45,9 +45,7 @@ impl ConversationMut {
             .map_err(Into::into)
     }
 
-    pub(super) async fn restore_and_clear_pending_messages(
-        &mut self,
-    ) -> Result<Option<Vec<BufferedDecryptedMessage>>> {
+    pub(super) async fn restore_and_clear_pending_messages(&mut self) -> Result<Option<Vec<BufferedDecryptedMessage>>> {
         let pending_messages = self
             .restore_pending_messages(MessageRestorePolicy::DecryptAndClear)
             .await?;

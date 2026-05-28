@@ -121,7 +121,8 @@ impl Credential {
         let sk = cert.private_key.into_inner();
         let chain = cert.certificate_chain;
 
-        let kp = CertificateKeyPair::new(sk, chain.clone()).map_err(OpenMlsError::wrap("creating certificate key pair"))?;
+        let kp =
+            CertificateKeyPair::new(sk, chain.clone()).map_err(OpenMlsError::wrap("creating certificate key pair"))?;
 
         let credential = MlsCredential::new_x509(chain).map_err(OpenMlsError::wrap("creating x509 credential"))?;
 
