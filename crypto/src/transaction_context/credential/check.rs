@@ -6,7 +6,7 @@ use super::{Error, Result};
 use crate::{
     Credential, CredentialRef, CredentialType, KeystoreError, RecursiveError,
     mls::{
-        conversation::ImmutableConversation,
+        conversation::Conversation,
         credential::{
             crl::{CrlUris, extract_crl_uris_from_credentials, extract_crl_uris_from_group},
             ext::CredentialExt as _,
@@ -29,7 +29,7 @@ impl TransactionContext {
 
         let session = self.session().await?;
         let conversations =
-            ImmutableConversation::load_all(session)
+            Conversation::load_all(session)
                 .await
                 .map_err(RecursiveError::mls_conversation(
                     "loading all conversations to check if the credential to be removed is present",
@@ -74,7 +74,7 @@ impl TransactionContext {
     async fn get_crl_uris(
         trust_anchors: impl Iterator<Item = &Certificate>,
         credentials: impl Iterator<Item = &Credential>,
-        conversations: impl Iterator<Item = &ImmutableConversation>,
+        conversations: impl Iterator<Item = &Conversation>,
     ) -> Result<CrlUris> {
         let mls_credentials = credentials
             .filter(|credential| credential.credential_type == CredentialType::X509)

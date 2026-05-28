@@ -5,10 +5,10 @@ use openmls::group::MlsGroup;
 
 use super::Result;
 use crate::{
-    ConversationConfiguration, ConversationId, KeystoreError, Session, mls::conversation::ImmutableConversation,
+    ConversationConfiguration, ConversationId, KeystoreError, Session, mls::conversation::Conversation,
 };
 
-impl ImmutableConversation {
+impl Conversation {
     /// restore the conversation from a persistence-saved serialized Group State.
     fn from_serialized_state(session: Session, buf: Vec<u8>) -> Result<Self> {
         let group: MlsGroup =

@@ -7,11 +7,9 @@ use core_crypto_keystore::{Database, entities::PersistedMlsGroup, traits::FetchF
 use schnellru::{ByLength, LruMap};
 
 use super::conversation::{ConversationId, ConversationIdRef};
-use crate::{
-    ImmutableDatabase, KeystoreError, RecursiveError, Result, Session, mls::conversation::ImmutableConversation,
-};
+use crate::{ImmutableDatabase, KeystoreError, RecursiveError, Result, Session, mls::conversation::Conversation};
 
-/// LRU cache of live [`ImmutableConversation`]s, keyed by conversation id.
+/// LRU cache of live [`Conversation`]s, keyed by conversation id.
 ///
 /// On a cache miss, [`Self::get_or_fetch`] loads the persisted MLS group state
 /// from the keystore and deserialises it. Persisted-but-inactive groups are
@@ -24,7 +22,7 @@ use crate::{
 pub(crate) struct ConversationCache {
     // `Arc<_>` is required here so that `ConversationGuard` can
     // hold a handle that outlives any single cache lookup.
-    entries: LruMap<ConversationId, Arc<ImmutableConversation>, ByLength>,
+    entries: LruMap<ConversationId, Arc<Conversation>, ByLength>,
 }
 
 impl ConversationCache {
@@ -47,17 +45,16 @@ impl ConversationCache {
         id: &ConversationIdRef,
         keystore: &Database,
         session: Session,
-    ) -> Result<Option<Arc<ImmutableConversation>>> {
+    ) -> Result<Option<Arc<Conversation>>> {
         if let Some(entry) = self.entries.get(id) {
             return Ok(Some(entry.clone()));
         }
 
-        let Some(conversation) =
-            ImmutableConversation::load(session, id)
-                .await
-                .map_err(RecursiveError::mls_conversation(
-                    "fetching persisted mls group from keystore",
-                ))?
+        let Some(conversation) = Conversation::load(session, id)
+            .await
+            .map_err(RecursiveError::mls_conversation(
+                "fetching persisted mls group from keystore",
+            ))?
         else {
             return Ok(None);
         };
@@ -92,7 +89,7 @@ impl ConversationCache {
     }
 
     /// Inserts a freshly-created conversation and returns the cached handle.
-    pub(crate) fn insert(&mut self, conversation: ImmutableConversation) -> Arc<ImmutableConversation> {
+    pub(crate) fn insert(&mut self, conversation: Conversation) -> Arc<Conversation> {
         let key = conversation.id().to_owned();
         let handle = Arc::new(conversation);
         self.entries.insert(key, handle.clone());
@@ -100,7 +97,7 @@ impl ConversationCache {
     }
 
     /// Removes an entry from the cache, if present.
-    pub(crate) fn remove(&mut self, id: &ConversationIdRef) -> Option<Arc<ImmutableConversation>> {
+    pub(crate) fn remove(&mut self, id: &ConversationIdRef) -> Option<Arc<Conversation>> {
         self.entries.remove(id)
     }
 

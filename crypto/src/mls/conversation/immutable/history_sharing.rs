@@ -1,7 +1,7 @@
 use super::Result;
 use crate::RecursiveError;
 
-impl super::ImmutableConversation {
+impl super::Conversation {
     /// Generate a new [`crate::HistorySecret`].
     ///
     /// This is useful when it's this client's turn to generate a new history client.

@@ -5,7 +5,7 @@ use openmls::prelude::{LeafNodeIndex, Proposal};
 
 use crate::ClientId;
 
-impl super::ImmutableConversation {
+impl super::Conversation {
     /// Exports the clients from a conversation
     ///
     /// # Arguments

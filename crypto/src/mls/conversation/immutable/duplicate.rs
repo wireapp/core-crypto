@@ -4,10 +4,10 @@
 
 use openmls::prelude::{ContentType, FramedContentBodyIn, Proposal, PublicMessageIn, Sender};
 
-use super::{Error, ImmutableConversation, Result};
+use super::{Error, Conversation, Result};
 use crate::OpenMlsError;
 
-impl ImmutableConversation {
+impl Conversation {
     pub(crate) async fn is_duplicate_message(&self, msg: &PublicMessageIn) -> Result<bool> {
         let (sender, content_type) = (msg.sender(), msg.body().content_type());
 

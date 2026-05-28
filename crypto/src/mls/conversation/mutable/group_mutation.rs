@@ -4,7 +4,7 @@ use openmls::group::{InnerState, MlsGroup};
 use super::{ConversationMut, Result};
 use crate::{
     KeystoreError, RecursiveError,
-    mls::conversation::{ConversationIdRef, ImmutableConversation},
+    mls::conversation::{ConversationIdRef, Conversation},
 };
 
 impl ConversationMut {
@@ -34,7 +34,7 @@ impl ConversationMut {
             .await
             .map_err(RecursiveError::transaction("getting database from context"))?;
 
-        let ImmutableConversation { group, id, .. } = &*self.inner;
+        let Conversation { group, id, .. } = &*self.inner;
         let mut group = group.write().await;
         let ok_result = operation(&database, &mut *group, id).await?;
 

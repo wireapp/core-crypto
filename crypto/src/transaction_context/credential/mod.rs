@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use super::{Error, Result};
 use crate::{
-    Credential, CredentialRef, RecursiveError, mls::conversation::ImmutableConversation,
+    Credential, CredentialRef, RecursiveError, mls::conversation::Conversation,
     transaction_context::TransactionContext,
 };
 
@@ -71,7 +71,7 @@ impl TransactionContext {
         // ensure this credential is not in use by any conversation
         let session = self.session().await?;
         for (conversation_id, conversation) in
-            ImmutableConversation::load_all(session)
+            Conversation::load_all(session)
                 .await
                 .map_err(RecursiveError::mls_conversation(
                     "loading all conversations to check if the credential to be removed is present",

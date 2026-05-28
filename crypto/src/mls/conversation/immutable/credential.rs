@@ -10,7 +10,7 @@ use openmls::{
 use super::{Error, Result};
 use crate::{Credential, LeafError, RecursiveError};
 
-impl super::ImmutableConversation {
+impl super::Conversation {
     fn extract_own_updated_node_from_proposals<'a>(
         own_index: &LeafNodeIndex,
         pending_proposals: impl Iterator<Item = &'a QueuedProposal>,

@@ -12,16 +12,16 @@ use openmls::group::MlsGroup;
 use super::{ConversationIdRef, Error, ExternalSenderKey, Result, SecretKey};
 use crate::{CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, OpenMlsError, Session};
 
-/// An ImmutableConversation exposes the read-only interface of an MLS conversation.
+/// A Conversation exposes the read-only interface of an MLS conversation.
 #[derive(Debug, derive_more::Constructor)]
-pub struct ImmutableConversation {
+pub struct Conversation {
     pub(in crate::mls::conversation) id: ConversationId,
     pub(in crate::mls::conversation) group: RwLock<MlsGroup>,
     pub(in crate::mls::conversation) configuration: ConversationConfiguration,
     session: Session,
 }
 
-impl ImmutableConversation {
+impl Conversation {
     /// Returns the conversation's ID
     pub fn id(&self) -> &ConversationIdRef {
         ConversationIdRef::new(&self.id)
@@ -101,7 +101,7 @@ mod test_utils {
 
     use super::*;
 
-    impl ImmutableConversation {
+    impl Conversation {
         pub async fn signature_keys(&self) -> Vec<SignaturePublicKey> {
             let group = self.group().await;
             group

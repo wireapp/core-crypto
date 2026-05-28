@@ -16,7 +16,7 @@ use openmls::prelude::group_info::GroupInfo;
 use super::{Error, Result};
 use crate::{
     CryptoProvider, GroupInfoBundle, LeafError, MlsTransport, RecursiveError, Session,
-    mls::{conversation::ImmutableConversation, credential::Credential},
+    mls::{conversation::Conversation, credential::Credential},
     transaction_context::TransactionContext,
 };
 
@@ -31,7 +31,7 @@ use crate::{
 /// conversation API on `TransactionContext`.
 #[derive(Debug, derive_more::Constructor)]
 pub struct ConversationMut {
-    inner: Arc<ImmutableConversation>,
+    inner: Arc<Conversation>,
     tx_context: TransactionContext,
 }
 
@@ -84,7 +84,7 @@ impl ConversationMut {
 }
 
 impl std::ops::Deref for ConversationMut {
-    type Target = ImmutableConversation;
+    type Target = Conversation;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
@@ -94,7 +94,7 @@ impl std::ops::Deref for ConversationMut {
 #[cfg(test)]
 mod test_utils {
     use super::ConversationMut;
-    use crate::mls::conversation::ImmutableConversation;
+    use crate::mls::conversation::Conversation;
 
     impl ConversationMut {
         /// Replaces the MLS group in memory with the one from keystore.
@@ -102,7 +102,7 @@ mod test_utils {
             let session = self.tx_context.session().await.unwrap();
             let id = self.id();
 
-            let conversation = ImmutableConversation::load(session, id).await.unwrap().unwrap();
+            let conversation = Conversation::load(session, id).await.unwrap().unwrap();
             self.tx_context.mls_groups().await.unwrap().insert(conversation);
         }
     }

@@ -6,7 +6,7 @@ use openmls::{
 
 use crate::{
     ConversationConfiguration, ConversationId, KeystoreError, LeafError, OpenMlsError, RecursiveError,
-    mls::conversation::{ConversationMut, Error as ConversationError, ImmutableConversation},
+    mls::conversation::{Conversation, ConversationMut, Error as ConversationError},
     transaction_context::{Result, TransactionContext},
 };
 
@@ -17,7 +17,7 @@ impl TransactionContext {
     ///
     /// This effectively goes through the following steps:
     ///
-    /// 1. Produce an [`ImmutableConversation`] from the group.
+    /// 1. Produce a [`Conversation`] from the group.
     /// 2. Persist that conversation in the database.
     /// 3. Persist that conversation in the conversation cache.
     /// 4. Return the cached entry for that conversation.
@@ -43,7 +43,7 @@ impl TransactionContext {
         group.set_state(InnerState::Persisted);
 
         // now that we're persisted, construct a conversation
-        let conversation = ImmutableConversation::new(id, group.into(), configuration, session);
+        let conversation = Conversation::new(id, group.into(), configuration, session);
         let mut group_store = self.mls_groups().await?;
 
         let inner = group_store.insert(conversation);

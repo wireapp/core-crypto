@@ -30,7 +30,7 @@ pub use self::{
     error::{Error, Result},
     group_info::{GroupInfoBundle, GroupInfoEncryptionType, GroupInfoPayload, RatchetTreeType},
     id::{ConversationId, ConversationIdRef},
-    immutable::ImmutableConversation,
+    immutable::Conversation,
     mutable::{
         ConversationMut,
         decrypt::{BufferedDecryptedMessage, DecryptedMessage},
@@ -103,12 +103,12 @@ mod tests {
     mod wire_identity_getters {
         use super::Error;
         use crate::{
-            ClientId, CredentialType, DeviceStatus, E2eiConversationState, mls::conversation::ImmutableConversation,
+            ClientId, CredentialType, DeviceStatus, E2eiConversationState, mls::conversation::Conversation,
             test_utils::*,
         };
 
         async fn all_identities_check<const N: usize>(
-            conversation: &ImmutableConversation,
+            conversation: &Conversation,
             user_ids: &[String; N],
             expected_sizes: [usize; N],
         ) {
@@ -131,7 +131,7 @@ mod tests {
         }
 
         async fn check_identities_device_status<const N: usize>(
-            conversation: &ImmutableConversation,
+            conversation: &Conversation,
             client_ids: &[ClientId; N],
             name_status: &[(impl ToString, DeviceStatus); N],
         ) {
