@@ -29,8 +29,9 @@ use crate::{
 /// More generally, the conversation guard gives us convenient mutable accesses to a single
 /// conversation. This in turn means that we don't have to duplicate the entire
 /// conversation API on `TransactionContext`.
-#[derive(Debug, derive_more::Constructor)]
+#[derive(Debug, derive_more::Constructor, derive_more::Deref)]
 pub struct ConversationMut {
+    #[deref(forward)]
     inner: Arc<Conversation>,
     tx_context: TransactionContext,
 }
@@ -80,14 +81,6 @@ impl ConversationMut {
     fn group_info(group_info: Option<GroupInfo>) -> Result<GroupInfoBundle> {
         let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
         GroupInfoBundle::try_new_full_plaintext(group_info)
-    }
-}
-
-impl std::ops::Deref for ConversationMut {
-    type Target = Conversation;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
     }
 }
 
