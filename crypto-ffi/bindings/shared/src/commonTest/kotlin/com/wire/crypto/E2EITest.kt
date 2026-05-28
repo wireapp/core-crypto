@@ -11,8 +11,9 @@ import kotlin.test.fail
 
 internal class E2EITest {
     companion object {
-        private val testCaDer: ByteArray = Base64.getMimeDecoder().decode(
+        private val testCaPem: String =
             """
+            -----BEGIN CERTIFICATE-----
             MIIBrTCCAVOgAwIBAgIUTZQSLl3eOORQ+adTBaACtDinzVIwCgYIKoZIzj0EAwIwIzEhMB8G
             A1UEAwwYQ29yZSBDcnlwdG8gVGVzdCBSb290IENBMCAXDTI2MDUxODExMzcxNFoYDzIxMjYw
             NDI0MTEzNzE0WjAjMSEwHwYDVQQDDBhDb3JlIENyeXB0byBUZXN0IFJvb3QgQ0EwWTATBgcq
@@ -22,8 +23,8 @@ internal class E2EITest {
             FoAUcTTkAA9iiyLL9K7ZoQ/KowFwjZ8wCgYIKoZIzj0EAwIDSAAwRQIgGvcMi47MTKh6F4uz
             ppJsiJ+R0Mj4ato4FPg90nm0OtACIQCAIjV4mlXh8Gp2RRSlwuA894+NhyztLPU+vErHy/0I
             uA==
+            -----END CERTIFICATE-----
             """.trimIndent()
-        )
     }
 
     @Test
@@ -45,7 +46,7 @@ internal class E2EITest {
         val pkiEnv = PkiEnvironment.new(hooks, db)
 
         try {
-            pkiEnv.addTrustAnchor(testCaDer)
+            pkiEnv.addTrustAnchor(testCaPem)
         } catch (exception: Exception) {
             fail("Expected addTrustAnchor not to throw, but it threw: ${exception.message}")
         }
@@ -58,7 +59,7 @@ internal class E2EITest {
         val pkiEnv = PkiEnvironment.new(hooks, db)
 
         try {
-            pkiEnv.addIntermediateCert(testCaDer)
+            pkiEnv.addIntermediateCert(testCaPem)
         } catch (exception: Exception) {
             fail("Expected addIntermediateCert not to throw, but it threw: ${exception.message}")
         }

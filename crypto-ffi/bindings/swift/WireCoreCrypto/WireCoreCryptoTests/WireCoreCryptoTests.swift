@@ -7,20 +7,19 @@ import XCTest
 // swiftlint:disable:next type_body_length
 final class WireCoreCryptoTests: XCTestCase {
     var mockMlsTransport: MockMlsTransport = .init()
-    private static let testCaDer = Data(
-        base64Encoded: """
-            MIIBrTCCAVOgAwIBAgIUTZQSLl3eOORQ+adTBaACtDinzVIwCgYIKoZIzj0EAwIwIzEhMB8G
-            A1UEAwwYQ29yZSBDcnlwdG8gVGVzdCBSb290IENBMCAXDTI2MDUxODExMzcxNFoYDzIxMjYw
-            NDI0MTEzNzE0WjAjMSEwHwYDVQQDDBhDb3JlIENyeXB0byBUZXN0IFJvb3QgQ0EwWTATBgcq
-            hkjOPQIBBggqhkjOPQMBBwNCAASepKWhYSdxi9vctOj+3iksMZqCYv94ijB7KkHwvaOhsByE
-            tzGoCRVuw12fzZ7C5tDChISJDoDuLkMVF17n8IoYo2MwYTAPBgNVHRMBAf8EBTADAQH/MA4G
-            A1UdDwEB/wQEAwIBBjAdBgNVHQ4EFgQUcTTkAA9iiyLL9K7ZoQ/KowFwjZ8wHwYDVR0jBBgw
-            FoAUcTTkAA9iiyLL9K7ZoQ/KowFwjZ8wCgYIKoZIzj0EAwIDSAAwRQIgGvcMi47MTKh6F4uz
-            ppJsiJ+R0Mj4ato4FPg90nm0OtACIQCAIjV4mlXh8Gp2RRSlwuA894+NhyztLPU+vErHy/0I
-            uA==
-            """,
-        options: .ignoreUnknownCharacters
-    )!
+    private static let testCaPem = """
+        -----BEGIN CERTIFICATE-----
+        MIIBrTCCAVOgAwIBAgIUTZQSLl3eOORQ+adTBaACtDinzVIwCgYIKoZIzj0EAwIwIzEhMB8G
+        A1UEAwwYQ29yZSBDcnlwdG8gVGVzdCBSb290IENBMCAXDTI2MDUxODExMzcxNFoYDzIxMjYw
+        NDI0MTEzNzE0WjAjMSEwHwYDVQQDDBhDb3JlIENyeXB0byBUZXN0IFJvb3QgQ0EwWTATBgcq
+        hkjOPQIBBggqhkjOPQMBBwNCAASepKWhYSdxi9vctOj+3iksMZqCYv94ijB7KkHwvaOhsByE
+        tzGoCRVuw12fzZ7C5tDChISJDoDuLkMVF17n8IoYo2MwYTAPBgNVHRMBAf8EBTADAQH/MA4G
+        A1UdDwEB/wQEAwIBBjAdBgNVHQ4EFgQUcTTkAA9iiyLL9K7ZoQ/KowFwjZ8wHwYDVR0jBBgw
+        FoAUcTTkAA9iiyLL9K7ZoQ/KowFwjZ8wCgYIKoZIzj0EAwIDSAAwRQIgGvcMi47MTKh6F4uz
+        ppJsiJ+R0Mj4ato4FPg90nm0OtACIQCAIjV4mlXh8Gp2RRSlwuA894+NhyztLPU+vErHy/0I
+        uA==
+        -----END CERTIFICATE-----
+        """
 
     override func setUpWithError() throws {
         mockMlsTransport = MockMlsTransport()
@@ -672,7 +671,7 @@ final class WireCoreCryptoTests: XCTestCase {
             hooks: MockPkiEnvironmentHooks(), database: database)
 
         do {
-            try await pkiEnvironment.addTrustAnchor(certDer: Self.testCaDer)
+            try await pkiEnvironment.addTrustAnchor(certPem: Self.testCaPem)
         } catch {
             XCTFail("Expected addTrustAnchor not to throw, but it threw: \(error)")
         }
@@ -684,7 +683,7 @@ final class WireCoreCryptoTests: XCTestCase {
             hooks: MockPkiEnvironmentHooks(), database: database)
 
         do {
-            try await pkiEnvironment.addIntermediateCert(certDer: Self.testCaDer)
+            try await pkiEnvironment.addIntermediateCert(certPem: Self.testCaPem)
         } catch {
             XCTFail("Expected addIntermediateCert not to throw, but it threw: \(error)")
         }
