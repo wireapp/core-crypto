@@ -2,6 +2,8 @@
 
 [Introduction](introduction.md)
 
+[Release Notes](release_notes.md)
+
 # Concepts
 
 - [Proteus](concepts/proteus.md)

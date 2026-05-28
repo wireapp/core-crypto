@@ -1,8 +1,10 @@
-# Changelog
+# Release Notes
 
-## Unreleased
+## CoreCrypto 10
 
-### Changes
+### Unreleased
+
+#### Changes
 
 - `GroupInfo` and `Welcome` constructors are now fallible.
 
@@ -66,7 +68,7 @@
 
 - The `decode` tool has been extracted into its own repository at <https://github.com/wireapp/decode>.
 
-### Features
+#### Features
 
 - expose enitre read-only API in Kotlin on the `CoreCrypto` type. This allows reading data without opening a
   transaction.
@@ -142,7 +144,7 @@
 
   Affected platforms: android, ios, web
 
-#### New Credential API
+##### New Credential API
 
 - `Credential` is a first-class type representing a cryptographic identity.
   - It can be created at any time and lives in memory.
@@ -178,7 +180,7 @@
 - Added a new method to transaction context: `findCredentials` which produces a `CredentialRef` for each credential
   known by this client, efficiently filtering them by the specified criteria.
 
-#### Other
+##### Other
 
 - It is now safer to close a `Database`: instead of depending on a unique reference to the instance, it will just
   invalidate all other references to that instance.
@@ -196,7 +198,7 @@
 - The duplicate signature error when adding members to a conversation now contain debug information about which members
   had duplicate signatures.
 
-### Breaking Changes
+#### Breaking Changes
 
 - During decryption, core-crypto would automatically replay previously executed but unmerged (i.e., not yet acceped by
   the delivery service) operations. This behavior has changed: the responsibility of replaying any unmerged operations
@@ -388,55 +390,57 @@
 
   Affected platforms: all
 
-## v9.3.4 - 2026-04-30
+## CoreCrypto 9
+
+### v9.3.4 - 2026-04-30
 
 Fixes an issue that could cause _epoch observer_ events to be emitted for epoch changes that would not (yet) actually be
 persisted to the CoreCrypto database. This is relevant if the CoreCrypto instance is used inside the event handler of
 the _epoch observer_ (e.g., to update the exported secret). If you created a CoreCrypto transaction inside the handler
 and didn't use the CoreCrypto instance directly, this fix is irrelevant.
 
-## v9.3.3 - 2026-03-31
+### v9.3.3 - 2026-03-31
 
 - no more errors when deleting a non-existent credential
 
-## v9.3.2 - 2026-03-18
+### v9.3.2 - 2026-03-18
 
 - serialize structs into camelCase
 
-## v9.3.1 - 2026-03-18
+### v9.3.1 - 2026-03-18
 
 Fixes an enum representation bug on web.
 
-## v9.3.0 - 2026-02-20
+### v9.3.0 - 2026-02-20
 
 Lidl compat: Ios and Android can now export a compacted version of the CC database, retaining its encryption. This is
 only relevant for Lidl builds and should be ignored by everyone else.
 
-## v9.2.1 - 2026-02-17
+### v9.2.1 - 2026-02-17
 
 Upgrades openssl to version 3.5.5 (used on Android and iOS for encryption at rest).
 
-## v9.2.0 - 2026-02-05
+### v9.2.0 - 2026-02-05
 
 - Kotlin: expose the enitre read-only API on the `CoreCrypto` type. This allows performing arbitrary read-only
   operations on data while a transaction is running (e.g., in an `EpochObserver` event).
 - Kotlin: Introduce `KotlinInstant` type
 
-## v9.1.3 - 2025-12-18
+### v9.1.3 - 2025-12-18
 
 Upgrades the binding generator (uniffi 0.29.5) to include a crash fix for Android
 
-## v9.1.2 - 2025-11-05
+### v9.1.2 - 2025-11-05
 
 This release fixes a bug in the TypeScript bindings where the commit delay could in some situations be undefined when
 receiving a proposal.
 
-## v9.1.1 - 2025-10-24
+### v9.1.1 - 2025-10-24
 
 This release fixes the issue where `libcore_crypto_ffi.so` had segments aligned on 4k instead of 16k on Android
 platforms.
 
-## v9.1.0 - 2025-09-29
+### v9.1.0 - 2025-09-29
 
 > [!NOTE]
 > Even though this is a minor version bump, it contains a breaking change. See below for more information.
@@ -445,11 +449,11 @@ platforms.
 - fix the message rejected reason not being propagated on web
 - improvements to logs when epochs advance
 
-### Features
+#### Features
 
 - Web: structural errors
 
-  #### Example Usage
+  ##### Example Usage
 
   Extract the abort reason given via an `MlsTransportResponse`
 
@@ -481,29 +485,29 @@ platforms.
   }
   ```
 
-### Bug Fixes
+#### Bug Fixes
 
 - Web: fixed the abort reason of an `MlsTransportResponse` not being forwarded to rust.
 
-### Breaking Changes
+#### Breaking Changes
 
 - `proteusErrorCode` field was removed from the root error type, you can get it from the nested context now (see above).
   Affected platforms: web
 
-## v9.0.1 - 2025-09-18
+### v9.0.1 - 2025-09-18
 
-### Breaking Changes
+#### Breaking Changes
 
 - v9.0.0 had erroneously renamed `migrateDatabaseKeyTypeToBytes` to `migrateDbKeyTypeToBytes`. This has been fixed, and
   `migrateDatabaseKeyTypeToBytes` is usable again on all platforms.
 
   Affected platforms: Android
 
-### Bug Fixes
+#### Bug Fixes
 
 - Kotlin documentation is now correctly generated and deployed.
 
-## v9.0.0 - 2025-09-16
+### v9.0.0 - 2025-09-16
 
 - we're now tying the Kotlin wrapper more closely to the generated bindings which allows for greater velocity when
   making changes in code that affects our API - this causes most of the breaking changes in this release
@@ -516,7 +520,7 @@ platforms.
 > In this release we include a fix for missing artifacts in our Web release. The faulty release process affects all
 > `8.x` versions. Therefore, instead of migrating from any version < `8.x` to `8.x`, directly migrate to this version.
 
-### Breaking Changes
+#### Breaking Changes
 
 - Removed support for migrating CoreCrypto database to version 1.
 
@@ -646,12 +650,14 @@ platforms.
   - When pattern-matching the affected error types, add argument labels
   - When accessing inner error values, add field names
 
-### Features
+#### Features
 
 - In our Swift bindings we are now protecting against concurrent access from multiple core crypto instances.
 - In the decode tool we add support for listing members or identities present in a group info.
 
-## v8.0.3 - 2025-08-12
+## CoreCrypto 8
+
+### v8.0.3 - 2025-08-12
 
 This is only relevant for Kotlin.
 
@@ -663,25 +669,25 @@ Adds `ClientId.toString()`.
 
 Changes `ClientId.value` from `ByteArray` to the generated FFI type `com.wire.crypto.uniffi.ClientId`
 
-## v8.0.2 - 2025-07-23
+### v8.0.2 - 2025-07-23
 
 This is only relevant for Kotlin.
 
 Adds `MLSKeyPackage.copyBytes()`.
 
-## v8.0.1 - 2025-07-23
+### v8.0.1 - 2025-07-23
 
 This release is relevant only for Kotlin. It adds several pseudo-constructors and accessors for newtypes around byte
 vectors.
 
 For other platforms, no relevant changes are included.
 
-## v8.0.0 - 2025-07-17
+### v8.0.0 - 2025-07-17
 
 This release contains the complete API necessary for history sharing in conversations. We've improved the generated
 types in bindings to be more typesafe, and we've added the feature to rotate the key used for the core crypto database.
 
-### Breaking changes
+#### Breaking changes
 
 - Removed `canClose()`, and `isLocked()`.
 
@@ -795,37 +801,39 @@ types in bindings to be more typesafe, and we've added the feature to rotate the
 
   These types appear to provide no type safety benefits, instead only adding a bit of friction.
 
-### Features
+#### Features
 
 - Support Android environments with 16k page size
 - Added a module-level function `updateDatabaseKey`, to update the key of an existing CoreCrypto database
 - Support for history sharing which can be enabled by calling `enableHistorySharing()` and disabled again by calling
   `disableHistorySharing()`.
 
-## v7.0.2 - 2025-07-07
+## CoreCrypto 7
+
+### v7.0.2 - 2025-07-07
 
 Upgrade OpenMLS to fix a bug where the ratchet tree would sometimes become corrupt leading to broken MLS groups.
 
-### Bug Fixes
+#### Bug Fixes
 
 - update openmls [WPB-18569] (7ca7ba7)
 
-## v7.0.1 - 2025-06-02
+### v7.0.1 - 2025-06-02
 
-### Bug Fixes
+#### Bug Fixes
 
 - initWasm was being called with the wrong property field. (ca1706d)
 - allow registering epoch observer before calling mls_init (3f0605a)
 
-## v7.0.0 - 2025-05-21
+### v7.0.0 - 2025-05-21
 
-### Breaking changes
+#### Breaking changes
 
 The typescript bindings no longer implicitly load the wasm module when importing the core crypto module. To replace this
 behaviour the `async initWasmModule()` function has been added, which must be called before any other core crypto
 function.
 
-### Features
+#### Features
 
 - remove top level await and expose async init method instead (ce6e566)
 - expose `historyClient` constructor to swift (22d98de)
@@ -836,25 +844,27 @@ function.
 - add `fn history_client(HistorySecret) -> CoreCrypto` (8b7b7d4)
 - add `fn generate_history_secret` (a998dec)
 
-### Bug Fixes
+#### Bug Fixes
 
 - crypto-ffi: fix naming and attributes of WelcomeBundle fields on Wasm (1b2e88b)
 - prevent cancellations during transactions (Kotlin) (75217d5)
 - prevent cancellations during transactions (Kotlin) (ae621b7)
 
-## v6.0.1 - 2025-05-07
+## CoreCrypto 6
 
-### Bug Fixes
+### v6.0.1 - 2025-05-07
+
+#### Bug Fixes
 
 - swift publishing CI action (d1030e1)
 
-## v6.0.0 - 2025-05-07
+### v6.0.0 - 2025-05-07
 
 - Changed the core crypto database key format, to enable validation of the same and ensure consistency between platforms
 - Added a function for each platform to migrate from the old to the new key type
 - Several more bug fixes, including prevention of the _pending commit_ error
 
-### Breaking changes
+#### Breaking changes
 
 - Changed the core crypto database key format
 
@@ -868,36 +878,36 @@ function.
 
   Note: Instantiating this version of core crypto will fail before you call the migration function.
 
-## v5.4.0 - 2025-05-14
+### v5.4.0 - 2025-05-14
 
 Kotlin bindings only: transactions are now
 [`NonCancellable`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/),
 as [required by Uniffi](https://mozilla.github.io/uniffi-rs/latest/futures.html#cancelling-async-code). This prevents a
 category of bug where Kotlin thinks a transaction has been cancelled, while Rust thinks it is still running.
 
-## v5.3.0- 2025-04-29
+### v5.3.0- 2025-04-29
 
-### Bug Fixes
+#### Bug Fixes
 
 - re-throw inner error which cancelled the transaction (Swift) (0c282b2)
 
-## v5.2.0 - 2025-04-15
+### v5.2.0 - 2025-04-15
 
-### Bug Fixes
+#### Bug Fixes
 
 - add registerEpochObserver to CoreCryptoProtocol (eadf388)
 - create an interface for `ConversationConfiguration` (b1e82bf)
 - swift publishing failing due to not running on latest macos runner (dcc1890)
 
-## v5.1.0 - 2025-04-03
+### v5.1.0 - 2025-04-03
 
-### Bug Fixes
+#### Bug Fixes
 
 - broken swift bindings by publishing uniffi framework separately (2b950cc)
 - don't refer to the internal uniffi EpochObserver type in the public API (7833300)
 - re-expose proteus_reload_session which removed by mistake (36f2b87)
 
-## v5.0.0 - 2025-03-21
+### v5.0.0 - 2025-03-21
 
 New Swift bindings which are more ergonomic and allows for better testing by exposing the transaction context as a
 protocol.
@@ -905,23 +915,25 @@ protocol.
 New API for observing epoch changes through a callback API: `registerEpochObserver`. After adopting this API clients can
 remove their own epoch observers.
 
-### Breaking changes
+#### Breaking changes
 
 - New Swift bindings are replacing the old Swift bindings.
 
-## v4.2.3 - 2025-03-14
+## CoreCrypto 4
+
+### v4.2.3 - 2025-03-14
 
 - fix android publishing to maven central
 
-## v4.2.2 - 2025-03-14
+### v4.2.2 - 2025-03-14
 
 - fix publishing to maven central
 
-## v4.2.1 - 2025-03-14
+### v4.2.1 - 2025-03-14
 
 - expose `proteusCryptoboxMigrate()` [WPB-16549] (682b9fe)
 
-## v4.2.0 - 2025-02-28
+### v4.2.0 - 2025-02-28
 
 - The Android release once again bundles API docs.
 - The Kotlin bindings have received several API fixes in particular:
@@ -930,20 +942,20 @@ remove their own epoch observers.
 - The Typescript bindings now correctly expose WireIdentity and X509Identity.
 - The code base has migrated to Rust 2024 edition.
 
-## v4.1.0 - 2025-02-07
+### v4.1.0 - 2025-02-07
 
 - Add the capability to handle the case where a proposal-referencing commit arrives before the proposals it references.
 
-### (Semi-) Breaking changes
+#### (Semi-) Breaking changes
 
 - For the case mentioned above, the corresponding error type `BufferedCommit` has been added.
   - Depending on the error model, this can be a breaking change.
 
-## v4.0.1 - 2025-02-05
+### v4.0.1 - 2025-02-05
 
 - support entity derive for tables with hex ids (0bd3676)
 
-## v4.0.0 - 2025-01-28
+### v4.0.0 - 2025-01-28
 
 - All errors crossing the FFI boundary are now logged.
 - An iOS client has been added to internal interop tests, which means we now test the entire FFI stack on iOS.
@@ -953,7 +965,7 @@ remove their own epoch observers.
 - A number of improvements to Kotlin and Javascript bindings, making the bindings more consistent.
 - The `decode` tool gained support for decoding MLS messages.
 
-### Breaking changes
+#### Breaking changes
 
 - Deprecated functions on the `CoreCrypto` type that were automatically creating transactions have been removed.
 
@@ -1042,12 +1054,14 @@ remove their own epoch observers.
 
   Migration: drop all calls to removed functions as they are no longer necessary with the new MLS transport interface.
 
-## v3.1.1 - 2025-04-15
+## CoreCrypto 3
+
+### v3.1.1 - 2025-04-15
 
 - This release bumps the version of rusty-jwt-tools to 0.13.0, which includes additional end-to-end identity tests and
   test markers relevant to Bund.
 
-## v3.1.0 - 2025-02-12
+### v3.1.0 - 2025-02-12
 
 - Add a test case mimicking a real life bug ([WPB-15810]), demonstrating that in some cases it was possible to generate
   errors by swapping the ordering of two messages.
@@ -1066,27 +1080,29 @@ remove their own epoch observers.
   If the required proposal is never delivered, however, the client will eventually desync as the commit will never be
   processed. Clients should be on the lookout for this case and trigger their rejoin protocol in that event.
 
-## v3.0.2 - 2025-01-31
+### v3.0.2 - 2025-01-31
 
 - Fix a bug which could cause certain errors to generate spurious log lines of the form
 
   > Cannot build CoreCryptoError, falling back to standard Error! ctx: Incoming message is from an epoch too far in the
   > future to buffer.
 
-## v3.0.1 - 2025-01-27
+### v3.0.1 - 2025-01-27
 
 - Emit info log with context when buffering, restoring, or clearing buffered messages
 
-## v3.0.0 - 2024-12-11
+### v3.0.0 - 2024-12-11
 
 - Fix the 'transaction in progress' error when there was an attempt to perform multiple transactions in parallel. This
   will no longer throw an error, instead the transactions will be queued and performed serially one after another.
 
-### Breaking changes
+#### Breaking changes
 
 - Added the missing MLS error case OrphanWelcome.
 
-## v2.0.0 - 2024-12-02
+## CoreCrypto 2
+
+### v2.0.0 - 2024-12-02
 
 - The number of public errors has been reduced and simplified. It's no longer necessary to use the
   `proteus_last_error_code` function, since thrown error should contain all the information.
@@ -1094,7 +1110,7 @@ remove their own epoch observers.
   the form of a JSON Object string.
 - It's now possible to change the logger and log level at runtime (see `setLogLevel` and `setLogger`).
 
-### Breaking changes
+#### Breaking changes
 
 - Dropped support for `i686-linux-android` target.
 - `CoreCryptoLogger` takes an additional `context` parameter.
