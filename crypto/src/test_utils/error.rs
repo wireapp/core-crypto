@@ -8,7 +8,7 @@ pub enum Error {
     #[error("this was not supposed to happen")]
     ImplementationError,
     #[error(transparent)]
-    Mls(#[from] crate::MlsError),
+    Mls(#[from] crate::OpenMlsError),
     #[error(transparent)]
     Keystore(#[from] crate::KeystoreError),
     #[error("{0}")]

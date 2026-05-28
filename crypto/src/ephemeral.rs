@@ -29,8 +29,8 @@ use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
     CipherSuite, ClientId, ClientIdRef, CoreCrypto, CoreCryptoTransportNotImplementedProvider, Credential, Error,
-    MlsError, RecursiveError, Result, Session,
-    mls_provider::{DatabaseKey, MlsCryptoProvider},
+    OpenMlsError, RecursiveError, Result, Session,
+    mls_provider::{DatabaseKey, CryptoProvider},
 };
 
 /// We always instantiate history clients with this prefix in their client id, so
@@ -105,7 +105,7 @@ pub(crate) async fn generate_history_secret(ciphersuite: CipherSuite) -> Result<
         .map_err(RecursiveError::transaction("generating keypackage"))?;
     let key_package = KeyPackageSecretEncapsulation::load(&session.crypto_provider, key_package)
         .await
-        .map_err(MlsError::wrap("encapsulating key package"))?;
+        .map_err(OpenMlsError::wrap("encapsulating key package"))?;
 
     // we don't need to finish the transaction here--the point of the ephemeral CC was that no mutations would be saved
     // there
@@ -146,7 +146,7 @@ impl CoreCrypto {
             .map_err(RecursiveError::transaction("creating new transaction"))?;
 
         // store the client id (with some other stuff)
-        let mls_backend = MlsCryptoProvider::new(database.clone());
+        let mls_backend = CryptoProvider::new(database.clone());
         let transport = Arc::new(CoreCryptoTransportNotImplementedProvider::default());
         let session = Session::new(
             history_secret.client_id.clone(),

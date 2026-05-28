@@ -5,7 +5,7 @@ use openmls::{
 use wire_e2e_identity::parse_json_jwk;
 
 use super::{Error, Result};
-use crate::{MlsError, RecursiveError, mls_provider::CRYPTO};
+use crate::{OpenMlsError, RecursiveError, mls_provider::CRYPTO};
 
 const WIRE_SERVER_IDENTITY: &str = "wire-server";
 
@@ -43,9 +43,9 @@ impl ExternalSender {
     pub fn parse_public_key(key: &[u8], signature_scheme: SignatureScheme) -> Result<ExternalSender> {
         CRYPTO
             .validate_signature_key(signature_scheme, key)
-            .map_err(MlsError::wrap("validating signature key"))?;
+            .map_err(OpenMlsError::wrap("validating signature key"))?;
         let key = OpenMlsSignaturePublicKey::new(key.into(), signature_scheme)
-            .map_err(MlsError::wrap("creating new signature public key"))?;
+            .map_err(OpenMlsError::wrap("creating new signature public key"))?;
         Ok(MlsExternalSender::new(key.into(), MlsCredential::new_basic(WIRE_SERVER_IDENTITY.into())).into())
     }
 

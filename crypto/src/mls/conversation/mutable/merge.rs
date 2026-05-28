@@ -30,7 +30,7 @@
 use core_crypto_keystore::entities::StoredEncryptionKeyPair;
 
 use super::{ConversationMut, Result};
-use crate::{MlsError, mls::conversation::Error};
+use crate::{OpenMlsError, mls::conversation::Error};
 
 impl ConversationMut {
     /// Apply a pending commit
@@ -43,7 +43,7 @@ impl ConversationMut {
             group
                 .merge_pending_commit(provider)
                 .await
-                .map_err(MlsError::wrap("merging pending commit"))?;
+                .map_err(OpenMlsError::wrap("merging pending commit"))?;
 
             // ..so if there's any, we clear them after the commit is merged
             for oln in &previous_own_leaf_nodes {

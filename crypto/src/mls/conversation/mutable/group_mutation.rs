@@ -3,7 +3,7 @@ use openmls::group::{InnerState, MlsGroup};
 
 use super::{ConversationMut, Result};
 use crate::{
-    KeystoreError, MlsConversationConfiguration, RecursiveError,
+    KeystoreError, ConversationConfiguration, RecursiveError,
     mls::conversation::{ConversationIdRef, ImmutableConversation},
 };
 
@@ -28,7 +28,7 @@ impl ConversationMut {
             &Database,
             &mut MlsGroup,
             &ConversationIdRef,
-            &MlsConversationConfiguration,
+            &ConversationConfiguration,
         ) -> Result<T>,
     ) -> Result<T> {
         // we can't get the database if the transaction context has been invalidated,
@@ -71,7 +71,7 @@ impl ConversationMut {
             &Database,
             &mut MlsGroup,
             &ConversationIdRef,
-            &MlsConversationConfiguration,
+            &ConversationConfiguration,
         ) -> Result<T>,
     ) -> Result<T> {
         self.mutate_group(operation).await

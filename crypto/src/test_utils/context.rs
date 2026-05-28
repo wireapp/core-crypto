@@ -17,7 +17,7 @@ use wire_e2e_identity::{
 use x509_cert::der::Encode;
 
 use crate::{
-    CertificateBundle, CipherSuite, CredentialFindFilters, CredentialRef, CredentialType, MlsDecryptMessage,
+    CertificateBundle, CipherSuite, CredentialFindFilters, CredentialRef, CredentialType, DecryptedMessage,
     WireIdentity,
     mls::credential::{Credential, ext::CredentialExt},
     test_utils::{SessionContext, TestContext, x509::X509Certificate},
@@ -226,7 +226,7 @@ impl SessionContext {
         &self,
         case: &TestContext,
         expected_credential_ref: &CredentialRef,
-        decrypted: &MlsDecryptMessage,
+        decrypted: &DecryptedMessage,
     ) {
         let database = self.transaction.database().await.unwrap();
         let expected_credential = expected_credential_ref.load(&database).await.unwrap();

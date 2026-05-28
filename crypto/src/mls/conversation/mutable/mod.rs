@@ -15,7 +15,7 @@ use openmls::prelude::group_info::GroupInfo;
 
 use super::{Error, Result};
 use crate::{
-    LeafError, MlsCryptoProvider, MlsGroupInfoBundle, MlsTransport, RecursiveError, Session,
+    CryptoProvider, GroupInfoBundle, LeafError, MlsTransport, RecursiveError, Session,
     mls::{conversation::ImmutableConversation, credential::Credential},
     transaction_context::TransactionContext,
 };
@@ -52,7 +52,7 @@ impl ConversationMut {
             .map_err(Into::into)
     }
 
-    async fn crypto_provider(&self) -> Result<MlsCryptoProvider> {
+    async fn crypto_provider(&self) -> Result<CryptoProvider> {
         self.tx_context
             .crypto_provider()
             .await
@@ -77,9 +77,9 @@ impl ConversationMut {
             .map_err(Into::into)
     }
 
-    fn group_info(group_info: Option<GroupInfo>) -> Result<MlsGroupInfoBundle> {
+    fn group_info(group_info: Option<GroupInfo>) -> Result<GroupInfoBundle> {
         let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
-        MlsGroupInfoBundle::try_new_full_plaintext(group_info)
+        GroupInfoBundle::try_new_full_plaintext(group_info)
     }
 }
 

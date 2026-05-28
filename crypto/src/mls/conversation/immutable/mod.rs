@@ -10,14 +10,14 @@ use async_lock::{RwLock, RwLockReadGuard};
 use openmls::group::MlsGroup;
 
 use super::{ConversationIdRef, Error, ExternalSenderKey, Result, SecretKey};
-use crate::{CipherSuite, ConversationId, CredentialRef, MlsConversationConfiguration, MlsError, Session};
+use crate::{CipherSuite, ConversationId, CredentialRef, ConversationConfiguration, OpenMlsError, Session};
 
 /// An ImmutableConversation exposes the read-only interface of an MLS conversation.
 #[derive(Debug, derive_more::Constructor)]
 pub struct ImmutableConversation {
     pub(in crate::mls::conversation) id: ConversationId,
     pub(in crate::mls::conversation) group: RwLock<MlsGroup>,
-    pub(in crate::mls::conversation) configuration: MlsConversationConfiguration,
+    pub(in crate::mls::conversation) configuration: ConversationConfiguration,
     session: Session,
 }
 
@@ -33,7 +33,7 @@ impl ImmutableConversation {
     }
 
     /// Returns the conversation's configuration
-    pub fn configuration(&self) -> &MlsConversationConfiguration {
+    pub fn configuration(&self) -> &ConversationConfiguration {
         &self.configuration
     }
 
@@ -76,7 +76,7 @@ impl ImmutableConversation {
                 key_length,
             )
             .map(Into::into)
-            .map_err(MlsError::wrap("exporting secret key"))
+            .map_err(OpenMlsError::wrap("exporting secret key"))
             .map_err(Into::into)
     }
 

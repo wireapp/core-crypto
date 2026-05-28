@@ -3,7 +3,7 @@
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 
 use super::{Error, Result, TransactionContext};
-use crate::{ConversationId, MlsConversationConfiguration};
+use crate::{ConversationId, ConversationConfiguration};
 
 impl TransactionContext {
     /// Create a conversation from a received MLS Welcome message
@@ -26,7 +26,7 @@ impl TransactionContext {
             ));
         };
 
-        let configuration = MlsConversationConfiguration {
+        let configuration = ConversationConfiguration {
             ciphersuite: welcome.ciphersuite().into(),
             ..Default::default()
         };

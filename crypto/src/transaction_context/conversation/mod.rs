@@ -9,7 +9,7 @@ use openmls::group::MlsGroup;
 
 use super::{Error, Result, TransactionContext};
 use crate::{
-    CredentialRef, KeystoreError, LeafError, MlsConversationConfiguration, MlsError, RecursiveError,
+    CredentialRef, KeystoreError, LeafError, ConversationConfiguration, OpenMlsError, RecursiveError,
     mls::conversation::{ConversationIdRef, ConversationMut, PendingConversation},
 };
 
@@ -76,7 +76,7 @@ impl TransactionContext {
         &self,
         id: &ConversationIdRef,
         credential_ref: &CredentialRef,
-        configuration: MlsConversationConfiguration,
+        configuration: ConversationConfiguration,
     ) -> Result<()> {
         let database = &self.database().await?;
         let provider = &self.crypto_provider().await?;
@@ -103,7 +103,7 @@ impl TransactionContext {
             credential.to_mls_credential_with_key(),
         )
         .await
-        .map_err(MlsError::wrap("creating group with id"))?;
+        .map_err(OpenMlsError::wrap("creating group with id"))?;
 
         self.persist_conversation_from_mls_group(group, configuration).await?;
 

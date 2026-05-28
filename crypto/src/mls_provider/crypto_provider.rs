@@ -19,7 +19,7 @@ use sha2::{Digest, Sha256, Sha384, Sha512};
 use signature::digest::typenum::Unsigned;
 use tls_codec::SecretVLBytes;
 
-use super::{EntropySeed, MlsProviderError};
+use super::{EntropySeed, Error};
 
 /// Singleton for `RustCrypto`
 /// Because of the reseed feature we have to use this
@@ -52,8 +52,8 @@ impl RustCrypto {
         }
     }
 
-    pub(crate) fn reseed(&self, seed: Option<EntropySeed>) -> Result<(), MlsProviderError> {
-        let mut val = self.rng.write().map_err(|_| MlsProviderError::RngLockPoison)?;
+    pub(crate) fn reseed(&self, seed: Option<EntropySeed>) -> Result<(), Error> {
+        let mut val = self.rng.write().map_err(|_| Error::RngLockPoison)?;
         *val = rand_chacha::ChaCha20Rng::from_seed(seed.unwrap_or_default().0);
         Ok(())
     }
@@ -647,28 +647,26 @@ mod hpke_core {
 }
 
 impl OpenMlsRand for RustCrypto {
-    type Error = MlsProviderError;
+    type Error = Error;
 
     type RandImpl = rand_chacha::ChaCha20Rng;
     type BorrowTarget<'a> = RwLockWriteGuard<'a, Self::RandImpl>;
 
     fn borrow_rand(&self) -> Result<Self::BorrowTarget<'_>, Self::Error> {
-        self.rng.write().map_err(|_| MlsProviderError::RngLockPoison)
+        self.rng.write().map_err(|_| Error::RngLockPoison)
     }
 
     fn random_array<const N: usize>(&self) -> Result<[u8; N], Self::Error> {
         let mut rng = self.borrow_rand()?;
         let mut out = [0u8; N];
-        rng.try_fill_bytes(&mut out)
-            .map_err(|_| MlsProviderError::UnsufficientEntropy)?;
+        rng.try_fill_bytes(&mut out).map_err(|_| Error::UnsufficientEntropy)?;
         Ok(out)
     }
 
     fn random_vec(&self, len: usize) -> Result<Vec<u8>, Self::Error> {
         let mut rng = self.borrow_rand()?;
         let mut out = vec![0u8; len];
-        rng.try_fill_bytes(&mut out)
-            .map_err(|_| MlsProviderError::UnsufficientEntropy)?;
+        rng.try_fill_bytes(&mut out).map_err(|_| Error::UnsufficientEntropy)?;
         Ok(out)
     }
 }

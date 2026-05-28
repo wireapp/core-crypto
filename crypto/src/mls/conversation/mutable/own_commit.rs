@@ -7,7 +7,7 @@ use openmls::{
 use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{ConversationMut, Error, Result};
-use crate::{MlsDecryptMessage, RecursiveError, mls::credential::ext::CredentialExt};
+use crate::{DecryptedMessage, RecursiveError, mls::credential::ext::CredentialExt};
 
 impl ConversationMut {
     /// Returns the confirmation tag from a public message that is an own commit.
@@ -43,7 +43,7 @@ impl ConversationMut {
             .ok_or(Error::MlsMessageInvalidState("Message confirmation tag not present"))
     }
 
-    pub(crate) async fn handle_own_commit(&mut self, ct: &ConfirmationTag) -> Result<MlsDecryptMessage> {
+    pub(crate) async fn handle_own_commit(&mut self, ct: &ConfirmationTag) -> Result<DecryptedMessage> {
         let group = self.group().await;
         if group.pending_commit().is_none() {
             // This either means the DS replayed one of our commit OR we cleared a commit accepted by the DS
@@ -75,7 +75,7 @@ impl ConversationMut {
     /// When the incoming commit is sent by ourselves and it's the same as the local pending commit.
     /// This adapts [Self::commit_accepted] to return the same as
     /// [crate::mls::conversation::ConversationGuard::decrypt_message]
-    pub(crate) async fn merge_pending_commit(&mut self) -> Result<MlsDecryptMessage> {
+    pub(crate) async fn merge_pending_commit(&mut self) -> Result<DecryptedMessage> {
         self.commit_accepted().await?;
 
         let group = self.group().await;
@@ -95,7 +95,7 @@ impl ConversationMut {
             .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
-        Ok(MlsDecryptMessage {
+        Ok(DecryptedMessage {
             identity,
             delay: self.compute_next_commit_delay().await,
             is_active: self.group().await.is_active(),
@@ -111,7 +111,7 @@ mod tests {
     use openmls::prelude::{ProcessMessageError, ValidationError};
 
     use super::super::super::error::Error;
-    use crate::{CredentialRef, MlsError, test_utils::*};
+    use crate::{CredentialRef, OpenMlsError, test_utils::*};
 
     // If there’s a pending commit & it matches the incoming commit: mark pending commit as accepted
     #[apply(all_cred_cipher)]
@@ -235,7 +235,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     pub async fn should_fail_when_tampering_with_incoming_own_commit_same_as_pending(case: TestContext) {
-        use crate::MlsErrorKind;
+        use crate::OpenMlsErrorKind;
 
         if case.is_pure_ciphertext() {
             // The use case tested here requires inspecting your own commit.
@@ -268,8 +268,8 @@ mod tests {
             let error = decryption_result.unwrap_err();
             assert!(matches!(
                 error,
-                Error::Mls(MlsError {
-                    source: MlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
+                Error::Mls(OpenMlsError {
+                    source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
                         ValidationError::InvalidMembershipTag
                     )),
                     ..

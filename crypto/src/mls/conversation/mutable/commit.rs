@@ -6,15 +6,15 @@ use openmls::prelude::KeyPackageIn;
 
 use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
-    ClientId, ClientIdRef, CredentialRef, LeafError, MlsError, MlsGroupInfoBundle, RecursiveError,
+    ClientId, ClientIdRef, CredentialRef, LeafError, OpenMlsError, GroupInfoBundle, RecursiveError,
     mls::{
-        conversation::{ConversationMut, Error, Result, commit::MlsCommitBundle},
+        conversation::{ConversationMut, Error, Result, commit::CommitBundle},
         credential::Credential,
     },
 };
 
 impl ConversationMut {
-    pub(super) async fn send_and_merge_commit(&mut self, commit: MlsCommitBundle) -> Result<()> {
+    pub(super) async fn send_and_merge_commit(&mut self, commit: CommitBundle) -> Result<()> {
         let history_client_update_result = self.update_history_client().await?;
         if history_client_update_result == HistoryClientUpdateOutcome::CommitSentAndMerged {
             return Ok(());
@@ -43,7 +43,7 @@ impl ConversationMut {
     }
 
     /// Send the commit via [crate::MlsTransport] and handle the response.
-    pub(super) async fn send_commit(&mut self, commit: MlsCommitBundle) -> Result<()> {
+    pub(super) async fn send_commit(&mut self, commit: CommitBundle) -> Result<()> {
         let transport = self.transport().await?;
 
         transport
@@ -62,7 +62,7 @@ impl ConversationMut {
         Ok(())
     }
 
-    pub(super) async fn add_members_inner(&mut self, key_packages: Vec<KeyPackageIn>) -> Result<MlsCommitBundle> {
+    pub(super) async fn add_members_inner(&mut self, key_packages: Vec<KeyPackageIn>) -> Result<CommitBundle> {
         self.ensure_no_pending_commit().await?;
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
@@ -77,11 +77,11 @@ impl ConversationMut {
                         let affected_clients = Self::clients_with_duplicate_signature_keys(key_packages.as_ref());
                         Error::DuplicateSignature { affected_clients }
                     } else {
-                        MlsError::wrap("group add members")(err).into()
+                        OpenMlsError::wrap("group add members")(err).into()
                     }
                 })?;
 
-            Ok(MlsCommitBundle {
+            Ok(CommitBundle {
                 commit,
                 welcome: Some(welcome),
                 group_info: Self::group_info(group_info)?,
@@ -147,14 +147,14 @@ impl ConversationMut {
                 group
                     .remove_members(&backend, signer, &members)
                     .await
-                    .map_err(MlsError::wrap("group remove members"))
+                    .map_err(OpenMlsError::wrap("group remove members"))
                     .map_err(Into::into)
             })
             .await?;
 
         let group_info = Self::group_info(group_info)?;
 
-        self.send_and_merge_commit(MlsCommitBundle {
+        self.send_and_merge_commit(CommitBundle {
             commit,
             welcome,
             group_info,
@@ -184,7 +184,7 @@ impl ConversationMut {
 
     /// Self updates the own leaf node with the given credential and automatically commits. Pending proposals will be
     /// committed.
-    pub(crate) async fn set_credential_inner(&mut self, credential: &Credential) -> Result<MlsCommitBundle> {
+    pub(crate) async fn set_credential_inner(&mut self, credential: &Credential) -> Result<CommitBundle> {
         self.ensure_no_pending_commit().await?;
         let backend = self.crypto_provider().await?;
         let credential = credential.clone();
@@ -207,13 +207,13 @@ impl ConversationMut {
             let (commit, welcome, group_info) = group
                 .explicit_self_update(&backend, &credential.signature_key_pair, updated_leaf_node)
                 .await
-                .map_err(MlsError::wrap("group self update"))?;
+                .map_err(OpenMlsError::wrap("group self update"))?;
 
             // We should always have ratchet tree extension turned on hence GroupInfo should always be present
             let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
-            let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
+            let group_info = GroupInfoBundle::try_new_full_plaintext(group_info)?;
 
-            Ok(MlsCommitBundle {
+            Ok(CommitBundle {
                 welcome,
                 commit,
                 group_info,
@@ -233,7 +233,7 @@ impl ConversationMut {
         self.send_and_merge_commit(commit).await
     }
 
-    pub(crate) async fn commit_pending_proposals_inner(&mut self) -> Result<Option<MlsCommitBundle>> {
+    pub(crate) async fn commit_pending_proposals_inner(&mut self) -> Result<Option<CommitBundle>> {
         if self.group().await.pending_proposals().next().is_none() {
             return Ok(None);
         }
@@ -247,15 +247,15 @@ impl ConversationMut {
                 group
                     .commit_to_pending_proposals(&crypto_provider, signer)
                     .await
-                    .map_err(MlsError::wrap("group commit to pending proposals"))
+                    .map_err(OpenMlsError::wrap("group commit to pending proposals"))
                     .map_err(Into::into)
             })
             .await?;
-        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(
+        let group_info = GroupInfoBundle::try_new_full_plaintext(
             openmls_group_info.expect("creating a commit always produces a group info"),
         )?;
 
-        Ok(Some(MlsCommitBundle {
+        Ok(Some(CommitBundle {
             welcome,
             commit,
             group_info,
@@ -266,7 +266,7 @@ impl ConversationMut {
     pub(crate) async fn commit_inline_proposals(
         &mut self,
         proposals: Vec<openmls::prelude::Proposal>,
-    ) -> Result<Option<MlsCommitBundle>> {
+    ) -> Result<Option<CommitBundle>> {
         if proposals.is_empty() {
             return Ok(None);
         }
@@ -280,15 +280,15 @@ impl ConversationMut {
                 group
                     .commit_to_inline_proposals(provider, signer, proposals)
                     .await
-                    .map_err(MlsError::wrap("group commit to pending proposals"))
+                    .map_err(OpenMlsError::wrap("group commit to pending proposals"))
                     .map_err(Into::into)
             })
             .await?;
-        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(
+        let group_info = GroupInfoBundle::try_new_full_plaintext(
             openmls_group_info.expect("creating a commit always produces a group info"),
         )?;
 
-        Ok(Some(MlsCommitBundle {
+        Ok(Some(CommitBundle {
             welcome,
             commit,
             group_info,

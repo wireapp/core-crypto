@@ -2,7 +2,7 @@ use log::{debug, trace};
 use openmls::{messages::proposals::Proposal, prelude::LeafNodeIndex};
 
 use super::ImmutableConversation;
-use crate::MlsError;
+use crate::OpenMlsError;
 
 /// These constants intend to ramp up the delay and flatten the curve for later positions
 const DELAY_RAMP_UP_MULTIPLIER: f32 = 120.0;
@@ -59,7 +59,7 @@ impl ImmutableConversation {
                     acc += 1;
                 }
 
-                Result::<_, MlsError>::Ok(acc)
+                Result::<_, OpenMlsError>::Ok(acc)
             })
             .unwrap_or_default();
 

@@ -22,7 +22,7 @@ pub use self::{
     credential_type::CredentialType,
     error::Error,
 };
-use crate::{CipherSuite, ClientId, ClientIdRef, ClientIdentifier, MlsError, RecursiveError, mls_provider::CRYPTO};
+use crate::{CipherSuite, ClientId, ClientIdRef, ClientIdentifier, OpenMlsError, RecursiveError, mls_provider::CRYPTO};
 
 /// A cryptographic credential.
 ///
@@ -90,7 +90,7 @@ impl Credential {
         let signature_scheme = ciphersuite.signature_algorithm();
         let (private_key, public_key) = CRYPTO
             .signature_key_gen(signature_scheme)
-            .map_err(MlsError::wrap("generating signature key"))?;
+            .map_err(OpenMlsError::wrap("generating signature key"))?;
         let signature_key_pair = SignatureKeyPair::from_raw(signature_scheme, private_key, public_key);
 
         Ok(Self {
@@ -295,7 +295,7 @@ mod tests {
             .unwrap_err();
         assert!(innermost_source_matches!(
             err,
-            crate::MlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::MismatchKeypair),
+            crate::OpenMlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::MismatchKeypair),
         ));
     }
 
@@ -388,7 +388,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn should_fail_when_certificate_not_valid_yet(case: TestContext) {
-        use crate::MlsErrorKind;
+        use crate::OpenMlsErrorKind;
 
         if !case.is_x509() {
             return;
@@ -420,7 +420,7 @@ mod tests {
 
         assert!(innermost_source_matches!(
             err,
-            MlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::ExpiredCertificate),
+            OpenMlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::ExpiredCertificate),
         ))
     }
 

@@ -23,15 +23,15 @@ mod pending;
 mod welcome;
 
 pub use self::{
-    commit::MlsCommitBundle,
-    config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
+    commit::CommitBundle,
+    config::{ConversationConfiguration, CustomConfiguration, WirePolicy},
     error::{Error, Result},
-    group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
+    group_info::{GroupInfoBundle, GroupInfoEncryptionType, GroupInfoPayload, RatchetTreeType},
     id::{ConversationId, ConversationIdRef},
     immutable::ImmutableConversation,
     mutable::{
         ConversationMut,
-        decrypt::{MlsBufferedDecryptMessage, MlsDecryptMessage},
+        decrypt::{BufferedDecryptedMessage, DecryptedMessage},
     },
     welcome::WelcomeMessage,
 };
@@ -363,7 +363,7 @@ mod tests {
         use openmls::prelude::ExportSecretError;
 
         use super::*;
-        use crate::MlsErrorKind;
+        use crate::OpenMlsErrorKind;
 
         #[apply(all_cred_cipher)]
         pub async fn can_export_secret_key(case: TestContext) {
@@ -389,7 +389,7 @@ mod tests {
                 let error = result.unwrap_err();
                 assert!(innermost_source_matches!(
                     error,
-                    MlsErrorKind::MlsExportSecretError(ExportSecretError::KeyLengthTooLong)
+                    OpenMlsErrorKind::MlsExportSecretError(ExportSecretError::KeyLengthTooLong)
                 ));
             })
             .await

@@ -5,7 +5,7 @@ use openmls::group::MlsGroup;
 
 use super::Result;
 use crate::{
-    ConversationId, KeystoreError, MlsConversationConfiguration, Session, mls::conversation::ImmutableConversation,
+    ConversationId, KeystoreError, ConversationConfiguration, Session, mls::conversation::ImmutableConversation,
 };
 
 impl ImmutableConversation {
@@ -14,7 +14,7 @@ impl ImmutableConversation {
         let group: MlsGroup =
             core_crypto_keystore::deser(&buf).map_err(KeystoreError::wrap("deserializing group state"))?;
         let id = ConversationId::from(group.group_id().as_slice());
-        let configuration = MlsConversationConfiguration {
+        let configuration = ConversationConfiguration {
             ciphersuite: group.ciphersuite().into(),
             ..Default::default()
         };

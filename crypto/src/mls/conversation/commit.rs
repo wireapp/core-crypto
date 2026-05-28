@@ -8,7 +8,7 @@
 use openmls::prelude::MlsMessageOut;
 
 use super::{Error, Result};
-use crate::{MlsGroupInfoBundle, mls::conversation::WelcomeMessage};
+use crate::{GroupInfoBundle, mls::conversation::WelcomeMessage};
 
 /// Returned when a commit is created
 #[derive(Debug, Clone)]
@@ -18,19 +18,19 @@ pub struct CommitBundle {
     /// The commit message
     pub commit: MlsMessageOut,
     /// `GroupInfo` if the commit is merged
-    pub group_info: MlsGroupInfoBundle,
+    pub group_info: GroupInfoBundle,
     /// An encrypted message to fan out to all other conversation members in the new epoch
     pub encrypted_message: Option<Vec<u8>>,
 }
 
-impl MlsCommitBundle {
+impl CommitBundle {
     /// Unpacks this struct and serializes the commit
     ///
     /// 0 -> welcome
     /// 1 -> message
     /// 2 -> public group state
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes_triple(self) -> Result<(Option<WelcomeMessage>, Vec<u8>, MlsGroupInfoBundle)> {
+    pub fn to_bytes_triple(self) -> Result<(Option<WelcomeMessage>, Vec<u8>, GroupInfoBundle)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let welcome = self.welcome.map(Into::into);
         let commit = self
@@ -172,7 +172,7 @@ mod tests {
                 let conversation = case.create_conversation([&alice, &bob]).await.remove_notify(&bob).await;
                 let id = conversation.id().clone();
 
-                let MlsCommitBundle { welcome, .. } = alice.mls_transport().await.latest_commit_bundle().await;
+                let CommitBundle { welcome, .. } = alice.mls_transport().await.latest_commit_bundle().await;
                 assert!(welcome.is_none());
 
                 assert_eq!(conversation.member_count().await, 1);
@@ -225,7 +225,7 @@ mod tests {
 
                 // proposing the key update for alice
                 let conversation = conversation.update_notify().await;
-                let MlsCommitBundle { welcome, .. } = alice.mls_transport().await.latest_commit_bundle().await;
+                let CommitBundle { welcome, .. } = alice.mls_transport().await.latest_commit_bundle().await;
                 assert!(welcome.is_none());
 
                 let alice_new_keys = conversation.guard().await.encryption_keys().await;

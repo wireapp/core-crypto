@@ -7,14 +7,14 @@ use super::{Error, Result};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GroupInfoBundle {
     /// Indicates if the `payload` is encrypted or not
-    pub encryption_type: MlsGroupInfoEncryptionType,
+    pub encryption_type: GroupInfoEncryptionType,
     /// Indicates if the `payload` contains a full, partial or referenced [GroupInfo]
-    pub ratchet_tree_type: MlsRatchetTreeType,
+    pub ratchet_tree_type: RatchetTreeType,
     /// The [GroupInfo]
     pub payload: GroupInfoPayload,
 }
 
-impl MlsGroupInfoBundle {
+impl GroupInfoBundle {
     /// Creates a new instance with complete and unencrypted [GroupInfo]
     pub(crate) fn try_new_full_plaintext(gi: GroupInfo) -> Result<Self> {
         use tls_codec::Serialize as _;
@@ -24,15 +24,15 @@ impl MlsGroupInfoBundle {
             .tls_serialize_detached()
             .map_err(Error::tls_serialize("unencrypted mls message"))?;
         Ok(Self {
-            encryption_type: MlsGroupInfoEncryptionType::Plaintext,
-            ratchet_tree_type: MlsRatchetTreeType::Full,
+            encryption_type: GroupInfoEncryptionType::Plaintext,
+            ratchet_tree_type: RatchetTreeType::Full,
             payload: GroupInfoPayload::Plaintext(payload),
         })
     }
 }
 
 #[cfg(test)]
-impl MlsGroupInfoBundle {
+impl GroupInfoBundle {
     // test functions are not held to the same standard
     #![allow(missing_docs)]
 

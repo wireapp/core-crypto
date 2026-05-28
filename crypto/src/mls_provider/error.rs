@@ -19,7 +19,7 @@ pub enum Error {
 }
 
 #[allow(clippy::from_over_into)]
-impl Into<String> for MlsProviderError {
+impl Into<String> for Error {
     fn into(self) -> String {
         self.to_string()
     }
@@ -27,7 +27,7 @@ impl Into<String> for MlsProviderError {
 
 /// Note: You *will* be losing context when cloning the error, because errors should never be `Clone`able,
 /// but OpenMLS traits require it, so...let's do something that makes no sense.
-impl Clone for MlsProviderError {
+impl Clone for Error {
     fn clone(&self) -> Self {
         Self::StringError(self.to_string())
     }
@@ -35,25 +35,25 @@ impl Clone for MlsProviderError {
 
 /// Note: You should never test errors for equality because stacktraces can be different, yet we're
 /// constrained by OpenMLS to do this kind of things. So once again...
-impl PartialEq for MlsProviderError {
+impl PartialEq for Error {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
             // (MlsProviderError::KeystoreError(kse), MlsProviderError::KeystoreError(kse2)) => kse == kse2,
             (
-                MlsProviderError::EntropySeedLengthError { expected, actual },
-                MlsProviderError::EntropySeedLengthError {
+                Error::EntropySeedLengthError { expected, actual },
+                Error::EntropySeedLengthError {
                     expected: expected2,
                     actual: actual2,
                 },
             ) => expected == expected2 && actual == actual2,
-            (MlsProviderError::StringError(s), MlsProviderError::StringError(s2)) => s == s2,
-            (MlsProviderError::RngLockPoison, MlsProviderError::RngLockPoison) => true,
-            (MlsProviderError::UnsufficientEntropy, MlsProviderError::UnsufficientEntropy) => true,
-            (MlsProviderError::CertificateGenerationError, MlsProviderError::CertificateGenerationError) => true,
-            (MlsProviderError::UnsupportedSignatureScheme, MlsProviderError::UnsupportedSignatureScheme) => true,
+            (Error::StringError(s), Error::StringError(s2)) => s == s2,
+            (Error::RngLockPoison, Error::RngLockPoison) => true,
+            (Error::UnsufficientEntropy, Error::UnsufficientEntropy) => true,
+            (Error::CertificateGenerationError, Error::CertificateGenerationError) => true,
+            (Error::UnsupportedSignatureScheme, Error::UnsupportedSignatureScheme) => true,
             _ => false,
         }
     }
 }
 
-pub type MlsProviderResult<T> = Result<T, MlsProviderError>;
+pub type MlsProviderResult<T> = Result<T, Error>;

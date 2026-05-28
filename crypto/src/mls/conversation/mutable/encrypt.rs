@@ -3,7 +3,7 @@
 use openmls::prelude::MlsMessageOutBody;
 
 use super::{ConversationMut, Result};
-use crate::MlsError;
+use crate::OpenMlsError;
 
 impl ConversationMut {
     /// Encrypts a raw payload then serializes it to the TLS wire format.
@@ -40,12 +40,12 @@ impl ConversationMut {
         self.mutate_group(async |_, group, _, _| {
             let encrypted = group
                 .create_message(&backend, signer, message.as_ref())
-                .map_err(MlsError::wrap("creating encrypted message"))?;
+                .map_err(OpenMlsError::wrap("creating encrypted message"))?;
             // all application messages must be encrypted
             debug_assert!(matches!(encrypted.body, MlsMessageOutBody::PrivateMessage(_)));
             encrypted
                 .to_bytes()
-                .map_err(MlsError::wrap("constructing byte vector of encrypted message"))
+                .map_err(OpenMlsError::wrap("constructing byte vector of encrypted message"))
                 .map_err(Into::into)
         })
         .await

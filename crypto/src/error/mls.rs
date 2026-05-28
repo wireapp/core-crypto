@@ -114,7 +114,7 @@ pub enum OpenMlsErrorKind {
     GroupInfoError(#[from] openmls::messages::group_info::GroupInfoError),
     /// Provider Error
     #[error(transparent)]
-    ProviderError(#[from] crate::mls_provider::MlsProviderError),
+    ProviderError(#[from] crate::mls_provider::Error),
     /// Keystore Error
     #[error(transparent)]
     KeystoreError(#[from] core_crypto_keystore::CryptoKeystoreError),

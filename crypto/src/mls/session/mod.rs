@@ -17,12 +17,12 @@ pub use history_observer::HistoryObserver;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::{
-    ClientId, HistorySecret, ImmutableDatabase, LeafError, MlsError, MlsTransport, RecursiveError,
+    ClientId, HistorySecret, ImmutableDatabase, LeafError, OpenMlsError, MlsTransport, RecursiveError,
     mls::{
         conversation::{ConversationIdRef, ImmutableConversation},
-        conversation_cache::MlsConversationCache,
+        conversation_cache::ConversationCache,
     },
-    mls_provider::{EntropySeed, MlsCryptoProvider},
+    mls_provider::{EntropySeed, CryptoProvider},
 };
 
 /// A MLS Session enables a user device to communicate via the MLS protocol.
@@ -38,7 +38,7 @@ use crate::{
 #[derive(Clone, derive_more::Debug)]
 pub struct Session {
     id: ClientId,
-    pub(crate) crypto_provider: MlsCryptoProvider,
+    pub(crate) crypto_provider: CryptoProvider,
     pub(crate) transport: Arc<dyn MlsTransport + 'static>,
     database: ImmutableDatabase,
     #[debug("EpochObserver")]
@@ -49,14 +49,14 @@ pub struct Session {
     ///
     /// Shared across transactions for cache reuse;
     /// cleared on transaction rollback to avoid serving stale state.
-    pub(crate) conversation_cache: Arc<Mutex<MlsConversationCache>>,
+    pub(crate) conversation_cache: Arc<Mutex<ConversationCache>>,
 }
 
 impl Session {
     /// Create a new `Session`
     pub fn new(
         id: ClientId,
-        crypto_provider: MlsCryptoProvider,
+        crypto_provider: CryptoProvider,
         database: ImmutableDatabase,
         transport: Arc<dyn MlsTransport>,
     ) -> Self {
@@ -67,7 +67,7 @@ impl Session {
             database,
             epoch_observer: Arc::new(RwLock::new(None)),
             history_observer: Arc::new(RwLock::new(None)),
-            conversation_cache: Arc::new(Mutex::new(MlsConversationCache::new())),
+            conversation_cache: Arc::new(Mutex::new(ConversationCache::new())),
         }
     }
 
@@ -98,7 +98,7 @@ impl Session {
         self.crypto_provider
             .rand()
             .random_vec(len)
-            .map_err(MlsError::wrap("generating random vector"))
+            .map_err(OpenMlsError::wrap("generating random vector"))
             .map_err(Into::into)
     }
 
@@ -111,7 +111,7 @@ impl Session {
         self.crypto_provider
             .close()
             .await
-            .map_err(MlsError::wrap("closing connection with keystore"))
+            .map_err(OpenMlsError::wrap("closing connection with keystore"))
             .map_err(Into::into)
     }
 
@@ -124,7 +124,7 @@ impl Session {
     pub async fn reseed(&self, seed: Option<EntropySeed>) -> crate::mls::Result<()> {
         self.crypto_provider
             .reseed(seed)
-            .map_err(MlsError::wrap("reseeding mls backend"))
+            .map_err(OpenMlsError::wrap("reseeding mls backend"))
             .map_err(Into::into)
     }
 
@@ -135,7 +135,7 @@ impl Session {
             .key_package
             .store(&self.crypto_provider)
             .await
-            .map_err(MlsError::wrap("storing key package encapsulation"))?;
+            .map_err(OpenMlsError::wrap("storing key package encapsulation"))?;
 
         Ok(())
     }
@@ -151,13 +151,13 @@ mod tests {
     use core_crypto_keystore::{entities::*, traits::FetchFromDatabase};
 
     use super::*;
-    use crate::{KeystoreError, mls_provider::MlsCryptoProvider, transaction_context::test_utils::EntitiesCount};
+    use crate::{KeystoreError, mls_provider::CryptoProvider, transaction_context::test_utils::EntitiesCount};
 
     impl Session {
         // test functions are not held to the same documentation standard as proper functions
         #![allow(missing_docs)]
 
-        pub async fn find_keypackages(&self, backend: &MlsCryptoProvider) -> Result<Vec<openmls::prelude::KeyPackage>> {
+        pub async fn find_keypackages(&self, backend: &CryptoProvider) -> Result<Vec<openmls::prelude::KeyPackage>> {
             use core_crypto_keystore::CryptoKeystoreMls as _;
             let kps = backend
                 .key_store()

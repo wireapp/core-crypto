@@ -2,7 +2,7 @@ use openmls::{messages::group_info::VerifiableGroupInfo, prelude::Node};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use super::Result;
-use crate::{CredentialType, MlsError, RecursiveError, Session, transaction_context::TransactionContext};
+use crate::{CredentialType, OpenMlsError, RecursiveError, Session, transaction_context::TransactionContext};
 
 /// Indicates the state of a Conversation regarding end-to-end identity.
 ///
@@ -72,7 +72,7 @@ impl TransactionContext {
                 false,
             )
             .await
-            .map_err(MlsError::wrap("taking ratchet tree"))?;
+            .map_err(OpenMlsError::wrap("taking ratchet tree"))?;
         let mls_provider = self
             .crypto_provider()
             .await

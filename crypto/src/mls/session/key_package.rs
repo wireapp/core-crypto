@@ -56,7 +56,7 @@ mod tests {
     use openmls::prelude::{KeyPackageIn, ProtocolVersion};
     use openmls_traits::types::VerifiableCiphersuite;
 
-    use crate::{MlsConversationConfiguration, mls::key_package::KeypackageExt as _, test_utils::*};
+    use crate::{ConversationConfiguration, mls::key_package::KeypackageExt as _, test_utils::*};
 
     #[apply(all_cred_cipher)]
     async fn can_assess_keypackage_expiration(case: TestContext) {
@@ -98,7 +98,7 @@ mod tests {
             assert_eq!(kp.leaf_node().capabilities().versions(), &[ProtocolVersion::Mls10]);
             assert_eq!(
                 kp.leaf_node().capabilities().ciphersuites().to_vec(),
-                MlsConversationConfiguration::DEFAULT_SUPPORTED_CIPHERSUITES
+                ConversationConfiguration::DEFAULT_SUPPORTED_CIPHERSUITES
                     .iter()
                     .map(|c| VerifiableCiphersuite::from(*c))
                     .collect::<Vec<_>>()
@@ -107,7 +107,7 @@ mod tests {
             assert!(kp.leaf_node().capabilities().extensions().is_empty());
             assert_eq!(
                 kp.leaf_node().capabilities().credentials(),
-                MlsConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
+                ConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
             );
         })
         .await

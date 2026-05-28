@@ -5,7 +5,7 @@ use openmls::{
 };
 
 use crate::{
-    ConversationId, KeystoreError, LeafError, MlsConversationConfiguration, MlsError, RecursiveError,
+    ConversationId, KeystoreError, LeafError, ConversationConfiguration, OpenMlsError, RecursiveError,
     mls::conversation::{ConversationMut, Error as ConversationError, ImmutableConversation},
     transaction_context::{Result, TransactionContext},
 };
@@ -26,7 +26,7 @@ impl TransactionContext {
     pub(crate) async fn persist_conversation_from_mls_group(
         &self,
         mut group: MlsGroup,
-        configuration: MlsConversationConfiguration,
+        configuration: ConversationConfiguration,
     ) -> Result<ConversationMut> {
         let id = ConversationId::from(group.group_id().as_slice());
         let session = self.session().await.map_err(RecursiveError::transaction(
@@ -57,7 +57,7 @@ impl TransactionContext {
     pub(crate) async fn persist_conversation_from_welcome_message(
         &self,
         welcome: Welcome,
-        configuration: MlsConversationConfiguration,
+        configuration: ConversationConfiguration,
     ) -> Result<ConversationMut> {
         let mls_group_config =
             configuration
@@ -78,7 +78,7 @@ impl TransactionContext {
                 ) {
                     ConversationError::OrphanWelcome
                 } else {
-                    MlsError::wrap("group could not be created from welcome")(err).into()
+                    OpenMlsError::wrap("group could not be created from welcome")(err).into()
                 }
             })
             .map_err(RecursiveError::mls_conversation(

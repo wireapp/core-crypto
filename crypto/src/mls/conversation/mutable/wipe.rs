@@ -2,7 +2,7 @@ use core_crypto_keystore::CryptoKeystoreMls as _;
 use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::Result;
-use crate::{KeystoreError, MlsError, RecursiveError, mls::conversation::ConversationMut};
+use crate::{KeystoreError, OpenMlsError, RecursiveError, mls::conversation::ConversationMut};
 
 impl ConversationMut {
     /// Destroys a group locally
@@ -34,7 +34,7 @@ impl ConversationMut {
                 group
                     .remove_pending_proposal(database, &proposal)
                     .await
-                    .map_err(MlsError::wrap("removing pending proposal"))?;
+                    .map_err(OpenMlsError::wrap("removing pending proposal"))?;
             }
 
             Ok(())

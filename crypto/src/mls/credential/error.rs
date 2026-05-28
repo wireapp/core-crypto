@@ -40,7 +40,7 @@ pub enum Error {
     #[error(transparent)]
     Keystore(#[from] crate::KeystoreError),
     #[error(transparent)]
-    Mls(#[from] crate::MlsError),
+    Mls(#[from] crate::OpenMlsError),
     #[error(transparent)]
     Recursive(#[from] crate::RecursiveError),
     #[error("TLS serializing {item}")]

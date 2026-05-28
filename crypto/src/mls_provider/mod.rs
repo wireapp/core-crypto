@@ -10,7 +10,7 @@ mod error;
 
 pub(crate) use crypto_provider::CRYPTO;
 pub use crypto_provider::RustCrypto;
-pub use error::{MlsProviderError, MlsProviderResult};
+pub use error::{Error, MlsProviderResult};
 use openmls_traits::{
     authentication_service::{CredentialAuthenticationStatus, CredentialRef},
     crypto::OpenMlsCrypto,
@@ -39,7 +39,7 @@ impl EntropySeed {
     /// Create an entropy seed from the provided slice.
     pub fn try_from_slice(data: &[u8]) -> MlsProviderResult<Self> {
         if data.len() < Self::EXPECTED_LEN {
-            return Err(MlsProviderError::EntropySeedLengthError {
+            return Err(Error::EntropySeedLengthError {
                 actual: data.len(),
                 expected: Self::EXPECTED_LEN,
             });
@@ -116,7 +116,7 @@ pub struct CryptoProvider {
     auth_service: Arc<AuthenticationService>,
 }
 
-impl MlsCryptoProvider {
+impl CryptoProvider {
     /// Construct a crypto provider with defaults and a given [Database].
     ///
     /// See also:
@@ -169,7 +169,7 @@ impl MlsCryptoProvider {
     }
 }
 
-impl openmls_traits::OpenMlsCryptoProvider for MlsCryptoProvider {
+impl openmls_traits::OpenMlsCryptoProvider for CryptoProvider {
     type CryptoProvider = RustCrypto;
     type RandProvider = RustCrypto;
     type KeyStoreProvider = Database;
@@ -193,7 +193,7 @@ impl openmls_traits::OpenMlsCryptoProvider for MlsCryptoProvider {
 }
 
 /// Passthrough implementation of crypto functionality for references to `MlsCryptoProvider`.
-impl OpenMlsCrypto for &MlsCryptoProvider {
+impl OpenMlsCrypto for &CryptoProvider {
     fn supports(&self, ciphersuite: Ciphersuite) -> Result<(), CryptoError> {
         self.crypto.supports(ciphersuite)
     }

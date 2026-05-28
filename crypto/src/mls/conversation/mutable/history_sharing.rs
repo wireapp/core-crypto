@@ -4,7 +4,7 @@ use itertools::{Either, Itertools as _};
 use openmls::prelude::Sender;
 
 use super::{ConversationMut, Error, Result};
-use crate::{ClientIdRef, HistorySecret, MlsCommitBundle, RecursiveError};
+use crate::{ClientIdRef, HistorySecret, CommitBundle, RecursiveError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum HistoryClientUpdateOutcome {
@@ -34,7 +34,7 @@ impl ConversationMut {
     /// Bundle the history secret with the commit and send it.
     async fn send_new_history_client_commit(
         &mut self,
-        mut commit: MlsCommitBundle,
+        mut commit: CommitBundle,
         history_secret: HistorySecret,
     ) -> Result<()> {
         // Merge the commit locally so that we can encrypt the history secret with the new state.

@@ -7,7 +7,7 @@ mod wrapper;
 
 pub use keystore::KeystoreError;
 pub use leaf::LeafError;
-pub use mls::{MlsError, MlsErrorKind};
+pub use mls::{OpenMlsError, OpenMlsErrorKind};
 pub use proteus::{ProteusError, ProteusErrorKind};
 pub use recursive::{RecursiveError, ToRecursiveError};
 
@@ -51,7 +51,7 @@ pub enum Error {
     InvalidHistorySecret(&'static str),
     /// An external MLS operation failed
     #[error(transparent)]
-    Mls(#[from] MlsError),
+    OpenMls(#[from] OpenMlsError),
     /// E2EI error
     #[error(transparent)]
     E2eIdentity(#[from] wire_e2e_identity::E2eIdentityError),

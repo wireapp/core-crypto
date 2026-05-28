@@ -10,7 +10,7 @@ use super::{
     tmp_db_file,
     x509::{CertificateParams, X509TestChain, qualified_e2ei_cid, qualified_e2ei_cid_from_user_id},
 };
-pub use crate::{CipherSuite, CredentialType, MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy};
+pub use crate::{CipherSuite, ConversationConfiguration, CredentialType, CustomConfiguration, WirePolicy};
 use crate::{
     ClientId, ConnectionType, CredentialRef, Database, DatabaseKey, ExternalSender, test_utils::SessionContext,
 };
@@ -50,7 +50,7 @@ pub fn all_cred_cipher(case: TestContext) {}
 #[derive(Debug, Clone)]
 pub struct TestContext {
     pub credential_type: CredentialType,
-    pub cfg: MlsConversationConfiguration,
+    pub cfg: ConversationConfiguration,
     pub transport: Arc<dyn MlsTransportTestExt>,
     pub db: Option<(Database, Option<Arc<tempfile::TempDir>>)>,
     pub chain: Arc<RwLock<Option<X509TestChain>>>,
@@ -60,7 +60,7 @@ impl TestContext {
     pub fn new(credential_type: CredentialType, cs: openmls::prelude::Ciphersuite) -> Self {
         Self {
             credential_type,
-            cfg: MlsConversationConfiguration {
+            cfg: ConversationConfiguration {
                 ciphersuite: cs.into(),
                 ..Default::default()
             },
@@ -76,7 +76,7 @@ impl TestContext {
         self.cfg.ciphersuite.signature_algorithm()
     }
 
-    pub fn custom_cfg(&self) -> MlsCustomConfiguration {
+    pub fn custom_cfg(&self) -> CustomConfiguration {
         self.cfg.custom.clone()
     }
 
@@ -92,7 +92,7 @@ impl TestContext {
     pub fn default_x509() -> Self {
         Self {
             credential_type: CredentialType::X509,
-            cfg: MlsConversationConfiguration::default(),
+            cfg: ConversationConfiguration::default(),
             transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
             ..Default::default()
         }
@@ -100,7 +100,7 @@ impl TestContext {
 
     pub fn default_cipher() -> Self {
         let mut default = Self::default();
-        default.cfg.custom.wire_policy = MlsWirePolicy::Ciphertext;
+        default.cfg.custom.wire_policy = WirePolicy::Ciphertext;
         default
     }
 
@@ -113,7 +113,7 @@ impl TestContext {
     }
 
     pub fn is_pure_ciphertext(&self) -> bool {
-        matches!(self.cfg.custom.wire_policy, MlsWirePolicy::Ciphertext)
+        matches!(self.cfg.custom.wire_policy, WirePolicy::Ciphertext)
     }
 
     /// Create a new temporary directory and open a db there. Will be deleted on drop of [TestContext].
@@ -359,7 +359,7 @@ impl Default for TestContext {
     fn default() -> Self {
         Self {
             credential_type: CredentialType::Basic,
-            cfg: MlsConversationConfiguration::default(),
+            cfg: ConversationConfiguration::default(),
             transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
             db: None,
             chain: Arc::default(),

@@ -15,7 +15,7 @@ pub enum Error {
     #[error(transparent)]
     Keystore(#[from] crate::KeystoreError),
     #[error(transparent)]
-    Mls(#[from] crate::MlsError),
+    Mls(#[from] crate::OpenMlsError),
     #[error("{0}")]
     Leaf(#[from] crate::LeafError),
     #[error(transparent)]

@@ -27,7 +27,7 @@ pub(crate) struct ConversationCache {
     entries: LruMap<ConversationId, Arc<ImmutableConversation>, ByLength>,
 }
 
-impl MlsConversationCache {
+impl ConversationCache {
     /// Maximum number of conversations kept in memory before LRU eviction.
     const CAPACITY: u32 = 200;
 
@@ -113,7 +113,7 @@ impl MlsConversationCache {
     }
 }
 
-impl std::fmt::Debug for MlsConversationCache {
+impl std::fmt::Debug for ConversationCache {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MlsConversationCache")
             .field("len", &self.entries.len())

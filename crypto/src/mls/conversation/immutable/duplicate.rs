@@ -5,7 +5,7 @@
 use openmls::prelude::{ContentType, FramedContentBodyIn, Proposal, PublicMessageIn, Sender};
 
 use super::{Error, ImmutableConversation, Result};
-use crate::MlsError;
+use crate::OpenMlsError;
 
 impl ImmutableConversation {
     pub(crate) async fn is_duplicate_message(&self, msg: &PublicMessageIn) -> Result<bool> {
@@ -24,7 +24,7 @@ impl ImmutableConversation {
                     .group()
                     .await
                     .compute_confirmation_tag(&self.session.crypto_provider)
-                    .map_err(MlsError::wrap("computing confirmation tag"))?;
+                    .map_err(OpenMlsError::wrap("computing confirmation tag"))?;
                 Ok(msg_ct == &group_ct)
             }
             (ContentType::Proposal, Sender::Member(_) | Sender::NewMemberProposal) => {

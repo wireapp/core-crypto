@@ -5,7 +5,7 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize as _;
 
 use super::{ConversationMut, RecursionPolicy, Result};
-use crate::{KeystoreError, MlsDecryptMessage, mls::conversation::Error};
+use crate::{KeystoreError, DecryptedMessage, mls::conversation::Error};
 
 impl ConversationMut {
     /// Cache the bytes of a buffered commit in the backend.
@@ -48,7 +48,7 @@ impl ConversationMut {
         &mut self,
         commit: impl AsRef<[u8]>,
         recursion_policy: RecursionPolicy,
-    ) -> Result<MlsDecryptMessage> {
+    ) -> Result<DecryptedMessage> {
         info!(group_id = self.id().to_owned(); "attempting to process buffered commit");
 
         let message =

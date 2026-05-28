@@ -8,7 +8,8 @@ use wire_e2e_identity::WireIdentityReader as _;
 
 use super::{Result, Session};
 use crate::{
-    CipherSuite, CredentialFindFilters, CredentialRef, CredentialType, E2eiConversationState, MlsError, RecursiveError,
+    CipherSuite, CredentialFindFilters, CredentialRef, CredentialType, E2eiConversationState, OpenMlsError,
+    RecursiveError,
     mls::{credential::ext::CredentialExt as _, session::Error},
     mls_provider::AuthenticationService,
 };
@@ -85,7 +86,7 @@ impl Session {
         let rt = group_info
             .take_ratchet_tree(&self.crypto_provider, false)
             .await
-            .map_err(MlsError::wrap("taking ratchet tree"))?;
+            .map_err(OpenMlsError::wrap("taking ratchet tree"))?;
         Self::get_credential_in_use_in_ratchet_tree(
             cs,
             rt,

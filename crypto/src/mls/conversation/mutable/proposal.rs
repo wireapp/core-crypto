@@ -8,7 +8,7 @@
 use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn};
 
 use super::{ConversationMut, Result};
-use crate::MlsError;
+use crate::OpenMlsError;
 
 /// Creating proposals
 impl ConversationMut {
@@ -21,7 +21,7 @@ impl ConversationMut {
                 group
                     .propose_add_member(&crypto_provider, signer, key_package)
                     .await
-                    .map_err(MlsError::wrap("propose add member"))
+                    .map_err(OpenMlsError::wrap("propose add member"))
                     .map_err(Into::into)
             })
             .await?;
@@ -36,7 +36,7 @@ impl ConversationMut {
             .mutate_group(async |_, group, _, _| {
                 group
                     .propose_remove_member(&crypto_provider, signer, member)
-                    .map_err(MlsError::wrap("propose remove member"))
+                    .map_err(OpenMlsError::wrap("propose remove member"))
                     .map_err(Into::into)
             })
             .await?;
@@ -110,7 +110,7 @@ mod tests {
         use openmls::prelude::{ProcessMessageError, ValidationError};
 
         use super::*;
-        use crate::{MlsError, MlsErrorKind};
+        use crate::{OpenMlsError, OpenMlsErrorKind};
 
         #[apply(all_cred_cipher)]
         async fn ds_should_remove_guest_from_conversation(mut case: TestContext) {
@@ -156,8 +156,8 @@ mod tests {
 
                 assert!(matches!(
                     owner_decrypt.unwrap_err(),
-                    mls::conversation::Error::Mls(MlsError {
-                        source: MlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
+                    mls::conversation::Error::Mls(OpenMlsError {
+                        source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
                             ValidationError::UnauthorizedExternalSender
                         )),
                         ..
@@ -167,8 +167,8 @@ mod tests {
                 let (_, guest_decrypt) = proposal_guard.notify_member_fallible(&guest).await;
                 assert!(matches!(
                     guest_decrypt.unwrap_err(),
-                    mls::conversation::Error::Mls(MlsError {
-                        source: MlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
+                    mls::conversation::Error::Mls(OpenMlsError {
+                        source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
                             ValidationError::UnauthorizedExternalSender
                         )),
                         ..
@@ -199,8 +199,8 @@ mod tests {
                 let (proposal_guard, owner_decrypt) = proposal_guard.notify_member_fallible(&owner).await;
                 assert!(matches!(
                     owner_decrypt.unwrap_err(),
-                    mls::conversation::Error::Mls(MlsError {
-                        source: MlsErrorKind::MlsMessageError(ProcessMessageError::InvalidSignature),
+                    mls::conversation::Error::Mls(OpenMlsError {
+                        source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidSignature),
                         ..
                     })
                 ));
@@ -208,8 +208,8 @@ mod tests {
                 let (_, guest_decrypt) = proposal_guard.notify_member_fallible(&guest).await;
                 assert!(matches!(
                     guest_decrypt.unwrap_err(),
-                    mls::conversation::Error::Mls(MlsError {
-                        source: MlsErrorKind::MlsMessageError(ProcessMessageError::InvalidSignature),
+                    mls::conversation::Error::Mls(OpenMlsError {
+                        source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidSignature),
                         ..
                     })
                 ));

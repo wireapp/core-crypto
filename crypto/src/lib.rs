@@ -51,17 +51,16 @@ pub use crate::{
     build_metadata::{BUILD_METADATA, BuildMetadata},
     ephemeral::{HISTORY_CLIENT_ID_PREFIX, HistorySecret},
     error::{
-        Error, InnermostErrorMessage, KeystoreError, LeafError, MlsError, MlsErrorKind, ProteusError, ProteusErrorKind,
-        RecursiveError, Result, ToRecursiveError,
+        Error, InnermostErrorMessage, KeystoreError, LeafError, OpenMlsError, OpenMlsErrorKind, ProteusError,
+        ProteusErrorKind, RecursiveError, Result, ToRecursiveError,
     },
     identity::{WireIdentity, X509Identity},
     mls::{
         ExternalSender,
         ciphersuite::CipherSuite,
         conversation::{
-            ConversationId, GroupInfoPayload, MlsBufferedDecryptMessage, MlsCommitBundle, MlsConversationConfiguration,
-            MlsCustomConfiguration, MlsDecryptMessage, MlsGroupInfoBundle, MlsGroupInfoEncryptionType,
-            MlsRatchetTreeType, MlsWirePolicy,
+            BufferedDecryptedMessage, CommitBundle, ConversationConfiguration, ConversationId, CustomConfiguration,
+            DecryptedMessage, GroupInfoBundle, GroupInfoEncryptionType, GroupInfoPayload, RatchetTreeType, WirePolicy,
         },
         credential::{
             Credential, CredentialRef, CredentialType, FindFilters as CredentialFindFilters, x509::CertificateBundle,
@@ -74,7 +73,7 @@ pub use crate::{
             user_id::UserId,
         },
     },
-    mls_provider::{EntropySeed, MlsCryptoProvider, RawEntropySeed, RustCrypto},
+    mls_provider::{CryptoProvider, EntropySeed, RawEntropySeed, RustCrypto},
     transaction_context::{
         e2e_identity::conversation_state::E2eiConversationState, key_package::KEYPACKAGE_DEFAULT_LIFETIME,
     },
@@ -83,7 +82,7 @@ pub use crate::{
 /// An entity / data which has been packaged by the application to be encrypted
 /// and transmitted in an application message.
 #[derive(Debug, derive_more::From, derive_more::Deref, serde::Serialize, serde::Deserialize)]
-pub struct MlsTransportData(pub Vec<u8>);
+pub struct TransportData(pub Vec<u8>);
 
 /// Client callbacks to allow communication with the delivery service.
 /// There are two different endpoints, one for messages and one for commit bundles.
@@ -91,7 +90,7 @@ pub struct MlsTransportData(pub Vec<u8>);
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub trait MlsTransport: std::fmt::Debug + Send + Sync {
     /// Send a commit bundle to the corresponding endpoint.
-    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> Result<()>;
+    async fn send_commit_bundle(&self, commit_bundle: CommitBundle) -> Result<()>;
 
     /// This function will be called before a history secret is sent to the mls transport to allow
     /// the application to package it in a suitable transport container (json, protobuf, ...).
@@ -99,7 +98,7 @@ pub trait MlsTransport: std::fmt::Debug + Send + Sync {
     /// The `secret` parameter contain the history client's secrets which will be sent over the mls transport.
     ///
     /// Returns the history secret packaged for transport
-    async fn prepare_for_transport(&self, secret: &HistorySecret) -> Result<MlsTransportData>;
+    async fn prepare_for_transport(&self, secret: &HistorySecret) -> Result<TransportData>;
 }
 
 /// This provider is mainly used for the initialization of the history client session, the only case where transport
@@ -110,11 +109,11 @@ pub struct CoreCryptoTransportNotImplementedProvider();
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl MlsTransport for CoreCryptoTransportNotImplementedProvider {
-    async fn send_commit_bundle(&self, _commit_bundle: MlsCommitBundle) -> crate::Result<()> {
+    async fn send_commit_bundle(&self, _commit_bundle: CommitBundle) -> crate::Result<()> {
         Err(Error::MlsTransportNotProvided)
     }
 
-    async fn prepare_for_transport(&self, _secret: &HistorySecret) -> crate::Result<MlsTransportData> {
+    async fn prepare_for_transport(&self, _secret: &HistorySecret) -> crate::Result<TransportData> {
         Err(Error::MlsTransportNotProvided)
     }
 }

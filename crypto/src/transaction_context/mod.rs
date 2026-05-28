@@ -10,9 +10,9 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::pki_env::PkiEnvironment;
 
 use crate::{
-    ClientId, ConversationId, CoreCrypto, KeystoreError, MlsError, MlsTransport, RecursiveError, Session,
-    mls::{self, conversation_cache::MlsConversationCache},
-    mls_provider::{Database, MlsCryptoProvider},
+    ClientId, ConversationId, CoreCrypto, KeystoreError, MlsTransport, OpenMlsError, RecursiveError, Session,
+    mls::{self, conversation_cache::ConversationCache},
+    mls_provider::{CryptoProvider, Database},
 };
 pub mod conversation;
 mod credential;
@@ -62,7 +62,7 @@ impl TransactionContext {
             .database
             .new_transaction()
             .await
-            .map_err(MlsError::wrap("creating new transaction"))?;
+            .map_err(OpenMlsError::wrap("creating new transaction"))?;
         Ok(Self {
             inner: Arc::new(
                 TransactionContextInner::Valid {
@@ -118,7 +118,7 @@ impl TransactionContext {
     }
 
     /// Clones all references that the [MlsCryptoProvider] comprises.
-    pub async fn crypto_provider(&self) -> Result<MlsCryptoProvider> {
+    pub async fn crypto_provider(&self) -> Result<CryptoProvider> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { core_crypto, .. } => core_crypto
                 .mls
@@ -161,7 +161,7 @@ impl TransactionContext {
         }
     }
 
-    pub(crate) async fn mls_groups(&self) -> Result<MutexGuardArc<MlsConversationCache>> {
+    pub(crate) async fn mls_groups(&self) -> Result<MutexGuardArc<ConversationCache>> {
         let guard = self.inner.read().await;
         let TransactionContextInner::Valid { core_crypto, .. } = &*guard else {
             return Err(Error::InvalidTransactionContext);
@@ -265,7 +265,7 @@ impl TransactionContext {
     pub async fn mls_init(&self, session_id: ClientId, transport: Arc<dyn MlsTransport>) -> Result<()> {
         let database = self.database().await?;
         let pki_env = self.pki_environment().await.ok();
-        let crypto_provider = MlsCryptoProvider::new_with_pki_env(database.clone(), pki_env);
+        let crypto_provider = CryptoProvider::new_with_pki_env(database.clone(), pki_env);
         let session = Session::new(session_id.clone(), crypto_provider, database.into(), transport);
         self.set_mls_session(session).await?;
 
@@ -297,7 +297,7 @@ impl TransactionContext {
             .await?
             .rand()
             .random_vec(len)
-            .map_err(MlsError::wrap("generating random vector"))
+            .map_err(OpenMlsError::wrap("generating random vector"))
             .map_err(Into::into)
     }
 

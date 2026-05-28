@@ -4,8 +4,8 @@ use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
 use super::{Error, Result};
 use crate::{
-    ConversationId, CredentialRef, LeafError, MlsCommitBundle, MlsConversationConfiguration, MlsError,
-    MlsGroupInfoBundle, RecursiveError,
+    CommitBundle, ConversationId, CredentialRef, LeafError, ConversationConfiguration, OpenMlsError, GroupInfoBundle,
+    RecursiveError,
     mls::{
         self,
         conversation::{ConversationIdRef, PendingConversation},
@@ -62,7 +62,7 @@ impl TransactionContext {
         &self,
         group_info: VerifiableGroupInfo,
         credential_ref: &CredentialRef,
-    ) -> Result<(MlsCommitBundle, ConversationId, PendingConversation)> {
+    ) -> Result<(CommitBundle, ConversationId, PendingConversation)> {
         let ciphersuite = group_info.ciphersuite().into();
         let mls_provider = self.crypto_provider().await?;
         let database = &self.database().await?;
@@ -71,7 +71,7 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
 
-        let configuration = MlsConversationConfiguration {
+        let configuration = ConversationConfiguration {
             ciphersuite,
             ..Default::default()
         };
@@ -90,11 +90,11 @@ impl TransactionContext {
             credential.to_mls_credential_with_key(),
         )
         .await
-        .map_err(MlsError::wrap("joining mls group by external commit"))?;
+        .map_err(OpenMlsError::wrap("joining mls group by external commit"))?;
 
         // We should always have ratchet tree extension turned on hence GroupInfo should always be present
         let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
-        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info).map_err(
+        let group_info = GroupInfoBundle::try_new_full_plaintext(group_info).map_err(
             RecursiveError::mls_conversation("trying new full plaintext group info bundle"),
         )?;
 
@@ -107,7 +107,7 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::mls_conversation("saving pending conversation"))?;
 
-        let commit_bundle = MlsCommitBundle {
+        let commit_bundle = CommitBundle {
             welcome: None,
             commit,
             group_info,
@@ -133,7 +133,7 @@ mod tests {
     use core_crypto_keystore::CryptoKeystoreMls;
 
     use super::Error;
-    use crate::{LeafError, MlsConversationConfiguration, test_utils::*, transaction_context};
+    use crate::{LeafError, ConversationConfiguration, test_utils::*, transaction_context};
 
     #[apply(all_cred_cipher)]
     async fn join_by_external_commit_should_succeed(case: TestContext) {
@@ -410,7 +410,7 @@ mod tests {
 
         assert!(innermost_source_matches!(
             join_ext_commit.unwrap_err(),
-            crate::MlsErrorKind::MlsExternalCommitError(openmls::prelude::ExternalCommitError::MissingRatchetTree),
+            crate::OpenMlsErrorKind::MlsExternalCommitError(openmls::prelude::ExternalCommitError::MissingRatchetTree),
         ));
     }
 
@@ -434,7 +434,7 @@ mod tests {
             assert!(capabilities.proposal_types().is_empty());
             assert_eq!(
                 capabilities.credential_types(),
-                MlsConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
+                ConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
             );
         })
         .await

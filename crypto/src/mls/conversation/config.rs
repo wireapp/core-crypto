@@ -31,10 +31,10 @@ pub struct ConversationConfiguration {
     /// Delivery service public signature key and credential
     pub external_senders: Vec<ExternalSender>,
     /// Implementation specific configuration
-    pub custom: MlsCustomConfiguration,
+    pub custom: CustomConfiguration,
 }
 
-impl MlsConversationConfiguration {
+impl ConversationConfiguration {
     const PADDING_SIZE: usize = 128;
 
     /// Default protocol
@@ -108,12 +108,12 @@ impl MlsConversationConfiguration {
 
 /// The configuration parameters for a group/conversation which are not handled natively by openmls
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MlsCustomConfiguration {
+pub struct CustomConfiguration {
     // TODO: Not implemented yet. Tracking issue: WPB-9609
     /// Duration in seconds after which we will automatically force a self_update commit
     pub key_rotation_span: Option<std::time::Duration>,
     /// Defines if handshake messages are encrypted or not
-    pub wire_policy: MlsWirePolicy,
+    pub wire_policy: WirePolicy,
     /// Window for which decryption secrets are kept within an epoch. Use this with caution since
     /// this affects forward secrecy within an epoch. Use this when the Delivery Service cannot
     /// guarantee application messages order.
@@ -123,10 +123,10 @@ pub struct MlsCustomConfiguration {
     pub maximum_forward_distance: u32,
 }
 
-impl Default for MlsCustomConfiguration {
+impl Default for CustomConfiguration {
     fn default() -> Self {
         Self {
-            wire_policy: MlsWirePolicy::Plaintext,
+            wire_policy: WirePolicy::Plaintext,
             key_rotation_span: Default::default(),
             out_of_order_tolerance: OUT_OF_ORDER_TOLERANCE,
             maximum_forward_distance: MAXIMUM_FORWARD_DISTANCE,
@@ -137,7 +137,7 @@ impl Default for MlsCustomConfiguration {
 /// Wrapper over [WireFormatPolicy]
 #[derive(Debug, Copy, Clone, Default, Eq, PartialEq, Serialize, Deserialize)]
 #[repr(u8)]
-pub enum MlsWirePolicy {
+pub enum WirePolicy {
     /// Handshake messages are never encrypted
     #[default]
     Plaintext = 1,
@@ -145,11 +145,11 @@ pub enum MlsWirePolicy {
     Ciphertext = 2,
 }
 
-impl From<MlsWirePolicy> for WireFormatPolicy {
-    fn from(policy: MlsWirePolicy) -> Self {
+impl From<WirePolicy> for WireFormatPolicy {
+    fn from(policy: WirePolicy) -> Self {
         match policy {
-            MlsWirePolicy::Ciphertext => PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
-            MlsWirePolicy::Plaintext => PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
+            WirePolicy::Ciphertext => PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
+            WirePolicy::Plaintext => PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
         }
     }
 }
@@ -164,7 +164,7 @@ mod tests {
     };
     use wire_e2e_identity::JwsAlgorithm;
 
-    use crate::{ExternalSender, MlsConversationConfiguration, test_utils::*};
+    use crate::{ConversationConfiguration, ExternalSender, test_utils::*};
 
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn group_should_have_required_capabilities() {
@@ -183,7 +183,7 @@ mod tests {
             assert!(capabilities.proposal_types().is_empty());
             assert_eq!(
                 capabilities.credential_types(),
-                MlsConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
+                ConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
             );
         })
         .await
@@ -207,7 +207,7 @@ mod tests {
             // To prevent downgrade attacks, Ciphersuite MUST ONLY contain the current one
             assert_eq!(
                 creator_capabilities.ciphersuites().to_vec(),
-                MlsConversationConfiguration::DEFAULT_SUPPORTED_CIPHERSUITES
+                ConversationConfiguration::DEFAULT_SUPPORTED_CIPHERSUITES
                     .iter()
                     .map(|c| VerifiableCiphersuite::from(*c))
                     .collect::<Vec<_>>()
@@ -222,7 +222,7 @@ mod tests {
             // To prevent downgrade attacks, Credentials should just contain the current
             assert_eq!(
                 creator_capabilities.credentials(),
-                MlsConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
+                ConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
             );
         })
         .await

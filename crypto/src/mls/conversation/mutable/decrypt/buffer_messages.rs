@@ -10,7 +10,7 @@ use tls_codec::Deserialize;
 
 use super::{RecursionPolicy, Result};
 use crate::{
-    KeystoreError, MlsBufferedDecryptMessage,
+    KeystoreError, BufferedDecryptedMessage,
     mls::conversation::{ConversationMut, Error},
 };
 
@@ -47,7 +47,7 @@ impl ConversationMut {
 
     pub(super) async fn restore_and_clear_pending_messages(
         &mut self,
-    ) -> Result<Option<Vec<MlsBufferedDecryptMessage>>> {
+    ) -> Result<Option<Vec<BufferedDecryptedMessage>>> {
         let pending_messages = self
             .restore_pending_messages(MessageRestorePolicy::DecryptAndClear)
             .await?;
@@ -66,7 +66,7 @@ impl ConversationMut {
     pub(crate) async fn restore_pending_messages(
         &mut self,
         policy: MessageRestorePolicy,
-    ) -> Result<Option<Vec<MlsBufferedDecryptMessage>>> {
+    ) -> Result<Option<Vec<BufferedDecryptedMessage>>> {
         async move {
             let conversation_id = self.id();
             let database = self.database().await?;
@@ -117,7 +117,7 @@ impl ConversationMut {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{MlsDecryptMessage, test_utils::*};
+    use crate::{DecryptedMessage, test_utils::*};
 
     #[apply(all_cred_cipher)]
     async fn can_operate_with_pending_commit_wpb_17356(case: TestContext) {
@@ -193,7 +193,7 @@ mod tests {
                 .unwrap();
 
             // Finally, Bob receives the green light from the DS and he can merge the external commit
-            let MlsDecryptMessage {
+            let DecryptedMessage {
                 buffered_messages: Some(restored_messages),
                 ..
             } = conversation
@@ -291,7 +291,7 @@ mod tests {
 
             // Finally, Alice receives the original commit for this epoch
             let original_commit = ext_commit.to_bytes().unwrap();
-            let MlsDecryptMessage {
+            let DecryptedMessage {
                 buffered_messages: Some(restored_messages),
                 ..
             } = conversation

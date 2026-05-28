@@ -26,8 +26,8 @@ use self::error::Result;
 pub(crate) use self::{epoch_observer::TestEpochObserver, history_observer::TestHistoryObserver};
 pub use self::{error::Error as TestError, message::*, test_context::*, test_conversation::TestConversation};
 use crate::{
-    CertificateBundle, ClientId, ConnectionType, ConversationId, CoreCrypto, Credential, CredentialRef, Database,
-    DatabaseKey, Error, MlsCommitBundle, MlsGroupInfoBundle, MlsTransport, MlsTransportData, RecursiveError, Session,
+    CertificateBundle, ClientId, CommitBundle, ConnectionType, ConversationId, CoreCrypto, Credential, CredentialRef,
+    Database, DatabaseKey, Error, GroupInfoBundle, MlsTransport, RecursiveError, Session, TransportData,
     mls::HistoryObserver,
     test_utils::x509::{
         CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs, qualified_e2ei_cid_with_domain,
@@ -403,7 +403,7 @@ pub fn conversation_id() -> ConversationId {
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub trait MlsTransportTestExt: MlsTransport {
-    async fn latest_commit_bundle(&self) -> MlsCommitBundle;
+    async fn latest_commit_bundle(&self) -> CommitBundle;
     async fn latest_welcome_message(&self) -> MlsMessageOut {
         self.latest_commit_bundle().await.welcome.unwrap().clone()
     }
@@ -412,25 +412,25 @@ pub trait MlsTransportTestExt: MlsTransport {
         self.latest_commit_bundle().await.commit.clone()
     }
 
-    async fn latest_group_info(&self) -> MlsGroupInfoBundle {
+    async fn latest_group_info(&self) -> GroupInfoBundle {
         self.latest_commit_bundle().await.group_info.clone()
     }
 }
 
 #[derive(Debug, Default)]
 pub struct CoreCryptoTransportSuccessProvider {
-    latest_commit_bundle: RwLock<Option<MlsCommitBundle>>,
+    latest_commit_bundle: RwLock<Option<CommitBundle>>,
 }
 
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl MlsTransport for CoreCryptoTransportSuccessProvider {
-    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> crate::Result<()> {
+    async fn send_commit_bundle(&self, commit_bundle: CommitBundle) -> crate::Result<()> {
         self.latest_commit_bundle.write().await.replace(commit_bundle);
         Ok(())
     }
 
-    async fn prepare_for_transport(&self, secret: &HistorySecret) -> crate::Result<MlsTransportData> {
+    async fn prepare_for_transport(&self, secret: &HistorySecret) -> crate::Result<TransportData> {
         Ok(format!("history secret: {}", secret.client_id).into_bytes().into())
     }
 }
@@ -438,7 +438,7 @@ impl MlsTransport for CoreCryptoTransportSuccessProvider {
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl MlsTransportTestExt for CoreCryptoTransportSuccessProvider {
-    async fn latest_commit_bundle(&self) -> MlsCommitBundle {
+    async fn latest_commit_bundle(&self) -> CommitBundle {
         self.latest_commit_bundle
             .read()
             .await
@@ -453,7 +453,7 @@ pub struct CoreCryptoTransportAbortProvider;
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl MlsTransport for CoreCryptoTransportAbortProvider {
-    async fn send_commit_bundle(&self, _commit_bundle: MlsCommitBundle) -> crate::Result<()> {
+    async fn send_commit_bundle(&self, _commit_bundle: CommitBundle) -> crate::Result<()> {
         Err(crate::RecursiveError::mls_conversation("send commit bundle")(
             crate::mls::conversation::Error::MessageRejected {
                 reason: "abort provider always aborts".into(),
@@ -462,7 +462,7 @@ impl MlsTransport for CoreCryptoTransportAbortProvider {
         .into())
     }
 
-    async fn prepare_for_transport(&self, _secret: &HistorySecret) -> crate::Result<MlsTransportData> {
+    async fn prepare_for_transport(&self, _secret: &HistorySecret) -> crate::Result<TransportData> {
         Err(Error::Recursive(Test(ImplementationError.into())))
     }
 }
@@ -470,7 +470,7 @@ impl MlsTransport for CoreCryptoTransportAbortProvider {
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl MlsTransportTestExt for CoreCryptoTransportAbortProvider {
-    async fn latest_commit_bundle(&self) -> MlsCommitBundle {
+    async fn latest_commit_bundle(&self) -> CommitBundle {
         unreachable!("abort provider never stores a commit bundle")
     }
 }

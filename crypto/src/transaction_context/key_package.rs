@@ -7,7 +7,7 @@ use openmls::prelude::{CryptoConfig, Lifetime};
 
 use super::{Error, Result, TransactionContext};
 use crate::{
-    CredentialRef, Keypackage, KeypackageRef, KeystoreError, MlsConversationConfiguration, RecursiveError,
+    CredentialRef, Keypackage, KeypackageRef, KeystoreError, ConversationConfiguration, RecursiveError,
     mls::key_package::KeypackageExt as _,
 };
 
@@ -41,7 +41,7 @@ impl TransactionContext {
         };
 
         Keypackage::builder()
-            .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
+            .leaf_node_capabilities(ConversationConfiguration::default_leaf_capabilities())
             .key_package_lifetime(lifetime)
             .build(
                 config,

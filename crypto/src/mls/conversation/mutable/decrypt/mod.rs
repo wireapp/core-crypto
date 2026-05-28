@@ -29,7 +29,7 @@ use tls_codec::Deserialize as _;
 
 use super::{ConversationMut, Result};
 use crate::{
-    ClientId, E2eiConversationState, MlsError, RecursiveError, Session, WireIdentity,
+    ClientId, E2eiConversationState, OpenMlsError, RecursiveError, Session, WireIdentity,
     mls::{conversation::Error, credential::ext::CredentialExt as _},
 };
 
@@ -53,7 +53,7 @@ pub struct DecryptedMessage {
     ///
     /// Contains buffered messages for next epoch which were received before the commit creating the epoch
     /// because the DS did not fan them out in order.
-    pub buffered_messages: Option<Vec<MlsBufferedDecryptMessage>>,
+    pub buffered_messages: Option<Vec<BufferedDecryptedMessage>>,
 }
 
 /// Type safe recursion of [MlsDecryptMessage]
@@ -71,8 +71,8 @@ pub struct BufferedDecryptedMessage {
     pub identity: WireIdentity,
 }
 
-impl From<MlsDecryptMessage> for MlsBufferedDecryptMessage {
-    fn from(from: MlsDecryptMessage) -> Self {
+impl From<DecryptedMessage> for BufferedDecryptedMessage {
+    fn from(from: DecryptedMessage) -> Self {
         Self {
             app_msg: from.app_msg,
             is_active: from.is_active,
@@ -108,7 +108,7 @@ impl ConversationMut {
     /// # Errors
     /// If a message has been buffered, this will be indicated by an error.
     /// Other errors are originating from OpenMls and the KeyStore
-    pub async fn decrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<MlsDecryptMessage> {
+    pub async fn decrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<DecryptedMessage> {
         let mls_message_in =
             MlsMessageIn::tls_deserialize(&mut message.as_ref()).map_err(Error::tls_deserialize("mls message in"))?;
 
@@ -142,16 +142,16 @@ impl ConversationMut {
         &mut self,
         message: MlsMessageIn,
         recursion_policy: RecursionPolicy,
-    ) -> Result<MlsDecryptMessage> {
+    ) -> Result<DecryptedMessage> {
         let provider = &self.crypto_provider().await?;
         let parsed_message = self.parse_message(message.clone()).await?;
 
         let message_result = self.process_message(parsed_message).await;
 
         // Handles the case where we receive our own commits.
-        if let Err(Error::Mls(crate::MlsError {
+        if let Err(Error::Mls(crate::OpenMlsError {
             source:
-                crate::MlsErrorKind::MlsMessageError(ProcessMessageError::InvalidCommit(StageCommitError::OwnCommit)),
+                crate::OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidCommit(StageCommitError::OwnCommit)),
             ..
         })) = message_result
         {
@@ -172,9 +172,11 @@ impl ConversationMut {
         // In this error case, we have a missing proposal, so we need to buffer the commit.
         // We can't do that here--we don't have the appropriate data in scope--but we can at least
         // produce the proper error and return that, so our caller can handle it.
-        if let Err(Error::Mls(crate::MlsError {
+        if let Err(Error::Mls(crate::OpenMlsError {
             source:
-                crate::MlsErrorKind::MlsMessageError(ProcessMessageError::InvalidCommit(StageCommitError::MissingProposal)),
+                crate::OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidCommit(
+                    StageCommitError::MissingProposal,
+                )),
             ..
         })) = message_result
         {
@@ -204,7 +206,7 @@ impl ConversationMut {
                     "Application message"
                 );
 
-                MlsDecryptMessage {
+                DecryptedMessage {
                     app_msg: Some(app_msg.into_bytes()),
                     is_active: true,
                     delay: None,
@@ -258,7 +260,7 @@ impl ConversationMut {
 
                 let delay = self.compute_next_commit_delay().await;
 
-                MlsDecryptMessage {
+                DecryptedMessage {
                     app_msg: None,
                     is_active: true,
                     delay,
@@ -287,7 +289,7 @@ impl ConversationMut {
                         group
                             .merge_staged_commit(provider, *staged_commit.clone())
                             .await
-                            .map_err(MlsError::wrap("merge staged commit"))?;
+                            .map_err(OpenMlsError::wrap("merge staged commit"))?;
 
                         let added_members = group
                             .members()
@@ -323,7 +325,7 @@ impl ConversationMut {
                     .await
                     .map_err(RecursiveError::transaction("queueing epoch changed notification"))?;
 
-                MlsDecryptMessage {
+                DecryptedMessage {
                     app_msg: None,
                     is_active,
                     delay,
@@ -346,7 +348,7 @@ impl ConversationMut {
 
                 let delay = self.compute_next_commit_delay().await;
 
-                MlsDecryptMessage {
+                DecryptedMessage {
                     app_msg: None,
                     is_active: true,
                     delay,
@@ -382,7 +384,7 @@ impl ConversationMut {
             }
             _ => {
                 return Err(
-                    MlsError::wrap("parsing inbound message")(ProcessMessageError::IncompatibleWireFormat).into(),
+                    OpenMlsError::wrap("parsing inbound message")(ProcessMessageError::IncompatibleWireFormat).into(),
                 );
             }
         };
@@ -443,7 +445,7 @@ impl ConversationMut {
                     ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
                         MessageDecryptionError::SecretTreeError(SecretTreeError::TooDistantInThePast),
                     )) => Error::MessageEpochTooOld,
-                    _ => MlsError::wrap("processing message")(e).into(),
+                    _ => OpenMlsError::wrap("processing message")(e).into(),
                 })?;
             if is_duplicate {
                 return Err(Error::DuplicateMessage);

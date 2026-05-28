@@ -3,7 +3,7 @@ use std::{collections::HashSet, marker::PhantomData};
 use openmls::prelude::MlsMessageOut;
 
 use super::{SessionContext, TestConversation};
-use crate::{CredentialRef, MlsDecryptMessage};
+use crate::{CredentialRef, DecryptedMessage};
 
 pub struct Commit;
 
@@ -131,7 +131,7 @@ impl<'a, T> OperationGuard<'a, T> {
     async fn notify_member_inner(
         &mut self,
         member: &SessionContext,
-    ) -> crate::mls::conversation::Result<Option<MlsDecryptMessage>> {
+    ) -> crate::mls::conversation::Result<Option<DecryptedMessage>> {
         let member_index = self.conversation().member_index(member).await;
         if self.already_notified.contains(&member_index) {
             return Ok(None);
@@ -155,7 +155,7 @@ impl<'a, T> OperationGuard<'a, T> {
     pub async fn notify_member_fallible(
         mut self,
         member: &SessionContext,
-    ) -> (Self, crate::mls::conversation::Result<MlsDecryptMessage>) {
+    ) -> (Self, crate::mls::conversation::Result<DecryptedMessage>) {
         let result = self.notify_member_inner(member).await;
         (
             self,

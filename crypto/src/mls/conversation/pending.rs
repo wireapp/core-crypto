@@ -16,13 +16,13 @@ use tls_codec::Deserialize as _;
 
 use super::{Error, Result};
 use crate::{
-    KeystoreError, LeafError, MlsBufferedDecryptMessage, MlsCommitBundle, MlsConversationConfiguration,
-    MlsCustomConfiguration, MlsDecryptMessage, MlsError, RecursiveError,
+    KeystoreError, LeafError, BufferedDecryptedMessage, CommitBundle, ConversationConfiguration,
+    CustomConfiguration, DecryptedMessage, OpenMlsError, RecursiveError,
     mls::{
         conversation::{ConversationIdRef, mutable::decrypt::buffer_messages::MessageRestorePolicy},
         credential::ext::CredentialExt as _,
     },
-    mls_provider::{Database, MlsCryptoProvider},
+    mls_provider::{Database, CryptoProvider},
     transaction_context::TransactionContext,
 };
 
@@ -40,8 +40,8 @@ impl PendingConversation {
     }
 
     pub(crate) fn from_mls_group(group: MlsGroup, context: TransactionContext) -> Result<Self> {
-        let serialized_cfg = serde_json::to_vec(&MlsCustomConfiguration::default())
-            .map_err(MlsError::wrap("serializing custom config"))?;
+        let serialized_cfg = serde_json::to_vec(&CustomConfiguration::default())
+            .map_err(OpenMlsError::wrap("serializing custom config"))?;
         let serialized_group =
             core_crypto_keystore::ser(&group).map_err(KeystoreError::wrap("serializing mls group"))?;
         let group_id = group.group_id().to_vec();
@@ -55,7 +55,7 @@ impl PendingConversation {
         Ok(Self::new(inner, context))
     }
 
-    async fn mls_provider(&self) -> Result<MlsCryptoProvider> {
+    async fn mls_provider(&self) -> Result<CryptoProvider> {
         self.context
             .crypto_provider()
             .await
@@ -85,7 +85,7 @@ impl PendingConversation {
     }
 
     /// Send the commit via [crate::MlsTransport] and handle the response.
-    pub(crate) async fn send_commit(&self, commit: MlsCommitBundle) -> Result<()> {
+    pub(crate) async fn send_commit(&self, commit: CommitBundle) -> Result<()> {
         let transport = self
             .context
             .mls_transport()
@@ -103,7 +103,7 @@ impl PendingConversation {
     /// merge the pending group and restore any buffered messages.
     ///
     /// Otherwise, the given message will be buffered.
-    pub async fn try_process_own_join_commit(&mut self, message: impl AsRef<[u8]>) -> Result<MlsDecryptMessage> {
+    pub async fn try_process_own_join_commit(&mut self, message: impl AsRef<[u8]>) -> Result<DecryptedMessage> {
         // If the confirmation tag of the pending group and this incoming message are identical, we can merge the
         // pending group.
         if self.incoming_message_is_own_join_commit(message.as_ref()).await? {
@@ -142,9 +142,9 @@ impl PendingConversation {
         mls_group
             .merge_pending_commit(&backend)
             .await
-            .map_err(MlsError::wrap("merging pending commit"))?;
+            .map_err(OpenMlsError::wrap("merging pending commit"))?;
         let message_in = MlsMessageIn::tls_deserialize(&mut message.as_ref())
-            .map_err(MlsError::wrap("deserializing mls message"))?;
+            .map_err(OpenMlsError::wrap("deserializing mls message"))?;
         let MlsMessageInBody::PublicMessage(public_message) = message_in.extract() else {
             return Ok(false);
         };
@@ -153,12 +153,12 @@ impl PendingConversation {
         };
         let group_ct = mls_group
             .compute_confirmation_tag(&backend)
-            .map_err(MlsError::wrap("computing confirmation tag"))?;
+            .map_err(OpenMlsError::wrap("computing confirmation tag"))?;
         Ok(*msg_ct == group_ct)
     }
 
     /// Merges the [Self] instance and restores any buffered messages.
-    async fn merge_and_restore_messages(&mut self) -> Result<MlsDecryptMessage> {
+    async fn merge_and_restore_messages(&mut self) -> Result<DecryptedMessage> {
         let buffered_messages = self.merge().await?;
         let context = &self.context;
         let id = self.id();
@@ -183,7 +183,7 @@ impl PendingConversation {
             .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
-        Ok(MlsDecryptMessage {
+        Ok(DecryptedMessage {
             app_msg: None,
             is_active: conversation.group().await.is_active(),
             delay: conversation.compute_next_commit_delay().await,
@@ -199,7 +199,7 @@ impl PendingConversation {
     ///
     /// # Errors
     /// Errors resulting from OpenMls, the KeyStore calls and deserialization
-    pub(crate) async fn merge(&mut self) -> Result<Option<Vec<MlsBufferedDecryptMessage>>> {
+    pub(crate) async fn merge(&mut self) -> Result<Option<Vec<BufferedDecryptedMessage>>> {
         let mls_provider = self.mls_provider().await?;
         let id = self.id();
         let group = self.inner.state.clone();
@@ -212,12 +212,12 @@ impl PendingConversation {
         mls_group
             .merge_pending_commit(&mls_provider)
             .await
-            .map_err(MlsError::wrap("merging pending commit"))?;
+            .map_err(OpenMlsError::wrap("merging pending commit"))?;
 
         // Restore the custom configuration and build a conversation from it
         let custom_cfg =
-            serde_json::from_slice(&cfg).map_err(MlsError::wrap("deserializing mls custom configuration"))?;
-        let configuration = MlsConversationConfiguration {
+            serde_json::from_slice(&cfg).map_err(OpenMlsError::wrap("deserializing mls custom configuration"))?;
+        let configuration = ConversationConfiguration {
             ciphersuite: mls_group.ciphersuite().into(),
             custom: custom_cfg,
             ..Default::default()
@@ -283,7 +283,7 @@ impl PendingConversation {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{MlsDecryptMessage, test_utils::*};
+    use crate::{DecryptedMessage, test_utils::*};
 
     #[apply(all_cred_cipher)]
     async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestContext) {
@@ -347,7 +347,7 @@ mod tests {
                 .unwrap();
 
             // Finally, Bob receives the green light from the DS and he can merge the external commit
-            let MlsDecryptMessage {
+            let DecryptedMessage {
                 buffered_messages: Some(restored_messages),
                 ..
             } = pending_conversation
