@@ -5,7 +5,7 @@ use super::{Error, Result};
 
 /// A [GroupInfo] with metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MlsGroupInfoBundle {
+pub struct GroupInfoBundle {
     /// Indicates if the `payload` is encrypted or not
     pub encryption_type: MlsGroupInfoEncryptionType,
     /// Indicates if the `payload` contains a full, partial or referenced [GroupInfo]
@@ -67,7 +67,7 @@ impl MlsGroupInfoBundle {
 /// ```
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
 #[repr(u8)]
-pub enum MlsGroupInfoEncryptionType {
+pub enum GroupInfoEncryptionType {
     /// Unencrypted [GroupInfo]
     Plaintext = 1,
     /// [GroupInfo] encrypted in a JWE
@@ -88,7 +88,7 @@ pub enum MlsGroupInfoEncryptionType {
 /// ```
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Serialize, Deserialize)]
 #[repr(u8)]
-pub enum MlsRatchetTreeType {
+pub enum RatchetTreeType {
     /// Plain old and complete [GroupInfo]
     Full = 1,
     /// Contains [GroupInfo] changes since previous epoch (not yet implemented)

@@ -36,7 +36,7 @@ use crate::{
 /// Represents the potential items a consumer might require after passing us an encrypted message we
 /// have decrypted for him
 #[derive(Debug)]
-pub struct MlsDecryptMessage {
+pub struct DecryptedMessage {
     /// Decrypted text message
     pub app_msg: Option<Vec<u8>>,
     /// Is the conversation still active after receiving this commit aka has the user been removed from the group
@@ -46,9 +46,11 @@ pub struct MlsDecryptMessage {
     /// [ClientId] of the sender of the message being decrypted. Only present for application messages.
     pub sender_client_id: Option<ClientId>,
     /// Identity claims present in the sender credential
+    ///
     /// Present for all messages
     pub identity: WireIdentity,
     /// Only set when the decrypted message is a commit.
+    ///
     /// Contains buffered messages for next epoch which were received before the commit creating the epoch
     /// because the DS did not fan them out in order.
     pub buffered_messages: Option<Vec<MlsBufferedDecryptMessage>>,
@@ -56,16 +58,16 @@ pub struct MlsDecryptMessage {
 
 /// Type safe recursion of [MlsDecryptMessage]
 #[derive(Debug)]
-pub struct MlsBufferedDecryptMessage {
-    /// see [MlsDecryptMessage]
+pub struct BufferedDecryptedMessage {
+    /// see [DecryptedMessage::app_msg]
     pub app_msg: Option<Vec<u8>>,
-    /// see [MlsDecryptMessage]
+    /// see [DecryptedMessage::is_active]
     pub is_active: bool,
-    /// see [MlsDecryptMessage]
+    /// see [DecryptedMessage::delay]
     pub delay: Option<u64>,
-    /// see [MlsDecryptMessage]
+    /// see [DecryptedMessage::sender_client_id]
     pub sender_client_id: Option<ClientId>,
-    /// see [MlsDecryptMessage]
+    /// see [DecryptedMessage::identity]
     pub identity: WireIdentity,
 }
 

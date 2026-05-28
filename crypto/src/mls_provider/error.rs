@@ -1,5 +1,5 @@
 #[derive(Debug, thiserror::Error)]
-pub enum MlsProviderError {
+pub enum Error {
     #[error(transparent)]
     KeystoreError(#[from] core_crypto_keystore::CryptoKeystoreError),
     #[error("The provided entropy seed has an incorrect length: expected {expected}, found {actual}")]

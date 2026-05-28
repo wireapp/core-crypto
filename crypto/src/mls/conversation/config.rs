@@ -25,7 +25,7 @@ pub(crate) const MAXIMUM_FORWARD_DISTANCE: u32 = 1000;
 
 /// The configuration parameters for a group/conversation
 #[derive(Debug, Clone, Default)]
-pub struct MlsConversationConfiguration {
+pub struct ConversationConfiguration {
     /// The `OpenMls` Ciphersuite used in the group
     pub ciphersuite: CipherSuite,
     /// Delivery service public signature key and credential

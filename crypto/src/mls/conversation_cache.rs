@@ -21,7 +21,7 @@ use crate::{
 /// [`Self::clear`] must be called when a transaction is rolled back. Otherwise,
 /// in-memory state mutated during the aborted transaction would diverge from
 /// the keystore.
-pub(crate) struct MlsConversationCache {
+pub(crate) struct ConversationCache {
     // `Arc<_>` is required here so that `ConversationGuard` can
     // hold a handle that outlives any single cache lookup.
     entries: LruMap<ConversationId, Arc<ImmutableConversation>, ByLength>,

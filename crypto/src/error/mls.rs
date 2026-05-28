@@ -1,9 +1,9 @@
 /// A MLS operation failed, but we captured some context about how it did so
-pub type MlsError = super::wrapper::WrappedContextualError<MlsErrorKind>;
+pub type OpenMlsError = super::wrapper::WrappedContextualError<OpenMlsErrorKind>;
 
 /// Openmls produces these kinds of error
 #[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
-pub enum MlsErrorKind {
+pub enum OpenMlsErrorKind {
     /// Welcome error
     #[error(transparent)]
     MlsWelcomeError(#[from] openmls::prelude::WelcomeError<core_crypto_keystore::CryptoKeystoreError>),

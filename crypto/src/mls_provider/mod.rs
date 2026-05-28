@@ -110,7 +110,7 @@ impl openmls_traits::authentication_service::AuthenticationServiceDelegate for A
 
 /// The MLS crypto provider
 #[derive(Debug, Clone)]
-pub struct MlsCryptoProvider {
+pub struct CryptoProvider {
     crypto: Arc<RustCrypto>,
     key_store: Database,
     auth_service: Arc<AuthenticationService>,

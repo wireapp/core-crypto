@@ -12,7 +12,7 @@ use crate::{MlsGroupInfoBundle, mls::conversation::WelcomeMessage};
 
 /// Returned when a commit is created
 #[derive(Debug, Clone)]
-pub struct MlsCommitBundle {
+pub struct CommitBundle {
     /// A welcome message if there are pending Add proposals
     pub welcome: Option<MlsMessageOut>,
     /// The commit message
