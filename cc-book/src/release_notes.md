@@ -390,8 +390,6 @@
 
 ## v9.3.4 - 2026-04-30
 
-### Highlights
-
 Fixes an issue that could cause _epoch observer_ events to be emitted for epoch changes that would not (yet) actually be
 persisted to the CoreCrypto database. This is relevant if the CoreCrypto instance is used inside the event handler of
 the _epoch observer_ (e.g., to update the exported secret). If you created a CoreCrypto transaction inside the handler
@@ -407,13 +405,9 @@ and didn't use the CoreCrypto instance directly, this fix is irrelevant.
 
 ## v9.3.1 - 2026-03-18
 
-### Highlights
-
 Fixes an enum representation bug on web.
 
 ## v9.3.0 - 2026-02-20
-
-### Highlights
 
 Lidl compat: Ios and Android can now export a compacted version of the CC database, retaining its encryption. This is
 only relevant for Lidl builds and should be ignored by everyone else.
@@ -423,8 +417,6 @@ only relevant for Lidl builds and should be ignored by everyone else.
 Upgrades openssl to version 3.5.5 (used on Android and iOS for encryption at rest).
 
 ## v9.2.0 - 2026-02-05
-
-### Highlights
 
 - Kotlin: expose the enitre read-only API on the `CoreCrypto` type. This allows performing arbitrary read-only
   operations on data while a transaction is running (e.g., in an `EpochObserver` event).
@@ -448,8 +440,6 @@ platforms.
 
 > [!NOTE]
 > Even though this is a minor version bump, it contains a breaking change. See below for more information.
-
-### Highlights
 
 - added typescript structured errors
 - fix the message rejected reason not being propagated on web
@@ -514,8 +504,6 @@ platforms.
 - Kotlin documentation is now correctly generated and deployed.
 
 ## v9.0.0 - 2025-09-16
-
-### Highlights
 
 - we're now tying the Kotlin wrapper more closely to the generated bindings which allows for greater velocity when
   making changes in code that affects our API - this causes most of the breaking changes in this release
@@ -690,8 +678,6 @@ For other platforms, no relevant changes are included.
 
 ## v8.0.0 - 2025-07-17
 
-### Highlights
-
 This release contains the complete API necessary for history sharing in conversations. We've improved the generated
 types in bindings to be more typesafe, and we've added the feature to rotate the key used for the core crypto database.
 
@@ -818,8 +804,6 @@ types in bindings to be more typesafe, and we've added the feature to rotate the
 
 ## v7.0.2 - 2025-07-07
 
-### Highlights
-
 Upgrade OpenMLS to fix a bug where the ratchet tree would sometimes become corrupt leading to broken MLS groups.
 
 ### Bug Fixes
@@ -866,8 +850,6 @@ function.
 
 ## v6.0.0 - 2025-05-07
 
-### Highlights
-
 - Changed the core crypto database key format, to enable validation of the same and ensure consistency between platforms
 - Added a function for each platform to migrate from the old to the new key type
 - Several more bug fixes, including prevention of the _pending commit_ error
@@ -887,8 +869,6 @@ function.
   Note: Instantiating this version of core crypto will fail before you call the migration function.
 
 ## v5.4.0 - 2025-05-14
-
-### Highlights
 
 Kotlin bindings only: transactions are now
 [`NonCancellable`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/),
@@ -919,8 +899,6 @@ category of bug where Kotlin thinks a transaction has been cancelled, while Rust
 
 ## v5.0.0 - 2025-03-21
 
-### Highlights
-
 New Swift bindings which are more ergonomic and allows for better testing by exposing the transaction context as a
 protocol.
 
@@ -945,8 +923,6 @@ remove their own epoch observers.
 
 ## v4.2.0 - 2025-02-28
 
-### Highlights
-
 - The Android release once again bundles API docs.
 - The Kotlin bindings have received several API fixes in particular:
   - AcmeChallenge was missing the target property.
@@ -955,8 +931,6 @@ remove their own epoch observers.
 - The code base has migrated to Rust 2024 edition.
 
 ## v4.1.0 - 2025-02-07
-
-### Highlights
 
 - Add the capability to handle the case where a proposal-referencing commit arrives before the proposals it references.
 
@@ -970,8 +944,6 @@ remove their own epoch observers.
 - support entity derive for tables with hex ids (0bd3676)
 
 ## v4.0.0 - 2025-01-28
-
-### Highlights
 
 - All errors crossing the FFI boundary are now logged.
 - An iOS client has been added to internal interop tests, which means we now test the entire FFI stack on iOS.
@@ -1077,8 +1049,6 @@ remove their own epoch observers.
 
 ## v3.1.0 - 2025-02-12
 
-### Highlights
-
 - Add a test case mimicking a real life bug ([WPB-15810]), demonstrating that in some cases it was possible to generate
   errors by swapping the ordering of two messages.
 
@@ -1098,8 +1068,6 @@ remove their own epoch observers.
 
 ## v3.0.2 - 2025-01-31
 
-### Highlights
-
 - Fix a bug which could cause certain errors to generate spurious log lines of the form
 
   > Cannot build CoreCryptoError, falling back to standard Error! ctx: Incoming message is from an epoch too far in the
@@ -1107,13 +1075,9 @@ remove their own epoch observers.
 
 ## v3.0.1 - 2025-01-27
 
-### Highlights
-
 - Emit info log with context when buffering, restoring, or clearing buffered messages
 
 ## v3.0.0 - 2024-12-11
-
-### Highlights
 
 - Fix the 'transaction in progress' error when there was an attempt to perform multiple transactions in parallel. This
   will no longer throw an error, instead the transactions will be queued and performed serially one after another.
@@ -1123,8 +1087,6 @@ remove their own epoch observers.
 - Added the missing MLS error case OrphanWelcome.
 
 ## v2.0.0 - 2024-12-02
-
-### Highlights
 
 - The number of public errors has been reduced and simplified. It's no longer necessary to use the
   `proteus_last_error_code` function, since thrown error should contain all the information.
