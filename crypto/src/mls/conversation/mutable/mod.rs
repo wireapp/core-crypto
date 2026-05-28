@@ -22,8 +22,8 @@ use crate::{
 
 /// A mutable view of an MLS conversation.
 ///
-/// The conversation is ultimately owned by the [conversation
-/// cache][crate::mls::conversation_cache::MlsConversationCache], but we take an `Arc` here so that we don't have to tie
+/// The conversation is ultimately owned by the conversation
+/// cache, but we take an `Arc` here so that we don't have to tie
 /// the lifetime of the guard to the cache.
 ///
 /// More generally, the conversation guard gives us convenient mutable accesses to a single

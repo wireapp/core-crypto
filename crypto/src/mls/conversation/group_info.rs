@@ -98,7 +98,7 @@ pub enum RatchetTreeType {
     ByRef = 3,
 }
 
-/// Represents the byte array in [MlsGroupInfoBundle]
+/// Represents the byte array in [GroupInfoBundle]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum GroupInfoPayload {
     /// Unencrypted [GroupInfo]

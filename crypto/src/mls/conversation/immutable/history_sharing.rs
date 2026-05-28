@@ -14,8 +14,8 @@ impl super::ImmutableConversation {
             .map_err(Into::into)
     }
 
-    /// Check if history sharing is enabled, i.e., if any of the conversation members have a [ClientId] starting
-    /// with [crate::HISTORY_CLIENT_ID_PREFIX].
+    /// Check if history sharing is enabled, i.e., if any of the conversation members have a [ClientId][crate::ClientId]
+    /// starting with [crate::HISTORY_CLIENT_ID_PREFIX].
     pub async fn is_history_sharing_enabled(&self) -> bool {
         self.get_client_ids()
             .await

@@ -56,7 +56,7 @@ pub struct DecryptedMessage {
     pub buffered_messages: Option<Vec<BufferedDecryptedMessage>>,
 }
 
-/// Type safe recursion of [MlsDecryptMessage]
+/// Type safe recursion of [DecryptedMessage]
 #[derive(Debug)]
 pub struct BufferedDecryptedMessage {
     /// see [DecryptedMessage::app_msg]
@@ -101,9 +101,6 @@ impl ConversationMut {
     ///
     /// # Arguments
     /// * `message` - the encrypted message as a byte array
-    ///
-    /// # Returns
-    /// An [MlsDecryptMessage]
     ///
     /// # Errors
     /// If a message has been buffered, this will be indicated by an error.

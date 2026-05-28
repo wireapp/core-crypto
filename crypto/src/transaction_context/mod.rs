@@ -117,7 +117,7 @@ impl TransactionContext {
         }
     }
 
-    /// Clones all references that the [MlsCryptoProvider] comprises.
+    /// Clones the [CryptoProvider].
     pub async fn crypto_provider(&self) -> Result<CryptoProvider> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { core_crypto, .. } => core_crypto

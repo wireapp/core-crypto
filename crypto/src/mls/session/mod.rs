@@ -120,7 +120,7 @@ impl Session {
         &self.database
     }
 
-    /// see [crate::mls_provider::MlsCryptoProvider::reseed]
+    /// see [crate::mls_provider::CryptoProvider::reseed]
     pub async fn reseed(&self, seed: Option<EntropySeed>) -> crate::mls::Result<()> {
         self.crypto_provider
             .reseed(seed)
