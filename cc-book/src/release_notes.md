@@ -446,7 +446,8 @@ platforms.
 
 ## v9.1.0 - 2025-09-29
 
-Note: even though this is a minor version bump, it contains a breaking change. See below for more information.
+> [!NOTE]
+> Even though this is a minor version bump, it contains a breaking change. See below for more information.
 
 ### Highlights
 
@@ -523,10 +524,9 @@ Note: even though this is a minor version bump, it contains a breaking change. S
 - added implicit obfuscation of sensitive data in logs
 - reworked the entire build system and CI
 
-### Note
-
-In this release we include a fix for missing artifacts in our Web release. The faulty release process affects all `8.x`
-versions. Therefore, instead of migrating from any version < `8.x` to `8.x`, directly migrate to this version.
+> [!NOTE]
+> In this release we include a fix for missing artifacts in our Web release. The faulty release process affects all
+> `8.x` versions. Therefore, instead of migrating from any version < `8.x` to `8.x`, directly migrate to this version.
 
 ### Breaking Changes
 
