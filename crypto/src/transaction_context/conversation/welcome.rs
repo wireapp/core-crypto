@@ -3,7 +3,7 @@
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 
 use super::{Error, Result, TransactionContext};
-use crate::{ConversationId, ConversationConfiguration};
+use crate::{ConversationConfiguration, ConversationId};
 
 impl TransactionContext {
     /// Create a conversation from a received MLS Welcome message
@@ -43,7 +43,6 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::test_utils::*;
 
     #[apply(all_cred_cipher)]
@@ -91,13 +90,7 @@ mod tests {
                     .transaction
                     .process_welcome_message(welcome)
                     .await;
-                assert!(
-                    matches!(join_welcome.unwrap_err(),
-                    Error::Recursive(crate::RecursiveError::MlsConversation { source, .. })
-                        if matches!(*source, crate::mls::conversation::Error::Leaf(LeafError::ConversationAlreadyExists(ref i)) if i == &id
-                        )
-                    )
-                );
+                assert!(innermost_source_matches!(join_welcome.unwrap_err(), LeafError::ConversationAlreadyExists(i) if i == &id));
             })
         .await;
     }

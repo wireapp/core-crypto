@@ -133,7 +133,7 @@ mod tests {
     use core_crypto_keystore::CryptoKeystoreMls;
 
     use super::Error;
-    use crate::{ConversationConfiguration, LeafError, test_utils::*, transaction_context};
+    use crate::{ConversationConfiguration, LeafError, test_utils::*};
 
     #[apply(all_cred_cipher)]
     async fn join_by_external_commit_should_succeed(case: TestContext) {
@@ -332,8 +332,6 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn new_with_inflight_welcome_should_fail_when_already_exists(case: TestContext) {
-        use crate::mls;
-
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice]).await;
@@ -353,12 +351,7 @@ mod tests {
                     .process_welcome_message(welcome)
                     .await;
 
-                assert!(matches!(
-                    conflict_welcome.unwrap_err(),
-                    transaction_context::Error::Recursive(crate::RecursiveError::MlsConversation { source, .. })
-                        if matches!(*source, mls::conversation::Error::Leaf(LeafError::ConversationAlreadyExists(ref i)) if i == &id
-                        )
-                ));
+                assert!(innermost_source_matches!(conflict_welcome.unwrap_err(), LeafError::ConversationAlreadyExists(i) if i == &id));
             })
         .await
     }
