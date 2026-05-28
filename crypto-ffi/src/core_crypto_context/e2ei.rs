@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use core_crypto::{mls::conversation::Conversation as _, transaction_context::Error as TransactionError};
+use core_crypto::transaction_context::Error as TransactionError;
 
 use crate::{
     CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, E2eiConversationState, UserIdentities,

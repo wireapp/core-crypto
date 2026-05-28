@@ -198,7 +198,7 @@ impl From<core_crypto::Error> for CoreCryptoError {
             core_crypto::Error::Proteus(_proteus) => {
                 unreachable!("we don't raise proteus errors when building without proteus")
             }
-            core_crypto::Error::Mls(mls) => Self::Mls {
+            core_crypto::Error::OpenMls(mls) => Self::Mls {
                 mls_error: MlsError::from(mls),
             },
             core_crypto::Error::InvalidTransactionContext => Self::Other { msg: error.to_string() },

@@ -1,4 +1,4 @@
-use core_crypto::{RecursiveError, mls::conversation::Conversation as _};
+use core_crypto::RecursiveError;
 
 use crate::{CipherSuite, ConversationId, CoreCryptoFfi, CoreCryptoResult, E2eiConversationState};
 

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use core_crypto::{RecursiveError, mls::conversation::Conversation as _};
+use core_crypto::RecursiveError;
 
 use crate::{ClientId, ConversationId, CoreCryptoFfi, CoreCryptoResult, WireIdentity};
 

@@ -5,7 +5,7 @@
 //! everything.
 use std::{fmt, sync::Arc};
 
-use core_crypto::{HistorySecret, MlsCommitBundle};
+use core_crypto::{CommitBundle as CcCommitBundle, HistorySecret};
 
 use crate::{ClientId, CommitBundle, HistorySecret as HistorySecretFfi, error::mls_transport::MlsTransportResult};
 
@@ -14,12 +14,12 @@ use crate::{ClientId, CommitBundle, HistorySecret as HistorySecretFfi, error::ml
 // TODO: We derive Constructor here only because we need to construct an instance in interop.
 // Remove it once we drop the FFI client from interop.
 #[derive(Debug, derive_more::From, derive_more::Into, derive_more::Deref, derive_more::Constructor)]
-pub struct MlsTransportData(core_crypto::MlsTransportData);
+pub struct MlsTransportData(core_crypto::TransportData);
 
 uniffi::custom_type!(MlsTransportData, Vec<u8>, {
     lower: |key| key.0.to_vec(),
     try_lift: |vec| {
-        Ok(MlsTransportData(core_crypto::MlsTransportData::from(vec)))
+        Ok(MlsTransportData(core_crypto::TransportData::from(vec)))
     }
 });
 
@@ -50,16 +50,13 @@ impl std::fmt::Debug for MlsTransportShim {
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl core_crypto::MlsTransport for MlsTransportShim {
-    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> core_crypto::Result<()> {
+    async fn send_commit_bundle(&self, commit_bundle: CcCommitBundle) -> core_crypto::Result<()> {
         let commit_bundle = CommitBundle::try_from(commit_bundle)
             .map_err(|e| core_crypto::Error::ErrorDuringMlsTransport(e.to_string()))?;
         self.0.send_commit_bundle(commit_bundle).await.map_err(Into::into)
     }
 
-    async fn prepare_for_transport(
-        &self,
-        secret: &HistorySecret,
-    ) -> core_crypto::Result<core_crypto::MlsTransportData> {
+    async fn prepare_for_transport(&self, secret: &HistorySecret) -> core_crypto::Result<core_crypto::TransportData> {
         let client_id = ClientId::from(secret.client_id.clone()).into();
         let history_secret = rmp_serde::to_vec(&secret)
             .map(|secret| HistorySecretFfi {

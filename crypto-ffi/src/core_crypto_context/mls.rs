@@ -1,8 +1,6 @@
 use std::{fmt, sync::Arc, time::Duration};
 
-use core_crypto::{
-    MlsConversationConfiguration, mls::conversation::Conversation as _, transaction_context::Error as TransactionError,
-};
+use core_crypto::{ConversationConfiguration, transaction_context::Error as TransactionError};
 
 use crate::{
     CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, Credential,
@@ -108,12 +106,7 @@ impl CoreCryptoContext {
 
     /// Returns the ciphersuite in use for the given conversation.
     pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<CipherSuite> {
-        let cs = self
-            .inner
-            .conversation(conversation_id.as_ref())
-            .await?
-            .ciphersuite()
-            .await;
+        let cs = self.inner.conversation(conversation_id.as_ref()).await?.ciphersuite();
         Ok(CipherSuite::from(cs))
     }
 
@@ -199,7 +192,7 @@ impl CoreCryptoContext {
         credential_ref: &CredentialRef,
         external_sender: Option<Arc<ExternalSender>>,
     ) -> CoreCryptoResult<()> {
-        let lower_cfg = MlsConversationConfiguration {
+        let lower_cfg = ConversationConfiguration {
             ciphersuite: credential_ref.ciphersuite().into(),
             external_senders: external_sender
                 .into_iter()

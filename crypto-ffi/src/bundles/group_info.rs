@@ -1,4 +1,4 @@
-use core_crypto::MlsGroupInfoBundle;
+use core_crypto::GroupInfoBundle as CcGroupInfoBundle;
 
 /// How a `GroupInfo` is encrypted in a commit bundle.
 #[derive(Debug, Clone, Copy, uniffi::Enum)]
@@ -10,16 +10,16 @@ pub enum MlsGroupInfoEncryptionType {
     JweEncrypted = 2,
 }
 
-impl From<core_crypto::MlsGroupInfoEncryptionType> for MlsGroupInfoEncryptionType {
-    fn from(value: core_crypto::MlsGroupInfoEncryptionType) -> Self {
+impl From<core_crypto::GroupInfoEncryptionType> for MlsGroupInfoEncryptionType {
+    fn from(value: core_crypto::GroupInfoEncryptionType) -> Self {
         match value {
-            core_crypto::MlsGroupInfoEncryptionType::Plaintext => Self::Plaintext,
-            core_crypto::MlsGroupInfoEncryptionType::JweEncrypted => Self::JweEncrypted,
+            core_crypto::GroupInfoEncryptionType::Plaintext => Self::Plaintext,
+            core_crypto::GroupInfoEncryptionType::JweEncrypted => Self::JweEncrypted,
         }
     }
 }
 
-impl From<MlsGroupInfoEncryptionType> for core_crypto::MlsGroupInfoEncryptionType {
+impl From<MlsGroupInfoEncryptionType> for core_crypto::GroupInfoEncryptionType {
     fn from(value: MlsGroupInfoEncryptionType) -> Self {
         match value {
             MlsGroupInfoEncryptionType::Plaintext => Self::Plaintext,
@@ -43,17 +43,17 @@ pub enum MlsRatchetTreeType {
     ByRef = 3,
 }
 
-impl From<core_crypto::MlsRatchetTreeType> for MlsRatchetTreeType {
-    fn from(value: core_crypto::MlsRatchetTreeType) -> Self {
+impl From<core_crypto::RatchetTreeType> for MlsRatchetTreeType {
+    fn from(value: core_crypto::RatchetTreeType) -> Self {
         match value {
-            core_crypto::MlsRatchetTreeType::Full => Self::Full,
-            core_crypto::MlsRatchetTreeType::Delta => Self::Delta,
-            core_crypto::MlsRatchetTreeType::ByRef => Self::ByRef,
+            core_crypto::RatchetTreeType::Full => Self::Full,
+            core_crypto::RatchetTreeType::Delta => Self::Delta,
+            core_crypto::RatchetTreeType::ByRef => Self::ByRef,
         }
     }
 }
 
-impl From<MlsRatchetTreeType> for core_crypto::MlsRatchetTreeType {
+impl From<MlsRatchetTreeType> for core_crypto::RatchetTreeType {
     fn from(value: MlsRatchetTreeType) -> Self {
         match value {
             MlsRatchetTreeType::Full => Self::Full,
@@ -74,8 +74,8 @@ pub struct GroupInfoBundle {
     pub payload: Vec<u8>,
 }
 
-impl From<MlsGroupInfoBundle> for GroupInfoBundle {
-    fn from(group_info_bundle: MlsGroupInfoBundle) -> Self {
+impl From<CcGroupInfoBundle> for GroupInfoBundle {
+    fn from(group_info_bundle: CcGroupInfoBundle) -> Self {
         // single variant => no match stmt necessary
         let core_crypto::GroupInfoPayload::Plaintext(payload) = group_info_bundle.payload;
         Self {

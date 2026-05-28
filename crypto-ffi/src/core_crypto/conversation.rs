@@ -1,9 +1,6 @@
 use std::{borrow::Borrow, sync::Arc};
 
-use core_crypto::{
-    RecursiveError,
-    mls::conversation::{Conversation as _, ConversationIdRef},
-};
+use core_crypto::{RecursiveError, mls::conversation::ConversationIdRef};
 
 use crate::{
     CipherSuite, ClientId, CoreCryptoFfi, CoreCryptoResult, CredentialRef,
@@ -62,8 +59,7 @@ impl CoreCryptoFfi {
             .map_err(RecursiveError::mls_client(
                 "conversation_ciphersuite: getting raw conversation by id",
             ))?
-            .ciphersuite()
-            .await;
+            .ciphersuite();
         Ok(CipherSuite::from(core_crypto::MlsCiphersuite::from(cs)))
     }
 

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use core_crypto::MlsCommitBundle;
+use core_crypto::CommitBundle as CcCommitBundle;
 
 use crate::{CoreCryptoError, GroupInfoBundle, core_crypto_context::mls::Welcome};
 
@@ -17,10 +17,10 @@ pub struct CommitBundle {
     pub encrypted_message: Option<Vec<u8>>,
 }
 
-impl TryFrom<MlsCommitBundle> for CommitBundle {
+impl TryFrom<CcCommitBundle> for CommitBundle {
     type Error = CoreCryptoError;
 
-    fn try_from(msg: MlsCommitBundle) -> Result<Self, Self::Error> {
+    fn try_from(msg: CcCommitBundle) -> Result<Self, Self::Error> {
         let encrypted_message = msg.encrypted_message.clone();
         let (welcome, commit, group_info) = msg.to_bytes_triple()?;
         let welcome = welcome.map(Into::into).map(Arc::new);

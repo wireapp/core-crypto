@@ -48,9 +48,9 @@ pub enum MlsError {
     Other { msg: String },
 }
 
-impl From<core_crypto::MlsError> for MlsError {
+impl From<core_crypto::OpenMlsError> for MlsError {
     #[inline]
-    fn from(e: core_crypto::MlsError) -> Self {
+    fn from(e: core_crypto::OpenMlsError) -> Self {
         Self::Other {
             msg: e.innermost_error_message(),
         }
