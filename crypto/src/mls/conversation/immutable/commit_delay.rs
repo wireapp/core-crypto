@@ -1,8 +1,9 @@
+use std::collections::HashSet;
+
 use log::{debug, trace};
 use openmls::{messages::proposals::Proposal, prelude::LeafNodeIndex};
 
 use super::Conversation;
-use crate::OpenMlsError;
 
 /// These constants intend to ramp up the delay and flatten the curve for later positions
 const DELAY_RAMP_UP_MULTIPLIER: f32 = 120.0;
@@ -24,7 +25,7 @@ impl Conversation {
             return None;
         }
 
-        let removed_index = group
+        let removed_indices = group
             .pending_proposals()
             .filter_map(|proposal| {
                 if let Proposal::Remove(remove_proposal) = proposal.proposal() {
@@ -33,12 +34,12 @@ impl Conversation {
                     None
                 }
             })
-            .collect::<Vec<LeafNodeIndex>>();
+            .collect::<HashSet<LeafNodeIndex>>();
 
         let self_index = group.own_leaf_index();
-        debug!(removed_index:? = removed_index, self_index:? = self_index; "Indexes");
+        debug!(removed_index:? = removed_indices, self_index:? = self_index; "Indexes");
         // Find a remove proposal that concerns us
-        let is_self_removed = removed_index.contains(&self_index);
+        let is_self_removed = removed_indices.contains(&self_index);
 
         // If our own client has been removed, don't commit
         if is_self_removed {
@@ -47,27 +48,21 @@ impl Conversation {
         }
 
         let epoch = group.epoch().as_u64();
-        let mut own_index = group.own_leaf_index().u32() as u64;
+        let mut own_index = self_index.u32() as u64;
 
         // Look for members that were removed at the left of our tree in order to shift our own leaf index (post-commit
         // tree visualization)
         let left_tree_diff = group
             .members()
             .take(own_index as usize)
-            .try_fold(0u32, |mut acc, kp| {
-                if removed_index.contains(&kp.index) {
-                    acc += 1;
-                }
-
-                Result::<_, OpenMlsError>::Ok(acc)
-            })
-            .unwrap_or_default();
+            .filter(|member| removed_indices.contains(&member.index))
+            .count() as u64;
 
         // Post-commit visualization of the number of members after remove proposals
-        let nb_members = (group.members().count() as u64).saturating_sub(removed_index.len() as u64);
+        let nb_members = (group.members().count() as u64).saturating_sub(removed_indices.len() as u64);
         // This shifts our own leaf index to the left (tree-wise) from as many as there was removed members that have a
         // smaller leaf index than us (older members)
-        own_index = own_index.saturating_sub(left_tree_diff as u64);
+        own_index = own_index.saturating_sub(left_tree_diff);
 
         Some(Self::calculate_delay(own_index, epoch, nb_members))
     }
