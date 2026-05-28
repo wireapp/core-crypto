@@ -16,7 +16,7 @@ use crate::{
 impl TransactionContext {
     /// Checks if a given conversation id exists locally.
     ///
-    /// Equivalent to `self.conversation(id)?.`
+    /// Somewhat cheaper than `self.conversation(id).is_ok()`.
     pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
         let database = self.database().await?.into();
         self.mls_groups()
