@@ -39,7 +39,7 @@ impl EntropySeed {
     /// Create an entropy seed from the provided slice.
     pub fn try_from_slice(data: &[u8]) -> MlsProviderResult<Self> {
         if data.len() < Self::EXPECTED_LEN {
-            return Err(Error::EntropySeedLengthError {
+            return Err(Error::EntropySeedLength {
                 actual: data.len(),
                 expected: Self::EXPECTED_LEN,
             });
