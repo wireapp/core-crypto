@@ -257,7 +257,7 @@ mod tests {
                 for _ in 0..2 {
                     for session in sessions.iter() {
                         let conversation = conversation.guard_of(session).await;
-                        check_identities_device_status(&*conversation, &client_ids, &name_status).await;
+                        check_identities_device_status(&conversation, &client_ids, &name_status).await;
                     }
                 }
             })
