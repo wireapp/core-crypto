@@ -19,6 +19,20 @@ book covers core CoreCrypto concepts and migration guides for major releases.
   cargo install --git https://github.com/nx10/mdbook-langtabs --tag v0.2.0 --locked
   ```
 
+- **mdbook-mermaid** — install a released binary from the
+  [mdbook-mermaid releases page](https://github.com/badboy/mdbook-mermaid/releases), or via Cargo from crates.io:
+
+  ```sh
+  cargo install mdbook-mermaid --locked
+  ```
+
+- Run the following from project root to install the mdbook dependencies to cc-book:
+
+  ```sh
+  mdbook-langtabs install ./cc-book &&
+  mdbook-mermaid install ./cc-book
+  ```
+
 ## Building
 
 From the repository root:
