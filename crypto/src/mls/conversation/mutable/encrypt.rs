@@ -37,7 +37,7 @@ impl ConversationMut {
         let credential = self.credential().await?;
         let signer = credential.signature_key();
 
-        self.mutate_group(async |_, group, _, _| {
+        self.mutate_group(async |_, group, _| {
             let encrypted = group
                 .create_message(&backend, signer, message.as_ref())
                 .map_err(OpenMlsError::wrap("creating encrypted message"))?;

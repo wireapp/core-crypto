@@ -4,7 +4,7 @@ use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
 use super::{Error, Result};
 use crate::{
-    CommitBundle, ConversationId, CredentialRef, LeafError, ConversationConfiguration, OpenMlsError, GroupInfoBundle,
+    CommitBundle, ConversationConfiguration, ConversationId, CredentialRef, GroupInfoBundle, LeafError, OpenMlsError,
     RecursiveError,
     mls::{
         self,
@@ -133,7 +133,7 @@ mod tests {
     use core_crypto_keystore::CryptoKeystoreMls;
 
     use super::Error;
-    use crate::{LeafError, ConversationConfiguration, test_utils::*, transaction_context};
+    use crate::{ConversationConfiguration, LeafError, test_utils::*, transaction_context};
 
     #[apply(all_cred_cipher)]
     async fn join_by_external_commit_should_succeed(case: TestContext) {
@@ -387,7 +387,7 @@ mod tests {
             let credential = alice.find_any_credential(ciphersuite.into(), credential_type).await;
             let mls_provider = alice.transaction.crypto_provider().await.unwrap();
             conversation
-                .mutate_group_test(async move |_, group, _, _| {
+                .mutate_group_test(async move |_, group, _| {
                     let gi = group
                         .export_group_info(
                             &mls_provider,

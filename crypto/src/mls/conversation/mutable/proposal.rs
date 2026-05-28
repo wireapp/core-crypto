@@ -17,7 +17,7 @@ impl ConversationMut {
         let crypto_provider = self.crypto_provider().await?;
         let signer = &self.credential().await?.signature_key_pair;
         let (proposal, _ref) = self
-            .mutate_group(async |_, group, _, _| {
+            .mutate_group(async |_, group, _| {
                 group
                     .propose_add_member(&crypto_provider, signer, key_package)
                     .await
@@ -33,7 +33,7 @@ impl ConversationMut {
         let crypto_provider = self.crypto_provider().await?;
         let signer = &self.credential().await?.signature_key_pair;
         let (proposal, _ref) = self
-            .mutate_group(async |_, group, _, _| {
+            .mutate_group(async |_, group, _| {
                 group
                     .propose_remove_member(&crypto_provider, signer, member)
                     .map_err(OpenMlsError::wrap("propose remove member"))

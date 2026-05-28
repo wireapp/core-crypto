@@ -216,7 +216,7 @@ impl ConversationMut {
                 }
             }
             ProcessedMessageContent::ProposalMessage(proposal) => {
-                self.mutate_group(async |_, group, id, _| {
+                self.mutate_group(async |_, group, id| {
                     info!(
                         group_id = id.to_owned(),
                         sender = Obfuscated::from(proposal.sender()),
@@ -273,7 +273,7 @@ impl ConversationMut {
                 self.validate_commit(&staged_commit).await?;
 
                 let (is_active, removed_members, added_members, group_id) = self
-                    .mutate_group(async |_, group, id, _| {
+                    .mutate_group(async |_, group, id| {
                         let removed_indices = staged_commit
                             .remove_proposals()
                             .map(|p| p.remove_proposal().removed())
@@ -335,7 +335,7 @@ impl ConversationMut {
                 }
             }
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
-                self.mutate_group(async |_, group, id, _| {
+                self.mutate_group(async |_, group, id| {
                     info!(
                         group_id = id.to_owned(),
                         sender = Obfuscated::from(proposal.sender());
@@ -405,7 +405,7 @@ impl ConversationMut {
     ) -> Result<ProcessedMessage> {
         let msg_epoch = protocol_message.epoch().as_u64();
         let backend = self.crypto_provider().await?;
-        self.mutate_group(async move |_, group, _, _| {
+        self.mutate_group(async move |_, group, _| {
             let group_epoch = group.epoch().as_u64();
             let processed_msg = group
                 .process_message(&backend, protocol_message)
@@ -813,7 +813,7 @@ mod tests {
                 conversation
                     .guard()
                     .await
-                    .mutate_group(async |_, group, _, _| {
+                    .mutate_group(async |_, group, _| {
                         group.clear_pending_proposals();
                         Ok(())
                     })

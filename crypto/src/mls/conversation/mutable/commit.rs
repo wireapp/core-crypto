@@ -6,7 +6,7 @@ use openmls::prelude::KeyPackageIn;
 
 use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
-    ClientId, ClientIdRef, CredentialRef, LeafError, OpenMlsError, GroupInfoBundle, RecursiveError,
+    ClientId, ClientIdRef, CredentialRef, GroupInfoBundle, LeafError, OpenMlsError, RecursiveError,
     mls::{
         conversation::{ConversationMut, Error, Result, commit::CommitBundle},
         credential::Credential,
@@ -67,7 +67,7 @@ impl ConversationMut {
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
 
-        self.mutate_group(async |_, group, _, _| {
+        self.mutate_group(async |_, group, _| {
             let signer = credential.signature_key();
             let (commit, welcome, group_info) = group
                 .add_members(&backend, signer, key_packages.clone())
@@ -133,7 +133,7 @@ impl ConversationMut {
         let signer = credential.signature_key();
 
         let (commit, welcome, group_info) = self
-            .mutate_group(async |_, group, _, _| {
+            .mutate_group(async |_, group, _| {
                 let members = group
                     .members()
                     .filter_map(|kp| {
@@ -189,7 +189,7 @@ impl ConversationMut {
         let backend = self.crypto_provider().await?;
         let credential = credential.clone();
 
-        self.mutate_group(async |_, group, _, _| {
+        self.mutate_group(async |_, group, _| {
             // If the credential remains the same and we still want to update, we explicitly need to pass `None` to
             // openmls, if we just passed an unchanged leaf node, no update commit would be created.
             // Also, we can avoid cloning in the case we don't need to create a new leaf node.
@@ -242,7 +242,7 @@ impl ConversationMut {
         let credential = self.credential().await?;
 
         let (commit, welcome, openmls_group_info) = self
-            .mutate_group(async |_, group, _, _| {
+            .mutate_group(async |_, group, _| {
                 let signer = &credential.signature_key_pair;
                 group
                     .commit_to_pending_proposals(&crypto_provider, signer)
@@ -275,7 +275,7 @@ impl ConversationMut {
         let credential = self.credential().await?;
 
         let (commit, welcome, openmls_group_info) = self
-            .mutate_group(async |_, group, _, _| {
+            .mutate_group(async |_, group, _| {
                 let signer = &credential.signature_key_pair;
                 group
                     .commit_to_inline_proposals(provider, signer, proposals)

@@ -3,7 +3,7 @@ use openmls::group::{InnerState, MlsGroup};
 
 use super::{ConversationMut, Result};
 use crate::{
-    KeystoreError, ConversationConfiguration, RecursiveError,
+    KeystoreError, RecursiveError,
     mls::conversation::{ConversationIdRef, ImmutableConversation},
 };
 
@@ -24,12 +24,7 @@ impl ConversationMut {
     /// if any lock already exists on that conversation.
     pub(super) async fn mutate_group<T>(
         &mut self,
-        operation: impl AsyncFnOnce(
-            &Database,
-            &mut MlsGroup,
-            &ConversationIdRef,
-            &ConversationConfiguration,
-        ) -> Result<T>,
+        operation: impl AsyncFnOnce(&Database, &mut MlsGroup, &ConversationIdRef) -> Result<T>,
     ) -> Result<T> {
         // we can't get the database if the transaction context has been invalidated,
         // and we want to have that error first before evaluating anything in the operation.
@@ -39,14 +34,9 @@ impl ConversationMut {
             .await
             .map_err(RecursiveError::transaction("getting database from context"))?;
 
-        let ImmutableConversation {
-            group,
-            id,
-            configuration,
-            ..
-        } = &*self.inner;
+        let ImmutableConversation { group, id, .. } = &*self.inner;
         let mut group = group.write().await;
-        let ok_result = operation(&database, &mut *group, id, configuration).await?;
+        let ok_result = operation(&database, &mut *group, id).await?;
 
         if group.state_changed() == InnerState::Changed {
             database
@@ -67,12 +57,7 @@ impl ConversationMut {
     #[cfg(test)]
     pub(crate) async fn mutate_group_test<T>(
         &mut self,
-        operation: impl AsyncFnOnce(
-            &Database,
-            &mut MlsGroup,
-            &ConversationIdRef,
-            &ConversationConfiguration,
-        ) -> Result<T>,
+        operation: impl AsyncFnOnce(&Database, &mut MlsGroup, &ConversationIdRef) -> Result<T>,
     ) -> Result<T> {
         self.mutate_group(operation).await
     }

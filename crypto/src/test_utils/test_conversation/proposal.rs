@@ -38,7 +38,7 @@ impl<'a> TestConversation<'a> {
         let mut guard = self.guard().await;
         let member_id = member.session().await.id();
         let member_index = guard
-            .mutate_group_test(async |_, group, _, _| {
+            .mutate_group_test(async |_, group, _| {
                 Ok(group
                     .members()
                     .find(|member| member.credential.identity() == member_id.as_slice())

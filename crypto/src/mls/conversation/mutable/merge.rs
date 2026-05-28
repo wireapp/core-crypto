@@ -36,7 +36,7 @@ impl ConversationMut {
     /// Apply a pending commit
     pub(super) async fn commit_accepted(&mut self) -> Result<()> {
         let provider = &self.crypto_provider().await?;
-        self.mutate_group(async |database, group, _, _| {
+        self.mutate_group(async |database, group, _| {
             // openmls stores here all the encryption keypairs used for update proposals..
             let previous_own_leaf_nodes = group.own_leaf_nodes.clone();
 
@@ -68,7 +68,7 @@ impl ConversationMut {
     /// # Errors
     /// When there is no pending commit
     pub(crate) async fn clear_pending_commit(&mut self) -> Result<()> {
-        self.mutate_group(async |_, group, id, _| {
+        self.mutate_group(async |_, group, id| {
             if group.pending_commit().is_none() {
                 return Err(Error::PendingCommitNotFound);
             }

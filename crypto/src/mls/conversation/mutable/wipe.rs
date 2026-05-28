@@ -18,7 +18,7 @@ impl ConversationMut {
             .await
             .map_err(RecursiveError::transaction("getting mls conversation cache"))?;
 
-        self.mutate_group(async |database, group, _, _| {
+        self.mutate_group(async |database, group, _| {
             // the own client may or may not have generated an epoch keypair in the previous epoch
             // Since it is a terminal operation, ignoring the error is fine here.
             let _ = group.delete_previous_epoch_keypairs(&provider).await;
