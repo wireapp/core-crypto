@@ -223,3 +223,9 @@ dist
 
 crypto-ffi/bindings/build
 interop/src/clients/build
+
+# CC-Book - preprocessor files
+cc-book/mermaid.min.js
+cc-book/mermaid-init.js
+cc-book/langtabs.js
+cc-book/langtabs.css
