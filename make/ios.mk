@@ -16,7 +16,7 @@ $(IOS_DEVICE): $(ios-device-deps)
 .PHONY: ios-device
 ios-device: $(IOS_DEVICE) ## Build core-crypto-ffi for aarch64-apple-ios for iOS 16.4 (macOS only)
 
-IOS_SIMULATOR_ARM := target/aarch64-apple-ios-sim/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+IOS_SIMULATOR_ARM := target/aarch64-apple-ios-sim/release/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 ios-simulator-arm-deps := $(RUST_SOURCES)
 $(IOS_SIMULATOR_ARM): $(ios-simulator-arm-deps)
 	CRATE_CC_NO_DEFAULTS=1 \
@@ -28,10 +28,10 @@ $(IOS_SIMULATOR_ARM): $(ios-simulator-arm-deps)
 	  --crate-type=cdylib \
 	  --crate-type=staticlib \
 	  --package core-crypto-ffi \
-	  $(CARGO_BUILD_ARGS) -- $(RUST_STRIP_FLAGS)
+	  --release -- $(RUST_STRIP_FLAGS)
 
 .PHONY: ios-simulator-arm
-ios-simulator-arm: $(IOS_SIMULATOR_ARM) ## Build core-crypto-ffi for aarch64-apple-ios-sim, iOS 16.4 (macOS only)
+ios-simulator-arm: $(IOS_SIMULATOR_ARM) ## Build for aarch64-apple-ios-sim, iOS 16.4 (macOS only). Always builds in release mode (see WPB-25954).
 
 .PHONY: ios
 ios: ios-device ios-simulator-arm
