@@ -11,7 +11,7 @@ use tls_codec::Deserialize;
 use super::{RecursionPolicy, Result};
 use crate::{
     KeystoreError, MlsBufferedDecryptMessage,
-    mls::conversation::{ConversationGuard, Error},
+    mls::conversation::{ConversationMut, Error},
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -22,7 +22,7 @@ pub(crate) enum MessageRestorePolicy {
     ClearOnly,
 }
 
-impl ConversationGuard {
+impl ConversationMut {
     pub(super) async fn buffer_future_message(&self, message: impl AsRef<[u8]>) -> Result<()> {
         let database = self.database().await?;
         let pending_msg = MlsPendingMessage {

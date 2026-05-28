@@ -7,7 +7,7 @@ use super::{
 };
 use crate::{
     CredentialRef,
-    mls::{conversation::pending_conversation::PendingConversation, credential::Credential},
+    mls::{conversation::PendingConversation, credential::Credential},
 };
 
 impl<'a> TestConversation<'a> {

@@ -20,7 +20,7 @@ use crate::{
     transaction_context::TransactionContext,
 };
 
-/// A Conversation Guard wraps an [`Arc<RwLock<ImmutableConversation>>`].
+/// A mutable view of an MLS conversation.
 ///
 /// The conversation is ultimately owned by the [conversation
 /// cache][crate::mls::conversation_cache::MlsConversationCache], but we take an `Arc` here so that we don't have to tie
@@ -30,12 +30,12 @@ use crate::{
 /// conversation. This in turn means that we don't have to duplicate the entire
 /// conversation API on `TransactionContext`.
 #[derive(Debug, derive_more::Constructor)]
-pub struct ConversationGuard {
+pub struct ConversationMut {
     inner: Arc<ImmutableConversation>,
     tx_context: TransactionContext,
 }
 
-impl ConversationGuard {
+impl ConversationMut {
     async fn transport(&self) -> Result<Arc<dyn MlsTransport>> {
         self.tx_context
             .mls_transport()
@@ -83,20 +83,20 @@ impl ConversationGuard {
     }
 }
 
-impl std::ops::Deref for ConversationGuard {
+impl std::ops::Deref for ConversationMut {
     type Target = ImmutableConversation;
 
     fn deref(&self) -> &Self::Target {
-        &*self.inner
+        &self.inner
     }
 }
 
 #[cfg(test)]
 mod test_utils {
-    use super::ConversationGuard;
+    use super::ConversationMut;
     use crate::mls::conversation::ImmutableConversation;
 
-    impl ConversationGuard {
+    impl ConversationMut {
         /// Replaces the MLS group in memory with the one from keystore.
         pub async fn drop_and_restore(&mut self) {
             let session = self.tx_context.session().await.unwrap();

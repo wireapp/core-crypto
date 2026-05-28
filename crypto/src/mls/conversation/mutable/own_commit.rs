@@ -6,10 +6,10 @@ use openmls::{
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
 
-use super::{ConversationGuard, Error, Result};
+use super::{ConversationMut, Error, Result};
 use crate::{MlsDecryptMessage, RecursiveError, mls::credential::ext::CredentialExt};
 
-impl ConversationGuard {
+impl ConversationMut {
     /// Returns the confirmation tag from a public message that is an own commit.
     /// Returns an error if the confirmation tag in the own commit is missing.
     pub(crate) async fn extract_confirmation_tag_from_own_commit<'a>(

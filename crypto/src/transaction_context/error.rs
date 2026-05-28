@@ -2,7 +2,7 @@
 #![allow(missing_docs)]
 
 use super::e2e_identity;
-use crate::{ConversationId, CredentialRef, mls::conversation::pending_conversation::PendingConversation};
+use crate::{ConversationId, CredentialRef, mls::conversation::PendingConversation};
 
 /// A module-specific [Result][core::result::Result] type with a default error variant.
 pub type Result<T, E = Error> = core::result::Result<T, E>;

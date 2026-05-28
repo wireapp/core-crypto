@@ -8,7 +8,7 @@ use crate::{
     MlsGroupInfoBundle, RecursiveError,
     mls::{
         self,
-        conversation::{ConversationIdRef, pending_conversation::PendingConversation},
+        conversation::{ConversationIdRef, PendingConversation},
     },
     transaction_context::TransactionContext,
 };

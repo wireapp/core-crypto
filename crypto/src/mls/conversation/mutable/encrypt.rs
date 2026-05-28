@@ -2,10 +2,10 @@
 
 use openmls::prelude::MlsMessageOutBody;
 
-use super::{ConversationGuard, Result};
+use super::{ConversationMut, Result};
 use crate::MlsError;
 
-impl ConversationGuard {
+impl ConversationMut {
     /// Encrypts a raw payload then serializes it to the TLS wire format.
     ///
     /// Can only be called when there is no pending commit and no pending proposal.

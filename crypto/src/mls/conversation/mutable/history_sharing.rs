@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use itertools::{Either, Itertools as _};
 use openmls::prelude::Sender;
 
-use super::{ConversationGuard, Error, Result};
+use super::{ConversationMut, Error, Result};
 use crate::{ClientIdRef, HistorySecret, MlsCommitBundle, RecursiveError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -15,7 +15,7 @@ pub(super) enum HistoryClientUpdateOutcome {
     CommitSentAndMerged,
 }
 
-impl ConversationGuard {
+impl ConversationMut {
     /// Enable history sharing by generating a history client and adding it to the conversation.
     pub async fn enable_history_sharing(&mut self) -> Result<()> {
         if self.is_history_sharing_enabled().await {

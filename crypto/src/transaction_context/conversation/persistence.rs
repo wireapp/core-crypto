@@ -6,7 +6,7 @@ use openmls::{
 
 use crate::{
     ConversationId, KeystoreError, LeafError, MlsConversationConfiguration, MlsError, RecursiveError,
-    mls::conversation::{ConversationGuard, Error as ConversationError, ImmutableConversation},
+    mls::conversation::{ConversationMut, Error as ConversationError, ImmutableConversation},
     transaction_context::{Result, TransactionContext},
 };
 
@@ -27,7 +27,7 @@ impl TransactionContext {
         &self,
         mut group: MlsGroup,
         configuration: MlsConversationConfiguration,
-    ) -> Result<ConversationGuard> {
+    ) -> Result<ConversationMut> {
         let id = ConversationId::from(group.group_id().as_slice());
         let session = self.session().await.map_err(RecursiveError::transaction(
             "getting session from tx context to persist",
@@ -47,7 +47,7 @@ impl TransactionContext {
         let mut group_store = self.mls_groups().await?;
 
         let inner = group_store.insert(conversation);
-        Ok(ConversationGuard::new(inner, self.clone()))
+        Ok(ConversationMut::new(inner, self.clone()))
     }
 
     /// Create a MLS conversation from an MLS Welcome message
@@ -58,7 +58,7 @@ impl TransactionContext {
         &self,
         welcome: Welcome,
         configuration: MlsConversationConfiguration,
-    ) -> Result<ConversationGuard> {
+    ) -> Result<ConversationMut> {
         let mls_group_config =
             configuration
                 .as_openmls_default_configuration()

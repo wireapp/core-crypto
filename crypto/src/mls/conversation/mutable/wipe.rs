@@ -2,9 +2,9 @@ use core_crypto_keystore::CryptoKeystoreMls as _;
 use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::Result;
-use crate::{KeystoreError, MlsError, RecursiveError, mls::conversation::ConversationGuard};
+use crate::{KeystoreError, MlsError, RecursiveError, mls::conversation::ConversationMut};
 
-impl ConversationGuard {
+impl ConversationMut {
     /// Destroys a group locally
     ///
     /// # Errors
@@ -45,10 +45,10 @@ impl ConversationGuard {
 
         provider
             .key_store()
-            .mls_group_delete(&id)
+            .mls_group_delete(id)
             .await
             .map_err(KeystoreError::wrap("deleting mls group"))?;
-        let _ = conversation_cache.remove(&id);
+        let _ = conversation_cache.remove(id);
 
         Ok(())
     }

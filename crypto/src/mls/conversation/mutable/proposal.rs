@@ -7,11 +7,11 @@
 
 use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn};
 
-use super::{ConversationGuard, Result};
+use super::{ConversationMut, Result};
 use crate::MlsError;
 
 /// Creating proposals
-impl ConversationGuard {
+impl ConversationMut {
     /// Used when adding or updating the history client.
     pub(crate) async fn propose_add_member(&mut self, key_package: KeyPackageIn) -> Result<MlsMessageOut> {
         let crypto_provider = self.crypto_provider().await?;

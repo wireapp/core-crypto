@@ -4,10 +4,10 @@ use openmls::framing::MlsMessageIn;
 use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize as _;
 
-use super::{ConversationGuard, RecursionPolicy, Result};
+use super::{ConversationMut, RecursionPolicy, Result};
 use crate::{KeystoreError, MlsDecryptMessage, mls::conversation::Error};
 
-impl ConversationGuard {
+impl ConversationMut {
     /// Cache the bytes of a buffered commit in the backend.
     ///
     /// By storing the raw commit bytes and doing deserialization/decryption from scratch, we preserve all

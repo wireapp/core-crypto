@@ -10,7 +10,7 @@ use openmls::group::MlsGroup;
 use super::{Error, Result, TransactionContext};
 use crate::{
     CredentialRef, KeystoreError, LeafError, MlsConversationConfiguration, MlsError, RecursiveError,
-    mls::conversation::{ConversationGuard, ConversationIdRef, pending_conversation::PendingConversation},
+    mls::conversation::{ConversationIdRef, ConversationMut, PendingConversation},
 };
 
 impl TransactionContext {
@@ -30,7 +30,7 @@ impl TransactionContext {
     /// Acquire a conversation guard.
     ///
     /// This helper struct permits mutations on a conversation.
-    pub async fn conversation(&self, id: &ConversationIdRef) -> Result<ConversationGuard> {
+    pub async fn conversation(&self, id: &ConversationIdRef) -> Result<ConversationMut> {
         let keystore = self.database().await?;
         let session = self.session().await?;
         let inner = self
@@ -41,7 +41,7 @@ impl TransactionContext {
             .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?;
 
         if let Some(inner) = inner {
-            return Ok(ConversationGuard::new(inner, self.clone()));
+            return Ok(ConversationMut::new(inner, self.clone()));
         }
         // Check if there is a pending conversation with
         // the same id

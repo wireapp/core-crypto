@@ -59,11 +59,9 @@ pub use crate::{
         ExternalSender,
         ciphersuite::CipherSuite,
         conversation::{
-            ConversationId,
-            commit::MlsCommitBundle,
-            config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
-            conversation_guard::decrypt::{MlsBufferedDecryptMessage, MlsDecryptMessage},
-            group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
+            ConversationId, GroupInfoPayload, MlsBufferedDecryptMessage, MlsCommitBundle, MlsConversationConfiguration,
+            MlsCustomConfiguration, MlsDecryptMessage, MlsGroupInfoBundle, MlsGroupInfoEncryptionType,
+            MlsRatchetTreeType, MlsWirePolicy,
         },
         credential::{
             Credential, CredentialRef, CredentialType, FindFilters as CredentialFindFilters, x509::CertificateBundle,

@@ -11,25 +11,32 @@
 //! | merge     | ❌           | ❌            | ✅           | ✅            |
 //! | decrypt   | ✅           | ✅            | ✅           | ✅            |
 
-pub(crate) mod commit;
-pub(crate) mod config;
-pub(crate) mod conversation_guard;
+mod commit;
+mod config;
 mod error;
-pub(crate) mod group_info;
+mod group_info;
 mod id;
-mod immutable_conversation;
+mod immutable;
+mod mutable;
 mod orphan_welcome;
-pub(crate) mod pending_conversation;
+mod pending;
 mod welcome;
 
 pub use self::{
-    conversation_guard::ConversationGuard,
+    commit::MlsCommitBundle,
+    config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
     error::{Error, Result},
+    group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
     id::{ConversationId, ConversationIdRef},
-    immutable_conversation::ImmutableConversation,
+    immutable::ImmutableConversation,
+    mutable::{
+        ConversationMut,
+        decrypt::{MlsBufferedDecryptMessage, MlsDecryptMessage},
+    },
     welcome::WelcomeMessage,
 };
 use crate::bytes_wrapper;
+pub(crate) use pending::PendingConversation;
 
 bytes_wrapper!(
     /// A secret key derived from the group secret.

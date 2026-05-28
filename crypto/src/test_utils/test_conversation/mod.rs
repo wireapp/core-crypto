@@ -7,7 +7,7 @@ use super::{CredentialType, MessageExt as _, MlsTransportTestExt, SessionContext
 use crate::{
     ConversationId, CredentialRef, E2eiConversationState, RecursiveError,
     mls::{
-        conversation::ConversationGuard,
+        conversation::ConversationMut,
         credential::{Credential, ext::CredentialExt as _},
     },
 };
@@ -252,13 +252,13 @@ impl<'a> TestConversation<'a> {
     /// Convenience function to get the conversation guard of this conversation.
     ///
     /// The guard belongs to the current actor.
-    pub async fn guard(&self) -> ConversationGuard {
+    pub async fn guard(&self) -> ConversationMut {
         self.guard_of(self.actor()).await
     }
 
     /// Get the conversation guard of this conversation, from the point of view of the
     /// member.
-    pub async fn guard_of(&self, member: &'a SessionContext) -> ConversationGuard {
+    pub async fn guard_of(&self, member: &'a SessionContext) -> ConversationMut {
         member.transaction.conversation(&self.id).await.unwrap()
     }
 

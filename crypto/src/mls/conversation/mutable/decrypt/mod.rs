@@ -27,7 +27,7 @@ use openmls::{
 use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize as _;
 
-use super::{ConversationGuard, Result};
+use super::{ConversationMut, Result};
 use crate::{
     ClientId, E2eiConversationState, MlsError, RecursiveError, Session, WireIdentity,
     mls::{conversation::Error, credential::ext::CredentialExt as _},
@@ -93,7 +93,7 @@ enum RecursionPolicy {
     None,
 }
 
-impl ConversationGuard {
+impl ConversationMut {
     /// Deserializes a TLS-serialized message, then processes it.
     /// **Note**: this will discard any local pending commits or proposals.
     ///

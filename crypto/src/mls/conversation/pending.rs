@@ -19,7 +19,7 @@ use crate::{
     KeystoreError, LeafError, MlsBufferedDecryptMessage, MlsCommitBundle, MlsConversationConfiguration,
     MlsCustomConfiguration, MlsDecryptMessage, MlsError, RecursiveError,
     mls::{
-        conversation::{ConversationIdRef, conversation_guard::decrypt::buffer_messages::MessageRestorePolicy},
+        conversation::{ConversationIdRef, mutable::decrypt::buffer_messages::MessageRestorePolicy},
         credential::ext::CredentialExt as _,
     },
     mls_provider::{Database, MlsCryptoProvider},

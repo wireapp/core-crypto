@@ -8,12 +8,12 @@ use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
     ClientId, ClientIdRef, CredentialRef, LeafError, MlsError, MlsGroupInfoBundle, RecursiveError,
     mls::{
-        conversation::{ConversationGuard, Error, Result, commit::MlsCommitBundle},
+        conversation::{ConversationMut, Error, Result, commit::MlsCommitBundle},
         credential::Credential,
     },
 };
 
-impl ConversationGuard {
+impl ConversationMut {
     pub(super) async fn send_and_merge_commit(&mut self, commit: MlsCommitBundle) -> Result<()> {
         let history_client_update_result = self.update_history_client().await?;
         if history_client_update_result == HistoryClientUpdateOutcome::CommitSentAndMerged {

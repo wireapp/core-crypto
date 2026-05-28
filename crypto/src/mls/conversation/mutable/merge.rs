@@ -29,10 +29,10 @@
 
 use core_crypto_keystore::entities::StoredEncryptionKeyPair;
 
-use super::{ConversationGuard, Result};
+use super::{ConversationMut, Result};
 use crate::{MlsError, mls::conversation::Error};
 
-impl ConversationGuard {
+impl ConversationMut {
     /// Apply a pending commit
     pub(super) async fn commit_accepted(&mut self) -> Result<()> {
         let provider = &self.crypto_provider().await?;
