@@ -1,7 +1,7 @@
 use std::{net::SocketAddr, path::PathBuf};
 
 use anyhow::Result;
-use core_crypto::{HistorySecret, MlsCommitBundle, MlsTransport};
+use core_crypto::{CommitBundle as CcCommitBundle, HistorySecret, MlsTransport};
 use core_crypto_ffi::{CommitBundle, HistorySecret as HistorySecretFfi};
 use openmls::prelude::MlsMessageOut;
 use spinoff::Spinner;
@@ -67,7 +67,7 @@ impl RunningProcess {
 
 #[async_trait::async_trait]
 pub(crate) trait MlsTransportTestExt: MlsTransport {
-    async fn latest_commit_bundle(&self) -> MlsCommitBundle;
+    async fn latest_commit_bundle(&self) -> CcCommitBundle;
     async fn latest_welcome_message(&self) -> MlsMessageOut {
         self.latest_commit_bundle().await.welcome.unwrap().clone()
     }
@@ -75,27 +75,24 @@ pub(crate) trait MlsTransportTestExt: MlsTransport {
 
 #[derive(Debug, Default)]
 pub(crate) struct MlsTransportSuccessProvider {
-    latest_commit_bundle: RwLock<Option<MlsCommitBundle>>,
+    latest_commit_bundle: RwLock<Option<CcCommitBundle>>,
 }
 
 #[async_trait::async_trait]
 impl MlsTransport for MlsTransportSuccessProvider {
-    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> core_crypto::Result<()> {
+    async fn send_commit_bundle(&self, commit_bundle: CcCommitBundle) -> core_crypto::Result<()> {
         self.latest_commit_bundle.write().await.replace(commit_bundle);
         Ok(())
     }
 
-    async fn prepare_for_transport(
-        &self,
-        secret: &HistorySecret,
-    ) -> core_crypto::Result<core_crypto::MlsTransportData> {
+    async fn prepare_for_transport(&self, secret: &HistorySecret) -> core_crypto::Result<core_crypto::TransportData> {
         Ok(format!("history_secret: {:?}", secret.client_id).into_bytes().into())
     }
 }
 
 #[async_trait::async_trait]
 impl MlsTransportTestExt for MlsTransportSuccessProvider {
-    async fn latest_commit_bundle(&self) -> MlsCommitBundle {
+    async fn latest_commit_bundle(&self) -> CcCommitBundle {
         self.latest_commit_bundle
             .read()
             .await
@@ -111,8 +108,7 @@ impl core_crypto_ffi::MlsTransport for MlsTransportSuccessProvider {
     }
 
     async fn prepare_for_transport(&self, history_secret: HistorySecretFfi) -> core_crypto_ffi::MlsTransportData {
-        core_crypto::MlsTransportData::from(format!("history_secret: {:?}", history_secret.client_id).into_bytes())
-            .into()
+        core_crypto::TransportData::from(format!("history_secret: {:?}", history_secret.client_id).into_bytes()).into()
     }
 }
 
