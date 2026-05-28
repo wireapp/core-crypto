@@ -92,7 +92,7 @@ pub enum Error {
         source: tls_codec::Error,
     },
     #[error(transparent)]
-    Mls(#[from] crate::OpenMlsError),
+    OpenMls(#[from] crate::OpenMlsError),
     #[error(transparent)]
     Keystore(#[from] crate::KeystoreError),
     #[error("{0}")]

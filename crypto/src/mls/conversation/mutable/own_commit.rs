@@ -268,7 +268,7 @@ mod tests {
             let error = decryption_result.unwrap_err();
             assert!(matches!(
                 error,
-                Error::Mls(OpenMlsError {
+                Error::OpenMls(OpenMlsError {
                     source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
                         ValidationError::InvalidMembershipTag
                     )),

@@ -1,13 +1,13 @@
 mod keystore;
 mod leaf;
-mod mls;
+mod open_mls;
 mod proteus;
 mod recursive;
 mod wrapper;
 
 pub use keystore::KeystoreError;
 pub use leaf::LeafError;
-pub use mls::{OpenMlsError, OpenMlsErrorKind};
+pub use open_mls::{OpenMlsError, OpenMlsErrorKind};
 pub use proteus::{ProteusError, ProteusErrorKind};
 pub use recursive::{RecursiveError, ToRecursiveError};
 

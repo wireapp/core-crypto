@@ -156,7 +156,7 @@ mod tests {
 
                 assert!(matches!(
                     owner_decrypt.unwrap_err(),
-                    mls::conversation::Error::Mls(OpenMlsError {
+                    mls::conversation::Error::OpenMls(OpenMlsError {
                         source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
                             ValidationError::UnauthorizedExternalSender
                         )),
@@ -167,7 +167,7 @@ mod tests {
                 let (_, guest_decrypt) = proposal_guard.notify_member_fallible(&guest).await;
                 assert!(matches!(
                     guest_decrypt.unwrap_err(),
-                    mls::conversation::Error::Mls(OpenMlsError {
+                    mls::conversation::Error::OpenMls(OpenMlsError {
                         source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
                             ValidationError::UnauthorizedExternalSender
                         )),
@@ -199,7 +199,7 @@ mod tests {
                 let (proposal_guard, owner_decrypt) = proposal_guard.notify_member_fallible(&owner).await;
                 assert!(matches!(
                     owner_decrypt.unwrap_err(),
-                    mls::conversation::Error::Mls(OpenMlsError {
+                    mls::conversation::Error::OpenMls(OpenMlsError {
                         source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidSignature),
                         ..
                     })
@@ -208,7 +208,7 @@ mod tests {
                 let (_, guest_decrypt) = proposal_guard.notify_member_fallible(&guest).await;
                 assert!(matches!(
                     guest_decrypt.unwrap_err(),
-                    mls::conversation::Error::Mls(OpenMlsError {
+                    mls::conversation::Error::OpenMls(OpenMlsError {
                         source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidSignature),
                         ..
                     })

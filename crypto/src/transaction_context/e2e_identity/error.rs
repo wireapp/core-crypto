@@ -28,7 +28,7 @@ pub enum Error {
     #[error(transparent)]
     X509CertDerError(#[from] x509_cert::der::Error),
     #[error(transparent)]
-    Mls(#[from] crate::OpenMlsError),
+    OpenMls(#[from] crate::OpenMlsError),
     #[error(transparent)]
     Keystore(#[from] crate::KeystoreError),
     #[error(transparent)]

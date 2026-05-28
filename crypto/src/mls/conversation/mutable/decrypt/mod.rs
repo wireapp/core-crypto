@@ -146,7 +146,7 @@ impl ConversationMut {
         let message_result = self.process_message(parsed_message).await;
 
         // Handles the case where we receive our own commits.
-        if let Err(Error::Mls(crate::OpenMlsError {
+        if let Err(Error::OpenMls(crate::OpenMlsError {
             source:
                 crate::OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidCommit(StageCommitError::OwnCommit)),
             ..
@@ -169,7 +169,7 @@ impl ConversationMut {
         // In this error case, we have a missing proposal, so we need to buffer the commit.
         // We can't do that here--we don't have the appropriate data in scope--but we can at least
         // produce the proper error and return that, so our caller can handle it.
-        if let Err(Error::Mls(crate::OpenMlsError {
+        if let Err(Error::OpenMls(crate::OpenMlsError {
             source:
                 crate::OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidCommit(
                     StageCommitError::MissingProposal,

@@ -37,7 +37,7 @@ pub enum Error {
     #[error(transparent)]
     Keystore(#[from] crate::KeystoreError),
     #[error(transparent)]
-    Mls(#[from] crate::OpenMlsError),
+    OpenMls(#[from] crate::OpenMlsError),
     #[error("Credentials of type {0} are unknown")]
     UnknownCredential(u16),
     #[error("this credential is still in use by the conversation with id \"{}\"", hex::encode(.0))]
