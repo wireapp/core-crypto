@@ -27,7 +27,7 @@
 <a href=#27 id=27 data-nosnippet>27</a>
 <a href=#28 id=28 data-nosnippet>28</a><span class="attr">#[derive(Debug, serde::Serialize, serde::Deserialize)]
 <a href=#29 id=29 data-nosnippet>29</a></span><span class="kw">pub struct </span>X509CredentialConfiguration {
-<a href=#30 id=30 data-nosnippet>30</a>    <span class="kw">pub </span>acme_url: String,
+<a href=#30 id=30 data-nosnippet>30</a>    <span class="kw">pub </span>acme_directory_url: String,
 <a href=#31 id=31 data-nosnippet>31</a>    <span class="kw">pub </span>sign_alg: JwsAlgorithm,
 <a href=#32 id=32 data-nosnippet>32</a>    <span class="kw">pub </span>hash_alg: HashAlgorithm,
 <a href=#33 id=33 data-nosnippet>33</a>    <span class="kw">pub </span>display_name: String,
@@ -143,11 +143,5 @@
 <a href=#143 id=143 data-nosnippet>143</a>        <span class="kw">let </span>nonce = get_header(<span class="kw-2">&amp;</span>response, <span class="string">"replay-nonce"</span>)<span class="question-mark">?</span>;
 <a href=#144 id=144 data-nosnippet>144</a>        <span class="prelude-val">Ok</span>((nonce, response.json()<span class="question-mark">?</span>))
 <a href=#145 id=145 data-nosnippet>145</a>    }
-<a href=#146 id=146 data-nosnippet>146</a>
-<a href=#147 id=147 data-nosnippet>147</a>    <span class="kw">fn </span>acme_url(<span class="kw-2">&amp;</span><span class="self">self</span>, path: <span class="kw-2">&amp;</span>str) -&gt; Url {
-<a href=#148 id=148 data-nosnippet>148</a>        <span class="macro">format!</span>(<span class="string">"https://{}/acme/wire/{path}"</span>, <span class="self">self</span>.config.acme_url)
-<a href=#149 id=149 data-nosnippet>149</a>            .parse()
-<a href=#150 id=150 data-nosnippet>150</a>            .expect(<span class="string">"valid URL"</span>)
-<a href=#151 id=151 data-nosnippet>151</a>    }
-<a href=#152 id=152 data-nosnippet>152</a>}
+<a href=#146 id=146 data-nosnippet>146</a>}
 </code></pre></div></section></main></body></html>

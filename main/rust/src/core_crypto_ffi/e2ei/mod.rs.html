@@ -66,8 +66,8 @@
 <a href=#66 id=66 data-nosnippet>66</a><span class="doccomment">/// Configuration for an X509 credential acquisition flow.
 <a href=#67 id=67 data-nosnippet>67</a></span><span class="attr">#[derive(Debug, Clone, uniffi::Record)]
 <a href=#68 id=68 data-nosnippet>68</a></span><span class="kw">pub struct </span>X509CredentialAcquisitionConfiguration {
-<a href=#69 id=69 data-nosnippet>69</a>    <span class="doccomment">/// ACME server hostname.
-<a href=#70 id=70 data-nosnippet>70</a>    </span><span class="kw">pub </span>acme_url: String,
+<a href=#69 id=69 data-nosnippet>69</a>    <span class="doccomment">/// ACME directory URL.
+<a href=#70 id=70 data-nosnippet>70</a>    </span><span class="kw">pub </span>acme_directory_url: String,
 <a href=#71 id=71 data-nosnippet>71</a>    <span class="doccomment">/// Ciphersuite of the acquired credential.
 <a href=#72 id=72 data-nosnippet>72</a>    </span><span class="kw">pub </span>ciphersuite: FfiCiphersuite,
 <a href=#73 id=73 data-nosnippet>73</a>    <span class="doccomment">/// User-visible display name.
@@ -92,7 +92,7 @@
 <a href=#92 id=92 data-nosnippet>92</a>        <span class="kw">let </span>sign_alg: JwsAlgorithm = <span class="self">self</span>.ciphersuite.try_into()<span class="question-mark">?</span>;
 <a href=#93 id=93 data-nosnippet>93</a>
 <a href=#94 id=94 data-nosnippet>94</a>        <span class="prelude-val">Ok</span>(wire_e2e_identity::acquisition::X509CredentialConfiguration {
-<a href=#95 id=95 data-nosnippet>95</a>            acme_url: <span class="self">self</span>.acme_url,
+<a href=#95 id=95 data-nosnippet>95</a>            acme_directory_url: <span class="self">self</span>.acme_directory_url,
 <a href=#96 id=96 data-nosnippet>96</a>            sign_alg,
 <a href=#97 id=97 data-nosnippet>97</a>            hash_alg: HashAlgorithm::SHA256,
 <a href=#98 id=98 data-nosnippet>98</a>            display_name: <span class="self">self</span>.display_name,

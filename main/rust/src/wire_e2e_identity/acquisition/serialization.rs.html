@@ -105,7 +105,7 @@
 <a href=#105 id=105 data-nosnippet>105</a>        );
 <a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span>client_id = ClientId::try_new(Uuid::new_v4().to_string(), <span class="number">1</span>, <span class="string">"wire.example"</span>).unwrap();
 <a href=#107 id=107 data-nosnippet>107</a>        <span class="kw">let </span>config = X509CredentialConfiguration {
-<a href=#108 id=108 data-nosnippet>108</a>            acme_url: <span class="string">"acme.example"</span>.into(),
+<a href=#108 id=108 data-nosnippet>108</a>            acme_directory_url: <span class="string">"acme.example"</span>.into(),
 <a href=#109 id=109 data-nosnippet>109</a>            sign_alg: JwsAlgorithm::P256,
 <a href=#110 id=110 data-nosnippet>110</a>            hash_alg: HashAlgorithm::SHA256,
 <a href=#111 id=111 data-nosnippet>111</a>            display_name: <span class="string">"Alice"</span>.into(),
