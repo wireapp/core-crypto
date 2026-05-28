@@ -1,7 +1,7 @@
 use std::{fmt, sync::Arc};
 
 use wire_e2e_identity::pki_env;
-use x509_cert::der::Decode as _;
+use x509_cert::der::DecodePem as _;
 
 use crate::{CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, Database};
 
@@ -254,19 +254,19 @@ impl PkiEnvironment {
 
 #[uniffi::export]
 impl PkiEnvironment {
-    /// Add a DER-encoded certificate as a trust anchor.
+    /// Add a PEM-encoded certificate as a trust anchor.
     ///
     /// NOTE: currently we only support storing a single trust anchor, calling this method multiple
     /// times will overwrite any previously added trust anchor.
-    pub async fn add_trust_anchor(&self, cert_der: &[u8]) -> CoreCryptoResult<()> {
-        let cert = x509_cert::Certificate::from_der(cert_der).map_err(CoreCryptoError::generic())?;
+    pub async fn add_trust_anchor(&self, cert_pem: &str) -> CoreCryptoResult<()> {
+        let cert = x509_cert::Certificate::from_pem(cert_pem).map_err(CoreCryptoError::generic())?;
         self.0.add_trust_anchor(cert).await?;
         Ok(())
     }
 
-    /// Add a DER-encoded certificate as an intermediate certificate.
-    pub async fn add_intermediate_cert(&self, cert_der: &[u8]) -> CoreCryptoResult<()> {
-        let cert = x509_cert::Certificate::from_der(cert_der).map_err(CoreCryptoError::generic())?;
+    /// Add a PEM-encoded certificate as an intermediate certificate.
+    pub async fn add_intermediate_cert(&self, cert_pem: &str) -> CoreCryptoResult<()> {
+        let cert = x509_cert::Certificate::from_pem(cert_pem).map_err(CoreCryptoError::generic())?;
         self.0.add_intermediate_cert(cert).await?;
         Ok(())
     }
