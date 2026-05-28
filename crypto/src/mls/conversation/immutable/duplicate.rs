@@ -4,7 +4,7 @@
 
 use openmls::prelude::{ContentType, FramedContentBodyIn, Proposal, PublicMessageIn, Sender};
 
-use super::{Error, Conversation, Result};
+use super::{Conversation, Error, Result};
 use crate::OpenMlsError;
 
 impl Conversation {

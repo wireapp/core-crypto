@@ -4,8 +4,7 @@ use std::sync::Arc;
 
 use super::{Error, Result};
 use crate::{
-    Credential, CredentialRef, RecursiveError, mls::conversation::Conversation,
-    transaction_context::TransactionContext,
+    Credential, CredentialRef, RecursiveError, mls::conversation::Conversation, transaction_context::TransactionContext,
 };
 
 impl TransactionContext {

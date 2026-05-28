@@ -28,12 +28,11 @@ impl TransactionContext {
         let trust_anchors = env.get_trust_anchors().await;
 
         let session = self.session().await?;
-        let conversations =
-            Conversation::load_all(session)
-                .await
-                .map_err(RecursiveError::mls_conversation(
-                    "loading all conversations to check if the credential to be removed is present",
-                ))?;
+        let conversations = Conversation::load_all(session)
+            .await
+            .map_err(RecursiveError::mls_conversation(
+                "loading all conversations to check if the credential to be removed is present",
+            ))?;
         let relevant_crl_uris =
             Self::get_crl_uris(trust_anchors.iter(), credentials.iter(), conversations.values()).await?;
 

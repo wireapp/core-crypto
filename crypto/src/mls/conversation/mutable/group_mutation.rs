@@ -4,7 +4,7 @@ use openmls::group::{InnerState, MlsGroup};
 use super::{ConversationMut, Result};
 use crate::{
     KeystoreError, RecursiveError,
-    mls::conversation::{ConversationIdRef, Conversation},
+    mls::conversation::{Conversation, ConversationIdRef},
 };
 
 impl ConversationMut {

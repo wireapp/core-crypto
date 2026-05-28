@@ -4,9 +4,7 @@ use core_crypto_keystore::{entities::PersistedMlsGroup, traits::FetchFromDatabas
 use openmls::group::MlsGroup;
 
 use super::Result;
-use crate::{
-    ConversationConfiguration, ConversationId, KeystoreError, Session, mls::conversation::Conversation,
-};
+use crate::{ConversationConfiguration, ConversationId, KeystoreError, Session, mls::conversation::Conversation};
 
 impl Conversation {
     /// restore the conversation from a persistence-saved serialized Group State.
