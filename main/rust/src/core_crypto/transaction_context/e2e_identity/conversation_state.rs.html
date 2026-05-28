@@ -2,7 +2,7 @@
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span>openmls_traits::OpenMlsCryptoProvider;
 <a href=#3 id=3 data-nosnippet>3</a>
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span><span class="kw">super</span>::Result;
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>crate::{CredentialType, MlsError, RecursiveError, Session, transaction_context::TransactionContext};
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>crate::{CredentialType, OpenMlsError, RecursiveError, Session, transaction_context::TransactionContext};
 <a href=#6 id=6 data-nosnippet>6</a>
 <a href=#7 id=7 data-nosnippet>7</a><span class="doccomment">/// Indicates the state of a Conversation regarding end-to-end identity.
 <a href=#8 id=8 data-nosnippet>8</a>///
@@ -24,7 +24,7 @@
 <a href=#24 id=24 data-nosnippet>24</a>    <span class="doccomment">/// See [crate::mls::session::Session::e2ei_verify_group_state].
 <a href=#25 id=25 data-nosnippet>25</a>    </span><span class="kw">pub async fn </span>e2ei_verify_group_state(<span class="kw-2">&amp;</span><span class="self">self</span>, group_info: VerifiableGroupInfo) -&gt; <span class="prelude-ty">Result</span>&lt;E2eiConversationState&gt; {
 <a href=#26 id=26 data-nosnippet>26</a>        <span class="kw">let </span>mls_provider = <span class="self">self
-<a href=#27 id=27 data-nosnippet>27</a>            </span>.mls_provider()
+<a href=#27 id=27 data-nosnippet>27</a>            </span>.crypto_provider()
 <a href=#28 id=28 data-nosnippet>28</a>            .<span class="kw">await
 <a href=#29 id=29 data-nosnippet>29</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>;
 <a href=#30 id=30 data-nosnippet>30</a>        <span class="kw">let </span>auth_service = mls_provider.authentication_service();
@@ -34,7 +34,7 @@
 <a href=#34 id=34 data-nosnippet>34</a>        </span><span class="kw">let </span><span class="prelude-val">Ok</span>(rt) = group_info
 <a href=#35 id=35 data-nosnippet>35</a>            .take_ratchet_tree(
 <a href=#36 id=36 data-nosnippet>36</a>                <span class="kw-2">&amp;</span><span class="self">self
-<a href=#37 id=37 data-nosnippet>37</a>                    </span>.mls_provider()
+<a href=#37 id=37 data-nosnippet>37</a>                    </span>.crypto_provider()
 <a href=#38 id=38 data-nosnippet>38</a>                    .<span class="kw">await
 <a href=#39 id=39 data-nosnippet>39</a>                    </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
 <a href=#40 id=40 data-nosnippet>40</a>                is_sender,
@@ -66,15 +66,15 @@
 <a href=#66 id=66 data-nosnippet>66</a>        </span><span class="kw">let </span>rt = group_info
 <a href=#67 id=67 data-nosnippet>67</a>            .take_ratchet_tree(
 <a href=#68 id=68 data-nosnippet>68</a>                <span class="kw-2">&amp;</span><span class="self">self
-<a href=#69 id=69 data-nosnippet>69</a>                    </span>.mls_provider()
+<a href=#69 id=69 data-nosnippet>69</a>                    </span>.crypto_provider()
 <a href=#70 id=70 data-nosnippet>70</a>                    .<span class="kw">await
 <a href=#71 id=71 data-nosnippet>71</a>                    </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
 <a href=#72 id=72 data-nosnippet>72</a>                <span class="bool-val">false</span>,
 <a href=#73 id=73 data-nosnippet>73</a>            )
 <a href=#74 id=74 data-nosnippet>74</a>            .<span class="kw">await
-<a href=#75 id=75 data-nosnippet>75</a>            </span>.map_err(MlsError::wrap(<span class="string">"taking ratchet tree"</span>))<span class="question-mark">?</span>;
+<a href=#75 id=75 data-nosnippet>75</a>            </span>.map_err(OpenMlsError::wrap(<span class="string">"taking ratchet tree"</span>))<span class="question-mark">?</span>;
 <a href=#76 id=76 data-nosnippet>76</a>        <span class="kw">let </span>mls_provider = <span class="self">self
-<a href=#77 id=77 data-nosnippet>77</a>            </span>.mls_provider()
+<a href=#77 id=77 data-nosnippet>77</a>            </span>.crypto_provider()
 <a href=#78 id=78 data-nosnippet>78</a>            .<span class="kw">await
 <a href=#79 id=79 data-nosnippet>79</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>;
 <a href=#80 id=80 data-nosnippet>80</a>        <span class="kw">let </span>auth_service = mls_provider.authentication_service();

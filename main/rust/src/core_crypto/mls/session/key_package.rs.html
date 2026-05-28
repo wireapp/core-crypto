@@ -56,7 +56,7 @@
 <a href=#56 id=56 data-nosnippet>56</a>    <span class="kw">use </span>openmls::prelude::{KeyPackageIn, ProtocolVersion};
 <a href=#57 id=57 data-nosnippet>57</a>    <span class="kw">use </span>openmls_traits::types::VerifiableCiphersuite;
 <a href=#58 id=58 data-nosnippet>58</a>
-<a href=#59 id=59 data-nosnippet>59</a>    <span class="kw">use </span>crate::{MlsConversationConfiguration, mls::key_package::KeypackageExt <span class="kw">as _</span>, test_utils::<span class="kw-2">*</span>};
+<a href=#59 id=59 data-nosnippet>59</a>    <span class="kw">use </span>crate::{ConversationConfiguration, mls::key_package::KeypackageExt <span class="kw">as _</span>, test_utils::<span class="kw-2">*</span>};
 <a href=#60 id=60 data-nosnippet>60</a>
 <a href=#61 id=61 data-nosnippet>61</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#62 id=62 data-nosnippet>62</a>    </span><span class="kw">async fn </span>can_assess_keypackage_expiration(case: TestContext) {
@@ -85,7 +85,7 @@
 <a href=#85 id=85 data-nosnippet>85</a>            <span class="comment">// make sure it's valid
 <a href=#86 id=86 data-nosnippet>86</a>            </span><span class="kw">let _ </span>= KeyPackageIn::from(kp.clone())
 <a href=#87 id=87 data-nosnippet>87</a>                .standalone_validate(
-<a href=#88 id=88 data-nosnippet>88</a>                    <span class="kw-2">&amp;</span>cc.transaction.mls_provider().<span class="kw">await</span>.unwrap(),
+<a href=#88 id=88 data-nosnippet>88</a>                    <span class="kw-2">&amp;</span>cc.transaction.crypto_provider().<span class="kw">await</span>.unwrap(),
 <a href=#89 id=89 data-nosnippet>89</a>                    ProtocolVersion::Mls10,
 <a href=#90 id=90 data-nosnippet>90</a>                    <span class="bool-val">true</span>,
 <a href=#91 id=91 data-nosnippet>91</a>                )
@@ -98,7 +98,7 @@
 <a href=#98 id=98 data-nosnippet>98</a>            <span class="macro">assert_eq!</span>(kp.leaf_node().capabilities().versions(), <span class="kw-2">&amp;</span>[ProtocolVersion::Mls10]);
 <a href=#99 id=99 data-nosnippet>99</a>            <span class="macro">assert_eq!</span>(
 <a href=#100 id=100 data-nosnippet>100</a>                kp.leaf_node().capabilities().ciphersuites().to_vec(),
-<a href=#101 id=101 data-nosnippet>101</a>                MlsConversationConfiguration::DEFAULT_SUPPORTED_CIPHERSUITES
+<a href=#101 id=101 data-nosnippet>101</a>                ConversationConfiguration::DEFAULT_SUPPORTED_CIPHERSUITES
 <a href=#102 id=102 data-nosnippet>102</a>                    .iter()
 <a href=#103 id=103 data-nosnippet>103</a>                    .map(|c| VerifiableCiphersuite::from(<span class="kw-2">*</span>c))
 <a href=#104 id=104 data-nosnippet>104</a>                    .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
@@ -107,7 +107,7 @@
 <a href=#107 id=107 data-nosnippet>107</a>            <span class="macro">assert!</span>(kp.leaf_node().capabilities().extensions().is_empty());
 <a href=#108 id=108 data-nosnippet>108</a>            <span class="macro">assert_eq!</span>(
 <a href=#109 id=109 data-nosnippet>109</a>                kp.leaf_node().capabilities().credentials(),
-<a href=#110 id=110 data-nosnippet>110</a>                MlsConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
+<a href=#110 id=110 data-nosnippet>110</a>                ConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
 <a href=#111 id=111 data-nosnippet>111</a>            );
 <a href=#112 id=112 data-nosnippet>112</a>        })
 <a href=#113 id=113 data-nosnippet>113</a>        .<span class="kw">await

@@ -19,7 +19,7 @@
 <a href=#19 id=19 data-nosnippet>19</a><span class="kw">use </span>signature::digest::typenum::Unsigned;
 <a href=#20 id=20 data-nosnippet>20</a><span class="kw">use </span>tls_codec::SecretVLBytes;
 <a href=#21 id=21 data-nosnippet>21</a>
-<a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span>super::{EntropySeed, MlsProviderError};
+<a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span>super::{EntropySeed, Error};
 <a href=#23 id=23 data-nosnippet>23</a>
 <a href=#24 id=24 data-nosnippet>24</a><span class="doccomment">/// Singleton for `RustCrypto`
 <a href=#25 id=25 data-nosnippet>25</a>/// Because of the reseed feature we have to use this
@@ -52,8 +52,8 @@
 <a href=#52 id=52 data-nosnippet>52</a>        }
 <a href=#53 id=53 data-nosnippet>53</a>    }
 <a href=#54 id=54 data-nosnippet>54</a>
-<a href=#55 id=55 data-nosnippet>55</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>reseed(<span class="kw-2">&amp;</span><span class="self">self</span>, seed: <span class="prelude-ty">Option</span>&lt;EntropySeed&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), MlsProviderError&gt; {
-<a href=#56 id=56 data-nosnippet>56</a>        <span class="kw">let </span><span class="kw-2">mut </span>val = <span class="self">self</span>.rng.write().map_err(|<span class="kw">_</span>| MlsProviderError::RngLockPoison)<span class="question-mark">?</span>;
+<a href=#55 id=55 data-nosnippet>55</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>reseed(<span class="kw-2">&amp;</span><span class="self">self</span>, seed: <span class="prelude-ty">Option</span>&lt;EntropySeed&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+<a href=#56 id=56 data-nosnippet>56</a>        <span class="kw">let </span><span class="kw-2">mut </span>val = <span class="self">self</span>.rng.write().map_err(|<span class="kw">_</span>| Error::RngLockPoison)<span class="question-mark">?</span>;
 <a href=#57 id=57 data-nosnippet>57</a>        <span class="kw-2">*</span>val = rand_chacha::ChaCha20Rng::from_seed(seed.unwrap_or_default().<span class="number">0</span>);
 <a href=#58 id=58 data-nosnippet>58</a>        <span class="prelude-val">Ok</span>(())
 <a href=#59 id=59 data-nosnippet>59</a>    }
@@ -647,29 +647,27 @@
 <a href=#647 id=647 data-nosnippet>647</a>}
 <a href=#648 id=648 data-nosnippet>648</a>
 <a href=#649 id=649 data-nosnippet>649</a><span class="kw">impl </span>OpenMlsRand <span class="kw">for </span>RustCrypto {
-<a href=#650 id=650 data-nosnippet>650</a>    <span class="kw">type </span>Error = MlsProviderError;
+<a href=#650 id=650 data-nosnippet>650</a>    <span class="kw">type </span>Error = Error;
 <a href=#651 id=651 data-nosnippet>651</a>
 <a href=#652 id=652 data-nosnippet>652</a>    <span class="kw">type </span>RandImpl = rand_chacha::ChaCha20Rng;
 <a href=#653 id=653 data-nosnippet>653</a>    <span class="kw">type </span>BorrowTarget&lt;<span class="lifetime">'a</span>&gt; = RwLockWriteGuard&lt;<span class="lifetime">'a</span>, <span class="self">Self</span>::RandImpl&gt;;
 <a href=#654 id=654 data-nosnippet>654</a>
 <a href=#655 id=655 data-nosnippet>655</a>    <span class="kw">fn </span>borrow_rand(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::BorrowTarget&lt;<span class="lifetime">'_</span>&gt;, <span class="self">Self</span>::Error&gt; {
-<a href=#656 id=656 data-nosnippet>656</a>        <span class="self">self</span>.rng.write().map_err(|<span class="kw">_</span>| MlsProviderError::RngLockPoison)
+<a href=#656 id=656 data-nosnippet>656</a>        <span class="self">self</span>.rng.write().map_err(|<span class="kw">_</span>| Error::RngLockPoison)
 <a href=#657 id=657 data-nosnippet>657</a>    }
 <a href=#658 id=658 data-nosnippet>658</a>
 <a href=#659 id=659 data-nosnippet>659</a>    <span class="kw">fn </span>random_array&lt;<span class="kw">const </span>N: usize&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;[u8; N], <span class="self">Self</span>::Error&gt; {
 <a href=#660 id=660 data-nosnippet>660</a>        <span class="kw">let </span><span class="kw-2">mut </span>rng = <span class="self">self</span>.borrow_rand()<span class="question-mark">?</span>;
 <a href=#661 id=661 data-nosnippet>661</a>        <span class="kw">let </span><span class="kw-2">mut </span>out = [<span class="number">0u8</span>; N];
-<a href=#662 id=662 data-nosnippet>662</a>        rng.try_fill_bytes(<span class="kw-2">&amp;mut </span>out)
-<a href=#663 id=663 data-nosnippet>663</a>            .map_err(|<span class="kw">_</span>| MlsProviderError::UnsufficientEntropy)<span class="question-mark">?</span>;
-<a href=#664 id=664 data-nosnippet>664</a>        <span class="prelude-val">Ok</span>(out)
-<a href=#665 id=665 data-nosnippet>665</a>    }
-<a href=#666 id=666 data-nosnippet>666</a>
-<a href=#667 id=667 data-nosnippet>667</a>    <span class="kw">fn </span>random_vec(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;, <span class="self">Self</span>::Error&gt; {
-<a href=#668 id=668 data-nosnippet>668</a>        <span class="kw">let </span><span class="kw-2">mut </span>rng = <span class="self">self</span>.borrow_rand()<span class="question-mark">?</span>;
-<a href=#669 id=669 data-nosnippet>669</a>        <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="macro">vec!</span>[<span class="number">0u8</span>; len];
-<a href=#670 id=670 data-nosnippet>670</a>        rng.try_fill_bytes(<span class="kw-2">&amp;mut </span>out)
-<a href=#671 id=671 data-nosnippet>671</a>            .map_err(|<span class="kw">_</span>| MlsProviderError::UnsufficientEntropy)<span class="question-mark">?</span>;
-<a href=#672 id=672 data-nosnippet>672</a>        <span class="prelude-val">Ok</span>(out)
-<a href=#673 id=673 data-nosnippet>673</a>    }
-<a href=#674 id=674 data-nosnippet>674</a>}
+<a href=#662 id=662 data-nosnippet>662</a>        rng.try_fill_bytes(<span class="kw-2">&amp;mut </span>out).map_err(|<span class="kw">_</span>| Error::UnsufficientEntropy)<span class="question-mark">?</span>;
+<a href=#663 id=663 data-nosnippet>663</a>        <span class="prelude-val">Ok</span>(out)
+<a href=#664 id=664 data-nosnippet>664</a>    }
+<a href=#665 id=665 data-nosnippet>665</a>
+<a href=#666 id=666 data-nosnippet>666</a>    <span class="kw">fn </span>random_vec(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;, <span class="self">Self</span>::Error&gt; {
+<a href=#667 id=667 data-nosnippet>667</a>        <span class="kw">let </span><span class="kw-2">mut </span>rng = <span class="self">self</span>.borrow_rand()<span class="question-mark">?</span>;
+<a href=#668 id=668 data-nosnippet>668</a>        <span class="kw">let </span><span class="kw-2">mut </span>out = <span class="macro">vec!</span>[<span class="number">0u8</span>; len];
+<a href=#669 id=669 data-nosnippet>669</a>        rng.try_fill_bytes(<span class="kw-2">&amp;mut </span>out).map_err(|<span class="kw">_</span>| Error::UnsufficientEntropy)<span class="question-mark">?</span>;
+<a href=#670 id=670 data-nosnippet>670</a>        <span class="prelude-val">Ok</span>(out)
+<a href=#671 id=671 data-nosnippet>671</a>    }
+<a href=#672 id=672 data-nosnippet>672</a>}
 </code></pre></div></section></main></body></html>

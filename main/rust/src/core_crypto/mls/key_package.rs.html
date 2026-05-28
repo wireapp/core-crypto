@@ -8,14 +8,14 @@
 <a href=#8 id=8 data-nosnippet>8</a></span><span class="kw">pub use </span>openmls::prelude::KeyPackage <span class="kw">as </span>Keypackage;
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>openmls::prelude::{KeyPackageRef <span class="kw">as </span>KpHashRef, Lifetime, SignatureScheme};
 <a href=#10 id=10 data-nosnippet>10</a>
-<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span>crate::{CipherSuite, CredentialType, MlsError, mls_provider::CRYPTO};
+<a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span>crate::{CipherSuite, CredentialType, OpenMlsError, mls_provider::CRYPTO};
 <a href=#12 id=12 data-nosnippet>12</a>
 <a href=#13 id=13 data-nosnippet>13</a><span class="doccomment">/// Extensions on the `KeyPackage` type for nicer usage patterns.
 <a href=#14 id=14 data-nosnippet>14</a></span><span class="kw">pub trait </span>KeypackageExt {
 <a href=#15 id=15 data-nosnippet>15</a>    <span class="doccomment">/// Make a "fat" [`KeypackageRef`] from this [`Keypackage`].
 <a href=#16 id=16 data-nosnippet>16</a>    ///
 <a href=#17 id=17 data-nosnippet>17</a>    /// This is a fairly inexpensive operation.
-<a href=#18 id=18 data-nosnippet>18</a>    </span><span class="kw">fn </span>make_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;KeypackageRef, MlsError&gt;;
+<a href=#18 id=18 data-nosnippet>18</a>    </span><span class="kw">fn </span>make_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;KeypackageRef, OpenMlsError&gt;;
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a>    <span class="doccomment">/// Returns the ciphersuite associated this this key package.
 <a href=#21 id=21 data-nosnippet>21</a>    </span><span class="kw">fn </span>ciphersuite(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CipherSuite;
@@ -30,10 +30,10 @@
 <a href=#30 id=30 data-nosnippet>30</a>}
 <a href=#31 id=31 data-nosnippet>31</a>
 <a href=#32 id=32 data-nosnippet>32</a><span class="kw">impl </span>KeypackageExt <span class="kw">for </span>Keypackage {
-<a href=#33 id=33 data-nosnippet>33</a>    <span class="kw">fn </span>make_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;KeypackageRef, MlsError&gt; {
+<a href=#33 id=33 data-nosnippet>33</a>    <span class="kw">fn </span>make_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;KeypackageRef, OpenMlsError&gt; {
 <a href=#34 id=34 data-nosnippet>34</a>        <span class="kw">let </span>hash_ref = <span class="self">self
 <a href=#35 id=35 data-nosnippet>35</a>            </span>.hash_ref(CRYPTO.as_ref())
-<a href=#36 id=36 data-nosnippet>36</a>            .map_err(MlsError::wrap(<span class="string">"computing keypackage hash ref"</span>))<span class="question-mark">?</span>;
+<a href=#36 id=36 data-nosnippet>36</a>            .map_err(OpenMlsError::wrap(<span class="string">"computing keypackage hash ref"</span>))<span class="question-mark">?</span>;
 <a href=#37 id=37 data-nosnippet>37</a>
 <a href=#38 id=38 data-nosnippet>38</a>        <span class="kw">let </span>ciphersuite = &lt;<span class="self">Self </span><span class="kw">as </span>KeypackageExt&gt;::ciphersuite(<span class="self">self</span>);
 <a href=#39 id=39 data-nosnippet>39</a>        <span class="kw">let </span>credential_type = <span class="self">self</span>.credential_type();
@@ -113,7 +113,7 @@
 <a href=#113 id=113 data-nosnippet>113</a>}
 <a href=#114 id=114 data-nosnippet>114</a>
 <a href=#115 id=115 data-nosnippet>115</a><span class="kw">impl </span>KeypackageExt <span class="kw">for </span>KeypackageRef {
-<a href=#116 id=116 data-nosnippet>116</a>    <span class="kw">fn </span>make_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;KeypackageRef, MlsError&gt; {
+<a href=#116 id=116 data-nosnippet>116</a>    <span class="kw">fn </span>make_ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;KeypackageRef, OpenMlsError&gt; {
 <a href=#117 id=117 data-nosnippet>117</a>        <span class="prelude-val">Ok</span>(<span class="self">self</span>.clone())
 <a href=#118 id=118 data-nosnippet>118</a>    }
 <a href=#119 id=119 data-nosnippet>119</a>

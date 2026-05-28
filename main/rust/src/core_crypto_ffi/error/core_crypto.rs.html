@@ -198,7 +198,7 @@
 <a href=#198 id=198 data-nosnippet>198</a>            </span>core_crypto::Error::Proteus(_proteus) =&gt; {
 <a href=#199 id=199 data-nosnippet>199</a>                <span class="macro">unreachable!</span>(<span class="string">"we don't raise proteus errors when building without proteus"</span>)
 <a href=#200 id=200 data-nosnippet>200</a>            }
-<a href=#201 id=201 data-nosnippet>201</a>            core_crypto::Error::Mls(mls) =&gt; <span class="self">Self</span>::Mls {
+<a href=#201 id=201 data-nosnippet>201</a>            core_crypto::Error::OpenMls(mls) =&gt; <span class="self">Self</span>::Mls {
 <a href=#202 id=202 data-nosnippet>202</a>                mls_error: MlsError::from(mls),
 <a href=#203 id=203 data-nosnippet>203</a>            },
 <a href=#204 id=204 data-nosnippet>204</a>            core_crypto::Error::InvalidTransactionContext =&gt; <span class="self">Self</span>::Other { msg: error.to_string() },

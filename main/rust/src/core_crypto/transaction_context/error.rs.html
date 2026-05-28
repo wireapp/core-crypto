@@ -2,7 +2,7 @@
 <a href=#2 id=2 data-nosnippet>2</a></span><span class="attr">#![allow(missing_docs)]
 <a href=#3 id=3 data-nosnippet>3</a>
 <a href=#4 id=4 data-nosnippet>4</a></span><span class="kw">use </span><span class="kw">super</span>::e2e_identity;
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>crate::{ConversationId, CredentialRef, mls::conversation::pending_conversation::PendingConversation};
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>crate::{ConversationId, CredentialRef, mls::conversation::PendingConversation};
 <a href=#6 id=6 data-nosnippet>6</a>
 <a href=#7 id=7 data-nosnippet>7</a><span class="doccomment">/// A module-specific [Result][core::result::Result] type with a default error variant.
 <a href=#8 id=8 data-nosnippet>8</a></span><span class="kw">pub type </span><span class="prelude-ty">Result</span>&lt;T, E = Error&gt; = core::result::Result&lt;T, E&gt;;
@@ -37,7 +37,7 @@
 <a href=#37 id=37 data-nosnippet>37</a>    <span class="attr">#[error(transparent)]
 <a href=#38 id=38 data-nosnippet>38</a>    </span>Keystore(<span class="attr">#[from] </span><span class="kw">crate</span>::KeystoreError),
 <a href=#39 id=39 data-nosnippet>39</a>    <span class="attr">#[error(transparent)]
-<a href=#40 id=40 data-nosnippet>40</a>    </span>Mls(<span class="attr">#[from] </span><span class="kw">crate</span>::MlsError),
+<a href=#40 id=40 data-nosnippet>40</a>    </span>OpenMls(<span class="attr">#[from] </span><span class="kw">crate</span>::OpenMlsError),
 <a href=#41 id=41 data-nosnippet>41</a>    <span class="attr">#[error(<span class="string">"Credentials of type {0} are unknown"</span>)]
 <a href=#42 id=42 data-nosnippet>42</a>    </span>UnknownCredential(u16),
 <a href=#43 id=43 data-nosnippet>43</a>    <span class="attr">#[error(<span class="string">"this credential is still in use by the conversation with id \"{}\""</span>, hex::encode(.<span class="number">0</span>))]
