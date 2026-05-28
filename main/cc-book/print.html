@@ -16,8 +16,8 @@
         <link rel="icon" href="favicon-de23e50b.svg">
         <link rel="shortcut icon" href="favicon-8114d1fc.png">
         <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-2459343d.css">
-        <link rel="stylesheet" href="css/chrome-ae938929.css">
+        <link rel="stylesheet" href="css/general-0392ca55.css">
+        <link rel="stylesheet" href="css/chrome-fc474251.css">
         <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
@@ -29,7 +29,7 @@
         <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="langtabs-4f5a2230.css">
+        <link rel="stylesheet" href="langtabs-0bb573a3.css">
 
 
         <!-- Provide site root and default themes to javascript -->
@@ -37,10 +37,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-f4f3942c.js";
+            window.path_to_searchindex_js = "searchindex-a1dae4ba.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-5214041f.js"></script>
+        <script src="toc-8c35e91a.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -1197,6 +1197,317 @@ globally and not tied to a <code>CoreCrypto</code> instance. To set the log leve
 <ol>
 <li>Removed <code>CoreCryptoFfi.reseedRng()</code> and <code>CoreCryptoFfi.randomBytes()</code>.</li>
 </ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="corecrypto-architecture"><a class="header" href="#corecrypto-architecture">CoreCrypto Architecture</a></h1>
+<pre class="mermaid">block-beta
+
+columns 1
+
+block:system
+    Kotlin
+    Swift
+    TSN["TS Native"]
+    TSB["TS Browser"]
+end
+
+block:uniffi
+    UniFFI
+    UBRN
+end
+
+RUSTFFI["CoreCrypto FFI"]
+
+block:crypto
+    CRYPTO["Crypto&lt;br/&gt;MLS • Proteus"]
+    E2EI["E2E Identity"]
+end
+
+STORAGE["Storage"]
+block:database
+    Native["SQLite + SQLCipher"]
+    Browser["IndexedDB"]
+end
+
+classDef highlighted fill:#969,stroke:#333,stroke-width:3px;
+class TSB highlighted
+class Browser highlighted
+</pre>
+
+<h2 id="corecrypto-ffi"><a class="header" href="#corecrypto-ffi">CoreCrypto FFI</a></h2>
+<p>Allows other programming languages and platforms to embed and interact with <code>CoreCrypto</code></p>
+<ul>
+<li>For iOS and Android, <a href="https://github.com/mozilla/uniffi-rs">UniFFI</a> is used to produce the relevant Kotlin and Swift
+bindings</li>
+<li>For Typescript we additionally use <a href="https://github.com/jhugman/uniffi-bindgen-react-native">UBRN</a> to create a WASM
+binary for browser and a native binary for native TS from our UniFFI bindings.</li>
+</ul>
+<h3 id="data-types"><a class="header" href="#data-types">Data Types</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Rust</th><th>Swift</th><th>Kotlin</th><th>TypeScript</th></tr>
+</thead>
+<tbody>
+<tr><td><code>bool</code></td><td><code>Bool</code></td><td><code>Boolean</code></td><td><code>boolean</code></td></tr>
+<tr><td><code>u8</code></td><td><code>UInt8</code></td><td><code>UByte</code></td><td><code>number</code></td></tr>
+<tr><td><code>u16</code></td><td><code>UInt16</code></td><td><code>UShort</code></td><td><code>number</code></td></tr>
+<tr><td><code>u32</code></td><td><code>UInt32</code></td><td><code>UInt</code></td><td><code>number</code></td></tr>
+<tr><td><code>u64</code></td><td><code>UInt64</code></td><td><code>ULong</code></td><td><code>bigint</code></td></tr>
+<tr><td><code>i8</code></td><td><code>Int8</code></td><td><code>Byte</code></td><td><code>number</code></td></tr>
+<tr><td><code>i16</code></td><td><code>Int16</code></td><td><code>Short</code></td><td><code>number</code></td></tr>
+<tr><td><code>i32</code></td><td><code>Int32</code></td><td><code>Int</code></td><td><code>number</code></td></tr>
+<tr><td><code>i64</code></td><td><code>Int64</code></td><td><code>Long</code></td><td><code>bigint</code></td></tr>
+<tr><td><code>f32</code></td><td><code>Float</code></td><td><code>Float</code></td><td><code>number</code></td></tr>
+<tr><td><code>f64</code></td><td><code>Double</code></td><td><code>Double</code></td><td><code>number</code></td></tr>
+<tr><td><code>String</code> / <code>&amp;str</code></td><td><code>String</code></td><td><code>String</code></td><td><code>string</code></td></tr>
+<tr><td><code>std::time::SystemTime</code></td><td><code>Date</code></td><td><code>java.time.Instant</code></td><td><code>Date</code></td></tr>
+<tr><td><code>std::time::Duration</code></td><td><code>TimeInterval</code></td><td><code>java.time.Duration</code></td><td><code>number</code> (in milliseconds)</td></tr>
+<tr><td><code>Option&lt;T&gt;</code></td><td><code>Optional&lt;T&gt;</code></td><td><code>Optional&lt;T&gt;</code></td><td><code>T?</code></td></tr>
+<tr><td><code>Vec&lt;T&gt;</code></td><td><code>Array&lt;T&gt;</code></td><td><code>List&lt;T&gt;</code></td><td><code>Array&lt;T&gt;</code></td></tr>
+<tr><td><code>HashMap&lt;String, T&gt;</code></td><td><code>Dictionary&lt;String, T&gt;</code></td><td><code>Map&lt;String, T&gt;</code></td><td><code>Record&lt;string, T&gt;</code></td></tr>
+<tr><td><code>()</code></td><td><code>nil</code></td><td><code>null</code></td><td><code>null</code></td></tr>
+<tr><td><code>Result&lt;T, E&gt;</code></td><td><code>func placeholder() throws E -&gt; T</code></td><td><code>T placeholder() throws E</code></td><td><code>function placeholder(): T // @throws E</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>For more information, see <a href="https://mozilla.github.io/uniffi-rs/next/types/builtin_types.html">UniFFI Docs</a> and
+<a href="https://jhugman.github.io/uniffi-bindgen-react-native/idioms/common-types.html">UBRN Docs</a></p>
+<h2 id="corecrypto-1"><a class="header" href="#corecrypto-1">CoreCrypto</a></h2>
+<p>CoreCrypto provides a unified abstraction layer over MLS and Proteus. It exposes a simplified interface built around
+application-level entities rather than protocol-specific concepts.</p>
+<h2 id="database"><a class="header" href="#database">Database</a></h2>
+<p>Encrypted Keystore powered by SQLCipher on native platforms. WASM uses an IndexedDB-backed, encrypted store with
+AES256-GCM. It provides a persistent data storage layer with encryption at-rest.</p>
+<h3 id="native-ios-android-ts-native"><a class="header" href="#native-ios-android-ts-native">Native (iOS, Android, Ts-Native)</a></h3>
+<p>Pretty much everything is handed off to SQLCipher:</p>
+<ul>
+<li>Backing store: Encrypted SQLite database (with <a href="https://www.zetetic.net/sqlcipher/">SQLCipher</a>)</li>
+<li>Encryption: AES256-CBC with per-page IV (provided by <a href="https://www.zetetic.net/sqlcipher/">SQLCipher</a>).
+<ul>
+<li>Value-Level Encryption is also possible on the
+<a href="https://www.zetetic.net/sqlcipher/value-level-encryption/">Commercial or Enterprise editions</a> if we want additional
+security guarantees</li>
+</ul>
+</li>
+<li>Crypto primitives provider: <a href="https://www.openssl.org/">OpenSSL</a></li>
+<li>PRNG provider: <a href="https://www.openssl.org/">OpenSSL</a></li>
+</ul>
+<pre class="mermaid">graph LR
+    RS[Rusqlite] --&gt; S[SQLCipher]
+    SC{AES-256-CBC}
+    S -.-&gt;|Encrypts| SC
+    SC -.-&gt;|Decrypts| S
+    SC --&gt;|Stores| SF[File]
+</pre>
+
+<p>See <a href="https://www.zetetic.net/sqlcipher/design/">SQLCipher design</a></p>
+<p>Summary:</p>
+<ul>
+<li>SQLCipher’s file page size by default is 4096 bytes</li>
+<li>When using a passphrase (our case), the provided passphrase is derived using PBKDF2-HMAC-SHA512. <br /> The salt of
+this KDF is stored in the 16 first bytes of the file.
+<ul>
+<li>Note: This cannot be kept as-is on iOS as iOS needs to be able to read the first 16-32 bytes of SQLite databases to
+“magically” guess they are SQLite databases<br /> and to allow reading them from the background. This is very useful
+in the case of background work on iOS such as encrypted data in notifications needing access to the keystore.<br /></li>
+</ul>
+</li>
+<li>Each page is encrypted or decrypted on-the-fly using AES256-CBC
+<ul>
+<li>Provided by OpenSSL -<code>v1.1.1p</code> as of 29/06/22- in our case, but the crypto provider can be changed to NSS,
+LibTomCrypt or Security.framework</li>
+</ul>
+</li>
+<li>Each page is written with a unique, random IV (<em>initialization vector</em>). This IV is regenerated on each page write.
+This IV is appended at the end of each page.</li>
+<li>Page ciphertexts are authenticated using an authentication tag using HMAC-SHA512. This tag is also appended at the
+each of the page.</li>
+</ul>
+<h3 id="wasm"><a class="header" href="#wasm">WASM</a></h3>
+<ul>
+<li>Backing store: <code>IndexedDB</code> (with the <a href="https://crates.io/crates/idb"><code>idb</code></a> crate)</li>
+<li>Encryption: AES256-GCM Value-Level-Encryption with random, non-reused 96-bits nonces and embedded authentication tag
+(AAD) of the AEAD
+<ul>
+<li>Caveat: Primary IDs are not encrypted, as this would compromise lookup and cause whole table <br /> scans. It is thus
+not recommended to store sensitive or identifying data in the primary ID.</li>
+<li>Caveat: Indexed searches do work, in two steps, an optimistic step fetching an unencrypted record, <br /> and a
+fallback step iterating on all records, decrypting the targeted field and checking it. Worst case it will run a
+whole table scan.</li>
+</ul>
+</li>
+<li>Crypto primitives provider: RustCrypto - <a href="https://crates.io/crates/aes-gcm"><code>aes-gcm</code></a> crate</li>
+<li>PRNG provider: <a href="https://crates.io/crates/rand"><code>rand</code></a> crate with <a href="https://crates.io/crates/getrandom"><code>getrandom</code></a>
+(uses <a href="https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues">Crypto.getRandomValues</a> under the hood)</li>
+</ul>
+<pre class="mermaid">graph LR
+    direction LR
+    B(Keystore Entities)
+    C{AES-256-GCM} --&gt;|Stores| I[IndexedDB]
+    B -.-&gt;|Encrypts| C
+    C -.-&gt;|Decrypts| B
+</pre>
+
+<h4 id="how-the-value-level-encryption-works"><a class="header" href="#how-the-value-level-encryption-works">How the value-level encryption works</a></h4>
+<ul>
+<li>Consumers of the library are required to provide 32 bytes, generated by a CSPRNG or a hardware RNG, to be used as an
+AES-256 key <br /></li>
+<li>Entities (i.e. Models in an ORM environment) dictate which fields are encrypted and with which AAD <br /> through
+their implementation of the <code>Entity</code> trait.</li>
+<li>By default, the AAD is the primary ID of the IndexedDB collection (i.e Table in a SQL database environment)</li>
+<li>AES256-GCM is used to encrypt the aforementioned fields
+<ul>
+<li>A random 96-bit (12 bytes) Nonce is generated</li>
+<li>The AAD is fetched through <code>Entity::aad()</code></li>
+<li>Together they are fed to <a href="https://crates.io/crates/aes-gcm"><code>aes-gcm</code></a> to create a ciphertext with embedded
+authentication tag</li>
+</ul>
+</li>
+<li>The ciphertext is then stored along with its nonce with the following data layout:
+<ul>
+<li>Cleartext: A buffer of N bytes (<code>[u8; N]</code>)</li>
+<li>Ciphertext: <code>[12 bytes of nonce..., ...ciphertext]</code></li>
+</ul>
+</li>
+<li>When decrypting, the stored nonce is picked apart from the ciphertext, the AAD is also fetched, then the cleartext is
+<br /> decrypted and returned</li>
+<li>Note: All the fields from all entities are zeroed on drop for security reasons</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="rust-crypto-dependencies"><a class="header" href="#rust-crypto-dependencies">Rust Crypto Dependencies</a></h1>
+<h2 id="cryptographic-primitives--spec-implementations"><a class="header" href="#cryptographic-primitives--spec-implementations">Cryptographic primitives &amp; spec implementations</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Primitive</th><th>Repository</th><th>Known audits</th></tr>
+</thead>
+<tbody>
+<tr><td>P256</td><td><a href="https://github.com/RustCrypto/elliptic-curves/tree/master/p256">RustCrypto/p256</a></td><td>N/A</td></tr>
+<tr><td>P384</td><td><a href="https://github.com/RustCrypto/elliptic-curves/tree/master/p384">RustCrypto/p384</a></td><td>N/A</td></tr>
+<tr><td>Curve25519</td><td><a href="https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek">dalek-cryptography/curve25519-dalek</a></td><td>N/A</td></tr>
+<tr><td>Ed25519</td><td><a href="https://github.com/dalek-cryptography/ed25519-dalek">dalek-cryptography/ed25519-dalek</a></td><td>N/A</td></tr>
+<tr><td>X25519</td><td><a href="https://github.com/dalek-cryptography/x25519-dalek">dalek-cryptography/x25519-dalek</a></td><td>N/A</td></tr>
+<tr><td>SHA2</td><td><a href="https://github.com/RustCrypto/hashes/tree/master/sha2">RustCrypto/sha2</a></td><td>N/A</td></tr>
+<tr><td>HMAC</td><td><a href="https://github.com/RustCrypto/MACs/tree/master/hmac">RustCrypto/hmac</a></td><td>N/A</td></tr>
+<tr><td>AES-GCM</td><td><a href="https://github.com/RustCrypto/AEADs/tree/master/aes-gcm">RustCrypto/aes-gcm</a></td><td><a href="https://research.nccgroup.com/2020/02/26/public-report-rustcrypto-aes-gcm-and-chacha20poly1305-implementation-review/">Audit by NCC Group</a></td></tr>
+<tr><td>ChaCha20Poly1305</td><td><a href="https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305">RustCrypto/chacha20poly1305</a></td><td><a href="https://research.nccgroup.com/2020/02/26/public-report-rustcrypto-aes-gcm-and-chacha20poly1305-implementation-review/">Audit by NCC Group</a></td></tr>
+<tr><td>HKDF</td><td><a href="https://github.com/RustCrypto/KDFs/tree/master/hkdf">RustCrypto/hkdf</a></td><td>N/A</td></tr>
+<tr><td>HPKE</td><td><a href="https://github.com/rozbb/rust-hpke/tree/main">rozbb/rust-hpke</a></td><td><a href="https://github.com/rozbb/rust-hpke/tree/main#warning">No formal audits, but Cloudflare reviewed it</a></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="csprng"><a class="header" href="#csprng">CSPRNG</a></h2>
+<p>We use <a href="https://github.com/rust-random/rand">rand</a> in combination with <a href="https://github.com/rust-random/rand/tree/master/rand_chacha">rand-chacha</a> to achieve a proper CSPRNG</p>
+<ul>
+<li>No audits are known of this crate, but it is the de facto for the Rust ecosystem and is used by pretty much any crate
+needing a randomness source.</li>
+<li>Note: We use <a href="https://github.com/rust-random/getrandom">getrandom</a> under the hood to retrieve random data. Other than de facto OS entropy sources, we can inject
+entropy at will
+<ul>
+<li>On this topic, the entropy sources per platform are detailed <a href="https://docs.rs/getrandom/latest/getrandom/#supported-targets">here</a></li>
+</ul>
+</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="ci-builds-via-gnu-make-and-github-actions"><a class="header" href="#ci-builds-via-gnu-make-and-github-actions">CI Builds via GNU make and GitHub Actions</a></h1>
+<h2 id="make-based-actions--workflows"><a class="header" href="#make-based-actions--workflows">Make-based actions &amp; workflows</a></h2>
+<p>Our CI pipeline is heavily driven by make rules (in the root <a href="Makefile"><code>Makefile</code></a>). To avoid duplicating logic, the
+CI uses small GitHub composite actions that invoke specific make targets with consistent artifact caching via GitHub
+artifatcs.</p>
+<p>The directory <code>.github/actions/make/</code> houses:</p>
+<ul>
+<li>A generic composite action (<a href=".github/actions/make/action.yml"><code>.github/actions/make/action.yml</code></a>)</li>
+<li>Specialized wrappers in subdirectories which call the generic action</li>
+</ul>
+<p>The workflow file <a href=".github/workflows/pipeline.yml"><code>.github/workflows/pipeline.yml</code></a> orchestrates CI jobs, and uses
+those make actions in steps.</p>
+<h2 id="generic-make-action"><a class="header" href="#generic-make-action">Generic <code>make</code> action</a></h2>
+<p>This action produces an artifact which corresponds to a rule in the root <a href="Makefile"><code>Makefile</code></a>, or downloads it if
+any subsequent workflow run already produced the artifact with unchanged prerequisites.</p>
+<h3 id="file-hashes-of-dependencies"><a class="header" href="#file-hashes-of-dependencies">File Hashes of Dependencies</a></h3>
+<p>The prerequisites of ceach artifact are defined in the <a href="Makefile"><code>Makefile</code></a> itself. Each artifact that is produced
+using this action, has a corresponding variable in the <a href="Makefile"><code>Makefile</code></a>, called <code>&lt;target-name&gt;-deps</code>, which
+lists the artifact’s dependencies.</p>
+<p>The <a href="Makefile"><code>Makefile</code></a> contains a wildcard rule that uses this variable to calculate an aggregated <code>sha256sum</code> of
+all dependencies. This is then appended to the artifact key, identifying an artifact when downloading or uploading.</p>
+<h3 id="artifact-caching"><a class="header" href="#artifact-caching">Artifact Caching</a></h3>
+<p>Each caller of the generic <code>make</code> action must provide an artifact key, required to identify an artifact. This is
+necessary downloading a previously produced artifact or uploading the artifact just produced. The aggregated <code>sha256sum</code>
+(see above) is then appended to that key to ensure artifacts with different dependencies don’t share a key.</p>
+<p>In case an artifact was successfully downloaded, the action <code>touch</code>es them, because otherwise the checked out source
+files would be newer than the downloaded artifacts. This is necessary because another subsequent call of this actions
+for another rule might require that the downloaded artifact is newer than the source files.</p>
+<p>Otherwise, the artifact is produced by calling <code>make &lt;rule argument&gt;</code>.</p>
+<p>In both cases (artifact was downloaded or produced), the artifact is uploaded only if it hasn’t been uploaded for this
+workflow run of <a href=".github/workflows/pipeline.yml"><code>pipeline.yml</code></a>. This is relevant because the <code>make</code> action may be
+called with the same parameters multiple times in a single workflow run.</p>
+<h2 id="specialized-make-actions"><a class="header" href="#specialized-make-actions">Specialized <code>make</code> actions</a></h2>
+<p>Since most artifacts (except those produced by a job representing a “leaf” in the make dependency tree) are reused
+during the <a href=".github/workflows/pipeline.yml"><code>pipeline.yml</code></a> workflow, the generic action is frequently called with
+the same arguments. The parameters of the <code>make</code> action are the artifact key, the <code>make</code> rule, and the target path. To
+avoid having to repeat the arguments when an artifact is reused, we’re using sepcialized <code>make</code> actions, located in
+subfolders of <code>.github/actions/make</code>. These specialized actions are parameterless, except for the github token, which
+they just forward. The github token is needed to use the <code>gh</code> CLI on the runner machine.</p>
+<p>Any reused artifact should have such a specialized action. Whenever a new artifact is introduced in the workflow and it
+needs to be reused, an action should be added.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="manually-publish-release-artifacts"><a class="header" href="#manually-publish-release-artifacts">Manually publish release artifacts</a></h1>
+<p>If one of the publishing jobs fails due to some temporary error, it might be necessary to publish the release artifacts
+for a platform manually to avoid having to restart the whole release process.</p>
+<h2 id="android--jvm-kotlin"><a class="header" href="#android--jvm-kotlin">Android / JVM (Kotlin)</a></h2>
+<h3 id="preparation"><a class="header" href="#preparation">Preparation</a></h3>
+<ul>
+<li>Checkout the release tag</li>
+<li>Open the Core Libraries vault on 1Password and copy the secrets from
+<a href="https://start.1password.com/open/i?a=FOQLGGWZU5EQXEJO3V3A5HI3DU&amp;v=djjqzfw3nbf5zi5ytli7eg6vza&amp;i=bhy2booptksljmacemcsfqjlui&amp;h=wire.1password.eu">Maven Central Publishing</a>
+and
+<a href="https://start.1password.com/open/i?a=FOQLGGWZU5EQXEJO3V3A5HI3DU&amp;v=djjqzfw3nbf5zi5ytli7eg6vza&amp;i=bpxhdqfderdddblxes4pu4s6ji&amp;h=wire.1password.eu">CoreCrypto Sonatype PGP Signing Key</a>
+<pre><code>export ORG_GRADLE_PROJECT_mavenCentralPassword &lt;secret&gt;
+export ORG_GRADLE_PROJECT_mavenCentralUsername &lt;secret&gt;
+export ORG_GRADLE_PROJECT_signingInMemoryKeyId &lt;secret&gt;
+export ORG_GRADLE_PROJECT_signingInMemoryKey &lt;secret&gt;
+export ORG_GRADLE_PROJECT_signingInMemoryKeyPassword &lt;secret&gt;
+</code></pre>
+</li>
+</ul>
+<h3 id="android"><a class="header" href="#android">Android</a></h3>
+<ul>
+<li>Download the android.zip from the release on https://github.com/wireapp/core-crypto/releases</li>
+<li>Extract the archive and copy the Android artifacts into the root of the core-crypto project
+<pre><code class="language-bash">cp -r ~/downloads/android/* core-crypto
+</code></pre>
+</li>
+<li>Publish the project
+<pre><code class="language-bash">cd crypto-ffi/bindings
+./gradlew android:publishAllPublicationsToMavenCentralRepository --no-configuration-cache
+</code></pre>
+</li>
+</ul>
+<h3 id="jvm"><a class="header" href="#jvm">JVM</a></h3>
+<ul>
+<li>Download the jvm.zip from the release on https://github.com/wireapp/core-crypto/releases</li>
+<li>Extract the archive and copy the JVM artifacts into the root of the core-crypto project
+<pre><code class="language-bash">cp -r ~/downloads/jvm/* core-crypto
+</code></pre>
+</li>
+<li>Publish the project
+<pre><code class="language-bash">cd crypto-ffi/bindings
+./gradlew jvm:publishAllPublicationsToMavenCentralRepository --no-configuration-cache
+</code></pre>
+</li>
+</ul>
+<h2 id="ios-swift"><a class="header" href="#ios-swift">iOS (Swift)</a></h2>
+<p>iOS artifacts aren’t distributed through a centralized package manager. If the artifact has been uploaded to the GitHub
+release, it is considered to be published.</p>
+<h2 id="npm-typescript"><a class="header" href="#npm-typescript">NPM (Typescript)</a></h2>
+<ul>
+<li>Download the <code>wireapp-core-crypto-x.y.z.tgz</code> from the release on https://github.com/wireapp/core-crypto/releases</li>
+<li>Publish:
+<pre><code class="language-bash">cd crypto-ffi/bindings/js
+bun publish ~/downloads/wireapp-core-crypto-x.y.z.tgz
+</code></pre>
+</li>
+</ul>
 
                     </main>
 
@@ -1230,14 +1541,16 @@ globally and not tied to a <code>CoreCrypto</code> instance. To set the log leve
 
         <script src="elasticlunr-ef4e11c1.min.js"></script>
         <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-c2a407aa.js"></script>
+        <script src="searcher-09f2665d.js"></script>
 
         <script src="clipboard-1626706a.min.js"></script>
         <script src="highlight-abc7f01d.js"></script>
-        <script src="book-a0b12cfe.js"></script>
+        <script src="book-c22b7243.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="langtabs-e9254632.js"></script>
+        <script src="langtabs-57c6b578.js"></script>
+        <script src="mermaid-eefea253.min.js"></script>
+        <script src="mermaid-init-ccf746f1.js"></script>
 
         <script>
         window.addEventListener('load', function() {
