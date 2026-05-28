@@ -1,13 +1,14 @@
 use std::{collections::HashMap, sync::Arc};
 
-use super::{Error, Result};
-use crate::{Credential, LeafError, RecursiveError};
 use openmls::{
     group::QueuedProposal,
     prelude::{
         Credential as MlsCredential, CredentialWithKey, LeafNode, LeafNodeIndex, Proposal, Sender, SignaturePublicKey,
     },
 };
+
+use super::{Error, Result};
+use crate::{Credential, LeafError, RecursiveError};
 
 impl super::ImmutableConversation {
     fn extract_own_updated_node_from_proposals<'a>(

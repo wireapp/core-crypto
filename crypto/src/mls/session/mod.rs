@@ -71,11 +71,10 @@ impl Session {
         }
     }
 
-    /// Get an immutable view of an `MlsConversation`.
+    /// Get an immutable view of an MLS conversation.
     ///
-    /// Because it operates on the raw conversation type, this may be faster than
-    /// [crate::transaction_context::TransactionContext::conversation] for transient and immutable
-    /// purposes. For long-lived or mutable purposes, prefer the other method.
+    /// This may be faster than
+    /// [crate::transaction_context::TransactionContext::conversation].
     pub async fn get_raw_conversation(&self, id: &ConversationIdRef) -> Result<ImmutableConversation> {
         ImmutableConversation::load(self.clone(), id)
             .await

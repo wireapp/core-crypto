@@ -67,7 +67,7 @@ impl ConversationGuard {
         &mut self,
         policy: MessageRestorePolicy,
     ) -> Result<Option<Vec<MlsBufferedDecryptMessage>>> {
-        let result = async move {
+        async move {
             let conversation_id = self.id();
             let database = self.database().await?;
             if policy == MessageRestorePolicy::ClearOnly {
@@ -108,11 +108,9 @@ impl ConversationGuard {
 
             Ok(decrypted_messages)
         }
-        .await;
-        if let Err(e) = &result {
-            error!(error:% = e; "Error restoring pending messages");
-        }
-        result
+        .await.inspect_err(|err| {
+            error!(error:% = err; "Error restoring pending messages");
+        })
     }
 }
 

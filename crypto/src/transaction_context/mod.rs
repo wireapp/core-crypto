@@ -75,28 +75,26 @@ impl TransactionContext {
     }
 
     pub(crate) async fn session(&self) -> Result<Session> {
-        match &*self.inner.read().await {
-            TransactionContextInner::Valid { core_crypto, .. } => core_crypto.mls.read().await.as_ref().cloned().ok_or(
-                RecursiveError::mls_client("Getting mls session from transaction context")(
-                    mls::session::Error::MlsNotInitialized,
-                )
-                .into(),
-            ),
-            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
-        }
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return Err(Error::InvalidTransactionContext);
+        };
+        core_crypto.mls.read().await.as_ref().cloned().ok_or(
+            RecursiveError::mls_client("Getting mls session from transaction context")(
+                mls::session::Error::MlsNotInitialized,
+            )
+            .into(),
+        )
     }
 
     #[cfg(test)]
     pub(crate) async fn set_session_if_exists(&self, new_session: Session) {
-        match &*self.inner.read().await {
-            TransactionContextInner::Valid { core_crypto, .. } => {
-                let mut guard = core_crypto.mls.write().await;
+        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+            return;
+        };
 
-                if guard.as_ref().is_some() {
-                    *guard = Some(new_session)
-                }
-            }
-            TransactionContextInner::Invalid => {}
+        let mut guard = core_crypto.mls.write().await;
+        if guard.as_ref().is_some() {
+            *guard = Some(new_session)
         }
     }
 

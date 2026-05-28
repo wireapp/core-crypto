@@ -481,7 +481,6 @@ impl ConversationGuard {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::{
         mls::conversation::{config::MAX_PAST_EPOCHS, error::Error},
         test_utils::*,

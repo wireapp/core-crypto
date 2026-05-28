@@ -22,8 +22,9 @@ use crate::{
 
 /// A Conversation Guard wraps an [`Arc<RwLock<ImmutableConversation>>`].
 ///
-/// The conversation is ultimately owned by the [conversation cache][crate::mls::conversation_cache::MlsConversationCache], but we take an `Arc`
-/// here so that we don't have to tie the lifetime of the guard to the cache.
+/// The conversation is ultimately owned by the [conversation
+/// cache][crate::mls::conversation_cache::MlsConversationCache], but we take an `Arc` here so that we don't have to tie
+/// the lifetime of the guard to the cache.
 ///
 /// More generally, the conversation guard gives us convenient mutable accesses to a single
 /// conversation. This in turn means that we don't have to duplicate the entire

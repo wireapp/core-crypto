@@ -50,8 +50,7 @@ impl ImmutableConversation {
 
 #[cfg(test)]
 mod tests {
-    use crate::mls::conversation::Error;
-    use crate::test_utils::*;
+    use crate::{mls::conversation::Error, test_utils::*};
 
     #[apply(all_cred_cipher)]
     async fn decrypting_duplicate_member_commit_should_fail(case: TestContext) {
