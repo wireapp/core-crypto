@@ -57,7 +57,7 @@ pub use crate::{
     identity::{WireIdentity, X509Identity},
     mls::{
         ExternalSender,
-        ciphersuite::CipherSuite,
+        cipher_suite::CipherSuite,
         conversation::{
             BufferedDecryptedMessage, CommitBundle, ConversationConfiguration, ConversationId, CustomConfiguration,
             DecryptedMessage, GroupInfoBundle, GroupInfoEncryptionType, GroupInfoPayload, RatchetTreeType, WirePolicy,

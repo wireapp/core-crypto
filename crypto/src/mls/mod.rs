@@ -1,4 +1,4 @@
-pub(crate) mod ciphersuite;
+pub(crate) mod cipher_suite;
 pub mod conversation;
 pub(crate) mod conversation_cache;
 pub mod credential;
