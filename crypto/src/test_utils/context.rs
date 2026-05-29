@@ -122,9 +122,7 @@ impl SessionContext {
             .credential_type(credential_type)
             .cipher_suite(cipher_suite)
             .build();
-        let credentials = self
-            .core_crypto
-            .find_credentials(find_filters)
+        let credentials = CredentialRef::find(&self.core_crypto.database, find_filters)
             .await
             .expect("find credentials for cipher_suite and credential type");
         let credential_ref = credentials.first().expect("at least one credential found");
@@ -134,7 +132,7 @@ impl SessionContext {
     }
 
     pub async fn find_credentials(&self, find_filters: CredentialFindFilters<'_>) -> Option<Vec<CredentialRef>> {
-        self.core_crypto.find_credentials(find_filters).await.ok()
+        CredentialRef::find(&self.core_crypto.database, find_filters).await.ok()
     }
 
     pub async fn find_credential(&self, pk: &SignaturePublicKey) -> Option<Arc<Credential>> {

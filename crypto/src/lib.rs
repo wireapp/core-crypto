@@ -171,21 +171,6 @@ impl CoreCrypto {
             .map_err(Into::into)
     }
 
-    /// Find all credentials known by this session which match the specified conditions.
-    ///
-    /// If no filters are set, this is equivalent to [`Self::get_credentials`].
-    pub async fn find_credentials(&self, find_filters: CredentialFindFilters<'_>) -> Result<Vec<CredentialRef>> {
-        CredentialRef::find(&self.database(), find_filters)
-            .await
-            .map_err(RecursiveError::mls_credential_ref("finding credentials with filters"))
-            .map_err(Into::into)
-    }
-
-    /// Get all credentials known by this session.
-    pub async fn get_credentials(&self) -> Result<Vec<CredentialRef>> {
-        self.find_credentials(Default::default()).await
-    }
-
     /// Get the mls session if initialized
     pub async fn mls_session(&self) -> Result<Session> {
         if let Some(session) = self.mls.read().await.as_ref() {
