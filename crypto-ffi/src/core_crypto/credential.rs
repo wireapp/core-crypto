@@ -109,4 +109,18 @@ impl CoreCryptoFfi {
             .map(|credentials| credentials.into_iter().map(CredentialRef::from).map(Arc::new).collect())
             .map_err(CoreCryptoError::generic())
     }
+
+    /// Export a PEM string containing the public portion of this credential.
+    ///
+    /// - Basic credentials export their public key.
+    /// - x509 credentials export the full certificate chain. This enables external tools such as `openssl` to validate
+    ///   the certificate chain.
+    pub async fn export_credential_pem(&self, credential_ref: Arc<CredentialRef>) -> CoreCryptoResult<String> {
+        let credential = credential_ref
+            .0
+            .load(&self.inner.database())
+            .await
+            .map_err(CoreCryptoError::generic())?;
+        Ok(credential.export_pem())
+    }
 }
