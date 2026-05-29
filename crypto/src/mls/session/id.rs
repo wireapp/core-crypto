@@ -1,8 +1,12 @@
+mod qualified;
+
 use std::{
     borrow::{Borrow, Cow},
     fmt,
     ops::Deref,
 };
+
+pub use qualified::QualifiedClientId;
 
 use super::error::Error;
 

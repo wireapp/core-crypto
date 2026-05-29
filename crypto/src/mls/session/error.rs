@@ -7,6 +7,8 @@ pub(crate) type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("Supplied client id was not of the format `<user-id:device-id@domain>`")]
+    InvalidQualifiedClientId,
     #[error("Supplied user id was not valid")]
     InvalidUserId,
     #[error("X509 certificate bundle set was empty")]
