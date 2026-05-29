@@ -4,10 +4,12 @@ use std::sync::Arc;
 
 use async_lock::Mutex;
 use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPair};
-use wire_e2e_identity::{E2eIdentityError, HashAlgorithm, JwsAlgorithm, acquisition::states};
+use wire_e2e_identity::{HashAlgorithm, JwsAlgorithm, acquisition::states};
 use x509_cert::der::Encode as _;
 
-use crate::{CipherSuite as FfiCiphersuite, ClientId, CoreCryptoError, CoreCryptoResult, Credential, PkiEnvironment};
+use crate::{
+    CipherSuite as FfiCiphersuite, CoreCryptoError, CoreCryptoResult, Credential, PkiEnvironment, QualifiedClientId,
+};
 
 /// The end-to-end identity verification state of a conversation.
 ///
@@ -73,7 +75,7 @@ pub struct X509CredentialAcquisitionConfiguration {
     /// User-visible display name.
     pub display_name: String,
     /// Wire client id for the device acquiring the credential.
-    pub client_id: Arc<ClientId>,
+    pub client_id: Arc<QualifiedClientId>,
     /// Wire handle without the domain suffix.
     pub handle: String,
     /// Wire domain.
@@ -86,9 +88,6 @@ pub struct X509CredentialAcquisitionConfiguration {
 
 impl X509CredentialAcquisitionConfiguration {
     fn try_into_core(self) -> CoreCryptoResult<wire_e2e_identity::acquisition::X509CredentialConfiguration> {
-        let client_id = std::str::from_utf8(self.client_id.as_ref().0.as_ref()).map_err(CoreCryptoError::generic())?;
-        let client_id =
-            wire_e2e_identity::E2eiClientId::try_from_qualified(client_id).map_err(E2eIdentityError::from)?;
         let sign_alg: JwsAlgorithm = self.cipher_suite.try_into()?;
 
         Ok(wire_e2e_identity::acquisition::X509CredentialConfiguration {
@@ -96,7 +95,7 @@ impl X509CredentialAcquisitionConfiguration {
             sign_alg,
             hash_alg: HashAlgorithm::SHA256,
             display_name: self.display_name,
-            client_id,
+            client_id: self.client_id.as_e2ei_client_id(),
             handle: self.handle,
             domain: self.domain,
             team: self.team,
