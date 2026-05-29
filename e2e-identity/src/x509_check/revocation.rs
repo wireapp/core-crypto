@@ -72,7 +72,7 @@ fn check_cpr(cpr: CertificationPathResults) -> RustyX509CheckResult<()> {
     }
 }
 
-fn now() -> RustyX509CheckResult<u64> {
+pub(crate) fn now() -> RustyX509CheckResult<u64> {
     Ok(web_time::SystemTime::now()
         .duration_since(web_time::SystemTime::UNIX_EPOCH)
         .map_err(|_| RustyX509CheckError::CannotDetermineCurrentTime)?
