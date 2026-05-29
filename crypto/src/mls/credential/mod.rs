@@ -6,6 +6,7 @@ pub(crate) mod credential_ref;
 pub(crate) mod credential_type;
 pub(crate) mod crl;
 mod error;
+mod export_pem;
 pub(crate) mod ext;
 mod persistence;
 pub(crate) mod x509;
