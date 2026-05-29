@@ -29,7 +29,7 @@ use crate::{
     pki_env::hooks::PkiEnvironmentHooks,
     x509_check::{
         RustyX509CheckError, RustyX509CheckResult, extract_crl_uris,
-        revocation::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams},
+        revocation::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams, now},
     },
 };
 
@@ -248,18 +248,18 @@ impl PkiEnvironment {
         })
         .await?;
 
-        let cps = CertificationPathSettings::new();
+        let mut cps = CertificationPathSettings::new();
+        certval::set_time_of_interest(&mut cps, now()?);
         let mut cert_source = CertSource::new();
         cert_source.push(certval::CertFile {
             filename: "".to_string(),
             bytes: cert.to_der()?,
         });
 
+        let mut guard = self.rjt_pki_env.lock().await;
         cert_source.initialize(&cps).map_err(Error::Certval)?;
-        self.rjt_pki_env
-            .lock()
-            .await
-            .add_certificate_source(Box::new(cert_source));
+        cert_source.find_all_partial_paths(&guard, &cps);
+        guard.add_certificate_source(Box::new(cert_source));
 
         Ok(())
     }
