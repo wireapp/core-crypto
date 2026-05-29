@@ -47,6 +47,8 @@ export {
     cipherSuiteFromU16,
     cipherSuiteDefault,
     ClientId,
+    QualifiedClientId,
+    type QualifiedClientIdLike,
     Database,
     DatabaseKey,
     type MlsTransportData,
