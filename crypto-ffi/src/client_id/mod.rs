@@ -1,7 +1,5 @@
 mod qualified;
 
-use core_crypto::RecursiveError;
-
 pub use crate::client_id::qualified::QualifiedClientId;
 use crate::{CoreCryptoResult, bytes_wrapper::bytes_wrapper};
 
@@ -26,8 +24,6 @@ impl AsRef<core_crypto::ClientIdRef> for ClientId {
 impl ClientId {
     /// Try parsing this into a [QualifiedClientId].
     pub fn parse_qualified(&self) -> CoreCryptoResult<QualifiedClientId> {
-        let triple = core_crypto::QualifiedClientId::try_from(self.0.clone())
-            .map_err(RecursiveError::mls_client("parsing client id triple"))?;
-        Ok(triple.into())
+        QualifiedClientId::new(self.clone())
     }
 }

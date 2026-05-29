@@ -27,7 +27,8 @@ impl TryFrom<ClientId> for QualifiedClientId {
 }
 
 impl QualifiedClientId {
-    fn try_parse(value: &ClientId) -> Result<E2eiClientId> {
+    /// Try cloning a [ClientId] into an [E2eiClientId].
+    pub fn try_parse(value: &ClientId) -> Result<E2eiClientId> {
         let client_id = std::str::from_utf8(value.as_ref()).map_err(|_| Error::InvalidQualifiedClientId)?;
         wire_e2e_identity::E2eiClientId::try_from_qualified(client_id).map_err(|_| Error::InvalidQualifiedClientId)
     }
