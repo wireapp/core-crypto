@@ -289,7 +289,13 @@ impl SessionContext {
     ) -> Result<()> {
         let user_uuid = uuid::Uuid::new_v4();
         let rnd_id = rand::random::<usize>();
-        let session_id = ClientId(format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated()).into_bytes());
+
+        let session_id = ClientId::new(
+            &user_uuid.hyphenated().to_string(),
+            &format!("{rnd_id:x}"),
+            "members.wire.com",
+        )
+        .unwrap();
 
         let (session_id, credential) = match case.credential_type {
             CredentialType::Basic => {

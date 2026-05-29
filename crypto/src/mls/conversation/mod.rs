@@ -194,7 +194,7 @@ mod tests {
                 let android_id = android_identities.first().unwrap();
                 assert_eq!(
                     android_id.client_id.as_bytes(),
-                    alice_android.transaction.client_id().await.unwrap().0.as_slice()
+                    alice_android.transaction.client_id().await.unwrap().as_bytes()
                 );
 
                 let ios_identities = conversation
@@ -206,7 +206,7 @@ mod tests {
                 let ios_id = ios_identities.first().unwrap();
                 assert_eq!(
                     ios_id.client_id.as_bytes(),
-                    alice_ios.transaction.client_id().await.unwrap().0.as_slice()
+                    alice_ios.transaction.client_id().await.unwrap().as_bytes()
                 );
 
                 let empty_slice: &[ClientId] = &[];
