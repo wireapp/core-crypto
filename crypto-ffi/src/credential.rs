@@ -42,4 +42,13 @@ impl Credential {
     pub fn earliest_validity(&self) -> u64 {
         self.0.earliest_validity()
     }
+
+    /// Export a PEM string containing the public portion of this credential.
+    ///
+    /// - Basic credentials export their public key.
+    /// - x509 credentials export the full certificate chain. This enables external tools such as `openssl` to validate
+    ///   the certificate chain.
+    pub fn export_pem(&self) -> String {
+        self.0.export_pem()
+    }
 }
