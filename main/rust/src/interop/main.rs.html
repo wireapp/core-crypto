@@ -136,7 +136,7 @@
 <a href=#136 id=136 data-nosnippet>136</a>    <span class="kw">use </span>core_crypto::<span class="kw-2">*</span>;
 <a href=#137 id=137 data-nosnippet>137</a>    <span class="kw">use </span>rand::distributions::DistString;
 <a href=#138 id=138 data-nosnippet>138</a>
-<a href=#139 id=139 data-nosnippet>139</a>    <span class="macro">log::info!</span>(<span class="string">"Using ciphersuite {CIPHERSUITE_IN_USE}"</span>);
+<a href=#139 id=139 data-nosnippet>139</a>    <span class="macro">log::info!</span>(<span class="string">"Using cipher suite {CIPHERSUITE_IN_USE}"</span>);
 <a href=#140 id=140 data-nosnippet>140</a>
 <a href=#141 id=141 data-nosnippet>141</a>    <span class="kw">let </span><span class="kw-2">mut </span>spinner = util::RunningProcess::new(<span class="string">"[MLS] Step 0: Initializing clients &amp; env..."</span>, <span class="bool-val">true</span>);
 <a href=#142 id=142 data-nosnippet>142</a>    <span class="kw">let </span>db = Database::open(ConnectionType::InMemory, <span class="kw-2">&amp;</span>DatabaseKey::generate())
@@ -147,7 +147,7 @@
 <a href=#147 id=147 data-nosnippet>147</a>
 <a href=#148 id=148 data-nosnippet>148</a>    <span class="kw">let </span>conversation_id: ConversationId = MLS_CONVERSATION_ID.into();
 <a href=#149 id=149 data-nosnippet>149</a>    <span class="kw">let </span>config = ConversationConfiguration {
-<a href=#150 id=150 data-nosnippet>150</a>        ciphersuite: CIPHERSUITE_IN_USE.into(),
+<a href=#150 id=150 data-nosnippet>150</a>        cipher_suite: CIPHERSUITE_IN_USE.into(),
 <a href=#151 id=151 data-nosnippet>151</a>        ..Default::default()
 <a href=#152 id=152 data-nosnippet>152</a>    };
 <a href=#153 id=153 data-nosnippet>153</a>    <span class="kw">let </span>cc = CoreCrypto::new(db);

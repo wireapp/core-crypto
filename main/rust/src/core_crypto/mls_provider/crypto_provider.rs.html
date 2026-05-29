@@ -76,8 +76,8 @@
 <a href=#76 id=76 data-nosnippet>76</a>        }
 <a href=#77 id=77 data-nosnippet>77</a>    }
 <a href=#78 id=78 data-nosnippet>78</a>
-<a href=#79 id=79 data-nosnippet>79</a>    <span class="kw">fn </span>supports(<span class="kw-2">&amp;</span><span class="self">self</span>, ciphersuite: Ciphersuite) -&gt; <span class="prelude-ty">Result</span>&lt;(), CryptoError&gt; {
-<a href=#80 id=80 data-nosnippet>80</a>        <span class="kw">match </span>ciphersuite {
+<a href=#79 id=79 data-nosnippet>79</a>    <span class="kw">fn </span>supports(<span class="kw-2">&amp;</span><span class="self">self</span>, cipher_suite: Ciphersuite) -&gt; <span class="prelude-ty">Result</span>&lt;(), CryptoError&gt; {
+<a href=#80 id=80 data-nosnippet>80</a>        <span class="kw">match </span>cipher_suite {
 <a href=#81 id=81 data-nosnippet>81</a>            Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
 <a href=#82 id=82 data-nosnippet>82</a>            | Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
 <a href=#83 id=83 data-nosnippet>83</a>            | Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256

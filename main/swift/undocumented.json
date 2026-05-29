@@ -87,7 +87,7 @@
     {
       "file": "/Users/runner/work/core-crypto/core-crypto/crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift",
       "line": 8316,
-      "symbol": "X509CredentialAcquisitionConfiguration.init(acmeDirectoryUrl:ciphersuite:displayName:clientId:handle:domain:team:validityPeriodSecs:)",
+      "symbol": "X509CredentialAcquisitionConfiguration.init(acmeDirectoryUrl:cipherSuite:displayName:clientId:handle:domain:team:validityPeriodSecs:)",
       "symbol_kind": "source.lang.swift.decl.function.method.instance",
       "warning": "undocumented"
     },

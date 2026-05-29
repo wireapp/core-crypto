@@ -100,12 +100,12 @@
 <a href=#100 id=100 data-nosnippet>100</a>                <span class="kw">let </span>id = conversation.id.clone();
 <a href=#101 id=101 data-nosnippet>101</a>                <span class="kw">let </span>bob_keypackage = bob.new_keypackage(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
 <a href=#102 id=102 data-nosnippet>102</a>                <span class="kw">let </span>signature_key_pair = bob
-<a href=#103 id=103 data-nosnippet>103</a>                    .find_any_credential(case.ciphersuite(), case.credential_type)
+<a href=#103 id=103 data-nosnippet>103</a>                    .find_any_credential(case.cipher_suite(), case.credential_type)
 <a href=#104 id=104 data-nosnippet>104</a>                    .<span class="kw">await
 <a href=#105 id=105 data-nosnippet>105</a>                    </span>.signature_key_pair
 <a href=#106 id=106 data-nosnippet>106</a>                    .clone();
 <a href=#107 id=107 data-nosnippet>107</a>                <span class="kw">let </span>credential = Credential {
-<a href=#108 id=108 data-nosnippet>108</a>                    ciphersuite: case.ciphersuite(),
+<a href=#108 id=108 data-nosnippet>108</a>                    cipher_suite: case.cipher_suite(),
 <a href=#109 id=109 data-nosnippet>109</a>                    credential_type: CredentialType::Basic,
 <a href=#110 id=110 data-nosnippet>110</a>                    mls_credential: openmls::credentials::Credential::new_basic(
 <a href=#111 id=111 data-nosnippet>111</a>                        carol.get_client_id().<span class="kw">await</span>.into_inner(),

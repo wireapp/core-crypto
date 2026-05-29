@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-a1dae4ba.js";
+            window.path_to_searchindex_js = "searchindex-43df3882.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-8c35e91a.js"></script>
@@ -441,11 +441,11 @@ handle used to refer to the credential in subsequent operations.</p>
 <p><strong>Key packages</strong> — MLS-level advertisements of a device’s identity and capabilities. Other devices fetch a target
 device’s key package from the delivery service when adding it to a group. Generate them with
 <code>generateKeypackage(credentialRef)</code> inside a transaction.</p>
-<h2 id="ciphersuites"><a class="header" href="#ciphersuites">Ciphersuites</a></h2>
-<p>An MLS ciphersuite is a composite designation which specifies the KEM, AEAD, hash, and signature algorithms. CoreCrypto
-formally supports any of the ciphersuites specified in the RFC, but is primarily tested on ciphersuite 1
+<h2 id="cipher-suites"><a class="header" href="#cipher-suites">Cipher Suites</a></h2>
+<p>An MLS cipher suite is a composite designation which specifies the KEM, AEAD, hash, and signature algorithms. CoreCrypto
+formally supports any of the cipher suites specified in the RFC, but is primarily tested on cipher suite 1
 (MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519).</p>
-<p>The ciphersuite is fixed per conversation at the conversation’s creation.</p>
+<p>The cipher suite is fixed per conversation at the conversation’s creation.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="the-database"><a class="header" href="#the-database">The Database</a></h1>
 <p>The <code>Database</code> is CoreCrypto’s keystore: the persistent store for all key material and cryptographic state, as well as
@@ -884,10 +884,17 @@ calls to <code>CoreCryptoContext.generateKeyPackage()</code>.</p>
 <li>renamed <code>removeKeypackagesFor</code> → <code>removeKeyPackagesFor</code></li>
 </ul>
 </li>
+</ol>
+<h2 id="cipher-suites-1"><a class="header" href="#cipher-suites-1">Cipher Suites</a></h2>
+<ol>
 <li>
 <p>We aligned cipher suite spelling to <code>CipherSuite</code>:</p>
 <ul>
-<li>renamed <code>Ciphersuite</code> -&gt; <code>CipherSuite</code></li>
+<li>renamed <code>Ciphersuite</code> → <code>CipherSuite</code></li>
+<li>renamed <code>ciphersuiteFromU16</code> → <code>cipherSuiteFromU16</code></li>
+<li>renamed <code>ciphersuiteDefault</code> → <code>cipherSuiteDefault</code></li>
+<li>renamed <code>conversationCiphersuite</code> → <code>conversationCipherSuite</code></li>
+<li>renamed any parameters and fields <code>ciphersuite</code> → <code>cipherSuite</code></li>
 </ul>
 </li>
 </ol>
@@ -952,8 +959,8 @@ instance or distinct; they use unrelated tables. That said, it is typically more
 <p><strong>Build an <code>X509CredentialAcquisitionConfiguration</code></strong> describing the certificate you want:</p>
 <ul>
 <li><code>acmeUrl</code> - the URL of the ACME server</li>
-<li><code>ciphersuite</code> — must be one of the four with a JWS-compatible signature scheme: Ed25519, P256, P384, or P521. Other
-ciphersuites will fail at construction.</li>
+<li><code>cipher_suite</code> — must be one of the four with a JWS-compatible signature scheme: Ed25519, P256, P384, or P521.
+Other cipher suites will fail at construction.</li>
 <li><code>displayName</code>, <code>clientId</code>, <code>handle</code>, <code>domain</code>, optional <code>team</code></li>
 <li><code>validityPeriodSecs</code></li>
 </ul>

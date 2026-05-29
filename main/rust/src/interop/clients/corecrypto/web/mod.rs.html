@@ -85,10 +85,10 @@
 <a href=#85 id=85 data-nosnippet>85</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>new(driver_addr: <span class="kw-2">&amp;</span>SocketAddr, server: <span class="kw-2">&amp;</span>SocketAddr) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
 <a href=#86 id=86 data-nosnippet>86</a>        <span class="kw">let </span>client_id = uuid::Uuid::new_v4();
 <a href=#87 id=87 data-nosnippet>87</a>        <span class="kw">let </span>client_id_str = client_id.as_hyphenated().to_string();
-<a href=#88 id=88 data-nosnippet>88</a>        <span class="kw">let </span>ciphersuite = CIPHERSUITE_IN_USE <span class="kw">as </span>u16;
+<a href=#88 id=88 data-nosnippet>88</a>        <span class="kw">let </span>cipher_suite = CIPHERSUITE_IN_USE <span class="kw">as </span>u16;
 <a href=#89 id=89 data-nosnippet>89</a>        <span class="kw">let </span>client_config = <span class="macro">serde_json::json!</span>({
 <a href=#90 id=90 data-nosnippet>90</a>            <span class="string">"databaseName"</span>: <span class="macro">format!</span>(<span class="string">"db-{client_id_str}"</span>),
-<a href=#91 id=91 data-nosnippet>91</a>            <span class="string">"ciphersuites"</span>: [ciphersuite],
+<a href=#91 id=91 data-nosnippet>91</a>            <span class="string">"cipherSuites"</span>: [cipher_suite],
 <a href=#92 id=92 data-nosnippet>92</a>            <span class="string">"clientId"</span>: client_id_str
 <a href=#93 id=93 data-nosnippet>93</a>        });
 <a href=#94 id=94 data-nosnippet>94</a>

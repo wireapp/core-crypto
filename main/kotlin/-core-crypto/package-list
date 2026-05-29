@@ -5,8 +5,8 @@ $dokka.location:com.wire.crypto//CIPHERSUITES_DEFAULT/#/PointingToDeclaration/-
 $dokka.location:com.wire.crypto//CIPHERSUITE_DEFAULT/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-c-i-p-h-e-r-s-u-i-t-e_-d-e-f-a-u-l-t.html
 $dokka.location:com.wire.crypto//CREDENTIAL_TYPE_DEFAULT/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-c-r-e-d-e-n-t-i-a-l_-t-y-p-e_-d-e-f-a-u-l-t.html
 $dokka.location:com.wire.crypto//buildMetadata/#/PointingToDeclaration/-core-crypto/com.wire.crypto/build-metadata.html
-$dokka.location:com.wire.crypto//ciphersuiteDefault/#/PointingToDeclaration/-core-crypto/com.wire.crypto/ciphersuite-default.html
-$dokka.location:com.wire.crypto//ciphersuiteFromU16/#kotlin.UShort/PointingToDeclaration/-core-crypto/com.wire.crypto/ciphersuite-from-u16.html
+$dokka.location:com.wire.crypto//cipherSuiteDefault/#/PointingToDeclaration/-core-crypto/com.wire.crypto/cipher-suite-default.html
+$dokka.location:com.wire.crypto//cipherSuiteFromU16/#kotlin.UShort/PointingToDeclaration/-core-crypto/com.wire.crypto/cipher-suite-from-u16.html
 $dokka.location:com.wire.crypto//coreCryptoHistoryClient/#com.wire.crypto.HistorySecret/PointingToDeclaration/-core-crypto/com.wire.crypto/core-crypto-history-client.html
 $dokka.location:com.wire.crypto//coreCryptoNew/#com.wire.crypto.Database/PointingToDeclaration/-core-crypto/com.wire.crypto/core-crypto-new.html
 $dokka.location:com.wire.crypto//createPkiEnvironment/#com.wire.crypto.PkiEnvironmentHooks#com.wire.crypto.Database/PointingToDeclaration/-core-crypto/com.wire.crypto/create-pki-environment.html
@@ -133,7 +133,7 @@ $dokka.location:com.wire.crypto/CoreCryptoContext/addClientsToConversation/#com.
 $dokka.location:com.wire.crypto/CoreCryptoContext/addCredential/#com.wire.crypto.Credential/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/add-credential.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/close.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/commitPendingProposals/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/commit-pending-proposals.html
-$dokka.location:com.wire.crypto/CoreCryptoContext/conversationCiphersuite/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/conversation-ciphersuite.html
+$dokka.location:com.wire.crypto/CoreCryptoContext/conversationCipherSuite/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/conversation-cipher-suite.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/conversationCredential/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/conversation-credential.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/conversationEpoch/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/conversation-epoch.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/conversationExists/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/conversation-exists.html
@@ -187,7 +187,7 @@ $dokka.location:com.wire.crypto/CoreCryptoContextInterface///PointingToDeclarati
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/addClientsToConversation/#com.wire.crypto.ConversationId#kotlin.collections.List[com.wire.crypto.KeyPackage]/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/add-clients-to-conversation.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/addCredential/#com.wire.crypto.Credential/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/add-credential.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/commitPendingProposals/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/commit-pending-proposals.html
-$dokka.location:com.wire.crypto/CoreCryptoContextInterface/conversationCiphersuite/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/conversation-ciphersuite.html
+$dokka.location:com.wire.crypto/CoreCryptoContextInterface/conversationCipherSuite/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/conversation-cipher-suite.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/conversationCredential/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/conversation-credential.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/conversationEpoch/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/conversation-epoch.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/conversationExists/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/conversation-exists.html
@@ -262,7 +262,7 @@ $dokka.location:com.wire.crypto/CoreCryptoFfi///PointingToDeclaration/-core-cry
 $dokka.location:com.wire.crypto/CoreCryptoFfi/CoreCryptoFfi/#com.sun.jna.Pointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/-core-crypto-ffi.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/CoreCryptoFfi/#com.wire.crypto.NoPointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/-core-crypto-ffi.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/close.html
-$dokka.location:com.wire.crypto/CoreCryptoFfi/conversationCiphersuite/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/conversation-ciphersuite.html
+$dokka.location:com.wire.crypto/CoreCryptoFfi/conversationCipherSuite/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/conversation-cipher-suite.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/conversationCredential/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/conversation-credential.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/conversationEpoch/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/conversation-epoch.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/conversationExists/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/conversation-exists.html
@@ -291,7 +291,7 @@ $dokka.location:com.wire.crypto/CoreCryptoFfi/transactionFfi/#com.wire.crypto.Co
 $dokka.location:com.wire.crypto/CoreCryptoFfi/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/-companion/index.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/index.html
-$dokka.location:com.wire.crypto/CoreCryptoFfiInterface/conversationCiphersuite/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/conversation-ciphersuite.html
+$dokka.location:com.wire.crypto/CoreCryptoFfiInterface/conversationCipherSuite/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/conversation-cipher-suite.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/conversationCredential/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/conversation-credential.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/conversationEpoch/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/conversation-epoch.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/conversationExists/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/conversation-exists.html
@@ -359,7 +359,7 @@ $dokka.location:com.wire.crypto/CredentialRef.Companion///PointingToDeclaration/
 $dokka.location:com.wire.crypto/CredentialRef///PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/index.html
 $dokka.location:com.wire.crypto/CredentialRef/CredentialRef/#com.sun.jna.Pointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/-credential-ref.html
 $dokka.location:com.wire.crypto/CredentialRef/CredentialRef/#com.wire.crypto.NoPointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/-credential-ref.html
-$dokka.location:com.wire.crypto/CredentialRef/ciphersuite/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/ciphersuite.html
+$dokka.location:com.wire.crypto/CredentialRef/cipherSuite/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/cipher-suite.html
 $dokka.location:com.wire.crypto/CredentialRef/clientId/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/client-id.html
 $dokka.location:com.wire.crypto/CredentialRef/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/close.html
 $dokka.location:com.wire.crypto/CredentialRef/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/destroy.html
@@ -370,7 +370,7 @@ $dokka.location:com.wire.crypto/CredentialRef/type/#/PointingToDeclaration/-cor
 $dokka.location:com.wire.crypto/CredentialRef/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/CredentialRefInterface.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref-interface/-companion/index.html
 $dokka.location:com.wire.crypto/CredentialRefInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref-interface/index.html
-$dokka.location:com.wire.crypto/CredentialRefInterface/ciphersuite/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref-interface/ciphersuite.html
+$dokka.location:com.wire.crypto/CredentialRefInterface/cipherSuite/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref-interface/cipher-suite.html
 $dokka.location:com.wire.crypto/CredentialRefInterface/clientId/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref-interface/client-id.html
 $dokka.location:com.wire.crypto/CredentialRefInterface/earliestValidity/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref-interface/earliest-validity.html
 $dokka.location:com.wire.crypto/CredentialRefInterface/publicKeyHash/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref-interface/public-key-hash.html
@@ -562,7 +562,7 @@ $dokka.location:com.wire.crypto/KeyPackageRef.Companion///PointingToDeclaration/
 $dokka.location:com.wire.crypto/KeyPackageRef///PointingToDeclaration/-core-crypto/com.wire.crypto/-key-package-ref/index.html
 $dokka.location:com.wire.crypto/KeyPackageRef/KeyPackageRef/#com.sun.jna.Pointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-key-package-ref/-key-package-ref.html
 $dokka.location:com.wire.crypto/KeyPackageRef/KeyPackageRef/#com.wire.crypto.NoPointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-key-package-ref/-key-package-ref.html
-$dokka.location:com.wire.crypto/KeyPackageRef/ciphersuite/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-key-package-ref/ciphersuite.html
+$dokka.location:com.wire.crypto/KeyPackageRef/cipherSuite/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-key-package-ref/cipher-suite.html
 $dokka.location:com.wire.crypto/KeyPackageRef/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-key-package-ref/close.html
 $dokka.location:com.wire.crypto/KeyPackageRef/credentialType/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-key-package-ref/credential-type.html
 $dokka.location:com.wire.crypto/KeyPackageRef/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-key-package-ref/destroy.html
@@ -572,7 +572,7 @@ $dokka.location:com.wire.crypto/KeyPackageRef/signatureScheme/#/PointingToDeclar
 $dokka.location:com.wire.crypto/KeyPackageRef/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-key-package-ref/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/KeyPackageRefInterface.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-key-package-ref-interface/-companion/index.html
 $dokka.location:com.wire.crypto/KeyPackageRefInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-key-package-ref-interface/index.html
-$dokka.location:com.wire.crypto/KeyPackageRefInterface/ciphersuite/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-key-package-ref-interface/ciphersuite.html
+$dokka.location:com.wire.crypto/KeyPackageRefInterface/cipherSuite/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-key-package-ref-interface/cipher-suite.html
 $dokka.location:com.wire.crypto/KeyPackageRefInterface/credentialType/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-key-package-ref-interface/credential-type.html
 $dokka.location:com.wire.crypto/KeyPackageRefInterface/hashRef/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-key-package-ref-interface/hash-ref.html
 $dokka.location:com.wire.crypto/KeyPackageRefInterface/isValid/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-key-package-ref-interface/is-valid.html
@@ -789,7 +789,7 @@ $dokka.location:com.wire.crypto/X509CredentialAcquisitionConfiguration.Companion
 $dokka.location:com.wire.crypto/X509CredentialAcquisitionConfiguration///PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-credential-acquisition-configuration/index.html
 $dokka.location:com.wire.crypto/X509CredentialAcquisitionConfiguration/X509CredentialAcquisitionConfiguration/#kotlin.String#com.wire.crypto.CipherSuite#kotlin.String#com.wire.crypto.ClientId#kotlin.String#kotlin.String#kotlin.String?#kotlin.ULong/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-credential-acquisition-configuration/-x509-credential-acquisition-configuration.html
 $dokka.location:com.wire.crypto/X509CredentialAcquisitionConfiguration/acmeDirectoryUrl/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-credential-acquisition-configuration/acme-directory-url.html
-$dokka.location:com.wire.crypto/X509CredentialAcquisitionConfiguration/ciphersuite/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-credential-acquisition-configuration/ciphersuite.html
+$dokka.location:com.wire.crypto/X509CredentialAcquisitionConfiguration/cipherSuite/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-credential-acquisition-configuration/cipher-suite.html
 $dokka.location:com.wire.crypto/X509CredentialAcquisitionConfiguration/clientId/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-credential-acquisition-configuration/client-id.html
 $dokka.location:com.wire.crypto/X509CredentialAcquisitionConfiguration/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-credential-acquisition-configuration/destroy.html
 $dokka.location:com.wire.crypto/X509CredentialAcquisitionConfiguration/displayName/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-credential-acquisition-configuration/display-name.html

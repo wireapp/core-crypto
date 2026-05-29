@@ -167,9 +167,9 @@
 <a href=#167 id=167 data-nosnippet>167</a>            <span class="kw">let </span>intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();
 <a href=#168 id=168 data-nosnippet>168</a>            <span class="comment">// this completely invents a new client id for alice, which gets propagated into the credential
 <a href=#169 id=169 data-nosnippet>169</a>            </span><span class="kw">let </span>cert = CertificateBundle::new_with_default_values(intermediate_ca, <span class="prelude-val">Some</span>(expiration_time));
-<a href=#170 id=170 data-nosnippet>170</a>            <span class="kw">let </span>cb = Credential::x509(case.ciphersuite(), cert.clone()).unwrap();
+<a href=#170 id=170 data-nosnippet>170</a>            <span class="kw">let </span>cb = Credential::x509(case.cipher_suite(), cert.clone()).unwrap();
 <a href=#171 id=171 data-nosnippet>171</a>
-<a href=#172 id=172 data-nosnippet>172</a>            <span class="kw">let </span>credential = Credential::x509(case.ciphersuite(), cert).unwrap();
+<a href=#172 id=172 data-nosnippet>172</a>            <span class="kw">let </span>credential = Credential::x509(case.cipher_suite(), cert).unwrap();
 <a href=#173 id=173 data-nosnippet>173</a>            alice
 <a href=#174 id=174 data-nosnippet>174</a>                .transaction
 <a href=#175 id=175 data-nosnippet>175</a>                .add_credential_without_clientid_check(credential)

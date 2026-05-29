@@ -64,7 +64,7 @@
 <a href=#64 id=64 data-nosnippet>64</a>/// Note that this is a crate-private function; the public interface for this feature is
 <a href=#65 id=65 data-nosnippet>65</a>/// [`Conversation::generate_history_secret`][crate::mls::conversation::Conversation::generate_history_secret].
 <a href=#66 id=66 data-nosnippet>66</a>/// This implementation lives here instead of there for organizational reasons.
-<a href=#67 id=67 data-nosnippet>67</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>generate_history_secret(ciphersuite: CipherSuite) -&gt; <span class="prelude-ty">Result</span>&lt;HistorySecret&gt; {
+<a href=#67 id=67 data-nosnippet>67</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>generate_history_secret(cipher_suite: CipherSuite) -&gt; <span class="prelude-ty">Result</span>&lt;HistorySecret&gt; {
 <a href=#68 id=68 data-nosnippet>68</a>    <span class="comment">// generate a new completely arbitrary client id
 <a href=#69 id=69 data-nosnippet>69</a>    </span><span class="kw">let </span>session_id = uuid::Uuid::new_v4();
 <a href=#70 id=70 data-nosnippet>70</a>    <span class="kw">let </span>session_id = <span class="macro">format!</span>(<span class="string">"{HISTORY_CLIENT_ID_PREFIX}-{session_id}"</span>);
@@ -88,7 +88,7 @@
 <a href=#88 id=88 data-nosnippet>88</a>        .session()
 <a href=#89 id=89 data-nosnippet>89</a>        .<span class="kw">await
 <a href=#90 id=90 data-nosnippet>90</a>        </span>.map_err(RecursiveError::transaction(<span class="string">"Getting mls session"</span>))<span class="question-mark">?</span>;
-<a href=#91 id=91 data-nosnippet>91</a>    <span class="kw">let </span>credential = Credential::basic(ciphersuite, session_id.clone()).map_err(RecursiveError::mls_credential(
+<a href=#91 id=91 data-nosnippet>91</a>    <span class="kw">let </span>credential = Credential::basic(cipher_suite, session_id.clone()).map_err(RecursiveError::mls_credential(
 <a href=#92 id=92 data-nosnippet>92</a>        <span class="string">"generating basic credential for ephemeral client"</span>,
 <a href=#93 id=93 data-nosnippet>93</a>    ))<span class="question-mark">?</span>;
 <a href=#94 id=94 data-nosnippet>94</a>    <span class="kw">let </span>credential_ref = tx

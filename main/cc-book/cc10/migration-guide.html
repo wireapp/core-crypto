@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-a1dae4ba.js";
+            window.path_to_searchindex_js = "../searchindex-43df3882.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-8c35e91a.js"></script>
@@ -215,10 +215,17 @@ calls to <code>CoreCryptoContext.generateKeyPackage()</code>.</p>
 <li>renamed <code>removeKeypackagesFor</code> → <code>removeKeyPackagesFor</code></li>
 </ul>
 </li>
+</ol>
+<h2 id="cipher-suites"><a class="header" href="#cipher-suites">Cipher Suites</a></h2>
+<ol>
 <li>
 <p>We aligned cipher suite spelling to <code>CipherSuite</code>:</p>
 <ul>
-<li>renamed <code>Ciphersuite</code> -&gt; <code>CipherSuite</code></li>
+<li>renamed <code>Ciphersuite</code> → <code>CipherSuite</code></li>
+<li>renamed <code>ciphersuiteFromU16</code> → <code>cipherSuiteFromU16</code></li>
+<li>renamed <code>ciphersuiteDefault</code> → <code>cipherSuiteDefault</code></li>
+<li>renamed <code>conversationCiphersuite</code> → <code>conversationCipherSuite</code></li>
+<li>renamed any parameters and fields <code>ciphersuite</code> → <code>cipherSuite</code></li>
 </ul>
 </li>
 </ol>
@@ -283,8 +290,8 @@ instance or distinct; they use unrelated tables. That said, it is typically more
 <p><strong>Build an <code>X509CredentialAcquisitionConfiguration</code></strong> describing the certificate you want:</p>
 <ul>
 <li><code>acmeUrl</code> - the URL of the ACME server</li>
-<li><code>ciphersuite</code> — must be one of the four with a JWS-compatible signature scheme: Ed25519, P256, P384, or P521. Other
-ciphersuites will fail at construction.</li>
+<li><code>cipher_suite</code> — must be one of the four with a JWS-compatible signature scheme: Ed25519, P256, P384, or P521.
+Other cipher suites will fail at construction.</li>
 <li><code>displayName</code>, <code>clientId</code>, <code>handle</code>, <code>domain</code>, optional <code>team</code></li>
 <li><code>validityPeriodSecs</code></li>
 </ul>

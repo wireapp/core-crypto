@@ -63,7 +63,7 @@
 <a href=#63 id=63 data-nosnippet>63</a>        group_info: VerifiableGroupInfo,
 <a href=#64 id=64 data-nosnippet>64</a>        credential_ref: <span class="kw-2">&amp;</span>CredentialRef,
 <a href=#65 id=65 data-nosnippet>65</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;(CommitBundle, ConversationId, PendingConversation)&gt; {
-<a href=#66 id=66 data-nosnippet>66</a>        <span class="kw">let </span>ciphersuite = group_info.ciphersuite().into();
+<a href=#66 id=66 data-nosnippet>66</a>        <span class="kw">let </span>cipher_suite = group_info.ciphersuite().into();
 <a href=#67 id=67 data-nosnippet>67</a>        <span class="kw">let </span>mls_provider = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#68 id=68 data-nosnippet>68</a>        <span class="kw">let </span>database = <span class="kw-2">&amp;</span><span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#69 id=69 data-nosnippet>69</a>        <span class="kw">let </span>credential = credential_ref
@@ -72,7 +72,7 @@
 <a href=#72 id=72 data-nosnippet>72</a>            </span>.map_err(RecursiveError::mls_credential_ref(<span class="string">"loading credential"</span>))<span class="question-mark">?</span>;
 <a href=#73 id=73 data-nosnippet>73</a>
 <a href=#74 id=74 data-nosnippet>74</a>        <span class="kw">let </span>configuration = ConversationConfiguration {
-<a href=#75 id=75 data-nosnippet>75</a>            ciphersuite,
+<a href=#75 id=75 data-nosnippet>75</a>            cipher_suite,
 <a href=#76 id=76 data-nosnippet>76</a>            ..Default::default()
 <a href=#77 id=77 data-nosnippet>77</a>        };
 <a href=#78 id=78 data-nosnippet>78</a>
@@ -365,7 +365,7 @@
 <a href=#365 id=365 data-nosnippet>365</a>        <span class="comment">// we need an invalid GroupInfo; let's manufacture one.
 <a href=#366 id=366 data-nosnippet>366</a>        </span><span class="kw">let </span>group_info = {
 <a href=#367 id=367 data-nosnippet>367</a>            <span class="kw">let </span><span class="kw-2">mut </span>conversation = conversation.guard().<span class="kw">await</span>;
-<a href=#368 id=368 data-nosnippet>368</a>            <span class="kw">let </span>(ciphersuite, credential_type) = {
+<a href=#368 id=368 data-nosnippet>368</a>            <span class="kw">let </span>(cipher_suite, credential_type) = {
 <a href=#369 id=369 data-nosnippet>369</a>                <span class="kw">let </span>credential_type = conversation
 <a href=#370 id=370 data-nosnippet>370</a>                    .group()
 <a href=#371 id=371 data-nosnippet>371</a>                    .<span class="kw">await
@@ -374,10 +374,10 @@
 <a href=#374 id=374 data-nosnippet>374</a>                    .credential_type()
 <a href=#375 id=375 data-nosnippet>375</a>                    .try_into()
 <a href=#376 id=376 data-nosnippet>376</a>                    .expect(<span class="string">"case conversation has a known credential type"</span>);
-<a href=#377 id=377 data-nosnippet>377</a>                <span class="kw">let </span>ciphersuite = conversation.group().<span class="kw">await</span>.ciphersuite();
-<a href=#378 id=378 data-nosnippet>378</a>                (ciphersuite, credential_type)
+<a href=#377 id=377 data-nosnippet>377</a>                <span class="kw">let </span>cipher_suite = conversation.group().<span class="kw">await</span>.ciphersuite();
+<a href=#378 id=378 data-nosnippet>378</a>                (cipher_suite, credential_type)
 <a href=#379 id=379 data-nosnippet>379</a>            };
-<a href=#380 id=380 data-nosnippet>380</a>            <span class="kw">let </span>credential = alice.find_any_credential(ciphersuite.into(), credential_type).<span class="kw">await</span>;
+<a href=#380 id=380 data-nosnippet>380</a>            <span class="kw">let </span>credential = alice.find_any_credential(cipher_suite.into(), credential_type).<span class="kw">await</span>;
 <a href=#381 id=381 data-nosnippet>381</a>            <span class="kw">let </span>mls_provider = alice.transaction.crypto_provider().<span class="kw">await</span>.unwrap();
 <a href=#382 id=382 data-nosnippet>382</a>            conversation
 <a href=#383 id=383 data-nosnippet>383</a>                .mutate_group_test(<span class="kw">async move </span>|<span class="kw">_</span>, group, <span class="kw">_</span>| {
