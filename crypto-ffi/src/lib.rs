@@ -36,7 +36,7 @@ mod timestamp;
 
 pub use bundles::{commit::CommitBundle, group_info::GroupInfoBundle, proteus_auto_prekey::ProteusAutoPrekeyBundle};
 pub use cipher_suite::{CipherSuite, cipher_suite_default, cipher_suite_from_u16};
-pub use client_id::ClientId;
+pub use client_id::{ClientId, QualifiedClientId};
 #[cfg(not(target_os = "unknown"))]
 pub use core_crypto::command::transaction_helper::TransactionHelper;
 pub(crate) use core_crypto::e2ei::identities::UserIdentities;
