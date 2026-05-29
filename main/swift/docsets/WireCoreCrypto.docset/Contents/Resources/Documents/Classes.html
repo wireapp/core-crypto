@@ -102,6 +102,9 @@
                 <a href="WireCoreCryptoUniffi/Classes/PkiEnvironmentHooksImpl.html">PkiEnvironmentHooksImpl</a>
               </li>
               <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Classes/QualifiedClientId.html">QualifiedClientId</a>
+              </li>
+              <li class="nav-group-task">
                 <a href="WireCoreCryptoUniffi/Classes/SecretKey.html">SecretKey</a>
               </li>
               <li class="nav-group-task">
@@ -292,6 +295,9 @@
               </li>
               <li class="nav-group-task">
                 <a href="WireCoreCryptoUniffi/Protocols/PkiEnvironmentProtocol.html">PkiEnvironmentProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Protocols/QualifiedClientIdProtocol.html">QualifiedClientIdProtocol</a>
               </li>
               <li class="nav-group-task">
                 <a href="WireCoreCryptoUniffi/Protocols/SecretKeyProtocol.html">SecretKeyProtocol</a>
@@ -1062,6 +1068,38 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">class</span> <span class="kt">PkiEnvironmentHooksImpl</span> <span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Protocols/PkiEnvironmentHooks.html">PkiEnvironmentHooks</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi17QualifiedClientIdC"></a>
+                    <a name="//apple_ref/swift/Class/QualifiedClientId" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi17QualifiedClientIdC">QualifiedClientId</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>This type wraps <code><a href="WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></code> and verifies upon instantiation that it conforms to the <code>&lt;userid&gt;-&lt;device-id&gt;@&lt;domain&gt;</code>
+format.
+Instantiate via [ClientId::parse_qualified].</p>
+
+                        <a href="WireCoreCryptoUniffi/Classes/QualifiedClientId.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">class</span> <span class="kt">QualifiedClientId</span> <span class="p">:</span> <span class="kt"><a href="WireCoreCryptoUniffi/Protocols/QualifiedClientIdProtocol.html">QualifiedClientIdProtocol</a></span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">QualifiedClientId</span><span class="p">:</span> <span class="kt">Equatable</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">QualifiedClientId</span><span class="p">:</span> <span class="kt">Hashable</span></code></pre>
 
                         </div>
                       </div>
