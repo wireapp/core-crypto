@@ -380,9 +380,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi14PkiEnvironmentC19addIntermediateCert7certDery10Foundation4DataV_tYaKF"></a>
-                    <a name="//apple_ref/swift/Method/addIntermediateCert(certDer:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi14PkiEnvironmentC19addIntermediateCert7certDery10Foundation4DataV_tYaKF">addIntermediateCert(certDer:<wbr>)</a>
+                    <a name="/s:20WireCoreCryptoUniffi14PkiEnvironmentC19addIntermediateCert7certPemySS_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/addIntermediateCert(certPem:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi14PkiEnvironmentC19addIntermediateCert7certPemySS_tYaKF">addIntermediateCert(certPem:<wbr>)</a>
                     </code>
                       <span class="declaration-note">
                         Asynchronous
@@ -393,14 +393,14 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Add a DER-encoded certificate as an intermediate certificate.</p>
+                        <p>Add a PEM-encoded certificate as an intermediate certificate.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">addIntermediateCert</span><span class="p">(</span><span class="nv">certDer</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">addIntermediateCert</span><span class="p">(</span><span class="nv">certPem</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
@@ -410,9 +410,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi14PkiEnvironmentC14addTrustAnchor7certDery10Foundation4DataV_tYaKF"></a>
-                    <a name="//apple_ref/swift/Method/addTrustAnchor(certDer:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi14PkiEnvironmentC14addTrustAnchor7certDery10Foundation4DataV_tYaKF">addTrustAnchor(certDer:<wbr>)</a>
+                    <a name="/s:20WireCoreCryptoUniffi14PkiEnvironmentC14addTrustAnchor7certPemySS_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/addTrustAnchor(certPem:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi14PkiEnvironmentC14addTrustAnchor7certPemySS_tYaKF">addTrustAnchor(certPem:<wbr>)</a>
                     </code>
                       <span class="declaration-note">
                         Asynchronous
@@ -423,7 +423,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Add a DER-encoded certificate as a trust anchor.</p>
+                        <p>Add a PEM-encoded certificate as a trust anchor.</p>
 
 <p>NOTE: currently we only support storing a single trust anchor, calling this method multiple
  times will overwrite any previously added trust anchor.</p>
@@ -433,7 +433,7 @@
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">addTrustAnchor</span><span class="p">(</span><span class="nv">certDer</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">addTrustAnchor</span><span class="p">(</span><span class="nv">certPem</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
