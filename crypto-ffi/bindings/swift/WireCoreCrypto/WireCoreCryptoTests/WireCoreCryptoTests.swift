@@ -694,8 +694,9 @@ final class WireCoreCryptoTests: XCTestCase {
 
         let pkiEnvironment = try await PkiEnvironment(
             hooks: MockPkiEnvironmentHooks(), database: database)
-        let clientId = ClientId(
-            bytes: Data("LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com".utf8))
+        let qualifiedClientId = try ClientId(
+            bytes: Data("LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com".utf8)
+        ).parseQualified()
 
         let acquisition = try X509CredentialAcquisition(
             pkiEnvironment: pkiEnvironment,
@@ -703,7 +704,7 @@ final class WireCoreCryptoTests: XCTestCase {
                 acmeDirectoryUrl: "acme.example.com/directory",
                 cipherSuite: cipherSuiteDefault(),
                 displayName: "Alice Smith",
-                clientId: clientId,
+                clientId: qualifiedClientId,
                 handle: "alice_wire",
                 domain: "world.com",
                 team: nil,
@@ -718,13 +719,15 @@ final class WireCoreCryptoTests: XCTestCase {
         let database = try await newDatabase()
         let pkiEnvironment = try await PkiEnvironment(
             hooks: MockPkiEnvironmentHooks(), database: database)
-        let clientId = ClientId(
-            bytes: Data("LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com".utf8))
+        let qualifiedClientId = try ClientId(
+            bytes: Data("LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com".utf8)
+        ).parseQualified()
+        let clientId = qualifiedClientId.clientId()
         let config = X509CredentialAcquisitionConfiguration(
             acmeDirectoryUrl: "acme.example.com/directory",
             cipherSuite: cipherSuiteDefault(),
             displayName: "Alice Smith",
-            clientId: clientId,
+            clientId: qualifiedClientId,
             handle: "alice_wire",
             domain: "world.com",
             team: nil,

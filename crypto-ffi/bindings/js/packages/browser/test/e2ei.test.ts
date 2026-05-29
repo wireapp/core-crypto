@@ -137,15 +137,17 @@ describe("end to end identity", () => {
                 database
             );
 
-            const clientId = window.helpers.newClientId(
-                "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com"
-            );
+            const qualifiedClientId = window.helpers
+                .newClientId(
+                    "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com"
+                )
+                .parseQualified();
             const config =
                 window.ccModule.X509CredentialAcquisitionConfiguration.new({
                     acmeDirectoryUrl: "acme.example.com/directory",
                     cipherSuite: window.defaultCipherSuite,
                     displayName: "Alice Smith",
-                    clientId,
+                    clientId: qualifiedClientId,
                     handle: "alice_wire",
                     domain: "world.com",
                     team: undefined,
@@ -171,15 +173,18 @@ describe("end to end identity", () => {
                 database
             );
 
-            const clientId = window.helpers.newClientId(
-                "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com"
-            );
+            const qualifiedClientId = window.helpers
+                .newClientId(
+                    "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com"
+                )
+                .parseQualified();
+            const clientId = qualifiedClientId.clientId();
             const config =
                 window.ccModule.X509CredentialAcquisitionConfiguration.new({
                     acmeDirectoryUrl: "acme.example.com/directory",
                     cipherSuite: window.defaultCipherSuite,
                     displayName: "Alice Smith",
-                    clientId,
+                    clientId: qualifiedClientId,
                     handle: "alice_wire",
                     domain: "world.com",
                     team: undefined,
