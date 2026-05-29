@@ -92,9 +92,7 @@ impl std::str::FromStr for ClientId {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(
-            hex::decode(s).map_or_else(|_| s.as_bytes().to_vec(), std::convert::identity),
-        ))
+        Ok(Self(hex::decode(s).unwrap_or_else(|_| s.as_bytes().to_vec())))
     }
 }
 
