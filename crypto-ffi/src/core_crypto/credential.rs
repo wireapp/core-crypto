@@ -9,7 +9,11 @@ use crate::{CipherSuite, ClientId, CoreCryptoFfi, CoreCryptoResult, CredentialRe
 impl CoreCryptoFfi {
     /// Get the public key associated with this credential
     pub async fn public_key(&self, credential_ref: Arc<CredentialRef>) -> CoreCryptoResult<Vec<u8>> {
-        self.inner.public_key(&credential_ref.0).await.map_err(Into::into)
+        credential_ref
+            .0
+            .public_key(&self.inner.database())
+            .await
+            .map_err(CoreCryptoError::generic())
     }
 
     /// Get all credentials from this client.

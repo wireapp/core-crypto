@@ -27,4 +27,21 @@ impl CredentialRef {
                     .map_err(Into::into)
             })
     }
+
+    /// Load the public key for the credential matching this ref from the database.
+    ///
+    /// It might seem surprising that the public key isn't stored in the [`Credential`] type;
+    /// you can't get it simpliy by calling [`Self::load`]. The reason for this is that keys
+    /// can be quite large, especially in a post-quantum world, and most of the time, we do not
+    /// actually need the public key. We therefore offer this method to load it dynamically.
+    pub async fn public_key(&self, database: &impl FetchFromDatabase) -> Result<Vec<u8>> {
+        database
+            .get::<StoredCredential>(&self.public_key_hash())
+            .await
+            .map_err(KeystoreError::wrap("finding credential"))?
+            .ok_or(Error::CredentialNotFound)
+            .map_err(RecursiveError::mls_credential_ref("retrieving public key"))
+            .map(|mut stored_credential| std::mem::take(&mut stored_credential.public_key))
+            .map_err(Into::into)
+    }
 }

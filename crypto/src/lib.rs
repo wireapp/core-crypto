@@ -34,7 +34,6 @@ use async_lock::Mutex;
 use async_lock::RwLock;
 pub(crate) use bytes_wrapper::bytes_wrapper;
 pub use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
-use core_crypto_keystore::{entities::StoredCredential, traits::FetchFromDatabase};
 #[cfg(test)]
 pub use core_crypto_macros::{dispotent, durable, idempotent};
 pub(crate) use immutable_database::ImmutableDatabase;
@@ -157,18 +156,6 @@ impl CoreCrypto {
     /// Get the session's PKI Environment
     pub async fn get_pki_environment(&self) -> Option<Arc<PkiEnvironment>> {
         self.pki_environment.read().await.clone()
-    }
-
-    /// Get the public key associated with this credential
-    pub async fn public_key(&self, credential_ref: &CredentialRef) -> Result<Vec<u8>> {
-        self.database
-            .get::<StoredCredential>(&credential_ref.public_key_hash())
-            .await
-            .map_err(KeystoreError::wrap("finding credential"))?
-            .ok_or(mls::credential::credential_ref::Error::CredentialNotFound)
-            .map_err(RecursiveError::mls_credential_ref("retrieving public key"))
-            .map(|stored_credential: StoredCredential| stored_credential.public_key.clone())
-            .map_err(Into::into)
     }
 
     /// Get the mls session if initialized
