@@ -1,14 +1,15 @@
 mod qualified;
-
 use std::{
     borrow::{Borrow, Cow},
     fmt,
     ops::Deref,
 };
 
+// use base64::Engine as _;
 pub use qualified::QualifiedClientId;
+use uuid::Uuid;
 
-use super::error::Error;
+use super::error::{Error, Result};
 
 /// A Client identifier
 ///
@@ -16,41 +17,101 @@ use super::error::Error;
 /// mobile, etc. Users can have multiple clients.
 /// More information [here](https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-group-members-and-clients)
 #[derive(
-    core_crypto_macros::Debug,
-    Clone,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    derive_more::From,
-    derive_more::Into,
-    serde::Serialize,
-    serde::Deserialize,
+    core_crypto_macros::Debug, Clone, Eq, PartialOrd, Ord, Hash, derive_more::Into, serde::Serialize, serde::Deserialize,
 )]
 #[sensitive]
-pub struct ClientId(pub(crate) Vec<u8>);
+pub struct ClientId(Vec<u8>);
+
+pub struct SerializedClientId {
+    pub user_id: Uuid,
+    pub device_id: String,
+    pub domain: String,
+}
 
 impl ClientId {
+    /// user-id & device-id separator
+    pub const DELIMITER: &'static str = ":";
+
+    pub fn new(user_id: &str, device_id: &str, domain: &str) -> Result<Self> {
+        let delimiter = Self::DELIMITER;
+        let string = format!("{user_id}{delimiter}{device_id}@{domain}");
+        let bytes = string.into_bytes();
+        Self::try_parse_bytes(&bytes)?;
+        Ok(Self(bytes))
+    }
+
+    pub fn serialize(&self) -> SerializedClientId {
+        let (user_id, device_id, domain) =
+            Self::try_parse_bytes(&self.0).expect("We verified that this works upon initialization");
+
+        SerializedClientId {
+            user_id,
+            device_id: format!("{:x}", device_id),
+            domain,
+        }
+    }
+
+    pub(crate) fn new_from_bytes(bytes: Vec<u8>) -> Result<Self> {
+        Self::try_parse_bytes(&bytes)?;
+        Ok(Self(bytes))
+    }
+
+    fn try_parse_bytes(bytes: &[u8]) -> Result<(Uuid, u64, String)> {
+        let client_id = std::str::from_utf8(bytes).map_err(|_| Error::InvalidQualifiedClientId)?;
+        let (user_id, rest) = client_id
+            .split_once(Self::DELIMITER)
+            .ok_or(Error::InvalidQualifiedClientId)?;
+        let user_id = Self::parse_user_id(user_id)?;
+        let (device_id, domain) = rest.split_once('@').ok_or(Error::InvalidQualifiedClientId)?;
+        let device_id = Self::parse_device_id(device_id)?;
+        Ok((user_id, device_id, domain.to_owned()))
+    }
+
+    /// Parse the user id, assuming string representation of a UUIDv4.
+    /// TODO(SimonThormeyer): Should this be the base64-encoded string instead?
+    fn parse_user_id(user_id: &str) -> Result<Uuid> {
+        // let user_id = base64::prelude::BASE64_URL_SAFE_NO_PAD
+        //     .decode(user_id)
+        //     .map_err(|_| Error::InvalidQualifiedClientId)?;
+        let uuid = Uuid::try_parse(&user_id).map_err(|_| Error::InvalidQualifiedClientId)?;
+        Ok(uuid)
+    }
+
+    fn parse_device_id(device_id: &str) -> Result<u64> {
+        u64::from_str_radix(device_id, 16).map_err(|_| Error::InvalidQualifiedClientId)
+    }
+
+    pub(crate) fn as_bytes(&self) -> &[u8] {
+        &self.0
+    }
+
     pub(crate) fn into_inner(self) -> Vec<u8> {
         self.0
     }
 }
 
-impl From<Box<[u8]>> for ClientId {
-    fn from(value: Box<[u8]>) -> Self {
-        Self(value.into())
+impl TryFrom<&[u8]> for ClientId {
+    type Error = Error;
+
+    fn try_from(value: &[u8]) -> Result<Self> {
+        Self::try_parse_bytes(&value)?;
+        Ok(Self(value.into()))
     }
 }
 
-impl<const N: usize> From<[u8; N]> for ClientId {
-    fn from(value: [u8; N]) -> Self {
-        Self(value.into())
+impl TryFrom<Box<[u8]>> for ClientId {
+    type Error = Error;
+
+    fn try_from(value: Box<[u8]>) -> Result<Self> {
+        value.try_into()
     }
 }
 
-impl<'a> From<&'a [u8]> for ClientId {
-    fn from(value: &'a [u8]) -> Self {
-        Self(value.into())
+impl<const N: usize> TryFrom<[u8; N]> for ClientId {
+    type Error = Error;
+
+    fn try_from(value: [u8; N]) -> Result<Self> {
+        value.try_into()
     }
 }
 
