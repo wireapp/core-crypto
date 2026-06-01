@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-388fc123.js";
+            window.path_to_searchindex_js = "searchindex-c5ad4be2.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-8c35e91a.js"></script>
@@ -870,11 +870,12 @@ cipher suite.</p>
 conversation, removes every key package derived from it, and deletes it from both the working set and the keystore.</p>
 <h3 id="public-keys"><a class="header" href="#public-keys">Public keys</a></h3>
 <p>A <code>Credential</code> carries a public key but exposes no method to export it. To read the public key, register the credential
-with <code>addCredential</code> to obtain a <code>CredentialRef</code>, then:</p>
+with <code>addCredential</code> to obtain a <code>CredentialRef</code>, then call <code>coreCrypto.publicKey(credentialRef)</code> returns the raw public
+key bytes. This replaces v9.x’s <code>clientPublicKey(cipherSuite, credentialType)</code>.</p>
+<p>There also exist other helpers to work with public keys:</p>
 <ul>
-<li><code>coreCrypto.publicKey(credentialRef)</code> returns the raw public key bytes. This replaces v9.x’s
-<code>clientPublicKey(cipherSuite, credentialType)</code>.</li>
 <li><code>credentialRef.publicKeyHash()</code> returns the SHA256 hash of the public key.</li>
+<li><code>coreCrypto.exportCredentialPem(credentialRef)</code> serializes the public key of a credential into PEM format</li>
 </ul>
 <h2 id="x509-credential-acquisition"><a class="header" href="#x509-credential-acquisition">X509 Credential Acquisition</a></h2>
 <p>The enrollment API that previously drove the ACME and OIDC exchanges step-by-step from the client has been <strong>removed</strong>.

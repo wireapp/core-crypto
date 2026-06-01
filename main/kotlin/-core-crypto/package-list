@@ -349,12 +349,14 @@ $dokka.location:com.wire.crypto/Credential/Credential/#com.wire.crypto.NoPointer
 $dokka.location:com.wire.crypto/Credential/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential/close.html
 $dokka.location:com.wire.crypto/Credential/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential/destroy.html
 $dokka.location:com.wire.crypto/Credential/earliestValidity/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential/earliest-validity.html
+$dokka.location:com.wire.crypto/Credential/exportPem/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential/export-pem.html
 $dokka.location:com.wire.crypto/Credential/signatureScheme/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential/signature-scheme.html
 $dokka.location:com.wire.crypto/Credential/type/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential/type.html
 $dokka.location:com.wire.crypto/Credential/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/CredentialInterface.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-interface/-companion/index.html
 $dokka.location:com.wire.crypto/CredentialInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-interface/index.html
 $dokka.location:com.wire.crypto/CredentialInterface/earliestValidity/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-interface/earliest-validity.html
+$dokka.location:com.wire.crypto/CredentialInterface/exportPem/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-interface/export-pem.html
 $dokka.location:com.wire.crypto/CredentialInterface/signatureScheme/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-interface/signature-scheme.html
 $dokka.location:com.wire.crypto/CredentialInterface/type/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-interface/type.html
 $dokka.location:com.wire.crypto/CredentialRef.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-credential-ref/-companion/index.html
