@@ -72,7 +72,7 @@
 <a href=#72 id=72 data-nosnippet>72</a>    }
 <a href=#73 id=73 data-nosnippet>73</a>}
 <a href=#74 id=74 data-nosnippet>74</a>
-<a href=#75 id=75 data-nosnippet>75</a><span class="kw">fn </span>now() -&gt; RustyX509CheckResult&lt;u64&gt; {
+<a href=#75 id=75 data-nosnippet>75</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>now() -&gt; RustyX509CheckResult&lt;u64&gt; {
 <a href=#76 id=76 data-nosnippet>76</a>    <span class="prelude-val">Ok</span>(web_time::SystemTime::now()
 <a href=#77 id=77 data-nosnippet>77</a>        .duration_since(web_time::SystemTime::UNIX_EPOCH)
 <a href=#78 id=78 data-nosnippet>78</a>        .map_err(|<span class="kw">_</span>| RustyX509CheckError::CannotDetermineCurrentTime)<span class="question-mark">?
