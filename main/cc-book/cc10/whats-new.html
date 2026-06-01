@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-c5ad4be2.js";
+            window.path_to_searchindex_js = "../searchindex-1059262f.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-8c35e91a.js"></script>
+        <script src="../toc-e4cb6eb2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -185,9 +185,18 @@
 database is in-memory.</p>
 </li>
 <li>
+<p>added <code>Database.open(location: String, key: DatabaseKey)</code> as a static method to construct a persistent database
+instance, and <code>Database.open(key: DatabaseKey)</code> / <code>Database.inMemory(key: DatabaseKey)</code> to construct an in-memory
+database instance.</p>
+</li>
+<li>
 <p><strong>Typescript Only</strong>: Added <code>Database.close()</code> and <strong>removed</strong> <code>CoreCrypto.close()</code>. A <code>Database</code> should be closed if
 it is not used anymore. Closing a database makes any <code>PkiEnvironment</code> or <code>CoreCrypto</code> instance unusable. Calls to
 these instances will return a <code>CoreCryptoError.Other</code>. <code>CoreCrypto</code> instances do not need to be closed anymore.</p>
+</li>
+<li>
+<p>It is now safer to close a <code>Database</code>: instead of depending on a unique reference to the instance, it will just
+invalidate all other references to that instance.</p>
 </li>
 </ul>
 <h3 id="pki-environment-api"><a class="header" href="#pki-environment-api">PKI Environment API</a></h3>

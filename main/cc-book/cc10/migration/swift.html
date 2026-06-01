@@ -36,10 +36,10 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-c5ad4be2.js";
+            window.path_to_searchindex_js = "../../searchindex-1059262f.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../../toc-8c35e91a.js"></script>
+        <script src="../../toc-e4cb6eb2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,7 +181,7 @@
 <ol>
 <li>
 <p>The <code>CoreCrypto</code> constructor now takes a <code>Database</code> instance instead of a <code>DatabaseKey</code> and a path. To instantiate a
-database, call the <code>Database.new()</code> static method.</p>
+database, call the <code>Database.open()</code> static method.</p>
 </li>
 <li>
 <p>Deferred init is now the only way to instantiate <code>CoreCrypto</code>. Instead of calling <code>deferredInit()</code>, call the
@@ -206,6 +206,9 @@ raw bytes, call <code>externalSenderKey.copyBytes()</code>.</p>
 <ol>
 <li>
 <p>Removed <code>CoreCryptoFfi.reseedRng()</code> and <code>CoreCryptoFfi.randomBytes()</code>.</p>
+</li>
+<li>
+<p><code>DatabaseKey</code> constructor parameter is now named <code>bytes</code> not <code>key</code></p>
 </li>
 <li>
 <p>Removed the following static methods from <code>CoreCrypto</code> that were globally available:</p>

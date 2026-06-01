@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-c5ad4be2.js";
+            window.path_to_searchindex_js = "../searchindex-1059262f.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-8c35e91a.js"></script>
+        <script src="../toc-e4cb6eb2.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -376,8 +376,16 @@ raw key type that <code>getExternalSender()</code> returns).</p>
 accepted by the delivery service) operations. This behavior has changed: the responsibility of replaying any unmerged
 operations is delegated to the consumer.</p>
 <h2 id="mlstransport-interface"><a class="header" href="#mlstransport-interface">MlsTransport Interface</a></h2>
-<p>Instead of returning an <code>MlsTransportResponse</code> to communicate the reason why a message was rejected by the DS, throw an
-<code>MlsTransportError</code> instead. <code>MlsTransportResponse</code> was removed.</p>
+<ol>
+<li>
+<p>Instead of returning an <code>MlsTransportResponse</code> to communicate the reason why a message was rejected by the DS, throw
+an <code>MlsTransportError</code> instead. <code>MlsTransportResponse</code> was removed.</p>
+</li>
+<li>
+<p>Removed <code>sendMessage</code> method from <code>MlsTransport</code> interface. This wasn’t well-documented and wasn’t being used in any
+case. We remove it for the purpose of making life easier for everyone.</p>
+</li>
+</ol>
 <h2 id="renaming-ciphersuite-to-cipher-suite"><a class="header" href="#renaming-ciphersuite-to-cipher-suite">Renaming “Ciphersuite” to “Cipher Suite”</a></h2>
 <p>We aligned cipher suite spelling to <code>CipherSuite</code>:</p>
 <ul>
@@ -402,6 +410,24 @@ cache, so explicit reloads are no longer needed. Delete any call sites.</p>
 </li>
 <li>
 <p><code>GroupInfoBundle.payload</code> now contains a byte array instead of a class instance.</p>
+</li>
+<li>
+<p>The <code>updateDatabaseKey</code> function has been moved; it is now a static method <code>Database.updateKey</code>.</p>
+</li>
+<li>
+<p>removed <code>CoreCryptoContext.markConversationAsChildOf()</code>. No client should actually be using this function and all
+existing references to it should be removed.</p>
+</li>
+<li>
+<p>The duplicate signature error when adding members to a conversation now contain debug information about which members
+had duplicate signatures.</p>
+</li>
+<li>
+<p>Removed <code>WelcomeBundle</code> type that was returned from <code>processWelcomeMessage()</code> and <code>joinByExternalCommit()</code>. They
+return a <code>ConversationId</code> now only.</p>
+</li>
+<li>
+<p>Removed previously deprecated field <code>hasEpochChanged</code> from <code>DecryptedMessage</code>. Use the <code>EpochObserver</code> interface.</p>
 </li>
 </ol>
 
