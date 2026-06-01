@@ -7,6 +7,62 @@ the sub-pages:
 - [Swift](migration/swift.md)
 - [Kotlin](migration/kotlin.md)
 
+## Credentials
+
+CC10 introduces first-class `Credential` and `CredentialRef` types. Previously, credentials were implicit: `mlsInit()`
+created a basic credential for each cipher suite automatically, and every operation that needed a credential selected
+one by taking a `(cipherSuite, credentialType)` pair. In CC10 you construct credentials explicitly and refer to them by
+`CredentialRef`. The `(cipherSuite, credentialType)` selector has been removed from every call site.
+
+This makes credential operations much more flexible: whereas in the past CC would always implicitly choose the most
+recent credential of a given type and cipher suite, clients can simply choose the appropriate credential.
+
+### Creating and registering credentials
+
+1. `mlsInit()` no longer creates any credential or key packages. After initializing MLS, create at least one credential
+   yourself. See also [MLS Initialization](#mls-initialization) and [Key Packages](#key-packages).
+
+1. Create a basic credential with the `Credential.basic(cipherSuite, clientId)` static method. To obtain an X509
+   credential, use the acquisition flow described in [X509 Credential Acquisition](#x509-credential-acquisition). A
+   `Credential` lives in memory and is independent of any client instance.
+
+1. Register the credential with `transactionContext.addCredential(credential)`. This persists it and returns a
+   `CredentialRef`: a compact, stable handle you pass to the rest of the API in place of the old selector pair.
+
+   - Credentials registered with a single client must be distinct on the
+     `(credentialType, signatureScheme, creation timestamp)` tuple, where the timestamp has one-second resolution. If
+     you need several credentials sharing a type and signature scheme, wait one full second between registering each. We
+     expect to relax this limitation in the future.
+
+1. On MLS initialization, previously stored credentials are loaded automatically. Enumerate them with
+   `getCredentials()`, or filter with `findCredentials(...)`, to recover their `CredentialRef`s.
+
+### Passing credentials to operations
+
+Replace the old `(cipherSuite, credentialType)` arguments with a `CredentialRef`:
+
+| Operation                          | v9.x                                                      | v10.0                                                      |
+| ---------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------- |
+| Create a conversation              | `createConversation(id, creatorCredentialType, config)`   | `createConversation(id, credentialRef, externalSender?)`   |
+| Join by external commit            | `joinByExternalCommit(groupInfo, config, credentialType)` | `joinByExternalCommit(groupInfo, credentialRef)`           |
+| Generate key packages              | `clientKeypackages(cipherSuite, credentialType, amount)`  | repeated `generateKeyPackage(credentialRef)`               |
+| Switch a conversation's credential | `e2eiRotate(conversationId)`                              | `setConversationCredential(conversationId, credentialRef)` |
+
+A conversation's cipher suite is now derived from its credential, so `createConversation()` no longer accepts a separate
+cipher suite.
+
+To remove a credential, call `removeCredential(credentialRef)`. This checks that the credential is not in use by any
+conversation, removes every key package derived from it, and deletes it from both the working set and the keystore.
+
+### Public keys
+
+A `Credential` carries a public key but exposes no method to export it. To read the public key, register the credential
+with `addCredential` to obtain a `CredentialRef`, then:
+
+- `coreCrypto.publicKey(credentialRef)` returns the raw public key bytes. This replaces v9.x's
+  `clientPublicKey(cipherSuite, credentialType)`.
+- `credentialRef.publicKeyHash()` returns the SHA256 hash of the public key.
+
 ## X509 Credential Acquisition
 
 The enrollment API that previously drove the ACME and OIDC exchanges step-by-step from the client has been **removed**.
