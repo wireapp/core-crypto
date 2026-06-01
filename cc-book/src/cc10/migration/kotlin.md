@@ -8,13 +8,10 @@ See the [common migration guide](../migration-guide.md) for changes that apply t
 
 1. `historyClient(historySecret: HistorySecret)` has been moved into `CoreCrypto` Companion functions.
 
-1. The entire read-only API is now exposed on the `CoreCrypto` type, allowing data to be read without opening a
-   transaction.
-
 ## CoreCrypto Instantiation
 
 1. The `CoreCrypto` constructor now takes a `Database` instance instead of a `DatabaseKey` and a path. To instantiate a
-   database, call the `Database.new()` static method.
+   database, call the `Database.open()` static method.
 
 1. Deferred init is now the only way to instantiate `CoreCrypto`. Instead of calling `deferredInit()`, call the
    `CoreCrypto` constructor. As before, call `mlsInit()` in a transaction to initialize MLS.
@@ -26,11 +23,9 @@ raw bytes, call `externalSenderKey.copyBytes()`.
 
 ## Logging
 
-1. We **removed** `CoreCrypto.setLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel)`, as logging is configured
-   globally and not tied to a `CoreCrypto` instance. To set the log level, use the free function
-   `setMaxLogLevel(level: CoreCryptoLogLevel)`.
-
-1. We **renamed** `setLoggerOnly(logger: CoreCryptoLogger)` to `setLogger(logger: CoreCryptoLogger)`.
+1. We **removed** `level` parameter from `setLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel)`. To set the
+   log level, use the free function `setMaxLogLevel(level: CoreCryptoLogLevel)`.
+1. We **removed** `setLoggerOnly`.
 
 ## Other
 

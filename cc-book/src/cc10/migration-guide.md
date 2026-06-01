@@ -184,8 +184,11 @@ operations is delegated to the consumer.
 
 ## MlsTransport Interface
 
-Instead of returning an `MlsTransportResponse` to communicate the reason why a message was rejected by the DS, throw an
-`MlsTransportError` instead. `MlsTransportResponse` was removed.
+1. Instead of returning an `MlsTransportResponse` to communicate the reason why a message was rejected by the DS, throw
+   an `MlsTransportError` instead. `MlsTransportResponse` was removed.
+
+1. Removed `sendMessage` method from `MlsTransport` interface. This wasn't well-documented and wasn't being used in any
+   case. We remove it for the purpose of making life easier for everyone.
 
 ## Renaming "Ciphersuite" to "Cipher Suite"
 
@@ -208,3 +211,16 @@ We aligned cipher suite spelling to `CipherSuite`:
    cache, so explicit reloads are no longer needed. Delete any call sites.
 
 1. `GroupInfoBundle.payload` now contains a byte array instead of a class instance.
+
+1. The `updateDatabaseKey` function has been moved; it is now a static method `Database.updateKey`.
+
+1. removed `CoreCryptoContext.markConversationAsChildOf()`. No client should actually be using this function and all
+   existing references to it should be removed.
+
+1. The duplicate signature error when adding members to a conversation now contain debug information about which members
+   had duplicate signatures.
+
+1. Removed `WelcomeBundle` type that was returned from `processWelcomeMessage()` and `joinByExternalCommit()`. They
+   return a `ConversationId` now only.
+
+1. Removed previously deprecated field `hasEpochChanged` from `DecryptedMessage`. Use the `EpochObserver` interface.

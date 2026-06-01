@@ -5,7 +5,7 @@ See the [common migration guide](../migration-guide.md) for changes that apply t
 ## CoreCrypto Instantiation
 
 1. The `CoreCrypto` constructor now takes a `Database` instance instead of a `DatabaseKey` and a path. To instantiate a
-   database, call the `Database.new()` static method.
+   database, call the `Database.open()` static method.
 
 1. Deferred init is now the only way to instantiate `CoreCrypto`. Instead of calling `deferredInit()`, call the
    `CoreCrypto` constructor. As before, call `mlsInit()` in a transaction to initialize MLS.
@@ -26,6 +26,8 @@ raw bytes, call `externalSenderKey.copyBytes()`.
 ## Other
 
 1. Removed `CoreCryptoFfi.reseedRng()` and `CoreCryptoFfi.randomBytes()`.
+
+1. `DatabaseKey` constructor parameter is now named `bytes` not `key`
 
 1. Removed the following static methods from `CoreCrypto` that were globally available:
 

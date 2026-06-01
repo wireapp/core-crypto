@@ -9,9 +9,16 @@ With CC10 we introduce multiple new types that provide their own new API.
 - `Database.getLocation()` allows getting the location of a persistent database instance. It returns `null` if the
   database is in-memory.
 
+- added `Database.open(location: String, key: DatabaseKey)` as a static method to construct a persistent database
+  instance, and `Database.open(key: DatabaseKey)` / `Database.inMemory(key: DatabaseKey)` to construct an in-memory
+  database instance.
+
 - **Typescript Only**: Added `Database.close()` and **removed** `CoreCrypto.close()`. A `Database` should be closed if
   it is not used anymore. Closing a database makes any `PkiEnvironment` or `CoreCrypto` instance unusable. Calls to
   these instances will return a `CoreCryptoError.Other`. `CoreCrypto` instances do not need to be closed anymore.
+
+- It is now safer to close a `Database`: instead of depending on a unique reference to the instance, it will just
+  invalidate all other references to that instance.
 
 ### PKI Environment API
 

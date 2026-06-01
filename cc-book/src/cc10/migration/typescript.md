@@ -114,3 +114,5 @@ the mapping.
    the underlying `Uint8Array`, call the `serialize` property on the `KeyPackage`.
 
 1. `CustomConfiguration.keyRotationSpan` now defines milliseconds instead of seconds.
+
+1. renamed `CoreCrypto.reseedRng()` to `CoreCrypto.reseed()`
