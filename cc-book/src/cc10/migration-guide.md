@@ -87,7 +87,11 @@ to you exclusively through the `authenticate` hook's `acquisitionSnapshot` param
 1. Removed `CoreCrypto.provideTransport()`, added `transport` parameter to `CoreCryptoContext.mlsInit()`. Instead of
    providing transport separately from MLS initialization, provide it when calling `mlsInit()`.
 
-## Higher-Level Newtypes
+## Validated Input Types
+
+In several instances we have replaced parameters which used to be parsed at call time with exported types which are
+parsed at instantiation. This simplifies error propagation, because clients now receive parse errors directly at
+instantiation. It also simplifies call sites, because they can no longer return parse errors.
 
 1. `GroupInfo.new()` and `Welcome.new()` are now **fallible** constructors. Previously, both accepted any byte sequence
    unconditionally. They now validate the input as a TLS-encoded MLS structure at construction time and throw if the
@@ -96,19 +100,23 @@ to you exclusively through the `authenticate` hook's `acquisitionSnapshot` param
 1. We **removed** `GroupInfo.copyBytes()` and `Welcome.copyBytes()`. The underlying types no longer store raw bytes and
    cannot be round-tripped back to a byte array.
 
-1. Added `Welcome::serialize()`. We had test functions which required the serialized bytes given a `Welcome` instance,
-   so we added the ability to recreate those bytes.
+1. Added `Welcome.serialize()`, which recovers the TLS-serialized bytes (replacing the removed `copyBytes()`). It is
+   fallible and throws if serialization fails.
 
 1. `GroupInfo` and `Welcome` no longer support equality comparisons, hashing, or hex string display in generated
    bindings.
 
-1. `exportSecretKey()` now returns a `SecretKey` object instead of a byte array. To access the raw bytes, call
-   `secretKey.copyBytes()`.
+1. `createConversation()` now takes a single optional, parsed `ExternalSender` object instead of a list of raw
+   external-sender byte arrays carried on the conversation configuration. Parse the external sender ahead of time with:
 
-1. `createConversation()` now takes a parsed `ExternalSender` object instead of raw bytes. Parse the external sender
-   ahead of time with `ExternalSender.parseJwk()` for the JWK form, `ExternalSender.parsePublicKey()` for the legacy raw
-   public-key form, or `ExternalSender.parse()` to try both in turn. Parse errors are reported at parse time rather than
-   during conversation creation. Call `externalSender.serialize()` to recover the raw bytes when needed.
+   - `ExternalSender.parseJwk(jwk)` for the JWK form,
+   - `ExternalSender.parsePublicKey(key, signatureScheme)` for the legacy raw public-key form, or
+   - `ExternalSender.parse(key, signatureScheme)` to try the JWK form first and fall back to the raw public-key form.
+
+   Parse errors are reported at parse time rather than during conversation creation. Call `externalSender.serialize()`
+   to recover the raw public-key bytes; these match the `parsePublicKey` form and the `ExternalSenderKey` returned by
+   `getExternalSender()`. Note that `ExternalSender` (the parsed input type) is distinct from `ExternalSenderKey` (the
+   raw key type that `getExternalSender()` returns).
 
 ## No More Buffering of Unmerged Changes While Decrypting
 
