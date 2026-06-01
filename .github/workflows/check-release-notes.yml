@@ -1,10 +1,47 @@
-name: Check Release Notes
+name: Require release notes for breaking changes
 
 on:
   pull_request:
 
 jobs:
-  noop:
+  release-notes-check:
     runs-on: ubuntu-latest
+
     steps:
-      - run: echo "TODO"
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check breaking changes + release notes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          RANGE="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+
+          echo "Checking range: $RANGE"
+
+          # match conventional commit types that are marked as breaking via `!`
+          # or messages that containt `BREAKING CHANGE:`
+          if (git log --format=%B "$RANGE" | grep -E '^BREAKING') ||
+             (git log --format=%s "$RANGE" | cut -d: -f1 | grep -E '!'); then
+            BREAKING=1
+          else
+            BREAKING=0
+          fi
+
+          if [ "$BREAKING" -eq 0 ]; then
+            echo "No breaking changes detected."
+            exit 0
+          fi
+
+          # Print changed files of range and check if release notes are part of it.
+          if git diff --name-only "$RANGE" | \
+            grep -q 'cc-book/src/release_notes.md'; then
+            echo "Release notes updated."
+            exit 0
+          fi
+
+          echo "::error::Breaking change detected but cc-book/src/release_notes.md was not updated."
+          exit 1
