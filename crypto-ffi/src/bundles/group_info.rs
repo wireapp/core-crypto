@@ -1,4 +1,4 @@
-use core_crypto::GroupInfoBundle as CcGroupInfoBundle;
+use core_crypto::GroupInfoBundle as CryptoGroupInfoBundle;
 
 /// How a `GroupInfo` is encrypted in a commit bundle.
 #[derive(Debug, Clone, Copy, uniffi::Enum)]
@@ -74,8 +74,8 @@ pub struct GroupInfoBundle {
     pub payload: Vec<u8>,
 }
 
-impl From<CcGroupInfoBundle> for GroupInfoBundle {
-    fn from(group_info_bundle: CcGroupInfoBundle) -> Self {
+impl From<CryptoGroupInfoBundle> for GroupInfoBundle {
+    fn from(group_info_bundle: CryptoGroupInfoBundle) -> Self {
         // single variant => no match stmt necessary
         let core_crypto::GroupInfoPayload::Plaintext(payload) = group_info_bundle.payload;
         Self {

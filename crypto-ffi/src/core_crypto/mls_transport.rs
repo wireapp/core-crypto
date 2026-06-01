@@ -5,7 +5,7 @@
 //! everything.
 use std::{fmt, sync::Arc};
 
-use core_crypto::{CommitBundle as CcCommitBundle, HistorySecret};
+use core_crypto::{CommitBundle as CryptoCommitBundle, HistorySecret};
 
 use crate::{ClientId, CommitBundle, HistorySecret as HistorySecretFfi, error::mls_transport::MlsTransportResult};
 
@@ -50,7 +50,7 @@ impl std::fmt::Debug for MlsTransportShim {
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl core_crypto::MlsTransport for MlsTransportShim {
-    async fn send_commit_bundle(&self, commit_bundle: CcCommitBundle) -> core_crypto::Result<()> {
+    async fn send_commit_bundle(&self, commit_bundle: CryptoCommitBundle) -> core_crypto::Result<()> {
         let commit_bundle = CommitBundle::try_from(commit_bundle)
             .map_err(|e| core_crypto::Error::ErrorDuringMlsTransport(e.to_string()))?;
         self.0.send_commit_bundle(commit_bundle).await.map_err(Into::into)

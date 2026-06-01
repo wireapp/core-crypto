@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use core_crypto::{CipherSuite as CryptoCipherSuite, CredentialFindFilters, CredentialRef as CcCredentialRef};
+use core_crypto::{CipherSuite as CryptoCipherSuite, CredentialFindFilters, CredentialRef as CryptoCredentialRef};
 use core_crypto_keystore::Sha256Hash;
 
 use crate::{CipherSuite, ClientId, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, CredentialRef, CredentialType};
@@ -18,7 +18,7 @@ impl CoreCryptoFfi {
 
     /// Get all credentials from this client.
     pub async fn get_credentials(&self) -> CoreCryptoResult<Vec<Arc<CredentialRef>>> {
-        CcCredentialRef::get_all(&self.inner.database())
+        CryptoCredentialRef::get_all(&self.inner.database())
             .await
             .map(|credentials| credentials.into_iter().map(CredentialRef::from).map(Arc::new).collect())
             .map_err(CoreCryptoError::generic())
@@ -104,7 +104,7 @@ impl CoreCryptoFfi {
             earliest_validity,
         };
 
-        CcCredentialRef::find(&self.inner.database(), find_filters)
+        CryptoCredentialRef::find(&self.inner.database(), find_filters)
             .await
             .map(|credentials| credentials.into_iter().map(CredentialRef::from).map(Arc::new).collect())
             .map_err(CoreCryptoError::generic())
