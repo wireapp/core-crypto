@@ -23,40 +23,27 @@ With CC10 we introduce multiple new types that provide their own new API.
 
 ### Credential API
 
-- `Credential` is a first-class type representing a cryptographic identity.
-  - It can be created at any time and lives in memory.
-  - There are two variants of credential: basic and x509. Basic credentials are created with `Credential.basic` static
-    method. X509 credentials are obtained through the acquisition flow described in the
-    [X509 Credential Acquisition](migration-guide.md#x509-credential-acquisition) section of the migration guide.
-- Initializing an MLS client no longer automatically generates any credentials. Any stored credentials will be
-  automatically loaded on MLS init.
-- To add a credential to the set MLS knows about, after initializing MLS, call `addCredential` on a transaction context.
-  - This adds it to the working set, and stores it to the database.
-  - Due to limitations inherent in the current implementation, credentials added to a client must currently be distinct
-    on the `(credential type / signature scheme / unix timestamp of creation)` tuple.
-    - The time resolution is limited to 1 second.
-    - If you have need of multiple credentials for a given signature scheme and credential type, just wait 1 full second
-      between adding each of them.
-    - We expect this limitation to be relaxed in the future.
-  - This also returns a more lightweight `CredentialRef` which can be used elsewhere in the credential API, uniquely
-    referring to a single credential which has already been added to that client.
-- `CredentialRef` is a means of uniquely referring to a single credential without transferring the actual credential
-  data back and forth across FFI all the time.
-  - Each credential ref is aware of basic information about the credential it references:
-    - client id
-    - public key
-    - credential type
-    - signature scheme
-    - earliest validity
-- To remove a credential from the set MLS knows about, call `removeCredential` on a transaction context, handing it the
-  appropriate `CredentialRef`.
-  - Ensures the credential is not currently in use by any conversation.
-  - Removes all key packages generated from this credential.
-  - Removes the credential from the current working set and also from the keystore.
-- Added a new method to transaction context: `getCredentials`, which produces a `CredentialRef` for each credential
-  known by this client.
-- Added a new method to transaction context: `findCredentials`, which produces a `CredentialRef` for each credential
-  known by this client, efficiently filtering them by the specified criteria.
+`Credential` is now a first-class type representing a cryptographic identity. A credential can be created at any time,
+lives in memory, and is independent of any client instance or storage. There are two variants: basic credentials,
+created with the `Credential.basic` static method, and X509 credentials, obtained through the acquisition flow described
+in the [X509 Credential Acquisition](migration-guide.md#x509-credential-acquisition) section of the migration guide.
+
+Initializing an MLS client no longer automatically generates any credentials; instead, any previously stored credentials
+are loaded automatically on MLS init. To put a freshly created credential to use, register it with `addCredential` on a
+transaction context, which stores it and adds it to the working set. This explicit model is considerably more flexible
+than before: rather than CoreCrypto implicitly selecting the most recent credential of a given type and cipher suite,
+clients now choose exactly which credential each operation should use.
+
+Registering a credential returns a `CredentialRef`: a compact, stable handle that uniquely identifies a single stored
+credential without shuttling the full credential data back and forth across the FFI boundary. A `CredentialRef` carries
+basic metadata about the credential it points to — client id, credential type, signature scheme, cipher suite, earliest
+validity, and the hash of its public key — and is the value you pass throughout the rest of the credential API.
+
+Two transaction-context methods recover these references for credentials already known to a client: `getCredentials`
+returns a `CredentialRef` for every credential, and `findCredentials` does the same while efficiently filtering by
+criteria you specify. To delete a credential, pass its `CredentialRef` to `removeCredential`; this verifies the
+credential is not in use by any conversation, removes every key package derived from it, and deletes it from both the
+working set and the keystore.
 
 > [!NOTE]
 > CC v10.0 introduces lots of changes. We provide a [migration guide](migration-guide.md).
