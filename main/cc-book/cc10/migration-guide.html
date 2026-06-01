@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-43df3882.js";
+            window.path_to_searchindex_js = "../searchindex-388fc123.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-8c35e91a.js"></script>
@@ -183,82 +183,66 @@ the sub-pages:</p>
 <li><a href="migration/swift.html">Swift</a></li>
 <li><a href="migration/kotlin.html">Kotlin</a></li>
 </ul>
-<h2 id="mls-initialization"><a class="header" href="#mls-initialization">MLS Initialization</a></h2>
+<h2 id="credentials"><a class="header" href="#credentials">Credentials</a></h2>
+<p>CC10 introduces first-class <code>Credential</code> and <code>CredentialRef</code> types. Previously, credentials were implicit: <code>mlsInit()</code>
+created a basic credential for each cipher suite automatically, and every operation that needed a credential selected
+one by taking a <code>(cipherSuite, credentialType)</code> pair. In CC10 you construct credentials explicitly and refer to them by
+<code>CredentialRef</code>. The <code>(cipherSuite, credentialType)</code> selector has been removed from every call site.</p>
+<p>This makes credential operations much more flexible: whereas in the past CC would always implicitly choose the most
+recent credential of a given type and cipher suite, clients can simply choose the appropriate credential.</p>
+<h3 id="creating-and-registering-credentials"><a class="header" href="#creating-and-registering-credentials">Creating and registering credentials</a></h3>
 <ol>
 <li>
-<p><code>mlsInit()</code> was decoupled from key package creation. To create key packages after initializing MLS, call
-<code>CoreCryptoContext.generateKeyPackage()</code> in a transaction.</p>
+<p><code>mlsInit()</code> no longer creates any credential or key packages. After initializing MLS, create at least one credential
+yourself. See also <a href="#mls-initialization">MLS Initialization</a> and <a href="#key-packages">Key Packages</a>.</p>
 </li>
 <li>
-<p>Removed <code>CoreCrypto.provideTransport()</code>, added <code>transport</code> parameter to <code>CoreCryptoContext.mlsInit()</code>. Instead of
-providing transport separately from MLS initialization, provide it when calling <code>mlsInit()</code>.</p>
-</li>
-</ol>
-<h2 id="key-packages"><a class="header" href="#key-packages">Key Packages</a></h2>
-<ol>
-<li>
-<p>We <strong>removed</strong> <code>CoreCryptoContext.clientKeypackages()</code>. To generate a desired amount of key packages, make repeated
-calls to <code>CoreCryptoContext.generateKeyPackage()</code>.</p>
+<p>Create a basic credential with the <code>Credential.basic(cipherSuite, clientId)</code> static method. To obtain an X509
+credential, use the acquisition flow described in <a href="#x509-credential-acquisition">X509 Credential Acquisition</a>. A
+<code>Credential</code> lives in memory and is independent of any client instance.</p>
 </li>
 <li>
-<p>We <strong>removed</strong> <code>CoreCryptoContext.clientValidKeypackagesCount()</code>. To count remaining key packages, call
-<code>CoreCryptoContext.getKeyPackages()</code>, filter the results as desired, and count the remaining items.</p>
-</li>
-<li>
-<p>We aligned key package spelling to <code>KeyPackage</code>:</p>
+<p>Register the credential with <code>transactionContext.addCredential(credential)</code>. This persists it and returns a
+<code>CredentialRef</code>: a compact, stable handle you pass to the rest of the API in place of the old selector pair.</p>
 <ul>
-<li>renamed <code>Keypackage</code> → <code>KeyPackage</code></li>
-<li>renamed <code>KeypackageRef</code> → <code>KeyPackageRef</code></li>
-<li>renamed <code>generateKeypackage</code> → <code>generateKeyPackage</code></li>
-<li>renamed <code>getKeypackages</code> → <code>getKeyPackages</code></li>
-<li>renamed <code>removeKeypackage</code> → <code>removeKeyPackage</code></li>
-<li>renamed <code>removeKeypackagesFor</code> → <code>removeKeyPackagesFor</code></li>
+<li>Credentials registered with a single client must be distinct on the
+<code>(credentialType, signatureScheme, creation timestamp)</code> tuple, where the timestamp has one-second resolution. If
+you need several credentials sharing a type and signature scheme, wait one full second between registering each. We
+expect to relax this limitation in the future.</li>
 </ul>
 </li>
-</ol>
-<h2 id="cipher-suites"><a class="header" href="#cipher-suites">Cipher Suites</a></h2>
-<ol>
 <li>
-<p>We aligned cipher suite spelling to <code>CipherSuite</code>:</p>
+<p>On MLS initialization, previously stored credentials are loaded automatically. Enumerate them with
+<code>getCredentials()</code>, or filter with <code>findCredentials(...)</code>, to recover their <code>CredentialRef</code>s.</p>
+</li>
+</ol>
+<h3 id="passing-credentials-to-operations"><a class="header" href="#passing-credentials-to-operations">Passing credentials to operations</a></h3>
+<p>Replace the old <code>(cipherSuite, credentialType)</code> arguments with a <code>CredentialRef</code>:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Operation</th><th>v9.x</th><th>v10.0</th></tr>
+</thead>
+<tbody>
+<tr><td>Create a conversation</td><td><code>createConversation(id, creatorCredentialType, config)</code></td><td><code>createConversation(id, credentialRef, externalSender?)</code></td></tr>
+<tr><td>Join by external commit</td><td><code>joinByExternalCommit(groupInfo, config, credentialType)</code></td><td><code>joinByExternalCommit(groupInfo, credentialRef)</code></td></tr>
+<tr><td>Generate key packages</td><td><code>clientKeypackages(cipherSuite, credentialType, amount)</code></td><td>repeated <code>generateKeyPackage(credentialRef)</code></td></tr>
+<tr><td>Switch a conversation’s credential</td><td><code>e2eiRotate(conversationId)</code></td><td><code>setConversationCredential(conversationId, credentialRef)</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>A conversation’s cipher suite is now derived from its credential, so <code>createConversation()</code> no longer accepts a separate
+cipher suite.</p>
+<p>To remove a credential, call <code>removeCredential(credentialRef)</code>. This checks that the credential is not in use by any
+conversation, removes every key package derived from it, and deletes it from both the working set and the keystore.</p>
+<h3 id="public-keys"><a class="header" href="#public-keys">Public keys</a></h3>
+<p>A <code>Credential</code> carries a public key but exposes no method to export it. To read the public key, register the credential
+with <code>addCredential</code> to obtain a <code>CredentialRef</code>, then:</p>
 <ul>
-<li>renamed <code>Ciphersuite</code> → <code>CipherSuite</code></li>
-<li>renamed <code>ciphersuiteFromU16</code> → <code>cipherSuiteFromU16</code></li>
-<li>renamed <code>ciphersuiteDefault</code> → <code>cipherSuiteDefault</code></li>
-<li>renamed <code>conversationCiphersuite</code> → <code>conversationCipherSuite</code></li>
-<li>renamed any parameters and fields <code>ciphersuite</code> → <code>cipherSuite</code></li>
+<li><code>coreCrypto.publicKey(credentialRef)</code> returns the raw public key bytes. This replaces v9.x’s
+<code>clientPublicKey(cipherSuite, credentialType)</code>.</li>
+<li><code>credentialRef.publicKeyHash()</code> returns the SHA256 hash of the public key.</li>
 </ul>
-</li>
-</ol>
-<h2 id="higher-level-newtypes"><a class="header" href="#higher-level-newtypes">Higher-Level Newtypes</a></h2>
-<ol>
-<li>
-<p><code>GroupInfo.new()</code> and <code>Welcome.new()</code> are now <strong>fallible</strong> constructors. Previously, both accepted any byte sequence
-unconditionally. They now validate the input as a TLS-encoded MLS structure at construction time and throw if the
-bytes are malformed.</p>
-</li>
-<li>
-<p>We <strong>removed</strong> <code>GroupInfo.copyBytes()</code> and <code>Welcome.copyBytes()</code>. The underlying types no longer store raw bytes and
-cannot be round-tripped back to a byte array.</p>
-</li>
-<li>
-<p>Added <code>Welcome::serialize()</code>. We had test functions which required the serialized bytes given a <code>Welcome</code> instance,
-so we added the ability to recreate those bytes.</p>
-</li>
-<li>
-<p><code>GroupInfo</code> and <code>Welcome</code> no longer support equality comparisons, hashing, or hex string display in generated
-bindings.</p>
-</li>
-<li>
-<p><code>exportSecretKey()</code> now returns a <code>SecretKey</code> object instead of a byte array. To access the raw bytes, call
-<code>secretKey.copyBytes()</code>.</p>
-</li>
-<li>
-<p><code>createConversation()</code> now takes a parsed <code>ExternalSender</code> object instead of raw bytes. Parse the external sender
-ahead of time with <code>ExternalSender.parseJwk()</code> for the JWK form, <code>ExternalSender.parsePublicKey()</code> for the legacy raw
-public-key form, or <code>ExternalSender.parse()</code> to try both in turn. Parse errors are reported at parse time rather than
-during conversation creation. Call <code>externalSender.serialize()</code> to recover the raw bytes when needed.</p>
-</li>
-</ol>
 <h2 id="x509-credential-acquisition"><a class="header" href="#x509-credential-acquisition">X509 Credential Acquisition</a></h2>
 <p>The enrollment API that previously drove the ACME and OIDC exchanges step-by-step from the client has been <strong>removed</strong>.
 The whole ACME / DPoP / OIDC sequence is now hidden behind a single object, <code>X509CredentialAcquisition</code>, which the
@@ -317,13 +301,91 @@ bytes to encrypted storage before launching the IdP flow.</p>
 <code>X509CredentialAcquisition.fromBytes(pkiEnvironment, snapshot)</code> and call <code>finalize()</code> on the reconstructed instance.
 There is no client-visible serialization method on <code>X509CredentialAcquisition</code> itself; the snapshot bytes are delivered
 to you exclusively through the <code>authenticate</code> hook’s <code>acquisitionSnapshot</code> parameter.</p>
-<h2 id="mlstransport-interface"><a class="header" href="#mlstransport-interface">MlsTransport Interface</a></h2>
-<p>Instead of returning an <code>MlsTransportResponse</code> to communicate the reason why a message was rejected by the DS, throw an
-<code>MlsTransportError</code> instead. <code>MlsTransportResponse</code> was removed.</p>
+<h2 id="key-packages"><a class="header" href="#key-packages">Key Packages</a></h2>
+<ol>
+<li>
+<p>We <strong>removed</strong> <code>CoreCryptoContext.clientKeypackages()</code>. To generate a desired amount of key packages, make repeated
+calls to <code>CoreCryptoContext.generateKeyPackage()</code>.</p>
+</li>
+<li>
+<p>We <strong>removed</strong> <code>CoreCryptoContext.clientValidKeypackagesCount()</code>. To count remaining key packages, call
+<code>CoreCryptoContext.getKeyPackages()</code>, filter the results as desired, and count the remaining items.</p>
+</li>
+<li>
+<p>We aligned key package spelling to <code>KeyPackage</code>:</p>
+<ul>
+<li>renamed <code>Keypackage</code> → <code>KeyPackage</code></li>
+<li>renamed <code>KeypackageRef</code> → <code>KeyPackageRef</code></li>
+<li>renamed <code>generateKeypackage</code> → <code>generateKeyPackage</code></li>
+<li>renamed <code>getKeypackages</code> → <code>getKeyPackages</code></li>
+<li>renamed <code>removeKeypackage</code> → <code>removeKeyPackage</code></li>
+<li>renamed <code>removeKeypackagesFor</code> → <code>removeKeyPackagesFor</code></li>
+</ul>
+</li>
+</ol>
+<h2 id="mls-initialization"><a class="header" href="#mls-initialization">MLS Initialization</a></h2>
+<ol>
+<li>
+<p><code>mlsInit()</code> was decoupled from key package creation. To create key packages after initializing MLS, call
+<code>CoreCryptoContext.generateKeyPackage()</code> in a transaction.</p>
+</li>
+<li>
+<p>Removed <code>CoreCrypto.provideTransport()</code>, added <code>transport</code> parameter to <code>CoreCryptoContext.mlsInit()</code>. Instead of
+providing transport separately from MLS initialization, provide it when calling <code>mlsInit()</code>.</p>
+</li>
+</ol>
+<h2 id="validated-input-types"><a class="header" href="#validated-input-types">Validated Input Types</a></h2>
+<p>In several instances we have replaced parameters which used to be parsed at call time with exported types which are
+parsed at instantiation. This simplifies error propagation, because clients now receive parse errors directly at
+instantiation. It also simplifies call sites, because they can no longer return parse errors.</p>
+<ol>
+<li>
+<p><code>GroupInfo.new()</code> and <code>Welcome.new()</code> are now <strong>fallible</strong> constructors. Previously, both accepted any byte sequence
+unconditionally. They now validate the input as a TLS-encoded MLS structure at construction time and throw if the
+bytes are malformed.</p>
+</li>
+<li>
+<p>We <strong>removed</strong> <code>GroupInfo.copyBytes()</code> and <code>Welcome.copyBytes()</code>. The underlying types no longer store raw bytes and
+cannot be round-tripped back to a byte array.</p>
+</li>
+<li>
+<p>Added <code>Welcome.serialize()</code>, which recovers the TLS-serialized bytes (replacing the removed <code>copyBytes()</code>). It is
+fallible and throws if serialization fails.</p>
+</li>
+<li>
+<p><code>GroupInfo</code> and <code>Welcome</code> no longer support equality comparisons, hashing, or hex string display in generated
+bindings.</p>
+</li>
+<li>
+<p><code>createConversation()</code> now takes a single optional, parsed <code>ExternalSender</code> object instead of a list of raw
+external-sender byte arrays carried on the conversation configuration. Parse the external sender ahead of time with:</p>
+<ul>
+<li><code>ExternalSender.parseJwk(jwk)</code> for the JWK form,</li>
+<li><code>ExternalSender.parsePublicKey(key, signatureScheme)</code> for the legacy raw public-key form, or</li>
+<li><code>ExternalSender.parse(key, signatureScheme)</code> to try the JWK form first and fall back to the raw public-key form.</li>
+</ul>
+<p>Parse errors are reported at parse time rather than during conversation creation. Call <code>externalSender.serialize()</code>
+to recover the raw public-key bytes; these match the <code>parsePublicKey</code> form and the <code>ExternalSenderKey</code> returned by
+<code>getExternalSender()</code>. Note that <code>ExternalSender</code> (the parsed input type) is distinct from <code>ExternalSenderKey</code> (the
+raw key type that <code>getExternalSender()</code> returns).</p>
+</li>
+</ol>
 <h2 id="no-more-buffering-of-unmerged-changes-while-decrypting"><a class="header" href="#no-more-buffering-of-unmerged-changes-while-decrypting">No More Buffering of Unmerged Changes While Decrypting</a></h2>
 <p>During decryption, CoreCrypto would previously automatically replay previously executed but unmerged (i.e., not yet
 accepted by the delivery service) operations. This behavior has changed: the responsibility of replaying any unmerged
 operations is delegated to the consumer.</p>
+<h2 id="mlstransport-interface"><a class="header" href="#mlstransport-interface">MlsTransport Interface</a></h2>
+<p>Instead of returning an <code>MlsTransportResponse</code> to communicate the reason why a message was rejected by the DS, throw an
+<code>MlsTransportError</code> instead. <code>MlsTransportResponse</code> was removed.</p>
+<h2 id="renaming-ciphersuite-to-cipher-suite"><a class="header" href="#renaming-ciphersuite-to-cipher-suite">Renaming “Ciphersuite” to “Cipher Suite”</a></h2>
+<p>We aligned cipher suite spelling to <code>CipherSuite</code>:</p>
+<ul>
+<li>renamed <code>Ciphersuite</code> → <code>CipherSuite</code></li>
+<li>renamed <code>ciphersuiteFromU16</code> → <code>cipherSuiteFromU16</code></li>
+<li>renamed <code>ciphersuiteDefault</code> → <code>cipherSuiteDefault</code></li>
+<li>renamed <code>conversationCiphersuite</code> → <code>conversationCipherSuite</code></li>
+<li>renamed any parameters and fields <code>ciphersuite</code> → <code>cipherSuite</code></li>
+</ul>
 <h2 id="other-changes"><a class="header" href="#other-changes">Other Changes</a></h2>
 <ol>
 <li>

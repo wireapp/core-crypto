@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-43df3882.js";
+            window.path_to_searchindex_js = "../searchindex-388fc123.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-8c35e91a.js"></script>
@@ -199,60 +199,24 @@ e2ei flow</li>
 <li>Added <code>CoreCrypto.getPkiEnvironment()</code> to get the PkiEnvironment of a <code>CoreCrypto</code> instance</li>
 </ul>
 <h3 id="credential-api"><a class="header" href="#credential-api">Credential API</a></h3>
-<ul>
-<li><code>Credential</code> is a first-class type representing a cryptographic identity.
-<ul>
-<li>It can be created at any time and lives in memory.</li>
-<li>There are two variants of credential: basic and x509. Basic credentials are created with <code>Credential.basic</code> static
-method. X509 credentials are obtained through the acquisition flow described in the
-<a href="migration-guide.html#x509-credential-acquisition">X509 Credential Acquisition</a> section of the migration guide.</li>
-</ul>
-</li>
-<li>Initializing an MLS client no longer automatically generates any credentials. Any stored credentials will be
-automatically loaded on MLS init.</li>
-<li>To add a credential to the set MLS knows about, after initializing MLS, call <code>addCredential</code> on a transaction context.
-<ul>
-<li>This adds it to the working set, and stores it to the database.</li>
-<li>Due to limitations inherent in the current implementation, credentials added to a client must currently be distinct
-on the <code>(credential type / signature scheme / unix timestamp of creation)</code> tuple.
-<ul>
-<li>The time resolution is limited to 1 second.</li>
-<li>If you have need of multiple credentials for a given signature scheme and credential type, just wait 1 full second
-between adding each of them.</li>
-<li>We expect this limitation to be relaxed in the future.</li>
-</ul>
-</li>
-<li>This also returns a more lightweight <code>CredentialRef</code> which can be used elsewhere in the credential API, uniquely
-referring to a single credential which has already been added to that client.</li>
-</ul>
-</li>
-<li><code>CredentialRef</code> is a means of uniquely referring to a single credential without transferring the actual credential
-data back and forth across FFI all the time.
-<ul>
-<li>Each credential ref is aware of basic information about the credential it references:
-<ul>
-<li>client id</li>
-<li>public key</li>
-<li>credential type</li>
-<li>signature scheme</li>
-<li>earliest validity</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>To remove a credential from the set MLS knows about, call <code>removeCredential</code> on a transaction context, handing it the
-appropriate <code>CredentialRef</code>.
-<ul>
-<li>Ensures the credential is not currently in use by any conversation.</li>
-<li>Removes all key packages generated from this credential.</li>
-<li>Removes the credential from the current working set and also from the keystore.</li>
-</ul>
-</li>
-<li>Added a new method to transaction context: <code>getCredentials</code>, which produces a <code>CredentialRef</code> for each credential
-known by this client.</li>
-<li>Added a new method to transaction context: <code>findCredentials</code>, which produces a <code>CredentialRef</code> for each credential
-known by this client, efficiently filtering them by the specified criteria.</li>
-</ul>
+<p><code>Credential</code> is now a first-class type representing a cryptographic identity. A credential can be created at any time,
+lives in memory, and is independent of any client instance or storage. There are two variants: basic credentials,
+created with the <code>Credential.basic</code> static method, and X509 credentials, obtained through the acquisition flow described
+in the <a href="migration-guide.html#x509-credential-acquisition">X509 Credential Acquisition</a> section of the migration guide.</p>
+<p>Initializing an MLS client no longer automatically generates any credentials; instead, any previously stored credentials
+are loaded automatically on MLS init. To put a freshly created credential to use, register it with <code>addCredential</code> on a
+transaction context, which stores it and adds it to the working set. This explicit model is considerably more flexible
+than before: rather than CoreCrypto implicitly selecting the most recent credential of a given type and cipher suite,
+clients now choose exactly which credential each operation should use.</p>
+<p>Registering a credential returns a <code>CredentialRef</code>: a compact, stable handle that uniquely identifies a single stored
+credential without shuttling the full credential data back and forth across the FFI boundary. A <code>CredentialRef</code> carries
+basic metadata about the credential it points to — client id, credential type, signature scheme, cipher suite, earliest
+validity, and the hash of its public key — and is the value you pass throughout the rest of the credential API.</p>
+<p>Two transaction-context methods recover these references for credentials already known to a client: <code>getCredentials</code>
+returns a <code>CredentialRef</code> for every credential, and <code>findCredentials</code> does the same while efficiently filtering by
+criteria you specify. To delete a credential, pass its <code>CredentialRef</code> to <code>removeCredential</code>; this verifies the
+credential is not in use by any conversation, removes every key package derived from it, and deletes it from both the
+working set and the keystore.</p>
 <blockquote class="blockquote-tag blockquote-tag-note">
 <p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
 <p>CC v10.0 introduces lots of changes. We provide a <a href="migration-guide.html">migration guide</a>.</p>
