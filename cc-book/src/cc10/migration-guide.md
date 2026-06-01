@@ -57,11 +57,13 @@ conversation, removes every key package derived from it, and deletes it from bot
 ### Public keys
 
 A `Credential` carries a public key but exposes no method to export it. To read the public key, register the credential
-with `addCredential` to obtain a `CredentialRef`, then:
+with `addCredential` to obtain a `CredentialRef`, then call `coreCrypto.publicKey(credentialRef)` returns the raw public
+key bytes. This replaces v9.x's `clientPublicKey(cipherSuite, credentialType)`.
 
-- `coreCrypto.publicKey(credentialRef)` returns the raw public key bytes. This replaces v9.x's
-  `clientPublicKey(cipherSuite, credentialType)`.
+There also exist other helpers to work with public keys:
+
 - `credentialRef.publicKeyHash()` returns the SHA256 hash of the public key.
+- `coreCrypto.exportCredentialPem(credentialRef)` serializes the public key of a credential into PEM format
 
 ## X509 Credential Acquisition
 
