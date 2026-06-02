@@ -1,6 +1,6 @@
 use wire_e2e_identity::legacy::device_status;
 
-use crate::{CredentialType, X509Identity};
+use crate::{ClientId, CredentialType, X509Identity};
 
 /// The identity claims identifying a client.
 ///
@@ -8,7 +8,7 @@ use crate::{CredentialType, X509Identity};
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct WireIdentity {
     /// Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
-    pub client_id: String,
+    pub client_id: ClientId,
     /// Status of the credential at the moment this object is created.
     pub status: DeviceStatus,
     /// MLS thumbprint

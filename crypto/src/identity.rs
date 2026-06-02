@@ -4,14 +4,14 @@ use wire_e2e_identity::legacy::{device_status::DeviceStatus, id::WireQualifiedCl
 use x509_cert::der::pem::LineEnding;
 
 use super::{Error, Result};
-use crate::CredentialType;
+use crate::{ClientId, CredentialType};
 
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct WireIdentity {
     /// Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
-    pub client_id: String,
+    pub client_id: ClientId,
     /// MLS thumbprint
     pub thumbprint: String,
     /// Status of the Credential at the moment T when this object is created

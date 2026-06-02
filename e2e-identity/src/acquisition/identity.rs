@@ -11,7 +11,7 @@ type Result<T> = std::result::Result<T, CertificateError>;
 
 #[derive(Debug, Clone)]
 pub struct WireIdentity {
-    pub client_id: String,
+    pub client_id: ClientId,
     pub handle: QualifiedHandle,
     pub display_name: String,
     pub domain: String,
