@@ -316,3 +316,45 @@ impl PkiEnvironment {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use core_crypto_keystore::{ConnectionType, DatabaseKey};
+    use spki::der::DecodePem as _;
+
+    use super::*;
+
+    const EXAMPLE_CERT_PEM: &str = "
+-----BEGIN CERTIFICATE-----
+MIIBkzCCAUWgAwIBAgIUHFYIFRkm33GKIOb4xLeNtkjl3TIwBQYDK2VwMDcxFTAT
+BgNVBAMMDFRlc3QgUm9vdCBDQTERMA8GA1UECgwIVGVzdCBPcmcxCzAJBgNVBAYT
+AlVTMB4XDTI2MDUyODE1MzA0NFoXDTM2MDUyNTE1MzA0NFowNzEVMBMGA1UEAwwM
+VGVzdCBSb290IENBMREwDwYDVQQKDAhUZXN0IE9yZzELMAkGA1UEBhMCVVMwKjAF
+BgMrZXADIQDa0nMgIgBZeNM2ysNUVp80zwjZNqPJt7HYK3GX7GPp9aNjMGEwHQYD
+VR0OBBYEFHA0MmaaNGOTuBvdo3zzQoKFJ3p5MB8GA1UdIwQYMBaAFHA0MmaaNGOT
+uBvdo3zzQoKFJ3p5MA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMAUG
+AytlcANBAJffPzL50OWnmEBo9mGBQfPVzKRIfFc8EaXox1D5VF9cC1r8nRa0hUq+
+LOVS/gxNk618+PKA2bYq67MZQXCYGgk=
+-----END CERTIFICATE-----
+";
+
+    #[tokio::test]
+    async fn can_add_trust_anchor() {
+        let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
+            .await
+            .unwrap();
+        let pki_env = PkiEnvironment::with_dummy_hooks(db).await.unwrap();
+        let cert = x509_cert::Certificate::from_pem(EXAMPLE_CERT_PEM).unwrap();
+        assert!(pki_env.add_trust_anchor(cert).await.is_ok());
+    }
+
+    #[tokio::test]
+    async fn can_add_intermediate_cert() {
+        let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
+            .await
+            .unwrap();
+        let pki_env = PkiEnvironment::with_dummy_hooks(db).await.unwrap();
+        let cert = x509_cert::Certificate::from_pem(EXAMPLE_CERT_PEM).unwrap();
+        assert!(pki_env.add_intermediate_cert(cert).await.is_ok());
+    }
+}
