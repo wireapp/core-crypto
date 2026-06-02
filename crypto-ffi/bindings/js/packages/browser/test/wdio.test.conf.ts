@@ -118,7 +118,7 @@ export const config = {
             "static-server",
             {
                 folders: [
-                    { mount: "/", path: "./out/browser" },
+                    { mount: "/", path: "./packages/core-crypto/dist/browser" },
                     { mount: "/html", path: "./html" },
                 ],
                 port: 3000,

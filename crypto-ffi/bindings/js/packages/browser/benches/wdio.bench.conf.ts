@@ -42,7 +42,7 @@ export const config: WebdriverIO.Config = {
             {
                 port: 3000,
                 folders: [
-                    { mount: "/", path: "./out/browser" },
+                    { mount: "/", path: "./packages/core-crypto/dist/browser" },
                     { mount: "/html", path: "./html" },
                     {
                         mount: "/node_modules/tinybench",
