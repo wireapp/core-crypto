@@ -4,10 +4,6 @@
   "workspaces": {
     "": {
       "name": "@wireapp/core-crypto",
-      "dependencies": {
-        "@ubjs/core": "0.31.0-3",
-        "@ubjs/node": "0.31.0-3",
-      },
       "devDependencies": {
         "@eslint/js": "^10.0.1",
         "@types/bun": "^1.3.14",
@@ -19,6 +15,7 @@
         "@wdio/mocha-framework": "^9.27.2",
         "@wdio/spec-reporter": "^9.27.2",
         "@wdio/static-server-service": "^9.27.2",
+        "@wireapp/core-crypto": "workspace:*",
         "dts-bundle-generator": "^9.5.1",
         "eslint": "^10.4.0",
         "eslint-config-prettier": "^10.1.8",
@@ -32,6 +29,22 @@
         "typescript-eslint": "^8.60.0",
         "uniffi-bindgen-react-native": "^0.31.0-3",
         "yarn": "^1.22.22",
+      },
+    },
+    "packages/browser": {
+      "name": "@wireapp/core-crypto-browser",
+      "version": "9.0.1",
+    },
+    "packages/core-crypto": {
+      "name": "@wireapp/core-crypto",
+      "version": "9.0.1",
+    },
+    "packages/native": {
+      "name": "@wireapp/core-crypto-native",
+      "version": "9.0.1",
+      "dependencies": {
+        "@ubjs/core": "0.31.0-3",
+        "@ubjs/node": "0.31.0-3",
       },
     },
   },
@@ -484,6 +497,12 @@
     "@webassemblyjs/wasm-parser": ["@webassemblyjs/wasm-parser@1.14.1", "", { "dependencies": { "@webassemblyjs/ast": "1.14.1", "@webassemblyjs/helper-api-error": "1.13.2", "@webassemblyjs/helper-wasm-bytecode": "1.13.2", "@webassemblyjs/ieee754": "1.13.2", "@webassemblyjs/leb128": "1.13.2", "@webassemblyjs/utf8": "1.13.2" } }, "sha512-JLBl+KZ0R5qB7mCnud/yyX08jWFw5MsoalJ1pQ4EdFlgj9VdXKGuENGsiCIjegI1W7p91rUlcB/LB5yRJKNTcQ=="],
 
     "@webassemblyjs/wast-printer": ["@webassemblyjs/wast-printer@1.14.1", "", { "dependencies": { "@webassemblyjs/ast": "1.14.1", "@xtuc/long": "4.2.2" } }, "sha512-kPSSXE6De1XOR820C90RIo2ogvZG+c3KiHzqUoO/F34Y2shGzesfqv7o57xrxovZJH/MetF5UjroJ/R/3isoiw=="],
+
+    "@wireapp/core-crypto": ["@wireapp/core-crypto@workspace:packages/core-crypto"],
+
+    "@wireapp/core-crypto-browser": ["@wireapp/core-crypto-browser@workspace:packages/browser"],
+
+    "@wireapp/core-crypto-native": ["@wireapp/core-crypto-native@workspace:packages/native"],
 
     "@xtuc/ieee754": ["@xtuc/ieee754@1.2.0", "", {}, "sha512-DX8nKgqcGwsc0eJSqYt5lwP4DH5FlHnmuWWBRy7X0NcaGR0ZtuyeESgMwTYVEtxmsNGY+qit4QYT/MIYTOTPeA=="],
 
