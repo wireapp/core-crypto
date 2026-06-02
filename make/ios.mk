@@ -36,9 +36,24 @@ ios-simulator-arm: $(IOS_SIMULATOR_ARM) ## Build for aarch64-apple-ios-sim, iOS 
 .PHONY: ios
 ios: ios-device ios-simulator-arm
 
+# Generate swift wrapper extensions
+
+SWIFT_WRAPPER_DIR := crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto
+SOURCERY_CONFIG := $(SWIFT_WRAPPER_DIR)/.sourcery.yml
+SOURCERY_TEMPLATE := $(SWIFT_WRAPPER_DIR)/Sourcery/Templates/CoreCrypto.stencil
+SWIFT_WRAPPER_GENERATED := $(SWIFT_WRAPPER_DIR)/CoreCrypto.generated.swift
+
+.PHONY: swift-generate-wrapper
+swift-generate-wrapper: $(SWIFT_WRAPPER_GENERATED) $(SOURCERY_TEMPLATE)
+
+swift-generate-wrapper-deps := $(UNIFFI_SWIFT_OUTPUT) $(SOURCERY_CONFIG)
+
+$(SWIFT_WRAPPER_GENERATED): $(swift-generate-wrapper-deps)
+	sourcery --config $(SOURCERY_CONFIG)
+
 # Build XCFramework (macOS only)
 
-ios-create-xcframework-deps := $(IOS_DEVICE) $(IOS_SIMULATOR_ARM) $(UNIFFI_SWIFT_OUTPUT)
+ios-create-xcframework-deps := $(IOS_DEVICE) $(IOS_SIMULATOR_ARM) $(UNIFFI_SWIFT_OUTPUT) $(SWIFT_WRAPPER_GENERATED)
 $(STAMPS)/ios-create-xcframework: $(ios-create-xcframework-deps)
 	$(SHELL) scripts/build-xcframework.sh
 	$(TOUCH_STAMP)
@@ -46,7 +61,7 @@ $(STAMPS)/ios-create-xcframework: $(ios-create-xcframework-deps)
 .PHONY: ios-create-xcframework
 ios-create-xcframework: $(STAMPS)/ios-create-xcframework ## Build the XCode framework (macOS only)
 
-ios-test-deps := $(IOS_SIMULATOR_ARM) $(UNIFFI_SWIFT_OUTPUT) $(SWIFT_FILES)
+ios-test-deps := $(IOS_SIMULATOR_ARM) $(UNIFFI_SWIFT_OUTPUT) $(SWIFT_FILES) $(SWIFT_WRAPPER_GENERATED)
 
 $(STAMPS)/ios-test: $(ios-test-deps)
 	$(SHELL) scripts/run-ios-tests.sh $(XCODE_CONFIG)
