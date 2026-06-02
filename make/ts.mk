@@ -156,6 +156,8 @@ $(TS_NATIVE_OUT) &: $(ts-native-deps)
 	bun build packages/native/src/CoreCrypto.ts \
 	  --conditions=cc-native \
 	  --target node \
+	  --external "@ubjs/node" \
+	  --external "@ubjs/core" \
 	  --format esm \
 	  --outdir out/native \
 	  --entry-naming "corecrypto.[ext]" && \
