@@ -29,3 +29,12 @@ runs:
           gh-token: ${{ inputs.gh-token }}
           uses-rust: true
           artifact-generation: ${{ inputs.artifact-generation }}
+
+      - uses: ./.github/actions/make
+        with:
+          key: swift-generate-wrapper
+          make-rule: swift-generate-wrapper
+          target-path: crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto
+          gh-token: ${{ inputs.gh-token }}
+          uses-rust: false
+          artifact-generation: ${{ inputs.artifact-generation }}
