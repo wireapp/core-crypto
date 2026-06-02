@@ -589,9 +589,10 @@ The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.or
 
 #### Consider when making a release from a release branch<a name="consider-when-making-a-release-from-a-release-branch"></a>
 
-1. Isolate the changes to [index.md](docs/index.md) and `CHANGELOG.md` from the release commit itself
-1. After the release is finished, cherry-pick the changes to [index.md](docs/index.md) and `CHANGELOG.md` and get them
-   into `main`
+1. Isolate the changes to [index.md](docs/index.md) and `[release notes](cc-book/src/release_notes.md)` from the release
+   commit itself
+1. After the release is finished, cherry-pick the changes to [index.md](docs/index.md) and
+   `[release notes](cc-book/src/release_notes.md)` and get them into `main`
 1. For release series `4.x` and newer, docs upload happens automatically. If you released from the series `3.x` or
    older, you need to trigger docs upload manually:
    1. On GitHub, go to the [docs workflow](https://github.com/wireapp/core-crypto/actions/workflows/docs.yml)
