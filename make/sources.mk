@@ -58,14 +58,15 @@ SWIFT_FILES := $(shell fd --type f --extension swift . | LC_ALL=C sort)
 # TypeScript file-based heuristics
 #-------------------------------------------------------------------------------
 
-JS_DIR := crypto-ffi/bindings/js
+JS_DIR := $(abspath crypto-ffi/bindings/js)
 TS_SHARED_DIR := $(JS_DIR)/packages/shared
 TS_BROWSER_DIR := $(JS_DIR)/packages/browser
+TS_CORE_CRYPTO_DIR := $(JS_DIR)/packages/core-crypto
 TS_NATIVE_DIR := $(JS_DIR)/packages/native
 TS_SHARED_SRC_DIR := $(TS_SHARED_DIR)/src
 BROWSER_SRC_DIR := $(TS_BROWSER_DIR)/src
 TS_NATIVE_SRC_DIR := $(TS_NATIVE_DIR)/src
-PACKAGE_JSON := $(JS_DIR)/package.json
+PACKAGE_JSONS := $(JS_DIR)/package.json $(TS_BROWSER_DIR)/package.json $(TS_NATIVE_DIR)/package.json $(TS_CORE_CRYPTO_DIR)/package.json
 BUN_LOCK := $(JS_DIR)/bun.lock
 BUNFIG := $(JS_DIR)/bunfig.toml
 
