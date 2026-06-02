@@ -593,8 +593,3 @@ The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.or
    commit itself
 1. After the release is finished, cherry-pick the changes to [index.md](docs/index.md) and
    `[release notes](cc-book/src/release_notes.md)` and get them into `main`
-1. For release series `4.x` and newer, docs upload happens automatically. If you released from the series `3.x` or
-   older, you need to trigger docs upload manually:
-   1. On GitHub, go to the [docs workflow](https://github.com/wireapp/core-crypto/actions/workflows/docs.yml)
-   1. Click the `Run workflow` button
-   1. In the `Use workflow from` dropdown, choose `release/5.x`, in `Tag to checkout` provide your release tag
