@@ -52,7 +52,7 @@ jobs:
           key: ts-native-darwin-arm64
           make-rule: ts-native
           target-path: |
-            crypto-ffi/bindings/js/out/native/libcore_crypto_ffi.dylib
+            crypto-ffi/bindings/js/packages/core-crypto/dist/native/libcore_crypto_ffi.dylib
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
