@@ -3,8 +3,8 @@
 #-------------------------------------------------------------------------------
 
 TS_OUT_DIR := $(JS_DIR)/packages/core-crypto/dist
-WASM_TARGET_DIR := target/wasm
-WASM_BUILD_ENV := CARGO_TARGET_DIR=$(abspath $(WASM_TARGET_DIR))
+WASM_TARGET_DIR := $(abspath target/wasm)
+WASM_BUILD_ENV := CARGO_TARGET_DIR=$(WASM_TARGET_DIR)
 WASM_TARGET_TRIPLE := wasm32-unknown-unknown
 # We are accepting warnings on the generated code when running `cargo check`, this is consistent with the ubrn config.
 WASM_BUILD_RUSTFLAGS := --cfg getrandom_backend=\"wasm_js\" -Awarnings
@@ -12,13 +12,13 @@ WASM_FFI_LIB := $(WASM_TARGET_DIR)/debug/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 RUST_MODULES_WASM := $(JS_DIR)/rust_modules/wasm
 RUST_MODULES_STAMP := $(RUST_MODULES_WASM)/Cargo.toml
 RUST_MODULES_CARGO_LOCK := $(RUST_MODULES_WASM)/Cargo.lock
-WASM_FILE := $(abspath $(RUST_MODULES_WASM)/target/$(WASM_TARGET_TRIPLE)/$(RELEASE_MODE)/core_crypto_ffi_wasm.wasm)
+WASM_FILE := $(RUST_MODULES_WASM)/target/$(WASM_TARGET_TRIPLE)/$(RELEASE_MODE)/core_crypto_ffi_wasm.wasm
 BROWSER_TS_IMPL := $(BROWSER_GEN_DIR)/core_crypto_ffi.ts
 BROWSER_OUT_DIR := $(TS_OUT_DIR)/browser
 TS_NATIVE_OUT_DIR := $(TS_OUT_DIR)/native
 BROWSER_OUT := $(BROWSER_OUT_DIR)/corecrypto.d.ts $(BROWSER_OUT_DIR)/corecrypto.js
-TS_NATIVE_TARGET_DIR := target/napi
-TS_NATIVE_BUILD_ENV := CARGO_TARGET_DIR=$(abspath $(TS_NATIVE_TARGET_DIR))
+TS_NATIVE_TARGET_DIR := $(abspath target/napi)
+TS_NATIVE_BUILD_ENV := CARGO_TARGET_DIR=$(TS_NATIVE_TARGET_DIR)
 TS_NATIVE_DARWIN_TARGET ?= aarch64-apple-darwin
 TS_NATIVE_LINUX_TARGET ?= x86_64-unknown-linux-gnu
 ifeq ($(UNAME_S),Linux)
@@ -28,7 +28,7 @@ TS_NATIVE_TARGET_TRIPLE ?= $(TS_NATIVE_DARWIN_TARGET)
 else
 $(error Unsupported host platform for ts-native: $(UNAME_S))
 endif
-TS_NATIVE_FFI_LIB := $(abspath $(TS_NATIVE_TARGET_DIR))/$(TS_NATIVE_TARGET_TRIPLE)/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+TS_NATIVE_FFI_LIB := $(TS_NATIVE_TARGET_DIR)/$(TS_NATIVE_TARGET_TRIPLE)/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 TS_NATIVE_OUT := \
 	$(TS_NATIVE_OUT_DIR)/corecrypto.d.ts \
 	$(TS_NATIVE_OUT_DIR)/corecrypto.js \
@@ -136,7 +136,7 @@ ts-native-deps := $(TS_NATIVE_SRCS) $(RUST_SOURCES) $(BUN_LOCK) $(NODE_MODULES)
 # For the ts-native rule, we're switching into `CURDIR` because ubrn has a bug where running this in a sub dir causes a
 # `cargo metadata` call to fail. Switching directories doesn't allow us to run `bun ubrn` directly, so we're setting
 # the script absolute path here.
-UBRN := $(abspath $(JS_DIR)/node_modules/uniffi-bindgen-react-native/bin/cli.cjs)
+UBRN := $(JS_DIR)/node_modules/uniffi-bindgen-react-native/bin/cli.cjs
 
 $(TS_NATIVE_OUT) &: $(ts-native-deps)
 	cd $(JS_DIR) && \
@@ -152,7 +152,7 @@ $(TS_NATIVE_OUT) &: $(ts-native-deps)
 		--target $(TS_NATIVE_TARGET_TRIPLE) && \
 	(cd $(CURDIR) && $(TS_NATIVE_BUILD_ENV) RUSTFLAGS="$(RUSTFLAGS) -Awarnings" bun $(UBRN) generate napi bindings \
 		--library $(TS_NATIVE_FFI_LIB) \
-		--ts-dir $(abspath $(TS_NATIVE_GEN_DIR)) --lib-colocated) && \
+		--ts-dir $(TS_NATIVE_GEN_DIR) --lib-colocated) && \
 	bun build packages/native/src/CoreCrypto.ts \
 	  --conditions=cc-native \
 	  --target node \
