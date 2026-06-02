@@ -1,5 +1,5 @@
 import type { Task } from "tinybench";
-import { CipherSuite } from "../src/CoreCrypto";
+import { CipherSuite } from "#core-crypto";
 import { isNumberObject } from "node:util/types";
 import { mkdir } from "node:fs/promises";
 import { writeFile } from "node:fs/promises";
