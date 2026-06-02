@@ -139,6 +139,12 @@ make android
 
 Install Xcode & its command-line tools: [https://developer.apple.com/xcode/](https://developer.apple.com/xcode/).
 
+Install [Sourcery](https://github.com/krzysztofzablocki/sourcery)
+
+```sh
+brew install sourcery
+```
+
 Install iOS rust targets:
 
 ```sh
