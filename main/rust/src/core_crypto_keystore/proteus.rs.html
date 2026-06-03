@@ -24,17 +24,14 @@
 <a href=#24 id=24 data-nosnippet>24</a></span><span class="kw">impl </span>proteus_traits::PreKeyStore <span class="kw">for </span>Database {
 <a href=#25 id=25 data-nosnippet>25</a>    <span class="kw">type </span>Error = CryptoKeystoreError;
 <a href=#26 id=26 data-nosnippet>26</a>
-<a href=#27 id=27 data-nosnippet>27</a>    <span class="kw">async fn </span>prekey(
-<a href=#28 id=28 data-nosnippet>28</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#29 id=29 data-nosnippet>29</a>        id: proteus_traits::RawPreKeyId,
-<a href=#30 id=30 data-nosnippet>30</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;proteus_traits::RawPreKey&gt;, <span class="self">Self</span>::Error&gt; {
-<a href=#31 id=31 data-nosnippet>31</a>        <span class="self">self</span>.get::&lt;ProteusPrekey&gt;(<span class="kw-2">&amp;</span>id)
-<a href=#32 id=32 data-nosnippet>32</a>            .<span class="kw">await
-<a href=#33 id=33 data-nosnippet>33</a>            </span>.map(|db_prekey| db_prekey.map(|<span class="kw-2">mut </span>db_prekey| std::mem::take(<span class="kw-2">&amp;mut </span>db_prekey.prekey)))
-<a href=#34 id=34 data-nosnippet>34</a>    }
-<a href=#35 id=35 data-nosnippet>35</a>
-<a href=#36 id=36 data-nosnippet>36</a>    <span class="kw">async fn </span>remove(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: proteus_traits::RawPreKeyId) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
-<a href=#37 id=37 data-nosnippet>37</a>        Database::remove::&lt;ProteusPrekey&gt;(<span class="self">self</span>, <span class="kw-2">&amp;</span>id).<span class="kw">await
-<a href=#38 id=38 data-nosnippet>38</a>    </span>}
-<a href=#39 id=39 data-nosnippet>39</a>}
+<a href=#27 id=27 data-nosnippet>27</a>    <span class="kw">async fn </span>prekey(<span class="kw-2">&amp;</span><span class="self">self</span>, id: proteus_traits::RawPreKeyId) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;proteus_traits::RawPreKey&gt;, <span class="self">Self</span>::Error&gt; {
+<a href=#28 id=28 data-nosnippet>28</a>        <span class="self">self</span>.get::&lt;ProteusPrekey&gt;(<span class="kw-2">&amp;</span>id)
+<a href=#29 id=29 data-nosnippet>29</a>            .<span class="kw">await
+<a href=#30 id=30 data-nosnippet>30</a>            </span>.map(|db_prekey| db_prekey.map(|<span class="kw-2">mut </span>db_prekey| std::mem::take(<span class="kw-2">&amp;mut </span>db_prekey.prekey)))
+<a href=#31 id=31 data-nosnippet>31</a>    }
+<a href=#32 id=32 data-nosnippet>32</a>
+<a href=#33 id=33 data-nosnippet>33</a>    <span class="kw">async fn </span>remove(<span class="kw-2">&amp;</span><span class="self">self</span>, id: proteus_traits::RawPreKeyId) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="self">Self</span>::Error&gt; {
+<a href=#34 id=34 data-nosnippet>34</a>        Database::remove::&lt;ProteusPrekey&gt;(<span class="self">self</span>, <span class="kw-2">&amp;</span>id).<span class="kw">await
+<a href=#35 id=35 data-nosnippet>35</a>    </span>}
+<a href=#36 id=36 data-nosnippet>36</a>}
 </code></pre></div></section></main></body></html>
