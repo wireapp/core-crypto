@@ -21,6 +21,7 @@ DerivedData/
 *.dSYM.zip
 *.dSYM
 .DS_Store
+*.generated.swift
 
 # neovim
 .nvim.lua
