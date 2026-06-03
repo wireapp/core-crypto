@@ -3,10 +3,5 @@
     "compilerOptions": {
         "customConditions": ["cc-browser"]
     },
-    "include": [
-        "packages/shared/**/*.ts",
-        "packages/native/**/*.ts",
-        "packages/browser/**/*.ts",
-        "eslint.config.ts"
-    ]
+    "include": ["packages/**/*.ts", "eslint.config.ts"]
 }
