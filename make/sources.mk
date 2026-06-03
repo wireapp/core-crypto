@@ -6,7 +6,7 @@
 CRATES := crypto crypto-ffi keystore crypto-macros e2e-identity obfuscate
 
 # Directory with language specific bindings
-BINDINGS_DIR= ./crypto-ffi/bindings
+BINDINGS_DIR= $(abspath crypto-ffi/bindings)
 
 # Workspace-level Cargo config
 WORKSPACE_CARGO_FILES := Cargo.toml Cargo.lock
@@ -14,8 +14,8 @@ WORKSPACE_CARGO_FILES := Cargo.toml Cargo.lock
 # Per-crate manifests
 CRATE_MANIFESTS := $(addsuffix /Cargo.toml,$(CRATES))
 
-# Enumerate all .rs files in relevant crates
-RUST_RS_FILES := $(shell fd --type f --extension rs --exclude '$(BINDINGS_DIR)' . $(CRATES) | LC_ALL=C sort)
+# Enumerate all .rs files not ignored by our `.gitignore` (`fd` default behavior)
+RUST_RS_FILES := $(shell fd --type f --extension rs | LC_ALL=C sort)
 
 # Files relevant to build interop
 INTEROP_RS_FILES := $(shell fd --type f --extension rs . interop | LC_ALL=C sort)
