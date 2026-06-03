@@ -24,16 +24,13 @@ impl CryptoKeystoreProteus for Database {
 impl proteus_traits::PreKeyStore for Database {
     type Error = CryptoKeystoreError;
 
-    async fn prekey(
-        &mut self,
-        id: proteus_traits::RawPreKeyId,
-    ) -> Result<Option<proteus_traits::RawPreKey>, Self::Error> {
+    async fn prekey(&self, id: proteus_traits::RawPreKeyId) -> Result<Option<proteus_traits::RawPreKey>, Self::Error> {
         self.get::<ProteusPrekey>(&id)
             .await
             .map(|db_prekey| db_prekey.map(|mut db_prekey| std::mem::take(&mut db_prekey.prekey)))
     }
 
-    async fn remove(&mut self, id: proteus_traits::RawPreKeyId) -> Result<(), Self::Error> {
+    async fn remove(&self, id: proteus_traits::RawPreKeyId) -> Result<(), Self::Error> {
         Database::remove::<ProteusPrekey>(self, &id).await
     }
 }
