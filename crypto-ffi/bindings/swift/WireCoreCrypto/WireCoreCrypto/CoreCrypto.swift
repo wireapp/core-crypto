@@ -26,16 +26,13 @@ public protocol CoreCryptoProtocol: CoreCryptoFfiProtocol {
 
 /// CoreCrypto client which manages one cryptographic client for proteus and MLS.
 ///
-public final class CoreCrypto: CoreCryptoFfi, CoreCryptoProtocol, @unchecked Sendable {
+public final class CoreCrypto: CoreCryptoProtocol, @unchecked Sendable {
+    let coreCryptoFfi: CoreCryptoFfi
     let database: Database?
 
-    /// Initialize CoreCrypto with an Ffi instance
-    private init(_ coreCrypto: WireCoreCryptoUniffi.CoreCryptoFfi, database: Database? = nil) {
+    private init(_ coreCrypto: CoreCryptoFfi, database: Database? = nil) {
+        self.coreCryptoFfi = coreCrypto
         self.database = database
-        // Due to Swift limitations, we can't use the `super` convenience intializer inside a child initializer, we
-        // have to call the default `super` initializer. Luckily, we can do this meaningfully by cloning the pointer of
-        // the instance that is passed in here.
-        super.init(unsafeFromRawPointer: coreCrypto.uniffiClonePointer())
     }
 
     ///
@@ -47,13 +44,6 @@ public final class CoreCrypto: CoreCryptoFfi, CoreCryptoProtocol, @unchecked Sen
     public convenience init(database: Database) throws {
         let coreCrypto = try coreCryptoNew(database: database)
         self.init(coreCrypto, database: database)
-    }
-
-    @_documentation(visibility: private) required init(
-        unsafeFromRawPointer pointer: UnsafeMutableRawPointer
-    ) {
-        self.database = nil
-        super.init(unsafeFromRawPointer: pointer)
     }
 
     /// Instantiate a history client.
@@ -74,29 +64,24 @@ public final class CoreCrypto: CoreCryptoFfi, CoreCryptoProtocol, @unchecked Sen
         let transactionExecutor = try TransactionExecutor<Result>(
             keystorePath: filePath, block)
         do {
-            try await super.transactionFfi(command: transactionExecutor)
+            try await coreCryptoFfi.transactionFfi(command: transactionExecutor)
         } catch {
             throw await transactionExecutor.innerError ?? error
         }
         return await transactionExecutor.result!
     }
 
-    @available(*, unavailable, message: "Use transaction(_:) instead.")
-    public override func transactionFfi(command: CoreCryptoCommand) async throws {
-        try await super.transactionFfi(command: command)
-    }
-
-    public func registerEpochObserver(_ epochObserver: EpochObserver) async throws {
+    public func registerEpochObserver(epochObserver: EpochObserver) async throws {
         // we want to wrap the observer here to provide async indirection, so that no matter what
         // the observer that makes its way to the Rust side of things doesn't end up blocking
-        try await self.registerEpochObserver(
+        try await coreCryptoFfi.registerEpochObserver(
             epochObserver: EpochObserverIndirector(epochObserver))
     }
 
-    public func registerHistoryObserver(_ historyObserver: HistoryObserver) async throws {
+    public func registerHistoryObserver(historyObserver: HistoryObserver) async throws {
         // we want to wrap the observer here to provide async indirection, so that no matter what
         // the observer that makes its way to the Rust side of things doesn't end up blocking
-        try await self.registerHistoryObserver(
+        try await coreCryptoFfi.registerHistoryObserver(
             historyObserver: HistoryObserverIndirector(historyObserver))
     }
 

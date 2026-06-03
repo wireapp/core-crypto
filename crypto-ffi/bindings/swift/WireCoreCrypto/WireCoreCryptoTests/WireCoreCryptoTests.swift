@@ -512,7 +512,7 @@ final class WireCoreCryptoTests: XCTestCase {
 
         // register the observer
         let epochRecorder = EpochRecorder()
-        try await coreCrypto.registerEpochObserver(epochRecorder)
+        try await coreCrypto.registerEpochObserver(epochObserver: epochRecorder)
 
         // in another transaction, change the epoch
         try await coreCrypto.transaction { context in
@@ -546,7 +546,7 @@ final class WireCoreCryptoTests: XCTestCase {
 
         // register the observer
         let historyRecorder = HistoryRecorder()
-        try await coreCrypto.registerHistoryObserver(historyRecorder)
+        try await coreCrypto.registerHistoryObserver(historyObserver: historyRecorder)
 
         // in another transaction, enable history sharing
         try await coreCrypto.transaction { ctx in
