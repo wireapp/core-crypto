@@ -1,0 +1,5 @@
+sources:
+  - ../../WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift
+templates:
+  - Sourcery/Templates
+output: .

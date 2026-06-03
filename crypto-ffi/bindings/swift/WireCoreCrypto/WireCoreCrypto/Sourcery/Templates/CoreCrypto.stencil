@@ -1,0 +1,38 @@
+// Delegates all CoreCryptoFfiProtocol methods to the internal `coreCryptoFfi` reference.
+// Methods with manual implementations in CoreCrypto.swift are excluded via the `where` filter below.
+
+import WireCoreCryptoUniffi
+
+extension CoreCrypto {
+{% for protocol in types.protocols where protocol.name == "CoreCryptoFfiProtocol" %}{% for method in protocol.methods where method.callName != "registerEpochObserver" and method.callName != "registerHistoryObserver" %}
+    public func {{ method.callName }}(
+        {%- for param in method.parameters -%}
+            {%- if not param.argumentLabel -%}
+                _ {{ param.name }}: {{ param.typeName }}
+            {%- elif param.argumentLabel != param.name -%}
+                {{ param.argumentLabel }} {{ param.name }}: {{ param.typeName }}
+            {%- else -%}
+                {{ param.name }}: {{ param.typeName }}
+            {%- endif -%}
+            {%- if param.defaultValue %} = {{ param.defaultValue }}
+            {%- elif param.typeName.isOptional %} = nil
+            {%- endif -%}
+            {%- if not forloop.last %}, {% endif -%}
+        {%- endfor -%}
+    )
+    {%- if method.isAsync %} async{% endif -%}
+    {%- if method.throws %} throws{% endif -%}
+    {%- if not method.returnTypeName.isVoid %} -> {{ method.returnTypeName }}{% endif %} {
+        {% if not method.returnTypeName.isVoid %}return {% endif -%}
+        {%- if method.throws %}try {% endif -%}
+        {%- if method.isAsync %}await {% endif -%}
+        coreCryptoFfi.{{ method.callName }}(
+            {%- for param in method.parameters -%}
+                {%- if param.argumentLabel %}{{ param.argumentLabel }}: {% endif -%}
+                {{ param.name }}
+                {%- if not forloop.last %}, {% endif -%}
+            {%- endfor -%}
+        )
+    }
+{% endfor %}{% endfor %}
+}
