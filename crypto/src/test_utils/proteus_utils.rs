@@ -1,3 +1,5 @@
+use std::sync::{Mutex, MutexGuard};
+
 use proteus_wasm::{
     keys::{IdentityKeyPair, PreKey},
     session::Session,
@@ -27,10 +29,11 @@ impl CryptoboxLike {
     }
 
     pub fn new_prekey(&mut self) -> proteus_wasm::keys::PreKeyBundle {
-        let prekey_id = ((self.prekeys.len() + 1) % u16::MAX as usize) as u16;
+        let mut prekey_guard = self.prekeys.lock();
+        let prekey_id = ((prekey_guard.len() + 1) % u16::MAX as usize) as u16;
         let prekey = proteus_wasm::keys::PreKey::new(proteus_wasm::keys::PreKeyId::new(prekey_id));
         let prekey_bundle = proteus_wasm::keys::PreKeyBundle::new(self.identity.public_key.clone(), &prekey);
-        self.prekeys.push(prekey);
+        prekey_guard.push(prekey);
         prekey_bundle
     }
 
@@ -74,18 +77,11 @@ impl CryptoboxLike {
 }
 
 #[derive(Debug, Default)]
-pub struct PrekeyStore(pub Vec<PreKey>);
+pub struct PrekeyStore(Mutex<Vec<PreKey>>);
 
-impl std::ops::Deref for PrekeyStore {
-    type Target = Vec<PreKey>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl std::ops::DerefMut for PrekeyStore {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+impl PrekeyStore {
+    pub fn lock(&self) -> MutexGuard<'_, Vec<PreKey>> {
+        self.0.lock().expect("propagate mutex lock poison")
     }
 }
 
@@ -103,23 +99,21 @@ impl proteus_traits::ProteusErrorCode for DummyError {
 impl proteus_traits::PreKeyStore for PrekeyStore {
     type Error = DummyError;
 
-    async fn prekey(
-        &mut self,
-        id: proteus_traits::RawPreKeyId,
-    ) -> Result<Option<proteus_traits::RawPreKey>, Self::Error> {
+    async fn prekey(&self, id: proteus_traits::RawPreKeyId) -> Result<Option<proteus_traits::RawPreKey>, Self::Error> {
         let raw_prekey = self
-            .0
+            .lock()
             .iter()
             .find(|k| k.key_id.value() == id)
             .map(|prekey| prekey.serialise().unwrap());
         Ok(raw_prekey)
     }
 
-    async fn remove(&mut self, id: proteus_traits::RawPreKeyId) -> Result<(), Self::Error> {
-        self.0
+    async fn remove(&self, id: proteus_traits::RawPreKeyId) -> Result<(), Self::Error> {
+        let mut guard = self.lock();
+        guard
             .iter()
             .position(|k| k.key_id.value() == id)
-            .map(|ix| self.0.swap_remove(ix));
+            .map(|ix| guard.swap_remove(ix));
         Ok(())
     }
 }
