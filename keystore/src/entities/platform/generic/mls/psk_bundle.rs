@@ -16,7 +16,7 @@ use crate::{
 impl StoredPskBundle {
     fn from_row(row: &Row<'_>) -> rusqlite::Result<Self> {
         let psk_id = row.get("psk_id")?;
-        let psk = row.get("psK")?;
+        let psk = row.get("psk")?;
         Ok(Self { psk_id, psk })
     }
 }
