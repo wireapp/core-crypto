@@ -251,7 +251,7 @@ OfqfZA1YMtN5NLz/AA==
     #[rstest]
     #[tokio::test]
     #[wasm_bindgen_test]
-    async fn should_have_revoked_status(#[future] pki_env: PkiEnvironment) {
+    async fn should_have_expired_status(#[future] pki_env: PkiEnvironment) {
         let cert_der = pem::parse(CERT_EXPIRED).unwrap();
         let identity = cert_der
             .contents()
