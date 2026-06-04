@@ -32,7 +32,7 @@ RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES)
 	  echo "ERROR: The \"$*-deps\" variable doesn't exist in the Makefile."; exit 1; \
 	fi
 	@set -euo pipefail; \
-	hash=$$(sha256sum $($*-deps) | sha256sum | awk '{print $$1}'); \
+	hash=$$(sha256sum $($*-deps) | awk '{print $$1}' | sha256sum | awk '{print $$1}'); \
 	echo "$$hash"
 
 #-------------------------------------------------------------------------------
