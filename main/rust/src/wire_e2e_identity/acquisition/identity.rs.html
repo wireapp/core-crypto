@@ -251,7 +251,7 @@
 <a href=#251 id=251 data-nosnippet>251</a>    <span class="attr">#[rstest]
 <a href=#252 id=252 data-nosnippet>252</a>    #[tokio::test]
 <a href=#253 id=253 data-nosnippet>253</a>    #[wasm_bindgen_test]
-<a href=#254 id=254 data-nosnippet>254</a>    </span><span class="kw">async fn </span>should_have_revoked_status(<span class="attr">#[future] </span>pki_env: PkiEnvironment) {
+<a href=#254 id=254 data-nosnippet>254</a>    </span><span class="kw">async fn </span>should_have_expired_status(<span class="attr">#[future] </span>pki_env: PkiEnvironment) {
 <a href=#255 id=255 data-nosnippet>255</a>        <span class="kw">let </span>cert_der = pem::parse(CERT_EXPIRED).unwrap();
 <a href=#256 id=256 data-nosnippet>256</a>        <span class="kw">let </span>identity = cert_der
 <a href=#257 id=257 data-nosnippet>257</a>            .contents()
