@@ -336,6 +336,14 @@ impl CoreCryptoContext {
         Ok(())
     }
 
+    /// Check all X509 credentials for expiration and revocation
+    ///
+    /// This function must be called at least once every 24 hours. It is recommended to do this during an idle period,
+    /// because in case x509 credentials are used, HTTP requests are done to fetch new certificate revocation lists.
+    pub async fn check_credentials(&self) -> CoreCryptoResult<()> {
+        self.inner.check_credentials().await.map_err(Into::into)
+    }
+
     /// Generate a `KeyPackage` from the referenced credential.
     ///
     /// Makes no attempt to look up or prune existing keypackages.
