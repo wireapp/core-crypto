@@ -62,7 +62,7 @@ jobs:
         run: |
           filename=$(make ts-package | tail -n 1)
           echo "filename=$filename" >> "$GITHUB_OUTPUT"
-          echo "path=crypto-ffi/bindings/js/$filename" >> "$GITHUB_OUTPUT"
+          echo "path=crypto-ffi/bindings/js/packages/core-crypto/$filename" >> "$GITHUB_OUTPUT"
 
       - name: upload artifacts
         if: ${{ inputs.prepare == true }}
@@ -97,7 +97,7 @@ jobs:
       - name: publish package to npm (Trusted Publishers)
         if: ${{ inputs.release == true }}
         run: |
-          cd crypto-ffi/bindings/js
+          cd crypto-ffi/bindings/js/packages/core-crypto
           npm publish "./${{ steps.tarball.outputs.filename }}"
 
       - name: delete package from gh release
