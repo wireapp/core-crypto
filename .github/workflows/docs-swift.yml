@@ -16,7 +16,7 @@ jobs:
   docs-swift:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6.0.2
 
       - name: download swift bindings
         uses: ./.github/actions/make/bindings-swift
