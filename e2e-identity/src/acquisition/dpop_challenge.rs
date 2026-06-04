@@ -83,7 +83,7 @@ impl X509CredentialAcquisition<states::Initialized> {
         let directory = RustyAcme::acme_directory_response(body)?;
 
         let url = directory.new_nonce.to_string();
-        let resp = hooks.http_request(HttpMethod::Get, url, vec![], vec![]).await?;
+        let resp = hooks.http_request(HttpMethod::Head, url, vec![], vec![]).await?;
         let nonce = get_header(&resp, "replay-nonce")?;
         log::debug!(
             "acquisition({:?}): got the initial nonce",
