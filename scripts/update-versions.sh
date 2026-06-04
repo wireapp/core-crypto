@@ -15,11 +15,18 @@ for crate in crypto-macros \
 # Make sure workspace Cargo.lock is updated with new versions.
 cargo update -w
 
-# Update the NPM package version. Be careful not to overwrite the same
+# Update the NPM packages version. Be careful not to overwrite the same
 # file we're reading from.
-js_path=crypto-ffi/bindings/js
-jq "setpath([\"version\"]; \"${new_version}\")" ${js_path}/package.json > ${js_path}/package.json.new
-mv ${js_path}/package.json.new ${js_path}/package.json
+js_path=crypto-ffi/bindings/js/packages
+packages=(browser native core-crypto)
+
+for pkg in "${packages[@]}"; do
+  file="${js_path}/${pkg}/package.json"
+  tmp="${file}.new"
+
+  jq --indent 4 "setpath([\"version\"]; \"${new_version}\")" "$file" > "$tmp" \
+    && mv "$tmp" "$file"
+done
 
 # Update Maven package version.
 perl -pi -e 's/^VERSION_NAME=[0-9A-Za-z._-]+/VERSION_NAME='"$new_version"'/' crypto-ffi/bindings/gradle.properties
