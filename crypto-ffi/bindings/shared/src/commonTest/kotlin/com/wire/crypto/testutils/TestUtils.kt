@@ -102,48 +102,56 @@ class MockPkiEnvironmentHooks : PkiEnvironmentHooks {
     }
 }
 
-sealed interface CcInitOptions {
-    val clientId: ClientId?
-    val database: Database?
+data class CcInitOptions(
+    val mode: Mode = Mode.WithBasicCredential(),
+    val clientId: ClientId? = null,
+    val database: Database? = null,
+    val withPkiEnvironment: Boolean = false,
+) {
+    sealed interface Mode {
+        data object WithoutBasicCredential : Mode
 
-    data class WithoutBasicCredential(
-        override val clientId: ClientId? = null,
-        override val database: Database? = null,
-    ) : CcInitOptions
-
-    data class WithBasicCredential(
-        val cipherSuite: CipherSuite = CIPHERSUITE_DEFAULT,
-        override val clientId: ClientId? = null,
-        override val database: Database? = null,
-    ) : CcInitOptions
+        data class WithBasicCredential(
+            val cipherSuite: CipherSuite = CIPHERSUITE_DEFAULT
+        ) : Mode
+    }
 }
 
 suspend fun ccInit(
-    options: CcInitOptions = CcInitOptions.WithBasicCredential()
+    options: CcInitOptions = CcInitOptions()
 ): CoreCrypto {
     val db = options.database ?: newDatabase()
     val cc = CoreCrypto(db)
 
     val clientId = options.clientId ?: genClientId()
 
-    cc.transaction { ctx ->
-        ctx.mlsInit(clientId, MockMlsTransportSuccessProvider.getInstance())
+    if (options.withPkiEnvironment) {
+        val pkiEnvironment = PkiEnvironment.new(MockPkiEnvironmentHooks(), db)
+        cc.setPkiEnvironment(pkiEnvironment)
+    }
 
-        when (options) {
-            is CcInitOptions.WithBasicCredential -> {
+    cc.transaction { ctx ->
+        ctx.mlsInit(
+            clientId,
+            MockMlsTransportSuccessProvider.getInstance()
+        )
+
+        when (val mode = options.mode) {
+            is CcInitOptions.Mode.WithBasicCredential -> {
                 ctx.addCredential(
                     Credential.basic(
-                        options.cipherSuite,
+                        mode.cipherSuite,
                         clientId
                     )
                 )
             }
 
-            is CcInitOptions.WithoutBasicCredential -> {
+            CcInitOptions.Mode.WithoutBasicCredential -> {
                 // nothing
             }
         }
     }
+
     return cc
 }
 
