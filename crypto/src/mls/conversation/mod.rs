@@ -125,15 +125,15 @@ mod tests {
         async fn check_identities_device_status<const N: usize>(
             conversation: &Conversation,
             client_ids: &[ClientId; N],
-            name_status: &[(impl ToString, DeviceStatus); N],
+            device_status: &[DeviceStatus; N],
         ) {
             let mut identities = conversation.get_device_identities(client_ids).await.unwrap();
 
-            for (user_name, status) in name_status.iter() {
+            for (client_id, status) in client_ids.iter().zip(device_status.iter()) {
                 let client_identity = identities.remove(
                     identities
                         .iter()
-                        .position(|i| i.x509_identity.as_ref().unwrap().display_name == user_name.to_string())
+                        .position(|i| i.client_id.as_bytes() == client_id.as_slice())
                         .unwrap(),
                 );
                 assert_eq!(client_identity.status, *status);
@@ -209,13 +209,11 @@ mod tests {
         #[macro_rules_attribute::apply(smol_macros::test)]
         async fn should_read_revoked_device() {
             let case = TestContext::default_x509();
-            let rupert_user_id = uuid::Uuid::new_v4();
-            let bob_user_id = uuid::Uuid::new_v4();
-            let alice_user_id = uuid::Uuid::new_v4();
 
+            let [alice_client_id, bob_client_id] = case.x509_client_ids();
+
+            let rupert_user_id = uuid::Uuid::new_v4();
             let [rupert_client_id] = case.x509_client_ids_for_user(&rupert_user_id);
-            let [alice_client_id] = case.x509_client_ids_for_user(&alice_user_id);
-            let [bob_client_id] = case.x509_client_ids_for_user(&bob_user_id);
 
             let sessions = case
                 .sessions_x509_with_client_ids_and_revocation(
@@ -227,25 +225,18 @@ mod tests {
             Box::pin(async move {
                 let [alice, bob, rupert] = &sessions;
                 let conversation = case.create_conversation(&sessions).await;
-
-                let (alice_id, bob_id, rupert_id) = (
+                let client_ids = [
                     alice.get_client_id().await,
                     bob.get_client_id().await,
                     rupert.get_client_id().await,
-                );
-
-                let client_ids = [alice_id, bob_id, rupert_id];
-                let name_status = [
-                    (alice_user_id, DeviceStatus::Valid),
-                    (bob_user_id, DeviceStatus::Valid),
-                    (rupert_user_id, DeviceStatus::Revoked),
                 ];
+                let device_status = [DeviceStatus::Valid, DeviceStatus::Valid, DeviceStatus::Revoked];
 
                 // Do it a multiple times to avoid WPB-6904 happening again
                 for _ in 0..2 {
                     for session in sessions.iter() {
                         let conversation = conversation.guard_of(session).await;
-                        check_identities_device_status(&conversation, &client_ids, &name_status).await;
+                        check_identities_device_status(&conversation, &client_ids, &device_status).await;
                     }
                 }
             })
