@@ -47,14 +47,6 @@ bytes_wrapper!(
     SecretKey
 );
 
-bytes_wrapper!(
-    /// The raw public key of an external sender.
-    ///
-    /// This can be used to initialize a subconversation.
-    #[derive(Clone)]
-    ExternalSenderKey
-);
-
 #[cfg(test)]
 mod tests {
     use super::*;
