@@ -37,7 +37,7 @@ open class CreateMessage {
 
     @Setup(Level.Iteration)
     fun setup() = runBlocking {
-        cc = ccInit(CcInitOptions.WithBasicCredential(CipherSuite.valueOf(cipherSuite)))
+        cc = ccInit(CcInitOptions(CcInitOptions.Mode.WithBasicCredential(CipherSuite.valueOf(cipherSuite))))
         conversationId = createConversation(cc)
         messages = List(messageCount) {
             ByteArray(messageSize) { 'A'.code.toByte() }

@@ -111,7 +111,7 @@ internal class E2EITest {
             validityPeriodSecs = 3600uL
         )
 
-        val cc = ccInit(CcInitOptions.WithBasicCredential(clientId = clientId, database = db))
+        val cc = ccInit(CcInitOptions(clientId = clientId, database = db))
         val credentialRef = cc.findCredentials(clientId = clientId).first()
 
         val acquisition = X509CredentialAcquisition.newFromCredentialRef(pkiEnv, config, credentialRef)

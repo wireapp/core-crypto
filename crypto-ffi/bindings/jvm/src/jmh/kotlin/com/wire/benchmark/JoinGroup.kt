@@ -33,14 +33,15 @@ open class JoinGroup {
     @Setup(Level.Invocation)
     fun setup() {
         runBlocking {
-            val aliceCc = ccInit(CcInitOptions.WithBasicCredential(CipherSuite.valueOf(cipherSuite)))
+            val options = CcInitOptions(CcInitOptions.Mode.WithBasicCredential(CipherSuite.valueOf(cipherSuite)))
+            val aliceCc = ccInit(options)
             conversationId = createConversation(aliceCc)
 
             val keyPackages = mutableListOf<KeyPackage>()
 
             if (userCount > 1) {
                 repeat(userCount) {
-                    val bobCc = ccInit(CcInitOptions.WithBasicCredential(CipherSuite.valueOf(cipherSuite)))
+                    val bobCc = ccInit(options)
                     val kp = generateKeyPackage(bobCc)
                     keyPackages.add(kp)
                 }
@@ -49,7 +50,7 @@ open class JoinGroup {
                 }
             }
 
-            charlieCc = ccInit(CcInitOptions.WithBasicCredential(CipherSuite.valueOf(cipherSuite)))
+            charlieCc = ccInit(options)
             val kp = generateKeyPackage(charlieCc)
 
             aliceCc.transaction {

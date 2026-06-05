@@ -39,10 +39,11 @@ open class ProcessMessage {
 
     @Setup(Level.Invocation)
     fun setup() = runBlocking {
-        val aliceCc = ccInit(CcInitOptions.WithBasicCredential(CipherSuite.valueOf(cipherSuite)))
+        val options = CcInitOptions.Mode.WithBasicCredential(CipherSuite.valueOf(cipherSuite))
+        val aliceCc = ccInit(CcInitOptions(options))
         conversationId = createConversation(aliceCc)
 
-        bobCc = ccInit(CcInitOptions.WithBasicCredential(CipherSuite.valueOf(cipherSuite)))
+        bobCc = ccInit(CcInitOptions(options))
         invite(aliceCc, bobCc, conversationId)
 
         val messages = List(messageCount) {

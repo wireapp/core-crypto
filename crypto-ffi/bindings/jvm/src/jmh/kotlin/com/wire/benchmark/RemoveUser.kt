@@ -35,14 +35,20 @@ open class RemoveUser {
     @Setup(Level.Invocation)
     fun setup() {
         runBlocking {
-            aliceCc = ccInit(CcInitOptions.WithBasicCredential(CipherSuite.valueOf(cipherSuite)))
+            aliceCc = ccInit(CcInitOptions(CcInitOptions.Mode.WithBasicCredential(CipherSuite.valueOf(cipherSuite))))
             conversationId = createConversation(aliceCc)
 
             val keyPackages = mutableListOf<KeyPackage>()
             clientIdsToRemove = buildList {
                 repeat(userCount) {
                     val bobId = genClientId()
-                    val bobCc = ccInit(CcInitOptions.WithBasicCredential(CipherSuite.valueOf(cipherSuite), bobId))
+                    val bobCc =
+                        ccInit(
+                            CcInitOptions(
+                                mode = CcInitOptions.Mode.WithBasicCredential(CipherSuite.valueOf(cipherSuite)),
+                                clientId = bobId
+                            )
+                        )
                     val kp = generateKeyPackage(bobCc)
                     keyPackages.add(kp)
                     this.add(bobId)

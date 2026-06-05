@@ -35,12 +35,13 @@ open class AddUser {
     @Setup(Level.Invocation)
     fun setup() {
         runBlocking {
-            aliceCc = ccInit(CcInitOptions.WithBasicCredential(CipherSuite.valueOf(cipherSuite)))
+            val options = CcInitOptions(CcInitOptions.Mode.WithBasicCredential(CipherSuite.valueOf(cipherSuite)))
+            aliceCc = ccInit(options)
             conversationId = createConversation(aliceCc)
 
             keyPackages = buildList {
                 repeat(userCount) {
-                    val bobCc = ccInit(CcInitOptions.WithBasicCredential(CipherSuite.valueOf(cipherSuite)))
+                    val bobCc = ccInit(options)
                     val kp = generateKeyPackage(bobCc)
                     this.add(kp)
                 }

@@ -135,7 +135,7 @@ class MLSTest {
     @Test
     fun findCredentials_should_return_non_empty_result() = runTest {
         val clientId = genClientId()
-        val alice = ccInit(CcInitOptions.WithBasicCredential(CIPHERSUITE_DEFAULT, clientId))
+        val alice = ccInit(CcInitOptions(clientId = clientId))
         assertThat(alice.findCredentials(clientId = clientId)).isNotEmpty()
     }
 
@@ -235,11 +235,11 @@ class MLSTest {
     @Test
     fun addClientsToConversation_should_add_members_to_the_MLS_group() = runTest {
         val aliceId = genClientId()
-        val alice = ccInit(CcInitOptions.WithBasicCredential(CIPHERSUITE_DEFAULT, aliceId))
+        val alice = ccInit(CcInitOptions(clientId = aliceId))
         val bobId = genClientId()
-        val bob = ccInit(CcInitOptions.WithBasicCredential(CIPHERSUITE_DEFAULT, bobId))
+        val bob = ccInit(CcInitOptions(clientId = bobId))
         val carolId = genClientId()
-        val carol = ccInit(CcInitOptions.WithBasicCredential(CIPHERSUITE_DEFAULT, carolId))
+        val carol = ccInit(CcInitOptions(clientId = carolId))
 
         val conversationId = createConversation(bob)
         invite(bob, alice, conversationId)
@@ -270,7 +270,7 @@ class MLSTest {
         val alice = ccInit()
         val bob = ccInit()
         val carolId = genClientId()
-        val carol = ccInit(CcInitOptions.WithBasicCredential(CIPHERSUITE_DEFAULT, carolId))
+        val carol = ccInit(CcInitOptions(clientId = carolId))
         val conversationId = createConversation(bob)
         invite(bob, alice, conversationId)
         invite(bob, carol, conversationId)
@@ -297,7 +297,7 @@ class MLSTest {
 
     @Test
     fun givenTransactionRunsSuccessfully_thenShouldBeAbleToFinishOtherTransactions() = runTest {
-        val coreCrypto = ccInit(CcInitOptions.WithoutBasicCredential())
+        val coreCrypto = ccInit(CcInitOptions(mode = CcInitOptions.Mode.WithoutBasicCredential))
         val someWork = Job()
         val firstTransactionJob = launch {
             coreCrypto.transaction {
@@ -318,7 +318,7 @@ class MLSTest {
 
     @Test
     fun givenTransactionIsCancelled_thenShouldBeAbleToFinishOtherTransactions() = runTest {
-        val coreCrypto = ccInit(CcInitOptions.WithoutBasicCredential())
+        val coreCrypto = ccInit(CcInitOptions(CcInitOptions.Mode.WithoutBasicCredential))
 
         val firstTransactionJob = launch {
             coreCrypto.transaction {
@@ -574,7 +574,7 @@ class MLSTest {
                 CipherSuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519
             val credential2 = Credential.basic(cipherSuite2, clientId)
 
-            val cc = ccInit(CcInitOptions.WithoutBasicCredential(clientId))
+            val cc = ccInit(CcInitOptions(CcInitOptions.Mode.WithoutBasicCredential, clientId))
             cc.transaction { ctx ->
                 ctx.addCredential(credential1)
                 ctx.addCredential(credential2)
@@ -678,7 +678,7 @@ class MLSTest {
                 clientId
             )
 
-            val cc = ccInit(CcInitOptions.WithoutBasicCredential(clientId))
+            val cc = ccInit(CcInitOptions(CcInitOptions.Mode.WithoutBasicCredential, clientId))
 
             cc.transaction { ctx ->
                 val cref1 = ctx.addCredential(credential1)
