@@ -206,8 +206,6 @@ mod tests {
             .await
         }
 
-        // TODO: ignore this test for now, until we fix the test suite (WPB-25356)
-        #[ignore]
         #[macro_rules_attribute::apply(smol_macros::test)]
         async fn should_read_revoked_device() {
             let case = TestContext::default_x509();
