@@ -844,38 +844,8 @@ final class WireCoreCryptoTests: XCTestCase {
         return try await Database.open(location: keystore.path, key: genDatabaseKey())
     }
 
-    enum CcInitOptions {
-        case withoutBasicCredential(clientId: ClientId? = nil, database: Database? = nil)
-
-        case withBasicCredential(
-            cipherSuite: CipherSuite = cipherSuiteDefault(),
-            clientId: ClientId? = nil,
-            database: Database? = nil
-        )
-
-        var clientId: ClientId? {
-            switch self {
-            case .withoutBasicCredential(let clientId, _):
-                return clientId
-
-            case .withBasicCredential(_, let clientId, _):
-                return clientId
-            }
-        }
-
-        var database: Database? {
-            switch self {
-            case .withoutBasicCredential(_, let database):
-                return database
-
-            case .withBasicCredential(_, _, let database):
-                return database
-            }
-        }
-    }
-
     func ccInit(
-        options: CcInitOptions = .withBasicCredential()
+        options: CcInitOptions = CcInitOptions()
     ) async throws -> CoreCrypto {
 
         let database: Database
@@ -886,6 +856,14 @@ final class WireCoreCryptoTests: XCTestCase {
         }
         let coreCrypto = try CoreCrypto(database: database)
 
+        if options.withPkiEnvironment {
+            let pkiEnvironment = try await PkiEnvironment(
+                hooks: MockPkiEnvironmentHooks(),
+                database: database
+            )
+            await coreCrypto.setPkiEnvironment(pkiEnvironment: pkiEnvironment)
+        }
+
         let clientId = options.clientId ?? genClientId()
 
         try await coreCrypto.transaction { ctx in
@@ -894,14 +872,14 @@ final class WireCoreCryptoTests: XCTestCase {
                 transport: self.mockMlsTransport
             )
 
-            switch options {
-            case .withBasicCredential(let cipherSuite, _, _):
+            switch options.mode {
+
+            case .withBasicCredential(let cipherSuite):
                 _ = try await ctx.addCredential(
-                    credential:
-                        Credential.basic(
-                            cipherSuite: cipherSuite,
-                            clientId: clientId
-                        )
+                    credential: Credential.basic(
+                        cipherSuite: cipherSuite,
+                        clientId: clientId
+                    )
                 )
 
             case .withoutBasicCredential:
@@ -1075,5 +1053,29 @@ extension Data {
             .replacingOccurrences(of: "+", with: "-")
             .replacingOccurrences(of: "/", with: "_")
             .replacingOccurrences(of: "=", with: "")
+    }
+}
+
+struct CcInitOptions {
+    enum Mode {
+        case withoutBasicCredential
+        case withBasicCredential(cipherSuite: CipherSuite = cipherSuiteDefault())
+    }
+
+    let mode: Mode
+    let clientId: ClientId?
+    let database: Database?
+    let withPkiEnvironment: Bool
+
+    init(
+        mode: Mode = .withBasicCredential(),
+        clientId: ClientId? = nil,
+        database: Database? = nil,
+        withPkiEnvironment: Bool = false
+    ) {
+        self.mode = mode
+        self.clientId = clientId
+        self.database = database
+        self.withPkiEnvironment = withPkiEnvironment
     }
 }
