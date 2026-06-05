@@ -785,6 +785,14 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertThrowsError(try ExternalSender.parseJwk(jwk: Data([0, 1, 2, 3])))
     }
 
+    func testCheckCredentials() async throws {
+        let coreCrypto = try await ccInit(
+            options: CcInitOptions(withPkiEnvironment: true))
+        try await coreCrypto.transaction { ctx in
+            try await ctx.checkCredentials()
+        }
+    }
+
     // MARK: - helpers
 
     final actor MockMlsTransport: MlsTransport {
