@@ -405,8 +405,10 @@ final class WireCoreCryptoTests: XCTestCase {
 
         let cipherSuite1 = CipherSuite.mls128Dhkemp256Aes128gcmSha256P256
         let alice = try await ccInit(
-            options: CcInitOptions.withBasicCredential(
-                cipherSuite: cipherSuite1, clientId: clientId))
+            options: CcInitOptions(
+                mode: .withBasicCredential(cipherSuite: cipherSuite1),
+                clientId: clientId
+            ))
 
         let cipherSuite2 = CipherSuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
         let credential2 = try Credential.basic(cipherSuite: cipherSuite2, clientId: clientId)
@@ -626,7 +628,10 @@ final class WireCoreCryptoTests: XCTestCase {
         )
 
         let alice = try await ccInit(
-            options: CcInitOptions.withoutBasicCredential(clientId: clientId))
+            options: CcInitOptions(
+                mode: .withoutBasicCredential,
+                clientId: clientId
+            ))
 
         try await alice.transaction { ctx in
             let cref1 = try await ctx.addCredential(credential: credential1)
@@ -716,9 +721,6 @@ final class WireCoreCryptoTests: XCTestCase {
     }
 
     func testCanInstantiateX509CredentialAcquisitionFromCredentialRef() async throws {
-        let database = try await newDatabase()
-        let pkiEnvironment = try await PkiEnvironment(
-            hooks: MockPkiEnvironmentHooks(), database: database)
         let qualifiedClientId = try ClientId(
             bytes: Data("LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com".utf8)
         ).parseQualified()
@@ -735,7 +737,10 @@ final class WireCoreCryptoTests: XCTestCase {
         )
 
         let coreCrypto = try await ccInit(
-            options: .withBasicCredential(clientId: clientId, database: database))
+            options: CcInitOptions(
+                clientId: clientId, withPkiEnvironment: true
+            ))
+        let pkiEnvironment = await coreCrypto.getPkiEnvironment()!
 
         let credentialRef = try await coreCrypto.findCredentials(clientId: clientId).first!
 
