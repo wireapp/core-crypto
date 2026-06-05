@@ -44,8 +44,6 @@ pub enum Error {
     CredentialStillInUse(ConversationId),
     #[error("The supplied credential does not match the id this CC instance was initialized with")]
     WrongCredential,
-    #[error("The supplied credential is invalid")]
-    InvalidCredential,
     #[error(
         "There are invalid CredentialRefs that should be removed. Hex encoded sha256 hashes: {}",
         format_invalid_credential_refs(.0)

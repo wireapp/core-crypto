@@ -1,5 +1,5 @@
 use core_crypto_keystore::{entities::E2eiCrl, traits::FetchFromDatabase};
-use wire_e2e_identity::{pki_env::PkiEnvironment, x509_check::extract_crl_uris};
+use wire_e2e_identity::x509_check::extract_crl_uris;
 use x509_cert::Certificate;
 
 use super::{Error, Result};
@@ -7,15 +7,13 @@ use crate::{
     Credential, CredentialRef, CredentialType, KeystoreError, RecursiveError,
     mls::{
         conversation::Conversation,
-        credential::{
-            crl::{CrlUris, extract_crl_uris_from_credentials, extract_crl_uris_from_group},
-            ext::CredentialExt as _,
-        },
+        credential::crl::{CrlUris, extract_crl_uris_from_credentials, extract_crl_uris_from_group},
     },
     transaction_context::TransactionContext,
 };
 
 impl TransactionContext {
+    /// Check all X509 credentials for expiration and revocation
     /// This function must be called at least once every 24 hours. It is recommended to do this during an idle period,
     /// because in case x509 credentials are used, HTTP requests are done to fetch new certificate revocation lists.
     pub async fn check_credentials(&self) -> Result<()> {
@@ -52,9 +50,11 @@ impl TransactionContext {
 
         let mut invalid_credential_refs = Vec::new();
 
-        // check our own credentials for expiration or revocation
+        // Check our own x509 credentials for expiration or revocation
+        // Ideally, we can load credentials by type from db as we actually only care about X509 checks.
+        // Unfortunately, this is not supported yet.
         for credential in credentials {
-            if self.check_credential(&env, &credential).await.is_err() {
+            if credential.check(&env).await.is_err() {
                 invalid_credential_refs.push(CredentialRef::from_credential(&credential));
             }
         }
@@ -98,19 +98,6 @@ impl TransactionContext {
         }
 
         Ok(crl_uris)
-    }
-
-    async fn check_credential(&self, pki_env: &PkiEnvironment, credential: &Credential) -> Result<()> {
-        let cert = credential
-            .mls_credential()
-            .parse_leaf_cert()
-            .map_err(RecursiveError::mls_credential("parsing leaf certificate"))?
-            .ok_or(Error::InvalidCredential)?;
-        pki_env
-            .validate_cert(&cert)
-            .await
-            .map_err(RecursiveError::e2e_identity("validating credential certificate"))?;
-        Ok(())
     }
 
     async fn clean_up_irrelevant_crls(&self, relevant_crl_uris: &CrlUris) -> Result<()> {

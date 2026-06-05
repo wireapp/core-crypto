@@ -18,7 +18,10 @@ use super::{Error, Result};
 use crate::mls_provider::PkiKeypair;
 #[cfg(test)]
 use crate::test_utils::x509::X509Certificate;
-use crate::{CipherSuite, ClientId, Credential, CredentialType, OpenMlsError, RecursiveError};
+use crate::{
+    CipherSuite, ClientId, Credential, CredentialType, OpenMlsError, RecursiveError,
+    mls::credential::ext::CredentialExt as _,
+};
 
 #[derive(core_crypto_macros::Debug, Clone, Zeroize, derive::Constructor)]
 #[zeroize(drop)]
@@ -134,6 +137,28 @@ impl Credential {
             earliest_validity,
         };
         Ok(cb)
+    }
+
+    /// Check an X509 Credential for expiration or revocation
+    ///
+    /// For now we only care about X509 credentials which require the pki_env as an external resource.
+    /// As soon as we have validation logic for other types the pki_env parameter becomes very smelly.
+    /// Other credential types will just return.
+    pub(crate) async fn check(&self, pki_env: &PkiEnvironment) -> Result<()> {
+        if self.credential_type == CredentialType::X509 {
+            let cert = self
+                .mls_credential()
+                .parse_leaf_cert()
+                .map_err(RecursiveError::mls_credential("parsing leaf certificate"))?
+                // This can actually never happen and points to a type issue with credentials
+                .expect("parse_leaf_cert to return a Certificate");
+
+            pki_env
+                .validate_cert(&cert)
+                .await
+                .map_err(RecursiveError::e2e_identity("validating credential certificate"))?;
+        }
+        Ok(())
     }
 }
 
