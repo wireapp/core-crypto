@@ -563,6 +563,17 @@ class MLSTest {
     }
 
     @Test
+    fun canCheckCredentials(): TestResult {
+        val scope = TestScope()
+        return scope.runTest {
+            val cc = ccInit(CcInitOptions(withPkiEnvironment = true))
+            cc.transaction { ctx ->
+                ctx.checkCredentials()
+            }
+        }
+    }
+
+    @Test
     fun can_search_credentials_by_cipher_suite(): TestResult {
         val scope = TestScope()
         return scope.runTest {
