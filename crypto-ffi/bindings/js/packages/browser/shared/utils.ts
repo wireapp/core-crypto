@@ -132,6 +132,7 @@ export async function sharedSetup() {
                 options: CcInitOptions = {
                     withBasicCredential: true,
                     cipherSuite: window.defaultCipherSuite,
+                    withPkiEnvironment: false,
                 }
             ): Promise<CoreCrypto> {
                 const clientId =
@@ -139,6 +140,15 @@ export async function sharedSetup() {
                 const db =
                     options.database ?? (await window.helpers.newDatabase());
                 const cc = window.ccModule.CoreCrypto.new(db);
+
+                if (options.withPkiEnvironment) {
+                    const pkiEnvironment =
+                        await window.ccModule.PkiEnvironment.create(
+                            window.pkiEnvironmentHooks,
+                            db
+                        );
+                    await cc.setPkiEnvironment(pkiEnvironment);
+                }
 
                 // this also sets the default if undefined
                 // ?? would break type narrowing of CcInitOptions
@@ -505,12 +515,14 @@ type CcInitOptions =
           withBasicCredential: false;
           clientId?: ClientId;
           database?: Database;
+          withPkiEnvironment?: boolean;
       }
     | {
           withBasicCredential?: true;
           cipherSuite?: CipherSuite;
           clientId?: ClientId;
           database?: Database;
+          withPkiEnvironment?: boolean;
       };
 
 export interface Helpers {

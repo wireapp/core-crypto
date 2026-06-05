@@ -167,12 +167,6 @@ describe("end to end identity", () => {
 
     it("should instantiate an x509 credential acquisition object from credential ref", async () => {
         const acquisitionCreated = await browser.execute(async () => {
-            const database = await window.helpers.newDatabase();
-            const pkiEnvironment = await window.ccModule.PkiEnvironment.create(
-                window.pkiEnvironmentHooks,
-                database
-            );
-
             const qualifiedClientId = window.helpers
                 .newClientId(
                     "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com"
@@ -194,14 +188,16 @@ describe("end to end identity", () => {
             const cc = await window.helpers.ccInit({
                 withBasicCredential: true,
                 clientId,
-                database,
+                withPkiEnvironment: true,
             });
+
+            const pkiEnvironment = await cc.getPkiEnvironment();
 
             const [credentialRef] = await cc.findCredentials({ clientId });
 
             const acquisition =
                 await window.ccModule.X509CredentialAcquisition.newFromCredentialRef(
-                    pkiEnvironment,
+                    pkiEnvironment!,
                     config,
                     credentialRef!
                 );
