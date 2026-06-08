@@ -39,7 +39,7 @@ describe("external sender", () => {
                 });
 
                 return [
-                    Array.from(retrievedKey.copyBytes()),
+                    Array.from(retrievedKey.serialize()),
                     Array.from(externalSender.serialize()),
                 ];
             },

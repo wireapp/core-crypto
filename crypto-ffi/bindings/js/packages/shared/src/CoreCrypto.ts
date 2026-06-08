@@ -54,7 +54,6 @@ export {
     type MlsTransportData,
     migrateDatabaseKeyTypeToBytes,
     ExternalSender,
-    ExternalSenderKey,
     GroupInfo,
     ConversationId,
     Welcome,

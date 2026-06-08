@@ -34,7 +34,7 @@ describe("external sender", () => {
             return await ctx.getExternalSender(conversationId);
         });
 
-        expect(retrievedKey.copyBytes()).toEqual(externalSender.serialize());
+        expect(retrievedKey.serialize()).toEqual(externalSender.serialize());
     });
 
     test("parsePublicKey accepts the bytes produced by serialize", () => {
