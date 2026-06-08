@@ -9,9 +9,9 @@
 <a href=#9 id=9 data-nosnippet>9</a>    CryptoKeystoreError, CryptoKeystoreResult,
 <a href=#10 id=10 data-nosnippet>10</a>    connection::TransactionWrapper,
 <a href=#11 id=11 data-nosnippet>11</a>    entities::{
-<a href=#12 id=12 data-nosnippet>12</a>        ConsumerData, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup,
-<a href=#13 id=13 data-nosnippet>13</a>        StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment, StoredEncryptionKeyPair,
-<a href=#14 id=14 data-nosnippet>14</a>        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+<a href=#12 id=12 data-nosnippet>12</a>        ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup,
+<a href=#13 id=13 data-nosnippet>13</a>        PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment,
+<a href=#14 id=14 data-nosnippet>14</a>        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
 <a href=#15 id=15 data-nosnippet>15</a>    },
 <a href=#16 id=16 data-nosnippet>16</a>    traits::{BorrowPrimaryKey, DeletableBySearchKey <span class="kw">as _</span>, Entity, EntityDatabaseMutation, KeyType, OwnedKeyType <span class="kw">as _</span>},
 <a href=#17 id=17 data-nosnippet>17</a>    transaction::dynamic_dispatch::EntityType,
@@ -108,7 +108,7 @@
 <a href=#108 id=108 data-nosnippet>108</a>            </span>EntityType::E2eiRefreshToken =&gt; {
 <a href=#109 id=109 data-nosnippet>109</a>                E2eiRefreshToken::delete(tx, <span class="kw-2">&amp;</span><span class="self">self</span>.primary_key::&lt;E2eiRefreshToken&gt;()<span class="question-mark">?</span>).<span class="kw">await
 <a href=#110 id=110 data-nosnippet>110</a>            </span>}
-<a href=#111 id=111 data-nosnippet>111</a>            EntityType::E2eiAcmeCA =&gt; <span class="prelude-val">Err</span>(CryptoKeystoreError::NotImplemented),
+<a href=#111 id=111 data-nosnippet>111</a>            EntityType::E2eiAcmeCA =&gt; E2eiAcmeCA::delete(tx, <span class="kw-2">&amp;</span><span class="self">self</span>.primary_key::&lt;E2eiAcmeCA&gt;()<span class="question-mark">?</span>).<span class="kw">await</span>,
 <a href=#112 id=112 data-nosnippet>112</a>            EntityType::E2eiIntermediateCert =&gt; {
 <a href=#113 id=113 data-nosnippet>113</a>                E2eiIntermediateCert::delete(tx, <span class="kw-2">&amp;</span><span class="self">self</span>.primary_key::&lt;E2eiIntermediateCert&gt;()<span class="question-mark">?</span>).<span class="kw">await
 <a href=#114 id=114 data-nosnippet>114</a>            </span>}
