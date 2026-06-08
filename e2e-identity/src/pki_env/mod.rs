@@ -16,7 +16,7 @@ use core_crypto_keystore::{
     CryptoKeystoreError,
     connection::Database,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
-    traits::FetchFromDatabase,
+    traits::{FetchFromDatabase, UnifiedUniqueEntity},
 };
 use openmls_traits::authentication_service::{CredentialAuthenticationStatus, CredentialRef};
 use x509_cert::{
@@ -212,6 +212,49 @@ impl PkiEnvironment {
             .lock()
             .await
             .add_trust_anchor_source(Box::new(trust_anchors));
+        Ok(())
+    }
+
+    /// Remove the trust anchor with serial number `serial_number` from the PKI environment.
+    ///
+    /// Note that any certificates relying on the removed trust anchor may no longer
+    /// validate.
+    pub async fn remove_trust_anchor(&self, serial_number: &[u8]) -> Result<()> {
+        let mut guard = self.rjt_pki_env.lock().await;
+
+        let certs: Vec<_> = guard
+            .get_trust_anchors()
+            .iter()
+            .filter_map(|choice| match choice.decoded_ta {
+                TrustAnchorChoice::Certificate(ref cert)
+                    if cert.tbs_certificate.serial_number.as_bytes() != serial_number =>
+                {
+                    Some(cert.clone())
+                }
+                _ => None,
+            })
+            .collect();
+
+        guard.clear_trust_anchor_sources();
+
+        let mut trust_anchors = TaSource::new();
+        for cert in certs {
+            trust_anchors.push(certval::CertFile {
+                filename: "".to_string(),
+                bytes: cert.to_der()?,
+            });
+        }
+        trust_anchors.initialize().map_err(Error::Certval)?;
+        guard.add_trust_anchor_source(Box::new(trust_anchors));
+
+        // TODO: make this work for multiple trust anchors, see WPB-25632
+        self.transactionally(async || {
+            self.database
+                .remove::<E2eiAcmeCA>(&<E2eiAcmeCA as UnifiedUniqueEntity>::KEY)
+                .await
+        })
+        .await?;
+
         Ok(())
     }
 
