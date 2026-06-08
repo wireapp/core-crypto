@@ -3,7 +3,7 @@
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span>core_crypto::{RecursiveError, mls::conversation::ConversationIdRef};
 <a href=#4 id=4 data-nosnippet>4</a>
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>crate::{
-<a href=#6 id=6 data-nosnippet>6</a>    CipherSuite, ClientId, CoreCryptoFfi, CoreCryptoResult, CredentialRef,
+<a href=#6 id=6 data-nosnippet>6</a>    CipherSuite, ClientId, CoreCryptoFfi, CoreCryptoResult, CredentialRef, ExternalSender,
 <a href=#7 id=7 data-nosnippet>7</a>    bytes_wrapper::{bytes_wrapper, impl_display_via_hex},
 <a href=#8 id=8 data-nosnippet>8</a>    core_crypto_context::mls::SecretKey,
 <a href=#9 id=9 data-nosnippet>9</a>};
@@ -108,8 +108,8 @@
 <a href=#108 id=108 data-nosnippet>108</a>            .collect())
 <a href=#109 id=109 data-nosnippet>109</a>    }
 <a href=#110 id=110 data-nosnippet>110</a>
-<a href=#111 id=111 data-nosnippet>111</a>    <span class="doccomment">/// Returns the serialized public key of the external sender for the given conversation.
-<a href=#112 id=112 data-nosnippet>112</a>    </span><span class="kw">pub async fn </span>get_external_sender(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>ConversationId) -&gt; CoreCryptoResult&lt;Vec&lt;u8&gt;&gt; {
+<a href=#111 id=111 data-nosnippet>111</a>    <span class="doccomment">/// Returns the external sender for the given conversation.
+<a href=#112 id=112 data-nosnippet>112</a>    </span><span class="kw">pub async fn </span>get_external_sender(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>ConversationId) -&gt; CoreCryptoResult&lt;ExternalSender&gt; {
 <a href=#113 id=113 data-nosnippet>113</a>        <span class="kw">let </span>conversation = <span class="self">self
 <a href=#114 id=114 data-nosnippet>114</a>            </span>.inner
 <a href=#115 id=115 data-nosnippet>115</a>            .mls_session()
