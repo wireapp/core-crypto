@@ -22,7 +22,10 @@ With CC10 we introduce multiple new types that provide their own new API.
 
 ### PKI Environment API
 
-- Added `PkiEnvironment` constructed via `createPkiEnvironment(database: Database, hooks: PkiEnvironmentHooks)`
+- Added `PkiEnvironment`constructed via
+  - `PkiEnvironment(database: Database, hooks: PkiEnvironmentHooks)` (swift)
+  - `PkiEnvironment.new(database: Database, hooks: PkiEnvironmentHooks)` (kotlin)
+  - `PkiEnvironment.create(database: Database, hooks: PkiEnvironmentHooks)` (ts)
 - Added `PkiEnvironmentHooks` interface which has to be implemented by a client and will be used by CoreCrypto during
   e2ei flow
 - Added `CoreCrypto.setPkiEnvironment()` to set a PkiEnvironment on a `CoreCrypto` instance
