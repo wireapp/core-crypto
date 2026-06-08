@@ -67,10 +67,6 @@ ts-clean: ## Cleanup old TypeScript build outputs
 ubrn-deps := $(RUST_SOURCES) $(BUN_LOCK) $(NODE_MODULES)
 $(WASM_FFI_LIB) $(BROWSER_TS_IMPL) $(RUST_MODULES_STAMP) &: $(ubrn-deps)
 	cd $(JS_DIR) && $(WASM_BUILD_ENV) bun ubrn build web --no-wasm-pack
-	# The most recent ubrn version has a regression, where it generates an
-	# invalid `Cargo.toml` in `rust_modules`. This fixes it via postprocessing
-	# until the upstream issue is fixed.
-	perl -pi -e 's/opt-level = "3"/opt-level = 3/' $(RUST_MODULES_WASM)/Cargo.toml
 	touch $(RUST_MODULES_STAMP)
 
 $(RUST_MODULES_CARGO_LOCK): Cargo.lock $(RUST_MODULES_STAMP)
