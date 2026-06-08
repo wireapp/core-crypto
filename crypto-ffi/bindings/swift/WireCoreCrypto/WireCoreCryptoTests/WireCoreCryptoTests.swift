@@ -760,7 +760,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let conversationId = ConversationId(bytes: Data("ext-sender-jwk".utf8))
 
         let credentialRef = try await alice.getCredentials().first!
-        let retrievedKey = try await alice.transaction { ctx -> ExternalSenderKey in
+        let retrievedKey = try await alice.transaction { ctx -> ExternalSender in
             try await ctx.createConversation(
                 conversationId: conversationId,
                 credentialRef: credentialRef,
@@ -769,7 +769,7 @@ final class WireCoreCryptoTests: XCTestCase {
             return try await ctx.getExternalSender(conversationId: conversationId)
         }
 
-        XCTAssertEqual(retrievedKey.copyBytes(), externalSender.serialize())
+        XCTAssertEqual(retrievedKey, externalSender)
     }
 
     func testParsePublicKeyAcceptsBytesProducedBySerialize() throws {
