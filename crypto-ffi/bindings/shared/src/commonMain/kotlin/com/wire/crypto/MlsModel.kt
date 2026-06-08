@@ -12,9 +12,6 @@ val CREDENTIAL_TYPE_DEFAULT = CredentialType.BASIC
 /** Construct a client ID */
 fun String.toClientId() = ClientId(this.toByteArray())
 
-/** Construct an external sender ID */
-fun ByteArray.toExternalSenderKey() = ExternalSenderKey(this)
-
 /** Construct a Welcome */
 fun ByteArray.toWelcome() = Welcome(this)
 

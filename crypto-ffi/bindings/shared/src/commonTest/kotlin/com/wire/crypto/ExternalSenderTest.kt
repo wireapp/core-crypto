@@ -31,7 +31,7 @@ class ExternalSenderTest {
             ctx.getExternalSender(id)
         }
 
-        assertThat(retrievedKey.copyBytes()).isEqualTo(externalSender.serialize())
+        assertThat(retrievedKey).isEqualTo(externalSender)
     }
 
     @Test
