@@ -9,8 +9,10 @@ mod persistence;
 use async_lock::{RwLock, RwLockReadGuard};
 use openmls::group::MlsGroup;
 
-use super::{ConversationIdRef, Error, ExternalSenderKey, Result, SecretKey};
-use crate::{CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, OpenMlsError, Session};
+use super::{ConversationIdRef, Error, Result, SecretKey};
+use crate::{
+    CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, ExternalSender, OpenMlsError, Session,
+};
 
 /// A Conversation exposes the read-only interface of an MLS conversation.
 #[derive(Debug, derive_more::Constructor)]
@@ -80,18 +82,17 @@ impl Conversation {
             .map_err(Into::into)
     }
 
-    /// Returns the raw public key of the first external sender present in this group.
+    /// Returns the first external sender present in this group.
     ///
     /// This should be used to initialize a subconversation
-    pub async fn get_external_sender(&self) -> Result<ExternalSenderKey> {
+    pub async fn get_external_sender(&self) -> Result<ExternalSender> {
         let group = self.group().await;
         let ext_senders = group
             .group_context_extensions()
             .external_senders()
             .ok_or(Error::MissingExternalSenderExtension)?;
         let ext_sender = ext_senders.first().ok_or(Error::MissingExternalSenderExtension)?;
-        let ext_sender_public_key = ext_sender.signature_key().as_slice().to_vec().into();
-        Ok(ext_sender_public_key)
+        Ok(ext_sender.clone().into())
     }
 }
 

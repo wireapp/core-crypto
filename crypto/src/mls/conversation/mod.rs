@@ -47,14 +47,6 @@ bytes_wrapper!(
     SecretKey
 );
 
-bytes_wrapper!(
-    /// The raw public key of an external sender.
-    ///
-    /// This can be used to initialize a subconversation.
-    #[derive(Clone)]
-    ExternalSenderKey
-);
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -426,9 +418,10 @@ mod tests {
                     .await;
 
                 let alice_ext_sender = conversation.guard().await.get_external_sender().await.unwrap();
-                assert!(!alice_ext_sender.is_empty());
+                let signature_key: Vec<u8> = alice_ext_sender.signature_key().as_slice().to_vec();
+                assert!(!signature_key.is_empty());
                 assert_eq!(
-                    Sha256Hash::hash_from(alice_ext_sender),
+                    Sha256Hash::hash_from(&signature_key),
                     external_sender.initial_credential.public_key_hash()
                 );
             })
