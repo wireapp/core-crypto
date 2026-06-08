@@ -392,6 +392,25 @@ LOVS/gxNk618+PKA2bYq67MZQXCYGgk=
     }
 
     #[tokio::test]
+    async fn can_remove_trust_anchor() {
+        let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
+            .await
+            .unwrap();
+        let pki_env = PkiEnvironment::with_dummy_hooks(db).await.unwrap();
+        let cert = x509_cert::Certificate::from_pem(EXAMPLE_CERT_PEM).unwrap();
+        pki_env.add_trust_anchor(cert.clone()).await.unwrap();
+
+        let certs = pki_env.get_trust_anchors().await;
+        assert_eq!(certs.len(), 1);
+
+        pki_env
+            .remove_trust_anchor(certs[0].tbs_certificate.serial_number.as_bytes())
+            .await
+            .unwrap();
+        assert_eq!(pki_env.get_trust_anchors().await.len(), 0);
+    }
+
+    #[tokio::test]
     async fn can_add_intermediate_cert() {
         let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
             .await
