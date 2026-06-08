@@ -133,6 +133,7 @@ $dokka.location:com.wire.crypto/CoreCryptoContext/CoreCryptoContext/#com.sun.jna
 $dokka.location:com.wire.crypto/CoreCryptoContext/CoreCryptoContext/#com.wire.crypto.NoPointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/-core-crypto-context.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/addClientsToConversation/#com.wire.crypto.ConversationId#kotlin.collections.List[com.wire.crypto.KeyPackage]/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/add-clients-to-conversation.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/addCredential/#com.wire.crypto.Credential/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/add-credential.html
+$dokka.location:com.wire.crypto/CoreCryptoContext/checkCredentials/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/check-credentials.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/close.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/commitPendingProposals/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/commit-pending-proposals.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/conversationCipherSuite/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/conversation-cipher-suite.html
@@ -188,6 +189,7 @@ $dokka.location:com.wire.crypto/CoreCryptoContextInterface.Companion///PointingT
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/index.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/addClientsToConversation/#com.wire.crypto.ConversationId#kotlin.collections.List[com.wire.crypto.KeyPackage]/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/add-clients-to-conversation.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/addCredential/#com.wire.crypto.Credential/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/add-credential.html
+$dokka.location:com.wire.crypto/CoreCryptoContextInterface/checkCredentials/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/check-credentials.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/commitPendingProposals/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/commit-pending-proposals.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/conversationCipherSuite/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/conversation-cipher-suite.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/conversationCredential/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/conversation-credential.html

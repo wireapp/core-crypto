@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-1059262f.js";
+            window.path_to_searchindex_js = "../searchindex-e65cbff5.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4cb6eb2.js"></script>
@@ -302,6 +302,9 @@ bytes to encrypted storage before launching the IdP flow.</p>
 <code>X509CredentialAcquisition.fromBytes(pkiEnvironment, snapshot)</code> and call <code>finalize()</code> on the reconstructed instance.
 There is no client-visible serialization method on <code>X509CredentialAcquisition</code> itself; the snapshot bytes are delivered
 to you exclusively through the <code>authenticate</code> hook’s <code>acquisitionSnapshot</code> parameter.</p>
+<h3 id="checking-for-expiration-and-revocation"><a class="header" href="#checking-for-expiration-and-revocation">Checking for expiration and revocation</a></h3>
+<p>Call <code>checkCredentials</code> at least once every 24 hours to check all X509 credentials for expiration and revocation. It is
+recommended to do this during an idle period, because HTTP requests are done to fetch new certificate revocation lists.</p>
 <h2 id="key-packages"><a class="header" href="#key-packages">Key Packages</a></h2>
 <ol>
 <li>
