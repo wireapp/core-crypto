@@ -22,7 +22,7 @@ With CC10 we introduce multiple new types that provide their own new API.
 
 ### PKI Environment API
 
-- Added `PkiEnvironment`constructed via
+- Added `PkiEnvironment` constructed via
   - `PkiEnvironment(database: Database, hooks: PkiEnvironmentHooks)` (swift)
   - `PkiEnvironment.new(database: Database, hooks: PkiEnvironmentHooks)` (kotlin)
   - `PkiEnvironment.create(database: Database, hooks: PkiEnvironmentHooks)` (ts)
