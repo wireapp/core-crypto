@@ -18,6 +18,10 @@ import {
     Credential,
     Welcome,
     KeyPackage,
+    HttpMethod,
+    HttpHeader,
+    PkiEnvironment,
+    type PkiEnvironmentHooks,
 } from "@wireapp/core-crypto/native";
 import { Database } from "@wireapp/core-crypto/native";
 
@@ -58,6 +62,39 @@ class TestDeliveryService implements DeliveryService {
 }
 
 export const DELIVERY_SERVICE = new TestDeliveryService();
+
+class TestPkiEnvironmentHooks implements PkiEnvironmentHooks {
+    async httpRequest(
+        _method: HttpMethod,
+        _url: string,
+        _headers: Array<HttpHeader>,
+        _body: Uint8Array
+    ) {
+        // return a HttpResponse
+        return {
+            status: 200,
+            headers: [],
+            body: new Uint8Array(),
+        };
+    }
+
+    async authenticate(
+        _idp: string,
+        _keyAuth: string,
+        _acmeAud: string,
+        _acquisition_snapshot: Uint8Array
+    ) {
+        return "dummy-id-token";
+    }
+
+    async getBackendNonce() {
+        return "dummy-backend-nonce";
+    }
+
+    async fetchBackendAccessToken(_dpop: string) {
+        return "dummy-backend-token";
+    }
+}
 
 export async function setup() {
     if (logLevel >= 2) {
@@ -106,11 +143,15 @@ type CcInitOptions =
     | {
           withBasicCredential: false;
           clientId?: ClientId;
+          database?: Database;
+          withPkiEnvironment?: boolean;
       }
     | {
           withBasicCredential?: true;
           cipherSuite?: CipherSuite;
           clientId?: ClientId;
+          database?: Database;
+          withPkiEnvironment?: boolean;
       };
 
 /**
@@ -127,8 +168,17 @@ export async function ccInit(
 ): Promise<CoreCrypto> {
     const clientId = options.clientId ?? randomClientId();
 
-    const database = await openTestDatabase();
+    const database = options.database ?? (await openTestDatabase());
+
     const cc = CoreCrypto.new(database);
+
+    if (options.withPkiEnvironment) {
+        const pkiEnvironment = await PkiEnvironment.create(
+            new TestPkiEnvironmentHooks(),
+            database
+        );
+        await cc.setPkiEnvironment(pkiEnvironment);
+    }
 
     // this also sets the default if undefined
     // ?? would break type narrowing of CcInitOptions
