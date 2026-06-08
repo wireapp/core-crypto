@@ -77,4 +77,15 @@ describe("credentials", () => {
         expect(results2.length).toBe(1);
         expect(results1[0]).not.toEqual(results2[0]);
     });
+
+    test("can be checked", async () => {
+        const cc = await ccInit({
+            withBasicCredential: true,
+            cipherSuite: cipherSuiteDefault(),
+            withPkiEnvironment: true,
+        });
+        await cc.transaction(async (ctx) => {
+            await ctx.checkCredentials();
+        });
+    });
 });
