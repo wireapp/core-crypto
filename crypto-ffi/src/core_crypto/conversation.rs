@@ -3,7 +3,7 @@ use std::{borrow::Borrow, sync::Arc};
 use core_crypto::{RecursiveError, mls::conversation::ConversationIdRef};
 
 use crate::{
-    CipherSuite, ClientId, CoreCryptoFfi, CoreCryptoResult, CredentialRef,
+    CipherSuite, ClientId, CoreCryptoFfi, CoreCryptoResult, CredentialRef, ExternalSender,
     bytes_wrapper::{bytes_wrapper, impl_display_via_hex},
     core_crypto_context::mls::SecretKey,
 };
@@ -108,8 +108,8 @@ impl CoreCryptoFfi {
             .collect())
     }
 
-    /// Returns the serialized public key of the external sender for the given conversation.
-    pub async fn get_external_sender(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<u8>> {
+    /// Returns the external sender for the given conversation.
+    pub async fn get_external_sender(&self, conversation_id: &ConversationId) -> CoreCryptoResult<ExternalSender> {
         let conversation = self
             .inner
             .mls_session()

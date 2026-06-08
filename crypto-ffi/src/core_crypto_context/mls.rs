@@ -5,8 +5,7 @@ use core_crypto::{ConversationConfiguration, transaction_context::Error as Trans
 use crate::{
     CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, Credential,
     CredentialRef, DecryptedMessage, ExternalSender, KeyPackage, KeyPackageRef, MlsTransport,
-    bytes_wrapper::{bytes_wrapper, impl_display_via_hex},
-    core_crypto::mls_transport::callback_shim,
+    bytes_wrapper::bytes_wrapper, core_crypto::mls_transport::callback_shim,
 };
 
 bytes_wrapper!(
@@ -27,16 +26,6 @@ impl fmt::Display for SecretKey {
         f.write_str(data)
     }
 }
-
-bytes_wrapper!(
-    /// The raw public key of an external sender.
-    ///
-    /// This can be used to initialize a subconversation.
-    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-    #[uniffi::export(Eq, Hash, Display)]
-    ExternalSenderKey infallibly wraps core_crypto::mls::conversation::ExternalSenderKey; copy_bytes
-);
-impl_display_via_hex!(ExternalSenderKey);
 
 /// MLS Group Information
 ///
@@ -175,7 +164,7 @@ impl CoreCryptoContext {
     }
 
     /// Returns the serialized public key of the external sender for the given conversation.
-    pub async fn get_external_sender(&self, conversation_id: &ConversationId) -> CoreCryptoResult<ExternalSenderKey> {
+    pub async fn get_external_sender(&self, conversation_id: &ConversationId) -> CoreCryptoResult<ExternalSender> {
         let conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         conversation
             .get_external_sender()
