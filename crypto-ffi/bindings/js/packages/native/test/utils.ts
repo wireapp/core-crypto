@@ -245,31 +245,30 @@ export async function roundTripMessage(
     cc1: CoreCrypto,
     cc2: CoreCrypto,
     conversationId: ConversationId,
-    message: Uint8Array
-): Promise<(Uint8Array | null)[]> {
+    message: string
+): Promise<string[]> {
+    const encoder = new TextEncoder();
+    const messageBytes = encoder.encode(message);
+
     const encryptedByClient1 = await cc1.transaction(async (ctx) => {
-        return await ctx.encryptMessage(conversationId, message);
+        return await ctx.encryptMessage(conversationId, messageBytes);
     });
     const decryptedByClient2 = await cc2.transaction(async (ctx) => {
         return await ctx.decryptMessage(conversationId, encryptedByClient1);
     });
 
     const encryptedByClient2 = await cc2.transaction(async (ctx) => {
-        return await ctx.encryptMessage(conversationId, message);
+        return await ctx.encryptMessage(conversationId, messageBytes);
     });
     const decryptedByClient1 = await cc1.transaction(async (ctx) => {
         return await ctx.decryptMessage(conversationId, encryptedByClient2);
     });
 
-    const decryptedMessage1 =
-        decryptedByClient1.message !== undefined
-            ? decryptedByClient1.message
-            : null;
-    const decryptedMessage2 =
-        decryptedByClient2.message !== undefined
-            ? decryptedByClient2.message
-            : null;
-    return [decryptedMessage1, decryptedMessage2];
+    const decoder = new TextDecoder();
+    const result1 = decoder.decode(decryptedByClient1.message);
+    const result2 = decoder.decode(decryptedByClient2.message);
+
+    return [result1, result2];
 }
 
 /**
