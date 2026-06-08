@@ -75,7 +75,7 @@ pub use identity::{
 };
 pub use key_package::{KeyPackage, KeyPackageRef};
 pub use metadata::{BuildMetadata, build_metadata, version};
-#[cfg(not(any(feature = "wasm", target_os = "unknown")))]
+#[cfg(not(any(feature = "wasm", feature = "napi", target_os = "unknown")))]
 pub use pki_env::create_pki_environment;
 pub use pki_env::{HttpHeader, HttpMethod, HttpResponse, PkiEnvironment, PkiEnvironmentHooks};
 pub use signature_scheme::SignatureScheme;
