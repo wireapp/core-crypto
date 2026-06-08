@@ -8,6 +8,7 @@ web:
   wasmCrateName: core-crypto-ffi-wasm
   features: ["wasm"]
   cargoExtras: ["--locked"]
+  manifestPatchFile: Cargo.rust-modules.toml
 
 nodejs:
   features: ["napi"]
