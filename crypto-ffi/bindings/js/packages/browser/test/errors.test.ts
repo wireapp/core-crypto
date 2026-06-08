@@ -67,9 +67,9 @@ describe("core crypto errors", () => {
                 }
             }
         });
-        await expect(result.errorWasThrown).toBe(true);
-        await expect(result.isCorrectInstance).toBe(true);
-        await expect(result.errorConvIdMatches).toBe(true);
+        expect(result.errorWasThrown).toBe(true);
+        expect(result.isCorrectInstance).toBe(true);
+        expect(result.errorConvIdMatches).toBe(true);
     });
 
     it("should be correct when message rejected", async () => {
@@ -115,8 +115,8 @@ describe("core crypto errors", () => {
             }
         });
 
-        await expect(result.errorWasThrown).toBe(true);
-        await expect(result.errorTypeAndReasonMatch).toBe(true);
+        expect(result.errorWasThrown).toBe(true);
+        expect(result.errorTypeAndReasonMatch).toBe(true);
     });
 });
 
@@ -148,9 +148,9 @@ it("should build correctly when constructed by ubrn", async () => {
         }
     }, convId);
 
-    await expect(result.errorWasThrown).toBe(true);
-    await expect(result.isCorrectInstance).toBe(true);
-    await expect(result.message).toBe("Cannot lower this object to a pointer");
+    expect(result.errorWasThrown).toBe(true);
+    expect(result.isCorrectInstance).toBe(true);
+    expect(result.message).toBe("Cannot lower this object to a pointer");
 });
 
 describe("Error type mapping", () => {
@@ -181,6 +181,6 @@ describe("Error type mapping", () => {
             return false;
         });
 
-        await expect(isCorrectErrorInstance).toBe(true);
+        expect(isCorrectErrorInstance).toBe(true);
     });
 });

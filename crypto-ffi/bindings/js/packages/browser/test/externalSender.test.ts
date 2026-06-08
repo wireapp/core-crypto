@@ -46,7 +46,7 @@ describe("external sender", () => {
             jwkString
         );
 
-        await expect(retrievedBytes).toEqual(serializedBytes);
+        expect(retrievedBytes).toEqual(serializedBytes);
     });
 
     it("parsePublicKey accepts the bytes produced by serialize", async () => {
@@ -61,7 +61,7 @@ describe("external sender", () => {
             return fromJwk.equals(fromBytes);
         }, jwkString);
 
-        await expect(equal).toBe(true);
+        expect(equal).toBe(true);
     });
 
     it("parseJwk rejects malformed bytes", async () => {
@@ -76,6 +76,6 @@ describe("external sender", () => {
             }
         });
 
-        await expect(threw).toBe(true);
+        expect(threw).toBe(true);
     });
 });

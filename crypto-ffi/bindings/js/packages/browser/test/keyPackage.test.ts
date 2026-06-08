@@ -28,8 +28,8 @@ describe("key package", () => {
             return { threwError, wasDefined };
         });
 
-        await expect(threwError).toBe(false);
-        await expect(wasDefined).toBe(true);
+        expect(threwError).toBe(false);
+        expect(wasDefined).toBe(true);
     });
 
     it("can be serialized", async () => {
@@ -59,9 +59,9 @@ describe("key package", () => {
                 return { wasDefined, wasEmpty, roundtripMatches };
             });
 
-        await expect(wasDefined).toBe(true);
-        await expect(wasEmpty).toBe(false);
-        await expect(roundtripMatches).toBe(true);
+        expect(wasDefined).toBe(true);
+        expect(wasEmpty).toBe(false);
+        expect(roundtripMatches).toBe(true);
     });
 
     it("can be retrieved in bulk", async () => {
@@ -84,10 +84,10 @@ describe("key package", () => {
                 return { wasDefined, wasArray, arraySize, firstItemDefined };
             });
 
-        await expect(wasDefined).toBe(true);
-        await expect(wasArray).toBe(true);
-        await expect(arraySize).toBe(1);
-        await expect(firstItemDefined).toBe(true);
+        expect(wasDefined).toBe(true);
+        expect(wasArray).toBe(true);
+        expect(arraySize).toBe(1);
+        expect(firstItemDefined).toBe(true);
     });
 
     it("can be removed", async () => {
@@ -126,9 +126,9 @@ describe("key package", () => {
             }
         );
 
-        await expect(wasDefined).toBe(true);
-        await expect(wasArray).toBe(true);
-        await expect(arraySize).toBe(1);
+        expect(wasDefined).toBe(true);
+        expect(wasArray).toBe(true);
+        expect(arraySize).toBe(1);
     });
 
     it("can be removed by credentialref", async () => {
@@ -181,9 +181,7 @@ describe("key package", () => {
             }, KEYPACKAGES_PER_CREDENTIAL);
 
         // 2 credentials with the same n keypackages each
-        await expect(beforeRemovalArraySize).toBe(
-            KEYPACKAGES_PER_CREDENTIAL * 2
-        );
-        await expect(afterRemovalArraySize).toBe(KEYPACKAGES_PER_CREDENTIAL);
+        expect(beforeRemovalArraySize).toBe(KEYPACKAGES_PER_CREDENTIAL * 2);
+        expect(afterRemovalArraySize).toBe(KEYPACKAGES_PER_CREDENTIAL);
     });
 });

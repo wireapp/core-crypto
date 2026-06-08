@@ -61,7 +61,7 @@ describe("database", () => {
     });
 
     it("throws an error if used after close", async () => {
-        await expect(
+        expect(
             await browser.execute(async () => {
                 const databaseName = crypto.randomUUID();
                 const key = new Uint8Array(32);
@@ -132,7 +132,7 @@ describe("database", () => {
             return [JSON.stringify(pubkey1), JSON.stringify(pubkey2)];
         });
 
-        await expect(JSON.parse(pubkey1)).toEqual(JSON.parse(pubkey2));
+        expect(JSON.parse(pubkey1)).toEqual(JSON.parse(pubkey2));
     });
 
     it("migrating key type to bytes works", async () => {
@@ -213,6 +213,6 @@ describe("database", () => {
         }, JSON.stringify(stores));
 
         // If the migration succeeded, the epoch has to be 1.
-        await expect(result).toEqual(1n);
+        expect(result).toEqual(1n);
     });
 });

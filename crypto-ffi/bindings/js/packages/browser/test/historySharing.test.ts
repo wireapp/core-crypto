@@ -86,10 +86,10 @@ describe("history sharing", () => {
             };
         });
 
-        await expect(result.length).toBe(1);
-        await expect(result.enabledBeforeEnabling).toBe(false);
-        await expect(result.enabledAfterEnabling).toBe(true);
-        await expect(result.firstIdString).toBe(result.convIdSerialized);
-        await expect(result.commitHasEncryptedMessage).toBe(true);
+        expect(result.length).toBe(1);
+        expect(result.enabledBeforeEnabling).toBe(false);
+        expect(result.enabledAfterEnabling).toBe(true);
+        expect(result.firstIdString).toBe(result.convIdSerialized);
+        expect(result.commitHasEncryptedMessage).toBe(true);
     });
 });

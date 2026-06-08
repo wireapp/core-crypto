@@ -67,7 +67,7 @@ describe("epoch observer", () => {
                 };
             });
 
-        await expect(length).toEqual(1);
-        await expect(first_id_hex).toEqual(convIdSerialized);
+        expect(length).toEqual(1);
+        expect(first_id_hex).toEqual(convIdSerialized);
     });
 });

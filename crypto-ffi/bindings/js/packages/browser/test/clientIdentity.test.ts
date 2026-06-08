@@ -16,7 +16,7 @@ describe("client identity", () => {
             const cc = await window.helpers.ccInit();
             return (await cc.getCredentials())[0]!.publicKeyHash().byteLength;
         });
-        await expect(result).toBe(32);
+        expect(result).toBe(32);
     });
 
     it("requesting client key package should work", async () => {
@@ -31,6 +31,6 @@ describe("client identity", () => {
             }
             return threwError;
         });
-        await expect(threwError).toBe(false);
+        expect(threwError).toBe(false);
     });
 });

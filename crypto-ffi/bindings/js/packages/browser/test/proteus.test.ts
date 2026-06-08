@@ -31,8 +31,8 @@ describe("proteus", () => {
 
         const u16MAX = Math.pow(2, 16) - 1;
 
-        await expect(result.lastResortPrekeyId).toBe(u16MAX);
-        await expect(result.lastResortPrekey1).toStrictEqual(
+        expect(result.lastResortPrekeyId).toBe(u16MAX);
+        expect(result.lastResortPrekey1).toStrictEqual(
             result.lastResortPrekey2
         );
     });
@@ -70,7 +70,7 @@ describe("proteus", () => {
                 message
             );
         }, message);
-        await expect(decryptedMessage).toBe(message);
+        expect(decryptedMessage).toBe(message);
     });
 
     it("initializing same session twice should fail", async () => {

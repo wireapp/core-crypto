@@ -52,7 +52,7 @@ describe("external entropy", () => {
         const resultVector1 = new Uint32Array(resultByteVector1.buffer);
         const resultVector2 = new Uint32Array(resultByteVector2.buffer);
 
-        await expect(resultVector1).toStrictEqual(vector1);
-        await expect(resultVector2).toStrictEqual(vector2);
+        expect(resultVector1).toStrictEqual(vector1);
+        expect(resultVector2).toStrictEqual(vector2);
     });
 });

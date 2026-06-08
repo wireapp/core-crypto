@@ -22,10 +22,10 @@ describe("conversation", () => {
             const convId = await window.helpers.createConversation(alice);
             return await window.helpers.invite(alice, bob, convId);
         });
-        await expect(groupInfo.encryptionType).toBe(
+        expect(groupInfo.encryptionType).toBe(
             GroupInfoEncryptionType.Plaintext
         );
-        await expect(groupInfo.ratchetTreeType).toBe(RatchetTreeType.Full);
+        expect(groupInfo.ratchetTreeType).toBe(RatchetTreeType.Full);
     });
 
     it("should allow sending messages", async () => {
@@ -45,7 +45,7 @@ describe("conversation", () => {
             },
             messageText
         );
-        await expect(decryptedByAlice).toBe(messageText);
-        await expect(decryptedByBob).toBe(messageText);
+        expect(decryptedByAlice).toBe(messageText);
+        expect(decryptedByBob).toBe(messageText);
     });
 });

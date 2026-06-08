@@ -59,7 +59,7 @@ describe("PKI environment", () => {
             await cc.setPkiEnvironment(undefined);
             return (await cc.getPkiEnvironment()) === undefined;
         });
-        await expect(success).toBe(true);
+        expect(success).toBe(true);
     });
 
     it("should be settable before mls init", async () => {
@@ -86,7 +86,7 @@ describe("PKI environment", () => {
 
             return (await cc.getPkiEnvironment()) != undefined;
         });
-        await expect(success).toBe(true);
+        expect(success).toBe(true);
     });
 
     it("should add a trust anchor certificate", async () => {
@@ -105,7 +105,7 @@ describe("PKI environment", () => {
             }
         }, TEST_CA_PEM);
 
-        await expect(error).toBe(undefined);
+        expect(error).toBe(undefined);
     });
 
     it("should add an intermediate certificate", async () => {
@@ -124,7 +124,7 @@ describe("PKI environment", () => {
             }
         }, TEST_CA_PEM);
 
-        await expect(error).toBe(undefined);
+        expect(error).toBe(undefined);
     });
 });
 
@@ -158,7 +158,7 @@ describe("end to end identity", () => {
             return acquisition !== undefined;
         });
 
-        await expect(acquisitionCreated).toBe(true);
+        expect(acquisitionCreated).toBe(true);
     });
 
     it("should instantiate an x509 credential acquisition object from credential ref", async () => {
@@ -196,7 +196,7 @@ describe("end to end identity", () => {
             return acquisition !== undefined;
         });
 
-        await expect(acquisitionCreated).toBe(true);
+        expect(acquisitionCreated).toBe(true);
     });
 
     it("should not be enabled on conversation with basic credential", async () => {
@@ -223,7 +223,7 @@ describe("end to end identity", () => {
 
             return identities.pop()?.clientId?.equals(clientId);
         });
-        await expect(success).toBe(true);
+        expect(success).toBe(true);
     });
 
     it("identities can be queried by user id", async () => {
@@ -240,6 +240,6 @@ describe("end to end identity", () => {
             const identity = identities.values().next().value?.pop();
             return identity?.clientId?.equals(clientId);
         });
-        await expect(success).toBe(true);
+        expect(success).toBe(true);
     });
 });

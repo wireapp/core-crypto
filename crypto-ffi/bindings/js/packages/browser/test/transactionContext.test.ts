@@ -58,9 +58,9 @@ describe("transaction context", () => {
                 message: false,
             };
         });
-        await expect(result.errorWasThrown).toBe(true);
-        await expect(result.isCorrectInstance).toBe(true);
-        await expect(result.message).toBe(
+        expect(result.errorWasThrown).toBe(true);
+        expect(result.isCorrectInstance).toBe(true);
+        expect(result.message).toBe(
             "This transaction context has already been finished and can no longer be used."
         );
     });
@@ -124,6 +124,6 @@ describe("transaction context", () => {
             }
             throw new Error("Expected 'Conversation already exists' error");
         });
-        await expect(error.message).toBe("MlsError.ConversationAlreadyExists");
+        expect(error.message).toBe("MlsError.ConversationAlreadyExists");
     });
 });
