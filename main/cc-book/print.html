@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-e65cbff5.js";
+            window.path_to_searchindex_js = "searchindex-e76ea4d2.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e4cb6eb2.js"></script>
@@ -1468,7 +1468,13 @@ invalidate all other references to that instance.</p>
 </ul>
 <h3 id="pki-environment-api"><a class="header" href="#pki-environment-api">PKI Environment API</a></h3>
 <ul>
-<li>Added <code>PkiEnvironment</code> constructed via <code>createPkiEnvironment(database: Database, hooks: PkiEnvironmentHooks)</code></li>
+<li>Added <code>PkiEnvironment</code>constructed via
+<ul>
+<li><code>PkiEnvironment(database: Database, hooks: PkiEnvironmentHooks)</code> (swift)</li>
+<li><code>PkiEnvironment.new(database: Database, hooks: PkiEnvironmentHooks)</code> (kotlin)</li>
+<li><code>PkiEnvironment.create(database: Database, hooks: PkiEnvironmentHooks)</code> (ts)</li>
+</ul>
+</li>
 <li>Added <code>PkiEnvironmentHooks</code> interface which has to be implemented by a client and will be used by CoreCrypto during
 e2ei flow</li>
 <li>Added <code>CoreCrypto.setPkiEnvironment()</code> to set a PkiEnvironment on a <code>CoreCrypto</code> instance</li>

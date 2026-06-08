@@ -241,10 +241,10 @@
 <a href=#241 id=241 data-nosnippet>241</a>    }
 <a href=#242 id=242 data-nosnippet>242</a>}
 <a href=#243 id=243 data-nosnippet>243</a>
-<a href=#244 id=244 data-nosnippet>244</a><span class="attr">#[cfg_attr(feature = <span class="string">"wasm"</span>, uniffi::export)]
+<a href=#244 id=244 data-nosnippet>244</a><span class="attr">#[cfg_attr(any(feature = <span class="string">"wasm"</span>, feature = <span class="string">"napi"</span>), uniffi::export)]
 <a href=#245 id=245 data-nosnippet>245</a></span><span class="kw">impl </span>PkiEnvironment {
 <a href=#246 id=246 data-nosnippet>246</a>    <span class="doccomment">/// Create a new PKI environment.
-<a href=#247 id=247 data-nosnippet>247</a>    </span><span class="attr">#[cfg_attr(feature = <span class="string">"wasm"</span>, uniffi::constructor)]
+<a href=#247 id=247 data-nosnippet>247</a>    </span><span class="attr">#[cfg_attr(any(feature = <span class="string">"wasm"</span>, feature = <span class="string">"napi"</span>), uniffi::constructor)]
 <a href=#248 id=248 data-nosnippet>248</a>    </span><span class="kw">pub async fn </span>new(hooks: Arc&lt;<span class="kw">dyn </span>PkiEnvironmentHooks&gt;, database: Arc&lt;Database&gt;) -&gt; CoreCryptoResult&lt;<span class="self">Self</span>&gt; {
 <a href=#249 id=249 data-nosnippet>249</a>        <span class="kw">let </span>shim = Arc::new(PkiEnvironmentHooksShim::new(hooks));
 <a href=#250 id=250 data-nosnippet>250</a>        <span class="kw">let </span>pki_env = wire_e2e_identity::pki_env::PkiEnvironment::new(shim, database.as_ref().clone().into()).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -273,7 +273,7 @@
 <a href=#273 id=273 data-nosnippet>273</a>}
 <a href=#274 id=274 data-nosnippet>274</a>
 <a href=#275 id=275 data-nosnippet>275</a><span class="doccomment">/// Create a new PKI environment.
-<a href=#276 id=276 data-nosnippet>276</a></span><span class="attr">#[cfg(not(any(feature = <span class="string">"wasm"</span>, target_os = <span class="string">"unknown"</span>)))]
+<a href=#276 id=276 data-nosnippet>276</a></span><span class="attr">#[cfg(not(any(feature = <span class="string">"wasm"</span>, feature = <span class="string">"napi"</span>, target_os = <span class="string">"unknown"</span>)))]
 <a href=#277 id=277 data-nosnippet>277</a>#[uniffi::export]
 <a href=#278 id=278 data-nosnippet>278</a></span><span class="kw">pub async fn </span>create_pki_environment(
 <a href=#279 id=279 data-nosnippet>279</a>    hooks: Arc&lt;<span class="kw">dyn </span>PkiEnvironmentHooks&gt;,
