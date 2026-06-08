@@ -120,6 +120,11 @@ When the app resumes and is ready to complete acquisition, reconstruct the acqui
 There is no client-visible serialization method on `X509CredentialAcquisition` itself; the snapshot bytes are delivered
 to you exclusively through the `authenticate` hook's `acquisitionSnapshot` parameter.
 
+### Checking for expiration and revocation
+
+Call `checkCredentials` at least once every 24 hours to check all X509 credentials for expiration and revocation. It is
+recommended to do this during an idle period, because HTTP requests are done to fetch new certificate revocation lists.
+
 ## Key Packages
 
 1. We **removed** `CoreCryptoContext.clientKeypackages()`. To generate a desired amount of key packages, make repeated
