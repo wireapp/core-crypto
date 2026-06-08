@@ -308,12 +308,20 @@ async fn fetching_crls_works(test_env: TestEnvironment, #[case] sign_alg: JwsAlg
 }
 
 // @SF.PROVISIONING @TSFI.ACME
-// TODO: ignore this test for now, until the relevant PKI environment checks are in place
-#[ignore]
 #[rstest]
 #[tokio::test]
-async fn should_fail_when_certificate_path_doesnt_contain_trust_anchor(test_env: TestEnvironment) {
+async fn should_fail_without_trust_anchor(test_env: TestEnvironment) {
     let (pki_env, config) = prepare_pki_env_and_config(&test_env, JwsAlgorithm::P256).await;
+
+    let certs = pki_env.get_trust_anchors().await;
+    assert_eq!(certs.len(), 1);
+
+    pki_env
+        .remove_trust_anchor(certs[0].tbs_certificate.serial_number.as_bytes())
+        .await
+        .unwrap();
+    assert_eq!(pki_env.get_trust_anchors().await.len(), 0);
+
     let acq = X509CredentialAcquisition::try_new(Arc::new(pki_env), config).unwrap();
     let result = acq
         .complete_dpop_challenge()
