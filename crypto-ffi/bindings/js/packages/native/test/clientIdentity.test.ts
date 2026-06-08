@@ -1,6 +1,5 @@
-import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
-import { afterEach, beforeEach, describe } from "mocha";
+import { ccInit, generateKeyPackage, setup, teardown } from "./utils";
+import { test, afterEach, beforeEach, describe, expect } from "bun:test";
 
 beforeEach(async () => {
     await setup();
@@ -11,26 +10,16 @@ afterEach(async () => {
 });
 
 describe("client identity", () => {
-    it("get client public key should work", async () => {
-        const result = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
-            return (await cc.getCredentials())[0]!.publicKeyHash().byteLength;
-        });
+    test("get client public key should work", async () => {
+        const cc = await ccInit();
+        const result = (await cc.getCredentials())[0]!.publicKeyHash()
+            .byteLength;
         expect(result).toBe(32);
     });
 
-    it("requesting client key package should work", async () => {
-        const threwError = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
-            let threwError = false;
-            try {
-                const keypackage = await window.helpers.generateKeyPackage(cc);
-                keypackage.serialize();
-            } catch {
-                threwError = true;
-            }
-            return threwError;
-        });
-        expect(threwError).toBe(false);
+    test("requesting client key package should work", async () => {
+        const cc = await ccInit();
+        const keypackage = await generateKeyPackage(cc);
+        keypackage.serialize();
     });
 });
