@@ -47,7 +47,7 @@ impl PkiEnvironmentHooks for DummyPkiEnvironmentHooks {
 }
 
 impl PkiEnvironment {
-    pub async fn with_dummy_hooks(database: Database) -> Result<PkiEnvironment, super::Error> {
+    pub async fn with_dummy_hooks(database: Arc<Database>) -> Result<PkiEnvironment, super::Error> {
         Self::new(Arc::new(DummyPkiEnvironmentHooks), database).await
     }
 }

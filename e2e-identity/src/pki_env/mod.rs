@@ -115,14 +115,14 @@ pub struct PkiEnvironment {
     /// Implemented by the clients and used by us to make external calls during e2e flow
     hooks: Arc<dyn PkiEnvironmentHooks>,
     /// The database in which X509 Credentials are stored.
-    database: Database,
+    database: Arc<Database>,
     rjt_pki_env: Mutex<RjtPkiEnvironment>,
 }
 
 impl PkiEnvironment {
     /// Create a new PKI Environment
-    pub async fn new(hooks: Arc<dyn PkiEnvironmentHooks>, database: Database) -> Result<PkiEnvironment> {
-        let rjt_pki_env = restore_pki_env(&database).await?;
+    pub async fn new(hooks: Arc<dyn PkiEnvironmentHooks>, database: Arc<Database>) -> Result<PkiEnvironment> {
+        let rjt_pki_env = restore_pki_env(&*database).await?;
         Ok(Self {
             hooks,
             database,
