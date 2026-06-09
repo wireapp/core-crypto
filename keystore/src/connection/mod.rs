@@ -69,10 +69,12 @@ pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
     fn location(&self) -> Option<&str>;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Database {
-    pub(crate) conn: Arc<Mutex<Option<KeystoreDatabaseConnection>>>,
-    pub(crate) transaction: Arc<Mutex<Option<KeystoreTransaction>>>,
+    pub(crate) conn: Mutex<Option<KeystoreDatabaseConnection>>,
+    pub(crate) transaction: Mutex<Option<KeystoreTransaction>>,
+    // we need an internal Arc here so we can hand out `SemaphoreGuardArc`
+    // instances without keeping references with lifetimes to the semaphore
     transaction_semaphore: Arc<Semaphore>,
 }
 
@@ -131,19 +133,18 @@ impl DerefMut for ConnectionGuard<'_> {
 
 // Only the functions in this impl block directly mess with `self.conn`
 impl Database {
-    pub async fn open(location: ConnectionType<'_>, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
+    pub async fn open(location: ConnectionType<'_>, key: &DatabaseKey) -> CryptoKeystoreResult<Arc<Self>> {
         let conn = match location {
             ConnectionType::Persistent(location) => KeystoreDatabaseConnection::open(location, key).await?,
             ConnectionType::InMemory => KeystoreDatabaseConnection::open_in_memory(key).await?,
         };
         let conn = Mutex::new(Some(conn));
-        #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
-        let conn = Arc::new(conn);
         Ok(Self {
             conn,
             transaction: Default::default(),
             transaction_semaphore: Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT)),
-        })
+        }
+        .into())
     }
 
     #[cfg(all(test, not(target_os = "unknown")))]
