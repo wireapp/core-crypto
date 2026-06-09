@@ -1,6 +1,8 @@
+use std::sync::Arc;
+
 use wire_e2e_identity::legacy::device_status;
 
-use crate::{CredentialType, X509Identity};
+use crate::{ClientId, CredentialType, X509Identity};
 
 /// The identity claims identifying a client.
 ///
@@ -8,7 +10,7 @@ use crate::{CredentialType, X509Identity};
 #[derive(Debug, Clone, uniffi::Record)]
 pub struct WireIdentity {
     /// Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
-    pub client_id: String,
+    pub client_id: Option<Arc<ClientId>>,
     /// Status of the credential at the moment this object is created.
     pub status: DeviceStatus,
     /// MLS thumbprint
@@ -20,13 +22,14 @@ pub struct WireIdentity {
 }
 
 impl From<core_crypto::WireIdentity> for WireIdentity {
-    fn from(i: core_crypto::WireIdentity) -> Self {
+    fn from(cc_wire_identity: core_crypto::WireIdentity) -> Self {
+        let client_id = cc_wire_identity.client_id.map(ClientId::from).map(Arc::new);
         Self {
-            client_id: i.client_id,
-            status: i.status.into(),
-            thumbprint: i.thumbprint,
-            credential_type: i.credential_type.into(),
-            x509_identity: i.x509_identity.map(Into::into),
+            client_id,
+            status: cc_wire_identity.status.into(),
+            thumbprint: cc_wire_identity.thumbprint,
+            credential_type: cc_wire_identity.credential_type.into(),
+            x509_identity: cc_wire_identity.x509_identity.map(Into::into),
         }
     }
 }

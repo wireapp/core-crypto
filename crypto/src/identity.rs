@@ -1,17 +1,15 @@
-use std::str::FromStr;
-
-use wire_e2e_identity::legacy::{device_status::DeviceStatus, id::WireQualifiedClientId};
+use wire_e2e_identity::legacy::device_status::DeviceStatus;
 use x509_cert::der::pem::LineEnding;
 
 use super::{Error, Result};
-use crate::CredentialType;
+use crate::{ClientId, CredentialType, RecursiveError};
 
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct WireIdentity {
     /// Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
-    pub client_id: String,
+    pub client_id: Option<ClientId>,
     /// MLS thumbprint
     pub thumbprint: String,
     /// Status of the Credential at the moment T when this object is created
@@ -47,29 +45,31 @@ pub struct X509Identity {
 impl<'a> TryFrom<(wire_e2e_identity::WireIdentity, &'a [u8])> for WireIdentity {
     type Error = Error;
 
-    fn try_from((i, cert): (wire_e2e_identity::WireIdentity, &'a [u8])) -> Result<Self> {
+    fn try_from((e2ei_wire_identity, cert_bytes): (wire_e2e_identity::WireIdentity, &'a [u8])) -> Result<Self> {
         use x509_cert::der::Decode as _;
-        let document =
-            x509_cert::der::Document::from_der(cert).map_err(wire_e2e_identity::E2eIdentityError::X509CertDerError)?;
+        let document = x509_cert::der::Document::from_der(cert_bytes)
+            .map_err(wire_e2e_identity::E2eIdentityError::X509CertDerError)?;
         let certificate = document
             .to_pem("CERTIFICATE", LineEnding::LF)
             .map_err(wire_e2e_identity::E2eIdentityError::X509CertDerError)?;
 
-        let client_id = WireQualifiedClientId::from_str(&i.client_id)?;
+        let client_id = ClientId::new_from_bytes(e2ei_wire_identity.client_id.as_bytes().to_vec())
+            .map(Some)
+            .map_err(RecursiveError::mls_client("client id from wire identity client id"))?;
 
         Ok(Self {
-            client_id: client_id.try_into()?,
-            status: i.status.into(),
-            thumbprint: i.thumbprint,
+            client_id,
+            status: e2ei_wire_identity.status.into(),
+            thumbprint: e2ei_wire_identity.thumbprint,
             credential_type: CredentialType::X509,
             x509_identity: Some(X509Identity {
-                handle: i.handle.to_string(),
-                display_name: i.display_name,
-                domain: i.domain,
+                handle: e2ei_wire_identity.handle.to_string(),
+                display_name: e2ei_wire_identity.display_name,
+                domain: e2ei_wire_identity.domain,
                 certificate,
-                serial_number: i.serial_number,
-                not_before: i.not_before,
-                not_after: i.not_after,
+                serial_number: e2ei_wire_identity.serial_number,
+                not_before: e2ei_wire_identity.not_before,
+                not_after: e2ei_wire_identity.not_after,
             }),
         })
     }
