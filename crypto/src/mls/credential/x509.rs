@@ -105,7 +105,9 @@ impl CertificateBundle {
             .map_err(RecursiveError::e2e_identity("parsing wire qualified client id"))?
             .into();
         let client_id: Vec<u8> = client_id.into();
-        Ok(client_id.into())
+        let client_id =
+            ClientId::new_from_bytes(client_id).map_err(RecursiveError::mls_client("client id from bytes"))?;
+        Ok(client_id)
     }
 
     /// Reads the 'Not Before' claim from the leaf certificate

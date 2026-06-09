@@ -4,7 +4,7 @@ use wire_e2e_identity::{HashAlgorithm, JwsAlgorithm, compute_raw_key_thumbprint,
 use x509_cert::{Certificate, der::Decode};
 
 use super::{Error, Result};
-use crate::{CipherSuite, CredentialType, DeviceStatus, WireIdentity};
+use crate::{CipherSuite, ClientId, CredentialType, DeviceStatus, WireIdentity};
 
 #[allow(dead_code)]
 pub(crate) trait CredentialExt {
@@ -30,9 +30,15 @@ impl CredentialExt for CredentialWithKey {
             openmls::prelude::MlsCredentialType::Basic(_) => {
                 // in case the ClientId is not a Wire identifier, just returning an empty String is
                 // fine since this is simply informative and for Wire only
-                let client_id = std::str::from_utf8(self.credential.identity())
+                let client_id_string = std::str::from_utf8(self.credential.identity())
                     .unwrap_or_default()
                     .to_string();
+                let client_id_bytes = client_id_string.as_bytes();
+                let client_id = ClientId::try_from(client_id_bytes)
+                    .inspect_err(|e| {
+                        log::info!("could not parse client id, will set it to `None` on `WireIdentity`: {e}")
+                    })
+                    .ok();
 
                 let thumbprint = compute_thumbprint(cs, self.signature_key.as_slice())?;
 
