@@ -95,7 +95,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let database = try await newDatabase()
         var coreCrypto = try CoreCrypto(database: database)
 
-        let clientId = ClientId(bytes: UUID().uuidString.data(using: .utf8)!)
+        let clientId = genClientId()
         let cipherSuite = CipherSuite.mls128Dhkemx25519Chacha20poly1305Sha256Ed25519
 
         let credential = try Credential.basic(cipherSuite: cipherSuite, clientId: clientId)
@@ -168,7 +168,7 @@ final class WireCoreCryptoTests: XCTestCase {
 
         // Check if we can read the conversation from the migrated database
         let bob = try CoreCrypto(database: database)
-        let clientId = ClientId(bytes: Data("bob1".utf8))
+        let clientId = genClientId()
         let conversationId = ConversationId(bytes: Data("conversation1".utf8))
         let epoch = try await bob.transaction { ctx in
             try await ctx.mlsInit(clientId: clientId, transport: self.mockMlsTransport)
@@ -182,7 +182,7 @@ final class WireCoreCryptoTests: XCTestCase {
     }
 
     func testInteractionWithInvalidContextThrowsError() async throws {
-        let aliceId = ClientId(bytes: Data("alice1".utf8))
+        let aliceId = genClientId()
         let database = try await newDatabase()
         let coreCrypto = try CoreCrypto(database: database)
         var context: CoreCryptoContextProtocol?
@@ -699,9 +699,7 @@ final class WireCoreCryptoTests: XCTestCase {
 
         let pkiEnvironment = try await PkiEnvironment(
             hooks: MockPkiEnvironmentHooks(), database: database)
-        let qualifiedClientId = try ClientId(
-            bytes: Data("LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com".utf8)
-        ).parseQualified()
+        let clientId = genClientId()
 
         let acquisition = try X509CredentialAcquisition(
             pkiEnvironment: pkiEnvironment,
@@ -709,7 +707,7 @@ final class WireCoreCryptoTests: XCTestCase {
                 acmeDirectoryUrl: "acme.example.com/directory",
                 cipherSuite: cipherSuiteDefault(),
                 displayName: "Alice Smith",
-                clientId: qualifiedClientId,
+                clientId: clientId,
                 handle: "alice_wire",
                 domain: "world.com",
                 team: nil,
@@ -721,15 +719,12 @@ final class WireCoreCryptoTests: XCTestCase {
     }
 
     func testCanInstantiateX509CredentialAcquisitionFromCredentialRef() async throws {
-        let qualifiedClientId = try ClientId(
-            bytes: Data("LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com".utf8)
-        ).parseQualified()
-        let clientId = qualifiedClientId.clientId()
+        let clientId = genClientId()
         let config = X509CredentialAcquisitionConfiguration(
             acmeDirectoryUrl: "acme.example.com/directory",
             cipherSuite: cipherSuiteDefault(),
             displayName: "Alice Smith",
-            clientId: qualifiedClientId,
+            clientId: clientId,
             handle: "alice_wire",
             domain: "world.com",
             team: nil,
@@ -962,12 +957,16 @@ final class WireCoreCryptoTests: XCTestCase {
         return try! DatabaseKey(bytes: Data(bytes))
     }
 
-    func genClientId() -> ClientId {
-        ClientId(bytes: withUnsafeBytes(of: UUID().uuid) { Data($0) })
-    }
-
     func genConversationId() -> ConversationId {
         ConversationId(bytes: withUnsafeBytes(of: UUID().uuid) { Data($0) })
+    }
+
+    func genClientId() -> ClientId {
+        let userId = UUID().uuidString
+        let deviceId = String(format: "%016llx", UInt64.random(in: 0...UInt64.max))
+        // constructor only fails if the generated parts do not satisfy the wire client-id format
+        // swiftlint:disable:next force_try
+        return try! ClientId(userId: userId, deviceId: deviceId, domain: "wire.com")
     }
 
     private func generateEd25519Jwk() -> Data {
