@@ -56,9 +56,9 @@
 <a href=#56 id=56 data-nosnippet>56</a>        };
 <a href=#57 id=57 data-nosnippet>57</a>        <span class="kw">let </span><span class="kw-2">mut </span>guard = core_crypto.proteus.lock().<span class="kw">await</span>;
 <a href=#58 id=58 data-nosnippet>58</a>        <span class="kw">let </span>proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)<span class="question-mark">?</span>;
-<a href=#59 id=59 data-nosnippet>59</a>        <span class="kw">let </span><span class="kw-2">mut </span>keystore = <span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#59 id=59 data-nosnippet>59</a>        <span class="kw">let </span>keystore = <span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#60 id=60 data-nosnippet>60</a>        <span class="kw">let </span>(session, message) = proteus
-<a href=#61 id=61 data-nosnippet>61</a>            .session_from_message(<span class="kw-2">&amp;mut </span>keystore, session_id, envelope)
+<a href=#61 id=61 data-nosnippet>61</a>            .session_from_message(<span class="kw-2">&amp;</span>keystore, session_id, envelope)
 <a href=#62 id=62 data-nosnippet>62</a>            .<span class="kw">await
 <a href=#63 id=63 data-nosnippet>63</a>            </span>.map_err(RecursiveError::root(<span class="string">"creating proteus sesseion from message"</span>))<span class="question-mark">?</span>;
 <a href=#64 id=64 data-nosnippet>64</a>        ProteusCentral::session_save_by_ref(<span class="kw-2">&amp;</span>keystore, session)
@@ -127,9 +127,9 @@
 <a href=#127 id=127 data-nosnippet>127</a>        };
 <a href=#128 id=128 data-nosnippet>128</a>        <span class="kw">let </span><span class="kw-2">mut </span>guard = core_crypto.proteus.lock().<span class="kw">await</span>;
 <a href=#129 id=129 data-nosnippet>129</a>        <span class="kw">let </span>proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)<span class="question-mark">?</span>;
-<a href=#130 id=130 data-nosnippet>130</a>        <span class="kw">let </span><span class="kw-2">mut </span>keystore = <span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#130 id=130 data-nosnippet>130</a>        <span class="kw">let </span>keystore = <span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#131 id=131 data-nosnippet>131</a>        proteus
-<a href=#132 id=132 data-nosnippet>132</a>            .decrypt(<span class="kw-2">&amp;mut </span>keystore, session_id, ciphertext)
+<a href=#132 id=132 data-nosnippet>132</a>            .decrypt(<span class="kw-2">&amp;</span>keystore, session_id, ciphertext)
 <a href=#133 id=133 data-nosnippet>133</a>            .<span class="kw">await
 <a href=#134 id=134 data-nosnippet>134</a>            </span>.map_err(RecursiveError::root(<span class="string">"decrypting proteus message"</span>))
 <a href=#135 id=135 data-nosnippet>135</a>            .map_err(Into::into)
@@ -145,9 +145,9 @@
 <a href=#145 id=145 data-nosnippet>145</a>        };
 <a href=#146 id=146 data-nosnippet>146</a>        <span class="kw">let </span><span class="kw-2">mut </span>guard = core_crypto.proteus.lock().<span class="kw">await</span>;
 <a href=#147 id=147 data-nosnippet>147</a>        <span class="kw">let </span>proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)<span class="question-mark">?</span>;
-<a href=#148 id=148 data-nosnippet>148</a>        <span class="kw">let </span><span class="kw-2">mut </span>keystore = <span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#148 id=148 data-nosnippet>148</a>        <span class="kw">let </span>keystore = <span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#149 id=149 data-nosnippet>149</a>        proteus
-<a href=#150 id=150 data-nosnippet>150</a>            .encrypt(<span class="kw-2">&amp;mut </span>keystore, session_id, plaintext)
+<a href=#150 id=150 data-nosnippet>150</a>            .encrypt(<span class="kw-2">&amp;</span>keystore, session_id, plaintext)
 <a href=#151 id=151 data-nosnippet>151</a>            .<span class="kw">await
 <a href=#152 id=152 data-nosnippet>152</a>            </span>.map_err(RecursiveError::root(<span class="string">"encrypting proteus message"</span>))
 <a href=#153 id=153 data-nosnippet>153</a>            .map_err(Into::into)
@@ -168,9 +168,9 @@
 <a href=#168 id=168 data-nosnippet>168</a>        };
 <a href=#169 id=169 data-nosnippet>169</a>        <span class="kw">let </span><span class="kw-2">mut </span>guard = core_crypto.proteus.lock().<span class="kw">await</span>;
 <a href=#170 id=170 data-nosnippet>170</a>        <span class="kw">let </span>proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)<span class="question-mark">?</span>;
-<a href=#171 id=171 data-nosnippet>171</a>        <span class="kw">let </span><span class="kw-2">mut </span>keystore = <span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#171 id=171 data-nosnippet>171</a>        <span class="kw">let </span>keystore = <span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#172 id=172 data-nosnippet>172</a>        proteus
-<a href=#173 id=173 data-nosnippet>173</a>            .encrypt_batched(<span class="kw-2">&amp;mut </span>keystore, sessions, plaintext)
+<a href=#173 id=173 data-nosnippet>173</a>            .encrypt_batched(<span class="kw-2">&amp;</span>keystore, sessions, plaintext)
 <a href=#174 id=174 data-nosnippet>174</a>            .<span class="kw">await
 <a href=#175 id=175 data-nosnippet>175</a>            </span>.map_err(RecursiveError::root(<span class="string">"batch encrypting proteus message"</span>))
 <a href=#176 id=176 data-nosnippet>176</a>            .map_err(Into::into)

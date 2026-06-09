@@ -78,14 +78,14 @@
 <a href=#78 id=78 data-nosnippet>78</a>        credential_ref: <span class="kw-2">&amp;</span>CredentialRef,
 <a href=#79 id=79 data-nosnippet>79</a>        configuration: ConversationConfiguration,
 <a href=#80 id=80 data-nosnippet>80</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#81 id=81 data-nosnippet>81</a>        <span class="kw">let </span>database = <span class="kw-2">&amp;</span><span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#82 id=82 data-nosnippet>82</a>        <span class="kw">let </span>provider = <span class="kw-2">&amp;</span><span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#81 id=81 data-nosnippet>81</a>        <span class="kw">let </span>database = <span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#82 id=82 data-nosnippet>82</a>        <span class="kw">let </span>provider = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#83 id=83 data-nosnippet>83</a>        <span class="kw">if </span><span class="self">self</span>.conversation_exists(id).<span class="kw">await</span><span class="question-mark">? </span>|| <span class="self">self</span>.pending_conversation_exists(id).<span class="kw">await</span><span class="question-mark">? </span>{
 <a href=#84 id=84 data-nosnippet>84</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(LeafError::ConversationAlreadyExists(id.to_owned()).into());
 <a href=#85 id=85 data-nosnippet>85</a>        }
 <a href=#86 id=86 data-nosnippet>86</a>
 <a href=#87 id=87 data-nosnippet>87</a>        <span class="kw">let </span>credential = credential_ref
-<a href=#88 id=88 data-nosnippet>88</a>            .load(database)
+<a href=#88 id=88 data-nosnippet>88</a>            .load(<span class="kw-2">&amp;*</span>database)
 <a href=#89 id=89 data-nosnippet>89</a>            .<span class="kw">await
 <a href=#90 id=90 data-nosnippet>90</a>            </span>.map_err(RecursiveError::mls_credential_ref(
 <a href=#91 id=91 data-nosnippet>91</a>                <span class="string">"loading credential from database to create new conversation"</span>,
@@ -96,7 +96,7 @@
 <a href=#96 id=96 data-nosnippet>96</a>            .map_err(RecursiveError::mls_conversation(<span class="string">"converting config to openmls default"</span>))<span class="question-mark">?</span>;
 <a href=#97 id=97 data-nosnippet>97</a>
 <a href=#98 id=98 data-nosnippet>98</a>        <span class="kw">let </span>group = MlsGroup::new_with_group_id(
-<a href=#99 id=99 data-nosnippet>99</a>            provider,
+<a href=#99 id=99 data-nosnippet>99</a>            <span class="kw-2">&amp;</span>provider,
 <a href=#100 id=100 data-nosnippet>100</a>            <span class="kw-2">&amp;</span>credential.signature_key_pair,
 <a href=#101 id=101 data-nosnippet>101</a>            <span class="kw-2">&amp;</span>config,
 <a href=#102 id=102 data-nosnippet>102</a>            openmls::prelude::GroupId::from_slice(id.as_ref()),

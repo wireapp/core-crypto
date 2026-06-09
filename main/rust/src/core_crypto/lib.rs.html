@@ -123,7 +123,7 @@
 <a href=#123 id=123 data-nosnippet>123</a>/// `proteus_*` calls
 <a href=#124 id=124 data-nosnippet>124</a></span><span class="attr">#[derive(Debug)]
 <a href=#125 id=125 data-nosnippet>125</a></span><span class="kw">pub struct </span>CoreCrypto {
-<a href=#126 id=126 data-nosnippet>126</a>    database: Database,
+<a href=#126 id=126 data-nosnippet>126</a>    database: Arc&lt;Database&gt;,
 <a href=#127 id=127 data-nosnippet>127</a>    pki_environment: RwLock&lt;<span class="prelude-ty">Option</span>&lt;Arc&lt;PkiEnvironment&gt;&gt;&gt;,
 <a href=#128 id=128 data-nosnippet>128</a>    mls: RwLock&lt;<span class="prelude-ty">Option</span>&lt;mls::session::Session&gt;&gt;,
 <a href=#129 id=129 data-nosnippet>129</a>    <span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
@@ -135,7 +135,7 @@
 <a href=#135 id=135 data-nosnippet>135</a>
 <a href=#136 id=136 data-nosnippet>136</a><span class="kw">impl </span>CoreCrypto {
 <a href=#137 id=137 data-nosnippet>137</a>    <span class="doccomment">/// Create an new CoreCrypto client without any initialized session.
-<a href=#138 id=138 data-nosnippet>138</a>    </span><span class="kw">pub fn </span>new(database: Database) -&gt; Arc&lt;<span class="self">Self</span>&gt; {
+<a href=#138 id=138 data-nosnippet>138</a>    </span><span class="kw">pub fn </span>new(database: Arc&lt;Database&gt;) -&gt; Arc&lt;<span class="self">Self</span>&gt; {
 <a href=#139 id=139 data-nosnippet>139</a>        <span class="self">Self </span>{
 <a href=#140 id=140 data-nosnippet>140</a>            database,
 <a href=#141 id=141 data-nosnippet>141</a>            pki_environment: Default::default(),

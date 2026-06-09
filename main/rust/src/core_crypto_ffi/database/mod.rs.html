@@ -10,7 +10,7 @@
 <a href=#10 id=10 data-nosnippet>10</a>
 <a href=#11 id=11 data-nosnippet>11</a><span class="doccomment">/// The database acting as a core crypto keystore.
 <a href=#12 id=12 data-nosnippet>12</a></span><span class="attr">#[derive(Debug, derive_more::From, derive_more::Into, Clone, derive_more::Deref, uniffi::Object)]
-<a href=#13 id=13 data-nosnippet>13</a></span><span class="kw">pub struct </span>Database(core_crypto_keystore::Database);
+<a href=#13 id=13 data-nosnippet>13</a></span><span class="kw">pub struct </span>Database(Arc&lt;core_crypto_keystore::Database&gt;);
 <a href=#14 id=14 data-nosnippet>14</a>
 <a href=#15 id=15 data-nosnippet>15</a><span class="comment">// Note: no uniffi::export when not using ubrn, because static functions are not supported yet by uniffi version 0.29.
 <a href=#16 id=16 data-nosnippet>16</a></span><span class="attr">#[cfg_attr(any(feature = <span class="string">"wasm"</span>, feature = <span class="string">"napi"</span>), uniffi::export)]
