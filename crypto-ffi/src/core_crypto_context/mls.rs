@@ -137,7 +137,7 @@ impl CoreCryptoContext {
         let conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         let client_ids = conversation
             .get_client_ids()
-            .await
+            .await?
             .into_iter()
             .map(Into::into)
             .map(Arc::new)
