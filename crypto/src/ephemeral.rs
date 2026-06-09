@@ -65,10 +65,8 @@ impl Obfuscate for HistorySecret {
 /// [`Conversation::generate_history_secret`][crate::mls::conversation::Conversation::generate_history_secret].
 /// This implementation lives here instead of there for organizational reasons.
 pub(crate) async fn generate_history_secret(cipher_suite: CipherSuite) -> Result<HistorySecret> {
-    // generate a new completely arbitrary client id
-    let session_id = uuid::Uuid::new_v4();
-    let session_id = format!("{HISTORY_CLIENT_ID_PREFIX}-{session_id}");
-    let session_id = ClientId::from(session_id.into_bytes());
+    // generate a new client id
+    let session_id = ClientId::new_ephemeral();
 
     let database = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
         .await
