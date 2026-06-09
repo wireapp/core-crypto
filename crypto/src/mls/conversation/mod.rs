@@ -133,7 +133,11 @@ mod tests {
                 let client_identity = identities.remove(
                     identities
                         .iter()
-                        .position(|i| i.client_id.as_bytes() == client_id.as_slice())
+                        .position(|i| {
+                            i.client_id
+                                .clone()
+                                .is_some_and(|i_client_id| i_client_id.as_bytes() == client_id.as_slice())
+                        })
                         .unwrap(),
                 );
                 assert_eq!(client_identity.status, *status);
@@ -183,7 +187,7 @@ mod tests {
                     .unwrap();
                 let android_id = android_identities.first().unwrap();
                 assert_eq!(
-                    android_id.client_id.as_bytes(),
+                    android_id.client_id.clone().unwrap().as_bytes(),
                     alice_android.transaction.client_id().await.unwrap().as_bytes()
                 );
 
@@ -195,7 +199,7 @@ mod tests {
                     .unwrap();
                 let ios_id = ios_identities.first().unwrap();
                 assert_eq!(
-                    ios_id.client_id.as_bytes(),
+                    ios_id.client_id.clone().unwrap().as_bytes(),
                     alice_ios.transaction.client_id().await.unwrap().as_bytes()
                 );
 
@@ -277,7 +281,7 @@ mod tests {
                         && matches!(i.status, DeviceStatus::Valid)
                         && i.x509_identity.is_none()
                         && !i.thumbprint.is_empty()
-                        && !i.client_id.is_empty()
+                        && i.client_id.is_some()
                 }));
             })
             .await

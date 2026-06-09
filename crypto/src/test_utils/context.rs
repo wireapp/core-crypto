@@ -9,10 +9,7 @@ use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto};
 use tls_codec::Serialize;
 use wire_e2e_identity::{
     WireIdentityReader,
-    legacy::{
-        device_status::DeviceStatus,
-        id::{QualifiedE2eiClientId, WireQualifiedClientId},
-    },
+    legacy::{device_status::DeviceStatus, id::WireQualifiedClientId},
 };
 use x509_cert::der::Encode;
 
@@ -205,7 +202,7 @@ impl SessionContext {
         display_name: &str,
         signer: &X509Certificate,
     ) -> Arc<Credential> {
-        let cid = QualifiedE2eiClientId::try_from(self.get_client_id().await.as_slice()).unwrap();
+        let cid = self.get_client_id().await;
         let new_cert = CertificateBundle::new(handle, display_name, Some(&cid), None, signer);
         let credential = Credential::x509(case.cipher_suite(), new_cert).unwrap();
         self.transaction.add_credential_producing_arc(credential).await.unwrap()
@@ -213,7 +210,7 @@ impl SessionContext {
 
     pub async fn get_e2ei_client_id(&self) -> wire_e2e_identity::E2eiClientId {
         let cid = self.get_client_id().await;
-        let cid = std::str::from_utf8(&cid.0).unwrap();
+        let cid = std::str::from_utf8(cid.as_bytes()).unwrap();
         wire_e2e_identity::E2eiClientId::try_from_qualified(cid).unwrap()
     }
 
@@ -243,7 +240,8 @@ impl SessionContext {
                 .extract_identity(case.cipher_suite(), pki_env.as_deref())
                 .await
                 .unwrap();
-            let mls_client_id = mls_identity.client_id.as_bytes();
+            let client_id = mls_identity.client_id.clone().unwrap();
+            let client_id_bytes = client_id.as_bytes();
 
             let decrypted_identity = &decrypted.identity;
 
@@ -256,7 +254,10 @@ impl SessionContext {
             let identity = WireIdentity::try_from((identity, leaf.as_slice())).unwrap();
 
             assert_eq!(decrypted_identity.client_id, identity.client_id);
-            assert_eq!(decrypted_identity.client_id.as_bytes(), mls_client_id);
+            assert_eq!(
+                decrypted_identity.client_id.clone().unwrap().as_bytes(),
+                client_id_bytes
+            );
             let decrypted_x509_identity = decrypted_identity.x509_identity.as_ref().unwrap();
             let x509_identity = identity.x509_identity.as_ref().unwrap();
             assert_eq!(&decrypted_x509_identity.handle, x509_identity.handle.as_str());

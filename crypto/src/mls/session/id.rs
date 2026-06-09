@@ -367,17 +367,11 @@ impl From<ClientId> for LegacyClientId {
 }
 #[cfg(test)]
 impl ClientId {
-    pub(crate) fn to_user_id(&self) -> String {
-        let self_bytes: &[u8] = &self.0;
-        wire_e2e_identity::legacy::id::WireQualifiedClientId::try_from(self_bytes)
-            .unwrap()
-            .get_user_id()
+    pub(crate) fn as_user_id(&self) -> Uuid {
+        self.deserialize().user_id
     }
 
-    pub(crate) fn to_string_triple(&self) -> [String; 3] {
-        let cid = wire_e2e_identity::legacy::id::ClientId::from(self.0.clone());
-        let qualified_id = wire_e2e_identity::legacy::id::QualifiedE2eiClientId::from(cid);
-        let id_string: String = qualified_id.try_into().unwrap();
-        [id_string, "".into(), self.to_user_id()]
+    pub(crate) fn with_user(&self) -> (ClientId, Uuid) {
+        (self.clone(), self.as_user_id())
     }
 }
