@@ -165,16 +165,15 @@ impl Credential {
 }
 
 #[cfg(test)]
-fn new_rand_client(domain: Option<String>) -> (String, String) {
+fn new_rand_client(domain: Option<String>) -> (ClientId, String) {
     let rand_str = |n: usize| {
         use rand::distributions::{Alphanumeric, DistString as _};
         Alphanumeric.sample_string(&mut rand::thread_rng(), n)
     };
     let user_id = uuid::Uuid::new_v4().to_string();
     let domain = domain.unwrap_or_else(|| format!("{}.com", rand_str(6)));
-    let client_id = wire_e2e_identity::E2eiClientId::try_new(user_id, rand::random::<u64>(), &domain)
-        .unwrap()
-        .to_qualified();
+    let device_id = format!("{:x}", rand::random::<u64>());
+    let client_id = ClientId::new(&user_id, &device_id, &domain).unwrap();
     (client_id, domain)
 }
 
@@ -206,16 +205,14 @@ impl CertificateBundle {
         let name = rand_str(10);
         let handle = format!("{name}_wire");
         let display_name = format!("{name} Smith");
-        let client_id = wire_e2e_identity::legacy::id::ClientId::from(client_id.clone());
-        let client_id = wire_e2e_identity::legacy::id::QualifiedE2eiClientId::from(client_id);
-        Self::new(&handle, &display_name, Some(&client_id), None, signer)
+        Self::new(&handle, &display_name, Some(client_id), None, signer)
     }
 
     /// Generates a certificate that is later turned into a [Credential]
     pub fn new(
         handle: &str,
         display_name: &str,
-        client_id: Option<&wire_e2e_identity::legacy::id::QualifiedE2eiClientId>,
+        client_id: Option<&ClientId>,
         cert_keypair: Option<PkiKeypair>,
         signer: &crate::test_utils::x509::X509Certificate,
     ) -> Self {
@@ -225,7 +222,7 @@ impl CertificateBundle {
     pub fn new_with_expiration(
         handle: &str,
         display_name: &str,
-        client_id: Option<&wire_e2e_identity::legacy::id::QualifiedE2eiClientId>,
+        client_id: Option<&ClientId>,
         cert_keypair: Option<PkiKeypair>,
         signer: &crate::test_utils::x509::X509Certificate,
         expiration: Option<std::time::Duration>,
@@ -235,17 +232,15 @@ impl CertificateBundle {
         // and not a real client_id, instead we'll generate a random one
         let domain = "world.com";
         let (client_id, domain) = client_id
-            .map(|cid| {
-                let cid = String::from_utf8(cid.to_vec()).unwrap();
-                (cid, domain.to_string())
-            })
+            .cloned()
+            .map(|cid| (cid, domain.to_string()))
             .unwrap_or_else(|| new_rand_client(Some(domain.to_string())));
 
         let mut cert_params = crate::test_utils::x509::CertificateParams {
             domain: domain.into(),
             common_name: Some(display_name.to_string()),
             handle: Some(handle.to_string()),
-            client_id: Some(client_id.to_string()),
+            client_id: Some(client_id),
             cert_keypair,
             ..Default::default()
         };

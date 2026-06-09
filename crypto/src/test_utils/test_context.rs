@@ -153,20 +153,20 @@ impl TestContext {
     }
 
     pub fn x509_client_ids<const N: usize>(&self) -> [ClientId; N] {
-        std::array::from_fn(|_| qualified_e2ei_cid().as_ref().into())
+        std::array::from_fn(|_| qualified_e2ei_cid())
     }
 
     pub fn basic_client_ids<const N: usize>(&self) -> [ClientId; N] {
         fn generate() -> ClientId {
-            let user_id = uuid::Uuid::new_v4();
+            let user_id = uuid::Uuid::new_v4().hyphenated().to_string();
             let device_id = rand::random::<u64>();
-            format!("{user_id}:{device_id:x}@wire.com").into_bytes().into()
+            ClientId::new(&user_id, &format!("{device_id:x}"), "wire.com").unwrap()
         }
         std::array::from_fn(|_| generate())
     }
 
     pub fn x509_client_ids_for_user<const N: usize>(&self, user: &uuid::Uuid) -> [ClientId; N] {
-        std::array::from_fn(|_| qualified_e2ei_cid_from_user_id(user).as_ref().into())
+        std::array::from_fn(|_| qualified_e2ei_cid_from_user_id(user))
     }
 
     async fn test_chain(
@@ -175,18 +175,14 @@ impl TestContext {
         revoked_display_names: &[String],
         cert_params: Option<CertificateParams>,
     ) -> X509TestChain {
-        let string_triples = client_ids.iter().map(|id| id.to_string_triple()).collect::<Vec<_>>();
-        let str_triples = string_triples
-            .iter()
-            .map(|triple| std::array::from_fn(|i| triple[i].as_str()))
-            .collect::<Vec<_>>();
+        let client_ids_with_user_ids = client_ids.iter().map(|id| id.with_user()).collect::<Vec<_>>();
         let revoked_display_names = revoked_display_names
             .iter()
             .map(|name| name.as_str())
             .collect::<Vec<&str>>();
         let chain = init_x509_test_chain(
             self,
-            &str_triples,
+            &client_ids_with_user_ids,
             &revoked_display_names,
             cert_params.unwrap_or_default(),
         );

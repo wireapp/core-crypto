@@ -398,9 +398,7 @@ mod tests {
             let name = "alice";
             let common_name = format!("{name} Smith");
             let handle = format!("{}_wire", name.to_lowercase());
-            let client_id: String = crate::test_utils::x509::qualified_e2ei_cid_with_domain("wire.com")
-                .try_into()
-                .unwrap();
+            let client_id = crate::test_utils::x509::qualified_e2ei_cid_with_domain("wire.com");
             local_ca.create_and_sign_end_identity(CertificateParams {
                 common_name: Some(common_name.clone()),
                 handle: Some(handle.clone()),

@@ -330,7 +330,7 @@ impl<'a> TestConversation<'a> {
             .group()
             .await
             .members()
-            .find(|k| k.credential.identity() == client_id.0.as_slice())
+            .find(|k| k.credential.identity() == client_id.as_bytes())
             .unwrap()
             .encryption_key
     }
@@ -349,7 +349,7 @@ impl<'a> TestConversation<'a> {
         let guard = self.guard().await;
         let group_identities = guard.get_device_identities(std::slice::from_ref(&cid)).await.unwrap();
         let group_identity = group_identities.first().unwrap();
-        assert_eq!(group_identity.client_id.as_bytes(), cid.0.as_slice());
+        assert_eq!(group_identity.client_id.clone().unwrap().as_bytes(), cid.as_bytes());
         assert_eq!(
             group_identity.x509_identity.as_ref().unwrap().display_name,
             new_display_name
@@ -370,7 +370,7 @@ impl<'a> TestConversation<'a> {
             .await
             .unwrap();
 
-        assert_eq!(&local_identity.client_id.as_bytes(), &cid.0);
+        assert_eq!(&local_identity.client_id.unwrap().as_bytes(), &cid.as_bytes());
         assert_eq!(
             local_identity.x509_identity.as_ref().unwrap().display_name,
             new_display_name
@@ -386,7 +386,7 @@ impl<'a> TestConversation<'a> {
             signature_key,
         };
 
-        assert_eq!(credential.credential.identity(), &cid.0);
+        assert_eq!(credential.credential.identity(), cid.as_bytes());
         let keystore_identity = credential
             .extract_identity(cipher_suite, pki_env.as_deref())
             .await

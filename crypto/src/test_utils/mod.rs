@@ -20,6 +20,7 @@ use async_lock::RwLock;
 use openmls::framing::MlsMessageOut;
 use openmls_traits::OpenMlsCryptoProvider as _;
 pub use openmls_traits::types::SignatureScheme;
+use uuid::Uuid;
 use wire_e2e_identity::pki_env::PkiEnvironment;
 
 use self::error::Result;
@@ -29,9 +30,7 @@ use crate::{
     CertificateBundle, ClientId, CommitBundle, ConnectionType, ConversationId, CoreCrypto, Credential, CredentialRef,
     Database, DatabaseKey, Error, GroupInfoBundle, MlsTransport, RecursiveError, Session, TransportData,
     mls::HistoryObserver,
-    test_utils::x509::{
-        CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs, qualified_e2ei_cid_with_domain,
-    },
+    test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     transaction_context::TransactionContext,
 };
 pub use crate::{ClientIdentifier, CredentialType};
@@ -287,9 +286,14 @@ impl SessionContext {
         case: &crate::test_utils::TestContext,
         signer: Option<&crate::test_utils::x509::X509Certificate>,
     ) -> Result<()> {
-        let user_uuid = uuid::Uuid::new_v4();
-        let rnd_id = rand::random::<usize>();
-        let session_id = ClientId(format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated()).into_bytes());
+        let user_id = uuid::Uuid::new_v4();
+        let device_id = rand::random::<usize>();
+        let session_id = ClientId::new(
+            &user_id.hyphenated().to_string(),
+            &format!("{device_id:x}"),
+            "members.wire.com",
+        )
+        .map_err(RecursiveError::mls_client("new random session id"))?;
 
         let (session_id, credential) = match case.credential_type {
             CredentialType::Basic => {
@@ -331,7 +335,7 @@ impl SessionContext {
 
 fn init_x509_test_chain(
     case: &TestContext,
-    client_ids: &[[&str; 3]],
+    client_ids: &[(ClientId, Uuid)],
     revoked_display_names: &[&str],
     cert_params: CertificateParams,
 ) -> X509TestChain {
@@ -352,21 +356,11 @@ fn init_x509_test_chain(
 
     let local_actors = client_ids
         .iter()
-        .map(|[client_id, handle, display_name]| X509TestChainActorArg {
+        .map(|(client_id, display_name)| X509TestChainActorArg {
             name: display_name.to_string(),
-            handle: if handle.is_empty() {
-                format!("{display_name}_wire")
-            } else {
-                handle.to_string()
-            },
-            client_id: if client_id.is_empty() {
-                qualified_e2ei_cid_with_domain(local_ca_params.domain.as_ref().unwrap())
-                    .try_into()
-                    .unwrap()
-            } else {
-                client_id.to_string()
-            },
-            is_revoked: revoked_display_names.contains(display_name),
+            handle: format!("{display_name}_wire"),
+            client_id: client_id.clone(),
+            is_revoked: revoked_display_names.contains(&display_name.hyphenated().to_string().as_str()),
         })
         .collect();
 

@@ -1,11 +1,10 @@
 use std::{fmt::Display, time::Duration};
 
 use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
-use wire_e2e_identity::legacy::id::QualifiedE2eiClientId;
 use x509_cert::der::EncodePem;
 
 use crate::{
-    CertificateBundle,
+    CertificateBundle, ClientId,
     mls::session::identifier::ClientIdentifier,
     mls_provider::{CRYPTO, CertProfile, CertificateGenerationArgs, PkiKeypair},
     transaction_context::TransactionContext,
@@ -14,26 +13,21 @@ use crate::{
 const DOMAIN: &str = "wire.com";
 const DEFAULT_CRL_DOMAIN: &str = "localhost";
 
-pub(crate) fn qualified_e2ei_cid() -> QualifiedE2eiClientId {
+pub(crate) fn qualified_e2ei_cid() -> ClientId {
     qualified_e2ei_cid_from_user_id(&uuid::Uuid::new_v4())
 }
 
-pub(crate) fn qualified_e2ei_cid_with_domain(domain: &str) -> QualifiedE2eiClientId {
+pub(crate) fn qualified_e2ei_cid_with_domain(domain: &str) -> ClientId {
     qualified_e2ei_cid_from_user_id_and_domain(&uuid::Uuid::new_v4(), domain)
 }
 
-pub(crate) fn qualified_e2ei_cid_from_user_id(user_id: &uuid::Uuid) -> QualifiedE2eiClientId {
+pub(crate) fn qualified_e2ei_cid_from_user_id(user_id: &uuid::Uuid) -> ClientId {
     qualified_e2ei_cid_from_user_id_and_domain(user_id, DOMAIN)
 }
 
-pub(crate) fn qualified_e2ei_cid_from_user_id_and_domain(user_id: &uuid::Uuid, domain: &str) -> QualifiedE2eiClientId {
-    use base64::Engine as _;
-
-    let user_id = base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(user_id.as_bytes());
-
+pub(crate) fn qualified_e2ei_cid_from_user_id_and_domain(user_id: &uuid::Uuid, domain: &str) -> ClientId {
     let device_id = rand::random::<u64>();
-    let client_id = format!("{user_id}:{device_id:x}@{domain}");
-    QualifiedE2eiClientId::from(wire_e2e_identity::legacy::id::ClientId::from(client_id.into_bytes()))
+    ClientId::new(&user_id.hyphenated().to_string(), &format!("{device_id:x}"), domain).unwrap()
 }
 
 /// Params for generating the Certificate chain
@@ -42,7 +36,7 @@ pub struct CertificateParams {
     pub org: String,
     pub common_name: Option<String>,
     pub handle: Option<String>,
-    pub client_id: Option<String>,
+    pub client_id: Option<ClientId>,
     pub domain: Option<String>,
     pub cert_keypair: Option<PkiKeypair>,
     /// When the certificate becomes valid - UNIX timestamp
@@ -83,7 +77,7 @@ impl CertificateParams {
 pub struct X509TestChainActor {
     pub name: String,
     pub handle: String,
-    pub client_id: String,
+    pub client_id: ClientId,
     pub is_revoked: bool,
     pub certificate: X509Certificate,
 }
@@ -92,7 +86,7 @@ pub struct X509TestChainActor {
 pub struct X509TestChainActorArg {
     pub name: String,
     pub handle: String,
-    pub client_id: String,
+    pub client_id: ClientId,
     pub is_revoked: bool,
 }
 
@@ -308,7 +302,7 @@ impl X509TestChain {
 
         let common_name = format!("{name} Smith");
         let handle = format!("{}_wire", name.to_lowercase());
-        let client_id: String = qualified_e2ei_cid_with_domain("world.com").try_into().unwrap();
+        let client_id = qualified_e2ei_cid_with_domain("world.com");
         let mut cert_params = CertificateParams {
             common_name: Some(common_name.clone()),
             handle: Some(handle.clone()),
@@ -459,9 +453,7 @@ impl X509Certificate {
         }
 
         if let Some(client_id) = &params.client_id {
-            let qualified_client_id = wire_e2e_identity::E2eiClientId::try_from_qualified(client_id)
-                .unwrap()
-                .to_uri();
+            let qualified_client_id = client_id.as_e2ei_client_id().to_uri();
 
             alternative_names.push(qualified_client_id);
         }
