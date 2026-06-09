@@ -1,11 +1,13 @@
 use std::sync::{Arc, LazyLock, RwLock, RwLockWriteGuard};
 
+#[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
 use aes_gcm::{
     Aes128Gcm, Aes256Gcm, KeyInit,
     aead::{Aead, Nonce, Payload},
 };
+#[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
 use chacha20poly1305::ChaCha20Poly1305;
-use elliptic_curve::{Generate as _, sec1};
+use elliptic_curve::Generate as _;
 use hkdf::Hkdf;
 use openmls::prelude::HpkeCiphertext;
 use openmls_traits::{
@@ -18,7 +20,7 @@ use openmls_traits::{
 };
 use rand::Rng as _;
 use rand_core::SeedableRng as _;
-use sha2::{Digest, Sha256, Sha384, Sha512};
+use sha2::{Sha256, Sha384, Sha512};
 use tls_codec::SecretVLBytes;
 
 use super::{EntropySeed, Error, RawEntropySeed};
@@ -281,7 +283,9 @@ impl OpenMlsCrypto for RustCrypto {
         }
     }
 
+    #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
     fn hash(&self, hash_type: HashType, data: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        use sha2::Digest as _;
         match hash_type {
             HashType::Sha2_256 => Ok(Sha256::digest(data).as_slice().into()),
             HashType::Sha2_384 => Ok(Sha384::digest(data).as_slice().into()),
@@ -289,6 +293,17 @@ impl OpenMlsCrypto for RustCrypto {
         }
     }
 
+    #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+    fn hash(&self, hash_type: HashType, data: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        use graviola::hashing::{Hash as _, Sha256, Sha384, Sha512};
+        match hash_type {
+            HashType::Sha2_256 => Ok(Sha256::hash(data).as_ref().to_vec()),
+            HashType::Sha2_384 => Ok(Sha384::hash(data).as_ref().to_vec()),
+            HashType::Sha2_512 => Ok(Sha512::hash(data).as_ref().to_vec()),
+        }
+    }
+
+    #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
     fn aead_encrypt(
         &self,
         alg: AeadType,
@@ -327,6 +342,49 @@ impl OpenMlsCrypto for RustCrypto {
         }
     }
 
+    // graviola encrypts in place and writes the authentication tag to a separate buffer, but
+    // openmls expects the tag appended to the ciphertext.
+    // The key-length guards match the error behaviour of the rustcrypto path, since graviola's
+    // `AesGcm::new` panics on an invalid length.
+    #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+    fn aead_encrypt(
+        &self,
+        alg: AeadType,
+        key: &[u8],
+        data: &[u8],
+        nonce: &[u8],
+        aad: &[u8],
+    ) -> Result<Vec<u8>, CryptoError> {
+        use graviola::aead::{AesGcm, ChaCha20Poly1305};
+
+        let nonce: &[u8; 12] = nonce.try_into().map_err(|_| CryptoError::CryptoLibraryError)?;
+        let mut buf = data.to_vec();
+        let mut tag = [0u8; 16];
+
+        match alg {
+            AeadType::Aes128Gcm => {
+                if key.len() != 16 {
+                    return Err(CryptoError::CryptoLibraryError);
+                }
+                AesGcm::new(key).encrypt(nonce, aad, &mut buf, &mut tag);
+            }
+            AeadType::Aes256Gcm => {
+                if key.len() != 32 {
+                    return Err(CryptoError::CryptoLibraryError);
+                }
+                AesGcm::new(key).encrypt(nonce, aad, &mut buf, &mut tag);
+            }
+            AeadType::ChaCha20Poly1305 => {
+                let key: [u8; 32] = key.try_into().map_err(|_| CryptoError::CryptoLibraryError)?;
+                ChaCha20Poly1305::new(key).encrypt(nonce, aad, &mut buf, &mut tag);
+            }
+        }
+
+        buf.extend_from_slice(&tag);
+        Ok(buf)
+    }
+
+    #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
     fn aead_decrypt(
         &self,
         alg: AeadType,
@@ -360,6 +418,56 @@ impl OpenMlsCrypto for RustCrypto {
                     .map_err(|_| CryptoError::AeadDecryptionError)
             }
         }
+    }
+
+    // `openmls` supplies the ciphertext with the authentication tag appended, which we split off
+    // before handing the ciphertext to graviola's in-place decryption. See [`Self::aead_encrypt`].
+    #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+    fn aead_decrypt(
+        &self,
+        alg: AeadType,
+        key: &[u8],
+        ct_tag: &[u8],
+        nonce: &[u8],
+        aad: &[u8],
+    ) -> Result<Vec<u8>, CryptoError> {
+        use graviola::aead::{AesGcm, ChaCha20Poly1305};
+
+        let nonce: &[u8; 12] = nonce.try_into().map_err(|_| CryptoError::CryptoLibraryError)?;
+
+        // The trailing 16 bytes are the authentication tag.
+        if ct_tag.len() < 16 {
+            return Err(CryptoError::AeadDecryptionError);
+        }
+        let (ciphertext, tag) = ct_tag.split_at(ct_tag.len() - 16);
+        let mut buf = ciphertext.to_vec();
+
+        match alg {
+            AeadType::Aes128Gcm => {
+                if key.len() != 16 {
+                    return Err(CryptoError::CryptoLibraryError);
+                }
+                AesGcm::new(key)
+                    .decrypt(nonce, aad, &mut buf, tag)
+                    .map_err(|_| CryptoError::AeadDecryptionError)?;
+            }
+            AeadType::Aes256Gcm => {
+                if key.len() != 32 {
+                    return Err(CryptoError::CryptoLibraryError);
+                }
+                AesGcm::new(key)
+                    .decrypt(nonce, aad, &mut buf, tag)
+                    .map_err(|_| CryptoError::AeadDecryptionError)?;
+            }
+            AeadType::ChaCha20Poly1305 => {
+                let key: [u8; 32] = key.try_into().map_err(|_| CryptoError::CryptoLibraryError)?;
+                ChaCha20Poly1305::new(key)
+                    .decrypt(nonce, aad, &mut buf, tag)
+                    .map_err(|_| CryptoError::AeadDecryptionError)?;
+            }
+        }
+
+        Ok(buf)
     }
 
     /// Generate a `(secret key, public key)` pair from a signature scheme.
@@ -415,8 +523,7 @@ impl OpenMlsCrypto for RustCrypto {
                 // scalar ourselves and reject the (negligibly rare) out-of-range or zero values.
                 let sk = loop {
                     let mut scalar = [0u8; 32];
-                    rng.try_fill_bytes(&mut scalar)
-                        .map_err(|_| CryptoError::InsufficientRandomness)?;
+                    rng.fill_bytes(&mut scalar);
                     if let Ok(sk) = key_agreement::p256::StaticPrivateKey::from_bytes(&scalar) {
                         break sk;
                     }
@@ -426,8 +533,7 @@ impl OpenMlsCrypto for RustCrypto {
             SignatureScheme::ECDSA_SECP384R1_SHA384 => {
                 let sk = loop {
                     let mut scalar = [0u8; 48];
-                    rng.try_fill_bytes(&mut scalar)
-                        .map_err(|_| CryptoError::InsufficientRandomness)?;
+                    rng.fill_bytes(&mut scalar);
                     if let Ok(sk) = key_agreement::p384::StaticPrivateKey::from_bytes(&scalar) {
                         break sk;
                     }
@@ -435,9 +541,9 @@ impl OpenMlsCrypto for RustCrypto {
                 Ok((sk.as_bytes().to_vec(), sk.public_key_uncompressed().to_vec()))
             }
             SignatureScheme::ECDSA_SECP521R1_SHA512 => {
-                let sk = p521::ecdsa::SigningKey::random(&mut *rng);
+                let sk = p521::ecdsa::SigningKey::generate_from_rng(&mut *rng);
                 let pk = p521::ecdsa::VerifyingKey::from(&sk)
-                    .to_encoded_point(false)
+                    .to_sec1_point(false)
                     .to_bytes()
                     .into();
                 Ok((sk.to_bytes().to_vec(), pk))
@@ -445,8 +551,7 @@ impl OpenMlsCrypto for RustCrypto {
             SignatureScheme::ED25519 => {
                 // Any 32 bytes are a valid Ed25519 seed, so no rejection sampling is needed.
                 let mut seed = [0u8; 32];
-                rng.try_fill_bytes(&mut seed)
-                    .map_err(|_| CryptoError::InsufficientRandomness)?;
+                rng.fill_bytes(&mut seed);
                 let sk = Ed25519SigningKey::from_bytes(&seed).map_err(|_| CryptoError::CryptoLibraryError)?;
                 Ok((sk.as_seed().to_vec(), sk.public_key().as_bytes().to_vec()))
             }

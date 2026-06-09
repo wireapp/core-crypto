@@ -90,6 +90,10 @@ p256 = { workspace = true, features = ["pkcs8"] }
 p384 = { workspace = true, features = ["pkcs8"] }
 
 [dev-dependencies]
+# test-only PKI generation (`test_utils::x509::pki`) signs with rustcrypto on every architecture
+ed25519-dalek = { workspace = true, features = ["pkcs8"] }
+p256 = { workspace = true, features = ["pkcs8"] }
+p384 = { workspace = true, features = ["pkcs8"] }
 itertools.workspace = true
 uuid = { workspace = true, features = ["v4", "js"] }
 tempfile.workspace = true
