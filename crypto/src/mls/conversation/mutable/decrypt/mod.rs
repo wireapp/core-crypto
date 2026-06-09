@@ -191,7 +191,12 @@ impl ConversationMut {
             .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
-        let sender_client_id: ClientId = credential.credential.identity().to_owned().into();
+        let sender_client_id = credential
+            .credential
+            .identity()
+            .try_into()
+            .inspect_err(|e| log::info!("sender client id couldn't be parsed into the expected format: {e:?}"))
+            .ok();
 
         let decrypted = match message.into_content() {
             ProcessedMessageContent::ApplicationMessage(app_msg) => {
@@ -207,7 +212,7 @@ impl ConversationMut {
                     app_msg: Some(app_msg.into_bytes()),
                     is_active: true,
                     delay: None,
-                    sender_client_id: Some(sender_client_id),
+                    sender_client_id,
                     identity,
                     buffered_messages: None,
                 }
