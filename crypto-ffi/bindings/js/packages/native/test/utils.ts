@@ -110,7 +110,7 @@ export async function setup() {
 /**
  * Open a database that gets wiped after tests run.
  */
-async function openTestDatabase(databaseName?: string) {
+export async function newDatabase(databaseName?: string) {
     const keyBytes = new Uint8Array(32);
     crypto.getRandomValues(keyBytes);
     const key = new DatabaseKey(keyBytes);
@@ -168,7 +168,7 @@ export async function ccInit(
 ): Promise<CoreCrypto> {
     const clientId = options.clientId ?? randomClientId();
 
-    const database = options.database ?? (await openTestDatabase());
+    const database = options.database ?? (await newDatabase());
 
     const cc = CoreCrypto.new(database);
 
@@ -333,7 +333,7 @@ export async function proteusInit(
     clientName: string,
     databaseName?: string
 ): Promise<CoreCrypto> {
-    const database = await openTestDatabase(databaseName ?? clientName);
+    const database = await newDatabase(databaseName ?? clientName);
 
     const instance = CoreCrypto.new(database);
     await instance.transaction(async (ctx) => {
