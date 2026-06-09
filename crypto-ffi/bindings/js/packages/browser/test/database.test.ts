@@ -87,11 +87,6 @@ describe("database", () => {
             const cipherSuite = window.defaultCipherSuite;
             const databaseName = crypto.randomUUID();
 
-            const makeClientId = () => {
-                const array = new Uint8Array([1, 2]);
-                return new window.ccModule.ClientId(array);
-            };
-
             const keyBytes = new Uint8Array(32);
             window.crypto.getRandomValues(keyBytes);
             const key = new window.ccModule.DatabaseKey(keyBytes);
@@ -102,9 +97,9 @@ describe("database", () => {
             );
 
             let cc = window.ccModule.CoreCrypto.new(database);
-            const clientId = makeClientId();
+            const clientId = window.helpers.newClientId();
             await cc.transaction(async (ctx) => {
-                await ctx.mlsInit(makeClientId(), window.deliveryService);
+                await ctx.mlsInit(clientId, window.deliveryService);
                 await ctx.addCredential(
                     window.ccModule.Credential.basic(cipherSuite, clientId)
                 );
@@ -208,9 +203,7 @@ describe("database", () => {
             const instance = window.ccModule.CoreCrypto.new(database);
             const epoch = await instance.transaction(async (ctx) => {
                 // note that `conversationEpoch` is a MLS operation so we must at some point initialize MLS
-                const clientId = new window.ccModule.ClientId(
-                    encoder.encode("alice")
-                );
+                const clientId = window.helpers.newClientId();
                 await ctx.mlsInit(clientId, window.deliveryService);
                 return await ctx.conversationEpoch(
                     new window.ccModule.ConversationId(encoder.encode("convId"))

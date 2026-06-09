@@ -166,8 +166,12 @@ export function randomConversationId(): ConversationId {
 }
 
 export function randomClientId(): ClientId {
-    const uuid = crypto.randomUUID();
-    return new ClientId(Uint8Array.from(uuid));
+    const userId = crypto.randomUUID();
+    const deviceIdBytes = crypto.getRandomValues(new Uint8Array(8));
+    const deviceId = [...deviceIdBytes]
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join("");
+    return new ClientId(userId, deviceId, "wire.com");
 }
 
 /**
