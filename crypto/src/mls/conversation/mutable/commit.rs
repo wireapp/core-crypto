@@ -174,7 +174,7 @@ impl ConversationMut {
     pub async fn set_credential_by_ref(&mut self, credential_ref: &CredentialRef) -> Result<()> {
         let database = self.database().await?;
         let credential = credential_ref
-            .load(&database)
+            .load(&*database)
             .await
             .map_err(RecursiveError::mls_credential_ref("loading credential from ref"))?;
         let commit = self.set_credential_inner(&credential).await?;

@@ -30,9 +30,9 @@ impl TransactionContext {
         lifetime: Option<Duration>,
     ) -> Result<Keypackage> {
         let lifetime = Lifetime::new(lifetime.unwrap_or(KEYPACKAGE_DEFAULT_LIFETIME).as_secs());
-        let database = &self.database().await?;
+        let database = self.database().await?;
         let credential = credential_ref
-            .load(database)
+            .load(&*database)
             .await
             .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
         let config = CryptoConfig {
@@ -104,9 +104,9 @@ impl TransactionContext {
     /// if removing one returns an error. In that case, only the first produced error is returned.
     /// This helps ensure that as many keypackages for the given credential ref are removed as possible.
     pub async fn remove_key_packages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
-        let database = &self.database().await?;
+        let database = self.database().await?;
         let credential = credential_ref
-            .load(database)
+            .load(&*database)
             .await
             .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
         let signature_public_key = credential.signature_key_pair.public();

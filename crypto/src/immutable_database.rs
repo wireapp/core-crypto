@@ -1,4 +1,4 @@
-use std::borrow::Borrow;
+use std::{borrow::Borrow, sync::Arc};
 
 use async_trait::async_trait;
 use core_crypto_keystore::{
@@ -15,7 +15,7 @@ use core_crypto_keystore::{
 /// [`TransactionContext`][crate::transaction_context::TransactionContext]
 /// can still access the mutable variant on request.
 #[derive(Debug, Clone, derive_more::From)]
-pub struct ImmutableDatabase(Database);
+pub struct ImmutableDatabase(Arc<Database>);
 
 #[cfg_attr(not(target_os = "unknown"), async_trait)]
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]

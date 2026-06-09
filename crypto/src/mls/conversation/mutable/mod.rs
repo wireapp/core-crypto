@@ -45,7 +45,7 @@ impl ConversationMut {
             .map_err(Into::into)
     }
 
-    async fn database(&self) -> Result<Database> {
+    async fn database(&self) -> Result<Arc<Database>> {
         self.tx_context
             .database()
             .await

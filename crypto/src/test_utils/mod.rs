@@ -99,7 +99,7 @@ pub struct SessionContext {
     core_crypto: Arc<CoreCrypto>,
     // We need to store the `TempDir` struct for the duration of the test session,
     // because its drop implementation takes care of the directory deletion.
-    _db: Option<(Database, Arc<tempfile::TempDir>)>,
+    _db: Option<(Arc<Database>, Arc<tempfile::TempDir>)>,
 }
 
 impl SessionContext {
@@ -216,7 +216,7 @@ impl SessionContext {
         self.x509_chain().expect("No x509 test chain setup")
     }
 
-    pub async fn database(&self) -> Database {
+    pub async fn database(&self) -> Arc<Database> {
         self.transaction
             .database()
             .await

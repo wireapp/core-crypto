@@ -104,7 +104,7 @@ mod tests {
         let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 
         let key = DatabaseKey::generate();
-        let mut keystore = core_crypto_keystore::Database::open(ConnectionType::Persistent(&path), &key)
+        let keystore = core_crypto_keystore::Database::open(ConnectionType::Persistent(&path), &key)
             .await
             .unwrap();
         keystore.new_transaction().await.unwrap();
@@ -119,13 +119,13 @@ mod tests {
         let encrypted = bob.encrypt(&session_id, message);
 
         let (_, decrypted) = alice
-            .session_from_message(&mut keystore, &session_id, &encrypted)
+            .session_from_message(&keystore, &session_id, &encrypted)
             .await
             .unwrap();
 
         assert_eq!(message, decrypted.as_slice());
 
-        let encrypted = alice.encrypt(&mut keystore, &session_id, message).await.unwrap();
+        let encrypted = alice.encrypt(&keystore, &session_id, message).await.unwrap();
         let decrypted = bob.decrypt(&session_id, &encrypted).await;
 
         assert_eq!(message, decrypted.as_slice());

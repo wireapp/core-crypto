@@ -19,7 +19,7 @@ impl TransactionContext {
         mut credential: Credential,
     ) -> Result<Arc<Credential>> {
         let _credential_ref = credential
-            .save(&self.database().await?)
+            .save(&*self.database().await?)
             .await
             .map_err(RecursiveError::mls_credential("saving credential"))?;
 
@@ -57,7 +57,7 @@ impl TransactionContext {
         let database = self.database().await?;
 
         let credential = credential_ref
-            .load(&database)
+            .load(&*database)
             .await
             .map_err(RecursiveError::mls_credential_ref(
                 "loading all credentials from ref to remove from session identities",

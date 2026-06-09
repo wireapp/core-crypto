@@ -2,6 +2,8 @@
 //! (most of the time renewed external proposals) for the new epoch whereas it does not yet have
 //! the confirmation from the DS that the external join commit has been accepted.
 
+use std::sync::Arc;
+
 use core_crypto_keystore::{
     CryptoKeystoreMls as _,
     entities::{MlsPendingMessage, PersistedMlsPendingGroup},
@@ -63,7 +65,7 @@ impl PendingConversation {
             .map_err(Into::into)
     }
 
-    async fn keystore(&self) -> Result<Database> {
+    async fn keystore(&self) -> Result<Arc<Database>> {
         self.context
             .database()
             .await

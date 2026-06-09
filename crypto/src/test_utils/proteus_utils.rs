@@ -53,15 +53,12 @@ impl CryptoboxLike {
     pub async fn decrypt(&mut self, session_id: &str, ciphertext: &[u8]) -> Vec<u8> {
         let envelope = proteus_wasm::message::Envelope::deserialise(ciphertext).unwrap();
         match self.sessions.get_mut(session_id) {
-            Some(session) => session.decrypt(&mut self.prekeys, &envelope).await.unwrap(),
+            Some(session) => session.decrypt(&self.prekeys, &envelope).await.unwrap(),
             None => {
-                let (session, message) = proteus_wasm::session::Session::init_from_message(
-                    self.identity.clone(),
-                    &mut self.prekeys,
-                    &envelope,
-                )
-                .await
-                .unwrap();
+                let (session, message) =
+                    proteus_wasm::session::Session::init_from_message(self.identity.clone(), &self.prekeys, &envelope)
+                        .await
+                        .unwrap();
 
                 self.sessions.insert(session_id.to_string(), session);
 

@@ -20,7 +20,7 @@ impl TransactionContext {
         let database = self.database().await?;
         let env = self.pki_environment().await?;
 
-        let credentials = Credential::get_all(&database)
+        let credentials = Credential::get_all(&*database)
             .await
             .map_err(RecursiveError::mls_credential("getting all credentials"))?;
         let trust_anchors = env.get_trust_anchors().await;

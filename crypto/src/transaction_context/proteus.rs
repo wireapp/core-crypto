@@ -56,9 +56,9 @@ impl TransactionContext {
         };
         let mut guard = core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let mut keystore = self.database().await?;
+        let keystore = self.database().await?;
         let (session, message) = proteus
-            .session_from_message(&mut keystore, session_id, envelope)
+            .session_from_message(&keystore, session_id, envelope)
             .await
             .map_err(RecursiveError::root("creating proteus sesseion from message"))?;
         ProteusCentral::session_save_by_ref(&keystore, session)
@@ -127,9 +127,9 @@ impl TransactionContext {
         };
         let mut guard = core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let mut keystore = self.database().await?;
+        let keystore = self.database().await?;
         proteus
-            .decrypt(&mut keystore, session_id, ciphertext)
+            .decrypt(&keystore, session_id, ciphertext)
             .await
             .map_err(RecursiveError::root("decrypting proteus message"))
             .map_err(Into::into)
@@ -145,9 +145,9 @@ impl TransactionContext {
         };
         let mut guard = core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let mut keystore = self.database().await?;
+        let keystore = self.database().await?;
         proteus
-            .encrypt(&mut keystore, session_id, plaintext)
+            .encrypt(&keystore, session_id, plaintext)
             .await
             .map_err(RecursiveError::root("encrypting proteus message"))
             .map_err(Into::into)
@@ -168,9 +168,9 @@ impl TransactionContext {
         };
         let mut guard = core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let mut keystore = self.database().await?;
+        let keystore = self.database().await?;
         proteus
-            .encrypt_batched(&mut keystore, sessions, plaintext)
+            .encrypt_batched(&keystore, sessions, plaintext)
             .await
             .map_err(RecursiveError::root("batch encrypting proteus message"))
             .map_err(Into::into)

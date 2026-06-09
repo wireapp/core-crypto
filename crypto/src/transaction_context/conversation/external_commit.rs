@@ -65,9 +65,9 @@ impl TransactionContext {
     ) -> Result<(CommitBundle, ConversationId, PendingConversation)> {
         let cipher_suite = group_info.ciphersuite().into();
         let mls_provider = self.crypto_provider().await?;
-        let database = &self.database().await?;
+        let database = self.database().await?;
         let credential = credential_ref
-            .load(database)
+            .load(&*database)
             .await
             .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
 

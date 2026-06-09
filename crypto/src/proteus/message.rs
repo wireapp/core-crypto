@@ -10,7 +10,7 @@ impl ProteusCentral {
     /// Note: This cannot be used for handshake messages, see [ProteusCentral::session_from_message]
     pub(crate) async fn decrypt(
         &mut self,
-        keystore: &mut Database,
+        keystore: &Database,
         session_id: &str,
         ciphertext: &[u8],
     ) -> Result<Vec<u8>> {
@@ -28,12 +28,7 @@ impl ProteusCentral {
     }
 
     /// Encrypt a message for a session
-    pub(crate) async fn encrypt(
-        &mut self,
-        keystore: &mut Database,
-        session_id: &str,
-        plaintext: &[u8],
-    ) -> Result<Vec<u8>> {
+    pub(crate) async fn encrypt(&mut self, keystore: &Database, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
         let session = self
             .session(session_id, keystore)
             .await?
@@ -50,7 +45,7 @@ impl ProteusCentral {
     /// This is mainly used for conversations with multiple clients, this allows to minimize FFI roundtrips
     pub(crate) async fn encrypt_batched(
         &mut self,
-        keystore: &mut Database,
+        keystore: &Database,
         sessions: &[impl AsRef<str>],
         plaintext: &[u8],
     ) -> Result<HashMap<String, Vec<u8>>> {
@@ -86,7 +81,7 @@ mod tests {
         let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 
         let key = DatabaseKey::generate();
-        let mut keystore = core_crypto_keystore::Database::open(ConnectionType::Persistent(&path), &key)
+        let keystore = core_crypto_keystore::Database::open(ConnectionType::Persistent(&path), &key)
             .await
             .unwrap();
         keystore.new_transaction().await.unwrap();
@@ -103,12 +98,12 @@ mod tests {
 
         let message = b"Hello world";
 
-        let encrypted = alice.encrypt(&mut keystore, &session_id, message).await.unwrap();
+        let encrypted = alice.encrypt(&keystore, &session_id, message).await.unwrap();
         let decrypted = bob.decrypt(&session_id, &encrypted).await;
         assert_eq!(decrypted, message);
 
         let encrypted = bob.encrypt(&session_id, message);
-        let decrypted = alice.decrypt(&mut keystore, &session_id, &encrypted).await.unwrap();
+        let decrypted = alice.decrypt(&keystore, &session_id, &encrypted).await.unwrap();
         assert_eq!(decrypted, message);
 
         keystore.commit_transaction().await.unwrap();

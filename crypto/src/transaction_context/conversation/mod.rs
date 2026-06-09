@@ -78,14 +78,14 @@ impl TransactionContext {
         credential_ref: &CredentialRef,
         configuration: ConversationConfiguration,
     ) -> Result<()> {
-        let database = &self.database().await?;
-        let provider = &self.crypto_provider().await?;
+        let database = self.database().await?;
+        let provider = self.crypto_provider().await?;
         if self.conversation_exists(id).await? || self.pending_conversation_exists(id).await? {
             return Err(LeafError::ConversationAlreadyExists(id.to_owned()).into());
         }
 
         let credential = credential_ref
-            .load(database)
+            .load(&*database)
             .await
             .map_err(RecursiveError::mls_credential_ref(
                 "loading credential from database to create new conversation",
@@ -96,7 +96,7 @@ impl TransactionContext {
             .map_err(RecursiveError::mls_conversation("converting config to openmls default"))?;
 
         let group = MlsGroup::new_with_group_id(
-            provider,
+            &provider,
             &credential.signature_key_pair,
             &config,
             openmls::prelude::GroupId::from_slice(id.as_ref()),

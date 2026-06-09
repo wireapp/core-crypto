@@ -59,7 +59,7 @@ impl ProteusCentral {
     /// Creates a new proteus Session from a received message
     pub(crate) async fn session_from_message(
         &mut self,
-        keystore: &mut Database,
+        keystore: &Database,
         session_id: &str,
         envelope: &[u8],
     ) -> Result<(&mut ProteusConversationSession, Vec<u8>)> {

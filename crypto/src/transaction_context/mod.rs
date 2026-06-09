@@ -136,7 +136,7 @@ impl TransactionContext {
         }
     }
 
-    pub(crate) async fn database(&self) -> Result<Database> {
+    pub(crate) async fn database(&self) -> Result<Arc<Database>> {
         match &*self.inner.read().await {
             TransactionContextInner::Valid { core_crypto, .. } => Ok(core_crypto.database.clone()),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),

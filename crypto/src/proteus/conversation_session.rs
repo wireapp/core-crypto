@@ -25,7 +25,7 @@ impl ProteusConversationSession {
     }
 
     /// Decrypts a message for this Proteus session
-    pub async fn decrypt(&mut self, store: &mut core_crypto_keystore::Database, ciphertext: &[u8]) -> Result<Vec<u8>> {
+    pub async fn decrypt(&mut self, store: &core_crypto_keystore::Database, ciphertext: &[u8]) -> Result<Vec<u8>> {
         let envelope = Envelope::deserialise(ciphertext).map_err(ProteusError::wrap("deserializing envelope"))?;
         self.session
             .decrypt(store, &envelope)

@@ -76,7 +76,7 @@ pub struct TestContext {
     pub credential_type: CredentialType,
     pub cfg: ConversationConfiguration,
     pub transport: Arc<dyn MlsTransportTestExt>,
-    pub db: Option<(Database, Option<Arc<tempfile::TempDir>>)>,
+    pub db: Option<(Arc<Database>, Option<Arc<tempfile::TempDir>>)>,
     pub chain: Arc<RwLock<Option<X509TestChain>>>,
 }
 
@@ -104,7 +104,7 @@ impl TestContext {
         self.cfg.custom.clone()
     }
 
-    pub async fn create_in_memory_database(&mut self) -> Database {
+    pub async fn create_in_memory_database(&mut self) -> Arc<Database> {
         let database = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
             .await
             .unwrap();
@@ -142,7 +142,7 @@ impl TestContext {
 
     /// Create a new temporary directory and open a db there. Will be deleted on drop of [TestContext].
     /// Use this only if you're not instantiating a [SessionContext] in your test.
-    pub async fn create_persistent_db(&mut self) -> Database {
+    pub async fn create_persistent_db(&mut self) -> Arc<Database> {
         let (db_dir_string, db_dir) = tmp_db_file();
         let db = Database::open(ConnectionType::Persistent(&db_dir_string), &DatabaseKey::generate())
             .await
@@ -336,7 +336,7 @@ impl TestContext {
     {
         let signature_key = external_sender
             .initial_credential
-            .load(&external_sender.database().await)
+            .load(&*external_sender.database().await)
             .await
             .unwrap()
             .signature_key()

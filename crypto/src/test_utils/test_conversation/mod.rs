@@ -360,7 +360,7 @@ impl<'a> TestConversation<'a> {
 
         // the given credential ref
         let database = self.actor().transaction.database().await.unwrap();
-        let credential = credential_ref.load(&database).await.unwrap();
+        let credential = credential_ref.load(&*database).await.unwrap();
         let mls_credential_with_key = credential.to_mls_credential_with_key();
         let cipher_suite = self.case.cipher_suite();
         let session = self.actor().session().await;

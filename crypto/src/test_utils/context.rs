@@ -122,17 +122,19 @@ impl SessionContext {
             .credential_type(credential_type)
             .cipher_suite(cipher_suite)
             .build();
-        let credentials = CredentialRef::find(&self.core_crypto.database, find_filters)
+        let credentials = CredentialRef::find(&*self.core_crypto.database, find_filters)
             .await
             .expect("find credentials for cipher_suite and credential type");
         let credential_ref = credentials.first().expect("at least one credential found");
 
         let database = self.transaction.database().await.unwrap();
-        credential_ref.load(&database).await.unwrap()
+        credential_ref.load(&*database).await.unwrap()
     }
 
     pub async fn find_credentials(&self, find_filters: CredentialFindFilters<'_>) -> Option<Vec<CredentialRef>> {
-        CredentialRef::find(&self.core_crypto.database, find_filters).await.ok()
+        CredentialRef::find(&*self.core_crypto.database, find_filters)
+            .await
+            .ok()
     }
 
     pub async fn find_credential(&self, pk: &SignaturePublicKey) -> Option<Arc<Credential>> {
@@ -229,7 +231,7 @@ impl SessionContext {
         decrypted: &DecryptedMessage,
     ) {
         let database = self.transaction.database().await.unwrap();
-        let expected_credential = expected_credential_ref.load(&database).await.unwrap();
+        let expected_credential = expected_credential_ref.load(&*database).await.unwrap();
         if let openmls::prelude::MlsCredentialType::X509(certificate) =
             &expected_credential.mls_credential().mls_credential()
         {

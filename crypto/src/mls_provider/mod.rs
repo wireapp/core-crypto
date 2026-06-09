@@ -112,7 +112,7 @@ impl openmls_traits::authentication_service::AuthenticationServiceDelegate for A
 #[derive(Debug, Clone)]
 pub struct CryptoProvider {
     crypto: Arc<RustCrypto>,
-    key_store: Database,
+    key_store: Arc<Database>,
     auth_service: Arc<AuthenticationService>,
 }
 
@@ -122,12 +122,12 @@ impl CryptoProvider {
     /// See also:
     ///
     /// - [Database::open]
-    pub fn new(key_store: Database) -> Self {
+    pub fn new(key_store: Arc<Database>) -> Self {
         Self::new_with_pki_env(key_store, None)
     }
 
     /// Construct a crypto provider with the given database and the PKI environment.
-    pub fn new_with_pki_env(key_store: Database, pki_env: Option<Arc<PkiEnvironment>>) -> Self {
+    pub fn new_with_pki_env(key_store: Arc<Database>, pki_env: Option<Arc<PkiEnvironment>>) -> Self {
         let pki_env = RwLock::new(pki_env);
         let auth_service = Arc::new(AuthenticationService { pki_env });
         Self {
