@@ -100,10 +100,15 @@ struct InteropClientApp: App {
         return try! WireCoreCrypto.DatabaseKey(bytes: Data(bytes))
     }
 
+    private func genClientId(userId: String = UUID().uuidString) throws -> ClientId {
+        let deviceId = String(format: "%016llx", UInt64.random(in: 0...UInt64.max))
+        return try ClientId(userId: userId, deviceId: deviceId, domain: "wire.com")
+    }
+
     // swiftlint:disable:next function_body_length cyclomatic_complexity
     private func executeAction(_ action: InteropAction) async throws -> String {
         switch action {
-        case .initMLS(let clientId, let cipherSuite):
+        case .initMLS(let clientIdBytes, let cipherSuite):
             let key = try generateDatabaseKey()
             let keystorePath = try generateKeystorePath()
             let database = try await Database.open(location: keystorePath.path, key: key)
@@ -112,7 +117,10 @@ struct InteropClientApp: App {
             )
 
             let cipherSuite = try cipherSuiteFromU16(discriminant: cipherSuite)
-            let clientId = ClientId(bytes: clientId)
+            guard let userId = String(data: clientIdBytes, encoding: .utf8) else {
+                throw InteropError.encodingError
+            }
+            let clientId = try genClientId(userId: userId)
             try await self.coreCrypto?.transaction({ context in
                 try await context.mlsInit(
                     clientId: clientId,
@@ -167,20 +175,6 @@ struct InteropClientApp: App {
             }
 
             return "added client to conversation"
-
-        case .removeClient(let conversationId, let clientId):
-            guard let coreCrypto else { throw InteropError.notInitialised }
-            let conversationId = ConversationId(bytes: conversationId)
-            let clientId = ClientId(bytes: clientId)
-
-            _ = try await coreCrypto.transaction { ctx in
-                try await ctx.removeClientsFromConversation(
-                    conversationId: conversationId,
-                    clients: [clientId]
-                )
-            }
-
-            return "removed client from conversation"
 
         case .processWelcome(let welcomePath):
             guard let coreCrypto else { throw InteropError.notInitialised }

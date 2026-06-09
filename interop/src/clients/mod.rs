@@ -47,7 +47,6 @@ pub(crate) trait EmulatedClient {
 #[allow(dead_code)]
 pub(crate) trait EmulatedMlsClient: EmulatedClient {
     async fn get_keypackage(&self) -> Result<Vec<u8>>;
-    async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()>;
     async fn process_welcome(&self, welcome: &[u8]) -> Result<Vec<u8>>;
     async fn encrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>>;
     // TODO: Make it more complex so that we can extract other things like proposals etc. Tracking issue: WPB-9647

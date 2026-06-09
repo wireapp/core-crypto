@@ -15,6 +15,7 @@ import com.wire.crypto.cipherSuiteFromU16
 import com.wire.crypto.openDatabase
 import java.nio.file.Files
 import java.security.SecureRandom
+import java.util.Locale
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
@@ -33,15 +34,16 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
     suspend fun handleAction(action: InteropAction): Result<String> {
         return when (action) {
             is InteropAction.MLS.InitMLS -> {
+                val clientId = genClientId(String(action.clientId, Charsets.UTF_8))
                 coreCrypto.transaction({ context ->
                     context.mlsInit(
-                        clientId = ClientId(action.clientId),
+                        clientId = clientId,
                         transport = DummyTransport()
                     )
 
                     context.addCredential(
                         Credential.basic(
-                            clientId = ClientId(action.clientId),
+                            clientId = clientId,
                             cipherSuite = cipherSuiteFromU16(action.cipherSuite.toUShort())
                         )
                     )
@@ -61,14 +63,6 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
                 }
 
                 return Result.success("Client added")
-            }
-
-            is InteropAction.MLS.RemoveClient -> {
-                coreCrypto.transaction { context ->
-                    context.removeClientsFromConversation(ConversationId(action.conversationId), listOf(ClientId(action.clientId)))
-                }
-
-                return Result.success("Client removed")
             }
 
             is InteropAction.MLS.DecryptMessage -> {
@@ -182,6 +176,13 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
             val random = SecureRandom()
             random.nextBytes(bytes)
             return DatabaseKey(bytes)
+        }
+
+        private fun genClientId(userId: String): ClientId {
+            val deviceIdBytes = ByteArray(8)
+            SecureRandom().nextBytes(deviceIdBytes)
+            val deviceId = deviceIdBytes.joinToString("") { "%02x".format(Locale.ROOT, it.toInt() and 0xff) }
+            return ClientId(userId, deviceId, "wire.com")
         }
 
         private fun randomIdentifier(n: Int = 12): String {

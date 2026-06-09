@@ -14,8 +14,6 @@ sealed class InteropAction {
 
         class AddClient(val conversationId: ByteArray, val keyPackage: ByteArray) : MLS()
 
-        class RemoveClient(val conversationId: ByteArray, val clientId: ByteArray) : MLS()
-
         class ProcessWelcome(val welcome: ByteArray) : MLS()
 
         class EncryptMessage(val conversationId: ByteArray, val message: ByteArray) : MLS()
@@ -60,13 +58,6 @@ sealed class InteropAction {
                     val keyPackage = intent.getStringExtra("kp") ?: throw IllegalArgumentException("key_package is missing")
 
                     MLS.AddClient(conversationId = Base64.Default.decode(conversationId), keyPackage = Base64.Default.decode(keyPackage))
-                }
-
-                "remove-client" -> {
-                    val conversationId = intent.getStringExtra("cid") ?: throw IllegalArgumentException("conversation_id is missing")
-                    val clientId = intent.getStringExtra("client_id") ?: throw IllegalArgumentException("client_id is missing")
-
-                    MLS.RemoveClient(conversationId = Base64.Default.decode(conversationId), clientId = Base64.Default.decode(clientId))
                 }
 
                 "process-welcome" -> {

@@ -263,18 +263,6 @@ impl EmulatedMlsClient for CoreCryptoAndroidClient {
         Ok(kp_raw)
     }
 
-    async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
-        let cid_base64 = general_purpose::STANDARD.encode(conversation_id);
-        let client_id_base64 = general_purpose::STANDARD.encode(client_id);
-        self.driver
-            .execute(format!(
-                "--es action remove-client --es cid {cid_base64} --es client {client_id_base64}"
-            ))
-            .await?;
-
-        Ok(())
-    }
-
     async fn process_welcome(&self, welcome: &[u8]) -> Result<Vec<u8>> {
         let welcome_base64 = general_purpose::STANDARD.encode(welcome);
         let conversation_id_base64 = self

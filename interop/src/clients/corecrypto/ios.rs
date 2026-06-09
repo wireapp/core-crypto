@@ -231,16 +231,6 @@ impl EmulatedMlsClient for CoreCryptoIosClient {
         Ok(kp_raw)
     }
 
-    async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
-        let cid_base64 = general_purpose::STANDARD.encode(conversation_id);
-        let client_id_base64 = general_purpose::STANDARD.encode(client_id);
-        self.driver
-            .execute(format!("remove-client?cid={}&client={}", cid_base64, client_id_base64))
-            .await?;
-
-        Ok(())
-    }
-
     async fn process_welcome(&self, welcome: &[u8]) -> Result<Vec<u8>> {
         let welcome_path = std::env::temp_dir().join(format!("welcome-{}", uuid::Uuid::new_v4().as_hyphenated()));
         fs::write(&welcome_path, welcome)?;

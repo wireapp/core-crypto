@@ -9,7 +9,6 @@ enum InteropAction {
     case initMLS(clientId: Data, cipherSuite: UInt16)
     case getKeyPackage(cipherSuite: UInt16)
     case addClient(conversationId: Data, cipherSuite: UInt16, keyPackage: Data)
-    case removeClient(conversationId: Data, clientId: Data)
     case processWelcome(welcomePath: URL)
     case encryptMessage(conversationId: Data, message: Data)
     case decryptMessage(conversationId: Data, message: Data)
@@ -78,25 +77,6 @@ extension InteropAction {
             if let converationId, let cipherSuite, let keyPackage {
                 self = .addClient(
                     conversationId: converationId, cipherSuite: cipherSuite, keyPackage: keyPackage)
-            } else {
-                return nil
-            }
-
-        case "remove-client":
-            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-            let converationId = components?.queryItems?.first(where: { item in
-                item.name == "cid"
-            })?.value.flatMap { value in
-                Data(base64Encoded: value)
-            }
-            let clientId = components?.queryItems?.first(where: { item in
-                item.name == "client"
-            })?.value.flatMap { value in
-                Data(base64Encoded: value)
-            }
-
-            if let converationId, let clientId {
-                self = .removeClient(conversationId: converationId, clientId: clientId)
             } else {
                 return nil
             }
