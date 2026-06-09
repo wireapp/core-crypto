@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use log::trace;
 use openmls::prelude::{LeafNodeIndex, Proposal};
 
-use crate::ClientId;
+use crate::{ClientId, HISTORY_CLIENT_ID_PREFIX, RecursiveError, mls::conversation::immutable::Result};
 
 impl super::Conversation {
     /// Exports the clients from a conversation
@@ -49,21 +49,24 @@ impl super::Conversation {
     }
 
     /// Get actual group members and subtract pending remove proposals
-    pub async fn members_in_next_epoch(&self) -> Vec<ClientId> {
+    pub async fn members_in_next_epoch(&self) -> Result<Vec<ClientId>> {
         let pending_removals = self.pending_removals().await;
         let existing_clients = self
             .group()
             .await
             .members()
-            .filter_map(|kp| {
-                if !pending_removals.contains(&kp.index) {
-                    Some(kp.credential.identity().to_owned().into())
+            .filter_map(|member| {
+                if !pending_removals.contains(&member.index) {
+                    let client_id_result = ClientId::new_from_bytes(member.credential.identity().to_owned())
+                        .map_err(RecursiveError::mls_client("new client id from bytes"))
+                        .map_err(Into::into);
+                    Some(client_id_result)
                 } else {
-                    trace!(client_index:% = kp.index; "Client is pending removal");
+                    trace!(client_index:% = member.index; "Client is pending removal");
                     None
                 }
             })
-            .collect::<HashSet<_>>();
-        existing_clients.into_iter().collect()
+            .collect::<Result<HashSet<_>>>()?;
+        Ok(existing_clients.into_iter().collect())
     }
 }

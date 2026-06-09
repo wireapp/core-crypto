@@ -74,8 +74,9 @@ impl ConversationMut {
                 .await
                 .map_err(|err| {
                     if Self::err_is_duplicate_signature_key(&err) {
-                        let affected_clients = Self::clients_with_duplicate_signature_keys(key_packages.as_ref());
-                        Error::DuplicateSignature { affected_clients }
+                        Self::clients_with_duplicate_signature_keys(key_packages.as_ref())
+                            .map(|affected_clients| Error::DuplicateSignature { affected_clients })
+                            .unwrap_or_else(|e| e)
                     } else {
                         OpenMlsError::wrap("group add members")(err).into()
                     }
@@ -104,21 +105,25 @@ impl ConversationMut {
         )
     }
 
-    fn clients_with_duplicate_signature_keys(key_packages: &[KeyPackageIn]) -> Vec<(ClientId, ClientId)> {
+    fn clients_with_duplicate_signature_keys(key_packages: &[KeyPackageIn]) -> Result<Vec<(ClientId, ClientId)>> {
         let mut seen_signature_keys = HashMap::new();
         let mut duplicate_pairs = Vec::new();
 
         for key_package in key_packages {
             let signature_key = key_package.unverified_credential().signature_key.as_slice().to_vec();
 
-            let client_id: ClientId = key_package.credential().identity().to_vec().into();
+            let client_id: ClientId = key_package
+                .credential()
+                .identity()
+                .try_into()
+                .map_err(RecursiveError::mls_client("client id from bytes"))?;
 
             if let Some(previous_client_id) = seen_signature_keys.insert(signature_key, client_id.clone()) {
                 duplicate_pairs.push((previous_client_id, client_id));
             }
         }
 
-        duplicate_pairs
+        Ok(duplicate_pairs)
     }
 
     /// Removes clients from the group/conversation.

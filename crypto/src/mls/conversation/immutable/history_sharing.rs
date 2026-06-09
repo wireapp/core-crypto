@@ -17,9 +17,6 @@ impl super::Conversation {
     /// Check if history sharing is enabled, i.e., if any of the conversation members have a [ClientId][crate::ClientId]
     /// starting with [crate::HISTORY_CLIENT_ID_PREFIX].
     pub async fn is_history_sharing_enabled(&self) -> bool {
-        self.get_client_ids()
-            .await
-            .iter()
-            .any(|client_id| client_id.starts_with(crate::ephemeral::HISTORY_CLIENT_ID_PREFIX.as_bytes()))
+        !self.get_history_client_ids().await.is_empty()
     }
 }
