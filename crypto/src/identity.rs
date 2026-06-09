@@ -53,9 +53,9 @@ impl<'a> TryFrom<(wire_e2e_identity::WireIdentity, &'a [u8])> for WireIdentity {
             .to_pem("CERTIFICATE", LineEnding::LF)
             .map_err(wire_e2e_identity::E2eIdentityError::X509CertDerError)?;
 
-        let client_id = ClientId::new_from_bytes(e2ei_wire_identity.client_id.as_bytes().to_vec())
+        let client_id = ClientId::try_from_str_with_base64_user_id(&e2ei_wire_identity.client_id)
             .map(Some)
-            .map_err(RecursiveError::mls_client("client id from wire identity client id"))?;
+            .map_err(RecursiveError::mls_client("client id from qualified string"))?;
 
         Ok(Self {
             client_id,

@@ -45,6 +45,22 @@ impl ClientId {
         Ok(Self(bytes))
     }
 
+    /// In some cases, we still have a base64-encoded user id, e.g., certificates.
+    pub(crate) fn try_from_str_with_base64_user_id(str_with_base64_user_id: &str) -> Result<Self> {
+        E2eiClientId::try_from_qualified(str_with_base64_user_id)
+            .map(ClientId::from_e2ei_client_id)
+            .map_err(|_| Error::InvalidQualifiedClientId)
+    }
+
+    fn from_e2ei_client_id(e2ei_client_id: E2eiClientId) -> Self {
+        Self::new(
+            &e2ei_client_id.user_id.hyphenated().to_string(),
+            &format!("{:x}", e2ei_client_id.device_id),
+            &e2ei_client_id.domain,
+        )
+        .expect("from an E2eiClientId this will always succeed.")
+    }
+
     /// Deserialize the client ID into its parts
     pub fn deserialize(&self) -> DeserializedClientId {
         let (user_id, device_id, domain) =
@@ -76,13 +92,8 @@ impl ClientId {
     }
 
     /// Parse the user id, assuming string representation of a UUIDv4.
-    /// TODO(SimonThormeyer): Should this be the base64-encoded string instead?
     fn parse_user_id(user_id: &str) -> Result<Uuid> {
-        // let user_id = base64::prelude::BASE64_URL_SAFE_NO_PAD
-        //     .decode(user_id)
-        //     .map_err(|_| Error::InvalidQualifiedClientId)?;
-        let uuid = Uuid::try_parse(user_id).map_err(|_| Error::InvalidQualifiedClientId)?;
-        Ok(uuid)
+        Uuid::try_parse(user_id).map_err(|_| Error::InvalidQualifiedClientId)
     }
 
     fn parse_device_id(device_id: &str) -> Result<u64> {
