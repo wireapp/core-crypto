@@ -5,6 +5,7 @@ package com.wire.crypto
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import testutils.MockMlsTransportSuccessProvider
+import testutils.genClientId
 import testutils.genDatabaseKey
 import java.nio.file.Path
 import kotlin.io.path.*
@@ -107,7 +108,7 @@ class DatabaseKeyTest {
         val tmpdir = createTempDirectory("cc-test-")
         val path = tmpdir / "keystore"
         val oldKey = genDatabaseKey()
-        val clientId = "alice".toClientId()
+        val clientId = genClientId()
         val db = openDatabase(path.absolutePathString(), oldKey)
         var cc = CoreCrypto(db)
         val transport = MockMlsTransportSuccessProvider()

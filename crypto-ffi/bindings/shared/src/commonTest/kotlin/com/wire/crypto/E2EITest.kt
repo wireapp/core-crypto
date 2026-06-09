@@ -71,8 +71,7 @@ internal class E2EITest {
         val hooks = MockPkiEnvironmentHooks()
         val db = newDatabase()
         val pkiEnv = PkiEnvironment.new(hooks, db)
-        val clientId =
-            ClientId("LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com".encodeToByteArray()).parseQualified()
+        val clientId = genClientId()
 
         val acquisition = X509CredentialAcquisition(
             pkiEnv,
@@ -95,16 +94,12 @@ internal class E2EITest {
     fun testInstantiateX509CredentialAcquisitionFromCredentialRef() = runTest {
         val db = newDatabase()
         val pkiEnv = PkiEnvironment.new(MockPkiEnvironmentHooks(), db)
-        val qualifiedClientId = ClientId(
-            "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com"
-                .encodeToByteArray()
-        ).parseQualified()
-        val clientId = qualifiedClientId.clientId()
+        val clientId = genClientId()
         val config = X509CredentialAcquisitionConfiguration(
             acmeDirectoryUrl = "acme.example.com/directory",
             cipherSuite = CIPHERSUITE_DEFAULT,
             displayName = "Alice Smith",
-            clientId = qualifiedClientId,
+            clientId = clientId,
             handle = "alice_wire",
             domain = "world.com",
             team = null,

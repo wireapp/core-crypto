@@ -7,6 +7,7 @@ import kotlinx.coroutines.runBlocking
 import java.nio.ByteBuffer
 import java.nio.file.Files
 import java.security.SecureRandom
+import java.util.Locale
 import java.util.UUID
 import kotlin.random.Random
 import kotlin.test.*
@@ -24,7 +25,14 @@ private fun uuidBytes(): ByteArray {
 }
 
 fun genClientId(): ClientId {
-    return ClientId(uuidBytes())
+    val deviceIdBytes = ByteArray(8)
+    SecureRandom().nextBytes(deviceIdBytes)
+    val deviceId = deviceIdBytes.joinToString("") { "%02x".format(Locale.ROOT, it.toInt() and 0xff) }
+    return ClientId(
+        userId = UUID.randomUUID().toString(),
+        deviceId = deviceId,
+        domain = "wire.com"
+    )
 }
 
 fun genConversationId(): ConversationId {
