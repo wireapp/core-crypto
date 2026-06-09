@@ -195,7 +195,11 @@ impl Database {
     pub async fn conn(&self) -> CryptoKeystoreResult<ConnectionGuard<'_>> {
         self.conn.lock().await.try_into()
     }
+}
 
+// These and all other database impls shold not refer directly to `self.conn` but should go through the `self.conn()`
+// wrapper
+impl Database {
     /// Wait for any running transaction to finish, then take the connection out of this database,
     /// preventing this database from being used again.
     async fn take(&self) -> CryptoKeystoreResult<KeystoreDatabaseConnection> {
