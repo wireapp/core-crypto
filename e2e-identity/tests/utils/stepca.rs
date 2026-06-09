@@ -75,7 +75,7 @@ fn generate_authority_config(cfg: &CaCfg) -> serde_json::Value {
                         "provider": {
                             "issuerUrl": issuer,
                             "discoveryBaseUrl": discovery_base_url,
-                            "id_token_signing_alg_values_supported": [
+                            "signatureAlgorithms": [
                                 "RS256",
                                 "ES256",
                                 "ES384",
