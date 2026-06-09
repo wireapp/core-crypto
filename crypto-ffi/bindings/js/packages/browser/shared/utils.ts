@@ -73,13 +73,16 @@ export async function sharedSetup() {
             /**
              * Construct a new ClientId
              **/
-            static newClientId(clientIdStr?: string): ClientId {
-                if (clientIdStr === undefined) {
-                    clientIdStr = window.crypto.randomUUID();
-                }
-                const encoder = new TextEncoder();
+            static newClientId(): ClientId {
+                const userId = crypto.randomUUID();
+                const deviceIdBytes = crypto.getRandomValues(new Uint8Array(8));
+                const deviceId = [...deviceIdBytes]
+                    .map((byte) => byte.toString(16).padStart(2, "0"))
+                    .join("");
                 return new window.ccModule.ClientId(
-                    encoder.encode(clientIdStr)
+                    userId,
+                    deviceId,
+                    "wire.com"
                 );
             }
 
@@ -526,7 +529,7 @@ type CcInitOptions =
       };
 
 export interface Helpers {
-    newClientId(clientIdStr?: string): ClientId;
+    newClientId(): ClientId;
     newConversationId(): ConversationId;
     newDatabase(): Promise<Database>;
     generateKeyPackage(

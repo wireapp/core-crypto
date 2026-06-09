@@ -15,6 +15,7 @@ import {
     teardown,
     createConversation,
     generateKeyPackage,
+    randomClientId,
 } from "../test/utils";
 
 async function run() {
@@ -44,9 +45,7 @@ async function run() {
                 const clientIdsToRemove: ClientId[] = [];
 
                 for (let i = 0; i < userCount; i++) {
-                    const bobId = new ClientId(
-                        Buffer.from(crypto.randomUUID())
-                    );
+                    const bobId = randomClientId();
                     const bobCc = await ccInit({
                         withBasicCredential: true,
                         cipherSuite,

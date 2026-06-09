@@ -1,9 +1,8 @@
-import { ccInit, setup, teardown } from "./utils";
+import { ccInit, randomClientId, setup, teardown } from "./utils";
 import { test, beforeEach, describe, expect, afterAll } from "bun:test";
 import {
     CipherSuite,
     cipherSuiteDefault,
-    ClientId,
     Credential,
     CredentialType,
 } from "@wireapp/core-crypto/native";
@@ -20,7 +19,7 @@ describe("credentials", () => {
     test("basic credential can be created", async () => {
         const credential = Credential.basic(
             cipherSuiteDefault(),
-            new ClientId(Buffer.from("any random client id here"))
+            randomClientId()
         );
         expect(credential.type()).toEqual(CredentialType.Basic);
         expect(credential.earliestValidity()).toEqual(0n);
@@ -52,7 +51,7 @@ describe("credentials", () => {
     });
 
     test("credentials can be searched", async () => {
-        const clientId = new ClientId(Buffer.from("any random client id here"));
+        const clientId = randomClientId();
         const cipherSuite1 = CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256;
         const credential1 = Credential.basic(cipherSuite1, clientId);
 

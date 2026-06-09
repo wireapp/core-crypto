@@ -137,11 +137,7 @@ describe("end to end identity", () => {
                 database
             );
 
-            const qualifiedClientId = window.helpers
-                .newClientId(
-                    "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com"
-                )
-                .parseQualified();
+            const qualifiedClientId = window.helpers.newClientId();
             const config =
                 window.ccModule.X509CredentialAcquisitionConfiguration.new({
                     acmeDirectoryUrl: "acme.example.com/directory",
@@ -167,18 +163,13 @@ describe("end to end identity", () => {
 
     it("should instantiate an x509 credential acquisition object from credential ref", async () => {
         const acquisitionCreated = await browser.execute(async () => {
-            const qualifiedClientId = window.helpers
-                .newClientId(
-                    "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com"
-                )
-                .parseQualified();
-            const clientId = qualifiedClientId.clientId();
+            const clientId = window.helpers.newClientId();
             const config =
                 window.ccModule.X509CredentialAcquisitionConfiguration.new({
                     acmeDirectoryUrl: "acme.example.com/directory",
                     cipherSuite: window.defaultCipherSuite,
                     displayName: "Alice Smith",
-                    clientId: qualifiedClientId,
+                    clientId,
                     handle: "alice_wire",
                     domain: "world.com",
                     team: undefined,
@@ -221,8 +212,7 @@ describe("end to end identity", () => {
 
     it("identities can be queried by client id", async () => {
         const success = await browser.execute(async () => {
-            const clientIdStr = window.crypto.randomUUID();
-            const clientId = window.helpers.newClientId(clientIdStr);
+            const clientId = window.helpers.newClientId();
             const cc = await window.helpers.ccInit({ clientId });
             const conversationId = await window.helpers.createConversation(cc);
             const identities = await cc.transaction(async (ctx) => {
@@ -231,28 +221,24 @@ describe("end to end identity", () => {
                 ]);
             });
 
-            return identities.pop()?.clientId === clientIdStr;
+            return identities.pop()?.clientId?.equals(clientId);
         });
         await expect(success).toBe(true);
     });
 
     it("identities can be queried by user id", async () => {
         const success = await browser.execute(async () => {
-            const clientIdStr =
-                "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com";
-            const clientId = window.helpers.newClientId(clientIdStr);
+            const clientId = window.helpers.newClientId();
             const cc = await window.helpers.ccInit({ clientId });
             const conversationId = await window.helpers.createConversation(cc);
             const identities = await cc.transaction(async (ctx) => {
                 return await ctx.getUserIdentities(conversationId, [
-                    "LcksJb74Tm6N12cDjFy7lQ",
+                    clientId.deserialize().userId,
                 ]);
             });
 
-            return (
-                identities.values().next().value?.pop()?.clientId ===
-                clientIdStr
-            );
+            const identity = identities.values().next().value?.pop();
+            return identity?.clientId?.equals(clientId);
         });
         await expect(success).toBe(true);
     });
