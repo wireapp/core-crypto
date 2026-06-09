@@ -7,7 +7,9 @@ use openmls::prelude::Credential as MlsCredential;
 use tls_codec::Deserialize as _;
 
 use super::{Error, Result};
-use crate::{CipherSuite, ClientId, CredentialRef, CredentialType, KeystoreError, mls::session::id::ClientIdRef};
+use crate::{
+    CipherSuite, ClientId, CredentialRef, CredentialType, KeystoreError, RecursiveError, mls::session::id::ClientIdRef,
+};
 
 /// Filters to narrow down the set of credentials returned from various credential-finding methods.
 ///
@@ -96,7 +98,8 @@ impl CredentialRef {
                 && let Ok(cipher_suite) = stored_credential.ciphersuite.try_into()
             {
                 out.push(Self {
-                    client_id: ClientId(stored_credential.session_id.clone()),
+                    client_id: ClientId::new_from_bytes(stored_credential.session_id.clone())
+                        .map_err(RecursiveError::mls_client("new client id from bytes"))?,
                     r#type,
                     cipher_suite,
                     earliest_validity: stored_credential.created_at,
