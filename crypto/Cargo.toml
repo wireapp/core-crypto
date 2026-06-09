@@ -60,9 +60,7 @@ obfuscate = { workspace = true, features = [
   "openmls",
   "openmls_basic_credential",
 ] }
-aes-gcm = "0.11"
 sha2 = { workspace = true, features = ["oid"] }
-chacha20poly1305 = "0.11"
 signature.workspace = true
 elliptic-curve.workspace = true
 ecdsa = { workspace = true, features = ["der", "pkcs8"] }
@@ -85,6 +83,8 @@ graviola = "0.3"
 
 # but in other architectures we have to fall back to the rust-crypto implementations.
 [target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))'.dependencies]
+aes-gcm = "0.11"
+chacha20poly1305 = "0.11"
 ed25519-dalek = { workspace = true, features = ["pkcs8"] }
 p256 = { workspace = true, features = ["pkcs8"] }
 p384 = { workspace = true, features = ["pkcs8"] }
