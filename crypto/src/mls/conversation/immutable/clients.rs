@@ -7,17 +7,35 @@ use crate::ClientId;
 
 impl super::Conversation {
     /// Exports the clients from a conversation
-    ///
-    /// # Arguments
-    /// * `conversation_id` - the group/conversation id
-    pub async fn get_client_ids(&self) -> Vec<ClientId> {
+    /// Does NOT include history client ids.
+    pub async fn get_client_ids(&self) -> Result<Vec<ClientId>> {
+        let prefix = HISTORY_CLIENT_ID_PREFIX.as_bytes();
         self.group()
             .await
             .members()
-            .map(|kp| ClientId::from(kp.credential.identity().to_owned()))
+            .filter(|member| !member.credential.identity().starts_with(prefix))
+            .map(|kp| {
+                ClientId::new_from_bytes(kp.credential.identity().to_owned())
+                    .map_err(RecursiveError::mls_client("new client id from bytes"))
+                    .map_err(Into::into)
+            })
             .collect()
     }
 
+    /// Exports the history client ids from a conversation
+    pub async fn get_history_client_ids(&self) -> Vec<Vec<u8>> {
+        let prefix = HISTORY_CLIENT_ID_PREFIX.as_bytes();
+
+        self.group()
+            .await
+            .members()
+            .filter_map(|kp| {
+                let identity = kp.credential.identity();
+
+                identity.starts_with(prefix).then(|| identity.to_owned())
+            })
+            .collect()
+    }
     /// Gather pending remove proposals
     async fn pending_removals(&self) -> Vec<LeafNodeIndex> {
         self.group()
