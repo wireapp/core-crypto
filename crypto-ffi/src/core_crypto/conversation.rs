@@ -101,7 +101,7 @@ impl CoreCryptoFfi {
             .map_err(RecursiveError::mls_client("get_client_ids: getting raw conversation"))?;
         Ok(conversation
             .get_client_ids()
-            .await
+            .await?
             .into_iter()
             .map(Into::into)
             .map(Arc::new)
