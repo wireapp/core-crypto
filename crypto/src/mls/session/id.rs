@@ -1,12 +1,9 @@
-mod qualified;
-
 use std::{
     borrow::{Borrow, Cow},
     fmt,
     ops::Deref,
 };
 
-pub use qualified::QualifiedClientId;
 use uuid::Uuid;
 use wire_e2e_identity::E2eiClientId;
 

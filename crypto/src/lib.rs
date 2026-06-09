@@ -67,7 +67,7 @@ pub use crate::{
         key_package::{Keypackage, KeypackageRef},
         session::{
             EpochObserver, HistoryObserver, Session,
-            id::{ClientId, ClientIdRef, QualifiedClientId},
+            id::{ClientId, ClientIdRef},
             identifier::ClientIdentifier,
             user_id::UserId,
         },
