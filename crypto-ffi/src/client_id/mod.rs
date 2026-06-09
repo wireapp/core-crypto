@@ -1,9 +1,10 @@
-mod qualified;
+mod serialize;
 
 use core_crypto::RecursiveError;
+use wire_e2e_identity::E2eiClientId;
 
 use crate::CoreCryptoResult;
-pub use crate::client_id::qualified::QualifiedClientId;
+pub use crate::client_id::serialize::DeserializedClientId;
 
 /// A unique identifier for an MLS client.
 ///
@@ -41,8 +42,19 @@ impl ClientId {
         Ok(Self(inner))
     }
 
-    /// Try parsing this into a [QualifiedClientId].
-    pub fn parse_qualified(&self) -> CoreCryptoResult<QualifiedClientId> {
-        QualifiedClientId::new(self.clone())
+    /// Copy the wrapped data into a direct representation of the `<userid>-<device-id>@<domain>` format.
+    pub fn deserialize(&self) -> DeserializedClientId {
+        DeserializedClientId::new(self.clone())
+    }
+
+    /// Copy the wrapped data into a new byte array.
+    pub fn copy_bytes(&self) -> Vec<u8> {
+        self.0.clone().into()
+    }
+}
+
+impl ClientId {
+    pub(crate) fn as_e2ei_client_id(&self) -> E2eiClientId {
+        self.0.as_e2ei_client_id()
     }
 }

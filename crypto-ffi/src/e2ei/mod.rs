@@ -7,9 +7,7 @@ use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPa
 use wire_e2e_identity::{HashAlgorithm, JwsAlgorithm, acquisition::states};
 use x509_cert::der::Encode as _;
 
-use crate::{
-    CipherSuite as FfiCiphersuite, CoreCryptoError, CoreCryptoResult, Credential, PkiEnvironment, QualifiedClientId,
-};
+use crate::{CipherSuite as FfiCiphersuite, ClientId, CoreCryptoError, CoreCryptoResult, Credential, PkiEnvironment};
 
 /// The end-to-end identity verification state of a conversation.
 ///
@@ -75,7 +73,7 @@ pub struct X509CredentialAcquisitionConfiguration {
     /// User-visible display name.
     pub display_name: String,
     /// Wire client id for the device acquiring the credential.
-    pub client_id: Arc<QualifiedClientId>,
+    pub client_id: Arc<ClientId>,
     /// Wire handle without the domain suffix.
     pub handle: String,
     /// Wire domain.
