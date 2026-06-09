@@ -41,6 +41,6 @@ impl PkiEnvironment {
             content: RjtPkiEnvironment::encode_crl_to_der(&crl)?,
             distribution_point: crl_dp.to_owned(),
         };
-        self.database.save(crl_data).await.map_err(Into::into)
+        self.transactionally(async || self.database.save(crl_data).await).await
     }
 }
