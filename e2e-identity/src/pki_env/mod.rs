@@ -154,6 +154,13 @@ impl PkiEnvironment {
         &self.database
     }
 
+    /// Get an Arc to the database.
+    ///
+    /// In general [`Self::database`] is lighter-weight and should be preferred.
+    pub fn database_arc(&self) -> Arc<Database> {
+        self.database.clone()
+    }
+
     /// Wrap an operation which requires a transaction.
     ///
     /// If a transaction does not already exist, creates one.
