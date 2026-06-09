@@ -36,10 +36,10 @@ impl X509CredentialAcquisition {
         let ffi_database = core_crypto_database
             .map(|db| db.as_ref().clone())
             .unwrap_or(pki_environment.database());
-        let database = core_crypto_keystore::Database::from(ffi_database);
+        let database = Arc::<core_crypto_keystore::Database>::from(ffi_database);
         let credential = credential_ref
             .0
-            .load(&database)
+            .load(&*database)
             .await
             .map_err(RecursiveError::mls_credential_ref("loading credential from ref"))?;
 

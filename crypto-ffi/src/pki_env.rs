@@ -237,7 +237,7 @@ impl PkiEnvironment {
     }
 
     pub(crate) fn database(&self) -> Database {
-        self.0.database().clone().into()
+        self.0.database_arc().into()
     }
 }
 

@@ -10,7 +10,7 @@ use crate::{CoreCryptoError, CoreCryptoResult};
 
 /// The database acting as a core crypto keystore.
 #[derive(Debug, derive_more::From, derive_more::Into, Clone, derive_more::Deref, uniffi::Object)]
-pub struct Database(core_crypto_keystore::Database);
+pub struct Database(Arc<core_crypto_keystore::Database>);
 
 // Note: no uniffi::export when not using ubrn, because static functions are not supported yet by uniffi version 0.29.
 #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::export)]
