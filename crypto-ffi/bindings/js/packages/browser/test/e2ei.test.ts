@@ -40,12 +40,7 @@ describe("PKI environment", () => {
             }
 
             // set pki environment
-            const key = new Uint8Array(32);
-            window.crypto.getRandomValues(key);
-            const database = await window.ccModule.Database.open(
-                crypto.randomUUID(),
-                new window.ccModule.DatabaseKey(key)
-            );
+            const database = await window.helpers.newDatabase();
             pkiEnv = await window.ccModule.PkiEnvironment.create(
                 window.pkiEnvironmentHooks,
                 database
@@ -64,13 +59,7 @@ describe("PKI environment", () => {
 
     it("should be settable before mls init", async () => {
         const success = await browser.execute(async () => {
-            const key = new Uint8Array(32);
-            window.crypto.getRandomValues(key);
-            const database = await window.ccModule.Database.open(
-                window.crypto.randomUUID(),
-                new window.ccModule.DatabaseKey(key)
-            );
-
+            const database = await window.helpers.newDatabase();
             const cc = window.ccModule.CoreCrypto.new(database);
             let pkiEnv = await cc.getPkiEnvironment();
 

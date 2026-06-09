@@ -84,7 +84,6 @@ describe("database", () => {
 
     it("key update works", async () => {
         const [pubkey1, pubkey2] = await browser.execute(async () => {
-            const cipherSuite = window.defaultCipherSuite;
             const databaseName = crypto.randomUUID();
 
             const keyBytes = new Uint8Array(32);
@@ -95,15 +94,13 @@ describe("database", () => {
                 databaseName,
                 key
             );
-
-            let cc = window.ccModule.CoreCrypto.new(database);
             const clientId = window.helpers.newClientId();
-            await cc.transaction(async (ctx) => {
-                await ctx.mlsInit(clientId, window.deliveryService);
-                await ctx.addCredential(
-                    window.ccModule.Credential.basic(cipherSuite, clientId)
-                );
+            let cc = await window.helpers.ccInit({
+                withBasicCredential: true,
+                database,
+                clientId,
             });
+
             const pubkey1 = (
                 await cc.findCredentials({ clientId })
             )[0]!.publicKeyHash();
@@ -120,9 +117,10 @@ describe("database", () => {
                 throw e;
             }
 
-            cc = window.ccModule.CoreCrypto.new(database);
-            await cc.transaction(async (ctx) => {
-                await ctx.mlsInit(clientId, window.deliveryService);
+            cc = await window.helpers.ccInit({
+                withBasicCredential: false,
+                database,
+                clientId,
             });
             const pubkey2 = (
                 await cc.findCredentials({ clientId })
