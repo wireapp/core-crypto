@@ -16,7 +16,6 @@ use openmls_traits::{
 };
 use rand_core::{RngCore, SeedableRng};
 use sha2::{Digest, Sha256, Sha384, Sha512};
-use signature::digest::typenum::Unsigned;
 use tls_codec::SecretVLBytes;
 
 use super::{EntropySeed, Error};
@@ -60,18 +59,14 @@ impl RustCrypto {
 }
 
 impl OpenMlsCrypto for RustCrypto {
+    // These lengths are fixed by the curve specifications, so we can return them
+    // directly without consulting graviola or rustcrypto.
     fn signature_public_key_len(&self, signature_scheme: SignatureScheme) -> usize {
         match signature_scheme {
-            SignatureScheme::ECDSA_SECP256R1_SHA256 => {
-                <p256::NistP256 as p256::elliptic_curve::Curve>::FieldBytesSize::to_usize()
-            }
-            SignatureScheme::ECDSA_SECP384R1_SHA384 => {
-                <p384::NistP384 as p384::elliptic_curve::Curve>::FieldBytesSize::to_usize()
-            }
-            SignatureScheme::ECDSA_SECP521R1_SHA512 => {
-                <p521::NistP521 as p521::elliptic_curve::Curve>::FieldBytesSize::to_usize()
-            }
-            SignatureScheme::ED25519 => ed25519_dalek::PUBLIC_KEY_LENGTH,
+            SignatureScheme::ECDSA_SECP256R1_SHA256 => 32,
+            SignatureScheme::ECDSA_SECP384R1_SHA384 => 48,
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => 66,
+            SignatureScheme::ED25519 => 32,
             SignatureScheme::ED448 => 57,
         }
     }
@@ -217,6 +212,7 @@ impl OpenMlsCrypto for RustCrypto {
     }
 
     /// Generate a `(secret key, public key)` pair from a signature scheme.
+    #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
     fn signature_key_gen(&self, alg: SignatureScheme) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
         let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
 
@@ -248,6 +244,66 @@ impl OpenMlsCrypto for RustCrypto {
         }
     }
 
+    /// Generate a `(secret key, public key)` pair from a signature scheme.
+    ///
+    /// P256, P384, and Ed25519 are produced by graviola; P521 falls back to rustcrypto, which
+    /// graviola does not support. In every case we draw the key material from `self.rng` so that
+    /// the entropy source remains under our control, and we return the same byte encodings as the
+    /// rustcrypto path: a raw scalar for the ECDSA private key, X9.62 uncompressed for the ECDSA
+    /// public key, and the raw seed and point for Ed25519.
+    #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+    fn signature_key_gen(&self, alg: SignatureScheme) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
+        use graviola::{key_agreement, signing::eddsa::Ed25519SigningKey};
+
+        let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
+
+        match alg {
+            SignatureScheme::ECDSA_SECP256R1_SHA256 => {
+                // graviola exposes no key generation on `signing::ecdsa`, but its `key_agreement`
+                // P256 key is the same underlying scalar with identical byte encodings. We sample a
+                // scalar ourselves and reject the (negligibly rare) out-of-range or zero values.
+                let sk = loop {
+                    let mut scalar = [0u8; 32];
+                    rng.try_fill_bytes(&mut scalar)
+                        .map_err(|_| CryptoError::InsufficientRandomness)?;
+                    if let Ok(sk) = key_agreement::p256::StaticPrivateKey::from_bytes(&scalar) {
+                        break sk;
+                    }
+                };
+                Ok((sk.as_bytes().to_vec(), sk.public_key_uncompressed().to_vec()))
+            }
+            SignatureScheme::ECDSA_SECP384R1_SHA384 => {
+                let sk = loop {
+                    let mut scalar = [0u8; 48];
+                    rng.try_fill_bytes(&mut scalar)
+                        .map_err(|_| CryptoError::InsufficientRandomness)?;
+                    if let Ok(sk) = key_agreement::p384::StaticPrivateKey::from_bytes(&scalar) {
+                        break sk;
+                    }
+                };
+                Ok((sk.as_bytes().to_vec(), sk.public_key_uncompressed().to_vec()))
+            }
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => {
+                let sk = p521::ecdsa::SigningKey::random(&mut *rng);
+                let pk = p521::ecdsa::VerifyingKey::from(&sk)
+                    .to_encoded_point(false)
+                    .to_bytes()
+                    .into();
+                Ok((sk.to_bytes().to_vec(), pk))
+            }
+            SignatureScheme::ED25519 => {
+                // Any 32 bytes are a valid Ed25519 seed, so no rejection sampling is needed.
+                let mut seed = [0u8; 32];
+                rng.try_fill_bytes(&mut seed)
+                    .map_err(|_| CryptoError::InsufficientRandomness)?;
+                let sk = Ed25519SigningKey::from_bytes(&seed).map_err(|_| CryptoError::CryptoLibraryError)?;
+                Ok((sk.as_seed().to_vec(), sk.public_key().as_bytes().to_vec()))
+            }
+            _ => Err(CryptoError::UnsupportedSignatureScheme),
+        }
+    }
+
+    #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
     fn validate_signature_key(&self, alg: SignatureScheme, key: &[u8]) -> Result<(), CryptoError> {
         match alg {
             SignatureScheme::ED25519 => {
@@ -269,6 +325,31 @@ impl OpenMlsCrypto for RustCrypto {
         Ok(())
     }
 
+    #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+    fn validate_signature_key(&self, alg: SignatureScheme, key: &[u8]) -> Result<(), CryptoError> {
+        use graviola::signing::{ecdsa, eddsa::Ed25519VerifyingKey};
+
+        match alg {
+            SignatureScheme::ED25519 => {
+                Ed25519VerifyingKey::from_bytes(key).map_err(|_| CryptoError::InvalidKey)?;
+            }
+            SignatureScheme::ECDSA_SECP256R1_SHA256 => {
+                ecdsa::VerifyingKey::<ecdsa::P256>::from_x962_uncompressed(key).map_err(|_| CryptoError::InvalidKey)?;
+            }
+            SignatureScheme::ECDSA_SECP384R1_SHA384 => {
+                ecdsa::VerifyingKey::<ecdsa::P384>::from_x962_uncompressed(key).map_err(|_| CryptoError::InvalidKey)?;
+            }
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => {
+                p521::ecdsa::VerifyingKey::from_sec1_bytes(key).map_err(|_| CryptoError::InvalidKey)?;
+            }
+            SignatureScheme::ED448 => {
+                return Err(CryptoError::UnsupportedSignatureScheme);
+            }
+        }
+        Ok(())
+    }
+
+    #[cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))]
     fn verify_signature(
         &self,
         alg: SignatureScheme,
@@ -308,6 +389,52 @@ impl OpenMlsCrypto for RustCrypto {
                 let sig = ed25519_dalek::Signature::from_slice(signature).map_err(|_| CryptoError::InvalidSignature)?;
 
                 k.verify_strict(data, &sig).map_err(|_| CryptoError::InvalidSignature)
+            }
+            _ => Err(CryptoError::UnsupportedSignatureScheme),
+        }
+    }
+
+    /// Verify a signature over `data`.
+    ///
+    /// P256, P384, and Ed25519 are verified by graviola; P521 falls back to rustcrypto.
+    #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
+    fn verify_signature(
+        &self,
+        alg: SignatureScheme,
+        data: &[u8],
+        pk: &[u8],
+        signature: &[u8],
+    ) -> Result<(), CryptoError> {
+        use graviola::{
+            hashing::{Sha256, Sha384},
+            signing::{ecdsa, eddsa::Ed25519VerifyingKey},
+        };
+
+        match alg {
+            SignatureScheme::ECDSA_SECP256R1_SHA256 => {
+                let k = ecdsa::VerifyingKey::<ecdsa::P256>::from_x962_uncompressed(pk)
+                    .map_err(|_| CryptoError::CryptoLibraryError)?;
+                k.verify_asn1::<Sha256>(&[data], signature)
+                    .map_err(|_| CryptoError::InvalidSignature)
+            }
+            SignatureScheme::ECDSA_SECP384R1_SHA384 => {
+                let k = ecdsa::VerifyingKey::<ecdsa::P384>::from_x962_uncompressed(pk)
+                    .map_err(|_| CryptoError::CryptoLibraryError)?;
+                k.verify_asn1::<Sha384>(&[data], signature)
+                    .map_err(|_| CryptoError::InvalidSignature)
+            }
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => {
+                use signature::Verifier as _;
+                let k = p521::ecdsa::VerifyingKey::from_sec1_bytes(pk).map_err(|_| CryptoError::CryptoLibraryError)?;
+
+                let signature =
+                    p521::ecdsa::Signature::from_der(signature).map_err(|_| CryptoError::InvalidSignature)?;
+
+                k.verify(data, &signature).map_err(|_| CryptoError::InvalidSignature)
+            }
+            SignatureScheme::ED25519 => {
+                let k = Ed25519VerifyingKey::from_bytes(pk).map_err(|_| CryptoError::CryptoLibraryError)?;
+                k.verify(signature, data).map_err(|_| CryptoError::InvalidSignature)
             }
             _ => Err(CryptoError::UnsupportedSignatureScheme),
         }
