@@ -127,23 +127,29 @@ impl ConversationMut {
     /// * `id` - group/conversation id
     /// * `clients` - list of client ids to be removed from the group
     pub async fn remove_members(&mut self, clients: &[impl Borrow<ClientIdRef>]) -> Result<()> {
+        self.remove_members_or_history_clients(clients.iter().map(|e| e.borrow().as_ref()))
+            .await
+    }
+
+    pub(crate) async fn remove_members_or_history_clients(
+        &mut self,
+        clients: impl Iterator<Item = &[u8]> + Clone,
+    ) -> Result<()> {
         self.ensure_no_pending_commit().await?;
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
         let signer = credential.signature_key();
-
         let (commit, welcome, group_info) = self
             .mutate_group(async |_, group, _| {
                 let members = group
                     .members()
-                    .filter_map(|kp| {
+                    .filter_map(|member| {
                         clients
-                            .iter()
-                            .any(move |client_id| client_id.borrow() == kp.credential.identity())
-                            .then_some(kp.index)
+                            .clone()
+                            .any(move |client_id| client_id == member.credential.identity())
+                            .then_some(member.index)
                     })
                     .collect::<Vec<_>>();
-
                 group
                     .remove_members(&backend, signer, &members)
                     .await
