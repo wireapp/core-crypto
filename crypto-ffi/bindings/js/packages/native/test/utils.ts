@@ -210,7 +210,7 @@ export async function generateKeyPackage(
     });
 }
 
-export function randomConversationId(): ConversationId {
+export function newConversationId(): ConversationId {
     const uuid = crypto.randomUUID();
     return new ConversationId(Uint8Array.from(uuid));
 }
@@ -237,7 +237,7 @@ export function newClientId(): ClientId {
 export async function createConversation(
     cc: CoreCrypto
 ): Promise<ConversationId> {
-    const conversationId = randomConversationId();
+    const conversationId = newConversationId();
     const [credentialRef] = await cc.getCredentials();
     await cc.transaction(async (ctx) => {
         await ctx.createConversation(conversationId, credentialRef!);

@@ -1,5 +1,5 @@
 import { generateKeyPairSync } from "node:crypto";
-import { ccInit, randomConversationId, setup, teardown } from "./utils";
+import { ccInit, newConversationId, setup, teardown } from "./utils";
 import { test, beforeEach, describe, expect, afterAll } from "bun:test";
 import { ExternalSender, SignatureScheme } from "@wireapp/core-crypto/native";
 
@@ -23,7 +23,7 @@ describe("external sender", () => {
         const externalSender = ExternalSender.parseJwk(jwk);
 
         const cc = await ccInit();
-        const conversationId = randomConversationId();
+        const conversationId = newConversationId();
         const [credentialRef] = await cc.getCredentials();
         const retrievedKey = await cc.transaction(async (ctx) => {
             await ctx.createConversation(
