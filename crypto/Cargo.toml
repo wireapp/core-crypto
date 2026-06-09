@@ -60,13 +60,13 @@ aes-gcm = "0.10"
 sha2 = { workspace = true, features = ["oid"] }
 chacha20poly1305 = "0.10"
 hmac = "0.13"
-ed25519-dalek = { version = "2.2", features = ["pkcs8"] }
 signature = "2.2"
 ecdsa = { version = "0.16", features = ["der", "pkcs8"] }
-p256 = { version = "0.13", features = ["pkcs8"] }
-p384 = { version = "0.13", features = ["pkcs8"] }
-p521 = { version = "0.13", features = ["pkcs8"] }
 hkdf = "0.12"
+# graviola has no P521, so we always fall back to rustcrypto for that curve, on
+# every architecture. The other rustcrypto signature crates are needed only on
+# architectures graviola does not support; see the target-specific section below.
+p521 = { version = "0.13", features = ["pkcs8"] }
 x509-cert = { workspace = true, features = ["builder", "hazmat"] }
 web-time = "1.1.0"
 rand = { workspace = true, features = ["getrandom"] }
@@ -84,6 +84,16 @@ futures-lite = { version = "2.6", optional = true }
 
 [target.'cfg(target_os = "unknown")'.dependencies]
 serde-wasm-bindgen = "0.6"
+
+# For supported architectures we use the crypto implementations in graviola, which are fast
+[target.'cfg(any(target_arch = "aarch64", target_arch = "x86_64"))'.dependencies]
+graviola = "0.3"
+
+# but in other architectures we have to fall back to the rust-crypto implementations.
+[target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))'.dependencies]
+ed25519-dalek = { version = "2.2", features = ["pkcs8"] }
+p256 = { version = "0.13", features = ["pkcs8"] }
+p384 = { version = "0.13", features = ["pkcs8"] }
 
 [dev-dependencies]
 itertools.workspace = true
