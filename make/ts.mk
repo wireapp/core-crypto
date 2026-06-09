@@ -198,7 +198,7 @@ $(STAMPS)/ts-native-test: $(ts-native-test-deps)
 	@set -euo pipefail; \
 	cd $(JS_DIR) && \
 	if [ -n "$(TEST)" ]; then \
-		bun --conditions=cc-native test --filter "$(TEST)" ./packages/native/test; \
+		bun --conditions=cc-native test --test-name-pattern "$(TEST)" ./packages/native/test; \
 	else \
 		bun --conditions=cc-native test ./packages/native/test; \
 	fi
