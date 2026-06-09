@@ -9,9 +9,6 @@ val CIPHERSUITES_DEFAULT: List<CipherSuite> = listOf(CIPHERSUITE_DEFAULT)
 /** Default credential type */
 val CREDENTIAL_TYPE_DEFAULT = CredentialType.BASIC
 
-/** Construct a client ID */
-fun String.toClientId() = ClientId(this.toByteArray())
-
 /** Construct a Welcome */
 fun ByteArray.toWelcome() = Welcome(this)
 
