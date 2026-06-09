@@ -34,7 +34,7 @@ const logLevel = Number(process.env["CC_TEST_LOG_LEVEL"] || "0");
 const DEFAULT_CIPHERSUITE =
     CipherSuite.Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519;
 const SQLITE_SIDE_CAR_SUFFIXES = ["", "-journal", "-shm", "-wal"] as const;
-const DATABASE_LOCATIONS = new Set<string>();
+export const DATABASE_LOCATIONS = new Set<string>();
 
 interface DeliveryService extends MlsTransport {
     getLatestCommitBundle: () => Promise<CommitBundle>;
