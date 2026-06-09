@@ -1,7 +1,7 @@
 import {
     ccInit,
     generateKeyPackage,
-    randomClientId,
+    newClientId,
     setup,
     teardown,
 } from "./utils";
@@ -81,7 +81,7 @@ describe("key package", () => {
     });
 
     test("can be removed by credentialref", async () => {
-        const clientId = randomClientId();
+        const clientId = newClientId();
         const credential1 = Credential.basic(
             CipherSuite.Mls128Dhkemx25519Aes128gcmSha256Ed25519,
             clientId

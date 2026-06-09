@@ -166,7 +166,7 @@ export async function ccInit(
         cipherSuite: DEFAULT_CIPHERSUITE,
     }
 ): Promise<CoreCrypto> {
-    const clientId = options.clientId ?? randomClientId();
+    const clientId = options.clientId ?? newClientId();
 
     const database = options.database ?? (await newDatabase());
 
@@ -215,7 +215,7 @@ export function randomConversationId(): ConversationId {
     return new ConversationId(Uint8Array.from(uuid));
 }
 
-export function randomClientId(): ClientId {
+export function newClientId(): ClientId {
     const userId = crypto.randomUUID();
     const deviceIdBytes = crypto.getRandomValues(new Uint8Array(8));
     const deviceId = [...deviceIdBytes]
