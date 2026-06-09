@@ -155,7 +155,6 @@ impl Database {
     ) -> CryptoKeystoreResult<Self> {
         let conn = KeystoreDatabaseConnection::init_with_key_at_schema_version(name, key, version)?;
         let conn = Mutex::new(Some(conn));
-        let conn = Arc::new(conn);
         Ok(Self {
             conn,
             transaction: Default::default(),
@@ -168,7 +167,7 @@ impl Database {
         name: &str,
         key: &DatabaseKey,
         version: Option<u32>,
-    ) -> CryptoKeystoreResult<Self> {
+    ) -> CryptoKeystoreResult<Arc<Self>> {
         use crate::connection::{
             storage::{WasmEncryptedStorage, WasmStorageWrapper},
             wasm::migrations::{TARGET_VERSION, open_at},
@@ -180,12 +179,13 @@ impl Database {
             key,
             WasmStorageWrapper::Persistent(idb_database),
         ));
-        let conn = Arc::new(Mutex::new(Some(wasm_connection)));
+        let conn = Mutex::new(Some(wasm_connection));
         Ok(Self {
             conn,
             transaction: Default::default(),
             transaction_semaphore: Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT)),
-        })
+        }
+        .into())
     }
 
     pub async fn location(&self) -> CryptoKeystoreResult<Option<String>> {

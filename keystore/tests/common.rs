@@ -54,16 +54,12 @@ pub async fn setup(name: impl AsRef<str>, in_memory: bool) -> KeystoreTestContex
 }
 
 pub(crate) struct KeystoreTestContext {
-    store: Option<core_crypto_keystore::Database>,
+    store: Option<Arc<core_crypto_keystore::Database>>,
 }
 
 impl KeystoreTestContext {
     pub(crate) fn store(&self) -> &core_crypto_keystore::Database {
         self.store.as_ref().expect("KeystoreTestFixture store is missing")
-    }
-
-    pub(crate) fn store_mut(&mut self) -> &mut core_crypto_keystore::Database {
-        self.store.as_mut().expect("KeystoreTestFixture store is missing")
     }
 }
 
