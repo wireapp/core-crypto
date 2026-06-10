@@ -9,7 +9,7 @@ use certval::{
     verify_signatures,
 };
 use const_oid::AssociatedOid;
-use crl_store::CrlStore;
+pub(crate) use crl_store::CrlStore;
 use x509_cert::{
     der::{Decode, DecodePem, Encode},
     ext::pkix::AuthorityKeyIdentifier,
