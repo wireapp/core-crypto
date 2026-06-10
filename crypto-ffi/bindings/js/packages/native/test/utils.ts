@@ -40,7 +40,7 @@ interface DeliveryService extends MlsTransport {
     getLatestCommitBundle: () => Promise<CommitBundle>;
 }
 
-class TestDeliveryService implements DeliveryService {
+export class TestDeliveryService implements DeliveryService {
     private latestCommitBundle?: CommitBundle;
 
     async sendCommitBundle(commitBundle: CommitBundle): Promise<void> {
@@ -144,6 +144,7 @@ type CcInitOptions =
           withBasicCredential: false;
           clientId?: ClientId;
           database?: Database;
+          deliveryService?: DeliveryService;
           withPkiEnvironment?: boolean;
       }
     | {
@@ -151,6 +152,7 @@ type CcInitOptions =
           cipherSuite?: CipherSuite;
           clientId?: ClientId;
           database?: Database;
+          deliveryService?: DeliveryService;
           withPkiEnvironment?: boolean;
       };
 
@@ -167,8 +169,8 @@ export async function ccInit(
     }
 ): Promise<CoreCrypto> {
     const clientId = options.clientId ?? newClientId();
-
     const database = options.database ?? (await newDatabase());
+    const deliveryService = options.deliveryService ?? DELIVERY_SERVICE;
 
     const cc = CoreCrypto.new(database);
 
@@ -185,7 +187,7 @@ export async function ccInit(
     const withBasicCredential = options.withBasicCredential !== false;
 
     await cc.transaction(async (ctx) => {
-        await ctx.mlsInit(clientId, DELIVERY_SERVICE);
+        await ctx.mlsInit(clientId, deliveryService);
         if (withBasicCredential) {
             const cipherSuite = options.cipherSuite ?? DEFAULT_CIPHERSUITE;
             await ctx.addCredential(Credential.basic(cipherSuite, clientId));
