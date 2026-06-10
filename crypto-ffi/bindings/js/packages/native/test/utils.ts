@@ -378,12 +378,8 @@ export async function roundTripMessage(
  *
  * @returns {Promise<CoreCrypto>}
  */
-export async function proteusInit(
-    clientName: string,
-    databaseName?: string
-): Promise<CoreCrypto> {
-    const database = await newDatabase(databaseName ?? clientName);
-
+export async function proteusInit(): Promise<CoreCrypto> {
+    const database = await newDatabase();
     const instance = CoreCrypto.new(database);
     await instance.transaction(async (ctx) => {
         await ctx.proteusInit();
@@ -437,8 +433,10 @@ export async function newProteusSessionFromMessage(
     cc1: CoreCrypto,
     cc2: CoreCrypto,
     sessionId: string,
-    messageBytes: Uint8Array
-): Promise<Uint8Array> {
+    message: string
+): Promise<string> {
+    const encoder = new TextEncoder();
+    const messageBytes = encoder.encode(message);
     const encrypted = await cc1.transaction(async (ctx) => {
         return await ctx.proteusEncrypt(sessionId, messageBytes);
     });
@@ -447,5 +445,6 @@ export async function newProteusSessionFromMessage(
         return await ctx.proteusSessionFromMessage(sessionId, encrypted);
     });
 
-    return decrypted;
+    const decoder = new TextDecoder();
+    return decoder.decode(decrypted);
 }
