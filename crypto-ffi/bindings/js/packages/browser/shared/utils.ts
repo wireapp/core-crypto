@@ -396,20 +396,10 @@ export async function sharedSetup() {
              * It can be obtained inside the browser context via
              * {@link Window.ensureCcDefined}.
              *
-             * @param clientName the client name used to initialize.
-             *
              * @returns {Promise<void>}
              */
             static async proteusInit(): Promise<CoreCrypto> {
-                const databaseLocation = window.crypto.randomUUID();
-                const key = new Uint8Array(32);
-                window.crypto.getRandomValues(key);
-
-                const database = await window.ccModule.Database.open(
-                    databaseLocation,
-                    new window.ccModule.DatabaseKey(key)
-                );
-
+                const database = await this.newDatabase();
                 const instance = window.ccModule.CoreCrypto.new(database);
                 await instance.transaction((ctx) => ctx.proteusInit());
                 return instance;
@@ -468,7 +458,7 @@ export async function sharedSetup() {
                 cc2: CoreCrypto,
                 sessionId: string,
                 message: string
-            ): Promise<string | null> {
+            ): Promise<string> {
                 const encoder = new TextEncoder();
                 const messageBytes = encoder.encode(message);
                 const encrypted = await cc1.transaction(async (ctx) => {
@@ -483,7 +473,7 @@ export async function sharedSetup() {
                 });
 
                 const decoder = new TextDecoder();
-                return decrypted !== null ? decoder.decode(decrypted) : null;
+                return decoder.decode(decrypted);
             }
         }
         window.helpers = Helpers;
