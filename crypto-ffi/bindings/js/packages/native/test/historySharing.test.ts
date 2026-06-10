@@ -1,10 +1,15 @@
-import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
-import { afterEach, beforeEach, describe } from "mocha";
+import {
+    ccInit,
+    createConversation,
+    DELIVERY_SERVICE,
+    setup,
+    teardown,
+} from "./utils";
+import { test, expect, afterEach, beforeEach, describe } from "bun:test";
 import {
     ConversationId,
     type HistorySecret,
-} from "@wireapp/core-crypto/browser";
+} from "@wireapp/core-crypto/native";
 
 beforeEach(async () => {
     await setup();
@@ -15,81 +20,68 @@ afterEach(async () => {
 });
 
 describe("history sharing", () => {
-    it("enable and disable should work", async () => {
-        const result = await browser.execute(async () => {
-            // set up the observer. this just keeps a list of all observations.
-            type ObservedHistoryClient = {
-                conversationId: ConversationId;
-                historySecret: HistorySecret;
-            };
-            class Observer {
-                observations: ObservedHistoryClient[];
+    test("enable and disable should work", async () => {
+        // set up the observer. this just keeps a list of all observations.
+        type ObservedHistoryClient = {
+            conversationId: ConversationId;
+            historySecret: HistorySecret;
+        };
+        class Observer {
+            observations: ObservedHistoryClient[];
 
-                constructor() {
-                    this.observations = [];
-                }
-
-                async historyClientCreated(
-                    conversationId: ConversationId,
-                    historySecret: HistorySecret
-                ): Promise<void> {
-                    this.observations.push({
-                        conversationId,
-                        historySecret,
-                    });
-                }
+            constructor() {
+                this.observations = [];
             }
 
-            const observer = new Observer();
+            async historyClientCreated(
+                conversationId: ConversationId,
+                historySecret: HistorySecret
+            ): Promise<void> {
+                this.observations.push({
+                    conversationId,
+                    historySecret,
+                });
+            }
+        }
 
-            const cc = await window.helpers.ccInit();
+        const observer = new Observer();
 
-            // create the conversation in one transaction
-            const convId = await window.helpers.createConversation(cc);
+        const cc = await ccInit();
 
-            // register the observer
-            await cc.registerHistoryObserver(observer);
+        // create the conversation in one transaction
+        const convId = await createConversation(cc);
 
-            const enabledBeforeEnabling =
-                await cc.isHistorySharingEnabled(convId);
+        // register the observer
+        await cc.registerHistoryObserver(observer);
 
-            // in another transaction, enable history sharing
-            await cc.transaction(async (ctx) => {
-                await ctx.enableHistorySharing(convId);
-            });
+        const enabledBeforeEnabling = await cc.isHistorySharingEnabled(convId);
 
-            const enabledAfterEnabling =
-                await cc.isHistorySharingEnabled(convId);
-
-            const commitHasEncryptedMessage =
-                (await window.deliveryService.getLatestCommitBundle())
-                    .encryptedMessage !== undefined;
-
-            const decoder = new TextDecoder();
-
-            // we have to explicitly return non-primitives, as anything passed by reference won't make it out of
-            // the browser context
-            const firstIdString = decoder.decode(
-                observer.observations[0]?.conversationId.copyBytes() ??
-                    new Uint8Array()
-            );
-            const convIdSerialized = decoder.decode(
-                convId.copyBytes() ?? new Uint8Array()
-            );
-            return {
-                length: observer.observations.length,
-                firstIdString,
-                convIdSerialized,
-                enabledBeforeEnabling,
-                enabledAfterEnabling,
-                commitHasEncryptedMessage,
-            };
+        // in another transaction, enable history sharing
+        await cc.transaction(async (ctx) => {
+            await ctx.enableHistorySharing(convId);
         });
 
-        expect(result.length).toBe(1);
-        expect(result.enabledBeforeEnabling).toBe(false);
-        expect(result.enabledAfterEnabling).toBe(true);
-        expect(result.firstIdString).toBe(result.convIdSerialized);
-        expect(result.commitHasEncryptedMessage).toBe(true);
+        const enabledAfterEnabling = await cc.isHistorySharingEnabled(convId);
+
+        const commitHasEncryptedMessage =
+            (await DELIVERY_SERVICE.getLatestCommitBundle())
+                .encryptedMessage !== undefined;
+
+        const decoder = new TextDecoder();
+
+        // we have to explicitly return non-primitives, as anything passed by reference won't make it out of
+        // the browser context
+        const firstIdString = decoder.decode(
+            observer.observations[0]?.conversationId.copyBytes() ??
+                new Uint8Array()
+        );
+        const convIdSerialized = decoder.decode(
+            convId.copyBytes() ?? new Uint8Array()
+        );
+        expect(observer.observations.length).toBe(1);
+        expect(enabledBeforeEnabling).toBeFalse();
+        expect(enabledAfterEnabling).toBeTrue();
+        expect(firstIdString).toBe(convIdSerialized);
+        expect(commitHasEncryptedMessage).toBeTrue();
     });
 });
