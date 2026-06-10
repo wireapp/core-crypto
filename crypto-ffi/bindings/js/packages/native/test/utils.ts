@@ -280,6 +280,53 @@ export async function invite(
 }
 
 /**
+ * Remove {@link cc2} from a previously created conversation on the
+ * instance of {@link cc} (via {@link createConversation}).
+ *
+ * @param cc The {@link CoreCrypto} instance on which the
+ * conversation was created previously.
+ * @param clientIdToRemove The client id of the {@link CoreCrypto} instance that will be
+ * removed.
+ * @param conversationId The id of the previously created conversation.
+ *
+ * @returns {Promise<GroupInfoBundle>} The resulting group info.
+ *
+ * @throws Error if {@link cc} or {@link cc2} instances cannot be found.
+ */
+export async function remove(
+    cc: CoreCrypto,
+    clientIdToRemove: ClientId,
+    conversationId: ConversationId
+): Promise<GroupInfoBundle> {
+    await cc.transaction((ctx) =>
+        ctx.removeClientsFromConversation(conversationId, [clientIdToRemove])
+    );
+    const commitBundle = await DELIVERY_SERVICE.getLatestCommitBundle();
+
+    return commitBundle.groupInfo;
+}
+
+/**
+ * Consume the last commit message on {@link cc}
+ *
+ * @param cc The {@link CoreCrypto} instance on which to consume the commit.
+ * @param conversationId The id of the previously created conversation.
+ *
+ * @returns {Promise<void>}
+ *
+ * @throws Error if {@link cc} instances cannot be found.
+ */
+export async function consumeLastestCommit(
+    cc: CoreCrypto,
+    conversationId: ConversationId
+): Promise<void> {
+    const commitBundle = await DELIVERY_SERVICE.getLatestCommitBundle();
+    await cc.transaction((ctx) =>
+        ctx.decryptMessage(conversationId, commitBundle.commit)
+    );
+}
+
+/**
  * Inside a previously created conversation, {@link cc1} encrypts
  * {@link message}, sends it to {@link cc2}, who then decrypts it.
  * This procedure is then repeated vice versa.
