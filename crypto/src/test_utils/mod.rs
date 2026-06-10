@@ -203,8 +203,13 @@ impl SessionContext {
         signature_scheme: SignatureScheme,
         chain: &X509TestChain,
     ) -> ClientIdentifier {
-        // Generate a new bundle
-        let bundle = crate::CertificateBundle::new_with_exact_client_id(client_id, chain.find_local_intermediate_ca());
+        let issuer = chain.find_local_intermediate_ca();
+        let bundle = chain
+            .actors
+            .iter()
+            .find(|actor| actor.client_id == client_id.to_string_triple()[0])
+            .map(|actor| CertificateBundle::from_certificate_and_issuer(&actor.certificate, issuer))
+            .unwrap_or_else(|| CertificateBundle::new_with_exact_client_id(client_id, issuer));
         ClientIdentifier::X509(HashMap::from([(signature_scheme, bundle)]))
     }
 
