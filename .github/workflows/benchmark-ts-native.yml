@@ -87,6 +87,7 @@ jobs:
 
       - name: Run benchmark
         run: make ts-native-bench
+        timeout-minutes: 180
 
       # Merge all benchmark results into one file
       - name: Process results
