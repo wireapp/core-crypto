@@ -61,6 +61,12 @@ impl ClientId {
         .expect("from an E2eiClientId this will always succeed.")
     }
 
+    pub(crate) fn new_ephemeral() -> Self {
+        let user_id = Uuid::new_v4().hyphenated().to_string();
+        let bytes = format!("{HISTORY_CLIENT_ID_PREFIX}{}{user_id}", Self::DELIMITER).into_bytes();
+        Self(bytes)
+    }
+
     /// Deserialize the client ID into its parts
     pub fn deserialize(&self) -> DeserializedClientId {
         let (user_id, device_id, domain) =
