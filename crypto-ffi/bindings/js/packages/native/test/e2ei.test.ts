@@ -1,7 +1,21 @@
-import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
-import { afterEach, beforeEach, describe } from "mocha";
-import { E2eiConversationState } from "@wireapp/core-crypto/browser";
+import {
+    ccInit,
+    createConversation,
+    newClientId,
+    newDatabase,
+    setup,
+    teardown,
+    TestPkiEnvironmentHooks,
+} from "./utils";
+import { test, expect, afterEach, beforeEach, describe } from "bun:test";
+import {
+    cipherSuiteDefault,
+    CoreCrypto,
+    E2eiConversationState,
+    PkiEnvironment,
+    X509CredentialAcquisition,
+    X509CredentialAcquisitionConfiguration,
+} from "@wireapp/core-crypto/native";
 
 const TEST_CA_PEM = `
 -----BEGIN CERTIFICATE-----
@@ -26,223 +40,171 @@ afterEach(async () => {
 });
 
 describe("PKI environment", () => {
-    it("should be settable after mls init", async () => {
+    test("should be settable after mls init", async () => {
         // Get unset pki environment
-        const success = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit({
-                withBasicCredential: false,
-            });
-
-            let pkiEnv = await cc.getPkiEnvironment();
-
-            if (pkiEnv != undefined) {
-                throw new Error("Expected pkiEnv to be undefined.");
-            }
-
-            // set pki environment
-            const database = await window.helpers.newDatabase();
-            pkiEnv = await window.ccModule.PkiEnvironment.create(
-                window.pkiEnvironmentHooks,
-                database
-            );
-            await cc.setPkiEnvironment(pkiEnv);
-            // We cannot compare the result of getPkiEnvironment()
-            // with `pkiEnv`, due to uniffi hiding everything,
-            // so just make sure it's not undefined.
-            if ((await cc.getPkiEnvironment()) === undefined) return false;
-
-            await cc.setPkiEnvironment(undefined);
-            return (await cc.getPkiEnvironment()) === undefined;
+        const cc = await ccInit({
+            withBasicCredential: false,
         });
-        expect(success).toBe(true);
+
+        let pkiEnv = await cc.getPkiEnvironment();
+        expect(pkiEnv).toBeUndefined();
+
+        // set pki environment
+        const key = new Uint8Array(32);
+        crypto.getRandomValues(key);
+        const database = await newDatabase();
+        pkiEnv = await PkiEnvironment.create(
+            new TestPkiEnvironmentHooks(),
+            database
+        );
+        await cc.setPkiEnvironment(pkiEnv);
+        // We cannot compare the result of getPkiEnvironment()
+        // with `pkiEnv`, due to uniffi hiding everything,
+        // so just make sure it's not undefined.
+        expect(await cc.getPkiEnvironment()).toBeDefined();
+
+        await cc.setPkiEnvironment(undefined);
+        expect(await cc.getPkiEnvironment()).toBeUndefined();
     });
 
-    it("should be settable before mls init", async () => {
-        const success = await browser.execute(async () => {
-            const database = await window.helpers.newDatabase();
-            const cc = window.ccModule.CoreCrypto.new(database);
-            let pkiEnv = await cc.getPkiEnvironment();
+    test("should be settable before mls init", async () => {
+        const database = await newDatabase();
 
-            if (pkiEnv != undefined) {
-                throw new Error("Expected pkiEnv to be undefined.");
-            }
+        const cc = CoreCrypto.new(database);
+        let pkiEnv = await cc.getPkiEnvironment();
 
-            pkiEnv = await window.ccModule.PkiEnvironment.create(
-                window.pkiEnvironmentHooks,
-                database
-            );
-            await cc.setPkiEnvironment(pkiEnv);
+        if (pkiEnv != undefined) {
+            throw new Error("Expected pkiEnv to be undefined.");
+        }
 
-            return (await cc.getPkiEnvironment()) != undefined;
-        });
-        expect(success).toBe(true);
+        pkiEnv = await PkiEnvironment.create(
+            new TestPkiEnvironmentHooks(),
+            database
+        );
+        await cc.setPkiEnvironment(pkiEnv);
+        expect(await cc.getPkiEnvironment()).toBeDefined();
     });
 
-    it("should add a trust anchor certificate", async () => {
-        const error = await browser.execute(async (certPem) => {
-            const database = await window.helpers.newDatabase();
-            const pkiEnvironment = await window.ccModule.PkiEnvironment.create(
-                window.pkiEnvironmentHooks,
-                database
-            );
-
-            try {
-                await pkiEnvironment.addTrustAnchor(certPem);
-                return undefined;
-            } catch (error) {
-                return error instanceof Error ? error.message : String(error);
-            }
-        }, TEST_CA_PEM);
-
-        expect(error).toBe(undefined);
+    test("should add a trust anchor certificate", async () => {
+        const database = await newDatabase();
+        const pkiEnvironment = await PkiEnvironment.create(
+            new TestPkiEnvironmentHooks(),
+            database
+        );
+        expect(
+            async () => await pkiEnvironment.addTrustAnchor(TEST_CA_PEM)
+        ).not.toThrow();
     });
 
-    it("should add an intermediate certificate", async () => {
-        const error = await browser.execute(async (certPem) => {
-            const database = await window.helpers.newDatabase();
-            const pkiEnvironment = await window.ccModule.PkiEnvironment.create(
-                window.pkiEnvironmentHooks,
-                database
-            );
+    test("should add an intermediate certificate", async () => {
+        const database = await newDatabase();
+        const pkiEnvironment = await PkiEnvironment.create(
+            new TestPkiEnvironmentHooks(),
+            database
+        );
 
-            try {
-                await pkiEnvironment.addIntermediateCert(certPem);
-                return undefined;
-            } catch (error) {
-                return error instanceof Error ? error.message : String(error);
-            }
-        }, TEST_CA_PEM);
-
-        expect(error).toBe(undefined);
+        expect(
+            async () => await pkiEnvironment.addIntermediateCert(TEST_CA_PEM)
+        ).not.toThrow();
     });
 });
 
 describe("end to end identity", () => {
-    it("should instantiate an x509 credential acquisition object", async () => {
-        const acquisitionCreated = await browser.execute(async () => {
-            const database = await window.helpers.newDatabase();
-            const pkiEnvironment = await window.ccModule.PkiEnvironment.create(
-                window.pkiEnvironmentHooks,
-                database
-            );
+    test("should instantiate an x509 credential acquisition object", async () => {
+        const database = await newDatabase();
+        const pkiEnvironment = await PkiEnvironment.create(
+            new TestPkiEnvironmentHooks(),
+            database
+        );
 
-            const qualifiedClientId = window.helpers
-                .newClientId(
-                    "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com"
-                )
-                .parseQualified();
-            const config =
-                window.ccModule.X509CredentialAcquisitionConfiguration.new({
-                    acmeDirectoryUrl: "acme.example.com/directory",
-                    cipherSuite: window.defaultCipherSuite,
-                    displayName: "Alice Smith",
-                    clientId: qualifiedClientId,
-                    handle: "alice_wire",
-                    domain: "world.com",
-                    team: undefined,
-                    validityPeriodSecs: BigInt(3600),
-                });
-
-            const acquisition = new window.ccModule.X509CredentialAcquisition(
-                pkiEnvironment,
-                config
-            );
-
-            return acquisition !== undefined;
+        const qualifiedClientId = newClientId();
+        const config = X509CredentialAcquisitionConfiguration.new({
+            acmeDirectoryUrl: "acme.example.com/directory",
+            cipherSuite: cipherSuiteDefault(),
+            displayName: "Alice Smith",
+            clientId: qualifiedClientId,
+            handle: "alice_wire",
+            domain: "world.com",
+            team: undefined,
+            validityPeriodSecs: BigInt(3600),
         });
 
-        expect(acquisitionCreated).toBe(true);
+        const acquisition = new X509CredentialAcquisition(
+            pkiEnvironment,
+            config
+        );
+
+        expect(acquisition).toBeDefined();
     });
 
-    it("should instantiate an x509 credential acquisition object from credential ref", async () => {
-        const acquisitionCreated = await browser.execute(async () => {
-            const qualifiedClientId = window.helpers
-                .newClientId(
-                    "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com"
-                )
-                .parseQualified();
-            const clientId = qualifiedClientId.clientId();
-            const config =
-                window.ccModule.X509CredentialAcquisitionConfiguration.new({
-                    acmeDirectoryUrl: "acme.example.com/directory",
-                    cipherSuite: window.defaultCipherSuite,
-                    displayName: "Alice Smith",
-                    clientId: qualifiedClientId,
-                    handle: "alice_wire",
-                    domain: "world.com",
-                    team: undefined,
-                    validityPeriodSecs: BigInt(3600),
-                });
-
-            const cc = await window.helpers.ccInit({
-                withBasicCredential: true,
-                clientId,
-                withPkiEnvironment: true,
-            });
-
-            const pkiEnvironment = await cc.getPkiEnvironment();
-
-            const [credentialRef] = await cc.findCredentials({ clientId });
-
-            const acquisition =
-                await window.ccModule.X509CredentialAcquisition.newFromCredentialRef(
-                    pkiEnvironment!,
-                    config,
-                    credentialRef!
-                );
-
-            return acquisition !== undefined;
+    test("should instantiate an x509 credential acquisition object from credential ref", async () => {
+        const clientId = newClientId();
+        const config = X509CredentialAcquisitionConfiguration.new({
+            acmeDirectoryUrl: "acme.example.com/directory",
+            cipherSuite: cipherSuiteDefault(),
+            displayName: "Alice Smith",
+            clientId: clientId,
+            handle: "alice_wire",
+            domain: "world.com",
+            team: undefined,
+            validityPeriodSecs: BigInt(3600),
         });
 
-        expect(acquisitionCreated).toBe(true);
+        const cc = await ccInit({
+            withBasicCredential: true,
+            cipherSuite: cipherSuiteDefault(),
+            clientId,
+            withPkiEnvironment: true,
+        });
+
+        const pkiEnvironment = await cc.getPkiEnvironment();
+
+        const [credentialRef] = await cc.findCredentials({ clientId });
+
+        const acquisition =
+            await X509CredentialAcquisition.newFromCredentialRef(
+                pkiEnvironment!,
+                config,
+                credentialRef!
+            );
+
+        expect(acquisition).toBeDefined();
     });
 
-    it("should not be enabled on conversation with basic credential", async () => {
-        const conversationState = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
-            const conversationId = await window.helpers.createConversation(cc);
-            return await cc.transaction(async (ctx) => {
-                return await ctx.e2eiConversationState(conversationId);
-            });
+    test("should not be enabled on conversation with basic credential", async () => {
+        const cc = await ccInit();
+        const conversationId = await createConversation(cc);
+        const conversationState = await cc.transaction(async (ctx) => {
+            return await ctx.e2eiConversationState(conversationId);
         });
         expect(conversationState).toBe(E2eiConversationState.NotEnabled);
     });
 
-    it("identities can be queried by client id", async () => {
-        const success = await browser.execute(async () => {
-            const clientIdStr = window.crypto.randomUUID();
-            const clientId = window.helpers.newClientId(clientIdStr);
-            const cc = await window.helpers.ccInit({ clientId });
-            const conversationId = await window.helpers.createConversation(cc);
-            const identities = await cc.transaction(async (ctx) => {
-                return await ctx.getDeviceIdentities(conversationId, [
-                    clientId,
-                ]);
-            });
-
-            return identities.pop()?.clientId === clientIdStr;
+    test("identities can be queried by client id", async () => {
+        const clientId = newClientId();
+        const cc = await ccInit({ clientId });
+        const conversationId = await createConversation(cc);
+        const identities = await cc.transaction(async (ctx) => {
+            return await ctx.getDeviceIdentities(conversationId, [clientId]);
         });
-        expect(success).toBe(true);
+
+        console.log(JSON.stringify(identities));
+
+        expect(identities.pop()?.clientId?.equals(clientId));
     });
 
-    it("identities can be queried by user id", async () => {
-        const success = await browser.execute(async () => {
-            const clientIdStr =
-                "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com";
-            const clientId = window.helpers.newClientId(clientIdStr);
-            const cc = await window.helpers.ccInit({ clientId });
-            const conversationId = await window.helpers.createConversation(cc);
-            const identities = await cc.transaction(async (ctx) => {
-                return await ctx.getUserIdentities(conversationId, [
-                    "LcksJb74Tm6N12cDjFy7lQ",
-                ]);
-            });
-
-            return (
-                identities.values().next().value?.pop()?.clientId ===
-                clientIdStr
-            );
+    test("identities can be queried by user id", async () => {
+        const clientId = newClientId();
+        const cc = await ccInit({ clientId });
+        const conversationId = await createConversation(cc);
+        const identities = await cc.transaction(async (ctx) => {
+            return await ctx.getUserIdentities(conversationId, [
+                clientId.deserialize().userId,
+            ]);
         });
-        expect(success).toBe(true);
+
+        expect(
+            identities.values().next().value?.pop()?.clientId?.equals(clientId)
+        );
     });
 });

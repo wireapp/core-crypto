@@ -63,7 +63,7 @@ class TestDeliveryService implements DeliveryService {
 
 export const DELIVERY_SERVICE = new TestDeliveryService();
 
-class TestPkiEnvironmentHooks implements PkiEnvironmentHooks {
+export class TestPkiEnvironmentHooks implements PkiEnvironmentHooks {
     async httpRequest(
         _method: HttpMethod,
         _url: string,
