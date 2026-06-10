@@ -30,3 +30,4 @@ raw bytes, call `externalSenderKey.copyBytes()`.
 ## Other
 
 1. Removed `CoreCryptoFfi.reseedRng()` and `CoreCryptoFfi.randomBytes()`.
+1. Removed `String.toClientId()`. Use the regular `ClientId` constructor to get a `ClientId`.

@@ -205,6 +205,12 @@ We aligned cipher suite spelling to `CipherSuite`:
 - renamed `conversationCiphersuite` → `conversationCipherSuite`
 - renamed any parameters and fields `ciphersuite` → `cipherSuite`
 
+## Client ID initialization
+
+Previously, initialization was done via `ClientId.new(bytes)`, where bytes was a string of a specific format with a user
+id, device id, and domain. The new constructor takes care of this for you and ensures all client ids conform to this
+fomat: `ClientId.new(userId, deviceId, domain)`.
+
 ## Other Changes
 
 1. `CoreCrypto.e2eiIsEnvSetup()` can't throw anymore and will always return a boolean.

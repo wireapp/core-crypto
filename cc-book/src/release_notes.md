@@ -9,6 +9,7 @@
 - New PKI Environment API
 - New Credential API
 - TS-Native library
+- Reworked client id initialization
 
 ## CoreCrypto 9
 
