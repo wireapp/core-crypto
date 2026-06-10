@@ -1,6 +1,6 @@
-import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
-import { afterEach, beforeEach, describe } from "mocha";
+import type { ConversationId } from "@wireapp/core-crypto/native";
+import { ccInit, createConversation, setup, teardown } from "./utils";
+import { test, expect, afterEach, beforeEach, describe } from "bun:test";
 
 beforeEach(async () => {
     await setup();
@@ -11,63 +11,51 @@ afterEach(async () => {
 });
 
 describe("epoch observer", () => {
-    it("should observe new epochs", async () => {
-        const { length, first_id_hex, convIdSerialized } =
-            await browser.execute(async () => {
-                // set up the observer. this just keeps a list of all observations.
-                type ObservedEpoch = {
-                    // @ts-expect-error `window` is not present when ts is checking, but is present in the browser
-                    conversationId: window.ccModule.ConversationId;
-                    epoch: bigint;
-                };
-                class Observer {
-                    observations: ObservedEpoch[];
-                    constructor() {
-                        this.observations = [];
-                    }
-                    async epochChanged(
-                        // @ts-expect-error `window` is not present when ts is checking, but is present in the browser
-                        conversationId: window.ccModule.ConversationId,
-                        epoch: bigint
-                    ): Promise<void> {
-                        this.observations.push({ conversationId, epoch });
-                    }
-                }
-                const observer = new Observer();
+    test("should observe new epochs", async () => {
+        // set up the observer. this just keeps a list of all observations.
+        type ObservedEpoch = {
+            conversationId: ConversationId;
+            epoch: bigint;
+        };
+        class Observer {
+            observations: ObservedEpoch[];
+            constructor() {
+                this.observations = [];
+            }
+            async epochChanged(
+                conversationId: ConversationId,
+                epoch: bigint
+            ): Promise<void> {
+                this.observations.push({ conversationId, epoch });
+            }
+        }
+        const observer = new Observer();
 
-                const cc = await window.helpers.ccInit();
+        const cc = await ccInit();
 
-                // create the conversation in one transaction
-                const convId = await window.helpers.createConversation(cc);
+        // create the conversation in one transaction
+        const convId = await createConversation(cc);
 
-                // register the epoch observer
-                await cc.registerEpochObserver(observer);
+        // register the epoch observer
+        await cc.registerEpochObserver(observer);
 
-                // in another transaction, change the epoch
-                await cc.transaction(async (ctx) => {
-                    await ctx.updateKeyingMaterial(convId);
-                });
+        // in another transaction, change the epoch
+        await cc.transaction(async (ctx) => {
+            await ctx.updateKeyingMaterial(convId);
+        });
 
-                // wait a bit to ensure that the observation, which we have intentionally
-                // not awaited, makes it to us
-                await new Promise((resolve) => setTimeout(resolve, 200)); // 200ms should be plenty
+        // wait a bit to ensure that the observation, which we have intentionally
+        // not awaited, makes it to us
+        await new Promise((resolve) => setTimeout(resolve, 200)); // 200ms should be plenty
 
-                // pass a serializable
-                const first_id_hex = new TextDecoder().decode(
-                    observer.observations[0]?.conversationId.copyBytes()
-                );
+        // pass a serializable
+        const first_id_hex = new TextDecoder().decode(
+            observer.observations[0]?.conversationId.copyBytes()
+        );
 
-                const convIdSerialized = new TextDecoder().decode(
-                    convId.copyBytes()
-                );
-                return {
-                    length: observer.observations.length,
-                    first_id_hex,
-                    convIdSerialized,
-                };
-            });
+        const convIdSerialized = new TextDecoder().decode(convId.copyBytes());
 
-        expect(length).toEqual(1);
+        expect(observer.observations.length).toEqual(1);
         expect(first_id_hex).toEqual(convIdSerialized);
     });
 });
