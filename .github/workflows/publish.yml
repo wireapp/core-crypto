@@ -63,6 +63,9 @@ jobs:
     uses: ./.github/workflows/publish-jvm.yml
     with:
       release: true
+      # Empty when prepare-jvm was skipped (sonatype-action == 'release'); the
+      # release then discovers the staging repository by description instead.
+      staging_repository_id: ${{ needs.prepare-jvm.outputs.staging_repository_id }}
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
@@ -93,6 +96,9 @@ jobs:
     uses: ./.github/workflows/publish-android.yml
     with:
       release: true
+      # Empty when prepare-android was skipped (sonatype-action == 'release'); the
+      # release then discovers the staging repository by description instead.
+      staging_repository_id: ${{ needs.prepare-android.outputs.staging_repository_id }}
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}

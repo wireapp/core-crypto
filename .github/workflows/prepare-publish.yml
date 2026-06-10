@@ -2,6 +2,13 @@ name: prepare publish
 
 on:
   workflow_call:
+    outputs:
+      jvm_staging_repository_id:
+        description: "Sonatype staging repository id staged for the jvm packages."
+        value: ${{ jobs.jvm.outputs.staging_repository_id }}
+      android_staging_repository_id:
+        description: "Sonatype staging repository id staged for the android packages."
+        value: ${{ jobs.android.outputs.staging_repository_id }}
     secrets:
       SONATYPE_USERNAME:
         required: true
