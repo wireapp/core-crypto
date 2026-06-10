@@ -1,6 +1,5 @@
-import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
-import { afterEach, beforeEach, describe } from "mocha";
+import { ccInit, setup, teardown } from "./utils";
+import { test, expect, afterEach, beforeEach, describe } from "bun:test";
 
 beforeEach(async () => {
     await setup();
@@ -11,28 +10,22 @@ afterEach(async () => {
 });
 
 describe("set_data()", () => {
-    it("should persist data to DB", async () => {
+    test("should persist data to DB", async () => {
         const text = "my message processing checkpoint";
-        const result = await browser.execute(async (text) => {
-            const cc = await window.helpers.ccInit();
-            const encoder = new TextEncoder();
-            const data = encoder.encode(text);
-            let dbResultBeforeSet: Uint8Array | undefined;
-            await cc.transaction(async (ctx) => {
-                dbResultBeforeSet = await ctx.getData();
-                await ctx.setData(data);
-            });
-            const dbResultAfterSet = await cc.transaction(async (ctx) => {
-                return await ctx.getData();
-            });
-            const decoder = new TextDecoder();
-            return {
-                beforeSet: dbResultBeforeSet,
-                afterSet: decoder.decode(dbResultAfterSet),
-            };
-        }, text);
+        const cc = await ccInit();
+        const encoder = new TextEncoder();
+        const data = encoder.encode(text);
+        let dbResultBeforeSet: Uint8Array | undefined;
+        await cc.transaction(async (ctx) => {
+            dbResultBeforeSet = await ctx.getData();
+            await ctx.setData(data);
+        });
+        const dbResultAfterSet = await cc.transaction(async (ctx) => {
+            return await ctx.getData();
+        });
+        const decoder = new TextDecoder();
 
-        expect(result.beforeSet).toBeUndefined();
-        expect(result.afterSet).toBe(text);
+        expect(dbResultBeforeSet).toBeUndefined();
+        expect(decoder.decode(dbResultAfterSet)).toBe(text);
     });
 });
