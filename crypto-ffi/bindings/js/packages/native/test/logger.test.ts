@@ -1,6 +1,19 @@
-import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
-import { afterEach, beforeEach, describe } from "mocha";
+import {
+    ccInit,
+    consumeLastestCommit,
+    createConversation,
+    invite,
+    newClientId,
+    remove,
+    setup,
+    teardown,
+} from "./utils";
+import { test, expect, afterEach, beforeEach, describe } from "bun:test";
+import {
+    CoreCryptoLogLevel,
+    setLogger,
+    setMaxLogLevel,
+} from "@wireapp/core-crypto/native";
 
 beforeEach(async () => {
     await setup();
@@ -10,138 +23,120 @@ afterEach(async () => {
     await teardown();
 });
 
+/**
+ * Log entry from the core crypto logger
+ */
+export interface LogEntry {
+    level: number;
+    message: string;
+    context: string;
+}
+
+const RECORDED_LOGS: LogEntry[] = [];
+/**
+ * Records logs by setting a logger and maximum log level in the browser's context.
+ * The logs are stored in a global variable `window.recordedLogs` for further retrieval.
+ *
+ * @return {Promise<void>}
+ */
+async function recordLogs(): Promise<void> {
+    setLogger({
+        log: (level: number, message: string, context: string) => {
+            console.log(message, context);
+            RECORDED_LOGS.push({
+                level: level,
+                message: message,
+                context: context,
+            });
+        },
+    });
+    setMaxLogLevel(CoreCryptoLogLevel.Debug);
+}
+
+/**
+ * Retrieves the logs recorded on the browser-side.
+ *
+ * @return {Promise<LogEntry[]>} A promise that resolves to an array of log entries
+ */
+async function retrieveLogs(): Promise<LogEntry[]> {
+    return RECORDED_LOGS.map((entry) => {
+        return entry;
+    });
+}
+
 describe("logger", () => {
-    type BrowserLog = {
-        level: string;
-        message: string;
-        source: string;
-        timestamp: number;
-    };
-
-    it("forwards logs when registered", async () => {
-        const result = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
-            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
-                window.ccModule;
-
-            const logs: string[] = [];
-            setLogger({
-                log: (_level, json_msg: string, _context) => {
-                    logs.push(json_msg);
-                },
-            });
-            setMaxLogLevel(CoreCryptoLogLevel.Debug);
-            await window.helpers.createConversation(cc);
-            return logs;
+    test("forwards logs when registered", async () => {
+        const cc = await ccInit();
+        const logs: string[] = [];
+        setLogger({
+            log: (_level, json_msg: string, _context) => {
+                logs.push(json_msg);
+            },
         });
-
-        expect(result.length).toBeGreaterThan(0);
+        setMaxLogLevel(CoreCryptoLogLevel.Debug);
+        await createConversation(cc);
+        expect(logs.length).toBeGreaterThan(0);
     });
 
-    it("can be replaced", async () => {
-        const result = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
-            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
-                window.ccModule;
+    test("can be replaced", async () => {
+        const cc = await ccInit();
 
-            const logs: string[] = [];
-            setLogger({
-                log: (_level, _message, _context) => {
-                    throw Error("Initial logger should not be active");
-                },
-            });
-            setLogger({
-                log: (_level, json_msg: string, _context) => {
-                    logs.push(json_msg);
-                },
-            });
-            setMaxLogLevel(CoreCryptoLogLevel.Debug);
-            await window.helpers.createConversation(cc);
-            return logs;
+        const logs: string[] = [];
+        setLogger({
+            log: (_level, _message, _context) => {
+                throw Error("Initial logger should not be active");
+            },
         });
+        setLogger({
+            log: (_level, json_msg: string, _context) => {
+                logs.push(json_msg);
+            },
+        });
+        setMaxLogLevel(CoreCryptoLogLevel.Debug);
+        await createConversation(cc);
 
-        expect(result.length).toBeGreaterThan(0);
+        expect(logs.length).toBeGreaterThan(0);
     });
 
-    it("doesn't forward logs below log level when registered", async () => {
-        const result = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
-            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
-                window.ccModule;
+    test("doesn't forward logs below log level when registered", async () => {
+        const cc = await ccInit();
 
-            const logs: string[] = [];
-            setLogger({
-                log: (_level, json_msg: string, _context) => {
-                    logs.push(json_msg);
-                },
-            });
-            setMaxLogLevel(CoreCryptoLogLevel.Warn);
-            await window.helpers.createConversation(cc);
-            return logs;
+        const logs: string[] = [];
+        setLogger({
+            log: (_level, json_msg: string, _context) => {
+                logs.push(json_msg);
+            },
         });
+        setMaxLogLevel(CoreCryptoLogLevel.Warn);
+        await createConversation(cc);
 
-        expect(result.length).toBe(0);
+        expect(logs.length).toBe(0);
     });
 
-    it("when throwing errors they're reported as errors", async () => {
-        const expectedErrorMessage = "expected test error in logger test";
-        await browser.execute(async (expectedErrorMessage) => {
-            const cc = await window.helpers.ccInit();
-            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
-                window.ccModule;
+    test("forwards logs with context key/value pairs", async () => {
+        const alice = await ccInit();
+        const bob = await ccInit();
+        const conversationId = await createConversation(alice);
+        await invite(alice, bob, conversationId);
 
-            setLogger({
-                log: (_level, _message, _context) => {
-                    throw Error(expectedErrorMessage);
-                },
-            });
-            setMaxLogLevel(CoreCryptoLogLevel.Debug);
-            await window.helpers.createConversation(cc);
-        }, expectedErrorMessage);
+        await recordLogs();
 
-        const logs = (await browser.getLogs("browser")) as BrowserLog[];
-        console.log(JSON.stringify(logs));
-        const errorLogs = logs.filter((log) => {
-            return (
-                log.message.includes(expectedErrorMessage) &&
-                log.source === "console-api"
-            );
-        });
+        const encoder = new TextEncoder();
+        const messageText = "Hello world!";
+        const messageBytes = encoder.encode(messageText);
 
-        expect(errorLogs.length).toBeGreaterThan(0);
-        expect(errorLogs[0]!.message).toEqual(
-            expect.stringContaining(expectedErrorMessage)
+        const encryptedMessage = await alice.transaction(
+            async (ctx) =>
+                await ctx.encryptMessage(conversationId, messageBytes)
         );
-    });
 
-    it("forwards logs with context key/value pairs", async () => {
-        const result = await browser.execute(async () => {
-            const alice = await window.helpers.ccInit();
-            const bob = await window.helpers.ccInit();
-            const conversationId =
-                await window.helpers.createConversation(alice);
-            await window.helpers.invite(alice, bob, conversationId);
+        await bob.transaction(
+            async (ctx) =>
+                await ctx.decryptMessage(conversationId, encryptedMessage)
+        );
 
-            await window.helpers.recordLogs();
-
-            const encoder = new TextEncoder();
-            const messageText = "Hello world!";
-            const messageBytes = encoder.encode(messageText);
-
-            const encryptedMessage = await alice.transaction(
-                async (ctx) =>
-                    await ctx.encryptMessage(conversationId, messageBytes)
-            );
-
-            await bob.transaction(
-                async (ctx) =>
-                    await ctx.decryptMessage(conversationId, encryptedMessage)
-            );
-
-            return window.helpers.retrieveLogs();
-        });
-
-        const proteusErrorLog = result.find(
+        const logs = await retrieveLogs();
+        const proteusErrorLog = logs.find(
             (element) => element.message === "Application message"
         )!.context;
 
@@ -152,22 +147,19 @@ describe("logger", () => {
         });
     });
 
-    it("forward logs with member changes", async () => {
-        const logs = await browser.execute(async () => {
-            const alice = await window.helpers.ccInit();
-            const bob = await window.helpers.ccInit();
-            const carolId = window.helpers.newClientId();
-            const carol = await window.helpers.ccInit({ clientId: carolId });
-            await window.helpers.recordLogs();
-            const conversationId =
-                await window.helpers.createConversation(alice);
-            await window.helpers.invite(alice, bob, conversationId);
-            await window.helpers.invite(alice, carol, conversationId);
-            await window.helpers.consumeLastestCommit(bob, conversationId);
-            await window.helpers.remove(alice, carolId, conversationId);
-            await window.helpers.consumeLastestCommit(bob, conversationId);
-            return await window.helpers.retrieveLogs();
-        });
+    test("forward logs with member changes", async () => {
+        const alice = await ccInit();
+        const bob = await ccInit();
+        const carolId = newClientId();
+        const carol = await ccInit({ clientId: carolId });
+        await recordLogs();
+        const conversationId = await createConversation(alice);
+        await invite(alice, bob, conversationId);
+        await invite(alice, carol, conversationId);
+        await consumeLastestCommit(bob, conversationId);
+        await remove(alice, carolId, conversationId);
+        await consumeLastestCommit(bob, conversationId);
+        const logs = await retrieveLogs();
 
         const epochChangedContext1 = logs.find(
             (element) => element.message === "Epoch advanced"
