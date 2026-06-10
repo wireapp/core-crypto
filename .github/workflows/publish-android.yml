@@ -60,7 +60,7 @@ jobs:
         if: ${{ inputs.prepare == true }}
         run: |
           cd crypto-ffi/bindings
-          ./gradlew :android:publishToSonatype :android:closeSonatypeStagingRepository --no-configuration-cache
+          ./gradlew :android:publishAllPublicationsToSonatypeRepository closeSonatypeStagingRepository --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
@@ -72,7 +72,7 @@ jobs:
         if: ${{ inputs.release == true }}
         run: |
           cd crypto-ffi/bindings
-          ./gradlew :android:findSonatypeStagingRepository :android:releaseSonatypeStagingRepository --no-configuration-cache
+          ./gradlew findSonatypeStagingRepository releaseSonatypeStagingRepository --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
