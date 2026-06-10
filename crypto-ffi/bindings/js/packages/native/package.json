@@ -1,6 +1,6 @@
 {
     "name": "@wireapp/core-crypto-native",
-    "version": "9.0.1",
+    "version": "10.0.0-pre.1",
     "type": "module",
     "dependencies": {
         "@ubjs/core": "0.31.0-3",
