@@ -161,6 +161,10 @@ impl CoreCryptoFfi {
             .map_err(RecursiveError::mls_client(
                 "is_history_sharing_enabled: getting raw conversation",
             ))?;
-        Ok(conversation.is_history_sharing_enabled().await)
+        conversation
+            .is_history_sharing_enabled()
+            .await
+            .map_err(RecursiveError::mls_conversation("is history sharing enabled"))
+            .map_err(Into::into)
     }
 }

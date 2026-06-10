@@ -3,18 +3,22 @@ use std::collections::HashSet;
 use log::trace;
 use openmls::prelude::{LeafNodeIndex, Proposal};
 
-use crate::{ClientId, HISTORY_CLIENT_ID_PREFIX, RecursiveError, mls::conversation::immutable::Result};
+use crate::{ClientId, RecursiveError, mls::conversation::immutable::Result};
 
 impl super::Conversation {
     /// Exports the clients from a conversation
     ///
     /// # Arguments
     /// * `conversation_id` - the group/conversation id
-    pub async fn get_client_ids(&self) -> Vec<ClientId> {
+    pub async fn get_client_ids(&self) -> Result<Vec<ClientId>> {
         self.group()
             .await
             .members()
-            .map(|kp| ClientId::from(kp.credential.identity().to_owned()))
+            .map(|member| {
+                ClientId::new_from_bytes(member.credential.identity().to_owned())
+                    .map_err(RecursiveError::mls_client("new client id from bytes"))
+                    .map_err(Into::into)
+            })
             .collect()
     }
 

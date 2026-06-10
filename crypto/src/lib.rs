@@ -48,7 +48,7 @@ use wire_e2e_identity::{legacy::device_status::DeviceStatus, pki_env::PkiEnviron
 
 pub use crate::{
     build_metadata::{BUILD_METADATA, BuildMetadata},
-    ephemeral::{HISTORY_CLIENT_ID_PREFIX, HistorySecret},
+    ephemeral::{HISTORY_CLIENT_ID_SUFFIX, HistorySecret},
     error::{
         Error, InnermostErrorMessage, KeystoreError, LeafError, OpenMlsError, OpenMlsErrorKind, ProteusError,
         ProteusErrorKind, RecursiveError, Result, ToRecursiveError,

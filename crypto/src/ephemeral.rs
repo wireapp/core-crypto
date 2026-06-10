@@ -26,6 +26,7 @@ use std::{borrow::Borrow, sync::Arc};
 use core_crypto_keystore::{ConnectionType, Database};
 use obfuscate::{Obfuscate, Obfuscated};
 use openmls::prelude::KeyPackageSecretEncapsulation;
+use uuid::Uuid;
 
 use crate::{
     CipherSuite, ClientId, ClientIdRef, CoreCrypto, CoreCryptoTransportNotImplementedProvider, Credential, Error,
@@ -33,9 +34,14 @@ use crate::{
     mls_provider::{CryptoProvider, DatabaseKey},
 };
 
-/// We always instantiate history clients with this prefix in their client id, so
-/// we can use prefix testing to determine with some accuracy whether or not something is a history client.
-pub const HISTORY_CLIENT_ID_PREFIX: &str = "history-client";
+/// We're using a static device ID for history clients, 0u64.
+const HISTORY_CLIENT_DEVICE_ID: &str = "0000000000000000";
+/// We're using this as the domain component for a history client id.
+const HISTORY_CLIENT_DOMAIN: &str = "history.client";
+/// We always instantiate history clients with this suffix in their client id, so we can use suffix testing to determine
+/// with some accuracy whether or not something is a history client.
+// We don't have const_format!() yet and don't want to pull in a dependency for just combining the above components.
+pub const HISTORY_CLIENT_ID_SUFFIX: &str = "0000000000000000@history.client";
 
 /// A `HistorySecret` encodes sufficient client state that it can be used to instantiate an
 /// ephemeral client.
@@ -65,8 +71,10 @@ impl Obfuscate for HistorySecret {
 /// [`Conversation::generate_history_secret`][crate::mls::conversation::Conversation::generate_history_secret].
 /// This implementation lives here instead of there for organizational reasons.
 pub(crate) async fn generate_history_secret(cipher_suite: CipherSuite) -> Result<HistorySecret> {
+    let user_id = Uuid::new_v4().hyphenated().to_string();
     // generate a new client id
-    let session_id = ClientId::new_ephemeral();
+    let session_id = ClientId::new(&user_id, HISTORY_CLIENT_DEVICE_ID, HISTORY_CLIENT_DOMAIN)
+        .map_err(RecursiveError::mls_client("history client id"))?;
 
     let database = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
         .await
@@ -116,7 +124,7 @@ pub(crate) async fn generate_history_secret(cipher_suite: CipherSuite) -> Result
 }
 
 pub(crate) fn is_history_client(client_id: impl Borrow<ClientIdRef>) -> bool {
-    client_id.borrow().starts_with(HISTORY_CLIENT_ID_PREFIX.as_bytes())
+    client_id.borrow().ends_with(HISTORY_CLIENT_ID_SUFFIX.as_bytes())
 }
 
 impl CoreCrypto {
@@ -125,10 +133,7 @@ impl CoreCrypto {
     /// This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
     /// Other use is a logic error.
     pub async fn history_client(history_secret: HistorySecret) -> Result<Arc<Self>> {
-        if !history_secret
-            .client_id
-            .starts_with(HISTORY_CLIENT_ID_PREFIX.as_bytes())
-        {
+        if !is_history_client(&history_secret.client_id) {
             return Err(Error::InvalidHistorySecret("client id has invalid format"));
         }
 

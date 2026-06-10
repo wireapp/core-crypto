@@ -215,7 +215,14 @@ impl<'a> OperationGuard<'a, Commit> {
             match operation {
                 TestOperation::Update => {}
                 TestOperation::Remove(member) => {
-                    if self.conversation.guard().await.is_history_sharing_enabled().await {
+                    if self
+                        .conversation
+                        .guard()
+                        .await
+                        .is_history_sharing_enabled()
+                        .await
+                        .unwrap()
+                    {
                         let ephemeral_client = self.conversation.instantiate_history_client().await;
                         self.conversation.history_client.replace(ephemeral_client);
                         self.process_added_members(&[self.conversation.history_client.as_ref().unwrap()])

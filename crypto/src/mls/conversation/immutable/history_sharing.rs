@@ -1,5 +1,5 @@
 use super::Result;
-use crate::RecursiveError;
+use crate::{RecursiveError, ephemeral::is_history_client};
 
 impl super::Conversation {
     /// Generate a new [`crate::HistorySecret`].
@@ -15,11 +15,10 @@ impl super::Conversation {
     }
 
     /// Check if history sharing is enabled, i.e., if any of the conversation members have a [ClientId][crate::ClientId]
-    /// starting with [crate::HISTORY_CLIENT_ID_PREFIX].
-    pub async fn is_history_sharing_enabled(&self) -> bool {
+    /// ending with [crate::HISTORY_CLIENT_ID_SUFFIX].
+    pub async fn is_history_sharing_enabled(&self) -> Result<bool> {
         self.get_client_ids()
             .await
-            .iter()
-            .any(|client_id| client_id.starts_with(crate::ephemeral::HISTORY_CLIENT_ID_PREFIX.as_bytes()))
+            .map(|client_ids| client_ids.iter().any(|client_id| is_history_client(client_id)))
     }
 }

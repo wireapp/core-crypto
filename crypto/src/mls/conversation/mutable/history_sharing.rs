@@ -18,7 +18,7 @@ pub(super) enum HistoryClientUpdateOutcome {
 impl ConversationMut {
     /// Enable history sharing by generating a history client and adding it to the conversation.
     pub async fn enable_history_sharing(&mut self) -> Result<()> {
-        if self.is_history_sharing_enabled().await {
+        if self.is_history_sharing_enabled().await? {
             log::warn!("History sharing is already enabled.");
             return Ok(());
         }
@@ -70,7 +70,7 @@ impl ConversationMut {
 
     /// Disable history sharing by removing history clients from the conversation.
     pub async fn disable_history_sharing(&mut self) -> Result<()> {
-        let mut history_client_ids = self.get_client_ids().await;
+        let mut history_client_ids = self.get_client_ids().await?;
         // We're facing a trade-off situation here: do we want to avoid unnecessary iteration and assume that there is
         // always at most one history client in a conversation?
         // Then we could use something like `into_iter().find_map()` to lazily evaluate client ids, but this way we're
@@ -92,7 +92,7 @@ impl ConversationMut {
     /// Updating the history client means adding a remove proposal for the existing, and an add proposal for
     /// a new history client.
     pub(super) async fn update_history_client(&mut self) -> Result<HistoryClientUpdateOutcome> {
-        if !self.is_history_sharing_enabled().await {
+        if !self.is_history_sharing_enabled().await? {
             return Ok(HistoryClientUpdateOutcome::NoUpdateNeeded);
         }
 
@@ -191,7 +191,7 @@ mod tests {
     use rstest_reuse::apply;
 
     use crate::{
-        ephemeral::HISTORY_CLIENT_ID_PREFIX,
+        ephemeral::is_history_client,
         test_utils::{TestContext, all_cred_cipher},
     };
 
@@ -204,7 +204,7 @@ mod tests {
             let test_conv = case.create_conversation([&alice, &bob]).await;
             let guard = test_conv.guard().await;
 
-            assert!(!guard.is_history_sharing_enabled().await);
+            assert!(!guard.is_history_sharing_enabled().await.unwrap());
 
             let test_conv = test_conv.enable_history_sharing_notify().await;
             assert_eq!(test_conv.member_count().await, 3);
@@ -220,7 +220,7 @@ mod tests {
                 .expect("bob should be able to decrypt the history secret");
 
             let test_conv = test_conv.disable_history_sharing_notify().await;
-            assert!(!guard.is_history_sharing_enabled().await);
+            assert!(!guard.is_history_sharing_enabled().await.unwrap());
             assert_eq!(test_conv.member_count().await, 2);
 
             let observed_history_clients = alice.history_observer().await.observed_history_clients().await;
@@ -235,10 +235,7 @@ mod tests {
                 "conversation id of observed history client change must match"
             );
             assert!(
-                observed_history_clients[0]
-                    .1
-                    .client_id
-                    .starts_with(HISTORY_CLIENT_ID_PREFIX.as_bytes()),
+                is_history_client(&observed_history_clients[0].1.client_id),
                 "client id of observed history client change must be a history client id"
             );
         })
@@ -252,7 +249,7 @@ mod tests {
             let test_conv = case.create_conversation([&alice, &bob, &carol]).await;
             let guard = test_conv.guard().await;
 
-            assert!(!guard.is_history_sharing_enabled().await);
+            assert!(!guard.is_history_sharing_enabled().await.unwrap());
             assert_eq!(test_conv.member_count().await, 3, "we have 3 members in the beginning");
 
             let test_conv = test_conv.enable_history_sharing_notify().await;
@@ -273,7 +270,7 @@ mod tests {
             assert!(
                 observed_history_clients
                     .iter()
-                    .all(|observation| observation.1.client_id.starts_with(HISTORY_CLIENT_ID_PREFIX.as_bytes())),
+                    .all(|observation| is_history_client(&observation.1.client_id)),
                 "client ids of observed history client changes must be a history client id"
             );
             assert_eq!(
