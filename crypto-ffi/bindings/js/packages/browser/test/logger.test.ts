@@ -122,7 +122,7 @@ describe("logger", () => {
                 await window.helpers.createConversation(alice);
             await window.helpers.invite(alice, bob, conversationId);
 
-            await window.helpers.recordLogs();
+            window.helpers.recordLogs();
 
             const encoder = new TextEncoder();
             const messageText = "Hello world!";
@@ -138,7 +138,7 @@ describe("logger", () => {
                     await ctx.decryptMessage(conversationId, encryptedMessage)
             );
 
-            return window.helpers.retrieveLogs();
+            return window.recordedLogs;
         });
 
         const proteusErrorLog = result.find(
@@ -158,7 +158,7 @@ describe("logger", () => {
             const bob = await window.helpers.ccInit();
             const carolId = window.helpers.newClientId();
             const carol = await window.helpers.ccInit({ clientId: carolId });
-            await window.helpers.recordLogs();
+            window.helpers.recordLogs();
             const conversationId =
                 await window.helpers.createConversation(alice);
             await window.helpers.invite(alice, bob, conversationId);
@@ -166,7 +166,7 @@ describe("logger", () => {
             await window.helpers.consumeLastestCommit(bob, conversationId);
             await window.helpers.remove(alice, carolId, conversationId);
             await window.helpers.consumeLastestCommit(bob, conversationId);
-            return await window.helpers.retrieveLogs();
+            return window.recordedLogs;
         });
 
         const epochChangedContext1 = logs.find(

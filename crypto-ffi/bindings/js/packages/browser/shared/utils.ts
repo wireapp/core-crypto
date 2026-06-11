@@ -178,9 +178,9 @@ export async function sharedSetup() {
              * Records logs by setting a logger and maximum log level in the browser's context.
              * The logs are stored in a global variable `window.recordedLogs` for further retrieval.
              *
-             * @return {Promise<void>}
+             * @return {void}
              */
-            static async recordLogs(): Promise<void> {
+            static recordLogs(): void {
                 const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
                     window.ccModule;
                 window.recordedLogs = [];
@@ -196,17 +196,6 @@ export async function sharedSetup() {
                     },
                 });
                 setMaxLogLevel(CoreCryptoLogLevel.Debug);
-            }
-
-            /**
-             * Retrieves the logs recorded on the browser-side.
-             *
-             * @return {Promise<LogEntry[]>} A promise that resolves to an array of log entries
-             */
-            static async retrieveLogs(): Promise<LogEntry[]> {
-                return window.recordedLogs.map((entry) => {
-                    return entry;
-                });
             }
 
             /**
@@ -521,8 +510,7 @@ export interface Helpers {
         cipherSuite?: CipherSuite
     ): Promise<KeyPackage>;
     ccInit: (options?: CcInitOptions) => Promise<CoreCrypto>;
-    recordLogs(): Promise<void>;
-    retrieveLogs(): Promise<LogEntry[]>;
+    recordLogs(): void;
     createConversation(cc: CoreCrypto): Promise<ConversationId>;
     invite(
         cc1: CoreCrypto,

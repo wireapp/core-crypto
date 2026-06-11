@@ -37,9 +37,8 @@ const RECORDED_LOGS: LogEntry[] = [];
  * Records logs by setting a logger and maximum log level in the browser's context.
  * The logs are stored in a global variable `window.recordedLogs` for further retrieval.
  *
- * @return {Promise<void>}
  */
-async function recordLogs(): Promise<void> {
+function recordLogs(): void {
     setLogger({
         log: (level: number, message: string, context: string) => {
             console.log(message, context);
@@ -51,17 +50,6 @@ async function recordLogs(): Promise<void> {
         },
     });
     setMaxLogLevel(CoreCryptoLogLevel.Debug);
-}
-
-/**
- * Retrieves the logs recorded on the browser-side.
- *
- * @return {Promise<LogEntry[]>} A promise that resolves to an array of log entries
- */
-async function retrieveLogs(): Promise<LogEntry[]> {
-    return RECORDED_LOGS.map((entry) => {
-        return entry;
-    });
 }
 
 describe("logger", () => {
@@ -119,7 +107,7 @@ describe("logger", () => {
         const conversationId = await createConversation(alice);
         await invite(alice, bob, conversationId);
 
-        await recordLogs();
+        recordLogs();
 
         const encoder = new TextEncoder();
         const messageText = "Hello world!";
@@ -135,8 +123,7 @@ describe("logger", () => {
                 await ctx.decryptMessage(conversationId, encryptedMessage)
         );
 
-        const logs = await retrieveLogs();
-        const proteusErrorLog = logs.find(
+        const proteusErrorLog = RECORDED_LOGS.find(
             (element) => element.message === "Application message"
         )!.context;
 
@@ -152,19 +139,18 @@ describe("logger", () => {
         const bob = await ccInit();
         const carolId = newClientId();
         const carol = await ccInit({ clientId: carolId });
-        await recordLogs();
+        recordLogs();
         const conversationId = await createConversation(alice);
         await invite(alice, bob, conversationId);
         await invite(alice, carol, conversationId);
         await consumeLastestCommit(bob, conversationId);
         await remove(alice, carolId, conversationId);
         await consumeLastestCommit(bob, conversationId);
-        const logs = await retrieveLogs();
 
-        const epochChangedContext1 = logs.find(
+        const epochChangedContext1 = RECORDED_LOGS.find(
             (element) => element.message === "Epoch advanced"
         )!.context;
-        const epochChangedContext2 = logs.findLast(
+        const epochChangedContext2 = RECORDED_LOGS.findLast(
             (element) => element.message === "Epoch advanced"
         )!.context;
 
