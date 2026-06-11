@@ -337,7 +337,7 @@ export async function sharedSetup() {
              * @param message The message encrypted, sent, and decrypted once in each
              * direction.
              *
-             * @returns {Promise<(string | null)[]>} A two-element list, containing the decrypted {@link message} by
+             * @returns {Promise<(string)[]>} A two-element list, containing the decrypted {@link message} by
              * {@link client1} and {@link client2}, in that order.
              */
             static async roundTripMessage(
@@ -345,7 +345,7 @@ export async function sharedSetup() {
                 cc2: CoreCrypto,
                 conversationId: ConversationId,
                 message: string
-            ): Promise<(string | null)[]> {
+            ): Promise<string[]> {
                 const encoder = new TextEncoder();
                 const messageBytes = encoder.encode(message);
 
@@ -384,14 +384,8 @@ export async function sharedSetup() {
                 );
 
                 const decoder = new TextDecoder();
-                const result1 =
-                    decryptedByClient1.message !== undefined
-                        ? decoder.decode(decryptedByClient1.message)
-                        : null;
-                const result2 =
-                    decryptedByClient2.message !== undefined
-                        ? decoder.decode(decryptedByClient2.message)
-                        : null;
+                const result1 = decoder.decode(decryptedByClient1.message);
+                const result2 = decoder.decode(decryptedByClient2.message);
 
                 return [result1, result2];
             }
