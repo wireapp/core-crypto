@@ -3,6 +3,10 @@ name: publish node packages
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}-publish-npm"
 
+permissions:
+  id-token: write
+  contents: read
+
 on:
   workflow_call:
     inputs:
