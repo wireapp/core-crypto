@@ -21,11 +21,11 @@ jobs:
           java-version: 25
           distribution: adopt
       - name: gradle setup
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@v6.1.0
         with:
           cache-provider: basic
       - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v6
+        uses: gradle/actions/wrapper-validation@v6.1.0
 
       - name: download linux library
         uses: ./.github/actions/make/jvm
