@@ -137,7 +137,7 @@
 <a href=#137 id=137 data-nosnippet>137</a>        <span class="kw">let </span>conversation = <span class="self">self</span>.inner.conversation(conversation_id.as_ref()).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#138 id=138 data-nosnippet>138</a>        <span class="kw">let </span>client_ids = conversation
 <a href=#139 id=139 data-nosnippet>139</a>            .get_client_ids()
-<a href=#140 id=140 data-nosnippet>140</a>            .<span class="kw">await
+<a href=#140 id=140 data-nosnippet>140</a>            .<span class="kw">await</span><span class="question-mark">?
 <a href=#141 id=141 data-nosnippet>141</a>            </span>.into_iter()
 <a href=#142 id=142 data-nosnippet>142</a>            .map(Into::into)
 <a href=#143 id=143 data-nosnippet>143</a>            .map(Arc::new)

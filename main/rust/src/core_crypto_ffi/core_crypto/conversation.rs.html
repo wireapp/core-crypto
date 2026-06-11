@@ -101,7 +101,7 @@
 <a href=#101 id=101 data-nosnippet>101</a>            </span>.map_err(RecursiveError::mls_client(<span class="string">"get_client_ids: getting raw conversation"</span>))<span class="question-mark">?</span>;
 <a href=#102 id=102 data-nosnippet>102</a>        <span class="prelude-val">Ok</span>(conversation
 <a href=#103 id=103 data-nosnippet>103</a>            .get_client_ids()
-<a href=#104 id=104 data-nosnippet>104</a>            .<span class="kw">await
+<a href=#104 id=104 data-nosnippet>104</a>            .<span class="kw">await</span><span class="question-mark">?
 <a href=#105 id=105 data-nosnippet>105</a>            </span>.into_iter()
 <a href=#106 id=106 data-nosnippet>106</a>            .map(Into::into)
 <a href=#107 id=107 data-nosnippet>107</a>            .map(Arc::new)

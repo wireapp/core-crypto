@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-f607dbb0.js";
+            window.path_to_searchindex_js = "../searchindex-2625779d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e4cb6eb2.js"></script>
@@ -398,6 +398,10 @@ case. We remove it for the purpose of making life easier for everyone.</p>
 <li>renamed <code>conversationCiphersuite</code> → <code>conversationCipherSuite</code></li>
 <li>renamed any parameters and fields <code>ciphersuite</code> → <code>cipherSuite</code></li>
 </ul>
+<h2 id="client-id-initialization"><a class="header" href="#client-id-initialization">Client ID initialization</a></h2>
+<p>Previously, initialization was done via <code>ClientId.new(bytes)</code>, where bytes was a string of a specific format with a user
+id, device id, and domain. The new constructor takes care of this for you and ensures all client ids conform to this
+fomat: <code>ClientId.new(userId, deviceId, domain)</code>.</p>
 <h2 id="other-changes"><a class="header" href="#other-changes">Other Changes</a></h2>
 <ol>
 <li>
