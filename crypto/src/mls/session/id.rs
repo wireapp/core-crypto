@@ -133,28 +133,6 @@ impl TryFrom<&[u8]> for ClientId {
     }
 }
 
-impl TryFrom<Box<[u8]>> for ClientId {
-    type Error = Error;
-
-    fn try_from(value: Box<[u8]>) -> Result<Self> {
-        value.try_into()
-    }
-}
-
-impl<const N: usize> TryFrom<[u8; N]> for ClientId {
-    type Error = Error;
-
-    fn try_from(value: [u8; N]) -> Result<Self> {
-        value.try_into()
-    }
-}
-
-impl From<ClientId> for Box<[u8]> {
-    fn from(value: ClientId) -> Self {
-        value.0.into_boxed_slice()
-    }
-}
-
 impl Deref for ClientId {
     type Target = ClientIdRef;
 
@@ -175,23 +153,9 @@ impl AsRef<ClientIdRef> for ClientId {
     }
 }
 
-impl From<ClientId> for Cow<'_, [u8]> {
-    fn from(value: ClientId) -> Self {
-        Cow::Owned(value.0)
-    }
-}
-
 impl std::fmt::Display for ClientId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", hex::encode(self.0.as_slice()))
-    }
-}
-
-impl std::str::FromStr for ClientId {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(hex::decode(s).unwrap_or_else(|_| s.as_bytes().to_vec())))
     }
 }
 
@@ -204,6 +168,7 @@ where
     }
 }
 
+// Needed for proteus tests
 #[cfg(test)]
 impl From<&str> for ClientId {
     fn from(value: &str) -> Self {
