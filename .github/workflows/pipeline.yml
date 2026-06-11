@@ -357,7 +357,6 @@ jobs:
     needs: prepare-publish
     uses: ./.github/workflows/publish-jvm.yml
     with:
-        release: true
         staging_repository_id: ${{ needs.prepare-publish.outputs.jvm_staging_repository_id }}
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
@@ -370,7 +369,6 @@ jobs:
     needs: prepare-publish
     uses: ./.github/workflows/publish-android.yml
     with:
-        release: true
         staging_repository_id: ${{ needs.prepare-publish.outputs.android_staging_repository_id }}
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}

@@ -49,9 +49,7 @@ jobs:
 
   jvm:
     needs: verify-tag
-    uses: ./.github/workflows/publish-jvm.yml
-    with:
-      prepare: true
+    uses: ./.github/workflows/prepare-publish-jvm.yml
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
@@ -61,9 +59,7 @@ jobs:
 
   android:
     needs: verify-tag
-    uses: ./.github/workflows/publish-android.yml
-    with:
-      prepare: true
+    uses: ./.github/workflows/prepare-publish-android.yml
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}

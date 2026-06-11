@@ -28,6 +28,20 @@ on:
         options:
           - release
           - prepare-and-release
+      jvm-staging-repository-id:
+        description: >
+          Required when 'sonatype-action' is 'release'.
+          In that case, you must manually specify the sonatype repository id which will be promoted.
+        required: false
+        type: string
+        default: ""
+      android-staging-repository-id:
+        description: >
+          Required when 'sonatype-action' is 'release'.
+          In that case, you must manually specify the sonatype repository id which will be promoted.
+        required: false
+        type: string
+        default: ""
 
 env:
   RELEASE: 1
@@ -42,9 +56,7 @@ jobs:
     if: >
       (inputs.registry == 'all' || inputs.registry == 'jvm') &&
       inputs.sonatype-action == 'prepare-and-release'
-    uses: ./.github/workflows/publish-jvm.yml
-    with:
-      prepare: true
+    uses: ./.github/workflows/prepare-publish-jvm.yml
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
@@ -52,7 +64,8 @@ jobs:
       PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
 
-  release-jvm:
+  jvm-staging-repository-id:
+    runs-on: ubuntu-latest
     needs: prepare-jvm
     # always() lets this run even when prepare-jvm was skipped (sonatype-action == 'release').
     # The result check ensures we don't run if prepare-jvm actually failed.
@@ -60,12 +73,39 @@ jobs:
       always() &&
       (inputs.registry == 'all' || inputs.registry == 'jvm') &&
       (needs.prepare-jvm.result == 'success' || needs.prepare-jvm.result == 'skipped')
+    env:
+      COMPUTED_ID: ${{ needs.prepare-jvm.outputs.staging_repository_id }}
+      PROVIDED_ID: ${{ inputs.jvm-staging-repository-id }}
+    steps:
+      - name: ensure the jvm staging repository id
+        id: ensure-staging-repo
+        run: |
+          if [ -n "$COMPUTED_ID" ]; then
+            staging_repository_id="$COMPUTED_ID"
+          elif [ -n "$PROVIDED_ID" ]; then
+            staging_repository_id="$PROVIDED_ID"
+          else
+            echo "::error ::When 'sonatype-action' is 'release' you must manually specify the 'jvm-staging-repository-id' input"
+            exit 1
+          fi
+          echo "staging_repository_id=$staging_repository_id" >> "$GITHUB_OUTPUT"
+    outputs:
+      staging_repository_id: ${{ steps.ensure-staging-repo.outputs.staging_repository_id }}
+
+  release-jvm:
+    needs:
+      - prepare-jvm
+      - jvm-staging-repository-id
+    # always() lets this run even when prepare-jvm was skipped (sonatype-action == 'release').
+    # The result check ensures we don't run if prepare-jvm actually failed.
+    if: >
+      always() &&
+      (inputs.registry == 'all' || inputs.registry == 'jvm') &&
+      (needs.prepare-jvm.result == 'success' || needs.prepare-jvm.result == 'skipped') &&
+      needs.jvm-staging-repository-id.result == 'success'
     uses: ./.github/workflows/publish-jvm.yml
     with:
-      release: true
-      # Empty when prepare-jvm was skipped (sonatype-action == 'release'); the
-      # release then discovers the staging repository by description instead.
-      staging_repository_id: ${{ needs.prepare-jvm.outputs.staging_repository_id }}
+      staging_repository_id: ${{ needs.jvm-staging-repository-id.outputs.staging_repository_id }}
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
@@ -77,9 +117,7 @@ jobs:
     if: >
       (inputs.registry == 'all' || inputs.registry == 'android') &&
       inputs.sonatype-action == 'prepare-and-release'
-    uses: ./.github/workflows/publish-android.yml
-    with:
-      prepare: true
+    uses: ./.github/workflows/prepare-publish-android.yml
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
@@ -87,18 +125,48 @@ jobs:
       PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
 
-  release-android:
+
+  android-staging-repository-id:
+    runs-on: ubuntu-latest
     needs: prepare-android
+    # always() lets this run even when prepare-android was skipped (sonatype-action == 'release').
+    # The result check ensures we don't run if prepare-android actually failed.
     if: >
       always() &&
       (inputs.registry == 'all' || inputs.registry == 'android') &&
       (needs.prepare-android.result == 'success' || needs.prepare-android.result == 'skipped')
+    env:
+      COMPUTED_ID: ${{ needs.prepare-android.outputs.staging_repository_id }}
+      PROVIDED_ID: ${{ inputs.android-staging-repository-id }}
+    steps:
+      - name: ensure the android staging repository id
+        id: ensure-staging-repo
+        run: |
+          if [ -n "$COMPUTED_ID" ]; then
+            staging_repository_id="$COMPUTED_ID"
+          elif [ -n "$PROVIDED_ID" ]; then
+            staging_repository_id="$PROVIDED_ID"
+          else
+            echo "::error ::When 'sonatype-action' is 'release' you must manually specify the 'android-staging-repository-id' input"
+            exit 1
+          fi
+          echo "staging_repository_id=$staging_repository_id" >> "$GITHUB_OUTPUT"
+    outputs:
+      staging_repository_id: ${{ steps.ensure-staging-repo.outputs.staging_repository_id }}
+
+
+  release-android:
+    needs:
+      - prepare-android
+      - android-staging-repository-id
+    if: >
+      always() &&
+      (inputs.registry == 'all' || inputs.registry == 'android') &&
+      (needs.prepare-android.result == 'success' || needs.prepare-android.result == 'skipped') &&
+      needs.android-staging-repository-id.result == 'success'
     uses: ./.github/workflows/publish-android.yml
     with:
-      release: true
-      # Empty when prepare-android was skipped (sonatype-action == 'release'); the
-      # release then discovers the staging repository by description instead.
-      staging_repository_id: ${{ needs.prepare-android.outputs.staging_repository_id }}
+      staging_repository_id: ${{ needs.android-staging-repository-id.outputs.staging_repository_id }}
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
