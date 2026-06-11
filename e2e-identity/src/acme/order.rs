@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use rusty_jwt_tools::prelude::{ClientId, Handle, JwsAlgorithm, Pem};
 
 use crate::acme::{
-    AcmeAccount, AcmeAuthz, AcmeDirectory, AcmeIdentifier, AcmeJws, RustyAcme, RustyAcmeError, RustyAcmeResult,
+    AcmeAccount, AcmeDirectory, AcmeIdentifier, AcmeJws, RustyAcme, RustyAcmeError, RustyAcmeResult,
     identifier::CanonicalIdentifier,
 };
 
@@ -237,10 +237,6 @@ impl AcmeOrder {
             .transpose()?
             .ok_or(RustyAcmeError::OrderError(AcmeOrderError::WrongIdentifiers))?
             .try_into()
-    }
-
-    pub fn try_get_user_authorization(&self) -> RustyAcmeResult<AcmeAuthz> {
-        todo!()
     }
 }
 
