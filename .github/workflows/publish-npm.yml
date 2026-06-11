@@ -75,6 +75,7 @@ jobs:
         id: download
         if: ${{ inputs.prepare == false && inputs.release == true }}
         run: |
+          cd crypto-ffi/bindings/js/packages/core-crypto
           gh release download "${{ github.ref_name }}" --pattern "*.tgz" --dir . 2>/dev/null || true
           filename=$(ls *.tgz 2>/dev/null | head -n 1)
           if [[ -z "$filename" ]]; then
