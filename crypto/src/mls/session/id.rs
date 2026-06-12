@@ -23,7 +23,7 @@ pub struct ClientId(Vec<u8>);
 
 pub struct DeserializedClientId {
     pub user_id: Uuid,
-    pub device_id: String,
+    pub device_id: u64,
     pub domain: String,
 }
 
@@ -34,15 +34,17 @@ impl ClientId {
     pub const DOMAIN_SEPERATOR: &'static str = "@";
 
     /// Create a new client ID.
-    pub fn new(user_id: &str, device_id: &str, domain: &str) -> Result<Self> {
+    pub fn new(user_id: Uuid, device_id: u64, domain: &str) -> Self {
         let string = format!(
-            "{user_id}{}{device_id}{}{domain}",
-            Self::DELIMITER,
-            Self::DOMAIN_SEPERATOR
+            "{user_id}{delimiter}{device_id:x}{seperator}{domain}",
+            user_id = user_id.hyphenated(),
+            delimiter = Self::DELIMITER,
+            seperator = Self::DOMAIN_SEPERATOR
         );
         let bytes = string.into_bytes();
-        Self::try_parse_bytes(&bytes)?;
-        Ok(Self(bytes))
+        #[cfg(debug_assertions)]
+        Self::try_parse_bytes(&bytes).expect("client id format string is correct");
+        Self(bytes)
     }
 
     /// In some cases, we still have a base64-encoded user id, e.g., certificates.
@@ -53,12 +55,7 @@ impl ClientId {
     }
 
     fn from_e2ei_client_id(e2ei_client_id: E2eiClientId) -> Self {
-        Self::new(
-            &e2ei_client_id.user_id.hyphenated().to_string(),
-            &format!("{:x}", e2ei_client_id.device_id),
-            &e2ei_client_id.domain,
-        )
-        .expect("from an E2eiClientId this will always succeed.")
+        Self::new(e2ei_client_id.user_id, e2ei_client_id.device_id, &e2ei_client_id.domain)
     }
 
     pub(crate) fn new_ephemeral() -> Self {
@@ -69,12 +66,11 @@ impl ClientId {
 
     /// Deserialize the client ID into its parts
     pub fn deserialize(&self) -> DeserializedClientId {
-        let (user_id, device_id, domain) =
-            Self::try_parse_bytes(&self.0).expect("We verified that this works upon initialization");
+        let (user_id, device_id, domain) = Self::try_parse_bytes(&self.0).expect("We just invert initialization");
 
         DeserializedClientId {
             user_id,
-            device_id: format!("{:x}", device_id),
+            device_id,
             domain,
         }
     }
@@ -84,6 +80,7 @@ impl ClientId {
         Ok(Self(bytes))
     }
 
+    /// Deconstruct the format string created during intialization
     fn try_parse_bytes(bytes: &[u8]) -> Result<(Uuid, u64, String)> {
         let client_id = std::str::from_utf8(bytes).map_err(|_| Error::InvalidQualifiedClientId)?;
         let (user_id, rest) = client_id
@@ -113,10 +110,8 @@ impl ClientId {
 
     /// Parse this into the representation required by the e2ei crate.
     pub fn as_e2ei_client_id(&self) -> E2eiClientId {
-        let (user_id, device_id, domain) =
-            Self::try_parse_bytes(&self.0).expect("We verified that this works upon initialization");
-        E2eiClientId::try_new(user_id.to_string(), device_id, &domain)
-            .expect("We verified that this works upon initialization")
+        let (user_id, device_id, domain) = Self::try_parse_bytes(&self.0).expect("We just invert initialization");
+        E2eiClientId::try_new(user_id.to_string(), device_id, &domain).expect("We just invert intialization")
     }
 
     pub(crate) fn into_inner(self) -> Vec<u8> {
