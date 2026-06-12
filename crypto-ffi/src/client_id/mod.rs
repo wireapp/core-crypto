@@ -6,7 +6,6 @@ use std::sync::Arc;
 
 use wire_e2e_identity::E2eiClientId;
 
-use crate::CoreCryptoResult;
 pub use crate::client_id::{device_id::DeviceId, serialize::DeserializedClientId, user_id::Uuid};
 
 /// A unique identifier for an MLS client.
@@ -39,12 +38,12 @@ impl AsRef<core_crypto::ClientIdRef> for ClientId {
 impl ClientId {
     /// Create a new client id.
     #[uniffi::constructor]
-    pub fn new(user_id: Arc<crate::Uuid>, device_id: Arc<DeviceId>, domain: String) -> CoreCryptoResult<Self> {
-        let inner = core_crypto::ClientId::new(**user_id, (*device_id).into(), &domain);
-        Ok(Self(inner))
+    pub fn new(user_id: Arc<crate::Uuid>, device_id: Arc<DeviceId>, domain: String) -> Self {
+        let inner = core_crypto::ClientId::new(**user_id, **device_id, &domain);
+        Self(inner)
     }
 
-    /// Copy the wrapped data into a direct representation of the `<userid>-<device-id>@<domain>` format.
+    /// Copy the wrapped data into a direct representation of the `<user-id>:<device-id>@<domain>` format.
     pub fn deserialize(&self) -> DeserializedClientId {
         DeserializedClientId::new(self.clone())
     }
