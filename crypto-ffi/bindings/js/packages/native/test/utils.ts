@@ -15,6 +15,8 @@ import {
     setLogger,
     setMaxLogLevel,
     ClientId,
+    DeviceId,
+    Uuid,
     Credential,
     Welcome,
     KeyPackage,
@@ -218,11 +220,12 @@ export function newConversationId(): ConversationId {
 }
 
 export function newClientId(): ClientId {
-    const userId = crypto.randomUUID();
+    const userId = new Uuid(crypto.randomUUID());
     const deviceIdBytes = crypto.getRandomValues(new Uint8Array(8));
-    const deviceId = [...deviceIdBytes]
+    const deviceIdString = [...deviceIdBytes]
         .map((byte) => byte.toString(16).padStart(2, "0"))
         .join("");
+    const deviceId = DeviceId.fromHexString(deviceIdString);
     return new ClientId(userId, deviceId, "wire.com");
 }
 

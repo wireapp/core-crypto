@@ -74,11 +74,14 @@ export async function sharedSetup() {
              * Construct a new ClientId
              **/
             static newClientId(): ClientId {
-                const userId = crypto.randomUUID();
+                const uuid = crypto.randomUUID();
+                const userId = new window.ccModule.Uuid(uuid);
                 const deviceIdBytes = crypto.getRandomValues(new Uint8Array(8));
-                const deviceId = [...deviceIdBytes]
+                const deviceIdString = [...deviceIdBytes]
                     .map((byte) => byte.toString(16).padStart(2, "0"))
                     .join("");
+                const deviceId =
+                    window.ccModule.DeviceId.fromHexString(deviceIdString);
                 return new window.ccModule.ClientId(
                     userId,
                     deviceId,

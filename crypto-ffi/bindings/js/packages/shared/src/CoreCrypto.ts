@@ -48,6 +48,8 @@ export {
     cipherSuiteDefault,
     ClientId,
     DeserializedClientId,
+    DeviceId,
+    Uuid,
     Database,
     DatabaseKey,
     type MlsTransportData,
