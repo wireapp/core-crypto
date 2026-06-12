@@ -153,9 +153,9 @@
 <a href=#153 id=153 data-nosnippet>153</a>    <span class="kw">let </span>cc = CoreCrypto::new(db);
 <a href=#154 id=154 data-nosnippet>154</a>    spinner.update(<span class="string">"initialized cc..."</span>);
 <a href=#155 id=155 data-nosnippet>155</a>
-<a href=#156 id=156 data-nosnippet>156</a>    <span class="kw">let </span>user_id = uuid::Uuid::new_v4().hyphenated().to_string();
+<a href=#156 id=156 data-nosnippet>156</a>    <span class="kw">let </span>user_id = uuid::Uuid::new_v4();
 <a href=#157 id=157 data-nosnippet>157</a>    <span class="kw">let </span>device_id = rand::random::&lt;u64&gt;();
-<a href=#158 id=158 data-nosnippet>158</a>    <span class="kw">let </span>master_client_id = ClientId::new(<span class="kw-2">&amp;</span>user_id, <span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{device_id:x}"</span>), <span class="string">"wire.com"</span>).unwrap();
+<a href=#158 id=158 data-nosnippet>158</a>    <span class="kw">let </span>master_client_id = ClientId::new(user_id, device_id, <span class="string">"wire.com"</span>);
 <a href=#159 id=159 data-nosnippet>159</a>    <span class="kw">let </span>credential = Credential::basic(CIPHERSUITE_IN_USE.into(), master_client_id.clone())<span class="question-mark">?</span>;
 <a href=#160 id=160 data-nosnippet>160</a>    spinner.update(<span class="string">"created credential..."</span>);
 <a href=#161 id=161 data-nosnippet>161</a>

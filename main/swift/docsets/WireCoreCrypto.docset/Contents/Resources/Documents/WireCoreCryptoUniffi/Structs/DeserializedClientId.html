@@ -17,7 +17,7 @@
     <a title="DeserializedClientId Structure Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="../../index.html">WireCoreCrypto Docs</a> (89% documented)</p>
+        <p><a href="../../index.html">WireCoreCrypto Docs</a> (90% documented)</p>
         <div class="header-right">
           <form role="search" action="../../search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -74,6 +74,9 @@
                 <a href="../../WireCoreCryptoUniffi/Classes/DatabaseKey.html">DatabaseKey</a>
               </li>
               <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/DeviceId.html">DeviceId</a>
+              </li>
+              <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Classes/EpochObserverImpl.html">EpochObserverImpl</a>
               </li>
               <li class="nav-group-task">
@@ -102,6 +105,9 @@
               </li>
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Classes/SecretKey.html">SecretKey</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Classes/Uuid.html">Uuid</a>
               </li>
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Classes/Welcome.html">Welcome</a>
@@ -263,6 +269,9 @@
                 <a href="../../WireCoreCryptoUniffi/Protocols/DatabaseProtocol.html">DatabaseProtocol</a>
               </li>
               <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Protocols/DeviceIdProtocol.html">DeviceIdProtocol</a>
+              </li>
+              <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Protocols/EpochObserver.html">EpochObserver</a>
               </li>
               <li class="nav-group-task">
@@ -291,6 +300,9 @@
               </li>
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Protocols/SecretKeyProtocol.html">SecretKeyProtocol</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../Protocols.html#/s:20WireCoreCryptoUniffi12UuidProtocolP">UuidProtocol</a>
               </li>
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Protocols/WelcomeProtocol.html">WelcomeProtocol</a>
@@ -406,9 +418,9 @@ Instantiate via [ClientId::deserialize].</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi20DeserializedClientIdV04userG0SSvp"></a>
+                    <a name="/s:20WireCoreCryptoUniffi20DeserializedClientIdV04userG0AA4UuidCvp"></a>
                     <a name="//apple_ref/swift/Property/userId" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi20DeserializedClientIdV04userG0SSvp">userId</a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi20DeserializedClientIdV04userG0AA4UuidCvp">userId</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -416,14 +428,14 @@ Instantiate via [ClientId::deserialize].</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The string representation of a UUID</p>
+                        <p>The user id component</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">var</span> <span class="nv">userId</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">var</span> <span class="nv">userId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/Uuid.html">Uuid</a></span></code></pre>
 
                         </div>
                       </div>
@@ -433,9 +445,9 @@ Instantiate via [ClientId::deserialize].</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi20DeserializedClientIdV06deviceG0SSvp"></a>
+                    <a name="/s:20WireCoreCryptoUniffi20DeserializedClientIdV06deviceG0AA06DeviceG0Cvp"></a>
                     <a name="//apple_ref/swift/Property/deviceId" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi20DeserializedClientIdV06deviceG0SSvp">deviceId</a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi20DeserializedClientIdV06deviceG0AA06DeviceG0Cvp">deviceId</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -443,14 +455,14 @@ Instantiate via [ClientId::deserialize].</p>
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>A hex-encoded unsigned 64-bit integer</p>
+                        <p>The device id component</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">var</span> <span class="nv">deviceId</span><span class="p">:</span> <span class="kt">String</span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="k">var</span> <span class="nv">deviceId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/DeviceId.html">DeviceId</a></span></code></pre>
 
                         </div>
                       </div>
@@ -487,9 +499,9 @@ Instantiate via [ClientId::deserialize].</p>
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi20DeserializedClientIdV06clientG004userG006deviceG06domainAcA0fG0C_S3Stcfc"></a>
+                    <a name="/s:20WireCoreCryptoUniffi20DeserializedClientIdV06clientG004userG006deviceG06domainAcA0fG0C_AA4UuidCAA06DeviceG0CSStcfc"></a>
                     <a name="//apple_ref/swift/Method/init(clientId:userId:deviceId:domain:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi20DeserializedClientIdV06clientG004userG006deviceG06domainAcA0fG0C_S3Stcfc">init(clientId:<wbr>userId:<wbr>deviceId:<wbr>domain:<wbr>)</a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi20DeserializedClientIdV06clientG004userG006deviceG06domainAcA0fG0C_AA4UuidCAA06DeviceG0CSStcfc">init(clientId:<wbr>userId:<wbr>deviceId:<wbr>domain:<wbr>)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -509,11 +521,11 @@ Instantiate via [ClientId::deserialize].</p>
      * The client id this was deserialized from
      */</span><span class="nv">clientId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></span><span class="p">,</span> 
     <span class="cm">/**
-     * The string representation of a UUID
-     */</span><span class="nv">userId</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> 
+     * The user id component
+     */</span><span class="nv">userId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/Uuid.html">Uuid</a></span><span class="p">,</span> 
     <span class="cm">/**
-     * A hex-encoded unsigned 64-bit integer
-     */</span><span class="nv">deviceId</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> 
+     * The device id component
+     */</span><span class="nv">deviceId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/DeviceId.html">DeviceId</a></span><span class="p">,</span> 
     <span class="cm">/**
      * The domain
      */</span><span class="nv">domain</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span></code></pre>
