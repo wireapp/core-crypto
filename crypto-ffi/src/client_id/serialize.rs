@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::ClientId;
+use crate::{ClientId, DeviceId, Uuid};
 
 /// This directly represents a `ClientId` of the `<userid>-<device-id>@<domain>` format.
 /// Instantiate via [ClientId::deserialize].
@@ -8,10 +8,10 @@ use crate::ClientId;
 pub struct DeserializedClientId {
     /// The client id this was deserialized from
     pub client_id: Arc<ClientId>,
-    /// The string representation of a UUID
-    pub user_id: String,
-    /// A hex-encoded unsigned 64-bit integer
-    pub device_id: String,
+    /// The user id component
+    pub user_id: Arc<Uuid>,
+    /// The device id component
+    pub device_id: Arc<DeviceId>,
     /// The domain
     pub domain: String,
 }
@@ -21,8 +21,8 @@ impl DeserializedClientId {
         let serialized = client_id.0.deserialize();
         Self {
             client_id: client_id.into(),
-            user_id: serialized.user_id.hyphenated().to_string(),
-            device_id: serialized.device_id,
+            user_id: Arc::new(serialized.user_id.into()),
+            device_id: Arc::new(serialized.device_id.into()),
             domain: serialized.domain,
         }
     }

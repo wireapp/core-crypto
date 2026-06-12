@@ -1,10 +1,13 @@
+mod device_id;
 mod serialize;
+mod user_id;
 
-use core_crypto::RecursiveError;
+use std::sync::Arc;
+
 use wire_e2e_identity::E2eiClientId;
 
 use crate::CoreCryptoResult;
-pub use crate::client_id::serialize::DeserializedClientId;
+pub use crate::client_id::{device_id::DeviceId, serialize::DeserializedClientId, user_id::Uuid};
 
 /// A unique identifier for an MLS client.
 ///
@@ -36,9 +39,8 @@ impl AsRef<core_crypto::ClientIdRef> for ClientId {
 impl ClientId {
     /// Create a new client id.
     #[uniffi::constructor]
-    pub fn new(user_id: String, device_id: String, domain: String) -> CoreCryptoResult<Self> {
-        let inner = core_crypto::ClientId::new(&user_id, &device_id, &domain)
-            .map_err(RecursiveError::mls_client("new client id"))?;
+    pub fn new(user_id: Arc<crate::Uuid>, device_id: Arc<DeviceId>, domain: String) -> CoreCryptoResult<Self> {
+        let inner = core_crypto::ClientId::new(**user_id, (*device_id).into(), &domain);
         Ok(Self(inner))
     }
 
