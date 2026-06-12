@@ -25,12 +25,10 @@ private fun uuidBytes(): ByteArray {
 }
 
 fun genClientId(): ClientId {
-    val deviceIdBytes = ByteArray(8)
-    SecureRandom().nextBytes(deviceIdBytes)
-    val deviceId = deviceIdBytes.joinToString("") { "%02x".format(Locale.ROOT, it.toInt() and 0xff) }
+    val deviceId = SecureRandom().nextLong().toULong()
     return ClientId(
-        userId = UUID.randomUUID().toString(),
-        deviceId = deviceId,
+        userId = Uuid(UUID.randomUUID().toString()),
+        deviceId = DeviceId(deviceId),
         domain = "wire.com"
     )
 }
