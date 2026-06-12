@@ -205,6 +205,6 @@ describe("end to end identity", () => {
 
         expect(
             identities.values().next().value?.pop()?.clientId?.equals(clientId)
-        );
+        ).toBeTrue();
     });
 });
