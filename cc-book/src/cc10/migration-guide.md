@@ -209,7 +209,8 @@ We aligned cipher suite spelling to `CipherSuite`:
 
 Previously, initialization was done via `ClientId.new(bytes)`, where bytes was a string of a specific format with a user
 id, device id, and domain. The new constructor takes care of this for you and ensures all client ids conform to this
-fomat: `ClientId.new(userId, deviceId, domain)`.
+fomat: `ClientId.new(userId, deviceId, domain)`. `userId` must be an instance of the newly added type `Uuid`, and
+`deviceId` a `DeviceId`.
 
 ## Other Changes
 
