@@ -109,7 +109,7 @@ jobs:
         if: ${{ inputs.release == true }}
         run: |
           cd crypto-ffi/bindings/js/packages/core-crypto
-          npm publish "./${{ steps.tarball.outputs.filename }}"
+          npm publish "./${{ steps.tarball.outputs.filename }}" --provenance
 
       - name: delete package from gh release
         if: ${{ inputs.release == true }}
