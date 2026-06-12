@@ -38,12 +38,14 @@ jobs:
         uses: actions/setup-node@v6
 
       - name: download ts browser artifacts
+        if: ${{ inputs.prepare == true }}
         uses: ./.github/actions/make/ts/browser
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
       - name: download ts native linux artifacts
+        if: ${{ inputs.prepare == true }}
         uses: ./.github/actions/make/ts/native
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
@@ -51,6 +53,7 @@ jobs:
 
       # We're just using the make action to download the previously produced artifact.
       - name: download ts native aarch64 apple darwin artifacts
+        if: ${{ inputs.prepare == true }}
         uses: ./.github/actions/make
         with:
           key: ts-native-darwin-arm64
