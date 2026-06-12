@@ -386,6 +386,5 @@ jobs:
     uses: ./.github/workflows/publish-npm.yml
     permissions:
       id-token: write
-      contents: read
     with:
       release: true
