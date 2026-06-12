@@ -6,16 +6,17 @@ import com.wire.crypto.ConversationId
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.Credential
 import com.wire.crypto.DatabaseKey
+import com.wire.crypto.DeviceId
 import com.wire.crypto.HistorySecret
 import com.wire.crypto.KeyPackage
 import com.wire.crypto.MlsTransport
 import com.wire.crypto.MlsTransportData
+import com.wire.crypto.Uuid
 import com.wire.crypto.Welcome
 import com.wire.crypto.cipherSuiteFromU16
 import com.wire.crypto.openDatabase
 import java.nio.file.Files
 import java.security.SecureRandom
-import java.util.Locale
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
@@ -179,10 +180,8 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
         }
 
         private fun genClientId(userId: String): ClientId {
-            val deviceIdBytes = ByteArray(8)
-            SecureRandom().nextBytes(deviceIdBytes)
-            val deviceId = deviceIdBytes.joinToString("") { "%02x".format(Locale.ROOT, it.toInt() and 0xff) }
-            return ClientId(userId, deviceId, "wire.com")
+            val deviceId = SecureRandom().nextLong().toULong()
+            return ClientId(Uuid(userId), DeviceId(deviceId), "wire.com")
         }
 
         private fun randomIdentifier(n: Int = 12): String {

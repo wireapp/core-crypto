@@ -101,8 +101,9 @@ struct InteropClientApp: App {
     }
 
     private func genClientId(userId: String = UUID().uuidString) throws -> ClientId {
-        let deviceId = String(format: "%016llx", UInt64.random(in: 0...UInt64.max))
-        return try ClientId(userId: userId, deviceId: deviceId, domain: "wire.com")
+        let userUuid = try Uuid(uuid: userId)
+        let deviceId = UInt64.random(in: 0...UInt64.max)
+        return try ClientId(userId: userUuid, deviceId: DeviceId(id: deviceId), domain: "wire.com")
     }
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity

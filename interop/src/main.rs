@@ -153,9 +153,9 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
     let cc = CoreCrypto::new(db);
     spinner.update("initialized cc...");
 
-    let user_id = uuid::Uuid::new_v4().hyphenated().to_string();
+    let user_id = uuid::Uuid::new_v4();
     let device_id = rand::random::<u64>();
-    let master_client_id = ClientId::new(&user_id, &format!("{device_id:x}"), "wire.com").unwrap();
+    let master_client_id = ClientId::new(user_id, device_id, "wire.com");
     let credential = Credential::basic(CIPHERSUITE_IN_USE.into(), master_client_id.clone())?;
     spinner.update("created credential...");
 
