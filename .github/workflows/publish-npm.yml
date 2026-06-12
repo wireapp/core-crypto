@@ -107,9 +107,28 @@ jobs:
 
       - name: publish package to npm (Trusted Publishers)
         if: ${{ inputs.release == true }}
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
         run: |
+          # This step should only run on a release, which implies the ref_name
+          # is a release tag, not a branch name.
+          #
+          # If the git tag is a semver prerelease (e.g. `v10.0.0-pre.9`),
+          # publish under an npm dist-tag named after the prerelease label
+          # (e.g. `pre`) so it doesn't claim `latest`, which npm would reject.
+          #
+          # A final release (e.g. `v10.0.0`) gets npm's default `latest` tag.
+          #
+          # Note: we can't use the full git tag as the dist-tag because npm
+          # rejects dist-tags that parse as a valid semver version.
+          tag='latest'
+          if [[ "$GITHUB_REF_NAME" == v*-* ]]; then
+            label="${GITHUB_REF_NAME#*-}"   # e.g. `pre.9`
+            tag="${label%%.*}"              # e.g. `pre`
+            echo "::notice ::publishing prerelease '$GITHUB_REF_NAME' under npm dist-tag '$tag'"
+          fi
           cd crypto-ffi/bindings/js/packages/core-crypto
-          npm publish "./${{ steps.tarball.outputs.filename }}" --provenance
+          npm publish "./${{ steps.tarball.outputs.filename }}" --provenance --tag "$tag"
 
       - name: delete package from gh release
         if: ${{ inputs.release == true }}
