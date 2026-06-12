@@ -1,0 +1,2326 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>CoreCrypto Book</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-0392ca55.css">
+        <link rel="stylesheet" href="css/chrome-fc474251.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="langtabs-0bb573a3.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex-2625779d.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc-e4cb6eb2.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CoreCrypto Book</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="corecrypto"><a class="header" href="#corecrypto">CoreCrypto</a></h1>
+<p>CoreCrypto is a simplified abstraction over the MLS and Proteus cryptographic protocols for end-to-end encrypted
+communication. In addition, it provides end-to-end identity (E2EI) support via X509 credentials.</p>
+<p>This book describes both core concepts and some platform-specific implementation notes. For detailed API references for
+a given platform and release, see <a href="https://wireapp.github.io/core-crypto">https://wireapp.github.io/core-crypto</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
+<h2 id="corecrypto-10"><a class="header" href="#corecrypto-10">CoreCrypto 10</a></h2>
+<h3 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h3>
+<ul>
+<li>Reworked E2EI</li>
+<li>New Database API</li>
+<li>New PKI Environment API</li>
+<li>New Credential API</li>
+<li>TS-Native library</li>
+<li>Reworked client id initialization</li>
+</ul>
+<h2 id="corecrypto-9"><a class="header" href="#corecrypto-9">CoreCrypto 9</a></h2>
+<h3 id="v934---2026-04-30"><a class="header" href="#v934---2026-04-30">v9.3.4 - 2026-04-30</a></h3>
+<p>Fixes an issue that could cause <em>epoch observer</em> events to be emitted for epoch changes that would not (yet) actually be
+persisted to the CoreCrypto database. This is relevant if the CoreCrypto instance is used inside the event handler of
+the <em>epoch observer</em> (e.g., to update the exported secret). If you created a CoreCrypto transaction inside the handler
+and didn’t use the CoreCrypto instance directly, this fix is irrelevant.</p>
+<h3 id="v933---2026-03-31"><a class="header" href="#v933---2026-03-31">v9.3.3 - 2026-03-31</a></h3>
+<ul>
+<li>no more errors when deleting a non-existent credential</li>
+</ul>
+<h3 id="v932---2026-03-18"><a class="header" href="#v932---2026-03-18">v9.3.2 - 2026-03-18</a></h3>
+<ul>
+<li>serialize structs into camelCase</li>
+</ul>
+<h3 id="v931---2026-03-18"><a class="header" href="#v931---2026-03-18">v9.3.1 - 2026-03-18</a></h3>
+<p>Fixes an enum representation bug on web.</p>
+<h3 id="v930---2026-02-20"><a class="header" href="#v930---2026-02-20">v9.3.0 - 2026-02-20</a></h3>
+<p>Lidl compat: Ios and Android can now export a compacted version of the CC database, retaining its encryption. This is
+only relevant for Lidl builds and should be ignored by everyone else.</p>
+<h3 id="v921---2026-02-17"><a class="header" href="#v921---2026-02-17">v9.2.1 - 2026-02-17</a></h3>
+<p>Upgrades openssl to version 3.5.5 (used on Android and iOS for encryption at rest).</p>
+<h3 id="v920---2026-02-05"><a class="header" href="#v920---2026-02-05">v9.2.0 - 2026-02-05</a></h3>
+<p>Kotlin changes:</p>
+<ul>
+<li>
+<p>expose the enitre read-only API on the <code>CoreCrypto</code> type. This allows performing arbitrary read-only operations on
+data while a transaction is running (e.g., in an <code>EpochObserver</code> event).</p>
+</li>
+<li>
+<p>Introduce <code>KotlinInstant</code> type</p>
+</li>
+</ul>
+<h3 id="v913---2025-12-18"><a class="header" href="#v913---2025-12-18">v9.1.3 - 2025-12-18</a></h3>
+<p>Upgrades the binding generator (uniffi 0.29.5) to include a crash fix for Android</p>
+<h3 id="v912---2025-11-05"><a class="header" href="#v912---2025-11-05">v9.1.2 - 2025-11-05</a></h3>
+<p>This release fixes a bug in the TypeScript bindings where the commit delay could in some situations be undefined when
+receiving a proposal.</p>
+<h3 id="v911---2025-10-24"><a class="header" href="#v911---2025-10-24">v9.1.1 - 2025-10-24</a></h3>
+<p>This release fixes the issue where <code>libcore_crypto_ffi.so</code> had segments aligned on 4k instead of 16k on Android
+platforms.</p>
+<h3 id="v910---2025-09-29"><a class="header" href="#v910---2025-09-29">v9.1.0 - 2025-09-29</a></h3>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>Even though this is a minor version bump, it contains a breaking change. See below for more information.</p>
+</blockquote>
+<ul>
+<li>added typescript structured errors</li>
+<li>fix the message rejected reason not being propagated on web</li>
+<li>improvements to logs when epochs advance</li>
+</ul>
+<h4 id="features"><a class="header" href="#features">Features</a></h4>
+<ul>
+<li>
+<p>Web: structural errors</p>
+<h5 id="example-usage"><a class="header" href="#example-usage">Example Usage</a></h5>
+<p>Extract the abort reason given via an <code>MlsTransportResponse</code></p>
+<pre><code class="language-typescript">try {
+    // send a commit that is rejected by the DS
+} catch (err) {
+  if(isMlsMessageRejectedError(err)) {
+    const rejectReason = err.context.context.reason;
+    // other things you want to do with this error...
+  } else {
+      // log error
+  }
+}
+</code></pre>
+<p>Extract the proteus error code</p>
+<pre><code class="language-typescript">try {
+    // look for a proteus session that doesn't exist
+} catch (err) {
+  if(isProteusSessionNotFoundError(err)) {
+    const errorCode = err.context.context.errorCode;
+    // other things you want to do with this error...
+  } else {
+      // log error
+  }
+}
+</code></pre>
+</li>
+</ul>
+<h4 id="bug-fixes"><a class="header" href="#bug-fixes">Bug Fixes</a></h4>
+<ul>
+<li>Web: fixed the abort reason of an <code>MlsTransportResponse</code> not being forwarded to rust.</li>
+</ul>
+<h4 id="breaking-changes"><a class="header" href="#breaking-changes">Breaking Changes</a></h4>
+<ul>
+<li><code>proteusErrorCode</code> field was removed from the root error type, you can get it from the nested context now (see above).
+Affected platforms: web</li>
+</ul>
+<h3 id="v901---2025-09-18"><a class="header" href="#v901---2025-09-18">v9.0.1 - 2025-09-18</a></h3>
+<h4 id="breaking-changes-1"><a class="header" href="#breaking-changes-1">Breaking Changes</a></h4>
+<ul>
+<li>
+<p>v9.0.0 had erroneously renamed <code>migrateDatabaseKeyTypeToBytes</code> to <code>migrateDbKeyTypeToBytes</code>. This has been fixed, and
+<code>migrateDatabaseKeyTypeToBytes</code> is usable again on all platforms.</p>
+<p>Affected platforms: Android</p>
+</li>
+</ul>
+<h4 id="bug-fixes-1"><a class="header" href="#bug-fixes-1">Bug Fixes</a></h4>
+<ul>
+<li>Kotlin documentation is now correctly generated and deployed.</li>
+</ul>
+<h3 id="v900---2025-09-16"><a class="header" href="#v900---2025-09-16">v9.0.0 - 2025-09-16</a></h3>
+<ul>
+<li>we’re now tying the Kotlin wrapper more closely to the generated bindings which allows for greater velocity when
+making changes in code that affects our API - this causes most of the breaking changes in this release</li>
+<li>removed cryptobox migration API</li>
+<li>in Swift, added protection against concurrent access from multiple core crypto instances</li>
+<li>added implicit obfuscation of sensitive data in logs</li>
+<li>reworked the entire build system and CI</li>
+</ul>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>In this release we include a fix for missing artifacts in our Web release. The faulty release process affects all
+<code>8.x</code> versions. Therefore, instead of migrating from any version &lt; <code>8.x</code> to <code>8.x</code>, directly migrate to this version.</p>
+</blockquote>
+<h4 id="breaking-changes-2"><a class="header" href="#breaking-changes-2">Breaking Changes</a></h4>
+<ul>
+<li>
+<p>Removed support for migrating CoreCrypto database to version 1.</p>
+<p>Affected platforms: Web</p>
+<p>Databases saved by CoreCrypto versions older than 2.0 cannot be migrated anymore.</p>
+</li>
+<li>
+<p>Removed <code>proteusCryptoboxMigrate</code>.</p>
+<p>Affected platforms: all</p>
+<p>Support for Cryptobox migration has been removed.</p>
+<p>Migration: remove all calls to <code>proteusCryptoboxMigrate</code>.</p>
+</li>
+<li>
+<p>Renamed <code>CoreCryptoContext.proteusDecrypt</code> to <code>CoreCryptoContext.proteusDecryptSafe(...)</code>.</p>
+<p>Affected platforms: Android</p>
+<p>It used to be the case that the Kotlin bindings hid the actual behavior of <code>proteusDecrypt</code> by adding a higher-level
+behavior, trading away some efficiency for ease-of-use. With this change, we have exposed the low-level behavior of
+<code>proteusDecrypt</code>, enabling for more efficient uses when decrypting many proteus messages at once. The old higher-level
+behavior of <code>proteusDecrypt</code> is now exposed as <code>proteusDecryptSafe</code>.</p>
+<p>Migration: replace all calls to <code>proteusDecrypt</code> with calls to <code>proteusDecryptSafe</code>.</p>
+</li>
+<li>
+<p>Eliminated wrapper <code>class E2EIEnrollment</code> in favor of generated <code>class E2eiEnrollment</code>.</p>
+<p>Affected platforms: Android</p>
+<p>We’ve brought the uniffi-generated code to very near parity with the older high-level bindings. The following breaking
+changes were necessary to eliminate the old binding class:</p>
+<p><strong>Name changes:</strong></p>
+<p>These methods have had their names changed. To migrate, simply rename all calls to these functions.</p>
+<ul>
+<li><code>accountResponse</code> -&gt; <code>newAccountResponse</code></li>
+<li><code>authzResponse</code> -&gt; <code>newAuthzResponse</code></li>
+<li><code>dpopChallengeResponse</code> -&gt; <code>newDpopChallengeResponse</code></li>
+<li><code>contextOidcChallengeResponse</code> -&gt; <code>newOidcChallengeResponse</code></li>
+</ul>
+</li>
+<li>
+<p>Eliminated (hand-written) wrapper <code>class CoreCryptoContext</code> in favor of (uniffi-generated) <code>class CoreCryptoContext</code>.</p>
+<p>Affected platforms: Android</p>
+<p>We’ve brought the uniffi-generated code to very near parity with the older high-level bindings. The following breaking
+changes were necessar to eliminate the old binding class:</p>
+<p><strong>Name changes:</strong></p>
+<p>These methods have had their names changed. To migrate, simply rename all calls to these functions.</p>
+<ul>
+<li><code>getPublicKey</code> -&gt; <code>clientPublicKey</code></li>
+<li><code>generateKeyPackages</code> -&gt; <code>clientKeypackages</code></li>
+<li><code>validKeyPackageCount</code> -&gt; <code>clientValidKeypackagesCount</code></li>
+<li><code>addMember</code> -&gt; <code>addClientsToConversation</code></li>
+<li><code>removeMember</code> -&gt; <code>removeClientsFromConversation</code></li>
+<li><code>members</code> -&gt; <code>getClientIds</code></li>
+<li><code>deriveAvsSecret</code> -&gt; <code>exportSecretKey</code></li>
+<li><code>proteusGetLocalFingerprint</code> -&gt; <code>proteusFingerprint</code></li>
+<li><code>proteusGetRemoteFingerprint</code> -&gt; <code>proteusFingerprintRemote</code></li>
+<li><code>proteusGetPrekeyFingerprint</code> -&gt; <code>proteusFingerprintPrekeyBundle</code></li>
+<li><code>proteusDoesSessionExist</code> -&gt; <code>proteusSessionExists</code></li>
+<li><code>proteusCreateSession</code> -&gt; <code>proteusSessionFromPrekey</code></li>
+<li><code>proteusDeleteSession</code> -&gt; <code>proteusSessionDelete</code></li>
+</ul>
+<p><strong>Parameter order changes:</strong></p>
+<p>These methods have had the order of their parameters changed. To migrate, either name the arguments in the caller or
+reorder the parameters appropriately.</p>
+<ul>
+<li><code>generateKeyPackages</code> / <code>clientKeypackages</code>: <code>amount</code> is now the final parameter, not the first</li>
+<li><code>joinByExternalCommit</code>: <code>credentialType</code> and <code>configuration</code> have swapped positions</li>
+<li><code>e2eiNewEnrollment</code>: <code>team</code> now appears after <code>handle</code> and before <code>expirySec</code></li>
+<li><code>e2eiNewActivationEnrollment</code>: <code>team</code> now appears after <code>handle</code> and before <code>expirySec</code></li>
+<li><code>e2eiNewRotateEnrollment</code>: new param order: <code>(displayName, handle, team, expirySec, ciphersuite)</code></li>
+<li><code>proteusCreateSession</code> / <code>proteusSessionFromPrekey</code>: params swapped</li>
+<li><code>proteusDecrypt</code>: params swapped</li>
+<li><code>proteusEncrypt</code>: params swapped</li>
+</ul>
+<p><strong>Other Parameter changes:</strong></p>
+<p>These methods have had the set of their parameters changed. To migrate, see instructions for each changed method.</p>
+<ul>
+<li><code>createConversation</code>: accepts <code>(ConversationId, CredentialType, ConversationConfiguration)</code>. Conversation
+configuration must be constructed externally.</li>
+</ul>
+<p><strong>Removed Methods:</strong></p>
+<p>These methods no longer exist.</p>
+<ul>
+<li><code>proteusNewPrekeys</code>: similar to <code>from.until(from + count).map { cc.proteusNewPrekey(it.toUShort()) }</code></li>
+<li><code>proteusNewLastPrekey</code>: similar to <code>cc.proteusLastResortPrekey()</code></li>
+<li><code>proteusEncryptWithPreKey</code>: similar to:
+<pre><code class="language-kotlin">cc.proteusSessionFromPrekey(sessionId, preKey)
+val encryptedMessage = cc.proteusEncrypt(sessionId, message)
+cc.proteusSessionSave(sessionId)
+return encryptedMessage
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p>Stopped duplicating generated code in kotlin bindings.</p>
+<p>Affected platforms: Android</p>
+<p>Hand-written wrappers have largely been removed. The following items have been renamed:</p>
+<ul>
+<li><code>Ciphersuites.DEFAULT</code> -&gt; <code>CIPHERSUITES_DEFAULT</code></li>
+<li><code>Ciphersuite.DEFAULT</code> -&gt; <code>CIPHERSUITE_DEFAULT</code></li>
+<li><code>CredentialType.Basic</code> -&gt; <code>CredentialType.BASIC</code></li>
+<li><code>MLSGroupId</code> -&gt; <code>ConversationId</code></li>
+<li><code>MLSKeyPackage</code> -&gt; <code>KeyPackage</code></li>
+<li><code>DeviceStatus.Valid</code> -&gt; <code>DeviceStatus.VALID</code></li>
+<li><code>DeviceStatus.Expired</code> -&gt; <code>DeviceStatus.EXPIRED</code></li>
+<li><code>DeviceStatus.Revoked</code> -&gt; <code>DeviceStatus.REVOKED</code></li>
+<li><code>E2eiConversationState.Verified</code> -&gt; <code>E2eiConversationState.VERIFIED</code></li>
+<li><code>E2eiConversationState.NotVerified</code> -&gt; <code>E2eiConversationState.NOT_VERIFIED</code></li>
+<li><code>E2eiConversationState.NotEnabled</code> -&gt; <code>E2eiConversationState.NOT_ENABLED</code></li>
+</ul>
+</li>
+<li>
+<p>Changed exposed error type structures</p>
+<p>Affected platforms: iOS</p>
+<p>Migration</p>
+<ul>
+<li>When pattern-matching the affected error types, add argument labels</li>
+<li>When accessing inner error values, add field names</li>
+</ul>
+</li>
+</ul>
+<h4 id="features-1"><a class="header" href="#features-1">Features</a></h4>
+<ul>
+<li>In our Swift bindings we are now protecting against concurrent access from multiple core crypto instances.</li>
+<li>In the decode tool we add support for listing members or identities present in a group info.</li>
+</ul>
+<h2 id="corecrypto-8"><a class="header" href="#corecrypto-8">CoreCrypto 8</a></h2>
+<h3 id="v803---2025-08-12"><a class="header" href="#v803---2025-08-12">v8.0.3 - 2025-08-12</a></h3>
+<p>This is only relevant for Kotlin.</p>
+<p>Fixes page size alignment for all supported linkers.</p>
+<p>Adds <code>ClientId.copyBytes()</code>.</p>
+<p>Adds <code>ClientId.toString()</code>.</p>
+<p>Changes <code>ClientId.value</code> from <code>ByteArray</code> to the generated FFI type <code>com.wire.crypto.uniffi.ClientId</code></p>
+<h3 id="v802---2025-07-23"><a class="header" href="#v802---2025-07-23">v8.0.2 - 2025-07-23</a></h3>
+<p>This is only relevant for Kotlin.</p>
+<p>Adds <code>MLSKeyPackage.copyBytes()</code>.</p>
+<h3 id="v801---2025-07-23"><a class="header" href="#v801---2025-07-23">v8.0.1 - 2025-07-23</a></h3>
+<p>This release is relevant only for Kotlin. It adds several pseudo-constructors and accessors for newtypes around byte
+vectors.</p>
+<p>For other platforms, no relevant changes are included.</p>
+<h3 id="v800---2025-07-17"><a class="header" href="#v800---2025-07-17">v8.0.0 - 2025-07-17</a></h3>
+<p>This release contains the complete API necessary for history sharing in conversations. We’ve improved the generated
+types in bindings to be more typesafe, and we’ve added the feature to rotate the key used for the core crypto database.</p>
+<h4 id="breaking-changes-3"><a class="header" href="#breaking-changes-3">Breaking changes</a></h4>
+<ul>
+<li>
+<p>Removed <code>canClose()</code>, and <code>isLocked()</code>.</p>
+<p>Affected platforms: Web</p>
+<p>Migration: Only needed if you were relying on the output of <code>canClose()</code> before calling <code>close()</code>:</p>
+<p>Call <code>close()</code> directly. Instead of handling the <code>false</code> case of <code>canClose()</code>, catch the error that <code>close()</code> may
+throw: <code>Cannot close as multiple strong refs exist</code>, then try again.</p>
+<p>The behavior of <code>close()</code> was adjusted, so that it waits for any running transaction to finish, instead of throwing an
+error.</p>
+</li>
+<li>
+<p>Removed <code>mlsInitWithClientId</code>, <code>mlsGenerateKeypairs</code>, <code>e2eiDumpPKIEnv</code>, <code>deleteKeypackages</code>, <code>getCredentialInUse</code></p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: not needed, no client is using these functions.</p>
+</li>
+<li>
+<p>Changed the location of the Wasm bytecode file</p>
+<p>Affected platforms: Web</p>
+<p>The Wasm bytecode file, <code>core-crypto-ffi_bg.wasm</code>, has been moved to a subdirectory named <code>autogenerated</code>. While this
+is an internal change and should normally not be breaking, in reality it may break the Web client, which assumes the
+location of that internal file.</p>
+<p>Migration: update relevant paths in the Web client to point to the new location, under <code>autogenerated</code>, including in
+any calls to <code>initWasmModule</code>.</p>
+</li>
+<li>
+<p>Added a parameter <code>refreshToken</code> to <code>newOidcChallengeRequest</code></p>
+<p>Affected platforms: Web</p>
+<p>This fixes an inconsistency between Web and other platforms.</p>
+<p>Migration: pass the refresh token received from the identity provider when calling <code>newOidcChallengeRequest</code>.</p>
+</li>
+<li>
+<p>Added a parameter <code>context</code> to <code>newOidcChallengeResponse</code></p>
+<p>Affected platforms: Web</p>
+<p>Migration: pass the transaction context when calling <code>newOidcChallengeResponse</code>.</p>
+</li>
+<li>
+<p>Added <code>encryptedMessage</code> field to <code>CommitBundle</code></p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>This field is used to bundle encrypted history secrets with a commit that adds a new history client.</p>
+<p>Migration: update any pattern-matching or other code that depends on the structure of <code>MlsCommitBundle</code> to include the
+new field. Also, make sure to update your implementation of the <code>MlsTransport</code> protocol/interface to include this
+field in the payload sent to the Delivery Service.</p>
+</li>
+<li>
+<p><code>ClientId</code> is a newtype, not a bare byte array.</p>
+<p>Affected platforms: Web, Swift</p>
+<p>Migration: call <code>new ClientId(id)</code> to construct a <code>ClientId</code>, and <code>id.copyBytes()</code> to get a byte array out.</p>
+</li>
+<li>
+<p><code>ClientId</code> wrapper accepts a byte array, not a string.</p>
+<p>Affected platforms: Android</p>
+<p>Migration: call <code>.toByteArray()</code> on the input.</p>
+</li>
+<li>
+<p><code>Ciphersuite</code> is an exported public enum, not an integer</p>
+<p>Affected platforms: all</p>
+<p>Migration: use the relevant enum variant instead of an integer.</p>
+</li>
+<li>
+<p><code>SecretKey</code>, <code>ExternalSenderKey</code>, <code>GroupInfo</code>, <code>ConversationId</code>, <code>KeyPackage</code>, <code>Welcome</code> are now newtypes</p>
+<p>Affected items:</p>
+<ul>
+<li><code>CoreCryptoContext.exportSecretKey</code> (aka <code>CoreCryptoContext.deriveAvsSecret</code>) now returns a <code>SecretKey</code></li>
+<li>(kotlin) <code>AvsSecret</code> newtype removed in favor of <code>SecretKey</code></li>
+<li><code>CoreCryptoContext.getExternalSender</code> now returns an <code>ExternalSenderKey</code></li>
+<li><code>ConversationConfiguration::external_senders</code> now accepts <code>ExternalSenderKey</code>s</li>
+<li><code>CoreCryptoContext.joinByExternalCommit</code> now accepts a <code>GroupInfo</code></li>
+<li><code>GroupInfoBundle</code> now contains a <code>GroupInfo</code></li>
+<li>Many <code>CoreCryptoContext</code> methods now accept a <code>ConversationId</code> newtype instead of a byte array</li>
+<li><code>HistoryObserver</code> and <code>EpochObserver</code> now produce <code>ConversationId</code> instances instead of byte arrays</li>
+<li><code>CoreCryptoContext.clientKeypackages</code> now produces <code>KeyPackage</code>s</li>
+<li><code>CoreCryptoContext.addClientsToConversation</code> now accepts <code>KeyPackage</code>s</li>
+<li><code>CommitBundle</code> now might contain a <code>Welcome</code></li>
+<li><code>CoreCryptoContext.processWelcomeMessage</code> now accepts a <code>Welcome</code></li>
+</ul>
+<p>Affected platforms: all</p>
+<p>Migration: call <code>.copyBytes()</code> on the newtype to get access to the raw byte vector. To construct the newtype from a
+byte array, just use the appropriate constructor.</p>
+<p>In the past, Android (but only Android) had newtypes in these instances; other clients needed to work with a raw byte
+vector. We’ve decided to expand the use of newtypes around byte vectors in the FFI interface. This has several
+benefits:</p>
+<ul>
+<li>Increased consistency between client FFI libraries</li>
+<li>Reduced thickness of the high-level FFI wrappers</li>
+<li>In some cases, we can avoid bidirectional data transfers across the FFI boundary, and just move pointers around
+instead.</li>
+</ul>
+</li>
+<li>
+<p>Removed <code>PlaintextMessage</code>, <code>MlsMessage</code> and <code>SignaturePublicKey</code> newtypes in favor of <code>ByteArray</code></p>
+<p>Affected platforms: Android</p>
+<p>The Message newtypes were only used in <code>CoreCryptoContext.encryptMessage</code> and <code>CoreCryptoContext.decryptMessage</code>.
+<code>SignaturePublicKey</code> was used only for the return value of <code>fun getPublicKey</code>. The only usage we found was an
+immediate access of the byte vector.</p>
+<p>These types appear to provide no type safety benefits, instead only adding a bit of friction.</p>
+</li>
+</ul>
+<h4 id="features-2"><a class="header" href="#features-2">Features</a></h4>
+<ul>
+<li>Support Android environments with 16k page size</li>
+<li>Added a module-level function <code>updateDatabaseKey</code>, to update the key of an existing CoreCrypto database</li>
+<li>Support for history sharing which can be enabled by calling <code>enableHistorySharing()</code> and disabled again by calling
+<code>disableHistorySharing()</code>.</li>
+</ul>
+<h2 id="corecrypto-7"><a class="header" href="#corecrypto-7">CoreCrypto 7</a></h2>
+<h3 id="v702---2025-07-07"><a class="header" href="#v702---2025-07-07">v7.0.2 - 2025-07-07</a></h3>
+<p>Upgrade OpenMLS to fix a bug where the ratchet tree would sometimes become corrupt leading to broken MLS groups.</p>
+<h4 id="bug-fixes-2"><a class="header" href="#bug-fixes-2">Bug Fixes</a></h4>
+<ul>
+<li>update openmls [WPB-18569] (7ca7ba7)</li>
+</ul>
+<h3 id="v701---2025-06-02"><a class="header" href="#v701---2025-06-02">v7.0.1 - 2025-06-02</a></h3>
+<h4 id="bug-fixes-3"><a class="header" href="#bug-fixes-3">Bug Fixes</a></h4>
+<ul>
+<li>initWasm was being called with the wrong property field. (ca1706d)</li>
+<li>allow registering epoch observer before calling mls_init (3f0605a)</li>
+</ul>
+<h3 id="v700---2025-05-21"><a class="header" href="#v700---2025-05-21">v7.0.0 - 2025-05-21</a></h3>
+<h4 id="breaking-changes-4"><a class="header" href="#breaking-changes-4">Breaking changes</a></h4>
+<p>The typescript bindings no longer implicitly load the wasm module when importing the core crypto module. To replace this
+behaviour the <code>async initWasmModule()</code> function has been added, which must be called before any other core crypto
+function.</p>
+<h4 id="features-3"><a class="header" href="#features-3">Features</a></h4>
+<ul>
+<li>remove top level await and expose async init method instead (ce6e566)</li>
+<li>expose <code>historyClient</code> constructor to swift (22d98de)</li>
+<li>expose <code>historyClient</code> constructor to kotlin (b16839d)</li>
+<li>expose <code>historyClient</code> constructor to wasm (3c2531a)</li>
+<li>expose <code>history_client</code> constructor publicly (c24fcc3)</li>
+<li>restore history secrets (5643e87)</li>
+<li>add <code>fn history_client(HistorySecret) -&gt; CoreCrypto</code> (8b7b7d4)</li>
+<li>add <code>fn generate_history_secret</code> (a998dec)</li>
+</ul>
+<h4 id="bug-fixes-4"><a class="header" href="#bug-fixes-4">Bug Fixes</a></h4>
+<ul>
+<li>crypto-ffi: fix naming and attributes of WelcomeBundle fields on Wasm (1b2e88b)</li>
+<li>prevent cancellations during transactions (Kotlin) (75217d5)</li>
+<li>prevent cancellations during transactions (Kotlin) (ae621b7)</li>
+</ul>
+<h2 id="corecrypto-6"><a class="header" href="#corecrypto-6">CoreCrypto 6</a></h2>
+<h3 id="v601---2025-05-07"><a class="header" href="#v601---2025-05-07">v6.0.1 - 2025-05-07</a></h3>
+<h4 id="bug-fixes-5"><a class="header" href="#bug-fixes-5">Bug Fixes</a></h4>
+<ul>
+<li>swift publishing CI action (d1030e1)</li>
+</ul>
+<h3 id="v600---2025-05-07"><a class="header" href="#v600---2025-05-07">v6.0.0 - 2025-05-07</a></h3>
+<ul>
+<li>Changed the core crypto database key format, to enable validation of the same and ensure consistency between platforms</li>
+<li>Added a function for each platform to migrate from the old to the new key type</li>
+<li>Several more bug fixes, including prevention of the <em>pending commit</em> error</li>
+</ul>
+<h4 id="breaking-changes-5"><a class="header" href="#breaking-changes-5">Breaking changes</a></h4>
+<ul>
+<li>
+<p>Changed the core crypto database key format</p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: before instantiating this version of core crypto for the first time, call <code>migrateDatabaseKeyTypeToBytes()</code>
+with the appropiate arguments (old key and your new key) <em>exactly once</em>. Then, instantiate core crypto with the new
+key.</p>
+<p>Note: Make sure the new key is not based on a string, and provide full 256 bits of entropy.</p>
+<p>Note: Instantiating this version of core crypto will fail before you call the migration function.</p>
+</li>
+</ul>
+<h3 id="v540---2025-05-14"><a class="header" href="#v540---2025-05-14">v5.4.0 - 2025-05-14</a></h3>
+<p>Kotlin bindings only: transactions are now
+<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/"><code>NonCancellable</code></a>,
+as <a href="https://mozilla.github.io/uniffi-rs/latest/futures.html#cancelling-async-code">required by Uniffi</a>. This prevents a
+category of bug where Kotlin thinks a transaction has been cancelled, while Rust thinks it is still running.</p>
+<h3 id="v530--2025-04-29"><a class="header" href="#v530--2025-04-29">v5.3.0- 2025-04-29</a></h3>
+<h4 id="bug-fixes-6"><a class="header" href="#bug-fixes-6">Bug Fixes</a></h4>
+<ul>
+<li>re-throw inner error which cancelled the transaction (Swift) (0c282b2)</li>
+</ul>
+<h3 id="v520---2025-04-15"><a class="header" href="#v520---2025-04-15">v5.2.0 - 2025-04-15</a></h3>
+<h4 id="bug-fixes-7"><a class="header" href="#bug-fixes-7">Bug Fixes</a></h4>
+<ul>
+<li>add registerEpochObserver to CoreCryptoProtocol (eadf388)</li>
+<li>create an interface for <code>ConversationConfiguration</code> (b1e82bf)</li>
+<li>swift publishing failing due to not running on latest macos runner (dcc1890)</li>
+</ul>
+<h3 id="v510---2025-04-03"><a class="header" href="#v510---2025-04-03">v5.1.0 - 2025-04-03</a></h3>
+<h4 id="bug-fixes-8"><a class="header" href="#bug-fixes-8">Bug Fixes</a></h4>
+<ul>
+<li>broken swift bindings by publishing uniffi framework separately (2b950cc)</li>
+<li>don’t refer to the internal uniffi EpochObserver type in the public API (7833300)</li>
+<li>re-expose proteus_reload_session which removed by mistake (36f2b87)</li>
+</ul>
+<h3 id="v500---2025-03-21"><a class="header" href="#v500---2025-03-21">v5.0.0 - 2025-03-21</a></h3>
+<p>New Swift bindings which are more ergonomic and allows for better testing by exposing the transaction context as a
+protocol.</p>
+<p>New API for observing epoch changes through a callback API: <code>registerEpochObserver</code>. After adopting this API clients can
+remove their own epoch observers.</p>
+<h4 id="breaking-changes-6"><a class="header" href="#breaking-changes-6">Breaking changes</a></h4>
+<ul>
+<li>New Swift bindings are replacing the old Swift bindings.</li>
+</ul>
+<h2 id="corecrypto-4"><a class="header" href="#corecrypto-4">CoreCrypto 4</a></h2>
+<h3 id="v423---2025-03-14"><a class="header" href="#v423---2025-03-14">v4.2.3 - 2025-03-14</a></h3>
+<ul>
+<li>fix android publishing to maven central</li>
+</ul>
+<h3 id="v422---2025-03-14"><a class="header" href="#v422---2025-03-14">v4.2.2 - 2025-03-14</a></h3>
+<ul>
+<li>fix publishing to maven central</li>
+</ul>
+<h3 id="v421---2025-03-14"><a class="header" href="#v421---2025-03-14">v4.2.1 - 2025-03-14</a></h3>
+<ul>
+<li>expose <code>proteusCryptoboxMigrate()</code> [WPB-16549] (682b9fe)</li>
+</ul>
+<h3 id="v420---2025-02-28"><a class="header" href="#v420---2025-02-28">v4.2.0 - 2025-02-28</a></h3>
+<ul>
+<li>The Android release once again bundles API docs.</li>
+<li>The Kotlin bindings have received several API fixes in particular:
+<ul>
+<li>AcmeChallenge was missing the target property.</li>
+<li>proteusGetPrekeyFingerprint was missing.</li>
+</ul>
+</li>
+<li>The Typescript bindings now correctly expose WireIdentity and X509Identity.</li>
+<li>The code base has migrated to Rust 2024 edition.</li>
+</ul>
+<h3 id="v410---2025-02-07"><a class="header" href="#v410---2025-02-07">v4.1.0 - 2025-02-07</a></h3>
+<ul>
+<li>Add the capability to handle the case where a proposal-referencing commit arrives before the proposals it references.</li>
+</ul>
+<h4 id="semi--breaking-changes"><a class="header" href="#semi--breaking-changes">(Semi-) Breaking changes</a></h4>
+<ul>
+<li>For the case mentioned above, the corresponding error type <code>BufferedCommit</code> has been added.
+<ul>
+<li>Depending on the error model, this can be a breaking change.</li>
+</ul>
+</li>
+</ul>
+<h3 id="v401---2025-02-05"><a class="header" href="#v401---2025-02-05">v4.0.1 - 2025-02-05</a></h3>
+<ul>
+<li>support entity derive for tables with hex ids (0bd3676)</li>
+</ul>
+<h3 id="v400---2025-01-28"><a class="header" href="#v400---2025-01-28">v4.0.0 - 2025-01-28</a></h3>
+<ul>
+<li>All errors crossing the FFI boundary are now logged.</li>
+<li>An iOS client has been added to internal interop tests, which means we now test the entire FFI stack on iOS.</li>
+<li>A new interface for MLS transport has been added, allowing for a much simpler and more robust CoreCrypto API.</li>
+<li>Removal of a number of deprecated and unnecessary functions and types.</li>
+<li>Completely reworked internal error handling, to allow for more precise errors.</li>
+<li>A number of improvements to Kotlin and Javascript bindings, making the bindings more consistent.</li>
+<li>The <code>decode</code> tool gained support for decoding MLS messages.</li>
+</ul>
+<h4 id="breaking-changes-7"><a class="header" href="#breaking-changes-7">Breaking changes</a></h4>
+<ul>
+<li>
+<p>Deprecated functions on the <code>CoreCrypto</code> type that were automatically creating transactions have been removed.</p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: replace calls to functions on <code>CoreCrypto</code> with calls to corresponding functions on <code>CoreCryptoContext</code>,
+which is created when you explicitly create a transaction. Transactions have to be explicitly created now.</p>
+</li>
+<li>
+<p>The low-level uniffi-generated Kotlin bindings code is no longer publicly available. It should never have been used in
+application code directly.</p>
+<p>Affected platforms: Android</p>
+<p>Migration: make sure to use the Kotlin high-level API only.</p>
+</li>
+<li>
+<p>The Wasm bytecode generated by <code>wasm-bindgen</code> is now imported directly when importing the <code>corecrypto</code> module. This
+makes sure that the Wasm module is immediately initialised, without any additional steps. There is no need for the
+client app to know or handle the path to Wasm bytecode file.</p>
+<p>Additionally, it is now possible to use the same CoreCrypto module in both browser and non-browser contexts.</p>
+<p>Affected platforms: Web</p>
+<p>Migration: drop any references to <code>core-crypto-ffi_bg.wasm</code> and do not set the <code>wasmFilePath</code> argument to the
+<code>CoreCrypto.init</code> function – it is no longer used. Additionally, make sure there is no special handling or separate
+hosting of the Wasm bytecode file. CoreCrypto release artifacts should be used without any changes.</p>
+</li>
+<li>
+<p>Validation callbacks, as well as related error variants, have been removed.</p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: remove all implementations of <code>authorize</code>, <code>userAuthorize</code> and <code>clientIsExistingGroupUser</code>, as well as
+calls to <code>CoreCrypto.setCallbacks</code>.</p>
+</li>
+<li>
+<p>The <code>MlsTransport</code> interface has been added. This is another milestone in the effort to simplify the public API and
+make it more robust.</p>
+<p>All client applications have to provide an implementation of the new interface, which comprises only two functions,
+<code>sendMessage</code> and <code>sendCommitBundle</code>.</p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: implement the <code>MlsTransport</code> interface and call <code>CoreCrypto.provideTransport</code> to make CoreCrypto use your
+implementation.</p>
+</li>
+<li>
+<p>Functions <code>CoreCrypto.wipe</code> and <code>CoreCrypto.unload</code> have been removed. They were not providing any value.</p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: drop calls to <code>wipe</code> and <code>unload</code>. Client applications wishing to make their keys and conversations
+inaccessible should remove the CoreCrypto database explicitly.</p>
+</li>
+<li>
+<p>The function <code>CoreCrypto.proteusLastErrorCode</code> has been removed. We now have Proteus error codes attached to errors
+that are emitted by CoreCrypto.</p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: drop calls to <code>proteusLastErrorCode</code> and instead check the returned error object.</p>
+</li>
+<li>
+<p>The functions <code>CoreCrypto.buildMetadata</code> and <code>CoreCrypto.version</code> have been moved to the module level. It is no longer
+required to create a <code>CoreCrypto</code> instance to call them.</p>
+<p>Affected platforms: Web</p>
+<p>Migration: use module-level <code>buildMetadata</code> and <code>version</code> functions.</p>
+</li>
+<li>
+<p>Several changes have been made to the E2EI API.</p>
+<p>The function <code>CoreCrypto.e2eiRotateAll</code> has been removed. Client applications should instead go over each conversation
+individually and call <code>CoreCrypto.e2eiRotate</code>.</p>
+<p>Two new functions have been added, <code>CoreCrypto.saveX509Credential</code> and <code>CoreCrypto.deleteStaleKeyPackages</code>. The former
+should be used after getting a new X509 credential, while the latter should be called after generating keypackages for
+the new credential and replacing the stale ones in the backend.</p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: replace calls to <code>e2eiRotateAll</code> with iterations over conversations, calling <code>e2eiRotate</code> on every
+conversation and checking for errors. Use <code>saveX509Credential</code> and <code>deleteStaleKeyPackages</code> as appropriate (more
+details in API documentation).</p>
+</li>
+<li>
+<p>The proposal API has been removed, simplifying the public API a great deal. This includes functions like
+<code>newProposal</code>, <code>newExternalProposal</code>, <code>clearPendingProposal</code>, <code>joinConversation</code> etc.</p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: drop all calls to removed functions as they are no longer necessary with the new MLS transport interface.</p>
+</li>
+</ul>
+<h2 id="corecrypto-3"><a class="header" href="#corecrypto-3">CoreCrypto 3</a></h2>
+<h3 id="v311---2025-04-15"><a class="header" href="#v311---2025-04-15">v3.1.1 - 2025-04-15</a></h3>
+<ul>
+<li>This release bumps the version of rusty-jwt-tools to 0.13.0, which includes additional end-to-end identity tests and
+test markers relevant to Bund.</li>
+</ul>
+<h3 id="v310---2025-02-12"><a class="header" href="#v310---2025-02-12">v3.1.0 - 2025-02-12</a></h3>
+<ul>
+<li>
+<p>Add a test case mimicking a real life bug ([WPB-15810]), demonstrating that in some cases it was possible to generate
+errors by swapping the ordering of two messages.</p>
+</li>
+<li>
+<p>Add a new layer of buffering to handle that situation.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>Decrypting a message can now potentially return a <code>MlsError::Other</code> variant with the message</p>
+<blockquote>
+<p>Incoming message is a commit for which we have not yet received all the proposals. Buffering until all proposals
+have arrived.</p>
+</blockquote>
+<p>Clients do not need to take any action in response to this message. This error simply indicates that the commit has
+been buffered, and will be automatically unbuffered when possible.</p>
+</blockquote>
+<p>If the required proposal is never delivered, however, the client will eventually desync as the commit will never be
+processed. Clients should be on the lookout for this case and trigger their rejoin protocol in that event.</p>
+</li>
+</ul>
+<h3 id="v302---2025-01-31"><a class="header" href="#v302---2025-01-31">v3.0.2 - 2025-01-31</a></h3>
+<ul>
+<li>
+<p>Fix a bug which could cause certain errors to generate spurious log lines of the form</p>
+<blockquote>
+<p>Cannot build CoreCryptoError, falling back to standard Error! ctx: Incoming message is from an epoch too far in the
+future to buffer.</p>
+</blockquote>
+</li>
+</ul>
+<h3 id="v301---2025-01-27"><a class="header" href="#v301---2025-01-27">v3.0.1 - 2025-01-27</a></h3>
+<ul>
+<li>Emit info log with context when buffering, restoring, or clearing buffered messages</li>
+</ul>
+<h3 id="v300---2024-12-11"><a class="header" href="#v300---2024-12-11">v3.0.0 - 2024-12-11</a></h3>
+<ul>
+<li>Fix the ‘transaction in progress’ error when there was an attempt to perform multiple transactions in parallel. This
+will no longer throw an error, instead the transactions will be queued and performed serially one after another.</li>
+</ul>
+<h4 id="breaking-changes-8"><a class="header" href="#breaking-changes-8">Breaking changes</a></h4>
+<ul>
+<li>Added the missing MLS error case OrphanWelcome.</li>
+</ul>
+<h2 id="corecrypto-2"><a class="header" href="#corecrypto-2">CoreCrypto 2</a></h2>
+<h3 id="v200---2024-12-02"><a class="header" href="#v200---2024-12-02">v2.0.0 - 2024-12-02</a></h3>
+<ul>
+<li>The number of public errors has been reduced and simplified. It’s no longer necessary to use the
+<code>proteus_last_error_code</code> function, since thrown error should contain all the information.</li>
+<li>The logger callback now includes an additional context parameter which contains additional context for a log event in
+the form of a JSON Object string.</li>
+<li>It’s now possible to change the logger and log level at runtime (see <code>setLogLevel</code> and <code>setLogger</code>).</li>
+</ul>
+<h4 id="breaking-changes-9"><a class="header" href="#breaking-changes-9">Breaking changes</a></h4>
+<ul>
+<li>Dropped support for <code>i686-linux-android</code> target.</li>
+<li><code>CoreCryptoLogger</code> takes an additional <code>context</code> parameter.</li>
+<li><code>CoreCryptoError</code> and its child errors have been refactored to reduce the amount of error we expose and provide
+explicit errors for Proteus errors. The errors we have removed will appear under the <code>Other</code> case.
+<pre><code>enum ProteusError {
+    SessionNotFound,
+    DuplicateMessage,
+    RemoteIdentityChanged,
+    Other(Int),
+}
+
+pub enum MlsError {
+    ConversationAlreadyExists,
+    DuplicateMessage,
+    BufferedFutureMessage,
+    WrongEpoch,
+    MessageEpochTooOld,
+    SelfCommitIgnored,
+    UnmergedPendingGroup,
+    StaleProposal,
+    StaleCommit,
+    Other(String)
+}
+</code></pre>
+</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="proteus"><a class="header" href="#proteus">Proteus</a></h1>
+<p>Proteus is Wire’s implementation of the <a href="https://signal.org/docs/">Signal Protocol</a>: a double-ratchet scheme providing
+forward secrecy and break-in recovery for one-to-one encrypted sessions.</p>
+<p>Proteus is intrinsically a direct protocol: every message is individually encrypted for each recipient. Groups in
+Proteus are a fiction managed collaboratively between the backend and the client; they do not exist at the protocol
+level. Encrypting a message for a group of <em>n</em> clients requires sending <em>n</em> individually encrypted copies. This effect
+is compounded by the fact that a logical user in the sense of a human is very likely to have multiple clients in terms
+of individual devices. This O(n²) overhead is manageable for small groups, but becomes expensive as they scale, and it
+was the primary motivation for adopting MLS.</p>
+<p>Proteus remains supported for backwards compatibility, but has not received direct development work in some time. Its
+implementation is already feature-gated for easy removal, and is intended to be removed as soon as we can confirm that a
+sufficiency of clients have upgraded their conversations to MLS.</p>
+<h2 id="initialization"><a class="header" href="#initialization">Initialization</a></h2>
+<p>Before any Proteus operation, the Proteus subsystem must be explicitly initialized within a transaction:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">await ctx.proteusInit()
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">try await ctx.proteusInit()
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">ctx.proteusInit()
+</code></pre>
+</div>
+</div>
+</div>
+
+<p>This loads the device’s Proteus identity from the keystore, creating it if it does not yet exist. All other Proteus
+methods will return an error if called before <code>proteusInit()</code> has succeeded.</p>
+<h2 id="identity-and-fingerprints"><a class="header" href="#identity-and-fingerprints">Identity and Fingerprints</a></h2>
+<p>A Proteus identity is a long-lived Ed25519 keypair tied to the device. CoreCrypto exposes several fingerprint accessors,
+each returning a hex string:</p>
+<p><strong><code>proteusFingerprint()</code></strong> — The local device’s public key. Remains stable for the lifetime of the keystore.</p>
+<p><strong><code>proteusFingerprintLocal(sessionId)</code></strong> — The local public key as seen from within a specific session. Equivalent to
+<code>proteusFingerprint()</code> but scoped to a session for API symmetry.</p>
+<p><strong><code>proteusFingerprintRemote(sessionId)</code></strong> — The remote peer’s public key within a session. Can be used to verify the
+peer’s identity out-of-band.</p>
+<p><strong><code>proteusFingerprintPrekeybundle(prekey)</code></strong> — Extracts the public key fingerprint from a serialized prekey bundle
+without opening a session. Useful for verifying a peer’s identity before establishing a session.</p>
+<h2 id="prekeys"><a class="header" href="#prekeys">Prekeys</a></h2>
+<p>Prekeys are the mechanism that allows a sender to open a Proteus session with a recipient who is offline. The recipient
+publishes a set of one-time prekey bundles to the delivery service in advance; the sender fetches one and uses it to
+bootstrap the session.</p>
+<p>CoreCrypto provides two ways to generate prekeys:</p>
+<p><strong><code>proteusNewPrekey(id)</code></strong> — Generates a prekey with an explicit numeric ID (a <code>u16</code>). Use this when your app manages
+the prekey ID space itself.</p>
+<p><strong><code>proteusNewPrekeyAuto()</code></strong> — Generates a prekey with an automatically incremented ID and returns both the ID and the
+serialized bundle. Prefer this unless you have a specific reason to control IDs manually.</p>
+<p>Both return a CBOR-serialized prekey bundle ready to upload to the delivery service.</p>
+<h3 id="the-last-resort-prekey"><a class="header" href="#the-last-resort-prekey">The Last Resort Prekey</a></h3>
+<p>Proteus reserves prekey ID 65535 (<code>u16::MAX</code>) as a last resort prekey. Unlike one-time prekeys, the last resort prekey
+is never consumed — it stays in the keystore indefinitely so that a sender can always open a session even when all
+one-time prekeys have been exhausted.</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">const prekey = await ctx.proteusLastResortPrekey()
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">let prekey = try await ctx.proteusLastResortPrekey()
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">val prekey = ctx.proteusLastResortPrekey()
+</code></pre>
+</div>
+</div>
+</div>
+
+<p>The constant <code>proteusLastResortPrekeyId()</code> returns <code>65535</code> and can be used to exclude this ID when generating ordinary
+prekeys.</p>
+<h2 id="sessions"><a class="header" href="#sessions">Sessions</a></h2>
+<p>A Proteus session represents an established encrypted channel with one remote client, identified by a caller-supplied
+<code>sessionId</code> string. Session state is cached in memory and persisted to the keystore.</p>
+<p>There are two ways to establish a new session, depending on which side initiates:</p>
+<p><strong><code>proteusSessionFromPrekey(sessionId, prekey)</code></strong> — Used by the <strong>sender</strong> to initiate a session. Takes the remote
+client’s serialized prekey bundle (fetched from the delivery service) and creates a local session ready to encrypt.</p>
+<p><strong><code>proteusSessionFromMessage(sessionId, envelope)</code></strong> — Used by the <strong>recipient</strong> upon receiving the first message.
+Decrypts the initial envelope, establishes the session, and returns the plaintext in a single step.</p>
+<p>Once established, a session can be checked for existence with <code>proteusSessionExists(sessionId)</code> and explicitly removed
+with <code>proteusSessionDelete(sessionId)</code>. Manual saves via <code>proteusSessionSave(sessionId)</code> are available but not normally
+required — sessions are persisted automatically when encrypting or decrypting.</p>
+<h2 id="encrypting-and-decrypting"><a class="header" href="#encrypting-and-decrypting">Encrypting and Decrypting</a></h2>
+<p>With a session established, encryption and decryption are straightforward:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">const ciphertext = await ctx.proteusEncrypt(sessionId, plaintext)
+const plaintext  = await ctx.proteusDecrypt(sessionId, ciphertext)
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">let ciphertext = try await ctx.proteusEncrypt(sessionId: sessionId, plaintext: plaintext)
+let plaintext  = try await ctx.proteusDecrypt(sessionId: sessionId, ciphertext: ciphertext)
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">val ciphertext = ctx.proteusEncrypt(sessionId, plaintext)
+val plaintext  = ctx.proteusDecrypt(sessionId, ciphertext)
+</code></pre>
+</div>
+</div>
+</div>
+
+<h3 id="batched-encryption"><a class="header" href="#batched-encryption">Batched Encryption</a></h3>
+<p>Because a group message in Proteus requires one encrypted copy per recipient client, CoreCrypto provides a batched
+variant to reduce FFI round-trips:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">const map = await ctx.proteusEncryptBatched(sessionIds, plaintext)
+// map: { sessionId -&gt; ciphertext }
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">let map = try await ctx.proteusEncryptBatched(sessions: sessionIds, plaintext: plaintext)
+// map: { sessionId -&gt; ciphertext }
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">val map = ctx.proteusEncryptBatched(sessionIds, plaintext)
+// map: { sessionId -&gt; ciphertext }
+</code></pre>
+</div>
+</div>
+</div>
+
+<p>This is more efficient than calling <code>proteusEncrypt</code> in a loop and should be preferred whenever sending to multiple
+sessions simultaneously.</p>
+<h3 id="safe-decrypt"><a class="header" href="#safe-decrypt">Safe Decrypt</a></h3>
+<p><code>proteusDecryptSafe(sessionId, ciphertext)</code> is a convenience wrapper that handles the common case where you do not know
+in advance whether the session already exists. It opens the session from the message envelope if necessary, then
+decrypts, in a single call. For high-volume decryption to an existing session, the plain <code>proteusDecrypt</code> call is
+slightly more efficient.</p>
+<h2 id="error-handling"><a class="header" href="#error-handling">Error Handling</a></h2>
+<p>Proteus errors are surfaced as a <code>ProteusError</code> with the following variants:</p>
+<p><strong><code>SessionNotFound</code></strong> — The requested session ID does not exist in the keystore or in-memory cache.</p>
+<p><strong><code>DuplicateMessage</code></strong> — The ciphertext has already been decrypted. The double-ratchet discards keys after use, so
+replaying a message is always an error.</p>
+<p><strong><code>RemoteIdentityChanged</code></strong> — The remote peer’s identity key no longer matches what was recorded when the session was
+established. This typically indicates a device reset or, in the worst case, a key compromise.</p>
+<p><strong><code>Other { error_code }</code></strong> — A lower-level Proteus error that does not map to one of the above categories. The numeric
+<code>error_code</code> corresponds to the
+<a href="https://github.com/wireapp/proteus/blob/develop/crates/proteus-traits/src/lib.rs">proteus-traits error table</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="mls"><a class="header" href="#mls">MLS</a></h1>
+<p><a href="https://www.rfc-editor.org/rfc/rfc9420.html">RFC 9420</a>, the Messaging Layer Security standard, solves the group-scaling
+problem that limits Proteus. Rather than maintaining an independent session per client pair, MLS establishes a single
+shared group secret from which all members independently derive the same encryption keys. Membership changes are managed
+through a <em>ratchet tree</em> — a binary tree structure that lets any member compute the new shared secret after an add or
+remove using only O(log n) key operations rather than O(n²) messages.</p>
+<p>The fundamental unit of time in an MLS group is the <em>epoch</em>. Each epoch has a distinct shared secret; when membership
+changes (or when keys are rotated for other reasons), the group advances to a new epoch and new keys are computed. The
+two-phase <em>proposal / commit</em> model makes this safe in asynchronous networks: proposals accumulate from multiple
+senders, and a single commit bundles them into an atomic epoch transition.</p>
+<h2 id="cryptographic-properties"><a class="header" href="#cryptographic-properties">Cryptographic Properties</a></h2>
+<h3 id="security-guarantees"><a class="header" href="#security-guarantees">Security Guarantees</a></h3>
+<p>MLS provides two complementary security properties that together defend against both historical and future exposure of
+messages.</p>
+<h4 id="forward-secrecy"><a class="header" href="#forward-secrecy">Forward Secrecy</a></h4>
+<p>Because each epoch derives a distinct shared secret and prior epoch secrets are deleted after use, compromise of the
+current epoch does not expose messages from any prior epoch. An attacker who obtains today’s keys learns nothing about
+yesterday’s conversations.</p>
+<h4 id="post-compromise-security"><a class="header" href="#post-compromise-security">Post-Compromise Security</a></h4>
+<p>Forward secrecy protects the past; post-compromise security (PCS) protects the future. If an attacker obtains a member’s
+key material — for example by compromising a device — they gain access to the current epoch. MLS limits this exposure:
+once any member contributes a commit that includes a fresh path secret (an Update proposal, or any commit authored by
+the compromised member), new randomness is injected into the key schedule. The attacker’s copy of the old keys cannot be
+used to derive the new epoch’s secrets, so the group heals automatically as conversation continues.</p>
+<p>Together, these guarantees mean that an MLS group is resilient over time: past messages remain private even after
+compromise, and future messages recover privacy as soon as keys are rotated.</p>
+<h3 id="efficiency"><a class="header" href="#efficiency">Efficiency</a></h3>
+<p>While changes in the group structure require O(log n) key operations, application messages are more efficient. Because
+each group has a shared group state governing its current shared secret, application messages encrypt in O(1). A
+significant improvement over Proteus!</p>
+<h2 id="initialization-1"><a class="header" href="#initialization-1">Initialization</a></h2>
+<p>Before any MLS operation, MLS must be explicitly initialized within a transaction:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">await ctx.mlsInit(clientId, transport)
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">try await ctx.mlsInit(clientId: clientId, transport: transport)
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">ctx.mlsInit(clientId, transport)
+</code></pre>
+</div>
+</div>
+</div>
+
+<h3 id="client-identity"><a class="header" href="#client-identity">Client Identity</a></h3>
+<p><code>ClientId</code> is an opaque byte array. CoreCrypto treats it as an identifier and does not inspect or validate its contents.
+Wire’s convention is to encode the client ID as a UTF-8 string of the form <code>userId:clientId@domain</code> — for example
+<code>alice_user_id:device1@wire.com</code> — but this is a Wire convention, not a CoreCrypto requirement.</p>
+<h3 id="mlstransport"><a class="header" href="#mlstransport"><code>MlsTransport</code></a></h3>
+<p>CoreCrypto intentionally abstains from communication with the Wire backend; instead, the caller provides an
+implementation of this interface that CoreCrypto calls on demand.</p>
+<p><strong><code>sendCommitBundle(commitBundle)</code></strong> — Called whenever a commit is produced — for example when creating a conversation,
+adding or removing members, or rotating keys. The <code>commitBundle</code> contains the commit message, a welcome message for any
+newly added members, and the updated group info. All three should be forwarded to the delivery service in a single
+request.</p>
+<p>The implementor of <code>sendCommitBundle</code> may throw an <code>MlsTransportError</code> indicating the reason for a rejected message.</p>
+<p><strong><code>prepareForTransport(historySecret)</code></strong> — Called before a history secret is transmitted to a new history client. The
+implementation should package the secret in the application’s transport format (e.g., JSON or Protobuf) and return the
+serialized bytes. CoreCrypto will then encrypt and send those bytes as an application message.</p>
+<h2 id="observers"><a class="header" href="#observers">Observers</a></h2>
+<p>CoreCrypto provides two optional observer interfaces that allow the application to react to significant MLS events
+without polling. Both are registered on the <code>CoreCrypto</code> instance directly (not on a transaction) and persist for the
+lifetime of the session.</p>
+<h3 id="epochobserver"><a class="header" href="#epochobserver">EpochObserver</a></h3>
+<p><code>registerEpochObserver(observer)</code> registers a callback that fires whenever a conversation advances to a new epoch — that
+is, whenever a commit is merged. The callback receives the <code>conversationId</code> and the new <code>epoch</code> number.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>The <code>epochChanged</code> callback must return promptly. CoreCrypto holds internal locks while dispatching it. If your
+observer needs to do significant work, dispatch it to a background task rather than doing it inline.</p>
+</blockquote>
+<h3 id="historyobserver"><a class="header" href="#historyobserver">HistoryObserver</a></h3>
+<p><code>registerHistoryObserver(observer)</code> registers a callback that fires when a new history client has been created and
+accepted by the delivery service. The callback receives the <code>conversationId</code> and a <code>HistorySecret</code> — an opaque bundle of
+key material that the application should forward to the history client so it can decrypt past messages.</p>
+<p>The history client feature is Wire’s mechanism for allowing newly added devices to read conversation history; the
+<code>HistoryObserver</code> is the hook through which the application participates in that handoff.</p>
+<h2 id="credentials-and-key-packages"><a class="header" href="#credentials-and-key-packages">Credentials and Key Packages</a></h2>
+<p>Before a device can join or create MLS groups, it needs a <em>credential</em> — a proof of identity that other group members
+can verify. CoreCrypto supports two credential types:</p>
+<p><strong><code>Basic</code></strong> — A locally generated keypair with no external attestation. Suitable whenever end-to-end identity
+verification is not required. This is the default.</p>
+<p><strong><code>X509</code></strong> — A certificate chain obtained through the E2EI enrollment process, binding the device’s MLS identity to a
+verified Wire user identity. Required for deployments with end-to-end identity enabled.</p>
+<p>Credentials are created and stored via <code>addCredential()</code> on the transaction, which returns a <code>CredentialRef</code> — a short
+handle used to refer to the credential in subsequent operations.</p>
+<p><strong>Key packages</strong> — MLS-level advertisements of a device’s identity and capabilities. Other devices fetch a target
+device’s key package from the delivery service when adding it to a group. Generate them with
+<code>generateKeypackage(credentialRef)</code> inside a transaction.</p>
+<h2 id="cipher-suites"><a class="header" href="#cipher-suites">Cipher Suites</a></h2>
+<p>An MLS cipher suite is a composite designation which specifies the KEM, AEAD, hash, and signature algorithms. CoreCrypto
+formally supports any of the cipher suites specified in the RFC, but is primarily tested on cipher suite 1
+(MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519).</p>
+<p>The cipher suite is fixed per conversation at the conversation’s creation.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-database"><a class="header" href="#the-database">The Database</a></h1>
+<p>The <code>Database</code> is CoreCrypto’s keystore: the persistent store for all key material and cryptographic state, as well as
+some non-cryptographic internal data. It is opened before constructing a <code>CoreCrypto</code> instance and passed in as an
+argument, making the storage layer an explicit dependency rather than something CoreCrypto manages internally.</p>
+<h2 id="what-the-database-stores"><a class="header" href="#what-the-database-stores">What the Database Stores</a></h2>
+<p>The database holds all state that must survive process restarts:</p>
+<ul>
+<li><strong>MLS group state</strong> — the serialized ratchet tree and secrets for every conversation the device participates in</li>
+<li><strong>Credentials and key packages</strong> — the device’s identity material and the key packages it has published to the
+delivery service</li>
+<li><strong>Pending messages</strong> — application messages and commits that arrived during an epoch transition and are waiting to be
+merged</li>
+<li><strong>Proteus identity and sessions</strong> — the device’s long-lived Proteus identity keypair and the state of every active
+Proteus session</li>
+<li><strong>Proteus prekeys</strong> — including the last-resort prekey</li>
+<li><strong>E2EI state</strong> — data about the ACME certificate authority, various certificates and CRLs, refresh tokens, and the
+like</li>
+</ul>
+<p>All entries are encrypted at rest using the <code>DatabaseKey</code> provided at open time.</p>
+<h2 id="backing-storage"><a class="header" href="#backing-storage">Backing Storage</a></h2>
+<p>On non-browser platforms the database is backed by <a href="https://www.zetetic.net/sqlcipher/">SQLCipher</a>, an encrypted SQLite
+variant. On the browser, the database sits atop IndexedDB and uses item-level encryption managed by CoreCrypto. In both
+cases, data is encrypted at rest.</p>
+<p>Future work on the database is intended to unify the backing storages, such that CoreCrypto will internally see an
+encrypted SQLite connection for all platforms. That work will be part of CC 11, but not CC 10. This change should be
+invisible to clients.</p>
+<h2 id="the-database-key"><a class="header" href="#the-database-key">The Database Key</a></h2>
+<p>The <code>DatabaseKey</code> is a 32-byte symmetric key used to encrypt all data at rest. Construct it from a byte array:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">const key = DatabaseKey.new(bytes)  // bytes must be exactly 32 bytes
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">let key = DatabaseKey(bytes: bytes)  // bytes must be exactly 32 bytes
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">val key = DatabaseKey(bytes)  // bytes must be exactly 32 bytes
+</code></pre>
+</div>
+</div>
+</div>
+
+<p>CoreCrypto does not generate or store the key — that is entirely the client’s responsibility. The key should be kept in
+the platform’s secure credential storage.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>The database key is never written to disk by CoreCrypto. If the key is lost, the database contents are unrecoverable.</p>
+</blockquote>
+<h2 id="opening-the-database"><a class="header" href="#opening-the-database">Opening the Database</a></h2>
+<p>All platforms define an async <code>Database.open</code> static method accepting a location and key. On platforms with an OS, the
+location is a filesystem path. On WASM, the location is the IndexedDB store name.</p>
+<p>All platforms define an async static method to open a transient database in memory. On WASM, this is
+<code>Database.inMemory</code>. For Kotlin and Swift, this is an overload of <code>Database.open</code>.</p>
+<h2 id="key-rotation"><a class="header" href="#key-rotation">Key Rotation</a></h2>
+<p>The database can be re-encrypted with a new key without closing and reopening it:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">await db.updateKey(newKey)
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">try await db.updateKey(key: newKey)
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">db.updateKey(newKey)
+</code></pre>
+</div>
+</div>
+</div>
+
+<p>This re-encrypts all stored data in place.</p>
+<h2 id="lifetime-and-closing"><a class="header" href="#lifetime-and-closing">Lifetime and Closing</a></h2>
+<p>On browser platforms, explicitly close the database when tearing down:</p>
+<pre><code class="language-typescript">await db.close()
+</code></pre>
+<h2 id="single-transaction-constraint"><a class="header" href="#single-transaction-constraint">Single-Transaction Constraint</a></h2>
+<p>Only one transaction may write to the database at a time. If a transaction is requested while another transaction is in
+flight, the call will block until the first transaction concludes.</p>
+<p>For more detail, see <a href="#concurrency">Transactions → Concurrency</a>.</p>
+<h2 id="exporting-a-copy"><a class="header" href="#exporting-a-copy">Exporting a Copy</a></h2>
+<p>On native platforms, a fully vacuumed copy of the database can be written to a new file:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="swift-0"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-1"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="swift-0">
+<pre><code class="language-swift">try await exportDatabaseCopy(database: db, destinationPath: destinationPath)
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-1">
+<pre><code class="language-kotlin">exportDatabaseCopy(db, destinationPath)
+</code></pre>
+</div>
+</div>
+</div>
+
+<p>The copy is encrypted with the same key as the source. This is useful for backup or for migrating the database to a new
+location. This function is not available on browser platforms.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-client"><a class="header" href="#the-client">The Client</a></h1>
+<p>In MLS terminology a <em>client</em> is a single device acting on behalf of a user — each phone, desktop, or web session that
+participates in MLS groups is a distinct client with its own identity and key material. CoreCrypto maps this concept to
+the <code>CoreCrypto</code> object itself. One <code>CoreCrypto</code> instance, backed by one <code>Database</code>, represents one MLS client.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>The Rust library internally calls this type <code>Session</code> to avoid ambiguity — “client” means something different at the
+Wire application layer (where it refers to a registered device in the Wire backend sense) and at the MLS protocol
+layer. The name <code>Session</code> does not appear in platform bindings; from Swift, Kotlin, and TypeScript, the type is always
+<code>CoreCrypto</code>.</p>
+</blockquote>
+<h2 id="sharing-a-corecrypto-instance"><a class="header" href="#sharing-a-corecrypto-instance">Sharing a CoreCrypto Instance</a></h2>
+<p><code>CoreCrypto</code> is cheap to clone. All internal state — the database connection, the MLS session, the Proteus state — is
+reference-counted, so cloning the object creates a new handle to the same shared state rather than copying anything.
+This means <code>CoreCrypto</code> can be freely passed to background tasks or across threads without wrapping it in an additional
+mutex or reference type.</p>
+<h2 id="read-only-operations"><a class="header" href="#read-only-operations">Read-Only Operations</a></h2>
+<p>Most MLS work happens inside a transaction (see <a href="#transactions-and-the-transactioncontext">Transactions and the TransactionContext</a>), but a
+handful of read-only operations are available directly on <code>CoreCrypto</code> without opening one. The set of read-only
+operations available on <code>CoreCrypto</code> is intentionally kept narrow.</p>
+<p>Any operation that might change state — creating or deleting a conversation, adding members, encrypting or decrypting a
+message — requires a transaction.</p>
+<h2 id="lifecycle"><a class="header" href="#lifecycle">Lifecycle</a></h2>
+<p>A <code>CoreCrypto</code> instance is typically created once at application startup and kept alive for the life of the process. The
+initialization sequence is:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">const db = await Database.open(path, key);       // open the keystore
+const cc = CoreCrypto.new(db);                   // construct CoreCrypto
+await cc.transaction(async (ctx) =&gt; {
+    await ctx.mlsInit(clientId, transport);      // initialize the MLS session
+});
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">let db = try await Database.open(location: path, key: key)  // open the keystore
+let cc = CoreCrypto(database: db)                            // construct CoreCrypto
+try await cc.transaction { ctx in
+    try await ctx.mlsInit(clientId: clientId, transport: transport)  // initialize the MLS session
+}
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">val db = Database.open(path, key)  // open the keystore
+val cc = CoreCrypto(db)            // construct CoreCrypto
+cc.transaction { ctx -&gt;
+    ctx.mlsInit(clientId, transport)  // initialize the MLS session
+}
+</code></pre>
+</div>
+</div>
+</div>
+
+<p>After <code>mlsInit()</code> is committed, the instance is ready to use.</p>
+<h3 id="multiple-instances"><a class="header" href="#multiple-instances">Multiple Instances</a></h3>
+<p>Only one <code>CoreCrypto</code> instance (and its clones) should be active against a given database file at a time. The iOS client
+has a file lock which prevents two instances of the CoreCrypto from interfering with each other. On other clients
+opening the same database from two independent <code>CoreCrypto</code> instances — whether in the same process or different
+processes — is not supported and will produce undefined behavior.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="transactions-and-the-transactioncontext"><a class="header" href="#transactions-and-the-transactioncontext">Transactions and the TransactionContext</a></h1>
+<p>Every operation in CoreCrypto that can potentially mutate state must happen inside a transaction. Transactions provide
+an atomicity guarantee: either all of the operations in a transaction are persisted together, or none of them are. This
+prevents the keystore from being left in an inconsistent state if an operation fails partway through — for example, if a
+commit is produced but the delivery service rejects it before the local group state is updated.</p>
+<h2 id="opening-a-transaction"><a class="header" href="#opening-a-transaction">Opening a Transaction</a></h2>
+<p>Transactions are opened with a callback pattern. Call <code>transaction()</code> on the <code>CoreCrypto</code> instance and pass an async
+function; CoreCrypto calls that function with a <code>CoreCryptoContext</code> (the transaction handle), and commits or rolls back
+the transaction automatically based on whether the function succeeds or throws:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">await cc.transaction(async (ctx) =&gt; {
+    await ctx.mlsInit(clientId, transport);
+    // more operations...
+});
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">try await cc.transaction { ctx in
+    try await ctx.mlsInit(clientId: clientId, transport: transport)
+    // more operations...
+}
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">cc.transaction { ctx -&gt;
+    ctx.mlsInit(clientId, transport)
+    // more operations...
+}
+</code></pre>
+</div>
+</div>
+</div>
+
+<p>If the callback completes without throwing, the transaction is committed — all buffered operations are written to the
+keystore in a single atomic database transaction. If the callback throws, the transaction is rolled back and no changes
+are persisted.</p>
+<p>There is no explicit <code>finish()</code> or <code>abort()</code> to call; both are handled automatically by <code>transaction()</code>.</p>
+<h2 id="the-corecryptocontext"><a class="header" href="#the-corecryptocontext">The CoreCryptoContext</a></h2>
+<p>The <code>ctx</code> parameter is the <code>CoreCryptoContext</code>: the object through which all mutating operations are performed. It is
+only valid for the lifetime of the callback — using it after the callback returns will produce an
+<code>InvalidTransactionContext</code> error.</p>
+<p>All operations are <strong>buffered in memory</strong> inside the context. Nothing is written to the database until the callback
+returns successfully. This means reads within the same transaction will observe the in-memory state, not the on-disk
+state — if you create a conversation and immediately query it within the same transaction, the query will find it.</p>
+<h2 id="concurrency"><a class="header" href="#concurrency">Concurrency</a></h2>
+<p>Only one transaction may be active at a time. Calling <code>cc.transaction()</code> while another transaction is already running
+will block until the first transaction finishes. This is a consequence of the single-writer constraint in the keystore;
+see <a href="#single-transaction-constraint">the Database chapter</a> for more detail.</p>
+<p>The practical implication is that large batches of work — for example, decrypting a backlog of incoming messages — will
+block any concurrent attempt to encrypt and send a new message. During an initial sync, this is desirable, because there
+are notable performance improvements to performing a large number of operations in a single transaction. On the other
+hand, once a client is fully synced and active, the opposite advice applies: because they are blocking, it is advisable
+to structure transactions to be as short-lived as possible.</p>
+<h2 id="error-handling-1"><a class="header" href="#error-handling-1">Error Handling</a></h2>
+<p>If an operation inside a transaction fails, it is usually best to let the error propagate out of the callback.
+<code>transaction()</code> will catch it, roll back automatically, and rethrow — the caller can then handle the error without
+worrying about cleanup:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">try {
+    await cc.transaction(async (ctx) =&gt; {
+        await ctx.decryptMessage(conversationId, incomingCiphertext);
+        await ctx.encryptMessage(conversationId, outgoingPlaintext);
+    });
+} catch (err) {
+    // The transaction was rolled back. No state was changed.
+}
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">do {
+    try await cc.transaction { ctx in
+        try await ctx.decryptMessage(conversationId: conversationId, payload: incomingCiphertext)
+        try await ctx.encryptMessage(conversationId: conversationId, message: outgoingPlaintext)
+    }
+} catch {
+    // The transaction was rolled back. No state was changed.
+}
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">try {
+    cc.transaction { ctx -&gt;
+        ctx.decryptMessage(conversationId, incomingCiphertext)
+        ctx.encryptMessage(conversationId, outgoingPlaintext)
+    }
+} catch (e: Exception) {
+    // The transaction was rolled back. No state was changed.
+}
+</code></pre>
+</div>
+</div>
+</div>
+
+<h3 id="retry-after-delivery-failure"><a class="header" href="#retry-after-delivery-failure">Retry After Delivery Failure</a></h3>
+<p>Some operations — those that produce a commit — invoke <code>MlsTransport.sendCommitBundle()</code> inside the transaction. If the
+delivery service returns <code>Retry</code>, CoreCrypto propagates this as an <code>MlsError</code> and the transaction is rolled back. The
+caller should fetch and process all pending incoming messages and then retry the operation in a new transaction.</p>
+<h3 id="reuse-after-completion"><a class="header" href="#reuse-after-completion">Reuse After Completion</a></h3>
+<p>Once <code>transaction()</code> returns (whether by success or failure), the <code>CoreCryptoContext</code> passed to the callback is
+permanently invalidated. Any attempt to call methods on a finished context returns <code>InvalidTransactionContext</code>. Always
+perform all work within the callback scope.</p>
+<h2 id="arbitrary-data-storage"><a class="header" href="#arbitrary-data-storage">Arbitrary Data Storage</a></h2>
+<p>The context provides two methods for storing a single blob of arbitrary bytes in the keystore, associated with the
+device:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">await ctx.setData(bytes)
+const bytes = await ctx.getData()
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">try await ctx.setData(data: bytes)
+let bytes = try await ctx.getData()
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">ctx.setData(bytes)
+val bytes = ctx.getData()
+</code></pre>
+</div>
+</div>
+</div>
+
+<p>These were implemented for the purpose of checkpointing during initial sync / batch decryption, but are not limited to
+that use.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="whats-new-in-cc-10"><a class="header" href="#whats-new-in-cc-10">What’s New in CC 10</a></h1>
+<h2 id="new-apis"><a class="header" href="#new-apis">New APIs</a></h2>
+<p>With CC10 we introduce multiple new types that provide their own new API.</p>
+<h3 id="database-api"><a class="header" href="#database-api">Database API</a></h3>
+<ul>
+<li>
+<p><code>Database.getLocation()</code> allows getting the location of a persistent database instance. It returns <code>null</code> if the
+database is in-memory.</p>
+</li>
+<li>
+<p>added <code>Database.open(location: String, key: DatabaseKey)</code> as a static method to construct a persistent database
+instance, and <code>Database.open(key: DatabaseKey)</code> / <code>Database.inMemory(key: DatabaseKey)</code> to construct an in-memory
+database instance.</p>
+</li>
+<li>
+<p><strong>Typescript Only</strong>: Added <code>Database.close()</code> and <strong>removed</strong> <code>CoreCrypto.close()</code>. A <code>Database</code> should be closed if
+it is not used anymore. Closing a database makes any <code>PkiEnvironment</code> or <code>CoreCrypto</code> instance unusable. Calls to
+these instances will return a <code>CoreCryptoError.Other</code>. <code>CoreCrypto</code> instances do not need to be closed anymore.</p>
+</li>
+<li>
+<p>It is now safer to close a <code>Database</code>: instead of depending on a unique reference to the instance, it will just
+invalidate all other references to that instance.</p>
+</li>
+</ul>
+<h3 id="pki-environment-api"><a class="header" href="#pki-environment-api">PKI Environment API</a></h3>
+<ul>
+<li>Added <code>PkiEnvironment</code> constructed via
+<ul>
+<li><code>PkiEnvironment(database: Database, hooks: PkiEnvironmentHooks)</code> (swift)</li>
+<li><code>PkiEnvironment.new(database: Database, hooks: PkiEnvironmentHooks)</code> (kotlin)</li>
+<li><code>PkiEnvironment.create(database: Database, hooks: PkiEnvironmentHooks)</code> (ts)</li>
+</ul>
+</li>
+<li>Added <code>PkiEnvironmentHooks</code> interface which has to be implemented by a client and will be used by CoreCrypto during
+e2ei flow</li>
+<li>Added <code>CoreCrypto.setPkiEnvironment()</code> to set a PkiEnvironment on a <code>CoreCrypto</code> instance</li>
+<li>Added <code>CoreCrypto.getPkiEnvironment()</code> to get the PkiEnvironment of a <code>CoreCrypto</code> instance</li>
+</ul>
+<h3 id="credential-api"><a class="header" href="#credential-api">Credential API</a></h3>
+<p><code>Credential</code> is now a first-class type representing a cryptographic identity. A credential can be created at any time,
+lives in memory, and is independent of any client instance or storage. There are two variants: basic credentials,
+created with the <code>Credential.basic</code> static method, and X509 credentials, obtained through the acquisition flow described
+in the <a href="#x509-credential-acquisition">X509 Credential Acquisition</a> section of the migration guide.</p>
+<p>Initializing an MLS client no longer automatically generates any credentials; instead, any previously stored credentials
+are loaded automatically on MLS init. To put a freshly created credential to use, register it with <code>addCredential</code> on a
+transaction context, which stores it and adds it to the working set. This explicit model is considerably more flexible
+than before: rather than CoreCrypto implicitly selecting the most recent credential of a given type and cipher suite,
+clients now choose exactly which credential each operation should use.</p>
+<p>Registering a credential returns a <code>CredentialRef</code>: a compact, stable handle that uniquely identifies a single stored
+credential without shuttling the full credential data back and forth across the FFI boundary. A <code>CredentialRef</code> carries
+basic metadata about the credential it points to — client id, credential type, signature scheme, cipher suite, earliest
+validity, and the hash of its public key — and is the value you pass throughout the rest of the credential API.</p>
+<p>Two transaction-context methods recover these references for credentials already known to a client: <code>getCredentials</code>
+returns a <code>CredentialRef</code> for every credential, and <code>findCredentials</code> does the same while efficiently filtering by
+criteria you specify. To delete a credential, pass its <code>CredentialRef</code> to <code>removeCredential</code>; this verifies the
+credential is not in use by any conversation, removes every key package derived from it, and deletes it from both the
+working set and the keystore.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>CC v10.0 introduces lots of changes. We provide a <a href="#migrating-from-v9x-to-v100">migration guide</a>.</p>
+</blockquote>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="migrating-from-v9x-to-v100"><a class="header" href="#migrating-from-v9x-to-v100">Migrating from v9.x to v10.0</a></h1>
+<p>This page covers breaking changes that are identical across all platforms. For platform-specific migration steps, see
+the sub-pages:</p>
+<ul>
+<li><a href="#migrating-to-cc-10-typescript">TypeScript</a></li>
+<li><a href="#migrating-to-cc-10-swift">Swift</a></li>
+<li><a href="#migrating-to-cc-10-kotlin">Kotlin</a></li>
+</ul>
+<h2 id="credentials"><a class="header" href="#credentials">Credentials</a></h2>
+<p>CC10 introduces first-class <code>Credential</code> and <code>CredentialRef</code> types. Previously, credentials were implicit: <code>mlsInit()</code>
+created a basic credential for each cipher suite automatically, and every operation that needed a credential selected
+one by taking a <code>(cipherSuite, credentialType)</code> pair. In CC10 you construct credentials explicitly and refer to them by
+<code>CredentialRef</code>. The <code>(cipherSuite, credentialType)</code> selector has been removed from every call site.</p>
+<p>This makes credential operations much more flexible: whereas in the past CC would always implicitly choose the most
+recent credential of a given type and cipher suite, clients can simply choose the appropriate credential.</p>
+<h3 id="creating-and-registering-credentials"><a class="header" href="#creating-and-registering-credentials">Creating and registering credentials</a></h3>
+<ol>
+<li>
+<p><code>mlsInit()</code> no longer creates any credential or key packages. After initializing MLS, create at least one credential
+yourself. See also <a href="#mls-initialization">MLS Initialization</a> and <a href="#key-packages">Key Packages</a>.</p>
+</li>
+<li>
+<p>Create a basic credential with the <code>Credential.basic(cipherSuite, clientId)</code> static method. To obtain an X509
+credential, use the acquisition flow described in <a href="#x509-credential-acquisition">X509 Credential Acquisition</a>. A
+<code>Credential</code> lives in memory and is independent of any client instance.</p>
+</li>
+<li>
+<p>Register the credential with <code>transactionContext.addCredential(credential)</code>. This persists it and returns a
+<code>CredentialRef</code>: a compact, stable handle you pass to the rest of the API in place of the old selector pair.</p>
+<ul>
+<li>Credentials registered with a single client must be distinct on the
+<code>(credentialType, signatureScheme, creation timestamp)</code> tuple, where the timestamp has one-second resolution. If
+you need several credentials sharing a type and signature scheme, wait one full second between registering each. We
+expect to relax this limitation in the future.</li>
+</ul>
+</li>
+<li>
+<p>On MLS initialization, previously stored credentials are loaded automatically. Enumerate them with
+<code>getCredentials()</code>, or filter with <code>findCredentials(...)</code>, to recover their <code>CredentialRef</code>s.</p>
+</li>
+</ol>
+<h3 id="passing-credentials-to-operations"><a class="header" href="#passing-credentials-to-operations">Passing credentials to operations</a></h3>
+<p>Replace the old <code>(cipherSuite, credentialType)</code> arguments with a <code>CredentialRef</code>:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Operation</th><th>v9.x</th><th>v10.0</th></tr>
+</thead>
+<tbody>
+<tr><td>Create a conversation</td><td><code>createConversation(id, creatorCredentialType, config)</code></td><td><code>createConversation(id, credentialRef, externalSender?)</code></td></tr>
+<tr><td>Join by external commit</td><td><code>joinByExternalCommit(groupInfo, config, credentialType)</code></td><td><code>joinByExternalCommit(groupInfo, credentialRef)</code></td></tr>
+<tr><td>Generate key packages</td><td><code>clientKeypackages(cipherSuite, credentialType, amount)</code></td><td>repeated <code>generateKeyPackage(credentialRef)</code></td></tr>
+<tr><td>Switch a conversation’s credential</td><td><code>e2eiRotate(conversationId)</code></td><td><code>setConversationCredential(conversationId, credentialRef)</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>A conversation’s cipher suite is now derived from its credential, so <code>createConversation()</code> no longer accepts a separate
+cipher suite.</p>
+<p>To remove a credential, call <code>removeCredential(credentialRef)</code>. This checks that the credential is not in use by any
+conversation, removes every key package derived from it, and deletes it from both the working set and the keystore.</p>
+<h3 id="public-keys"><a class="header" href="#public-keys">Public keys</a></h3>
+<p>A <code>Credential</code> carries a public key but exposes no method to export it. To read the public key, register the credential
+with <code>addCredential</code> to obtain a <code>CredentialRef</code>, then call <code>coreCrypto.publicKey(credentialRef)</code> returns the raw public
+key bytes. This replaces v9.x’s <code>clientPublicKey(cipherSuite, credentialType)</code>.</p>
+<p>There also exist other helpers to work with public keys:</p>
+<ul>
+<li><code>credentialRef.publicKeyHash()</code> returns the SHA256 hash of the public key.</li>
+<li><code>coreCrypto.exportCredentialPem(credentialRef)</code> serializes the public key of a credential into PEM format</li>
+</ul>
+<h2 id="x509-credential-acquisition"><a class="header" href="#x509-credential-acquisition">X509 Credential Acquisition</a></h2>
+<p>The enrollment API that previously drove the ACME and OIDC exchanges step-by-step from the client has been <strong>removed</strong>.
+The whole ACME / DPoP / OIDC sequence is now hidden behind a single object, <code>X509CredentialAcquisition</code>, which the
+client constructs once and then calls <code>finalize()</code> on to obtain a <code>Credential</code>. CoreCrypto reaches back into the client
+only via well-defined hook points; the client no longer threads nonces, account responses, order requests, or challenge
+payloads through its own code.</p>
+<p>Where you previously called <code>e2eiNewEnrollment</code>, <code>e2eiNewActivationEnrollment</code>, <code>e2eiNewRotateEnrollment</code>,
+<code>directoryResponse</code>, <code>newAccountRequest</code>/<code>Response</code>, <code>newOrderRequest</code>/<code>Response</code>, <code>newAuthzRequest</code>/<code>Response</code>,
+<code>createDpopToken</code>, <code>newDpopChallengeRequest</code>/<code>Response</code>, <code>newOidcChallengeRequest</code>/<code>Response</code>,
+<code>checkOrderRequest</code>/<code>Response</code>, <code>finalizeRequest</code>/<code>Response</code>, or <code>certificateRequest</code> — delete all of it. The new flow
+replaces every one of those calls.</p>
+<h3 id="acquiring-an-x509-credential"><a class="header" href="#acquiring-an-x509-credential">Acquiring an X509 credential</a></h3>
+<ol>
+<li>
+<p><strong>Implement <code>PkiEnvironmentHooks</code></strong>. CoreCrypto will call these hooks during acquisition:</p>
+<ul>
+<li><code>httpRequest</code> — perform HTTP requests against the ACME server, CRL distributors, and similar.</li>
+<li><code>authenticate</code> — drive the IdP authorization code flow with PKCE and return the resulting ID token.</li>
+<li><code>getBackendNonce</code> — obtain a nonce from the Wire backend.</li>
+<li><code>fetchBackendAccessToken</code> — exchange the DPoP token for a backend access token.</li>
+</ul>
+</li>
+<li>
+<p><strong>Create a <code>PkiEnvironment</code></strong> with <code>PkiEnvironment.new(hooks, database)</code> (TypeScript) or
+<code>createPkiEnvironment(hooks, database)</code> (Swift/Kotlin). The <code>Database</code> can be the same used by the <code>CoreCrypto</code>
+instance or distinct; they use unrelated tables. That said, it is typically more convenient to use a single database.</p>
+</li>
+<li>
+<p><strong>Build an <code>X509CredentialAcquisitionConfiguration</code></strong> describing the certificate you want:</p>
+<ul>
+<li><code>acmeUrl</code> - the URL of the ACME server</li>
+<li><code>cipher_suite</code> — must be one of the four with a JWS-compatible signature scheme: Ed25519, P256, P384, or P521.
+Other cipher suites will fail at construction.</li>
+<li><code>displayName</code>, <code>clientId</code>, <code>handle</code>, <code>domain</code>, optional <code>team</code></li>
+<li><code>validityPeriodSecs</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Construct the acquisition</strong>: <code>X509CredentialAcquisition.new(pkiEnvironment, configuration)</code>.</p>
+</li>
+<li>
+<p><strong>Call <code>await acquisition.finalize()</code></strong>. This drives the DPoP and OIDC challenges to completion, calling your hooks
+as needed, and returns the acquired <code>Credential</code>. The acquisition can only be finalized once; a second call throws.</p>
+</li>
+<li>
+<p><strong>Attach the credential</strong> to the client with <code>transactionContext.addCredential(credential)</code>, exactly as for a basic
+credential. This persists it to the internal database and returns a <code>CredentialRef</code>.</p>
+</li>
+</ol>
+<h3 id="pausing-across-the-idp-redirect"><a class="header" href="#pausing-across-the-idp-redirect">Pausing across the IdP redirect</a></h3>
+<p>The IdP authentication flow typically requires an external redirect, after which the app may have been suspended,
+backgrounded, or restarted. To support this, the <code>authenticate</code> hook receives an <code>acquisitionSnapshot: bytes</code> parameter
+capturing the acquisition state at the point the DPoP challenge has completed and OIDC is about to begin. Persist these
+bytes to encrypted storage before launching the IdP flow.</p>
+<p>When the app resumes and is ready to complete acquisition, reconstruct the acquisition from the snapshot with
+<code>X509CredentialAcquisition.fromBytes(pkiEnvironment, snapshot)</code> and call <code>finalize()</code> on the reconstructed instance.
+There is no client-visible serialization method on <code>X509CredentialAcquisition</code> itself; the snapshot bytes are delivered
+to you exclusively through the <code>authenticate</code> hook’s <code>acquisitionSnapshot</code> parameter.</p>
+<h3 id="checking-for-expiration-and-revocation"><a class="header" href="#checking-for-expiration-and-revocation">Checking for expiration and revocation</a></h3>
+<p>Call <code>checkCredentials</code> at least once every 24 hours to check all X509 credentials for expiration and revocation. It is
+recommended to do this during an idle period, because HTTP requests are done to fetch new certificate revocation lists.</p>
+<h2 id="key-packages"><a class="header" href="#key-packages">Key Packages</a></h2>
+<ol>
+<li>
+<p>We <strong>removed</strong> <code>CoreCryptoContext.clientKeypackages()</code>. To generate a desired amount of key packages, make repeated
+calls to <code>CoreCryptoContext.generateKeyPackage()</code>.</p>
+</li>
+<li>
+<p>We <strong>removed</strong> <code>CoreCryptoContext.clientValidKeypackagesCount()</code>. To count remaining key packages, call
+<code>CoreCryptoContext.getKeyPackages()</code>, filter the results as desired, and count the remaining items.</p>
+</li>
+<li>
+<p>We aligned key package spelling to <code>KeyPackage</code>:</p>
+<ul>
+<li>renamed <code>Keypackage</code> → <code>KeyPackage</code></li>
+<li>renamed <code>KeypackageRef</code> → <code>KeyPackageRef</code></li>
+<li>renamed <code>generateKeypackage</code> → <code>generateKeyPackage</code></li>
+<li>renamed <code>getKeypackages</code> → <code>getKeyPackages</code></li>
+<li>renamed <code>removeKeypackage</code> → <code>removeKeyPackage</code></li>
+<li>renamed <code>removeKeypackagesFor</code> → <code>removeKeyPackagesFor</code></li>
+</ul>
+</li>
+</ol>
+<h2 id="mls-initialization"><a class="header" href="#mls-initialization">MLS Initialization</a></h2>
+<ol>
+<li>
+<p><code>mlsInit()</code> was decoupled from key package creation. To create key packages after initializing MLS, call
+<code>CoreCryptoContext.generateKeyPackage()</code> in a transaction.</p>
+</li>
+<li>
+<p>Removed <code>CoreCrypto.provideTransport()</code>, added <code>transport</code> parameter to <code>CoreCryptoContext.mlsInit()</code>. Instead of
+providing transport separately from MLS initialization, provide it when calling <code>mlsInit()</code>.</p>
+</li>
+</ol>
+<h2 id="validated-input-types"><a class="header" href="#validated-input-types">Validated Input Types</a></h2>
+<p>In several instances we have replaced parameters which used to be parsed at call time with exported types which are
+parsed at instantiation. This simplifies error propagation, because clients now receive parse errors directly at
+instantiation. It also simplifies call sites, because they can no longer return parse errors.</p>
+<ol>
+<li>
+<p><code>GroupInfo.new()</code> and <code>Welcome.new()</code> are now <strong>fallible</strong> constructors. Previously, both accepted any byte sequence
+unconditionally. They now validate the input as a TLS-encoded MLS structure at construction time and throw if the
+bytes are malformed.</p>
+</li>
+<li>
+<p>We <strong>removed</strong> <code>GroupInfo.copyBytes()</code> and <code>Welcome.copyBytes()</code>. The underlying types no longer store raw bytes and
+cannot be round-tripped back to a byte array.</p>
+</li>
+<li>
+<p>Added <code>Welcome.serialize()</code>, which recovers the TLS-serialized bytes (replacing the removed <code>copyBytes()</code>). It is
+fallible and throws if serialization fails.</p>
+</li>
+<li>
+<p><code>GroupInfo</code> and <code>Welcome</code> no longer support equality comparisons, hashing, or hex string display in generated
+bindings.</p>
+</li>
+<li>
+<p><code>createConversation()</code> now takes a single optional, parsed <code>ExternalSender</code> object instead of a list of raw
+external-sender byte arrays carried on the conversation configuration. Parse the external sender ahead of time with:</p>
+<ul>
+<li><code>ExternalSender.parseJwk(jwk)</code> for the JWK form,</li>
+<li><code>ExternalSender.parsePublicKey(key, signatureScheme)</code> for the legacy raw public-key form, or</li>
+<li><code>ExternalSender.parse(key, signatureScheme)</code> to try the JWK form first and fall back to the raw public-key form.</li>
+</ul>
+<p>Parse errors are reported at parse time rather than during conversation creation. Call <code>externalSender.serialize()</code>
+to recover the raw public-key bytes; these match the <code>parsePublicKey</code> form and the <code>ExternalSenderKey</code> returned by
+<code>getExternalSender()</code>. Note that <code>ExternalSender</code> (the parsed input type) is distinct from <code>ExternalSenderKey</code> (the
+raw key type that <code>getExternalSender()</code> returns).</p>
+</li>
+</ol>
+<h2 id="no-more-buffering-of-unmerged-changes-while-decrypting"><a class="header" href="#no-more-buffering-of-unmerged-changes-while-decrypting">No More Buffering of Unmerged Changes While Decrypting</a></h2>
+<p>During decryption, CoreCrypto would previously automatically replay previously executed but unmerged (i.e., not yet
+accepted by the delivery service) operations. This behavior has changed: the responsibility of replaying any unmerged
+operations is delegated to the consumer.</p>
+<h2 id="mlstransport-interface"><a class="header" href="#mlstransport-interface">MlsTransport Interface</a></h2>
+<ol>
+<li>
+<p>Instead of returning an <code>MlsTransportResponse</code> to communicate the reason why a message was rejected by the DS, throw
+an <code>MlsTransportError</code> instead. <code>MlsTransportResponse</code> was removed.</p>
+</li>
+<li>
+<p>Removed <code>sendMessage</code> method from <code>MlsTransport</code> interface. This wasn’t well-documented and wasn’t being used in any
+case. We remove it for the purpose of making life easier for everyone.</p>
+</li>
+</ol>
+<h2 id="renaming-ciphersuite-to-cipher-suite"><a class="header" href="#renaming-ciphersuite-to-cipher-suite">Renaming “Ciphersuite” to “Cipher Suite”</a></h2>
+<p>We aligned cipher suite spelling to <code>CipherSuite</code>:</p>
+<ul>
+<li>renamed <code>Ciphersuite</code> → <code>CipherSuite</code></li>
+<li>renamed <code>ciphersuiteFromU16</code> → <code>cipherSuiteFromU16</code></li>
+<li>renamed <code>ciphersuiteDefault</code> → <code>cipherSuiteDefault</code></li>
+<li>renamed <code>conversationCiphersuite</code> → <code>conversationCipherSuite</code></li>
+<li>renamed any parameters and fields <code>ciphersuite</code> → <code>cipherSuite</code></li>
+</ul>
+<h2 id="client-id-initialization"><a class="header" href="#client-id-initialization">Client ID initialization</a></h2>
+<p>Previously, initialization was done via <code>ClientId.new(bytes)</code>, where bytes was a string of a specific format with a user
+id, device id, and domain. The new constructor takes care of this for you and ensures all client ids conform to this
+fomat: <code>ClientId.new(userId, deviceId, domain)</code>.</p>
+<h2 id="other-changes"><a class="header" href="#other-changes">Other Changes</a></h2>
+<ol>
+<li>
+<p><code>CoreCrypto.e2eiIsEnvSetup()</code> can’t throw anymore and will always return a boolean.</p>
+</li>
+<li>
+<p>removed <code>.proteusFingerprintPrekeybundle()</code> and <code>.proteusLastResortPrekeyId()</code> from <code>CoreCryptoContext</code>. Both are
+available as static methods on <code>CoreCrypto</code>.</p>
+</li>
+<li>
+<p>removed <code>CoreCryptoContext.proteusReloadSessions()</code>. Proteus sessions are now loaded on demand by the new per-session
+cache, so explicit reloads are no longer needed. Delete any call sites.</p>
+</li>
+<li>
+<p><code>GroupInfoBundle.payload</code> now contains a byte array instead of a class instance.</p>
+</li>
+<li>
+<p>The <code>updateDatabaseKey</code> function has been moved; it is now a static method <code>Database.updateKey</code>.</p>
+</li>
+<li>
+<p>removed <code>CoreCryptoContext.markConversationAsChildOf()</code>. No client should actually be using this function and all
+existing references to it should be removed.</p>
+</li>
+<li>
+<p>The duplicate signature error when adding members to a conversation now contain debug information about which members
+had duplicate signatures.</p>
+</li>
+<li>
+<p>Removed <code>WelcomeBundle</code> type that was returned from <code>processWelcomeMessage()</code> and <code>joinByExternalCommit()</code>. They
+return a <code>ConversationId</code> now only.</p>
+</li>
+<li>
+<p>Removed previously deprecated field <code>hasEpochChanged</code> from <code>DecryptedMessage</code>. Use the <code>EpochObserver</code> interface.</p>
+</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="migrating-to-cc-10-typescript"><a class="header" href="#migrating-to-cc-10-typescript">Migrating to CC 10: TypeScript</a></h1>
+<p>See the <a href="#migrating-from-v9x-to-v100">common migration guide</a> for changes that apply to all platforms.</p>
+<h2 id="browser-module-location"><a class="header" href="#browser-module-location">Browser Module Location</a></h2>
+<p>We want to prepare the ground for a native module, which runs on node or bun. Therefore, the browser module is now
+exported as <code>@wireapp/core-crypto/browser</code>. Update your imports:</p>
+<pre><code class="language-typescript">// before
+import { ... } from "@wireapp/core-crypto";
+
+// after
+import { ... } from "@wireapp/core-crypto/browser";
+</code></pre>
+<h2 id="corecrypto-instantiation"><a class="header" href="#corecrypto-instantiation">CoreCrypto Instantiation</a></h2>
+<ol>
+<li>
+<p>The <code>CoreCrypto</code> constructor now takes a <code>Database</code> instance instead of a <code>DatabaseKey</code> and a path. To instantiate a
+database, call <code>openDatabase()</code>.</p>
+</li>
+<li>
+<p>Deferred init is now the only way to instantiate <code>CoreCrypto</code>. We <strong>replaced</strong> <code>CoreCrypto.init(database: Database)</code>
+with the static function <code>CoreCrypto.new(database: Database)</code>. Instead of calling <code>CoreCrypto.deferredInit()</code>, call
+<code>CoreCrypto.new()</code>. As before, call <code>mlsInit()</code> in a transaction to initialize MLS.</p>
+</li>
+</ol>
+<h2 id="logging"><a class="header" href="#logging">Logging</a></h2>
+<ol>
+<li>
+<p>We <strong>removed</strong> <code>CoreCrypto.setLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel)</code> and
+<code>CoreCrypto.setMaxLogLevel(level: CoreCryptoLogLevel)</code>, as logging is configured globally and not tied to a
+<code>CoreCrypto</code> instance. To set the log level, use the free function <code>setMaxLogLevel(level: CoreCryptoLogLevel)</code>.</p>
+</li>
+<li>
+<p>We <strong>renamed</strong> <code>setLoggerOnly(logger: CoreCryptoLogger)</code> to <code>setLogger(logger: CoreCryptoLogger)</code>.</p>
+</li>
+</ol>
+<h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
+<h3 id="error-structure"><a class="header" href="#error-structure">Error Structure</a></h3>
+<p>We adjusted the TypeScript error structure. Whenever matching on errors using version <code>&gt;= 9.1.0</code> type guards, update
+their usage as shown in the examples below.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>For more info, see
+<a href="https://jhugman.github.io/uniffi-bindgen-react-native/idioms/errors.html#enums-as-errors">the corresponding section of the ubrn docs</a></p>
+</blockquote>
+<p><strong>Extracting the abort reason given via throwing an <code>MlsTransportError</code>:</strong></p>
+<pre><code class="language-typescript">import { CoreCryptoError, MlsError } from "core-crypto";
+
+try {
+    // send a commit that is rejected by the DS
+} catch (err) {
+  if (CoreCryptoError.Mls.instanceOf(err) &amp;&amp;
+      MlsError.MessageRejected.instanceOf(err.inner.mlsError)) {
+    const rejectReason = err.inner.mlsError.inner.reason;
+    // other things you want to do with this error...
+  } else {
+      // log error
+  }
+}
+</code></pre>
+<p><strong>Optional: use <code>switch</code> to handle multiple errors in one go:</strong></p>
+<pre><code class="language-typescript">import { CoreCryptoError, MlsError, MlsError_Tags } from "core-crypto";
+
+try {
+    // send a commit that is rejected by the DS
+} catch (err) {
+    if (CoreCryptoError.Mls.instanceOf(err)) {
+        switch (err.inner.mlsError.tag) {
+            case MlsError_Tags.MessageRejected: {
+                const rejectedReason = err.inner.mlsError.inner.reason;
+                // other things you want to do with this error...
+                break;
+            }
+
+            // handle other mls errors
+        }
+    }
+}
+</code></pre>
+<p><strong>Catch a proteus error:</strong></p>
+<pre><code class="language-typescript">import { CoreCryptoError, ProteusError } from "core-crypto";
+
+try {
+    // look for a proteus session that doesn't exist
+} catch (err) {
+  if (CoreCryptoError.Proteus.instanceOf(err) &amp;&amp;
+      ProteusError.SessionNotFound.instanceOf(err.inner.exception)) {
+     let message = err.inner.exception.message;
+     // other things you want to do with this error...
+  } else {
+      // log error
+  }
+}
+</code></pre>
+<h3 id="proteus-error-codes"><a class="header" href="#proteus-error-codes">Proteus Error Codes</a></h3>
+<p>The <code>proteusErrorCode</code> field was removed from the root error type. There is a deterministic mapping from error code to
+error type. If you were using the error code, use the error type instead (see above). See
+<a href="https://github.com/wireapp/proteus/blob/develop/crates/proteus-traits/src/lib.rs">the proteus-traits error table</a> for
+the mapping.</p>
+<h2 id="other"><a class="header" href="#other">Other</a></h2>
+<ol>
+<li>
+<p><code>CoreCryptoContext.generateKeyPackage()</code> now returns a <code>KeyPackage</code> instance instead of an <code>Uint8Array</code>. If you need
+the underlying <code>Uint8Array</code>, call the <code>serialize</code> property on the <code>KeyPackage</code>.</p>
+</li>
+<li>
+<p><code>CustomConfiguration.keyRotationSpan</code> now defines milliseconds instead of seconds.</p>
+</li>
+<li>
+<p>renamed <code>CoreCrypto.reseedRng()</code> to <code>CoreCrypto.reseed()</code></p>
+</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="migrating-to-cc-10-swift"><a class="header" href="#migrating-to-cc-10-swift">Migrating to CC 10: Swift</a></h1>
+<p>See the <a href="#migrating-from-v9x-to-v100">common migration guide</a> for changes that apply to all platforms.</p>
+<h2 id="corecrypto-instantiation-1"><a class="header" href="#corecrypto-instantiation-1">CoreCrypto Instantiation</a></h2>
+<ol>
+<li>
+<p>The <code>CoreCrypto</code> constructor now takes a <code>Database</code> instance instead of a <code>DatabaseKey</code> and a path. To instantiate a
+database, call the <code>Database.open()</code> static method.</p>
+</li>
+<li>
+<p>Deferred init is now the only way to instantiate <code>CoreCrypto</code>. Instead of calling <code>deferredInit()</code>, call the
+<code>CoreCrypto</code> constructor. As before, call <code>mlsInit()</code> in a transaction to initialize MLS.</p>
+</li>
+</ol>
+<h2 id="higher-level-newtypes"><a class="header" href="#higher-level-newtypes">Higher-Level Newtypes</a></h2>
+<p><code>CoreCryptoContext.getExternalSender()</code> now returns an <code>ExternalSenderKey</code> object instead of a byte array. To access the
+raw bytes, call <code>externalSenderKey.copyBytes()</code>.</p>
+<h2 id="logging-1"><a class="header" href="#logging-1">Logging</a></h2>
+<ol>
+<li>
+<p>We <strong>removed</strong> <code>CoreCrypto.setLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel)</code> and
+<code>CoreCrypto.setMaxLogLevel(level: CoreCryptoLogLevel)</code>, as logging is configured globally and not tied to a
+<code>CoreCrypto</code> instance. To set the log level, use the free function <code>setMaxLogLevel(level: CoreCryptoLogLevel)</code>.</p>
+</li>
+<li>
+<p>We <strong>renamed</strong> <code>setLoggerOnly(logger: CoreCryptoLogger)</code> to <code>setLogger(logger: CoreCryptoLogger)</code>.</p>
+</li>
+</ol>
+<h2 id="other-1"><a class="header" href="#other-1">Other</a></h2>
+<ol>
+<li>
+<p>Removed <code>CoreCryptoFfi.reseedRng()</code> and <code>CoreCryptoFfi.randomBytes()</code>.</p>
+</li>
+<li>
+<p><code>DatabaseKey</code> constructor parameter is now named <code>bytes</code> not <code>key</code></p>
+</li>
+<li>
+<p>Removed the following static methods from <code>CoreCrypto</code> that were globally available:</p>
+<ul>
+<li><code>version()</code></li>
+<li><code>buildMetadata()</code></li>
+</ul>
+</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="migrating-to-cc-10-kotlin"><a class="header" href="#migrating-to-cc-10-kotlin">Migrating to CC 10: Kotlin</a></h1>
+<p>See the <a href="#migrating-from-v9x-to-v100">common migration guide</a> for changes that apply to all platforms.</p>
+<h2 id="renames-and-moves"><a class="header" href="#renames-and-moves">Renames and Moves</a></h2>
+<ol>
+<li>
+<p><code>CoreCryptoClient</code> has been renamed to <code>CoreCrypto</code>.</p>
+</li>
+<li>
+<p><code>historyClient(historySecret: HistorySecret)</code> has been moved into <code>CoreCrypto</code> Companion functions.</p>
+</li>
+</ol>
+<h2 id="corecrypto-instantiation-2"><a class="header" href="#corecrypto-instantiation-2">CoreCrypto Instantiation</a></h2>
+<ol>
+<li>
+<p>The <code>CoreCrypto</code> constructor now takes a <code>Database</code> instance instead of a <code>DatabaseKey</code> and a path. To instantiate a
+database, call the <code>Database.open()</code> static method.</p>
+</li>
+<li>
+<p>Deferred init is now the only way to instantiate <code>CoreCrypto</code>. Instead of calling <code>deferredInit()</code>, call the
+<code>CoreCrypto</code> constructor. As before, call <code>mlsInit()</code> in a transaction to initialize MLS.</p>
+</li>
+</ol>
+<h2 id="higher-level-newtypes-1"><a class="header" href="#higher-level-newtypes-1">Higher-Level Newtypes</a></h2>
+<p><code>CoreCryptoContext.getExternalSender()</code> now returns an <code>ExternalSenderKey</code> object instead of a byte array. To access the
+raw bytes, call <code>externalSenderKey.copyBytes()</code>.</p>
+<h2 id="logging-2"><a class="header" href="#logging-2">Logging</a></h2>
+<ol>
+<li>We <strong>removed</strong> <code>level</code> parameter from <code>setLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel)</code>. To set the
+log level, use the free function <code>setMaxLogLevel(level: CoreCryptoLogLevel)</code>.</li>
+<li>We <strong>removed</strong> <code>setLoggerOnly</code>.</li>
+</ol>
+<h2 id="other-2"><a class="header" href="#other-2">Other</a></h2>
+<ol>
+<li>Removed <code>CoreCryptoFfi.reseedRng()</code> and <code>CoreCryptoFfi.randomBytes()</code>.</li>
+<li>Removed <code>String.toClientId()</code>. Use the regular <code>ClientId</code> constructor to get a <code>ClientId</code>.</li>
+</ol>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="corecrypto-architecture"><a class="header" href="#corecrypto-architecture">CoreCrypto Architecture</a></h1>
+<pre class="mermaid">block-beta
+
+columns 1
+
+block:system
+    Kotlin
+    Swift
+    TSN["TS Native"]
+    TSB["TS Browser"]
+end
+
+block:uniffi
+    UniFFI
+    UBRN
+end
+
+RUSTFFI["CoreCrypto FFI"]
+
+block:crypto
+    CRYPTO["Crypto&lt;br/&gt;MLS • Proteus"]
+    E2EI["E2E Identity"]
+end
+
+STORAGE["Storage"]
+block:database
+    Native["SQLite + SQLCipher"]
+    Browser["IndexedDB"]
+end
+
+classDef highlighted fill:#969,stroke:#333,stroke-width:3px;
+class TSB highlighted
+class Browser highlighted
+</pre>
+
+<h2 id="corecrypto-ffi"><a class="header" href="#corecrypto-ffi">CoreCrypto FFI</a></h2>
+<p>Allows other programming languages and platforms to embed and interact with <code>CoreCrypto</code></p>
+<ul>
+<li>For iOS and Android, <a href="https://github.com/mozilla/uniffi-rs">UniFFI</a> is used to produce the relevant Kotlin and Swift
+bindings</li>
+<li>For Typescript we additionally use <a href="https://github.com/jhugman/uniffi-bindgen-react-native">UBRN</a> to create a WASM
+binary for browser and a native binary for native TS from our UniFFI bindings.</li>
+</ul>
+<h3 id="data-types"><a class="header" href="#data-types">Data Types</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Rust</th><th>Swift</th><th>Kotlin</th><th>TypeScript</th></tr>
+</thead>
+<tbody>
+<tr><td><code>bool</code></td><td><code>Bool</code></td><td><code>Boolean</code></td><td><code>boolean</code></td></tr>
+<tr><td><code>u8</code></td><td><code>UInt8</code></td><td><code>UByte</code></td><td><code>number</code></td></tr>
+<tr><td><code>u16</code></td><td><code>UInt16</code></td><td><code>UShort</code></td><td><code>number</code></td></tr>
+<tr><td><code>u32</code></td><td><code>UInt32</code></td><td><code>UInt</code></td><td><code>number</code></td></tr>
+<tr><td><code>u64</code></td><td><code>UInt64</code></td><td><code>ULong</code></td><td><code>bigint</code></td></tr>
+<tr><td><code>i8</code></td><td><code>Int8</code></td><td><code>Byte</code></td><td><code>number</code></td></tr>
+<tr><td><code>i16</code></td><td><code>Int16</code></td><td><code>Short</code></td><td><code>number</code></td></tr>
+<tr><td><code>i32</code></td><td><code>Int32</code></td><td><code>Int</code></td><td><code>number</code></td></tr>
+<tr><td><code>i64</code></td><td><code>Int64</code></td><td><code>Long</code></td><td><code>bigint</code></td></tr>
+<tr><td><code>f32</code></td><td><code>Float</code></td><td><code>Float</code></td><td><code>number</code></td></tr>
+<tr><td><code>f64</code></td><td><code>Double</code></td><td><code>Double</code></td><td><code>number</code></td></tr>
+<tr><td><code>String</code> / <code>&amp;str</code></td><td><code>String</code></td><td><code>String</code></td><td><code>string</code></td></tr>
+<tr><td><code>std::time::SystemTime</code></td><td><code>Date</code></td><td><code>java.time.Instant</code></td><td><code>Date</code></td></tr>
+<tr><td><code>std::time::Duration</code></td><td><code>TimeInterval</code></td><td><code>java.time.Duration</code></td><td><code>number</code> (in milliseconds)</td></tr>
+<tr><td><code>Option&lt;T&gt;</code></td><td><code>Optional&lt;T&gt;</code></td><td><code>Optional&lt;T&gt;</code></td><td><code>T?</code></td></tr>
+<tr><td><code>Vec&lt;T&gt;</code></td><td><code>Array&lt;T&gt;</code></td><td><code>List&lt;T&gt;</code></td><td><code>Array&lt;T&gt;</code></td></tr>
+<tr><td><code>HashMap&lt;String, T&gt;</code></td><td><code>Dictionary&lt;String, T&gt;</code></td><td><code>Map&lt;String, T&gt;</code></td><td><code>Record&lt;string, T&gt;</code></td></tr>
+<tr><td><code>()</code></td><td><code>nil</code></td><td><code>null</code></td><td><code>null</code></td></tr>
+<tr><td><code>Result&lt;T, E&gt;</code></td><td><code>func placeholder() throws E -&gt; T</code></td><td><code>T placeholder() throws E</code></td><td><code>function placeholder(): T // @throws E</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>For more information, see <a href="https://mozilla.github.io/uniffi-rs/next/types/builtin_types.html">UniFFI Docs</a> and
+<a href="https://jhugman.github.io/uniffi-bindgen-react-native/idioms/common-types.html">UBRN Docs</a></p>
+<h2 id="corecrypto-1"><a class="header" href="#corecrypto-1">CoreCrypto</a></h2>
+<p>CoreCrypto provides a unified abstraction layer over MLS and Proteus. It exposes a simplified interface built around
+application-level entities rather than protocol-specific concepts.</p>
+<h2 id="database"><a class="header" href="#database">Database</a></h2>
+<p>Encrypted Keystore powered by SQLCipher on native platforms. WASM uses an IndexedDB-backed, encrypted store with
+AES256-GCM. It provides a persistent data storage layer with encryption at-rest.</p>
+<h3 id="native-ios-android-ts-native"><a class="header" href="#native-ios-android-ts-native">Native (iOS, Android, Ts-Native)</a></h3>
+<p>Pretty much everything is handed off to SQLCipher:</p>
+<ul>
+<li>Backing store: Encrypted SQLite database (with <a href="https://www.zetetic.net/sqlcipher/">SQLCipher</a>)</li>
+<li>Encryption: AES256-CBC with per-page IV (provided by <a href="https://www.zetetic.net/sqlcipher/">SQLCipher</a>).
+<ul>
+<li>Value-Level Encryption is also possible on the
+<a href="https://www.zetetic.net/sqlcipher/value-level-encryption/">Commercial or Enterprise editions</a> if we want additional
+security guarantees</li>
+</ul>
+</li>
+<li>Crypto primitives provider: <a href="https://www.openssl.org/">OpenSSL</a></li>
+<li>PRNG provider: <a href="https://www.openssl.org/">OpenSSL</a></li>
+</ul>
+<pre class="mermaid">graph LR
+    RS[Rusqlite] --&gt; S[SQLCipher]
+    SC{AES-256-CBC}
+    S -.-&gt;|Encrypts| SC
+    SC -.-&gt;|Decrypts| S
+    SC --&gt;|Stores| SF[File]
+</pre>
+
+<p>See <a href="https://www.zetetic.net/sqlcipher/design/">SQLCipher design</a></p>
+<p>Summary:</p>
+<ul>
+<li>SQLCipher’s file page size by default is 4096 bytes</li>
+<li>When using a passphrase (our case), the provided passphrase is derived using PBKDF2-HMAC-SHA512. <br /> The salt of
+this KDF is stored in the 16 first bytes of the file.
+<ul>
+<li>Note: This cannot be kept as-is on iOS as iOS needs to be able to read the first 16-32 bytes of SQLite databases to
+“magically” guess they are SQLite databases<br /> and to allow reading them from the background. This is very useful
+in the case of background work on iOS such as encrypted data in notifications needing access to the keystore.<br /></li>
+</ul>
+</li>
+<li>Each page is encrypted or decrypted on-the-fly using AES256-CBC
+<ul>
+<li>Provided by OpenSSL -<code>v1.1.1p</code> as of 29/06/22- in our case, but the crypto provider can be changed to NSS,
+LibTomCrypt or Security.framework</li>
+</ul>
+</li>
+<li>Each page is written with a unique, random IV (<em>initialization vector</em>). This IV is regenerated on each page write.
+This IV is appended at the end of each page.</li>
+<li>Page ciphertexts are authenticated using an authentication tag using HMAC-SHA512. This tag is also appended at the
+each of the page.</li>
+</ul>
+<h3 id="wasm"><a class="header" href="#wasm">WASM</a></h3>
+<ul>
+<li>Backing store: <code>IndexedDB</code> (with the <a href="https://crates.io/crates/idb"><code>idb</code></a> crate)</li>
+<li>Encryption: AES256-GCM Value-Level-Encryption with random, non-reused 96-bits nonces and embedded authentication tag
+(AAD) of the AEAD
+<ul>
+<li>Caveat: Primary IDs are not encrypted, as this would compromise lookup and cause whole table <br /> scans. It is thus
+not recommended to store sensitive or identifying data in the primary ID.</li>
+<li>Caveat: Indexed searches do work, in two steps, an optimistic step fetching an unencrypted record, <br /> and a
+fallback step iterating on all records, decrypting the targeted field and checking it. Worst case it will run a
+whole table scan.</li>
+</ul>
+</li>
+<li>Crypto primitives provider: RustCrypto - <a href="https://crates.io/crates/aes-gcm"><code>aes-gcm</code></a> crate</li>
+<li>PRNG provider: <a href="https://crates.io/crates/rand"><code>rand</code></a> crate with <a href="https://crates.io/crates/getrandom"><code>getrandom</code></a>
+(uses <a href="https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues">Crypto.getRandomValues</a> under the hood)</li>
+</ul>
+<pre class="mermaid">graph LR
+    direction LR
+    B(Keystore Entities)
+    C{AES-256-GCM} --&gt;|Stores| I[IndexedDB]
+    B -.-&gt;|Encrypts| C
+    C -.-&gt;|Decrypts| B
+</pre>
+
+<h4 id="how-the-value-level-encryption-works"><a class="header" href="#how-the-value-level-encryption-works">How the value-level encryption works</a></h4>
+<ul>
+<li>Consumers of the library are required to provide 32 bytes, generated by a CSPRNG or a hardware RNG, to be used as an
+AES-256 key <br /></li>
+<li>Entities (i.e. Models in an ORM environment) dictate which fields are encrypted and with which AAD <br /> through
+their implementation of the <code>Entity</code> trait.</li>
+<li>By default, the AAD is the primary ID of the IndexedDB collection (i.e Table in a SQL database environment)</li>
+<li>AES256-GCM is used to encrypt the aforementioned fields
+<ul>
+<li>A random 96-bit (12 bytes) Nonce is generated</li>
+<li>The AAD is fetched through <code>Entity::aad()</code></li>
+<li>Together they are fed to <a href="https://crates.io/crates/aes-gcm"><code>aes-gcm</code></a> to create a ciphertext with embedded
+authentication tag</li>
+</ul>
+</li>
+<li>The ciphertext is then stored along with its nonce with the following data layout:
+<ul>
+<li>Cleartext: A buffer of N bytes (<code>[u8; N]</code>)</li>
+<li>Ciphertext: <code>[12 bytes of nonce..., ...ciphertext]</code></li>
+</ul>
+</li>
+<li>When decrypting, the stored nonce is picked apart from the ciphertext, the AAD is also fetched, then the cleartext is
+<br /> decrypted and returned</li>
+<li>Note: All the fields from all entities are zeroed on drop for security reasons</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="rust-crypto-dependencies"><a class="header" href="#rust-crypto-dependencies">Rust Crypto Dependencies</a></h1>
+<h2 id="cryptographic-primitives--spec-implementations"><a class="header" href="#cryptographic-primitives--spec-implementations">Cryptographic primitives &amp; spec implementations</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Primitive</th><th>Repository</th><th>Known audits</th></tr>
+</thead>
+<tbody>
+<tr><td>P256</td><td><a href="https://github.com/RustCrypto/elliptic-curves/tree/master/p256">RustCrypto/p256</a></td><td>N/A</td></tr>
+<tr><td>P384</td><td><a href="https://github.com/RustCrypto/elliptic-curves/tree/master/p384">RustCrypto/p384</a></td><td>N/A</td></tr>
+<tr><td>Curve25519</td><td><a href="https://github.com/dalek-cryptography/curve25519-dalek/tree/main/curve25519-dalek">dalek-cryptography/curve25519-dalek</a></td><td>N/A</td></tr>
+<tr><td>Ed25519</td><td><a href="https://github.com/dalek-cryptography/ed25519-dalek">dalek-cryptography/ed25519-dalek</a></td><td>N/A</td></tr>
+<tr><td>X25519</td><td><a href="https://github.com/dalek-cryptography/x25519-dalek">dalek-cryptography/x25519-dalek</a></td><td>N/A</td></tr>
+<tr><td>SHA2</td><td><a href="https://github.com/RustCrypto/hashes/tree/master/sha2">RustCrypto/sha2</a></td><td>N/A</td></tr>
+<tr><td>HMAC</td><td><a href="https://github.com/RustCrypto/MACs/tree/master/hmac">RustCrypto/hmac</a></td><td>N/A</td></tr>
+<tr><td>AES-GCM</td><td><a href="https://github.com/RustCrypto/AEADs/tree/master/aes-gcm">RustCrypto/aes-gcm</a></td><td><a href="https://research.nccgroup.com/2020/02/26/public-report-rustcrypto-aes-gcm-and-chacha20poly1305-implementation-review/">Audit by NCC Group</a></td></tr>
+<tr><td>ChaCha20Poly1305</td><td><a href="https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305">RustCrypto/chacha20poly1305</a></td><td><a href="https://research.nccgroup.com/2020/02/26/public-report-rustcrypto-aes-gcm-and-chacha20poly1305-implementation-review/">Audit by NCC Group</a></td></tr>
+<tr><td>HKDF</td><td><a href="https://github.com/RustCrypto/KDFs/tree/master/hkdf">RustCrypto/hkdf</a></td><td>N/A</td></tr>
+<tr><td>HPKE</td><td><a href="https://github.com/rozbb/rust-hpke/tree/main">rozbb/rust-hpke</a></td><td><a href="https://github.com/rozbb/rust-hpke/tree/main#warning">No formal audits, but Cloudflare reviewed it</a></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="csprng"><a class="header" href="#csprng">CSPRNG</a></h2>
+<p>We use <a href="https://github.com/rust-random/rand">rand</a> in combination with <a href="https://github.com/rust-random/rand/tree/master/rand_chacha">rand-chacha</a> to achieve a proper CSPRNG</p>
+<ul>
+<li>No audits are known of this crate, but it is the de facto for the Rust ecosystem and is used by pretty much any crate
+needing a randomness source.</li>
+<li>Note: We use <a href="https://github.com/rust-random/getrandom">getrandom</a> under the hood to retrieve random data. Other than de facto OS entropy sources, we can inject
+entropy at will
+<ul>
+<li>On this topic, the entropy sources per platform are detailed <a href="https://docs.rs/getrandom/latest/getrandom/#supported-targets">here</a></li>
+</ul>
+</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="ci-builds-via-gnu-make-and-github-actions"><a class="header" href="#ci-builds-via-gnu-make-and-github-actions">CI Builds via GNU make and GitHub Actions</a></h1>
+<h2 id="make-based-actions--workflows"><a class="header" href="#make-based-actions--workflows">Make-based actions &amp; workflows</a></h2>
+<p>Our CI pipeline is heavily driven by make rules (in the root <a href="Makefile"><code>Makefile</code></a>). To avoid duplicating logic, the
+CI uses small GitHub composite actions that invoke specific make targets with consistent artifact caching via GitHub
+artifatcs.</p>
+<p>The directory <code>.github/actions/make/</code> houses:</p>
+<ul>
+<li>A generic composite action (<a href=".github/actions/make/action.yml"><code>.github/actions/make/action.yml</code></a>)</li>
+<li>Specialized wrappers in subdirectories which call the generic action</li>
+</ul>
+<p>The workflow file <a href=".github/workflows/pipeline.yml"><code>.github/workflows/pipeline.yml</code></a> orchestrates CI jobs, and uses
+those make actions in steps.</p>
+<h2 id="generic-make-action"><a class="header" href="#generic-make-action">Generic <code>make</code> action</a></h2>
+<p>This action produces an artifact which corresponds to a rule in the root <a href="Makefile"><code>Makefile</code></a>, or downloads it if
+any subsequent workflow run already produced the artifact with unchanged prerequisites.</p>
+<h3 id="file-hashes-of-dependencies"><a class="header" href="#file-hashes-of-dependencies">File Hashes of Dependencies</a></h3>
+<p>The prerequisites of ceach artifact are defined in the <a href="Makefile"><code>Makefile</code></a> itself. Each artifact that is produced
+using this action, has a corresponding variable in the <a href="Makefile"><code>Makefile</code></a>, called <code>&lt;target-name&gt;-deps</code>, which
+lists the artifact’s dependencies.</p>
+<p>The <a href="Makefile"><code>Makefile</code></a> contains a wildcard rule that uses this variable to calculate an aggregated <code>sha256sum</code> of
+all dependencies. This is then appended to the artifact key, identifying an artifact when downloading or uploading.</p>
+<h3 id="artifact-caching"><a class="header" href="#artifact-caching">Artifact Caching</a></h3>
+<p>Each caller of the generic <code>make</code> action must provide an artifact key, required to identify an artifact. This is
+necessary downloading a previously produced artifact or uploading the artifact just produced. The aggregated <code>sha256sum</code>
+(see above) is then appended to that key to ensure artifacts with different dependencies don’t share a key.</p>
+<p>In case an artifact was successfully downloaded, the action <code>touch</code>es them, because otherwise the checked out source
+files would be newer than the downloaded artifacts. This is necessary because another subsequent call of this actions
+for another rule might require that the downloaded artifact is newer than the source files.</p>
+<p>Otherwise, the artifact is produced by calling <code>make &lt;rule argument&gt;</code>.</p>
+<p>In both cases (artifact was downloaded or produced), the artifact is uploaded only if it hasn’t been uploaded for this
+workflow run of <a href=".github/workflows/pipeline.yml"><code>pipeline.yml</code></a>. This is relevant because the <code>make</code> action may be
+called with the same parameters multiple times in a single workflow run.</p>
+<h2 id="specialized-make-actions"><a class="header" href="#specialized-make-actions">Specialized <code>make</code> actions</a></h2>
+<p>Since most artifacts (except those produced by a job representing a “leaf” in the make dependency tree) are reused
+during the <a href=".github/workflows/pipeline.yml"><code>pipeline.yml</code></a> workflow, the generic action is frequently called with
+the same arguments. The parameters of the <code>make</code> action are the artifact key, the <code>make</code> rule, and the target path. To
+avoid having to repeat the arguments when an artifact is reused, we’re using sepcialized <code>make</code> actions, located in
+subfolders of <code>.github/actions/make</code>. These specialized actions are parameterless, except for the github token, which
+they just forward. The github token is needed to use the <code>gh</code> CLI on the runner machine.</p>
+<p>Any reused artifact should have such a specialized action. Whenever a new artifact is introduced in the workflow and it
+needs to be reused, an action should be added.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="manually-publish-release-artifacts"><a class="header" href="#manually-publish-release-artifacts">Manually publish release artifacts</a></h1>
+<p>If one of the publishing jobs fails due to some temporary error, it might be necessary to publish the release artifacts
+for a platform manually to avoid having to restart the whole release process.</p>
+<h2 id="android--jvm-kotlin"><a class="header" href="#android--jvm-kotlin">Android / JVM (Kotlin)</a></h2>
+<h3 id="preparation"><a class="header" href="#preparation">Preparation</a></h3>
+<ul>
+<li>Checkout the release tag</li>
+<li>Open the Core Libraries vault on 1Password and copy the secrets from
+<a href="https://start.1password.com/open/i?a=FOQLGGWZU5EQXEJO3V3A5HI3DU&amp;v=djjqzfw3nbf5zi5ytli7eg6vza&amp;i=bhy2booptksljmacemcsfqjlui&amp;h=wire.1password.eu">Maven Central Publishing</a>
+and
+<a href="https://start.1password.com/open/i?a=FOQLGGWZU5EQXEJO3V3A5HI3DU&amp;v=djjqzfw3nbf5zi5ytli7eg6vza&amp;i=bpxhdqfderdddblxes4pu4s6ji&amp;h=wire.1password.eu">CoreCrypto Sonatype PGP Signing Key</a>
+<pre><code>export ORG_GRADLE_PROJECT_mavenCentralPassword &lt;secret&gt;
+export ORG_GRADLE_PROJECT_mavenCentralUsername &lt;secret&gt;
+export ORG_GRADLE_PROJECT_signingInMemoryKeyId &lt;secret&gt;
+export ORG_GRADLE_PROJECT_signingInMemoryKey &lt;secret&gt;
+export ORG_GRADLE_PROJECT_signingInMemoryKeyPassword &lt;secret&gt;
+</code></pre>
+</li>
+</ul>
+<h3 id="android"><a class="header" href="#android">Android</a></h3>
+<ul>
+<li>Download the android.zip from the release on https://github.com/wireapp/core-crypto/releases</li>
+<li>Extract the archive and copy the Android artifacts into the root of the core-crypto project
+<pre><code class="language-bash">cp -r ~/downloads/android/* core-crypto
+</code></pre>
+</li>
+<li>Publish the project
+<pre><code class="language-bash">cd crypto-ffi/bindings
+./gradlew android:publishAllPublicationsToMavenCentralRepository --no-configuration-cache
+</code></pre>
+</li>
+</ul>
+<h3 id="jvm"><a class="header" href="#jvm">JVM</a></h3>
+<ul>
+<li>Download the jvm.zip from the release on https://github.com/wireapp/core-crypto/releases</li>
+<li>Extract the archive and copy the JVM artifacts into the root of the core-crypto project
+<pre><code class="language-bash">cp -r ~/downloads/jvm/* core-crypto
+</code></pre>
+</li>
+<li>Publish the project
+<pre><code class="language-bash">cd crypto-ffi/bindings
+./gradlew jvm:publishAllPublicationsToMavenCentralRepository --no-configuration-cache
+</code></pre>
+</li>
+</ul>
+<h2 id="ios-swift"><a class="header" href="#ios-swift">iOS (Swift)</a></h2>
+<p>iOS artifacts aren’t distributed through a centralized package manager. If the artifact has been uploaded to the GitHub
+release, it is considered to be published.</p>
+<h2 id="npm-typescript"><a class="header" href="#npm-typescript">NPM (Typescript)</a></h2>
+<ul>
+<li>Download the <code>wireapp-core-crypto-x.y.z.tgz</code> from the release on https://github.com/wireapp/core-crypto/releases</li>
+<li>Publish:
+<pre><code class="language-bash">cd crypto-ffi/bindings/js
+bun publish ~/downloads/wireapp-core-crypto-x.y.z.tgz
+</code></pre>
+</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-09f2665d.js"></script>
+
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="langtabs-57c6b578.js"></script>
+        <script src="mermaid-eefea253.min.js"></script>
+        <script src="mermaid-init-ccf746f1.js"></script>
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+
+    </div>
+    </body>
+</html>
