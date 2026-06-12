@@ -962,11 +962,13 @@ final class WireCoreCryptoTests: XCTestCase {
     }
 
     func genClientId() -> ClientId {
-        let userId = UUID().uuidString
-        let deviceId = String(format: "%016llx", UInt64.random(in: 0...UInt64.max))
+        // constructor only fails if the uuid string is not a uuid
+        // swiftlint:disable:next force_try
+        let userId = try! Uuid(uuid: UUID().uuidString)
+        let deviceId = UInt64.random(in: 0...UInt64.max)
         // constructor only fails if the generated parts do not satisfy the wire client-id format
         // swiftlint:disable:next force_try
-        return try! ClientId(userId: userId, deviceId: deviceId, domain: "wire.com")
+        return try! ClientId(userId: userId, deviceId: DeviceId(id: deviceId), domain: "wire.com")
     }
 
     private func generateEd25519Jwk() -> Data {
