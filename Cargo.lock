@@ -1065,7 +1065,7 @@ dependencies = [
 
 [[package]]
 name = "core-crypto"
-version = "10.0.0-pre.9"
+version = "10.0.0-pre.10"
 dependencies = [
  "aes-gcm",
  "anyhow",
@@ -1138,7 +1138,7 @@ dependencies = [
 
 [[package]]
 name = "core-crypto-ffi"
-version = "10.0.0-pre.9"
+version = "10.0.0-pre.10"
 dependencies = [
  "async-lock",
  "async-trait",
@@ -1173,7 +1173,7 @@ dependencies = [
 
 [[package]]
 name = "core-crypto-keystore"
-version = "10.0.0-pre.9"
+version = "10.0.0-pre.10"
 dependencies = [
  "aes-gcm",
  "async-fs",
@@ -1234,7 +1234,7 @@ dependencies = [
 
 [[package]]
 name = "core-crypto-macros"
-version = "10.0.0-pre.9"
+version = "10.0.0-pre.10"
 dependencies = [
  "darling 0.23.0",
  "heck",
@@ -2912,7 +2912,7 @@ dependencies = [
 
 [[package]]
 name = "interop"
-version = "10.0.0-pre.9"
+version = "10.0.0-pre.10"
 dependencies = [
  "anyhow",
  "async-fs",
@@ -3094,7 +3094,7 @@ dependencies = [
 
 [[package]]
 name = "keystore-dump"
-version = "10.0.0-pre.9"
+version = "10.0.0-pre.10"
 dependencies = [
  "anyhow",
  "chrono",
