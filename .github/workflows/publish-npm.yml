@@ -37,6 +37,9 @@ jobs:
       - name: Setup Node for npm publish
         uses: actions/setup-node@v6
 
+      - run: npm install -g npm@latest
+      - run: echo ::notice ::npm version "$(npm --version)"
+
       - name: download ts browser artifacts
         if: ${{ inputs.prepare == true }}
         uses: ./.github/actions/make/ts/browser
