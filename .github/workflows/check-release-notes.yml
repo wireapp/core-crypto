@@ -25,7 +25,7 @@ jobs:
           # match conventional commit types that are marked as breaking via `!`
           # or messages that containt `BREAKING CHANGE:`
           if (git log --format=%B "$RANGE" | grep -E '^BREAKING') ||
-             (git log --format=%s "$RANGE" | cut -d: -f1 | grep -E '!'); then
+             (git log --format=%s "$RANGE" | grep -v '^fixup!' | cut -d: -f1 | grep -E '!'); then
             BREAKING=1
           else
             BREAKING=0
