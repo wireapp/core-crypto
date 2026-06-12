@@ -1166,6 +1166,7 @@ dependencies = [
  "tls_codec",
  "uniffi 0.29.5",
  "uniffi 0.31.0",
+ "uuid",
  "web-sys",
  "wire-e2e-identity",
  "x509-cert",

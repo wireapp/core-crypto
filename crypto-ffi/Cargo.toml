@@ -44,6 +44,7 @@ rmp-serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 tls_codec.workspace = true
+uuid.workspace = true
 x509-cert.workspace = true
 
 # UniFFI - Android + iOS bindings - Runtime support
