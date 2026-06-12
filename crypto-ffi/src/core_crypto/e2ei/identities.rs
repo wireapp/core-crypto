@@ -2,11 +2,11 @@ use std::{collections::HashMap, sync::Arc};
 
 use core_crypto::RecursiveError;
 
-use crate::{ClientId, ConversationId, CoreCryptoFfi, CoreCryptoResult, WireIdentity};
+use crate::{ClientId, ConversationId, CoreCryptoFfi, CoreCryptoResult, Uuid, WireIdentity};
 
 type DeviceIdentities = Vec<WireIdentity>;
 
-pub(crate) type UserIdentities = HashMap<String, Vec<WireIdentity>>;
+pub(crate) type UserIdentities = HashMap<Arc<Uuid>, Vec<WireIdentity>>;
 
 #[uniffi::export]
 impl CoreCryptoFfi {
@@ -37,8 +37,9 @@ impl CoreCryptoFfi {
     pub async fn get_user_identities(
         &self,
         conversation_id: &ConversationId,
-        user_ids: Vec<String>,
+        user_ids: Vec<Arc<Uuid>>,
     ) -> CoreCryptoResult<UserIdentities> {
+        let user_ids = user_ids.into_iter().map(|uuid| **uuid).collect::<Vec<_>>();
         let conversation = self
             .inner
             .mls_session()
@@ -46,12 +47,12 @@ impl CoreCryptoFfi {
             .get_raw_conversation(conversation_id.as_ref())
             .await
             .map_err(RecursiveError::mls_client("getting raw conversation"))?;
-        let identities = conversation.get_user_identities(user_ids.as_slice()).await?;
+        let identities = conversation.get_user_identities(&user_ids).await?;
         let identities = identities
             .into_iter()
             .map(|(k, v)| -> CoreCryptoResult<_> {
                 let identities = v.into_iter().map(WireIdentity::from).collect::<Vec<_>>();
-                Ok((k, identities))
+                Ok((Arc::new(k.into()), identities))
             })
             .collect::<CoreCryptoResult<HashMap<_, _>>>()?;
         Ok(identities)

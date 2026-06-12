@@ -4,7 +4,7 @@ use core_crypto::transaction_context::Error as TransactionError;
 
 use crate::{
     CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, E2eiConversationState, UserIdentities,
-    WireIdentity,
+    Uuid, WireIdentity,
 };
 
 #[uniffi::export]
@@ -48,15 +48,20 @@ impl CoreCryptoContext {
     pub async fn get_user_identities(
         &self,
         conversation_id: &ConversationId,
-        user_ids: Vec<String>,
+        user_ids: Vec<Arc<Uuid>>,
     ) -> CoreCryptoResult<UserIdentities> {
         let conversation = self.inner.conversation(conversation_id.as_ref()).await?;
-        let user_ids = conversation.get_user_identities(user_ids.as_slice()).await?;
-        let user_ids = user_ids
+        let user_ids = user_ids.into_iter().map(|uuid| **uuid).collect::<Vec<_>>();
+        let user_identities = conversation
+            .get_user_identities(&user_ids)
+            .await?
+            .into_iter()
+            .collect::<Vec<_>>();
+        let user_ids = user_identities
             .into_iter()
             .map(|(k, v)| -> CoreCryptoResult<_> {
                 let identities = v.into_iter().map(WireIdentity::from).collect::<Vec<_>>();
-                Ok((k, identities))
+                Ok((Arc::new(k.into()), identities))
             })
             .collect::<CoreCryptoResult<HashMap<_, _>>>()?;
         Ok(user_ids)
