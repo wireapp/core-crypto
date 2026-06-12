@@ -170,10 +170,10 @@ fn new_rand_client(domain: Option<String>) -> (ClientId, String) {
         use rand::distributions::{Alphanumeric, DistString as _};
         Alphanumeric.sample_string(&mut rand::thread_rng(), n)
     };
-    let user_id = uuid::Uuid::new_v4().to_string();
+    let user_id = uuid::Uuid::new_v4();
     let domain = domain.unwrap_or_else(|| format!("{}.com", rand_str(6)));
-    let device_id = format!("{:x}", rand::random::<u64>());
-    let client_id = ClientId::new(&user_id, &device_id, &domain).unwrap();
+    let device_id = rand::random::<u64>();
+    let client_id = ClientId::new(user_id, device_id, &domain);
     (client_id, domain)
 }
 

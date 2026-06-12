@@ -158,14 +158,14 @@ impl TestContext {
 
     pub fn basic_client_ids<const N: usize>(&self) -> [ClientId; N] {
         fn generate() -> ClientId {
-            let user_id = uuid::Uuid::new_v4().hyphenated().to_string();
+            let user_id = uuid::Uuid::new_v4();
             let device_id = rand::random::<u64>();
-            ClientId::new(&user_id, &format!("{device_id:x}"), "wire.com").unwrap()
+            ClientId::new(user_id, device_id, "wire.com")
         }
         std::array::from_fn(|_| generate())
     }
 
-    pub fn x509_client_ids_for_user<const N: usize>(&self, user: &uuid::Uuid) -> [ClientId; N] {
+    pub fn x509_client_ids_for_user<const N: usize>(&self, user: uuid::Uuid) -> [ClientId; N] {
         std::array::from_fn(|_| qualified_e2ei_cid_from_user_id(user))
     }
 

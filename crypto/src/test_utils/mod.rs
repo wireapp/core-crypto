@@ -292,13 +292,8 @@ impl SessionContext {
         signer: Option<&crate::test_utils::x509::X509Certificate>,
     ) -> Result<()> {
         let user_id = uuid::Uuid::new_v4();
-        let device_id = rand::random::<usize>();
-        let session_id = ClientId::new(
-            &user_id.hyphenated().to_string(),
-            &format!("{device_id:x}"),
-            "members.wire.com",
-        )
-        .map_err(RecursiveError::mls_client("new random session id"))?;
+        let device_id = rand::random::<u64>();
+        let session_id = ClientId::new(user_id, device_id, "members.wire.com");
 
         let (session_id, credential) = match case.credential_type {
             CredentialType::Basic => {
