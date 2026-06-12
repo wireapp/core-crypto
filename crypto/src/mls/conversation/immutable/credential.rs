@@ -8,7 +8,7 @@ use openmls::{
 };
 
 use super::{Error, Result};
-use crate::{Credential, LeafError, RecursiveError};
+use crate::{ClientId, Credential, LeafError, RecursiveError};
 
 impl super::Conversation {
     fn extract_own_updated_node_from_proposals<'a>(
@@ -60,18 +60,25 @@ impl super::Conversation {
     }
 
     /// Returns all members credentials with their signature public key from the group/conversation
-    pub async fn members_with_key(&self) -> HashMap<Vec<u8>, CredentialWithKey> {
-        self.group().await.members().fold(HashMap::new(), |mut acc, kp| {
-            let credential = kp.credential;
-            let id = credential.identity().to_vec();
-            let signature_key = SignaturePublicKey::from(kp.signature_key);
-            let credential = CredentialWithKey {
-                credential,
-                signature_key,
-            };
-            acc.entry(id).or_insert(credential);
-            acc
-        })
+    pub async fn members_with_key(&self) -> Result<HashMap<ClientId, CredentialWithKey>> {
+        self.group()
+            .await
+            .members()
+            .map(|member| {
+                let credential = member.credential;
+                let id: ClientId = credential
+                    .identity()
+                    .try_into()
+                    .map_err(RecursiveError::mls_client("client id from bytes"))?;
+
+                let credential = CredentialWithKey {
+                    credential,
+                    signature_key: SignaturePublicKey::from(member.signature_key),
+                };
+
+                Ok((id, credential))
+            })
+            .collect()
     }
 
     pub(crate) async fn own_mls_credential(&self) -> Result<MlsCredential> {

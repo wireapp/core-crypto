@@ -7,10 +7,8 @@ use core_crypto_keystore::{
 use openmls::prelude::{Credential as MlsCredential, ExternalSender, HpkePublicKey, KeyPackage, SignaturePublicKey};
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto};
 use tls_codec::Serialize;
-use wire_e2e_identity::{
-    WireIdentityReader,
-    legacy::{device_status::DeviceStatus, id::WireQualifiedClientId},
-};
+use uuid::Uuid;
+use wire_e2e_identity::{WireIdentityReader, legacy::device_status::DeviceStatus};
 use x509_cert::der::Encode;
 
 use crate::{
@@ -85,11 +83,8 @@ impl SessionContext {
         self.transaction = self.core_crypto.new_transaction().await.unwrap();
     }
 
-    pub async fn get_user_id(&self) -> String {
-        let client_id = self.get_client_id().await;
-        let client_id: Vec<u8> = client_id.into();
-        let client_id = wire_e2e_identity::legacy::id::ClientId::from(client_id);
-        WireQualifiedClientId::from(client_id).get_user_id()
+    pub async fn get_user_id(&self) -> Uuid {
+        self.get_client_id().await.deserialize().user_id
     }
 
     /// Create, save, and add a new credential of the type relevant to this test

@@ -93,6 +93,8 @@ mod tests {
     }
 
     mod wire_identity_getters {
+        use uuid::Uuid;
+
         use super::Error;
         use crate::{
             ClientId, CredentialType, DeviceStatus, E2eiConversationState, mls::conversation::Conversation,
@@ -101,7 +103,7 @@ mod tests {
 
         async fn all_identities_check<const N: usize>(
             conversation: &Conversation,
-            user_ids: &[String; N],
+            user_ids: &[Uuid; N],
             expected_sizes: [usize; N],
         ) {
             let all_identities = conversation.get_user_identities(user_ids).await.unwrap();
@@ -111,10 +113,7 @@ mod tests {
                 assert_eq!(alice_identities.len(), expected_size);
             }
             // Not found
-            let not_found = conversation
-                .get_user_identities(&["aaaaaaaaaaaaa".to_string()])
-                .await
-                .unwrap();
+            let not_found = conversation.get_user_identities(&[Uuid::new_v4()]).await.unwrap();
             assert!(not_found.is_empty());
 
             // Invalid usage

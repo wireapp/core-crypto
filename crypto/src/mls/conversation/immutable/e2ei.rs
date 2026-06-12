@@ -1,10 +1,11 @@
 use std::{borrow::Borrow, collections::HashMap};
 
 use openmls_traits::OpenMlsCryptoProvider as _;
+use uuid::Uuid;
 
 use super::{Error, Result};
 use crate::{
-    ClientIdRef, CredentialType, E2eiConversationState, RecursiveError, Session, UserId, WireIdentity,
+    ClientIdRef, CredentialType, E2eiConversationState, RecursiveError, Session, WireIdentity,
     mls::credential::ext::CredentialExt as _,
 };
 
@@ -42,8 +43,8 @@ impl super::Conversation {
         let pki_env = auth_service.pki_env().await;
 
         let mut identities = vec![];
-        for (id, credential) in self.members_with_key().await {
-            if device_ids.iter().any(|client_id| client_id.borrow() == id) {
+        for (id, credential) in self.members_with_key().await? {
+            if device_ids.iter().any(|client_id| client_id.borrow() == id.as_slice()) {
                 identities.push(
                     credential
                         .extract_identity(self.cipher_suite(), pki_env.as_deref())
@@ -61,7 +62,7 @@ impl super::Conversation {
     ///
     /// Returns a Map with all the identities for a given users. Consumers are then recommended to
     /// reduce those identities to determine the actual status of a user.
-    pub async fn get_user_identities(&self, user_ids: &[String]) -> Result<HashMap<String, Vec<WireIdentity>>> {
+    pub async fn get_user_identities(&self, user_ids: &[Uuid]) -> Result<HashMap<Uuid, Vec<WireIdentity>>> {
         if user_ids.is_empty() {
             return Err(Error::CallerError(
                 "This function accepts a list of IDs as a parameter, but that list was empty.",
@@ -69,27 +70,22 @@ impl super::Conversation {
         }
         let mls_provider = &self.session.crypto_provider;
         let auth_service = mls_provider.authentication_service();
-        let user_ids = user_ids.iter().map(|uid| uid.as_bytes()).collect::<Vec<_>>();
 
         let pki_env = auth_service.pki_env().await;
 
         let mut identities = HashMap::new();
-        for (id, credential) in self.members_with_key().await {
-            let uid = match UserId::try_from(id.as_slice()) {
-                Ok(uid) => uid,
-                Err(_) => continue,
-            };
+        for (id, credential) in self.members_with_key().await? {
+            let user_id = &id.deserialize().user_id;
 
-            if !user_ids.contains(&uid) {
+            if !user_ids.contains(user_id) {
                 continue;
             }
 
-            let uid = String::try_from(uid).map_err(RecursiveError::mls_client("getting user identities"))?;
             let identity = credential
                 .extract_identity(self.cipher_suite(), pki_env.as_deref())
                 .await
                 .map_err(RecursiveError::mls_credential("extracting identity"))?;
-            let value = identities.entry(uid).or_insert_with(Vec::new);
+            let value = identities.entry(*user_id).or_insert_with(Vec::new);
             value.push(identity);
         }
 
