@@ -232,7 +232,15 @@ ts-native-bench: $(TS_NATIVE_OUT)
 		bun --conditions=cc-native run "$$f"; \
 	done
 
+TS_NATIVE_FULL_OUT := \
+	$(TS_NATIVE_OUT_DIR)/corecrypto.d.ts \
+	$(TS_NATIVE_OUT_DIR)/corecrypto.js \
+	$(TS_NATIVE_OUT_DIR)/libcore_crypto_ffi.so \
+	$(TS_NATIVE_OUT_DIR)/libcore_crypto_ffi.dylib
+
+TS_PACKAGE_FILES := $(BROWSER_OUT) $(TS_NATIVE_FULL_OUT)
+
 .PHONY: ts-package
-ts-package: $(TS_OUT)  ## Package the ready-to-release tarball
+ts-package: $(TS_PACKAGE_FILES)  ## Package the ready-to-release tarball - you need to cross-compile or otherwise acquire the ts-native artifact that doesn't match your host.
 	@cd $(JS_DIR)/packages/core-crypto && \
 	bun pm pack --quiet
