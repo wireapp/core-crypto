@@ -33,13 +33,10 @@ export async function initWasmModule(location: string | undefined = undefined) {
             await initWasm({});
         }
     } else {
-        // non-browser context, load WASM module from file
-        const fs = await import("fs/promises");
-        const path = new URL(`${location}index_bg.wasm`, import.meta.url);
-        const file = await fs.open(path);
-        const buffer = await file.readFile();
-        const module = new WebAssembly.Module(new Uint8Array(buffer));
-        await initWasm({ module_or_path: module });
+        throw Error(
+            "initializing the wasm module of `@wireapp/core-crypto/browser` package outside the browser\
+            isn't currently supported. Consider using the `@wireapp/core-crypto/native` package."
+        );
     }
     // UBRN initialization
     // Initialize the generated bindings: mostly checksums, but also callbacks.
