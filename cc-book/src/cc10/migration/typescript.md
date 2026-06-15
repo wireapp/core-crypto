@@ -116,3 +116,7 @@ the mapping.
 1. `CustomConfiguration.keyRotationSpan` now defines milliseconds instead of seconds.
 
 1. renamed `CoreCrypto.reseedRng()` to `CoreCrypto.reseed()`
+
+1. In versions `9.x`, it was possible to instantiate wasm clients in a node-like runtime (without persistence, though).
+   This is no longer supported. Use `@wireapp/core-crypto/native` instead for fully featured CoreCrypto with
+   persistence.
