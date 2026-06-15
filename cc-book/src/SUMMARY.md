@@ -2,8 +2,6 @@
 
 [Introduction](introduction.md)
 
-[Release Notes](release_notes.md)
-
 # Concepts
 
 - [Proteus](concepts/proteus.md)
@@ -19,6 +17,11 @@
   - [TypeScript](cc10/migration/typescript.md)
   - [Swift](cc10/migration/swift.md)
   - [Kotlin](cc10/migration/kotlin.md)
+
+# Releases
+
+- [Release Notes](release_notes.md)
+- [Release Artifacts](release_artifacts.md)
 
 # Development
 
