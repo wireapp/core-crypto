@@ -41,6 +41,8 @@ jobs:
 
       - run: echo ::notice ::npm version "$(npm --version)"
 
+      # We're just using the make action in these next few steps to download
+      # previously produced artifacts.
       - name: download ts browser artifacts
         if: ${{ inputs.prepare == true }}
         uses: ./.github/actions/make/ts/browser
@@ -48,14 +50,9 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
-      - name: download ts native linux artifacts
-        if: ${{ inputs.prepare == true }}
-        uses: ./.github/actions/make/ts/native
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
-
-      # We're just using the make action to download the previously produced artifact.
+      # Note that for make/mtime reasons, we _must_ download native apple artifacts before
+      # downloading native linux artifacts, otherwise the "package" step will trigger
+      # a rebuild of the linux artifacts.
       - name: download ts native aarch64 apple darwin artifacts
         if: ${{ inputs.prepare == true }}
         uses: ./.github/actions/make
@@ -64,6 +61,13 @@ jobs:
           make-rule: ts-native
           target-path: |
             crypto-ffi/bindings/js/packages/core-crypto/dist/native/libcore_crypto_ffi.dylib
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: download ts native linux artifacts
+        if: ${{ inputs.prepare == true }}
+        uses: ./.github/actions/make/ts/native
+        with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
