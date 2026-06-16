@@ -1,4 +1,4 @@
-use vergen_gitcl::{BuildBuilder, CargoBuilder, Emitter, GitclBuilder};
+use vergen_gitcl::{Build, Cargo, Emitter, Gitcl};
 
 fn main() -> anyhow::Result<()> {
     // Target aliases
@@ -18,19 +18,19 @@ fn main() -> anyhow::Result<()> {
 
     // collect a bunch of build/git information and emit it into the build environment,
     // from whence we can extract it and make it public
-    let build = BuildBuilder::default().build_timestamp(true).build()?;
-    let cargo = CargoBuilder::default()
+    let build = Build::builder().build_timestamp(true).build();
+    let cargo = Cargo::builder()
         .debug(true)
         .features(true)
         .opt_level(true)
         .target_triple(true)
-        .build()?;
-    let git = GitclBuilder::default()
+        .build();
+    let git = Gitcl::builder()
         .branch(true)
         .sha(false)
         .dirty(false)
         .describe(true, true, Some("v*"))
-        .build()?;
+        .build();
 
     Emitter::default()
         .fail_on_error()
