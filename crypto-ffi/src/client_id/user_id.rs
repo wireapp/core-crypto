@@ -12,8 +12,9 @@ use crate::{CoreCryptoError, CoreCryptoResult};
     derive_more::Deref,
     derive_more::DerefMut,
     uniffi::Object,
+    derive_more::Display,
 )]
-#[uniffi::export(Eq, Hash)]
+#[uniffi::export(Eq, Hash, Display)]
 /// A Uuid.
 // It's currently just used as a user id. However, we're calling it `Uuid`, because it might potentially be used in
 // other places, too, e.g., conversation ids.
