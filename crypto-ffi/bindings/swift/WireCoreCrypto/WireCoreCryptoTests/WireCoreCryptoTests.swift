@@ -29,6 +29,14 @@ final class WireCoreCryptoTests: XCTestCase {
         // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
+    func testUuidToStringWorks() throws {
+        let rawUuid = UUID().uuidString
+        let uuid = try Uuid(uuid: rawUuid)
+
+        XCTAssertEqual(String(describing: uuid), rawUuid.lowercased())
+        XCTAssertEqual(uuid.description, rawUuid.lowercased())
+    }
+
     func testSetClientDataPersists() async throws {
         let database = try await newDatabase()
         let coreCrypto = try CoreCrypto(database: database)

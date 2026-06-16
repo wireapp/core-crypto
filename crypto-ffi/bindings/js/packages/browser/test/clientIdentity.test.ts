@@ -11,6 +11,16 @@ afterEach(async () => {
 });
 
 describe("client identity", () => {
+    it("Uuid.toString should work", async () => {
+        const result = await browser.execute(() => {
+            const rawUuid = window.crypto.randomUUID();
+            const uuid = new window.ccModule.Uuid(rawUuid);
+
+            return uuid.toString() === rawUuid;
+        });
+        expect(result).toBe(true);
+    });
+
     it("get client public key should work", async () => {
         const result = await browser.execute(async () => {
             const cc = await window.helpers.ccInit();

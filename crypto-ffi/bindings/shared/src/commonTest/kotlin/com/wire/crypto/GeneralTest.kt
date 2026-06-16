@@ -8,10 +8,19 @@ import testutils.MockMlsTransportSuccessProvider
 import testutils.genClientId
 import testutils.genDatabaseKey
 import java.nio.file.Path
+import java.util.UUID
 import kotlin.io.path.*
 import kotlin.test.*
 
 class GeneralTest {
+    @Test
+    fun uuid_to_string() = runTest {
+        val rawUuid = UUID.randomUUID().toString()
+        val uuid = Uuid(rawUuid)
+
+        assertThat(uuid.toString()).isEqualTo(rawUuid)
+    }
+
     @Test
     fun get_version() = runTest {
         val version = version()
