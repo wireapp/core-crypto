@@ -41,7 +41,6 @@ const RECORDED_LOGS: LogEntry[] = [];
 function recordLogs(): void {
     setLogger({
         log: (level: number, message: string, context: string) => {
-            console.log(message, context);
             RECORDED_LOGS.push({
                 level: level,
                 message: message,
