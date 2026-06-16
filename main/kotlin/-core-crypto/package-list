@@ -778,6 +778,7 @@ $dokka.location:com.wire.crypto/Uuid/close/#/PointingToDeclaration/-core-crypto
 $dokka.location:com.wire.crypto/Uuid/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-uuid/destroy.html
 $dokka.location:com.wire.crypto/Uuid/equals/#kotlin.Any?/PointingToDeclaration/-core-crypto/com.wire.crypto/-uuid/equals.html
 $dokka.location:com.wire.crypto/Uuid/hashCode/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-uuid/hash-code.html
+$dokka.location:com.wire.crypto/Uuid/toString/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-uuid/to-string.html
 $dokka.location:com.wire.crypto/Uuid/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-uuid/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/UuidInterface.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-uuid-interface/-companion/index.html
 $dokka.location:com.wire.crypto/UuidInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-uuid-interface/index.html
