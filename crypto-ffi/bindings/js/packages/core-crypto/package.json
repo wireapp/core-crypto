@@ -17,6 +17,16 @@
             "import": "./dist/native/corecrypto.js"
         }
     },
+    "typesVersions": {
+        "*": {
+            "browser": [
+                "./dist/browser/corecrypto.d.ts"
+            ],
+            "native": [
+                "./dist/native/corecrypto.d.ts"
+            ]
+        }
+    },
     "files": [
         "dist/browser/corecrypto.js",
         "dist/browser/corecrypto.d.ts",
