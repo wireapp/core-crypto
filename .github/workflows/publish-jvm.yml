@@ -38,12 +38,12 @@ jobs:
           distribution: adopt
 
       - name: gradle setup
-        uses: gradle/actions/setup-gradle@v6.1.0
+        uses: gradle/actions/setup-gradle@v6.1.1
         with:
           cache-provider: basic
 
       - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v6.1.0
+        uses: gradle/actions/wrapper-validation@v6.1.1
 
       - name: release artifact
         run: |
