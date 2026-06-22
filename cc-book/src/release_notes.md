@@ -8,7 +8,7 @@
 - New Database API
 - New PKI Environment API
 - New Credential API
-- TS-Native library (dropped the non-persistent wasm client support for non-browser contexts)
+- TS-Native library
 - Reworked client id constructor to take typed data instead of a byte string
 
 ## CoreCrypto 9

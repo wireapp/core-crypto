@@ -57,3 +57,26 @@ working set and the keystore.
 
 > [!NOTE]
 > CC v10.0 introduces lots of changes. We provide a [migration guide](migration-guide.md).
+
+## New Platform: TS Native
+
+With CC 10 we are expanding the set of supported bindings. In addition to the existing browser bindings--now published
+as `@wireapp/core-crypto/browser`--we are also publishing bindings for Node and other native platforms, as
+`@wireapp/core-crypto/native`.
+
+These new bindings are conceptually more similar to [KMP](https://kotlinlang.org/multiplatform/) than to the browser
+bindings: under the hood, they are not compiled to WASM at all. Instead, they call directly into a `.so` or `.dylib`
+library according to the relevant system.
+
+> [!NOTE]
+> We do not currently provide a `.dll` with which it would be possible to run the TS Native bindings on Windows.
+
+While the mechanics of the library's implementation are different, the actual API will be very familiar; we've
+intentionally minimized the differences between the native and browser implementations.
+
+### Deprecating the WASM non-browser code
+
+In 9.x we provided the ability to launch CC in-memory in the TS WASM bindings, which enabled transient usage in
+non-browser contexts. With the addition of the TS Native bindings, we have removed the transient WASM APIs. The TS
+Native bindings enable fully-persistent usage patterns outside the browser and should replace all usage of the old
+transient WASM API.
