@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-4357260b.js";
+            window.path_to_searchindex_js = "searchindex-45263d00.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-59a922f4.js"></script>
@@ -822,6 +822,24 @@ working set and the keystore.</p>
 <p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
 <p>CC v10.0 introduces lots of changes. We provide a <a href="#migrating-from-v9x-to-v100">migration guide</a>.</p>
 </blockquote>
+<h2 id="new-platform-ts-native"><a class="header" href="#new-platform-ts-native">New Platform: TS Native</a></h2>
+<p>With CC 10 we are expanding the set of supported bindings. In addition to the existing browser bindings–now published
+as <code>@wireapp/core-crypto/browser</code>–we are also publishing bindings for Node and other native platforms, as
+<code>@wireapp/core-crypto/native</code>.</p>
+<p>These new bindings are conceptually more similar to <a href="https://kotlinlang.org/multiplatform/">KMP</a> than to the browser
+bindings: under the hood, they are not compiled to WASM at all. Instead, they call directly into a <code>.so</code> or <code>.dylib</code>
+library according to the relevant system.</p>
+<p>While the mechanics of the library’s implementation are different, the actual API will be very familiar; we’ve
+intentionally minimized the differences between the native and browser implementations.</p>
+<p>The most visible difference is initialization. The browser bindings require you to <code>await initWasmModule()</code> before
+constructing any types, but the native bindings have no such step; import and start using the API directly.</p>
+<p>The native package runs on Node and Bun, and currently ships prebuilt libraries for macOS (Apple Silicon) and Linux
+(x86_64, glibc); the appropriate one is selected automatically at runtime. Other platforms—including Intel macOS, ARM
+Linux, musl-based distributions, and Windows—are not currently prebuilt.</p>
+<h3 id="removing-non-browser-wasm-support"><a class="header" href="#removing-non-browser-wasm-support">Removing non-browser WASM support</a></h3>
+<p>In 9.x it was possible to instantiate WASM clients in a node-like runtime, though without persistence. With the addition
+of the TS Native bindings, this is no longer supported. The TS Native bindings enable fully-persistent usage patterns
+outside the browser and should replace all usage of the WASM bindings outside the browser.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="migrating-from-v9x-to-v100"><a class="header" href="#migrating-from-v9x-to-v100">Migrating from v9.x to v10.0</a></h1>
 <p>This page covers breaking changes that are identical across all platforms. For platform-specific migration steps, see
@@ -1292,7 +1310,7 @@ log level, use the free function <code>setMaxLogLevel(level: CoreCryptoLogLevel)
 <li>New Database API</li>
 <li>New PKI Environment API</li>
 <li>New Credential API</li>
-<li>TS-Native library (dropped the non-persistent wasm client support for non-browser contexts)</li>
+<li>TS-Native library</li>
 <li>Reworked client id constructor to take typed data instead of a byte string</li>
 </ul>
 <h2 id="corecrypto-9"><a class="header" href="#corecrypto-9">CoreCrypto 9</a></h2>
