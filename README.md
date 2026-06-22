@@ -209,6 +209,37 @@ Make sure you have all prerequisites:
   bunx @puppeteer/browsers install --path ~/bin chromedriver
   ```
 
+- Install [binaryen tools](https://github.com/WebAssembly/binaryen#tools):
+
+  ```sh
+  td="$(mktemp -d)"
+  pushd "$td"
+  case "$(uname -s)" in
+    Linux)  os=linux ;;
+    Darwin) os=macos ;;
+    MINGW*|MSYS*|CYGWIN*) os=windows ;;
+    *) echo "unsupported OS: $(uname -s)" >&2; exit 1 ;;
+  esac
+
+  case "$(uname -m)" in
+    x86_64|amd64) arch=x86_64 ;;
+    aarch64|arm64) [[ "$os" == linux ]] && arch=aarch64 || arch=arm64 ;;
+    *) echo "unsupported architecture: $(uname -m)" >&2; exit 1 ;;
+  esac
+
+  version="$(gh release view --repo WebAssembly/binaryen --json tagName --jq .tagName)"
+
+  tarball="binaryen-${version}-${arch}-${os}.tar.gz"
+  gh release download --repo webassembly/binaryen --pattern "$tarball" --pattern "${tarball}.sha256"
+  sha256sum -c "${tarball}.sha256"
+  tar -xzf "$tarball"
+  mkdir -p "$HOME/bin"
+  cp "binaryen-$version"/bin/* "$HOME/bin/"
+
+  popd
+  rm -rf "$td"
+  ```
+
 Build:
 
 ```sh
