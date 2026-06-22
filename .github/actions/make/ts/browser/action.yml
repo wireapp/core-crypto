@@ -16,6 +16,26 @@ runs:
       - name: Install wasm-bindgen-cli
         uses: ./.github/actions/setup-wasm-bindgen
 
+      # wasm-opt (binaryen) is invoked by the `wasm-build` make rule in release builds to
+      # shrink the shipped wasm. taiki-e/install-action doesn't package binaryen, so we fetch
+      # a pinned release tarball directly. Only release builds (RELEASE set) run wasm-opt, so we
+      # skip the download otherwise. We extract into RUNNER_TEMP rather than the working tree
+      # to avoid perturbing the mtime-sensitive make artifact system.
+      - name: Install wasm-opt (binaryen)
+        if: ${{ env.RELEASE != '' }}
+        shell: bash -euo pipefail {0}
+        env:
+          BINARYEN_VERSION: version_130
+          GH_TOKEN: ${{ inputs.gh-token }}
+        run: |
+          tarball="binaryen-${BINARYEN_VERSION}-x86_64-linux.tar.gz"
+          cd "$RUNNER_TEMP"
+          gh release download "${BINARYEN_VERSION}" --repo WebAssembly/binaryen \
+            --pattern "${tarball}" --pattern "${tarball}.sha256"
+          sha256sum -c "${tarball}.sha256"
+          tar -xzf "${tarball}"
+          echo "${RUNNER_TEMP}/binaryen-${BINARYEN_VERSION}/bin" >> "$GITHUB_PATH"
+
       # ensure bun deps are installed freshly before any command using bun is invoked
       - name: install bun deps
         run: |
