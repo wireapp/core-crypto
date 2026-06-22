@@ -74,9 +74,8 @@ library according to the relevant system.
 While the mechanics of the library's implementation are different, the actual API will be very familiar; we've
 intentionally minimized the differences between the native and browser implementations.
 
-### Deprecating the WASM non-browser code
+### Removing non-browser WASM support
 
-In 9.x we provided the ability to launch CC in-memory in the TS WASM bindings, which enabled transient usage in
-non-browser contexts. With the addition of the TS Native bindings, we have removed the transient WASM APIs. The TS
-Native bindings enable fully-persistent usage patterns outside the browser and should replace all usage of the old
-transient WASM API.
+In 9.x it was possible to instantiate WASM clients in a node-like runtime, though without persistence. With the addition
+of the TS Native bindings, this is no longer supported. The TS Native bindings enable fully-persistent usage patterns
+outside the browser and should replace all usage of the WASM bindings outside the browser.
