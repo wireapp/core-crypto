@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["MAX_BLOB_LEN"],"enum":["ConnectionType"],"mod":["platform"],"struct":["ConnectionGuard","Database"],"trait":["DatabaseConnection","DatabaseConnectionRequirements"]};
