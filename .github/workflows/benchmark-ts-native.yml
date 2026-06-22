@@ -1,6 +1,6 @@
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}-benchmark-ts-native"
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 on:
   workflow_call:
