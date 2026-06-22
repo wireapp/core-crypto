@@ -68,11 +68,15 @@ These new bindings are conceptually more similar to [KMP](https://kotlinlang.org
 bindings: under the hood, they are not compiled to WASM at all. Instead, they call directly into a `.so` or `.dylib`
 library according to the relevant system.
 
-> [!NOTE]
-> We do not currently provide a `.dll` with which it would be possible to run the TS Native bindings on Windows.
-
 While the mechanics of the library's implementation are different, the actual API will be very familiar; we've
 intentionally minimized the differences between the native and browser implementations.
+
+The most visible difference is initialization. The browser bindings require you to `await initWasmModule()` before
+constructing any types, but the native bindings have no such step; import and start using the API directly.
+
+The native package runs on Node and Bun, and currently ships prebuilt libraries for macOS (Apple Silicon) and Linux
+(x86_64, glibc); the appropriate one is selected automatically at runtime. Other platforms—including Intel macOS, ARM
+Linux, musl-based distributions, and Windows—are not currently prebuilt.
 
 ### Removing non-browser WASM support
 
