@@ -42,10 +42,10 @@ describe("history sharing", () => {
 
             const observer = new Observer();
 
-            const cc = await window.helpers.ccInit();
+            const cc = await helpers.ccInit();
 
             // create the conversation in one transaction
-            const convId = await window.helpers.createConversation(cc);
+            const convId = await helpers.createConversation(cc);
 
             // register the observer
             await cc.registerHistoryObserver(observer);
@@ -62,7 +62,7 @@ describe("history sharing", () => {
                 await cc.isHistorySharingEnabled(convId);
 
             const commitHasEncryptedMessage =
-                (await window.deliveryService.getLatestCommitBundle())
+                (await deliveryService.getLatestCommitBundle())
                     .encryptedMessage !== undefined;
 
             const decoder = new TextDecoder();

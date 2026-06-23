@@ -13,13 +13,13 @@ afterEach(async () => {
 describe("metadata", () => {
     it("metadata can be retrieved and contains key 'gitDescribe'", async () => {
         await expect(
-            browser.execute(async () => window.ccModule.buildMetadata())
+            browser.execute(async () => ccModule.buildMetadata())
         ).resolves.toHaveProperty("gitDescribe");
     });
 
     it("version can be retrieved and is a semantic version number", async () => {
         await expect(
-            browser.execute(async () => window.ccModule.version())
+            browser.execute(async () => ccModule.version())
         ).resolves.toMatch(
             RegExp(
                 // Regex for matching semantic versions from https://semver.org

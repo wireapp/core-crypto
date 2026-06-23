@@ -20,9 +20,8 @@ describe("logger", () => {
 
     it("forwards logs when registered", async () => {
         const result = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
-            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
-                window.ccModule;
+            const cc = await helpers.ccInit();
+            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } = ccModule;
 
             const logs: string[] = [];
             setLogger({
@@ -31,7 +30,7 @@ describe("logger", () => {
                 },
             });
             setMaxLogLevel(CoreCryptoLogLevel.Debug);
-            await window.helpers.createConversation(cc);
+            await helpers.createConversation(cc);
             return logs;
         });
 
@@ -40,9 +39,8 @@ describe("logger", () => {
 
     it("can be replaced", async () => {
         const result = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
-            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
-                window.ccModule;
+            const cc = await helpers.ccInit();
+            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } = ccModule;
 
             const logs: string[] = [];
             setLogger({
@@ -56,7 +54,7 @@ describe("logger", () => {
                 },
             });
             setMaxLogLevel(CoreCryptoLogLevel.Debug);
-            await window.helpers.createConversation(cc);
+            await helpers.createConversation(cc);
             return logs;
         });
 
@@ -65,9 +63,8 @@ describe("logger", () => {
 
     it("doesn't forward logs below log level when registered", async () => {
         const result = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
-            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
-                window.ccModule;
+            const cc = await helpers.ccInit();
+            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } = ccModule;
 
             const logs: string[] = [];
             setLogger({
@@ -76,7 +73,7 @@ describe("logger", () => {
                 },
             });
             setMaxLogLevel(CoreCryptoLogLevel.Warn);
-            await window.helpers.createConversation(cc);
+            await helpers.createConversation(cc);
             return logs;
         });
 
@@ -86,9 +83,8 @@ describe("logger", () => {
     it("when throwing errors they're reported as errors", async () => {
         const expectedErrorMessage = "expected test error in logger test";
         await browser.execute(async (expectedErrorMessage) => {
-            const cc = await window.helpers.ccInit();
-            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
-                window.ccModule;
+            const cc = await helpers.ccInit();
+            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } = ccModule;
 
             setLogger({
                 log: (_level, _message, _context) => {
@@ -96,7 +92,7 @@ describe("logger", () => {
                 },
             });
             setMaxLogLevel(CoreCryptoLogLevel.Debug);
-            await window.helpers.createConversation(cc);
+            await helpers.createConversation(cc);
         }, expectedErrorMessage);
 
         const logs = (await browser.getLogs("browser")) as BrowserLog[];
@@ -116,13 +112,12 @@ describe("logger", () => {
 
     it("forwards logs with context key/value pairs", async () => {
         const result = await browser.execute(async () => {
-            const alice = await window.helpers.ccInit();
-            const bob = await window.helpers.ccInit();
-            const conversationId =
-                await window.helpers.createConversation(alice);
-            await window.helpers.invite(alice, bob, conversationId);
+            const alice = await helpers.ccInit();
+            const bob = await helpers.ccInit();
+            const conversationId = await helpers.createConversation(alice);
+            await helpers.invite(alice, bob, conversationId);
 
-            window.helpers.recordLogs();
+            helpers.recordLogs();
 
             const encoder = new TextEncoder();
             const messageText = "Hello world!";
@@ -138,7 +133,7 @@ describe("logger", () => {
                     await ctx.decryptMessage(conversationId, encryptedMessage)
             );
 
-            return window.recordedLogs;
+            return recordedLogs;
         });
 
         const proteusErrorLog = result.find(
@@ -154,19 +149,18 @@ describe("logger", () => {
 
     it("forward logs with member changes", async () => {
         const logs = await browser.execute(async () => {
-            const alice = await window.helpers.ccInit();
-            const bob = await window.helpers.ccInit();
-            const carolId = window.helpers.newClientId();
-            const carol = await window.helpers.ccInit({ clientId: carolId });
-            window.helpers.recordLogs();
-            const conversationId =
-                await window.helpers.createConversation(alice);
-            await window.helpers.invite(alice, bob, conversationId);
-            await window.helpers.invite(alice, carol, conversationId);
-            await window.helpers.consumeLastestCommit(bob, conversationId);
-            await window.helpers.remove(alice, carolId, conversationId);
-            await window.helpers.consumeLastestCommit(bob, conversationId);
-            return window.recordedLogs;
+            const alice = await helpers.ccInit();
+            const bob = await helpers.ccInit();
+            const carolId = helpers.newClientId();
+            const carol = await helpers.ccInit({ clientId: carolId });
+            helpers.recordLogs();
+            const conversationId = await helpers.createConversation(alice);
+            await helpers.invite(alice, bob, conversationId);
+            await helpers.invite(alice, carol, conversationId);
+            await helpers.consumeLastestCommit(bob, conversationId);
+            await helpers.remove(alice, carolId, conversationId);
+            await helpers.consumeLastestCommit(bob, conversationId);
+            return recordedLogs;
         });
 
         const epochChangedContext1 = logs.find(

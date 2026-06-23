@@ -16,16 +16,16 @@ describe("database", () => {
             browser.execute(async () => {
                 const databaseName = crypto.randomUUID();
                 const key = new Uint8Array(32);
-                window.crypto.getRandomValues(key);
+                crypto.getRandomValues(key);
 
-                await window.ccModule.Database.open(
+                await ccModule.Database.open(
                     databaseName,
-                    new window.ccModule.DatabaseKey(key)
+                    new ccModule.DatabaseKey(key)
                 );
 
-                const db = await window.ccModule.Database.open(
+                const db = await ccModule.Database.open(
                     databaseName,
-                    new window.ccModule.DatabaseKey(key)
+                    new ccModule.DatabaseKey(key)
                 );
 
                 return { dbIsDefined: db !== undefined };
@@ -38,11 +38,11 @@ describe("database", () => {
             browser.execute(async () => {
                 const databaseName = crypto.randomUUID();
                 const key = new Uint8Array(32);
-                window.crypto.getRandomValues(key);
+                crypto.getRandomValues(key);
 
-                const db = await window.ccModule.Database.open(
+                const db = await ccModule.Database.open(
                     databaseName,
-                    new window.ccModule.DatabaseKey(key)
+                    new ccModule.DatabaseKey(key)
                 );
 
                 return {
@@ -55,7 +55,7 @@ describe("database", () => {
     it("key must have correct length", async () => {
         await expect(
             browser.execute(async () => {
-                new window.ccModule.DatabaseKey(new Uint8Array(11));
+                new ccModule.DatabaseKey(new Uint8Array(11));
             })
         ).rejects.toThrow();
     });
@@ -66,9 +66,9 @@ describe("database", () => {
                 const databaseName = crypto.randomUUID();
                 const key = new Uint8Array(32);
 
-                const database = await window.ccModule.Database.open(
+                const database = await ccModule.Database.open(
                     databaseName,
-                    new window.ccModule.DatabaseKey(key)
+                    new ccModule.DatabaseKey(key)
                 );
 
                 await database.close();
@@ -76,7 +76,7 @@ describe("database", () => {
                     await database.getLocation();
                     return false;
                 } catch (e) {
-                    return window.ccModule.CoreCryptoError.Other.instanceOf(e);
+                    return ccModule.CoreCryptoError.Other.instanceOf(e);
                 }
             })
         ).toBe(true);
@@ -87,15 +87,12 @@ describe("database", () => {
             const databaseName = crypto.randomUUID();
 
             const keyBytes = new Uint8Array(32);
-            window.crypto.getRandomValues(keyBytes);
-            const key = new window.ccModule.DatabaseKey(keyBytes);
+            crypto.getRandomValues(keyBytes);
+            const key = new ccModule.DatabaseKey(keyBytes);
 
-            const database = await window.ccModule.Database.open(
-                databaseName,
-                key
-            );
-            const clientId = window.helpers.newClientId();
-            let cc = await window.helpers.ccInit({
+            const database = await ccModule.Database.open(databaseName, key);
+            const clientId = helpers.newClientId();
+            let cc = await helpers.ccInit({
                 withBasicCredential: true,
                 database,
                 clientId,
@@ -106,8 +103,8 @@ describe("database", () => {
             )[0]!.publicKeyHash();
 
             const newKeyBytes = new Uint8Array(32);
-            window.crypto.getRandomValues(newKeyBytes);
-            const newKey = new window.ccModule.DatabaseKey(newKeyBytes);
+            crypto.getRandomValues(newKeyBytes);
+            const newKey = new ccModule.DatabaseKey(newKeyBytes);
 
             try {
                 await database.updateKey(newKey);
@@ -117,7 +114,7 @@ describe("database", () => {
                 throw e;
             }
 
-            cc = await window.helpers.ccInit({
+            cc = await helpers.ccInit({
                 withBasicCredential: false,
                 database,
                 clientId,
@@ -184,8 +181,8 @@ describe("database", () => {
 
             // Migrate the whole database to use the new key type.
             const old_key = clientName;
-            const new_key = new window.ccModule.DatabaseKey(new Uint8Array(32));
-            await window.ccModule.migrateDatabaseKeyTypeToBytes(
+            const new_key = new ccModule.DatabaseKey(new Uint8Array(32));
+            await ccModule.migrateDatabaseKeyTypeToBytes(
                 clientName,
                 old_key,
                 new_key
@@ -193,18 +190,15 @@ describe("database", () => {
 
             // Reconstruct the client based on the migrated database and fetch the epoch.
             const encoder = new TextEncoder();
-            const database = await window.ccModule.Database.open(
-                clientName,
-                new_key
-            );
+            const database = await ccModule.Database.open(clientName, new_key);
 
-            const instance = window.ccModule.CoreCrypto.new(database);
+            const instance = ccModule.CoreCrypto.new(database);
             const epoch = await instance.transaction(async (ctx) => {
                 // note that `conversationEpoch` is a MLS operation so we must at some point initialize MLS
-                const clientId = window.helpers.newClientId();
-                await ctx.mlsInit(clientId, window.deliveryService);
+                const clientId = helpers.newClientId();
+                await ctx.mlsInit(clientId, deliveryService);
                 return await ctx.conversationEpoch(
-                    new window.ccModule.ConversationId(encoder.encode("convId"))
+                    new ccModule.ConversationId(encoder.encode("convId"))
                 );
             });
             return epoch;

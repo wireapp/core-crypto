@@ -17,10 +17,10 @@ afterEach(async () => {
 describe("conversation", () => {
     it("should allow inviting members", async () => {
         const groupInfo = await browser.execute(async () => {
-            const alice = await window.helpers.ccInit();
-            const bob = await window.helpers.ccInit();
-            const convId = await window.helpers.createConversation(alice);
-            return await window.helpers.invite(alice, bob, convId);
+            const alice = await helpers.ccInit();
+            const bob = await helpers.ccInit();
+            const convId = await helpers.createConversation(alice);
+            return await helpers.invite(alice, bob, convId);
         });
         expect(groupInfo.encryptionType).toBe(
             GroupInfoEncryptionType.Plaintext
@@ -32,11 +32,11 @@ describe("conversation", () => {
         const messageText = "Hello world!";
         const [decryptedByAlice, decryptedByBob] = await browser.execute(
             async (messageText) => {
-                const alice = await window.helpers.ccInit();
-                const bob = await window.helpers.ccInit();
-                const convId = await window.helpers.createConversation(alice);
-                await window.helpers.invite(alice, bob, convId);
-                return await window.helpers.roundTripMessage(
+                const alice = await helpers.ccInit();
+                const bob = await helpers.ccInit();
+                const convId = await helpers.createConversation(alice);
+                await helpers.invite(alice, bob, convId);
+                return await helpers.roundTripMessage(
                     alice,
                     bob,
                     convId,

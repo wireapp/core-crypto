@@ -35,7 +35,7 @@ export interface LogEntry {
 const RECORDED_LOGS: LogEntry[] = [];
 /**
  * Records logs by setting a logger and maximum log level in the browser's context.
- * The logs are stored in a global variable `window.recordedLogs` for further retrieval.
+ * The logs are stored in a global variable `recordedLogs` for further retrieval.
  *
  */
 function recordLogs(): void {

@@ -13,41 +13,38 @@ describe("benchmark", () => {
         // 1. Initialize the benchmark in the browser, but don't block
         const parameters = await userBenchmarkParameters();
         await browser.execute(async (parameters) => {
-            window.benchRunning = true;
+            benchRunning = true;
 
             void (async (parameters) => {
-                window.bench = new window.tinybench.Bench({
+                bench = new tinybench.Bench({
                     name: "Adding a User",
                     time: 1000,
                     iterations: 5,
                     warmupIterations: 1,
                 });
                 for (const { userCount, cipherSuite } of parameters) {
-                    window.bench.add(
-                        `cipherSuite=${window.ccModule.CipherSuite[cipherSuite]} userCount=${userCount}`,
+                    bench.add(
+                        `cipherSuite=${ccModule.CipherSuite[cipherSuite]} userCount=${userCount}`,
                         async () => {
-                            const aliceCc = await window.helpers.ccInit({
+                            const aliceCc = await helpers.ccInit({
                                 withBasicCredential: true,
                                 cipherSuite,
                             });
 
                             const conversationId =
-                                await window.helpers.createConversation(
-                                    aliceCc
-                                );
+                                await helpers.createConversation(aliceCc);
                             const keyPackages: KeyPackage[] = [];
 
                             if (userCount > 1) {
                                 for (let i = 0; i < userCount; i++) {
-                                    const bobCc = await window.helpers.ccInit({
+                                    const bobCc = await helpers.ccInit({
                                         withBasicCredential: true,
                                         cipherSuite,
                                     });
-                                    const kp =
-                                        await window.helpers.generateKeyPackage(
-                                            bobCc,
-                                            cipherSuite
-                                        );
+                                    const kp = await helpers.generateKeyPackage(
+                                        bobCc,
+                                        cipherSuite
+                                    );
                                     keyPackages.push(kp);
                                 }
 
@@ -60,11 +57,11 @@ describe("benchmark", () => {
                                 );
                             }
 
-                            const charlieCc = await window.helpers.ccInit({
+                            const charlieCc = await helpers.ccInit({
                                 withBasicCredential: true,
                                 cipherSuite,
                             });
-                            const kp = await window.helpers.generateKeyPackage(
+                            const kp = await helpers.generateKeyPackage(
                                 charlieCc,
                                 cipherSuite
                             );
@@ -77,22 +74,22 @@ describe("benchmark", () => {
                                     )
                             );
                             const commitBundle =
-                                await window.deliveryService.getLatestCommitBundle();
+                                await deliveryService.getLatestCommitBundle();
 
-                            const start = window.bench.now();
+                            const start = bench.now();
 
                             await charlieCc.transaction((ctx) =>
                                 ctx.processWelcomeMessage(commitBundle.welcome!)
                             );
 
-                            const end = window.bench.now();
+                            const end = bench.now();
                             return { overriddenDuration: end - start };
                         }
                     );
                 }
 
-                await window.bench.run();
-                window.benchRunning = false;
+                await bench.run();
+                benchRunning = false;
             })(parameters);
         }, parameters);
 

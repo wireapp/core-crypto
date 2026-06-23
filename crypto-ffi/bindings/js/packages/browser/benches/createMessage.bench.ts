@@ -15,9 +15,9 @@ describe("benchmark", () => {
 
         const parameters = await messageBenchmarkParameters();
         await browser.execute(async (parameters) => {
-            window.benchRunning = true;
+            benchRunning = true;
             void (async (parameters) => {
-                window.bench = new window.tinybench.Bench({
+                bench = new tinybench.Bench({
                     name: "create message",
                     time: 1000,
                     iterations: 5,
@@ -25,16 +25,15 @@ describe("benchmark", () => {
                 });
                 for (const { count, size, cipherSuite } of parameters) {
                     const message = new Uint8Array(size);
-                    const cc = await window.helpers.ccInit({
+                    const cc = await helpers.ccInit({
                         withBasicCredential: true,
                         cipherSuite,
                     });
 
-                    const conversationId =
-                        await window.helpers.createConversation(cc);
+                    const conversationId = await helpers.createConversation(cc);
 
-                    window.bench.add(
-                        `cipherSuite=${window.ccModule.CipherSuite[cipherSuite]} size=${size}B count=${count}`,
+                    bench.add(
+                        `cipherSuite=${ccModule.CipherSuite[cipherSuite]} size=${size}B count=${count}`,
                         async () => {
                             await cc.transaction(async (ctx) => {
                                 for (let i = 0; i < count; i++) {
@@ -48,8 +47,8 @@ describe("benchmark", () => {
                     );
                 }
 
-                await window.bench.run();
-                window.benchRunning = false;
+                await bench.run();
+                benchRunning = false;
             })(parameters);
         }, parameters);
 

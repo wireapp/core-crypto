@@ -13,9 +13,8 @@ afterEach(async () => {
 describe("proteus", () => {
     it("should initialize correctly", async () => {
         const result = await browser.execute(async () => {
-            const cc = await window.helpers.proteusInit();
-            const lastResortPrekeyId =
-                window.ccModule.proteusLastResortPrekeyId();
+            const cc = await helpers.proteusInit();
+            const lastResortPrekeyId = ccModule.proteusLastResortPrekeyId();
             const [prekey1, prekey2] = await cc.transaction(async (ctx) => {
                 const prekey1 = await ctx.proteusLastResortPrekey();
                 const prekey2 = await ctx.proteusLastResortPrekey();
@@ -39,31 +38,23 @@ describe("proteus", () => {
 
     it("new session from prekey should succeed", async () => {
         await browser.execute(async () => {
-            const sessionId = window.crypto.randomUUID();
-            const alice = await window.helpers.proteusInit();
-            const bob = await window.helpers.proteusInit();
-            await window.helpers.newProteusSessionFromPrekey(
-                alice,
-                bob,
-                sessionId
-            );
+            const sessionId = crypto.randomUUID();
+            const alice = await helpers.proteusInit();
+            const bob = await helpers.proteusInit();
+            await helpers.newProteusSessionFromPrekey(alice, bob, sessionId);
         });
     });
 
     it("new session from message should succeed", async () => {
         const message = "Hello, world!";
         const decryptedMessage = await browser.execute(async (message) => {
-            const sessionId = window.crypto.randomUUID();
-            const alice = await window.helpers.proteusInit();
-            const bob = await window.helpers.proteusInit();
+            const sessionId = crypto.randomUUID();
+            const alice = await helpers.proteusInit();
+            const bob = await helpers.proteusInit();
             // Session for alice
-            await window.helpers.newProteusSessionFromPrekey(
-                alice,
-                bob,
-                sessionId
-            );
+            await helpers.newProteusSessionFromPrekey(alice, bob, sessionId);
             // Session for bob
-            return await window.helpers.newProteusSessionFromMessage(
+            return await helpers.newProteusSessionFromMessage(
                 alice,
                 bob,
                 sessionId,
@@ -77,10 +68,10 @@ describe("proteus", () => {
         await expect(
             browser.execute(async () => {
                 const sessionId = crypto.randomUUID();
-                const alice = await window.helpers.proteusInit();
-                const bob = await window.helpers.proteusInit();
+                const alice = await helpers.proteusInit();
+                const bob = await helpers.proteusInit();
                 // Session for alice
-                await window.helpers.newProteusSessionFromPrekey(
+                await helpers.newProteusSessionFromPrekey(
                     alice,
                     bob,
                     sessionId
@@ -88,7 +79,7 @@ describe("proteus", () => {
                 // Session for bob
                 const message = "Hello, world!";
                 const decryptedMessage =
-                    await window.helpers.newProteusSessionFromMessage(
+                    await helpers.newProteusSessionFromMessage(
                         alice,
                         bob,
                         sessionId,
@@ -98,7 +89,7 @@ describe("proteus", () => {
                 if (decryptedMessage != message) {
                     throw new Error("Messages should match");
                 }
-                await window.helpers.newProteusSessionFromMessage(
+                await helpers.newProteusSessionFromMessage(
                     alice,
                     bob,
                     sessionId,

@@ -17,7 +17,7 @@ describe("epoch observer", () => {
                 // set up the observer. this just keeps a list of all observations.
                 type ObservedEpoch = {
                     // @ts-expect-error `window` is not present when ts is checking, but is present in the browser
-                    conversationId: window.ccModule.ConversationId;
+                    conversationId: ccModule.ConversationId;
                     epoch: bigint;
                 };
                 class Observer {
@@ -27,7 +27,7 @@ describe("epoch observer", () => {
                     }
                     async epochChanged(
                         // @ts-expect-error `window` is not present when ts is checking, but is present in the browser
-                        conversationId: window.ccModule.ConversationId,
+                        conversationId: ccModule.ConversationId,
                         epoch: bigint
                     ): Promise<void> {
                         this.observations.push({ conversationId, epoch });
@@ -35,10 +35,10 @@ describe("epoch observer", () => {
                 }
                 const observer = new Observer();
 
-                const cc = await window.helpers.ccInit();
+                const cc = await helpers.ccInit();
 
                 // create the conversation in one transaction
-                const convId = await window.helpers.createConversation(cc);
+                const convId = await helpers.createConversation(cc);
 
                 // register the epoch observer
                 await cc.registerEpochObserver(observer);

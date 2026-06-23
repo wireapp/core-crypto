@@ -12,7 +12,7 @@ afterEach(async () => {
 describe("initialization", () => {
     it("should succeed", async () => {
         await browser.execute(async () => {
-            await window.helpers.ccInit();
+            await helpers.ccInit();
         });
     });
 });

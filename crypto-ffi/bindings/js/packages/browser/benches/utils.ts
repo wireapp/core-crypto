@@ -12,8 +12,8 @@ declare global {
 export async function setup() {
     await sharedSetup();
     await browser.execute(async () => {
-        if (window.tinybench === undefined) {
-            window.tinybench =
+        if (tinybench === undefined) {
+            tinybench =
                 // @ts-expect-error TS2307: Cannot find module ./corecrypto.js or its corresponding type declarations.
                 await import("/node_modules/tinybench/dist/index.js");
         }
@@ -30,7 +30,7 @@ export async function collectBenchmarkResults() {
     // 2. Poll until benchmark is done
     await browser.waitUntil(
         async () => {
-            return !(await browser.execute(() => window.benchRunning));
+            return !(await browser.execute(() => benchRunning));
         },
         {
             timeout: 3_600_000 * 3, // 3 hr
@@ -40,7 +40,7 @@ export async function collectBenchmarkResults() {
 
     // 3. Retrieve results
     const results = await browser.execute(() => {
-        return { name: window.bench.name, table: window.bench.table() };
+        return { name: bench.name, table: bench.table() };
     });
 
     await logResults(results.name, results.table);

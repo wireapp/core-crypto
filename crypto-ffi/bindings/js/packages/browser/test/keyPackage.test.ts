@@ -13,12 +13,12 @@ afterEach(async () => {
 describe("key package", () => {
     it("can be created", async () => {
         const { threwError, wasDefined } = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
+            const cc = await helpers.ccInit();
 
             let threwError = false;
             let keyPackage = undefined;
             try {
-                keyPackage = await window.helpers.generateKeyPackage(cc);
+                keyPackage = await helpers.generateKeyPackage(cc);
             } catch {
                 threwError = true;
             }
@@ -35,15 +35,15 @@ describe("key package", () => {
     it("can be serialized", async () => {
         const { wasDefined, wasEmpty, roundtripMatches } =
             await browser.execute(async () => {
-                const cc = await window.helpers.ccInit();
-                const keyPackage = await window.helpers.generateKeyPackage(cc);
+                const cc = await helpers.ccInit();
+                const keyPackage = await helpers.generateKeyPackage(cc);
 
                 const bytes = new Uint8Array(keyPackage.serialize());
 
                 const wasDefined = bytes !== null && bytes !== undefined;
                 const wasEmpty = bytes.byteLength === 0;
 
-                const kp2 = new window.ccModule.KeyPackage(bytes);
+                const kp2 = new ccModule.KeyPackage(bytes);
                 const bytes2 = new Uint8Array(kp2.serialize());
 
                 // JS in the browser doesn't have a natural way to compare Uint8Arrays,
@@ -67,8 +67,8 @@ describe("key package", () => {
     it("can be retrieved in bulk", async () => {
         const { wasDefined, wasArray, arraySize, firstItemDefined } =
             await browser.execute(async () => {
-                const cc = await window.helpers.ccInit();
-                await window.helpers.generateKeyPackage(cc);
+                const cc = await helpers.ccInit();
+                await helpers.generateKeyPackage(cc);
 
                 const keyPackages = await cc.transaction(async (ctx) => {
                     return await ctx.getKeyPackages();
@@ -93,14 +93,14 @@ describe("key package", () => {
     it("can be removed", async () => {
         const { wasDefined, wasArray, arraySize } = await browser.execute(
             async () => {
-                const clientId = window.helpers.newClientId();
-                const cc = await window.helpers.ccInit({
+                const clientId = helpers.newClientId();
+                const cc = await helpers.ccInit({
                     withBasicCredential: false,
                     clientId,
                 });
 
-                const credential = window.ccModule.Credential.basic(
-                    window.ccModule.cipherSuiteDefault(),
+                const credential = ccModule.Credential.basic(
+                    ccModule.cipherSuiteDefault(),
                     clientId
                 );
 
@@ -136,19 +136,18 @@ describe("key package", () => {
 
         const { beforeRemovalArraySize, afterRemovalArraySize } =
             await browser.execute(async (KEYPACKAGES_PER_CREDENTIAL) => {
-                const clientId = window.helpers.newClientId();
-                const cc = await window.helpers.ccInit({
+                const clientId = helpers.newClientId();
+                const cc = await helpers.ccInit({
                     withBasicCredential: false,
                     clientId,
                 });
-                const credential1 = window.ccModule.Credential.basic(
-                    window.ccModule.CipherSuite
+                const credential1 = ccModule.Credential.basic(
+                    ccModule.CipherSuite
                         .Mls128Dhkemx25519Aes128gcmSha256Ed25519,
                     clientId
                 );
-                const credential2 = window.ccModule.Credential.basic(
-                    window.ccModule.CipherSuite
-                        .Mls128Dhkemp256Aes128gcmSha256P256,
+                const credential2 = ccModule.Credential.basic(
+                    ccModule.CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256,
                     clientId
                 );
 

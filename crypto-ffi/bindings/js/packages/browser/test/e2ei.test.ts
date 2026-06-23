@@ -29,7 +29,7 @@ describe("PKI environment", () => {
     it("should be settable after mls init", async () => {
         // Get unset pki environment
         const success = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit({
+            const cc = await helpers.ccInit({
                 withBasicCredential: false,
             });
 
@@ -40,9 +40,9 @@ describe("PKI environment", () => {
             }
 
             // set pki environment
-            const database = await window.helpers.newDatabase();
-            pkiEnv = await window.ccModule.PkiEnvironment.create(
-                window.pkiEnvironmentHooks,
+            const database = await helpers.newDatabase();
+            pkiEnv = await ccModule.PkiEnvironment.create(
+                pkiEnvironmentHooks,
                 database
             );
             await cc.setPkiEnvironment(pkiEnv);
@@ -59,16 +59,16 @@ describe("PKI environment", () => {
 
     it("should be settable before mls init", async () => {
         const success = await browser.execute(async () => {
-            const database = await window.helpers.newDatabase();
-            const cc = window.ccModule.CoreCrypto.new(database);
+            const database = await helpers.newDatabase();
+            const cc = ccModule.CoreCrypto.new(database);
             let pkiEnv = await cc.getPkiEnvironment();
 
             if (pkiEnv != undefined) {
                 throw new Error("Expected pkiEnv to be undefined.");
             }
 
-            pkiEnv = await window.ccModule.PkiEnvironment.create(
-                window.pkiEnvironmentHooks,
+            pkiEnv = await ccModule.PkiEnvironment.create(
+                pkiEnvironmentHooks,
                 database
             );
             await cc.setPkiEnvironment(pkiEnv);
@@ -80,9 +80,9 @@ describe("PKI environment", () => {
 
     it("should add a trust anchor certificate", async () => {
         const error = await browser.execute(async (certPem) => {
-            const database = await window.helpers.newDatabase();
-            const pkiEnvironment = await window.ccModule.PkiEnvironment.create(
-                window.pkiEnvironmentHooks,
+            const database = await helpers.newDatabase();
+            const pkiEnvironment = await ccModule.PkiEnvironment.create(
+                pkiEnvironmentHooks,
                 database
             );
 
@@ -99,9 +99,9 @@ describe("PKI environment", () => {
 
     it("should add an intermediate certificate", async () => {
         const error = await browser.execute(async (certPem) => {
-            const database = await window.helpers.newDatabase();
-            const pkiEnvironment = await window.ccModule.PkiEnvironment.create(
-                window.pkiEnvironmentHooks,
+            const database = await helpers.newDatabase();
+            const pkiEnvironment = await ccModule.PkiEnvironment.create(
+                pkiEnvironmentHooks,
                 database
             );
 
@@ -120,26 +120,25 @@ describe("PKI environment", () => {
 describe("end to end identity", () => {
     it("should instantiate an x509 credential acquisition object", async () => {
         const acquisitionCreated = await browser.execute(async () => {
-            const database = await window.helpers.newDatabase();
-            const pkiEnvironment = await window.ccModule.PkiEnvironment.create(
-                window.pkiEnvironmentHooks,
+            const database = await helpers.newDatabase();
+            const pkiEnvironment = await ccModule.PkiEnvironment.create(
+                pkiEnvironmentHooks,
                 database
             );
 
-            const qualifiedClientId = window.helpers.newClientId();
-            const config =
-                window.ccModule.X509CredentialAcquisitionConfiguration.new({
-                    acmeDirectoryUrl: "acme.example.com/directory",
-                    cipherSuite: window.defaultCipherSuite,
-                    displayName: "Alice Smith",
-                    clientId: qualifiedClientId,
-                    handle: "alice_wire",
-                    domain: "world.com",
-                    team: undefined,
-                    validityPeriodSecs: BigInt(3600),
-                });
+            const qualifiedClientId = helpers.newClientId();
+            const config = ccModule.X509CredentialAcquisitionConfiguration.new({
+                acmeDirectoryUrl: "acme.example.com/directory",
+                cipherSuite: defaultCipherSuite,
+                displayName: "Alice Smith",
+                clientId: qualifiedClientId,
+                handle: "alice_wire",
+                domain: "world.com",
+                team: undefined,
+                validityPeriodSecs: BigInt(3600),
+            });
 
-            const acquisition = new window.ccModule.X509CredentialAcquisition(
+            const acquisition = new ccModule.X509CredentialAcquisition(
                 pkiEnvironment,
                 config
             );
@@ -152,20 +151,19 @@ describe("end to end identity", () => {
 
     it("should instantiate an x509 credential acquisition object from credential ref", async () => {
         const acquisitionCreated = await browser.execute(async () => {
-            const clientId = window.helpers.newClientId();
-            const config =
-                window.ccModule.X509CredentialAcquisitionConfiguration.new({
-                    acmeDirectoryUrl: "acme.example.com/directory",
-                    cipherSuite: window.defaultCipherSuite,
-                    displayName: "Alice Smith",
-                    clientId,
-                    handle: "alice_wire",
-                    domain: "world.com",
-                    team: undefined,
-                    validityPeriodSecs: BigInt(3600),
-                });
+            const clientId = helpers.newClientId();
+            const config = ccModule.X509CredentialAcquisitionConfiguration.new({
+                acmeDirectoryUrl: "acme.example.com/directory",
+                cipherSuite: defaultCipherSuite,
+                displayName: "Alice Smith",
+                clientId,
+                handle: "alice_wire",
+                domain: "world.com",
+                team: undefined,
+                validityPeriodSecs: BigInt(3600),
+            });
 
-            const cc = await window.helpers.ccInit({
+            const cc = await helpers.ccInit({
                 withBasicCredential: true,
                 clientId,
                 withPkiEnvironment: true,
@@ -176,7 +174,7 @@ describe("end to end identity", () => {
             const [credentialRef] = await cc.findCredentials({ clientId });
 
             const acquisition =
-                await window.ccModule.X509CredentialAcquisition.newFromCredentialRef(
+                await ccModule.X509CredentialAcquisition.newFromCredentialRef(
                     pkiEnvironment!,
                     config,
                     credentialRef!
@@ -190,8 +188,8 @@ describe("end to end identity", () => {
 
     it("should not be enabled on conversation with basic credential", async () => {
         const conversationState = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
-            const conversationId = await window.helpers.createConversation(cc);
+            const cc = await helpers.ccInit();
+            const conversationId = await helpers.createConversation(cc);
             return await cc.transaction(async (ctx) => {
                 return await ctx.e2eiConversationState(conversationId);
             });
@@ -201,9 +199,9 @@ describe("end to end identity", () => {
 
     it("identities can be queried by client id", async () => {
         const success = await browser.execute(async () => {
-            const clientId = window.helpers.newClientId();
-            const cc = await window.helpers.ccInit({ clientId });
-            const conversationId = await window.helpers.createConversation(cc);
+            const clientId = helpers.newClientId();
+            const cc = await helpers.ccInit({ clientId });
+            const conversationId = await helpers.createConversation(cc);
             const identities = await cc.transaction(async (ctx) => {
                 return await ctx.getDeviceIdentities(conversationId, [
                     clientId,
@@ -217,9 +215,9 @@ describe("end to end identity", () => {
 
     it("identities can be queried by user id", async () => {
         const success = await browser.execute(async () => {
-            const clientId = window.helpers.newClientId();
-            const cc = await window.helpers.ccInit({ clientId });
-            const conversationId = await window.helpers.createConversation(cc);
+            const clientId = helpers.newClientId();
+            const cc = await helpers.ccInit({ clientId });
+            const conversationId = await helpers.createConversation(cc);
             const identities = await cc.transaction(async (ctx) => {
                 return await ctx.getUserIdentities(conversationId, [
                     clientId.deserialize().userId,

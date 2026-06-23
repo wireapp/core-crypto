@@ -29,7 +29,7 @@ describe("external entropy", () => {
 
         const [result1, result2] = await browser.execute(
             async (length1, length2) => {
-                const cc = await window.helpers.ccInit();
+                const cc = await helpers.ccInit();
                 // Null byte seed
                 const seed = new Uint8Array(32);
                 await cc.reseed(seed);

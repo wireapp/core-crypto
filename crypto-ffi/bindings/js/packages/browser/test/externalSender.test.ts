@@ -23,11 +23,10 @@ describe("external sender", () => {
         const [retrievedBytes, serializedBytes] = await browser.execute(
             async (jwkString) => {
                 const jwk = new TextEncoder().encode(jwkString);
-                const externalSender =
-                    window.ccModule.ExternalSender.parseJwk(jwk);
+                const externalSender = ccModule.ExternalSender.parseJwk(jwk);
 
-                const alice = await window.helpers.ccInit();
-                const conversationId = window.helpers.newConversationId();
+                const alice = await helpers.ccInit();
+                const conversationId = helpers.newConversationId();
                 const [credentialRef] = await alice.getCredentials();
                 const retrievedKey = await alice.transaction(async (ctx) => {
                     await ctx.createConversation(
@@ -53,10 +52,10 @@ describe("external sender", () => {
         const jwkString = generateEd25519JwkString();
         const equal = await browser.execute(async (jwkString) => {
             const jwk = new TextEncoder().encode(jwkString);
-            const fromJwk = window.ccModule.ExternalSender.parseJwk(jwk);
-            const fromBytes = window.ccModule.ExternalSender.parsePublicKey(
+            const fromJwk = ccModule.ExternalSender.parseJwk(jwk);
+            const fromBytes = ccModule.ExternalSender.parsePublicKey(
                 fromJwk.serialize(),
-                window.ccModule.SignatureScheme.Ed25519
+                ccModule.SignatureScheme.Ed25519
             );
             return fromJwk.equals(fromBytes);
         }, jwkString);
@@ -67,9 +66,7 @@ describe("external sender", () => {
     it("parseJwk rejects malformed bytes", async () => {
         const threw = await browser.execute(async () => {
             try {
-                window.ccModule.ExternalSender.parseJwk(
-                    new Uint8Array([0, 1, 2, 3])
-                );
+                ccModule.ExternalSender.parseJwk(new Uint8Array([0, 1, 2, 3]));
                 return false;
             } catch {
                 return true;

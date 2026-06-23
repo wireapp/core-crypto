@@ -23,15 +23,15 @@ afterEach(async () => {
 describe("core crypto errors", () => {
     it("should build correctly when constructed by cc", async () => {
         const result = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
+            const cc = await helpers.ccInit();
 
-            const conversationId = await window.helpers.createConversation(cc);
-            const CoreCryptoError = window.ccModule.CoreCryptoError;
-            const MlsError = window.ccModule.MlsError;
+            const conversationId = await helpers.createConversation(cc);
+            const CoreCryptoError = ccModule.CoreCryptoError;
+            const MlsError = ccModule.MlsError;
 
             try {
                 const [credentialRef] = await cc.findCredentials({
-                    credentialType: window.ccModule.CredentialType.Basic,
+                    credentialType: ccModule.CredentialType.Basic,
                 });
                 await cc.transaction(async (cx) => {
                     await cx.createConversation(conversationId, credentialRef!);
@@ -76,22 +76,22 @@ describe("core crypto errors", () => {
         const result = await browser.execute(async () => {
             const transport_override = {
                 async sendCommitBundle(_: CommitBundle) {
-                    throw window.ccModule.MlsTransportError.MessageRejected.new(
-                        { reason: "just testing" }
-                    );
+                    throw ccModule.MlsTransportError.MessageRejected.new({
+                        reason: "just testing",
+                    });
                 },
             };
 
-            window.deliveryService = {
-                ...window.deliveryService,
+            deliveryService = {
+                ...deliveryService,
                 ...transport_override,
             };
 
-            const cc = await window.helpers.ccInit();
-            const conversationId = await window.helpers.createConversation(cc);
+            const cc = await helpers.ccInit();
+            const conversationId = await helpers.createConversation(cc);
 
-            const CoreCryptoError = window.ccModule.CoreCryptoError;
-            const MlsError = window.ccModule.MlsError;
+            const CoreCryptoError = ccModule.CoreCryptoError;
+            const MlsError = ccModule.MlsError;
             try {
                 await cc.transaction(async (cx) => {
                     await cx.updateKeyingMaterial(conversationId);
@@ -123,13 +123,13 @@ describe("core crypto errors", () => {
 it("should build correctly when constructed by ubrn", async () => {
     const convId = crypto.randomUUID();
     const result = await browser.execute(async (convId) => {
-        const cc = await window.helpers.ccInit();
+        const cc = await helpers.ccInit();
 
         try {
             await cc.transaction(async (cx) => {
                 // pass in a string argument instead of a `ConversationId` instance
                 const [credentialRef] = await cc.findCredentials({
-                    credentialType: window.ccModule.CredentialType.Basic,
+                    credentialType: ccModule.CredentialType.Basic,
                 });
                 await cx.createConversation(
                     convId as unknown as ConversationId,
@@ -156,12 +156,12 @@ it("should build correctly when constructed by ubrn", async () => {
 describe("Error type mapping", () => {
     it("should work for conversation already exists", async () => {
         const isCorrectErrorInstance = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
-            const conversationId = await window.helpers.createConversation(cc);
+            const cc = await helpers.ccInit();
+            const conversationId = await helpers.createConversation(cc);
 
             try {
                 const [credentialRef] = await cc.findCredentials({
-                    credentialType: window.ccModule.CredentialType.Basic,
+                    credentialType: ccModule.CredentialType.Basic,
                 });
                 await cc.transaction(async (ctx) => {
                     await ctx.createConversation(
@@ -171,8 +171,8 @@ describe("Error type mapping", () => {
                 });
             } catch (e) {
                 return (
-                    window.ccModule.CoreCryptoError.Mls.hasInner(e) &&
-                    window.ccModule.MlsError.ConversationAlreadyExists.instanceOf(
+                    ccModule.CoreCryptoError.Mls.hasInner(e) &&
+                    ccModule.MlsError.ConversationAlreadyExists.instanceOf(
                         e.inner.mlsError
                     ) &&
                     e.inner.mlsError.inner.conversationId !== undefined

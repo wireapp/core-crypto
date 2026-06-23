@@ -13,8 +13,8 @@ afterEach(async () => {
 describe("client identity", () => {
     it("Uuid.toString should work", async () => {
         const result = await browser.execute(() => {
-            const rawUuid = window.crypto.randomUUID();
-            const uuid = new window.ccModule.Uuid(rawUuid);
+            const rawUuid = crypto.randomUUID();
+            const uuid = new ccModule.Uuid(rawUuid);
 
             return uuid.toString() === rawUuid;
         });
@@ -23,7 +23,7 @@ describe("client identity", () => {
 
     it("get client public key should work", async () => {
         const result = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
+            const cc = await helpers.ccInit();
             return (await cc.getCredentials())[0]!.publicKeyHash().byteLength;
         });
         expect(result).toBe(32);
@@ -31,10 +31,10 @@ describe("client identity", () => {
 
     it("requesting client key package should work", async () => {
         const threwError = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
+            const cc = await helpers.ccInit();
             let threwError = false;
             try {
-                const keypackage = await window.helpers.generateKeyPackage(cc);
+                const keypackage = await helpers.generateKeyPackage(cc);
                 keypackage.serialize();
             } catch {
                 threwError = true;

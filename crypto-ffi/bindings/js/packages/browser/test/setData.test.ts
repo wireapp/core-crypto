@@ -14,7 +14,7 @@ describe("set_data()", () => {
     it("should persist data to DB", async () => {
         const text = "my message processing checkpoint";
         const result = await browser.execute(async (text) => {
-            const cc = await window.helpers.ccInit();
+            const cc = await helpers.ccInit();
             const encoder = new TextEncoder();
             const data = encoder.encode(text);
             let dbResultBeforeSet: Uint8Array | undefined;

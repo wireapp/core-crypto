@@ -13,13 +13,13 @@ afterEach(async () => {
 describe("credentials", () => {
     it("basic credential can be created", async () => {
         const result = await browser.execute(async () => {
-            const credential = window.ccModule.Credential.basic(
-                window.ccModule.cipherSuiteDefault(),
-                window.helpers.newClientId()
+            const credential = ccModule.Credential.basic(
+                ccModule.cipherSuiteDefault(),
+                helpers.newClientId()
             );
             return {
                 isBasicType:
-                    credential.type() === window.ccModule.CredentialType.Basic,
+                    credential.type() === ccModule.CredentialType.Basic,
                 earliestValidity: credential.earliestValidity(),
             };
         });
@@ -29,13 +29,12 @@ describe("credentials", () => {
 
     it("credential can be added", async () => {
         const result = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
+            const cc = await helpers.ccInit();
             const allCredentials = await cc.getCredentials();
             const [ref] = allCredentials;
             return {
                 isDefined: ref !== undefined,
-                isBasicType:
-                    ref!.type() === window.ccModule.CredentialType.Basic,
+                isBasicType: ref!.type() === ccModule.CredentialType.Basic,
                 earliestValidity: ref!.earliestValidity(),
                 length: allCredentials.length,
             };
@@ -49,7 +48,7 @@ describe("credentials", () => {
 
     it("credential can be removed", async () => {
         const length = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
+            const cc = await helpers.ccInit();
             const [ref] = await cc.getCredentials();
             await cc.transaction(async (ctx) => {
                 return await ctx.removeCredential(ref!);
@@ -63,23 +62,23 @@ describe("credentials", () => {
 
     it("credentials can be searched", async () => {
         const result = await browser.execute(async () => {
-            const clientId = window.helpers.newClientId();
+            const clientId = helpers.newClientId();
             const cipherSuite1 =
-                window.ccModule.CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256;
-            const credential1 = window.ccModule.Credential.basic(
+                ccModule.CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256;
+            const credential1 = ccModule.Credential.basic(
                 cipherSuite1,
                 clientId
             );
 
             const cipherSuite2 =
-                window.ccModule.CipherSuite
+                ccModule.CipherSuite
                     .Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519;
-            const credential2 = window.ccModule.Credential.basic(
+            const credential2 = ccModule.Credential.basic(
                 cipherSuite2,
                 clientId
             );
 
-            const cc = await window.helpers.ccInit({
+            const cc = await helpers.ccInit({
                 withBasicCredential: false,
                 clientId,
             });
@@ -113,9 +112,9 @@ describe("credentials", () => {
     it("can be checked", async () => {
         const result = await browser.execute(async () => {
             try {
-                const cc = await window.helpers.ccInit({
+                const cc = await helpers.ccInit({
                     withBasicCredential: true,
-                    cipherSuite: window.defaultCipherSuite,
+                    cipherSuite: defaultCipherSuite,
                     withPkiEnvironment: true,
                 });
                 await cc.transaction(async (ctx) => {

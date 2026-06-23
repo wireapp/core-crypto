@@ -16,7 +16,7 @@ describe("transaction context", () => {
         const expectedErrorMessage = "Message of expected error";
         await expect(
             browser.execute(async (expectedMessage) => {
-                const cc = await window.helpers.ccInit();
+                const cc = await helpers.ccInit();
                 await cc.transaction(async () => {
                     throw new Error(expectedMessage);
                 });
@@ -28,9 +28,9 @@ describe("transaction context", () => {
 
     it("should throw error when using invalid context", async () => {
         const result = await browser.execute(async () => {
-            const CoreCryptoError = window.ccModule.CoreCryptoError;
-            const MlsError = window.ccModule.MlsError;
-            const cc = await window.helpers.ccInit();
+            const CoreCryptoError = ccModule.CoreCryptoError;
+            const MlsError = ccModule.MlsError;
+            const cc = await helpers.ccInit();
 
             let context: CoreCryptoContext | null = null;
             await cc.transaction(async (ctx) => {
@@ -67,13 +67,13 @@ describe("transaction context", () => {
 
     it("should roll back transaction after error", async () => {
         const error = await browser.execute(async () => {
-            const cc = await window.helpers.ccInit();
-            const basicCredentialType = window.ccModule.CredentialType.Basic;
-            const conversationId = new window.ccModule.ConversationId(
+            const cc = await helpers.ccInit();
+            const basicCredentialType = ccModule.CredentialType.Basic;
+            const conversationId = new ccModule.ConversationId(
                 new TextEncoder().encode("testConversation")
             );
-            const CoreCryptoError = window.ccModule.CoreCryptoError;
-            const MlsError = window.ccModule.MlsError;
+            const CoreCryptoError = ccModule.CoreCryptoError;
+            const MlsError = ccModule.MlsError;
 
             const [credentialRef] = await cc.findCredentials({
                 credentialType: basicCredentialType,

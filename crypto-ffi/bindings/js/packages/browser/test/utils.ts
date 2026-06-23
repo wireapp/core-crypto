@@ -19,10 +19,10 @@ declare global {
 export async function setup() {
     await sharedSetup();
     await browser.execute(async () => {
-        window.defaultCipherSuite =
-            window.ccModule.CipherSuite.Mls128Dhkemx25519Aes128gcmSha256Ed25519;
+        defaultCipherSuite =
+            ccModule.CipherSuite.Mls128Dhkemx25519Aes128gcmSha256Ed25519;
 
-        window.pkiEnvironmentHooks = {
+        pkiEnvironmentHooks = {
             async httpRequest(
                 _method: HttpMethod,
                 _url: string,
