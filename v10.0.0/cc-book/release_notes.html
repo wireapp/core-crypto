@@ -1,0 +1,919 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Release Notes - CoreCrypto Book</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="favicon-8114d1fc.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-0392ca55.css">
+        <link rel="stylesheet" href="css/chrome-fc474251.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="langtabs-0bb573a3.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex-196e0233.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc-59a922f4.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CoreCrypto Book</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
+<h2 id="corecrypto-10"><a class="header" href="#corecrypto-10">CoreCrypto 10</a></h2>
+<h3 id="v1000---2026-06-23"><a class="header" href="#v1000---2026-06-23">v10.0.0 - 2026-06-23</a></h3>
+<ul>
+<li>Reworked E2EI</li>
+<li>New Database API</li>
+<li>New PKI Environment API</li>
+<li>New Credential API</li>
+<li>TS-Native library</li>
+<li>Reworked client id constructor to take typed data instead of a byte string</li>
+</ul>
+<h2 id="corecrypto-9"><a class="header" href="#corecrypto-9">CoreCrypto 9</a></h2>
+<h3 id="v934---2026-04-30"><a class="header" href="#v934---2026-04-30">v9.3.4 - 2026-04-30</a></h3>
+<p>Fixes an issue that could cause <em>epoch observer</em> events to be emitted for epoch changes that would not (yet) actually be
+persisted to the CoreCrypto database. This is relevant if the CoreCrypto instance is used inside the event handler of
+the <em>epoch observer</em> (e.g., to update the exported secret). If you created a CoreCrypto transaction inside the handler
+and didn’t use the CoreCrypto instance directly, this fix is irrelevant.</p>
+<h3 id="v933---2026-03-31"><a class="header" href="#v933---2026-03-31">v9.3.3 - 2026-03-31</a></h3>
+<ul>
+<li>no more errors when deleting a non-existent credential</li>
+</ul>
+<h3 id="v932---2026-03-18"><a class="header" href="#v932---2026-03-18">v9.3.2 - 2026-03-18</a></h3>
+<ul>
+<li>serialize structs into camelCase</li>
+</ul>
+<h3 id="v931---2026-03-18"><a class="header" href="#v931---2026-03-18">v9.3.1 - 2026-03-18</a></h3>
+<p>Fixes an enum representation bug on web.</p>
+<h3 id="v930---2026-02-20"><a class="header" href="#v930---2026-02-20">v9.3.0 - 2026-02-20</a></h3>
+<p>Lidl compat: Ios and Android can now export a compacted version of the CC database, retaining its encryption. This is
+only relevant for Lidl builds and should be ignored by everyone else.</p>
+<h3 id="v921---2026-02-17"><a class="header" href="#v921---2026-02-17">v9.2.1 - 2026-02-17</a></h3>
+<p>Upgrades openssl to version 3.5.5 (used on Android and iOS for encryption at rest).</p>
+<h3 id="v920---2026-02-05"><a class="header" href="#v920---2026-02-05">v9.2.0 - 2026-02-05</a></h3>
+<p>Kotlin changes:</p>
+<ul>
+<li>
+<p>expose the enitre read-only API on the <code>CoreCrypto</code> type. This allows performing arbitrary read-only operations on
+data while a transaction is running (e.g., in an <code>EpochObserver</code> event).</p>
+</li>
+<li>
+<p>Introduce <code>KotlinInstant</code> type</p>
+</li>
+</ul>
+<h3 id="v913---2025-12-18"><a class="header" href="#v913---2025-12-18">v9.1.3 - 2025-12-18</a></h3>
+<p>Upgrades the binding generator (uniffi 0.29.5) to include a crash fix for Android</p>
+<h3 id="v912---2025-11-05"><a class="header" href="#v912---2025-11-05">v9.1.2 - 2025-11-05</a></h3>
+<p>This release fixes a bug in the TypeScript bindings where the commit delay could in some situations be undefined when
+receiving a proposal.</p>
+<h3 id="v911---2025-10-24"><a class="header" href="#v911---2025-10-24">v9.1.1 - 2025-10-24</a></h3>
+<p>This release fixes the issue where <code>libcore_crypto_ffi.so</code> had segments aligned on 4k instead of 16k on Android
+platforms.</p>
+<h3 id="v910---2025-09-29"><a class="header" href="#v910---2025-09-29">v9.1.0 - 2025-09-29</a></h3>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>Even though this is a minor version bump, it contains a breaking change. See below for more information.</p>
+</blockquote>
+<ul>
+<li>added typescript structured errors</li>
+<li>fix the message rejected reason not being propagated on web</li>
+<li>improvements to logs when epochs advance</li>
+</ul>
+<h4 id="features"><a class="header" href="#features">Features</a></h4>
+<ul>
+<li>
+<p>Web: structural errors</p>
+<h5 id="example-usage"><a class="header" href="#example-usage">Example Usage</a></h5>
+<p>Extract the abort reason given via an <code>MlsTransportResponse</code></p>
+<pre><code class="language-typescript">try {
+    // send a commit that is rejected by the DS
+} catch (err) {
+  if(isMlsMessageRejectedError(err)) {
+    const rejectReason = err.context.context.reason;
+    // other things you want to do with this error...
+  } else {
+      // log error
+  }
+}
+</code></pre>
+<p>Extract the proteus error code</p>
+<pre><code class="language-typescript">try {
+    // look for a proteus session that doesn't exist
+} catch (err) {
+  if(isProteusSessionNotFoundError(err)) {
+    const errorCode = err.context.context.errorCode;
+    // other things you want to do with this error...
+  } else {
+      // log error
+  }
+}
+</code></pre>
+</li>
+</ul>
+<h4 id="bug-fixes"><a class="header" href="#bug-fixes">Bug Fixes</a></h4>
+<ul>
+<li>Web: fixed the abort reason of an <code>MlsTransportResponse</code> not being forwarded to rust.</li>
+</ul>
+<h4 id="breaking-changes"><a class="header" href="#breaking-changes">Breaking Changes</a></h4>
+<ul>
+<li><code>proteusErrorCode</code> field was removed from the root error type, you can get it from the nested context now (see above).
+Affected platforms: web</li>
+</ul>
+<h3 id="v901---2025-09-18"><a class="header" href="#v901---2025-09-18">v9.0.1 - 2025-09-18</a></h3>
+<h4 id="breaking-changes-1"><a class="header" href="#breaking-changes-1">Breaking Changes</a></h4>
+<ul>
+<li>
+<p>v9.0.0 had erroneously renamed <code>migrateDatabaseKeyTypeToBytes</code> to <code>migrateDbKeyTypeToBytes</code>. This has been fixed, and
+<code>migrateDatabaseKeyTypeToBytes</code> is usable again on all platforms.</p>
+<p>Affected platforms: Android</p>
+</li>
+</ul>
+<h4 id="bug-fixes-1"><a class="header" href="#bug-fixes-1">Bug Fixes</a></h4>
+<ul>
+<li>Kotlin documentation is now correctly generated and deployed.</li>
+</ul>
+<h3 id="v900---2025-09-16"><a class="header" href="#v900---2025-09-16">v9.0.0 - 2025-09-16</a></h3>
+<ul>
+<li>we’re now tying the Kotlin wrapper more closely to the generated bindings which allows for greater velocity when
+making changes in code that affects our API - this causes most of the breaking changes in this release</li>
+<li>removed cryptobox migration API</li>
+<li>in Swift, added protection against concurrent access from multiple core crypto instances</li>
+<li>added implicit obfuscation of sensitive data in logs</li>
+<li>reworked the entire build system and CI</li>
+</ul>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>In this release we include a fix for missing artifacts in our Web release. The faulty release process affects all
+<code>8.x</code> versions. Therefore, instead of migrating from any version &lt; <code>8.x</code> to <code>8.x</code>, directly migrate to this version.</p>
+</blockquote>
+<h4 id="breaking-changes-2"><a class="header" href="#breaking-changes-2">Breaking Changes</a></h4>
+<ul>
+<li>
+<p>Removed support for migrating CoreCrypto database to version 1.</p>
+<p>Affected platforms: Web</p>
+<p>Databases saved by CoreCrypto versions older than 2.0 cannot be migrated anymore.</p>
+</li>
+<li>
+<p>Removed <code>proteusCryptoboxMigrate</code>.</p>
+<p>Affected platforms: all</p>
+<p>Support for Cryptobox migration has been removed.</p>
+<p>Migration: remove all calls to <code>proteusCryptoboxMigrate</code>.</p>
+</li>
+<li>
+<p>Renamed <code>CoreCryptoContext.proteusDecrypt</code> to <code>CoreCryptoContext.proteusDecryptSafe(...)</code>.</p>
+<p>Affected platforms: Android</p>
+<p>It used to be the case that the Kotlin bindings hid the actual behavior of <code>proteusDecrypt</code> by adding a higher-level
+behavior, trading away some efficiency for ease-of-use. With this change, we have exposed the low-level behavior of
+<code>proteusDecrypt</code>, enabling for more efficient uses when decrypting many proteus messages at once. The old higher-level
+behavior of <code>proteusDecrypt</code> is now exposed as <code>proteusDecryptSafe</code>.</p>
+<p>Migration: replace all calls to <code>proteusDecrypt</code> with calls to <code>proteusDecryptSafe</code>.</p>
+</li>
+<li>
+<p>Eliminated wrapper <code>class E2EIEnrollment</code> in favor of generated <code>class E2eiEnrollment</code>.</p>
+<p>Affected platforms: Android</p>
+<p>We’ve brought the uniffi-generated code to very near parity with the older high-level bindings. The following breaking
+changes were necessary to eliminate the old binding class:</p>
+<p><strong>Name changes:</strong></p>
+<p>These methods have had their names changed. To migrate, simply rename all calls to these functions.</p>
+<ul>
+<li><code>accountResponse</code> -&gt; <code>newAccountResponse</code></li>
+<li><code>authzResponse</code> -&gt; <code>newAuthzResponse</code></li>
+<li><code>dpopChallengeResponse</code> -&gt; <code>newDpopChallengeResponse</code></li>
+<li><code>contextOidcChallengeResponse</code> -&gt; <code>newOidcChallengeResponse</code></li>
+</ul>
+</li>
+<li>
+<p>Eliminated (hand-written) wrapper <code>class CoreCryptoContext</code> in favor of (uniffi-generated) <code>class CoreCryptoContext</code>.</p>
+<p>Affected platforms: Android</p>
+<p>We’ve brought the uniffi-generated code to very near parity with the older high-level bindings. The following breaking
+changes were necessar to eliminate the old binding class:</p>
+<p><strong>Name changes:</strong></p>
+<p>These methods have had their names changed. To migrate, simply rename all calls to these functions.</p>
+<ul>
+<li><code>getPublicKey</code> -&gt; <code>clientPublicKey</code></li>
+<li><code>generateKeyPackages</code> -&gt; <code>clientKeypackages</code></li>
+<li><code>validKeyPackageCount</code> -&gt; <code>clientValidKeypackagesCount</code></li>
+<li><code>addMember</code> -&gt; <code>addClientsToConversation</code></li>
+<li><code>removeMember</code> -&gt; <code>removeClientsFromConversation</code></li>
+<li><code>members</code> -&gt; <code>getClientIds</code></li>
+<li><code>deriveAvsSecret</code> -&gt; <code>exportSecretKey</code></li>
+<li><code>proteusGetLocalFingerprint</code> -&gt; <code>proteusFingerprint</code></li>
+<li><code>proteusGetRemoteFingerprint</code> -&gt; <code>proteusFingerprintRemote</code></li>
+<li><code>proteusGetPrekeyFingerprint</code> -&gt; <code>proteusFingerprintPrekeyBundle</code></li>
+<li><code>proteusDoesSessionExist</code> -&gt; <code>proteusSessionExists</code></li>
+<li><code>proteusCreateSession</code> -&gt; <code>proteusSessionFromPrekey</code></li>
+<li><code>proteusDeleteSession</code> -&gt; <code>proteusSessionDelete</code></li>
+</ul>
+<p><strong>Parameter order changes:</strong></p>
+<p>These methods have had the order of their parameters changed. To migrate, either name the arguments in the caller or
+reorder the parameters appropriately.</p>
+<ul>
+<li><code>generateKeyPackages</code> / <code>clientKeypackages</code>: <code>amount</code> is now the final parameter, not the first</li>
+<li><code>joinByExternalCommit</code>: <code>credentialType</code> and <code>configuration</code> have swapped positions</li>
+<li><code>e2eiNewEnrollment</code>: <code>team</code> now appears after <code>handle</code> and before <code>expirySec</code></li>
+<li><code>e2eiNewActivationEnrollment</code>: <code>team</code> now appears after <code>handle</code> and before <code>expirySec</code></li>
+<li><code>e2eiNewRotateEnrollment</code>: new param order: <code>(displayName, handle, team, expirySec, ciphersuite)</code></li>
+<li><code>proteusCreateSession</code> / <code>proteusSessionFromPrekey</code>: params swapped</li>
+<li><code>proteusDecrypt</code>: params swapped</li>
+<li><code>proteusEncrypt</code>: params swapped</li>
+</ul>
+<p><strong>Other Parameter changes:</strong></p>
+<p>These methods have had the set of their parameters changed. To migrate, see instructions for each changed method.</p>
+<ul>
+<li><code>createConversation</code>: accepts <code>(ConversationId, CredentialType, ConversationConfiguration)</code>. Conversation
+configuration must be constructed externally.</li>
+</ul>
+<p><strong>Removed Methods:</strong></p>
+<p>These methods no longer exist.</p>
+<ul>
+<li><code>proteusNewPrekeys</code>: similar to <code>from.until(from + count).map { cc.proteusNewPrekey(it.toUShort()) }</code></li>
+<li><code>proteusNewLastPrekey</code>: similar to <code>cc.proteusLastResortPrekey()</code></li>
+<li><code>proteusEncryptWithPreKey</code>: similar to:
+<pre><code class="language-kotlin">cc.proteusSessionFromPrekey(sessionId, preKey)
+val encryptedMessage = cc.proteusEncrypt(sessionId, message)
+cc.proteusSessionSave(sessionId)
+return encryptedMessage
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p>Stopped duplicating generated code in kotlin bindings.</p>
+<p>Affected platforms: Android</p>
+<p>Hand-written wrappers have largely been removed. The following items have been renamed:</p>
+<ul>
+<li><code>Ciphersuites.DEFAULT</code> -&gt; <code>CIPHERSUITES_DEFAULT</code></li>
+<li><code>Ciphersuite.DEFAULT</code> -&gt; <code>CIPHERSUITE_DEFAULT</code></li>
+<li><code>CredentialType.Basic</code> -&gt; <code>CredentialType.BASIC</code></li>
+<li><code>MLSGroupId</code> -&gt; <code>ConversationId</code></li>
+<li><code>MLSKeyPackage</code> -&gt; <code>KeyPackage</code></li>
+<li><code>DeviceStatus.Valid</code> -&gt; <code>DeviceStatus.VALID</code></li>
+<li><code>DeviceStatus.Expired</code> -&gt; <code>DeviceStatus.EXPIRED</code></li>
+<li><code>DeviceStatus.Revoked</code> -&gt; <code>DeviceStatus.REVOKED</code></li>
+<li><code>E2eiConversationState.Verified</code> -&gt; <code>E2eiConversationState.VERIFIED</code></li>
+<li><code>E2eiConversationState.NotVerified</code> -&gt; <code>E2eiConversationState.NOT_VERIFIED</code></li>
+<li><code>E2eiConversationState.NotEnabled</code> -&gt; <code>E2eiConversationState.NOT_ENABLED</code></li>
+</ul>
+</li>
+<li>
+<p>Changed exposed error type structures</p>
+<p>Affected platforms: iOS</p>
+<p>Migration</p>
+<ul>
+<li>When pattern-matching the affected error types, add argument labels</li>
+<li>When accessing inner error values, add field names</li>
+</ul>
+</li>
+</ul>
+<h4 id="features-1"><a class="header" href="#features-1">Features</a></h4>
+<ul>
+<li>In our Swift bindings we are now protecting against concurrent access from multiple core crypto instances.</li>
+<li>In the decode tool we add support for listing members or identities present in a group info.</li>
+</ul>
+<h2 id="corecrypto-8"><a class="header" href="#corecrypto-8">CoreCrypto 8</a></h2>
+<h3 id="v803---2025-08-12"><a class="header" href="#v803---2025-08-12">v8.0.3 - 2025-08-12</a></h3>
+<p>This is only relevant for Kotlin.</p>
+<p>Fixes page size alignment for all supported linkers.</p>
+<p>Adds <code>ClientId.copyBytes()</code>.</p>
+<p>Adds <code>ClientId.toString()</code>.</p>
+<p>Changes <code>ClientId.value</code> from <code>ByteArray</code> to the generated FFI type <code>com.wire.crypto.uniffi.ClientId</code></p>
+<h3 id="v802---2025-07-23"><a class="header" href="#v802---2025-07-23">v8.0.2 - 2025-07-23</a></h3>
+<p>This is only relevant for Kotlin.</p>
+<p>Adds <code>MLSKeyPackage.copyBytes()</code>.</p>
+<h3 id="v801---2025-07-23"><a class="header" href="#v801---2025-07-23">v8.0.1 - 2025-07-23</a></h3>
+<p>This release is relevant only for Kotlin. It adds several pseudo-constructors and accessors for newtypes around byte
+vectors.</p>
+<p>For other platforms, no relevant changes are included.</p>
+<h3 id="v800---2025-07-17"><a class="header" href="#v800---2025-07-17">v8.0.0 - 2025-07-17</a></h3>
+<p>This release contains the complete API necessary for history sharing in conversations. We’ve improved the generated
+types in bindings to be more typesafe, and we’ve added the feature to rotate the key used for the core crypto database.</p>
+<h4 id="breaking-changes-3"><a class="header" href="#breaking-changes-3">Breaking changes</a></h4>
+<ul>
+<li>
+<p>Removed <code>canClose()</code>, and <code>isLocked()</code>.</p>
+<p>Affected platforms: Web</p>
+<p>Migration: Only needed if you were relying on the output of <code>canClose()</code> before calling <code>close()</code>:</p>
+<p>Call <code>close()</code> directly. Instead of handling the <code>false</code> case of <code>canClose()</code>, catch the error that <code>close()</code> may
+throw: <code>Cannot close as multiple strong refs exist</code>, then try again.</p>
+<p>The behavior of <code>close()</code> was adjusted, so that it waits for any running transaction to finish, instead of throwing an
+error.</p>
+</li>
+<li>
+<p>Removed <code>mlsInitWithClientId</code>, <code>mlsGenerateKeypairs</code>, <code>e2eiDumpPKIEnv</code>, <code>deleteKeypackages</code>, <code>getCredentialInUse</code></p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: not needed, no client is using these functions.</p>
+</li>
+<li>
+<p>Changed the location of the Wasm bytecode file</p>
+<p>Affected platforms: Web</p>
+<p>The Wasm bytecode file, <code>core-crypto-ffi_bg.wasm</code>, has been moved to a subdirectory named <code>autogenerated</code>. While this
+is an internal change and should normally not be breaking, in reality it may break the Web client, which assumes the
+location of that internal file.</p>
+<p>Migration: update relevant paths in the Web client to point to the new location, under <code>autogenerated</code>, including in
+any calls to <code>initWasmModule</code>.</p>
+</li>
+<li>
+<p>Added a parameter <code>refreshToken</code> to <code>newOidcChallengeRequest</code></p>
+<p>Affected platforms: Web</p>
+<p>This fixes an inconsistency between Web and other platforms.</p>
+<p>Migration: pass the refresh token received from the identity provider when calling <code>newOidcChallengeRequest</code>.</p>
+</li>
+<li>
+<p>Added a parameter <code>context</code> to <code>newOidcChallengeResponse</code></p>
+<p>Affected platforms: Web</p>
+<p>Migration: pass the transaction context when calling <code>newOidcChallengeResponse</code>.</p>
+</li>
+<li>
+<p>Added <code>encryptedMessage</code> field to <code>CommitBundle</code></p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>This field is used to bundle encrypted history secrets with a commit that adds a new history client.</p>
+<p>Migration: update any pattern-matching or other code that depends on the structure of <code>MlsCommitBundle</code> to include the
+new field. Also, make sure to update your implementation of the <code>MlsTransport</code> protocol/interface to include this
+field in the payload sent to the Delivery Service.</p>
+</li>
+<li>
+<p><code>ClientId</code> is a newtype, not a bare byte array.</p>
+<p>Affected platforms: Web, Swift</p>
+<p>Migration: call <code>new ClientId(id)</code> to construct a <code>ClientId</code>, and <code>id.copyBytes()</code> to get a byte array out.</p>
+</li>
+<li>
+<p><code>ClientId</code> wrapper accepts a byte array, not a string.</p>
+<p>Affected platforms: Android</p>
+<p>Migration: call <code>.toByteArray()</code> on the input.</p>
+</li>
+<li>
+<p><code>Ciphersuite</code> is an exported public enum, not an integer</p>
+<p>Affected platforms: all</p>
+<p>Migration: use the relevant enum variant instead of an integer.</p>
+</li>
+<li>
+<p><code>SecretKey</code>, <code>ExternalSenderKey</code>, <code>GroupInfo</code>, <code>ConversationId</code>, <code>KeyPackage</code>, <code>Welcome</code> are now newtypes</p>
+<p>Affected items:</p>
+<ul>
+<li><code>CoreCryptoContext.exportSecretKey</code> (aka <code>CoreCryptoContext.deriveAvsSecret</code>) now returns a <code>SecretKey</code></li>
+<li>(kotlin) <code>AvsSecret</code> newtype removed in favor of <code>SecretKey</code></li>
+<li><code>CoreCryptoContext.getExternalSender</code> now returns an <code>ExternalSenderKey</code></li>
+<li><code>ConversationConfiguration::external_senders</code> now accepts <code>ExternalSenderKey</code>s</li>
+<li><code>CoreCryptoContext.joinByExternalCommit</code> now accepts a <code>GroupInfo</code></li>
+<li><code>GroupInfoBundle</code> now contains a <code>GroupInfo</code></li>
+<li>Many <code>CoreCryptoContext</code> methods now accept a <code>ConversationId</code> newtype instead of a byte array</li>
+<li><code>HistoryObserver</code> and <code>EpochObserver</code> now produce <code>ConversationId</code> instances instead of byte arrays</li>
+<li><code>CoreCryptoContext.clientKeypackages</code> now produces <code>KeyPackage</code>s</li>
+<li><code>CoreCryptoContext.addClientsToConversation</code> now accepts <code>KeyPackage</code>s</li>
+<li><code>CommitBundle</code> now might contain a <code>Welcome</code></li>
+<li><code>CoreCryptoContext.processWelcomeMessage</code> now accepts a <code>Welcome</code></li>
+</ul>
+<p>Affected platforms: all</p>
+<p>Migration: call <code>.copyBytes()</code> on the newtype to get access to the raw byte vector. To construct the newtype from a
+byte array, just use the appropriate constructor.</p>
+<p>In the past, Android (but only Android) had newtypes in these instances; other clients needed to work with a raw byte
+vector. We’ve decided to expand the use of newtypes around byte vectors in the FFI interface. This has several
+benefits:</p>
+<ul>
+<li>Increased consistency between client FFI libraries</li>
+<li>Reduced thickness of the high-level FFI wrappers</li>
+<li>In some cases, we can avoid bidirectional data transfers across the FFI boundary, and just move pointers around
+instead.</li>
+</ul>
+</li>
+<li>
+<p>Removed <code>PlaintextMessage</code>, <code>MlsMessage</code> and <code>SignaturePublicKey</code> newtypes in favor of <code>ByteArray</code></p>
+<p>Affected platforms: Android</p>
+<p>The Message newtypes were only used in <code>CoreCryptoContext.encryptMessage</code> and <code>CoreCryptoContext.decryptMessage</code>.
+<code>SignaturePublicKey</code> was used only for the return value of <code>fun getPublicKey</code>. The only usage we found was an
+immediate access of the byte vector.</p>
+<p>These types appear to provide no type safety benefits, instead only adding a bit of friction.</p>
+</li>
+</ul>
+<h4 id="features-2"><a class="header" href="#features-2">Features</a></h4>
+<ul>
+<li>Support Android environments with 16k page size</li>
+<li>Added a module-level function <code>updateDatabaseKey</code>, to update the key of an existing CoreCrypto database</li>
+<li>Support for history sharing which can be enabled by calling <code>enableHistorySharing()</code> and disabled again by calling
+<code>disableHistorySharing()</code>.</li>
+</ul>
+<h2 id="corecrypto-7"><a class="header" href="#corecrypto-7">CoreCrypto 7</a></h2>
+<h3 id="v702---2025-07-07"><a class="header" href="#v702---2025-07-07">v7.0.2 - 2025-07-07</a></h3>
+<p>Upgrade OpenMLS to fix a bug where the ratchet tree would sometimes become corrupt leading to broken MLS groups.</p>
+<h4 id="bug-fixes-2"><a class="header" href="#bug-fixes-2">Bug Fixes</a></h4>
+<ul>
+<li>update openmls [WPB-18569] (7ca7ba7)</li>
+</ul>
+<h3 id="v701---2025-06-02"><a class="header" href="#v701---2025-06-02">v7.0.1 - 2025-06-02</a></h3>
+<h4 id="bug-fixes-3"><a class="header" href="#bug-fixes-3">Bug Fixes</a></h4>
+<ul>
+<li>initWasm was being called with the wrong property field. (ca1706d)</li>
+<li>allow registering epoch observer before calling mls_init (3f0605a)</li>
+</ul>
+<h3 id="v700---2025-05-21"><a class="header" href="#v700---2025-05-21">v7.0.0 - 2025-05-21</a></h3>
+<h4 id="breaking-changes-4"><a class="header" href="#breaking-changes-4">Breaking changes</a></h4>
+<p>The typescript bindings no longer implicitly load the wasm module when importing the core crypto module. To replace this
+behaviour the <code>async initWasmModule()</code> function has been added, which must be called before any other core crypto
+function.</p>
+<h4 id="features-3"><a class="header" href="#features-3">Features</a></h4>
+<ul>
+<li>remove top level await and expose async init method instead (ce6e566)</li>
+<li>expose <code>historyClient</code> constructor to swift (22d98de)</li>
+<li>expose <code>historyClient</code> constructor to kotlin (b16839d)</li>
+<li>expose <code>historyClient</code> constructor to wasm (3c2531a)</li>
+<li>expose <code>history_client</code> constructor publicly (c24fcc3)</li>
+<li>restore history secrets (5643e87)</li>
+<li>add <code>fn history_client(HistorySecret) -&gt; CoreCrypto</code> (8b7b7d4)</li>
+<li>add <code>fn generate_history_secret</code> (a998dec)</li>
+</ul>
+<h4 id="bug-fixes-4"><a class="header" href="#bug-fixes-4">Bug Fixes</a></h4>
+<ul>
+<li>crypto-ffi: fix naming and attributes of WelcomeBundle fields on Wasm (1b2e88b)</li>
+<li>prevent cancellations during transactions (Kotlin) (75217d5)</li>
+<li>prevent cancellations during transactions (Kotlin) (ae621b7)</li>
+</ul>
+<h2 id="corecrypto-6"><a class="header" href="#corecrypto-6">CoreCrypto 6</a></h2>
+<h3 id="v601---2025-05-07"><a class="header" href="#v601---2025-05-07">v6.0.1 - 2025-05-07</a></h3>
+<h4 id="bug-fixes-5"><a class="header" href="#bug-fixes-5">Bug Fixes</a></h4>
+<ul>
+<li>swift publishing CI action (d1030e1)</li>
+</ul>
+<h3 id="v600---2025-05-07"><a class="header" href="#v600---2025-05-07">v6.0.0 - 2025-05-07</a></h3>
+<ul>
+<li>Changed the core crypto database key format, to enable validation of the same and ensure consistency between platforms</li>
+<li>Added a function for each platform to migrate from the old to the new key type</li>
+<li>Several more bug fixes, including prevention of the <em>pending commit</em> error</li>
+</ul>
+<h4 id="breaking-changes-5"><a class="header" href="#breaking-changes-5">Breaking changes</a></h4>
+<ul>
+<li>
+<p>Changed the core crypto database key format</p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: before instantiating this version of core crypto for the first time, call <code>migrateDatabaseKeyTypeToBytes()</code>
+with the appropiate arguments (old key and your new key) <em>exactly once</em>. Then, instantiate core crypto with the new
+key.</p>
+<p>Note: Make sure the new key is not based on a string, and provide full 256 bits of entropy.</p>
+<p>Note: Instantiating this version of core crypto will fail before you call the migration function.</p>
+</li>
+</ul>
+<h3 id="v540---2025-05-14"><a class="header" href="#v540---2025-05-14">v5.4.0 - 2025-05-14</a></h3>
+<p>Kotlin bindings only: transactions are now
+<a href="https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/"><code>NonCancellable</code></a>,
+as <a href="https://mozilla.github.io/uniffi-rs/latest/futures.html#cancelling-async-code">required by Uniffi</a>. This prevents a
+category of bug where Kotlin thinks a transaction has been cancelled, while Rust thinks it is still running.</p>
+<h3 id="v530--2025-04-29"><a class="header" href="#v530--2025-04-29">v5.3.0- 2025-04-29</a></h3>
+<h4 id="bug-fixes-6"><a class="header" href="#bug-fixes-6">Bug Fixes</a></h4>
+<ul>
+<li>re-throw inner error which cancelled the transaction (Swift) (0c282b2)</li>
+</ul>
+<h3 id="v520---2025-04-15"><a class="header" href="#v520---2025-04-15">v5.2.0 - 2025-04-15</a></h3>
+<h4 id="bug-fixes-7"><a class="header" href="#bug-fixes-7">Bug Fixes</a></h4>
+<ul>
+<li>add registerEpochObserver to CoreCryptoProtocol (eadf388)</li>
+<li>create an interface for <code>ConversationConfiguration</code> (b1e82bf)</li>
+<li>swift publishing failing due to not running on latest macos runner (dcc1890)</li>
+</ul>
+<h3 id="v510---2025-04-03"><a class="header" href="#v510---2025-04-03">v5.1.0 - 2025-04-03</a></h3>
+<h4 id="bug-fixes-8"><a class="header" href="#bug-fixes-8">Bug Fixes</a></h4>
+<ul>
+<li>broken swift bindings by publishing uniffi framework separately (2b950cc)</li>
+<li>don’t refer to the internal uniffi EpochObserver type in the public API (7833300)</li>
+<li>re-expose proteus_reload_session which removed by mistake (36f2b87)</li>
+</ul>
+<h3 id="v500---2025-03-21"><a class="header" href="#v500---2025-03-21">v5.0.0 - 2025-03-21</a></h3>
+<p>New Swift bindings which are more ergonomic and allows for better testing by exposing the transaction context as a
+protocol.</p>
+<p>New API for observing epoch changes through a callback API: <code>registerEpochObserver</code>. After adopting this API clients can
+remove their own epoch observers.</p>
+<h4 id="breaking-changes-6"><a class="header" href="#breaking-changes-6">Breaking changes</a></h4>
+<ul>
+<li>New Swift bindings are replacing the old Swift bindings.</li>
+</ul>
+<h2 id="corecrypto-4"><a class="header" href="#corecrypto-4">CoreCrypto 4</a></h2>
+<h3 id="v423---2025-03-14"><a class="header" href="#v423---2025-03-14">v4.2.3 - 2025-03-14</a></h3>
+<ul>
+<li>fix android publishing to maven central</li>
+</ul>
+<h3 id="v422---2025-03-14"><a class="header" href="#v422---2025-03-14">v4.2.2 - 2025-03-14</a></h3>
+<ul>
+<li>fix publishing to maven central</li>
+</ul>
+<h3 id="v421---2025-03-14"><a class="header" href="#v421---2025-03-14">v4.2.1 - 2025-03-14</a></h3>
+<ul>
+<li>expose <code>proteusCryptoboxMigrate()</code> [WPB-16549] (682b9fe)</li>
+</ul>
+<h3 id="v420---2025-02-28"><a class="header" href="#v420---2025-02-28">v4.2.0 - 2025-02-28</a></h3>
+<ul>
+<li>The Android release once again bundles API docs.</li>
+<li>The Kotlin bindings have received several API fixes in particular:
+<ul>
+<li>AcmeChallenge was missing the target property.</li>
+<li>proteusGetPrekeyFingerprint was missing.</li>
+</ul>
+</li>
+<li>The Typescript bindings now correctly expose WireIdentity and X509Identity.</li>
+<li>The code base has migrated to Rust 2024 edition.</li>
+</ul>
+<h3 id="v410---2025-02-07"><a class="header" href="#v410---2025-02-07">v4.1.0 - 2025-02-07</a></h3>
+<ul>
+<li>Add the capability to handle the case where a proposal-referencing commit arrives before the proposals it references.</li>
+</ul>
+<h4 id="semi--breaking-changes"><a class="header" href="#semi--breaking-changes">(Semi-) Breaking changes</a></h4>
+<ul>
+<li>For the case mentioned above, the corresponding error type <code>BufferedCommit</code> has been added.
+<ul>
+<li>Depending on the error model, this can be a breaking change.</li>
+</ul>
+</li>
+</ul>
+<h3 id="v401---2025-02-05"><a class="header" href="#v401---2025-02-05">v4.0.1 - 2025-02-05</a></h3>
+<ul>
+<li>support entity derive for tables with hex ids (0bd3676)</li>
+</ul>
+<h3 id="v400---2025-01-28"><a class="header" href="#v400---2025-01-28">v4.0.0 - 2025-01-28</a></h3>
+<ul>
+<li>All errors crossing the FFI boundary are now logged.</li>
+<li>An iOS client has been added to internal interop tests, which means we now test the entire FFI stack on iOS.</li>
+<li>A new interface for MLS transport has been added, allowing for a much simpler and more robust CoreCrypto API.</li>
+<li>Removal of a number of deprecated and unnecessary functions and types.</li>
+<li>Completely reworked internal error handling, to allow for more precise errors.</li>
+<li>A number of improvements to Kotlin and Javascript bindings, making the bindings more consistent.</li>
+<li>The <code>decode</code> tool gained support for decoding MLS messages.</li>
+</ul>
+<h4 id="breaking-changes-7"><a class="header" href="#breaking-changes-7">Breaking changes</a></h4>
+<ul>
+<li>
+<p>Deprecated functions on the <code>CoreCrypto</code> type that were automatically creating transactions have been removed.</p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: replace calls to functions on <code>CoreCrypto</code> with calls to corresponding functions on <code>CoreCryptoContext</code>,
+which is created when you explicitly create a transaction. Transactions have to be explicitly created now.</p>
+</li>
+<li>
+<p>The low-level uniffi-generated Kotlin bindings code is no longer publicly available. It should never have been used in
+application code directly.</p>
+<p>Affected platforms: Android</p>
+<p>Migration: make sure to use the Kotlin high-level API only.</p>
+</li>
+<li>
+<p>The Wasm bytecode generated by <code>wasm-bindgen</code> is now imported directly when importing the <code>corecrypto</code> module. This
+makes sure that the Wasm module is immediately initialised, without any additional steps. There is no need for the
+client app to know or handle the path to Wasm bytecode file.</p>
+<p>Additionally, it is now possible to use the same CoreCrypto module in both browser and non-browser contexts.</p>
+<p>Affected platforms: Web</p>
+<p>Migration: drop any references to <code>core-crypto-ffi_bg.wasm</code> and do not set the <code>wasmFilePath</code> argument to the
+<code>CoreCrypto.init</code> function – it is no longer used. Additionally, make sure there is no special handling or separate
+hosting of the Wasm bytecode file. CoreCrypto release artifacts should be used without any changes.</p>
+</li>
+<li>
+<p>Validation callbacks, as well as related error variants, have been removed.</p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: remove all implementations of <code>authorize</code>, <code>userAuthorize</code> and <code>clientIsExistingGroupUser</code>, as well as
+calls to <code>CoreCrypto.setCallbacks</code>.</p>
+</li>
+<li>
+<p>The <code>MlsTransport</code> interface has been added. This is another milestone in the effort to simplify the public API and
+make it more robust.</p>
+<p>All client applications have to provide an implementation of the new interface, which comprises only two functions,
+<code>sendMessage</code> and <code>sendCommitBundle</code>.</p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: implement the <code>MlsTransport</code> interface and call <code>CoreCrypto.provideTransport</code> to make CoreCrypto use your
+implementation.</p>
+</li>
+<li>
+<p>Functions <code>CoreCrypto.wipe</code> and <code>CoreCrypto.unload</code> have been removed. They were not providing any value.</p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: drop calls to <code>wipe</code> and <code>unload</code>. Client applications wishing to make their keys and conversations
+inaccessible should remove the CoreCrypto database explicitly.</p>
+</li>
+<li>
+<p>The function <code>CoreCrypto.proteusLastErrorCode</code> has been removed. We now have Proteus error codes attached to errors
+that are emitted by CoreCrypto.</p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: drop calls to <code>proteusLastErrorCode</code> and instead check the returned error object.</p>
+</li>
+<li>
+<p>The functions <code>CoreCrypto.buildMetadata</code> and <code>CoreCrypto.version</code> have been moved to the module level. It is no longer
+required to create a <code>CoreCrypto</code> instance to call them.</p>
+<p>Affected platforms: Web</p>
+<p>Migration: use module-level <code>buildMetadata</code> and <code>version</code> functions.</p>
+</li>
+<li>
+<p>Several changes have been made to the E2EI API.</p>
+<p>The function <code>CoreCrypto.e2eiRotateAll</code> has been removed. Client applications should instead go over each conversation
+individually and call <code>CoreCrypto.e2eiRotate</code>.</p>
+<p>Two new functions have been added, <code>CoreCrypto.saveX509Credential</code> and <code>CoreCrypto.deleteStaleKeyPackages</code>. The former
+should be used after getting a new X509 credential, while the latter should be called after generating keypackages for
+the new credential and replacing the stale ones in the backend.</p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: replace calls to <code>e2eiRotateAll</code> with iterations over conversations, calling <code>e2eiRotate</code> on every
+conversation and checking for errors. Use <code>saveX509Credential</code> and <code>deleteStaleKeyPackages</code> as appropriate (more
+details in API documentation).</p>
+</li>
+<li>
+<p>The proposal API has been removed, simplifying the public API a great deal. This includes functions like
+<code>newProposal</code>, <code>newExternalProposal</code>, <code>clearPendingProposal</code>, <code>joinConversation</code> etc.</p>
+<p>Affected platforms: Web, Android, iOS</p>
+<p>Migration: drop all calls to removed functions as they are no longer necessary with the new MLS transport interface.</p>
+</li>
+</ul>
+<h2 id="corecrypto-3"><a class="header" href="#corecrypto-3">CoreCrypto 3</a></h2>
+<h3 id="v311---2025-04-15"><a class="header" href="#v311---2025-04-15">v3.1.1 - 2025-04-15</a></h3>
+<ul>
+<li>This release bumps the version of rusty-jwt-tools to 0.13.0, which includes additional end-to-end identity tests and
+test markers relevant to Bund.</li>
+</ul>
+<h3 id="v310---2025-02-12"><a class="header" href="#v310---2025-02-12">v3.1.0 - 2025-02-12</a></h3>
+<ul>
+<li>
+<p>Add a test case mimicking a real life bug ([WPB-15810]), demonstrating that in some cases it was possible to generate
+errors by swapping the ordering of two messages.</p>
+</li>
+<li>
+<p>Add a new layer of buffering to handle that situation.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>Decrypting a message can now potentially return a <code>MlsError::Other</code> variant with the message</p>
+<blockquote>
+<p>Incoming message is a commit for which we have not yet received all the proposals. Buffering until all proposals
+have arrived.</p>
+</blockquote>
+<p>Clients do not need to take any action in response to this message. This error simply indicates that the commit has
+been buffered, and will be automatically unbuffered when possible.</p>
+</blockquote>
+<p>If the required proposal is never delivered, however, the client will eventually desync as the commit will never be
+processed. Clients should be on the lookout for this case and trigger their rejoin protocol in that event.</p>
+</li>
+</ul>
+<h3 id="v302---2025-01-31"><a class="header" href="#v302---2025-01-31">v3.0.2 - 2025-01-31</a></h3>
+<ul>
+<li>
+<p>Fix a bug which could cause certain errors to generate spurious log lines of the form</p>
+<blockquote>
+<p>Cannot build CoreCryptoError, falling back to standard Error! ctx: Incoming message is from an epoch too far in the
+future to buffer.</p>
+</blockquote>
+</li>
+</ul>
+<h3 id="v301---2025-01-27"><a class="header" href="#v301---2025-01-27">v3.0.1 - 2025-01-27</a></h3>
+<ul>
+<li>Emit info log with context when buffering, restoring, or clearing buffered messages</li>
+</ul>
+<h3 id="v300---2024-12-11"><a class="header" href="#v300---2024-12-11">v3.0.0 - 2024-12-11</a></h3>
+<ul>
+<li>Fix the ‘transaction in progress’ error when there was an attempt to perform multiple transactions in parallel. This
+will no longer throw an error, instead the transactions will be queued and performed serially one after another.</li>
+</ul>
+<h4 id="breaking-changes-8"><a class="header" href="#breaking-changes-8">Breaking changes</a></h4>
+<ul>
+<li>Added the missing MLS error case OrphanWelcome.</li>
+</ul>
+<h2 id="corecrypto-2"><a class="header" href="#corecrypto-2">CoreCrypto 2</a></h2>
+<h3 id="v200---2024-12-02"><a class="header" href="#v200---2024-12-02">v2.0.0 - 2024-12-02</a></h3>
+<ul>
+<li>The number of public errors has been reduced and simplified. It’s no longer necessary to use the
+<code>proteus_last_error_code</code> function, since thrown error should contain all the information.</li>
+<li>The logger callback now includes an additional context parameter which contains additional context for a log event in
+the form of a JSON Object string.</li>
+<li>It’s now possible to change the logger and log level at runtime (see <code>setLogLevel</code> and <code>setLogger</code>).</li>
+</ul>
+<h4 id="breaking-changes-9"><a class="header" href="#breaking-changes-9">Breaking changes</a></h4>
+<ul>
+<li>Dropped support for <code>i686-linux-android</code> target.</li>
+<li><code>CoreCryptoLogger</code> takes an additional <code>context</code> parameter.</li>
+<li><code>CoreCryptoError</code> and its child errors have been refactored to reduce the amount of error we expose and provide
+explicit errors for Proteus errors. The errors we have removed will appear under the <code>Other</code> case.
+<pre><code>enum ProteusError {
+    SessionNotFound,
+    DuplicateMessage,
+    RemoteIdentityChanged,
+    Other(Int),
+}
+
+pub enum MlsError {
+    ConversationAlreadyExists,
+    DuplicateMessage,
+    BufferedFutureMessage,
+    WrongEpoch,
+    MessageEpochTooOld,
+    SelfCommitIgnored,
+    UnmergedPendingGroup,
+    StaleProposal,
+    StaleCommit,
+    Other(String)
+}
+</code></pre>
+</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="cc10/migration/kotlin.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="release_artifacts.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="cc10/migration/kotlin.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="release_artifacts.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-09f2665d.js"></script>
+
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="langtabs-57c6b578.js"></script>
+        <script src="mermaid-eefea253.min.js"></script>
+        <script src="mermaid-init-ccf746f1.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

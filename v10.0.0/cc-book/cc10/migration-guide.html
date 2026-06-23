@@ -1,0 +1,501 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Migration Guide - CoreCrypto Book</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../langtabs-0bb573a3.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-196e0233.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-59a922f4.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CoreCrypto Book</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="migrating-from-v9x-to-v100"><a class="header" href="#migrating-from-v9x-to-v100">Migrating from v9.x to v10.0</a></h1>
+<p>This page covers breaking changes that are identical across all platforms. For platform-specific migration steps, see
+the sub-pages:</p>
+<ul>
+<li><a href="migration/typescript.html">TypeScript</a></li>
+<li><a href="migration/swift.html">Swift</a></li>
+<li><a href="migration/kotlin.html">Kotlin</a></li>
+</ul>
+<h2 id="credentials"><a class="header" href="#credentials">Credentials</a></h2>
+<p>CC10 introduces first-class <code>Credential</code> and <code>CredentialRef</code> types. Previously, credentials were implicit: <code>mlsInit()</code>
+created a basic credential for each cipher suite automatically, and every operation that needed a credential selected
+one by taking a <code>(cipherSuite, credentialType)</code> pair. In CC10 you construct credentials explicitly and refer to them by
+<code>CredentialRef</code>. The <code>(cipherSuite, credentialType)</code> selector has been removed from every call site.</p>
+<p>This makes credential operations much more flexible: whereas in the past CC would always implicitly choose the most
+recent credential of a given type and cipher suite, clients can simply choose the appropriate credential.</p>
+<h3 id="creating-and-registering-credentials"><a class="header" href="#creating-and-registering-credentials">Creating and registering credentials</a></h3>
+<ol>
+<li>
+<p><code>mlsInit()</code> no longer creates any credential or key packages. After initializing MLS, create at least one credential
+yourself. See also <a href="#mls-initialization">MLS Initialization</a> and <a href="#key-packages">Key Packages</a>.</p>
+</li>
+<li>
+<p>Create a basic credential with the <code>Credential.basic(cipherSuite, clientId)</code> static method. To obtain an X509
+credential, use the acquisition flow described in <a href="#x509-credential-acquisition">X509 Credential Acquisition</a>. A
+<code>Credential</code> lives in memory and is independent of any client instance.</p>
+</li>
+<li>
+<p>Register the credential with <code>transactionContext.addCredential(credential)</code>. This persists it and returns a
+<code>CredentialRef</code>: a compact, stable handle you pass to the rest of the API in place of the old selector pair.</p>
+<ul>
+<li>Credentials registered with a single client must be distinct on the
+<code>(credentialType, signatureScheme, creation timestamp)</code> tuple, where the timestamp has one-second resolution. If
+you need several credentials sharing a type and signature scheme, wait one full second between registering each. We
+expect to relax this limitation in the future.</li>
+</ul>
+</li>
+<li>
+<p>On MLS initialization, previously stored credentials are loaded automatically. Enumerate them with
+<code>getCredentials()</code>, or filter with <code>findCredentials(...)</code>, to recover their <code>CredentialRef</code>s.</p>
+</li>
+</ol>
+<h3 id="passing-credentials-to-operations"><a class="header" href="#passing-credentials-to-operations">Passing credentials to operations</a></h3>
+<p>Replace the old <code>(cipherSuite, credentialType)</code> arguments with a <code>CredentialRef</code>:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Operation</th><th>v9.x</th><th>v10.0</th></tr>
+</thead>
+<tbody>
+<tr><td>Create a conversation</td><td><code>createConversation(id, creatorCredentialType, config)</code></td><td><code>createConversation(id, credentialRef, externalSender?)</code></td></tr>
+<tr><td>Join by external commit</td><td><code>joinByExternalCommit(groupInfo, config, credentialType)</code></td><td><code>joinByExternalCommit(groupInfo, credentialRef)</code></td></tr>
+<tr><td>Generate key packages</td><td><code>clientKeypackages(cipherSuite, credentialType, amount)</code></td><td>repeated <code>generateKeyPackage(credentialRef)</code></td></tr>
+<tr><td>Switch a conversation’s credential</td><td><code>e2eiRotate(conversationId)</code></td><td><code>setConversationCredential(conversationId, credentialRef)</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>A conversation’s cipher suite is now derived from its credential, so <code>createConversation()</code> no longer accepts a separate
+cipher suite.</p>
+<p>To remove a credential, call <code>removeCredential(credentialRef)</code>. This checks that the credential is not in use by any
+conversation, removes every key package derived from it, and deletes it from both the working set and the keystore.</p>
+<h3 id="public-keys"><a class="header" href="#public-keys">Public keys</a></h3>
+<p>A <code>Credential</code> carries a public key but exposes no method to export it. To read the public key, register the credential
+with <code>addCredential</code> to obtain a <code>CredentialRef</code>, then call <code>coreCrypto.publicKey(credentialRef)</code> returns the raw public
+key bytes. This replaces v9.x’s <code>clientPublicKey(cipherSuite, credentialType)</code>.</p>
+<p>There also exist other helpers to work with public keys:</p>
+<ul>
+<li><code>credentialRef.publicKeyHash()</code> returns the SHA256 hash of the public key.</li>
+<li><code>coreCrypto.exportCredentialPem(credentialRef)</code> serializes the public key of a credential into PEM format</li>
+</ul>
+<h2 id="x509-credential-acquisition"><a class="header" href="#x509-credential-acquisition">X509 Credential Acquisition</a></h2>
+<p>The enrollment API that previously drove the ACME and OIDC exchanges step-by-step from the client has been <strong>removed</strong>.
+The whole ACME / DPoP / OIDC sequence is now hidden behind a single object, <code>X509CredentialAcquisition</code>, which the
+client constructs once and then calls <code>finalize()</code> on to obtain a <code>Credential</code>. CoreCrypto reaches back into the client
+only via well-defined hook points; the client no longer threads nonces, account responses, order requests, or challenge
+payloads through its own code.</p>
+<p>Where you previously called <code>e2eiNewEnrollment</code>, <code>e2eiNewActivationEnrollment</code>, <code>e2eiNewRotateEnrollment</code>,
+<code>directoryResponse</code>, <code>newAccountRequest</code>/<code>Response</code>, <code>newOrderRequest</code>/<code>Response</code>, <code>newAuthzRequest</code>/<code>Response</code>,
+<code>createDpopToken</code>, <code>newDpopChallengeRequest</code>/<code>Response</code>, <code>newOidcChallengeRequest</code>/<code>Response</code>,
+<code>checkOrderRequest</code>/<code>Response</code>, <code>finalizeRequest</code>/<code>Response</code>, or <code>certificateRequest</code> — delete all of it. The new flow
+replaces every one of those calls.</p>
+<h3 id="acquiring-an-x509-credential"><a class="header" href="#acquiring-an-x509-credential">Acquiring an X509 credential</a></h3>
+<ol>
+<li>
+<p><strong>Implement <code>PkiEnvironmentHooks</code></strong>. CoreCrypto will call these hooks during acquisition:</p>
+<ul>
+<li><code>httpRequest</code> — perform HTTP requests against the ACME server, CRL distributors, and similar.</li>
+<li><code>authenticate</code> — drive the IdP authorization code flow with PKCE and return the resulting ID token.</li>
+<li><code>getBackendNonce</code> — obtain a nonce from the Wire backend.</li>
+<li><code>fetchBackendAccessToken</code> — exchange the DPoP token for a backend access token.</li>
+</ul>
+</li>
+<li>
+<p><strong>Create a <code>PkiEnvironment</code></strong> with <code>PkiEnvironment.new(hooks, database)</code> (TypeScript) or
+<code>createPkiEnvironment(hooks, database)</code> (Swift/Kotlin). The <code>Database</code> can be the same used by the <code>CoreCrypto</code>
+instance or distinct; they use unrelated tables. That said, it is typically more convenient to use a single database.</p>
+</li>
+<li>
+<p><strong>Build an <code>X509CredentialAcquisitionConfiguration</code></strong> describing the certificate you want:</p>
+<ul>
+<li><code>acmeUrl</code> - the URL of the ACME server</li>
+<li><code>cipher_suite</code> — must be one of the four with a JWS-compatible signature scheme: Ed25519, P256, P384, or P521.
+Other cipher suites will fail at construction.</li>
+<li><code>displayName</code>, <code>clientId</code>, <code>handle</code>, <code>domain</code>, optional <code>team</code></li>
+<li><code>validityPeriodSecs</code></li>
+</ul>
+</li>
+<li>
+<p><strong>Construct the acquisition</strong>: <code>X509CredentialAcquisition.new(pkiEnvironment, configuration)</code>.</p>
+</li>
+<li>
+<p><strong>Call <code>await acquisition.finalize()</code></strong>. This drives the DPoP and OIDC challenges to completion, calling your hooks
+as needed, and returns the acquired <code>Credential</code>. The acquisition can only be finalized once; a second call throws.</p>
+</li>
+<li>
+<p><strong>Attach the credential</strong> to the client with <code>transactionContext.addCredential(credential)</code>, exactly as for a basic
+credential. This persists it to the internal database and returns a <code>CredentialRef</code>.</p>
+</li>
+</ol>
+<h3 id="pausing-across-the-idp-redirect"><a class="header" href="#pausing-across-the-idp-redirect">Pausing across the IdP redirect</a></h3>
+<p>The IdP authentication flow typically requires an external redirect, after which the app may have been suspended,
+backgrounded, or restarted. To support this, the <code>authenticate</code> hook receives an <code>acquisitionSnapshot: bytes</code> parameter
+capturing the acquisition state at the point the DPoP challenge has completed and OIDC is about to begin. Persist these
+bytes to encrypted storage before launching the IdP flow.</p>
+<p>When the app resumes and is ready to complete acquisition, reconstruct the acquisition from the snapshot with
+<code>X509CredentialAcquisition.fromBytes(pkiEnvironment, snapshot)</code> and call <code>finalize()</code> on the reconstructed instance.
+There is no client-visible serialization method on <code>X509CredentialAcquisition</code> itself; the snapshot bytes are delivered
+to you exclusively through the <code>authenticate</code> hook’s <code>acquisitionSnapshot</code> parameter.</p>
+<h3 id="checking-for-expiration-and-revocation"><a class="header" href="#checking-for-expiration-and-revocation">Checking for expiration and revocation</a></h3>
+<p>Call <code>checkCredentials</code> at least once every 24 hours to check all X509 credentials for expiration and revocation. It is
+recommended to do this during an idle period, because HTTP requests are done to fetch new certificate revocation lists.</p>
+<h2 id="key-packages"><a class="header" href="#key-packages">Key Packages</a></h2>
+<ol>
+<li>
+<p>We <strong>removed</strong> <code>CoreCryptoContext.clientKeypackages()</code>. To generate a desired amount of key packages, make repeated
+calls to <code>CoreCryptoContext.generateKeyPackage()</code>.</p>
+</li>
+<li>
+<p>We <strong>removed</strong> <code>CoreCryptoContext.clientValidKeypackagesCount()</code>. To count remaining key packages, call
+<code>CoreCryptoContext.getKeyPackages()</code>, filter the results as desired, and count the remaining items.</p>
+</li>
+<li>
+<p>We aligned key package spelling to <code>KeyPackage</code>:</p>
+<ul>
+<li>renamed <code>Keypackage</code> → <code>KeyPackage</code></li>
+<li>renamed <code>KeypackageRef</code> → <code>KeyPackageRef</code></li>
+<li>renamed <code>generateKeypackage</code> → <code>generateKeyPackage</code></li>
+<li>renamed <code>getKeypackages</code> → <code>getKeyPackages</code></li>
+<li>renamed <code>removeKeypackage</code> → <code>removeKeyPackage</code></li>
+<li>renamed <code>removeKeypackagesFor</code> → <code>removeKeyPackagesFor</code></li>
+</ul>
+</li>
+</ol>
+<h2 id="mls-initialization"><a class="header" href="#mls-initialization">MLS Initialization</a></h2>
+<ol>
+<li>
+<p><code>mlsInit()</code> was decoupled from key package creation. To create key packages after initializing MLS, call
+<code>CoreCryptoContext.generateKeyPackage()</code> in a transaction.</p>
+</li>
+<li>
+<p>Removed <code>CoreCrypto.provideTransport()</code>, added <code>transport</code> parameter to <code>CoreCryptoContext.mlsInit()</code>. Instead of
+providing transport separately from MLS initialization, provide it when calling <code>mlsInit()</code>.</p>
+</li>
+</ol>
+<h2 id="validated-input-types"><a class="header" href="#validated-input-types">Validated Input Types</a></h2>
+<p>In several instances we have replaced parameters which used to be parsed at call time with exported types which are
+parsed at instantiation. This simplifies error propagation, because clients now receive parse errors directly at
+instantiation. It also simplifies call sites, because they can no longer return parse errors.</p>
+<ol>
+<li>
+<p><code>GroupInfo.new()</code> and <code>Welcome.new()</code> are now <strong>fallible</strong> constructors. Previously, both accepted any byte sequence
+unconditionally. They now validate the input as a TLS-encoded MLS structure at construction time and throw if the
+bytes are malformed.</p>
+</li>
+<li>
+<p>We <strong>removed</strong> <code>GroupInfo.copyBytes()</code> and <code>Welcome.copyBytes()</code>. The underlying types no longer store raw bytes and
+cannot be round-tripped back to a byte array.</p>
+</li>
+<li>
+<p>Added <code>Welcome.serialize()</code>, which recovers the TLS-serialized bytes (replacing the removed <code>copyBytes()</code>). It is
+fallible and throws if serialization fails.</p>
+</li>
+<li>
+<p><code>GroupInfo</code> and <code>Welcome</code> no longer support equality comparisons, hashing, or hex string display in generated
+bindings.</p>
+</li>
+<li>
+<p><code>createConversation()</code> now takes a single optional, parsed <code>ExternalSender</code> object instead of a list of raw
+external-sender byte arrays carried on the conversation configuration. Parse the external sender ahead of time with:</p>
+<ul>
+<li><code>ExternalSender.parseJwk(jwk)</code> for the JWK form,</li>
+<li><code>ExternalSender.parsePublicKey(key, signatureScheme)</code> for the legacy raw public-key form, or</li>
+<li><code>ExternalSender.parse(key, signatureScheme)</code> to try the JWK form first and fall back to the raw public-key form.</li>
+</ul>
+<p>Parse errors are reported at parse time rather than during conversation creation. Call <code>externalSender.serialize()</code>
+to recover the raw public-key bytes; these match the <code>parsePublicKey</code> form and the <code>ExternalSenderKey</code> returned by
+<code>getExternalSender()</code>. Note that <code>ExternalSender</code> (the parsed input type) is distinct from <code>ExternalSenderKey</code> (the
+raw key type that <code>getExternalSender()</code> returns).</p>
+</li>
+</ol>
+<h2 id="no-more-buffering-of-unmerged-changes-while-decrypting"><a class="header" href="#no-more-buffering-of-unmerged-changes-while-decrypting">No More Buffering of Unmerged Changes While Decrypting</a></h2>
+<p>During decryption, CoreCrypto would previously automatically replay previously executed but unmerged (i.e., not yet
+accepted by the delivery service) operations. This behavior has changed: the responsibility of replaying any unmerged
+operations is delegated to the consumer.</p>
+<h2 id="mlstransport-interface"><a class="header" href="#mlstransport-interface">MlsTransport Interface</a></h2>
+<ol>
+<li>
+<p>Instead of returning an <code>MlsTransportResponse</code> to communicate the reason why a message was rejected by the DS, throw
+an <code>MlsTransportError</code> instead. <code>MlsTransportResponse</code> was removed.</p>
+</li>
+<li>
+<p>Removed <code>sendMessage</code> method from <code>MlsTransport</code> interface. This wasn’t well-documented and wasn’t being used in any
+case. We remove it for the purpose of making life easier for everyone.</p>
+</li>
+</ol>
+<h2 id="renaming-ciphersuite-to-cipher-suite"><a class="header" href="#renaming-ciphersuite-to-cipher-suite">Renaming “Ciphersuite” to “Cipher Suite”</a></h2>
+<p>We aligned cipher suite spelling to <code>CipherSuite</code>:</p>
+<ul>
+<li>renamed <code>Ciphersuite</code> → <code>CipherSuite</code></li>
+<li>renamed <code>ciphersuiteFromU16</code> → <code>cipherSuiteFromU16</code></li>
+<li>renamed <code>ciphersuiteDefault</code> → <code>cipherSuiteDefault</code></li>
+<li>renamed <code>conversationCiphersuite</code> → <code>conversationCipherSuite</code></li>
+<li>renamed any parameters and fields <code>ciphersuite</code> → <code>cipherSuite</code></li>
+</ul>
+<h2 id="client-id-initialization"><a class="header" href="#client-id-initialization">Client ID initialization</a></h2>
+<p>Previously, initialization was done via <code>ClientId.new(bytes)</code>, where bytes was a string of a specific format with a user
+id, device id, and domain. The new constructor takes care of this for you and ensures all client ids conform to this
+fomat: <code>ClientId.new(userId, deviceId, domain)</code>. <code>userId</code> must be an instance of the newly added type <code>Uuid</code>, and
+<code>deviceId</code> a <code>DeviceId</code>.</p>
+<h2 id="other-changes"><a class="header" href="#other-changes">Other Changes</a></h2>
+<ol>
+<li>
+<p><code>CoreCrypto.e2eiIsEnvSetup()</code> can’t throw anymore and will always return a boolean.</p>
+</li>
+<li>
+<p>removed <code>.proteusFingerprintPrekeybundle()</code> and <code>.proteusLastResortPrekeyId()</code> from <code>CoreCryptoContext</code>. Both are
+available as static methods on <code>CoreCrypto</code>.</p>
+</li>
+<li>
+<p>removed <code>CoreCryptoContext.proteusReloadSessions()</code>. Proteus sessions are now loaded on demand by the new per-session
+cache, so explicit reloads are no longer needed. Delete any call sites.</p>
+</li>
+<li>
+<p><code>GroupInfoBundle.payload</code> now contains a byte array instead of a class instance.</p>
+</li>
+<li>
+<p>The <code>updateDatabaseKey</code> function has been moved; it is now a static method <code>Database.updateKey</code>.</p>
+</li>
+<li>
+<p>removed <code>CoreCryptoContext.markConversationAsChildOf()</code>. No client should actually be using this function and all
+existing references to it should be removed.</p>
+</li>
+<li>
+<p>The duplicate signature error when adding members to a conversation now contain debug information about which members
+had duplicate signatures.</p>
+</li>
+<li>
+<p>Removed <code>WelcomeBundle</code> type that was returned from <code>processWelcomeMessage()</code> and <code>joinByExternalCommit()</code>. They
+return a <code>ConversationId</code> now only.</p>
+</li>
+<li>
+<p>Removed previously deprecated field <code>hasEpochChanged</code> from <code>DecryptedMessage</code>. Use the <code>EpochObserver</code> interface.</p>
+</li>
+</ol>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../cc10/whats-new.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../cc10/migration/typescript.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../cc10/whats-new.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../cc10/migration/typescript.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../langtabs-57c6b578.js"></script>
+        <script src="../mermaid-eefea253.min.js"></script>
+        <script src="../mermaid-init-ccf746f1.js"></script>
+
+
+
+    </div>
+    </body>
+</html>
