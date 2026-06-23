@@ -16,6 +16,15 @@ import {
 import { browser } from "@wdio/globals";
 import type { local } from "webdriver";
 
+type ccModuleType = typeof import("@wireapp/core-crypto/browser");
+
+declare global {
+    var ccModule: ccModuleType;
+    var helpers: Helpers;
+    var _latestCommitBundle: CommitBundle;
+    var deliveryService: DeliveryService;
+}
+
 // Logging can be adjusted via the CC_TEST_LOG_LEVEL variable:
 // 0 = no logs
 // 1 = browser logs

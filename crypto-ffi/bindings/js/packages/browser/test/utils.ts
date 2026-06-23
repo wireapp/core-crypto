@@ -2,32 +2,18 @@ import { browser } from "@wdio/globals";
 
 import {
     CipherSuite,
-    type CommitBundle,
     type PkiEnvironmentHooks,
     HttpMethod,
     HttpHeader,
 } from "@wireapp/core-crypto/browser";
-import {
-    sharedSetup,
-    type DeliveryService,
-    type Helpers,
-    type LogEntry,
-} from "../shared/utils";
+import { sharedSetup, type LogEntry } from "../shared/utils";
 
 export { teardown } from "../shared/utils";
 
-type ccModuleType = typeof import("@wireapp/core-crypto/browser");
-
 declare global {
-    interface Window {
-        ccModule: ccModuleType;
-        defaultCipherSuite: CipherSuite;
-        deliveryService: DeliveryService;
-        pkiEnvironmentHooks: PkiEnvironmentHooks;
-        _latestCommitBundle: CommitBundle;
-        recordedLogs: LogEntry[];
-        helpers: Helpers;
-    }
+    var defaultCipherSuite: CipherSuite;
+    var pkiEnvironmentHooks: PkiEnvironmentHooks;
+    var recordedLogs: LogEntry[];
 }
 
 export async function setup() {

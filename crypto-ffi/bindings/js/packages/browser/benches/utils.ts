@@ -1,23 +1,12 @@
 import { browser } from "@wdio/globals";
 import type { Bench } from "tinybench";
-import type { CommitBundle } from "@wireapp/core-crypto/browser";
-import {
-    sharedSetup,
-    type Helpers,
-    type DeliveryService,
-} from "../shared/utils";
+import { sharedSetup } from "../shared/utils";
 import { logResults } from "../../shared/benches/utils";
-type ccModuleType = typeof import("@wireapp/core-crypto/browser");
+
 declare global {
-    interface Window {
-        ccModule: ccModuleType;
-        deliveryService: DeliveryService;
-        _latestCommitBundle: CommitBundle;
-        tinybench: typeof import("tinybench");
-        benchRunning: boolean;
-        bench: Bench;
-        helpers: Helpers;
-    }
+    var tinybench: typeof import("tinybench");
+    var benchRunning: boolean;
+    var bench: Bench;
 }
 
 export async function setup() {
