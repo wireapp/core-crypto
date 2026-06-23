@@ -42,10 +42,10 @@
         "eslint-plugin-wdio": "^9.28.0",
         "prettier": "^3.8.4",
         "tinybench": "^6.0.2",
-        "ts-loader": "^9.6.0",
+        "ts-loader": "^9.6.1",
         "typedoc": "0.28.19",
         "typescript": "^5.8.3",
-        "typescript-eslint": "^8.61.0",
+        "typescript-eslint": "^8.61.1",
         "uniffi-bindgen-react-native": "^0.31.0-3",
         "yarn": "^1.22.22"
     },
