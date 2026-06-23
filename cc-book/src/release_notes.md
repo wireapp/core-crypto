@@ -2,7 +2,7 @@
 
 ## CoreCrypto 10
 
-### Unreleased
+### v10.0.0 - 2026-06-23
 
 - Reworked E2EI
 - New Database API
