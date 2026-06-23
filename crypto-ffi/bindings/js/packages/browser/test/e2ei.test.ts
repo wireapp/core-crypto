@@ -129,7 +129,7 @@ describe("end to end identity", () => {
             const qualifiedClientId = helpers.newClientId();
             const config = ccModule.X509CredentialAcquisitionConfiguration.new({
                 acmeDirectoryUrl: "acme.example.com/directory",
-                cipherSuite: defaultCipherSuite,
+                cipherSuite: ccModule.cipherSuiteDefault(),
                 displayName: "Alice Smith",
                 clientId: qualifiedClientId,
                 handle: "alice_wire",
@@ -154,7 +154,7 @@ describe("end to end identity", () => {
             const clientId = helpers.newClientId();
             const config = ccModule.X509CredentialAcquisitionConfiguration.new({
                 acmeDirectoryUrl: "acme.example.com/directory",
-                cipherSuite: defaultCipherSuite,
+                cipherSuite: ccModule.cipherSuiteDefault(),
                 displayName: "Alice Smith",
                 clientId,
                 handle: "alice_wire",

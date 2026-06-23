@@ -117,7 +117,7 @@ export async function sharedSetup() {
                 cipherSuite?: CipherSuite
             ): Promise<KeyPackage> {
                 if (cipherSuite === undefined) {
-                    cipherSuite = defaultCipherSuite;
+                    cipherSuite = ccModule.cipherSuiteDefault();
                 }
                 const [credentialRef] = await cc.findCredentials({
                     cipherSuite: cipherSuite,
@@ -140,7 +140,7 @@ export async function sharedSetup() {
             static async ccInit(
                 options: CcInitOptions = {
                     withBasicCredential: true,
-                    cipherSuite: defaultCipherSuite,
+                    cipherSuite: ccModule.cipherSuiteDefault(),
                     withPkiEnvironment: false,
                 }
             ): Promise<CoreCrypto> {
@@ -165,7 +165,8 @@ export async function sharedSetup() {
                     await ctx.mlsInit(clientId, deliveryService);
                     if (withBasicCredential) {
                         const cipherSuite =
-                            options.cipherSuite ?? defaultCipherSuite;
+                            options.cipherSuite ??
+                            ccModule.cipherSuiteDefault();
                         await ctx.addCredential(
                             ccModule.Credential.basic(cipherSuite, clientId)
                         );

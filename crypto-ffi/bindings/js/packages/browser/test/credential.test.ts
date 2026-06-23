@@ -114,7 +114,7 @@ describe("credentials", () => {
             try {
                 const cc = await helpers.ccInit({
                     withBasicCredential: true,
-                    cipherSuite: defaultCipherSuite,
+                    cipherSuite: ccModule.cipherSuiteDefault(),
                     withPkiEnvironment: true,
                 });
                 await cc.transaction(async (ctx) => {

@@ -1,7 +1,6 @@
 import { browser } from "@wdio/globals";
 
 import {
-    CipherSuite,
     type PkiEnvironmentHooks,
     HttpMethod,
     HttpHeader,
@@ -11,7 +10,6 @@ import { sharedSetup, type LogEntry } from "../shared/utils";
 export { teardown } from "../shared/utils";
 
 declare global {
-    var defaultCipherSuite: CipherSuite;
     var pkiEnvironmentHooks: PkiEnvironmentHooks;
     var recordedLogs: LogEntry[];
 }
@@ -19,9 +17,6 @@ declare global {
 export async function setup() {
     await sharedSetup();
     await browser.execute(async () => {
-        defaultCipherSuite =
-            ccModule.CipherSuite.Mls128Dhkemx25519Aes128gcmSha256Ed25519;
-
         pkiEnvironmentHooks = {
             async httpRequest(
                 _method: HttpMethod,
