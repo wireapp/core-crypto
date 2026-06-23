@@ -12,7 +12,7 @@ declare global {
 export async function setup() {
     await sharedSetup();
     await browser.execute(async () => {
-        if (tinybench === undefined) {
+        if (globalThis.tinybench === undefined) {
             tinybench =
                 // @ts-expect-error TS2307: Cannot find module ./corecrypto.js or its corresponding type declarations.
                 await import("/node_modules/tinybench/dist/index.js");

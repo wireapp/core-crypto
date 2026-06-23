@@ -39,7 +39,7 @@ export async function sharedSetup() {
     // Forward browser log events to the console.
     browser.on("log.entryAdded", logEvents);
     await browser.execute(async (logLevel) => {
-        if (ccModule === undefined) {
+        if (globalThis.ccModule === undefined) {
             // @ts-expect-error TS2307: Cannot find module ./corecrypto.js or its corresponding type declarations.
             ccModule = await import("/corecrypto.js");
             await ccModule.initWasmModule(
@@ -60,7 +60,7 @@ export async function sharedSetup() {
             }
         }
 
-        if (deliveryService === undefined) {
+        if (globalThis.deliveryService === undefined) {
             deliveryService = {
                 async sendCommitBundle(commitBundle: CommitBundle) {
                     _latestCommitBundle = commitBundle;
@@ -183,7 +183,7 @@ export async function sharedSetup() {
             static recordLogs(): void {
                 const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
                     ccModule;
-                recordedLogs = [];
+                globalThis.recordedLogs = [];
 
                 setLogger({
                     log: (level: number, message: string, context: string) => {
