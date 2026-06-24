@@ -1,7 +1,4 @@
 {
     "extends": "./packages/browser/tsconfig.json",
-    "compilerOptions": {
-        "customConditions": ["cc-browser"]
-    },
     "include": ["packages/**/*.ts", "shared/**/*.ts", "eslint.config.ts"]
 }
