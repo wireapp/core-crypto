@@ -1,7 +1,7 @@
 import { browser } from "@wdio/globals";
 import type { Bench } from "tinybench";
 import { sharedSetup } from "../shared/utils";
-import { logResults } from "../../shared/benches/utils";
+import { logResults } from "../../../shared/benches/utils";
 
 declare global {
     var tinybench: typeof import("tinybench");

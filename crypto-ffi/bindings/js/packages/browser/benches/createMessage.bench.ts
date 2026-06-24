@@ -1,7 +1,7 @@
 import { beforeEach, describe } from "mocha";
 import { browser } from "@wdio/globals";
 import { collectBenchmarkResults, setup } from "./utils";
-import { messageBenchmarkParameters } from "../../shared/benches/utils";
+import { messageBenchmarkParameters } from "../../../shared/benches/utils";
 
 beforeEach(async () => {
     await setup();

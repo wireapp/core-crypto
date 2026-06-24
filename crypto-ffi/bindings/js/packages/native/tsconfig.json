@@ -1,10 +1,10 @@
 {
-    "extends": "../shared/tsconfig.json",
+    "extends": "../../shared/tsconfig.json",
     "compilerOptions": {
         "customConditions": ["cc-native"]
     },
     "include": [
-        "../shared/src/**/*.ts",
+        "../../shared/src/**/*.ts",
         "src/**/*.ts",
         "test/**/*.ts",
         "benches/**/*.ts"

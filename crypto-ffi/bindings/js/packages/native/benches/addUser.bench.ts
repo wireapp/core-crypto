@@ -2,7 +2,7 @@ import {
     logResults,
     tinybenchSetup,
     userBenchmarkParameters,
-} from "../../shared/benches/utils";
+} from "../../../shared/benches/utils";
 import { CipherSuite, type KeyPackage } from "@wireapp/core-crypto/native";
 import { Bench } from "tinybench";
 import {

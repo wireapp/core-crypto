@@ -4,7 +4,7 @@ import {
     logResults,
     messageBenchmarkParameters,
     tinybenchSetup,
-} from "../../shared/benches/utils";
+} from "../../../shared/benches/utils";
 import {
     ccInit,
     setup,

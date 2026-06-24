@@ -1,7 +1,7 @@
 import { beforeEach, describe } from "mocha";
 import { browser } from "@wdio/globals";
 import { collectBenchmarkResults, setup } from "./utils";
-import { userBenchmarkParameters } from "../../shared/benches/utils";
+import { userBenchmarkParameters } from "../../../shared/benches/utils";
 import type { KeyPackage } from "@wireapp/core-crypto/browser";
 
 beforeEach(async () => {

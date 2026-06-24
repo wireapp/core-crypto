@@ -59,7 +59,7 @@ SWIFT_FILES := $(shell fd --type f --extension swift . | LC_ALL=C sort)
 #-------------------------------------------------------------------------------
 
 JS_DIR := $(abspath crypto-ffi/bindings/js)
-TS_SHARED_DIR := $(JS_DIR)/packages/shared
+TS_SHARED_DIR := $(JS_DIR)/shared
 TS_BROWSER_DIR := $(JS_DIR)/packages/browser
 TS_CORE_CRYPTO_DIR := $(JS_DIR)/packages/core-crypto
 TS_NATIVE_DIR := $(JS_DIR)/packages/native
