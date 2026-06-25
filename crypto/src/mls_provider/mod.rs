@@ -221,6 +221,10 @@ impl OpenMlsCrypto for &CryptoProvider {
         self.crypto.hkdf_expand(hash_type, prk, info, okm_len)
     }
 
+    fn shake256_kdf_derive(&self, input: &[u8], out_len: usize) -> Result<tls_codec::SecretVLBytes, CryptoError> {
+        self.crypto.shake256_kdf_derive(input, out_len)
+    }
+
     fn hash(&self, hash_type: HashType, data: &[u8]) -> Result<Vec<u8>, CryptoError> {
         self.crypto.hash(hash_type, data)
     }

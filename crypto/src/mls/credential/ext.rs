@@ -139,6 +139,7 @@ fn compute_thumbprint(cs: CipherSuite, raw_key: &[u8]) -> Result<String> {
         SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::P384,
         SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::P521,
         SignatureScheme::ED448 => return Err(Error::UnsupportedAlgorithm),
+        SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87 => return Ok(String::new()),
     };
     let hash_alg = match cs.hash_algorithm() {
         HashType::Sha2_256 => HashAlgorithm::SHA256,

@@ -97,6 +97,9 @@ impl OpenMlsCrypto for RustCrypto {
             }
             SignatureScheme::ED25519 => ed25519_dalek::PUBLIC_KEY_LENGTH,
             SignatureScheme::ED448 => 57,
+            // raw FIPS-204 public-key sizes
+            SignatureScheme::MLDSA65 => 1952,
+            SignatureScheme::MLDSA87 => 2592,
         }
     }
 
@@ -165,6 +168,19 @@ impl OpenMlsCrypto for RustCrypto {
                 Ok(okm.into())
             }
         }
+    }
+
+    fn shake256_kdf_derive(&self, input: &[u8], out_len: usize) -> Result<SecretVLBytes, CryptoError> {
+        use sha3::{
+            Shake256,
+            digest::{ExtendableOutput, Update, XofReader},
+        };
+        let mut hasher = Shake256::default();
+        hasher.update(input);
+        let mut reader = hasher.finalize_xof();
+        let mut out = zeroize::Zeroizing::new(vec![0u8; out_len]);
+        reader.read(&mut out);
+        Ok(out.as_slice().into())
     }
 
     fn hash(&self, hash_type: HashType, data: &[u8]) -> Result<Vec<u8>, CryptoError> {
@@ -287,6 +303,11 @@ impl OpenMlsCrypto for RustCrypto {
                 p521::ecdsa::VerifyingKey::from_sec1_bytes(key).map_err(|_| CryptoError::InvalidKey)?;
             }
             SignatureScheme::ED448 => {
+                return Err(CryptoError::UnsupportedSignatureScheme);
+            }
+            // ML-DSA key validation lands with the ML-DSA implementation; until then the
+            // schemes exist in the enum but are not accepted, so we fail closed.
+            SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87 => {
                 return Err(CryptoError::UnsupportedSignatureScheme);
             }
         }

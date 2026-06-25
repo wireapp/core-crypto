@@ -818,7 +818,7 @@ dependencies = [
  "serde",
  "sha-1",
  "sha2 0.10.9",
- "spki",
+ "spki 0.7.3",
  "subtle-encoding",
  "url",
  "x509-cert",
@@ -996,7 +996,7 @@ checksum = "7b77c319abfd5219629c45c34c89ba945ed3c5e49fcde9d16b6c3885f118a730"
 dependencies = [
  "const-oid 0.9.6",
  "der 0.7.10",
- "spki",
+ "spki 0.7.3",
  "x509-cert",
 ]
 
@@ -1189,7 +1189,8 @@ dependencies = [
  "serde-wasm-bindgen",
  "serde_json",
  "sha2 0.10.9",
- "signature",
+ "sha3 0.11.0",
+ "signature 2.2.0",
  "smol",
  "smol-macros",
  "strum",
@@ -1704,6 +1705,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4850db49bf08e663084f7fb5c87d202ef91a3907271aff24a94eb97ff039153c"
 dependencies = [
  "block-buffer 0.12.0",
+ "const-oid 0.10.2",
  "crypto-common 0.2.1",
  "ctutils",
  "zeroize",
@@ -1771,8 +1773,8 @@ dependencies = [
  "digest 0.10.7",
  "elliptic-curve 0.13.8",
  "rfc6979",
- "signature",
- "spki",
+ "signature 2.2.0",
+ "spki 0.7.3",
 ]
 
 [[package]]
@@ -1781,9 +1783,9 @@ version = "2.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "115531babc129696a58c64a4fef0a8bf9e9698629fb97e9e40767d235cfbcd53"
 dependencies = [
- "pkcs8",
+ "pkcs8 0.10.2",
  "serde",
- "signature",
+ "signature 2.2.0",
 ]
 
 [[package]]
@@ -1827,7 +1829,7 @@ dependencies = [
  "group 0.13.0",
  "hkdf 0.12.4",
  "pem-rfc7468",
- "pkcs8",
+ "pkcs8 0.10.2",
  "rand_core 0.6.4",
  "sec1 0.7.3",
  "subtle",
@@ -3207,7 +3209,7 @@ dependencies = [
  "serde_json",
  "sha-1",
  "sha2 0.10.9",
- "spki",
+ "spki 0.7.3",
  "thiserror 1.0.69",
  "zeroize",
 ]
@@ -3223,7 +3225,7 @@ dependencies = [
  "elliptic-curve 0.13.8",
  "once_cell",
  "sha2 0.10.9",
- "signature",
+ "signature 2.2.0",
 ]
 
 [[package]]
@@ -3553,6 +3555,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "ml-dsa"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "add6b9d92e496f16f4526d68ff29da1483aba4b119baeab8bed3b9e3544a6f3d"
+dependencies = [
+ "crypto-common 0.2.1",
+ "ctutils",
+ "hybrid-array",
+ "module-lattice",
+ "pkcs8 0.11.0",
+ "shake",
+ "signature 3.0.0",
+ "zeroize",
+]
+
+[[package]]
 name = "ml-kem"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3824,7 +3842,7 @@ dependencies = [
 [[package]]
 name = "openmls"
 version = "1.0.0"
-source = "git+https://github.com/wireapp/openmls?rev=c9cde17076508968c9cbead5728454f0a1f60c4f#c9cde17076508968c9cbead5728454f0a1f60c4f"
+source = "git+https://github.com/wireapp/openmls?rev=82c21de5d15d5459c2a57770f888e92f6ecb7471#82c21de5d15d5459c2a57770f888e92f6ecb7471"
 dependencies = [
  "async-trait",
  "backtrace",
@@ -3841,16 +3859,18 @@ dependencies = [
  "tls_codec",
  "web-time",
  "x509-cert",
+ "zeroize",
 ]
 
 [[package]]
 name = "openmls_basic_credential"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=c9cde17076508968c9cbead5728454f0a1f60c4f#c9cde17076508968c9cbead5728454f0a1f60c4f"
+source = "git+https://github.com/wireapp/openmls?rev=82c21de5d15d5459c2a57770f888e92f6ecb7471#82c21de5d15d5459c2a57770f888e92f6ecb7471"
 dependencies = [
  "async-trait",
  "ed25519-dalek",
  "getrandom 0.2.15",
+ "ml-dsa",
  "openmls_traits",
  "p256 0.13.2",
  "p384 0.13.1",
@@ -3859,21 +3879,23 @@ dependencies = [
  "secrecy",
  "serde",
  "tls_codec",
+ "zeroize",
 ]
 
 [[package]]
 name = "openmls_traits"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=c9cde17076508968c9cbead5728454f0a1f60c4f#c9cde17076508968c9cbead5728454f0a1f60c4f"
+source = "git+https://github.com/wireapp/openmls?rev=82c21de5d15d5459c2a57770f888e92f6ecb7471#82c21de5d15d5459c2a57770f888e92f6ecb7471"
 dependencies = [
  "async-trait",
  "ed25519-dalek",
+ "ml-dsa",
  "p256 0.13.2",
  "p384 0.13.1",
  "p521 0.13.3",
  "rand_core 0.6.4",
  "serde",
- "signature",
+ "signature 2.2.0",
  "tls_codec",
  "zeroize",
 ]
@@ -3881,7 +3903,7 @@ dependencies = [
 [[package]]
 name = "openmls_x509_credential"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=c9cde17076508968c9cbead5728454f0a1f60c4f#c9cde17076508968c9cbead5728454f0a1f60c4f"
+source = "git+https://github.com/wireapp/openmls?rev=82c21de5d15d5459c2a57770f888e92f6ecb7471#82c21de5d15d5459c2a57770f888e92f6ecb7471"
 dependencies = [
  "async-trait",
  "base64 0.21.7",
@@ -4252,8 +4274,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c8ffb9f10fa047879315e6625af03c164b16962a5368d724ed16323b68ace47f"
 dependencies = [
  "der 0.7.10",
- "pkcs8",
- "spki",
+ "pkcs8 0.10.2",
+ "spki 0.7.3",
 ]
 
 [[package]]
@@ -4263,7 +4285,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f950b2377845cebe5cf8b5165cb3cc1a5e0fa5cfa3e1f7f55707d8fd82e0a7b7"
 dependencies = [
  "der 0.7.10",
- "spki",
+ "spki 0.7.3",
+]
+
+[[package]]
+name = "pkcs8"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "451913da69c775a56034ea8d9003d27ee8948e12443eae7c038ba100a4f21cb7"
+dependencies = [
+ "der 0.8.0",
+ "spki 0.8.0",
 ]
 
 [[package]]
@@ -4847,10 +4879,10 @@ dependencies = [
  "num-integer",
  "num-traits",
  "pkcs1",
- "pkcs8",
+ "pkcs8 0.10.2",
  "rand_core 0.6.4",
- "signature",
- "spki",
+ "signature 2.2.0",
+ "spki 0.7.3",
  "subtle",
  "zeroize",
 ]
@@ -5169,7 +5201,7 @@ dependencies = [
  "base16ct 0.2.0",
  "der 0.7.10",
  "generic-array",
- "pkcs8",
+ "pkcs8 0.10.2",
  "subtle",
  "zeroize",
 ]
@@ -5533,6 +5565,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "signature"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "28d567dcbaf0049cb8ac2608a76cd95ff9e4412e1899d389ee400918ca7537f5"
+dependencies = [
+ "digest 0.11.2",
+]
+
+[[package]]
 name = "siphasher"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5644,6 +5685,16 @@ dependencies = [
  "base64ct",
  "der 0.7.10",
  "sha2 0.10.9",
+]
+
+[[package]]
+name = "spki"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d9efca8738c78ee9484207732f728b1ef517bbb1833d6fc0879ca898a522f6f"
+dependencies = [
+ "base64ct",
+ "der 0.8.0",
 ]
 
 [[package]]
@@ -7618,8 +7669,8 @@ dependencies = [
  "serde_json",
  "sha1",
  "shlex",
- "signature",
- "spki",
+ "signature 2.2.0",
+ "spki 0.7.3",
  "testcontainers",
  "thiserror 2.0.18",
  "time",
@@ -7788,8 +7839,8 @@ dependencies = [
  "const-oid 0.9.6",
  "der 0.7.10",
  "sha1",
- "signature",
- "spki",
+ "signature 2.2.0",
+ "spki 0.7.3",
  "tls_codec",
 ]
 
@@ -7801,7 +7852,7 @@ checksum = "5e54e695a31f0fecb826cf59ae2093c941d7ef932a1f8508185dd23b29ce2e2e"
 dependencies = [
  "const-oid 0.9.6",
  "der 0.7.10",
- "spki",
+ "spki 0.7.3",
  "x509-cert",
 ]
 
