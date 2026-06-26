@@ -1,0 +1,149 @@
+import { browser, expect } from "@wdio/globals";
+import { setup, teardown } from "./utils";
+import { afterEach, beforeEach, describe } from "mocha";
+
+beforeEach(async () => {
+    await setup();
+});
+
+afterEach(async () => {
+    await teardown();
+});
+
+describe("logger", () => {
+    it("forwards logs when registered", async () => {
+        const result = await browser.execute(async () => {
+            const cc = await helpers.ccInit();
+            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } = ccModule;
+
+            const logs: string[] = [];
+            setLogger({
+                log: (_level, json_msg: string, _context) => {
+                    logs.push(json_msg);
+                },
+            });
+            setMaxLogLevel(CoreCryptoLogLevel.Debug);
+            await helpers.createConversation(cc);
+            return logs;
+        });
+
+        expect(result.length).toBeGreaterThan(0);
+    });
+
+    it("can be replaced", async () => {
+        const result = await browser.execute(async () => {
+            const cc = await helpers.ccInit();
+            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } = ccModule;
+
+            const logs: string[] = [];
+            setLogger({
+                log: (_level, _message, _context) => {
+                    throw Error("Initial logger should not be active");
+                },
+            });
+            setLogger({
+                log: (_level, json_msg: string, _context) => {
+                    logs.push(json_msg);
+                },
+            });
+            setMaxLogLevel(CoreCryptoLogLevel.Debug);
+            await helpers.createConversation(cc);
+            return logs;
+        });
+
+        expect(result.length).toBeGreaterThan(0);
+    });
+
+    it("doesn't forward logs below log level when registered", async () => {
+        const result = await browser.execute(async () => {
+            const cc = await helpers.ccInit();
+            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } = ccModule;
+
+            const logs: string[] = [];
+            setLogger({
+                log: (_level, json_msg: string, _context) => {
+                    logs.push(json_msg);
+                },
+            });
+            setMaxLogLevel(CoreCryptoLogLevel.Warn);
+            await helpers.createConversation(cc);
+            return logs;
+        });
+
+        expect(result.length).toBe(0);
+    });
+
+    it("forwards logs with context key/value pairs", async () => {
+        const result = await browser.execute(async () => {
+            const alice = await helpers.ccInit();
+            const bob = await helpers.ccInit();
+            const conversationId = await helpers.createConversation(alice);
+            await helpers.invite(alice, bob, conversationId);
+
+            helpers.recordLogs();
+
+            const encoder = new TextEncoder();
+            const messageText = "Hello world!";
+            const messageBytes = encoder.encode(messageText);
+
+            const encryptedMessage = await alice.transaction(
+                async (ctx) =>
+                    await ctx.encryptMessage(conversationId, messageBytes)
+            );
+
+            await bob.transaction(
+                async (ctx) =>
+                    await ctx.decryptMessage(conversationId, encryptedMessage)
+            );
+
+            return recordedLogs;
+        });
+
+        const proteusErrorLog = result.find(
+            (element) => element.message === "Application message"
+        )!.context;
+
+        expect(JSON.parse(proteusErrorLog)).toMatchObject({
+            group_id: expect.anything(),
+            sender_client_id: expect.anything(),
+            epoch: expect.anything(),
+        });
+    });
+
+    it("forward logs with member changes", async () => {
+        const logs = await browser.execute(async () => {
+            const alice = await helpers.ccInit();
+            const bob = await helpers.ccInit();
+            const carolId = helpers.newClientId();
+            const carol = await helpers.ccInit({ clientId: carolId });
+            helpers.recordLogs();
+            const conversationId = await helpers.createConversation(alice);
+            await helpers.invite(alice, bob, conversationId);
+            await helpers.invite(alice, carol, conversationId);
+            await helpers.consumeLastestCommit(bob, conversationId);
+            await helpers.remove(alice, carolId, conversationId);
+            await helpers.consumeLastestCommit(bob, conversationId);
+            return recordedLogs;
+        });
+
+        const epochChangedContext1 = logs.find(
+            (element) => element.message === "Epoch advanced"
+        )!.context;
+        const epochChangedContext2 = logs.findLast(
+            (element) => element.message === "Epoch advanced"
+        )!.context;
+
+        expect(JSON.parse(epochChangedContext1)).toMatchObject({
+            group_id: expect.anything(),
+            epoch: expect.anything(),
+            removed: "[]",
+            added: expect.stringContaining("Member"),
+        });
+        expect(JSON.parse(epochChangedContext2)).toMatchObject({
+            group_id: expect.anything(),
+            epoch: expect.anything(),
+            removed: expect.stringContaining("Member"),
+            added: "[]",
+        });
+    });
+});
