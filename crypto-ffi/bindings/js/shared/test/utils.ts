@@ -10,7 +10,7 @@ export async function setup() {
 
 async function setPkiEnvironmentHooks() {
     await runOnPlatform(async () => {
-        pkiEnvironmentHooks = {
+        globalThis.pkiEnvironmentHooks = {
             async httpRequest(
                 _method: HttpMethod,
                 _url: string,

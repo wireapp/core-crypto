@@ -15,6 +15,7 @@ import {
 } from "#core-crypto";
 
 import {
+    runOnPlatform,
     sharedSetup as platformSharedSetup,
     sharedTeardown as platformSharedTeardown,
     setPlatformHelpers,
@@ -516,9 +517,9 @@ async function setHelpers() {
 async function setDeliveryService() {
     await runOnPlatform(() => {
         if (globalThis.deliveryService === undefined) {
-            deliveryService = {
+            globalThis.deliveryService = {
                 async sendCommitBundle(commitBundle: CommitBundle) {
-                    _latestCommitBundle = commitBundle;
+                    globalThis._latestCommitBundle = commitBundle;
                 },
                 async prepareForTransport(
                     secret: HistorySecret
@@ -526,7 +527,7 @@ async function setDeliveryService() {
                     return Promise.resolve(secret.clientId.copyBytes());
                 },
                 async getLatestCommitBundle() {
-                    return _latestCommitBundle;
+                    return globalThis._latestCommitBundle;
                 },
             };
         }
