@@ -24,7 +24,7 @@
         },
         "#shared-utils": {
             "cc-browser": "./packages/browser/shared/utils.ts",
-            "cc-native": "./packages/native/test/utils.ts",
+            "cc-native": "./packages/native/shared/utils.ts",
             "default": "./packages/browser/shared/utils.ts"
         }
     },
