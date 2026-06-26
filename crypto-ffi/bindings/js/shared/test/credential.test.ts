@@ -1,6 +1,6 @@
-import { browser } from "@wdio/globals";
-import { setup, teardown } from "./utils";
+import { runOnPlatform, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
+import { expect } from "chai";
 
 beforeEach(async () => {
     await setup();
@@ -12,7 +12,7 @@ afterEach(async () => {
 
 describe("credentials", () => {
     it("basic credential can be created", async () => {
-        const result = await browser.execute(async () => {
+        const result = await runOnPlatform(async () => {
             const credential = ccModule.Credential.basic(
                 ccModule.cipherSuiteDefault(),
                 helpers.newClientId()
@@ -23,12 +23,12 @@ describe("credentials", () => {
                 earliestValidity: credential.earliestValidity(),
             };
         });
-        expect(result.isBasicType).toBe(true);
-        expect(result.earliestValidity).toEqual(0n);
+        expect(result.isBasicType).to.equal(true);
+        expect(result.earliestValidity).to.equal(0n);
     });
 
     it("credential can be added", async () => {
-        const result = await browser.execute(async () => {
+        const result = await runOnPlatform(async () => {
             const cc = await helpers.ccInit();
             const allCredentials = await cc.getCredentials();
             const [ref] = allCredentials;
@@ -39,15 +39,15 @@ describe("credentials", () => {
                 length: allCredentials.length,
             };
         });
-        expect(result.isDefined).toBe(true);
-        expect(result.isBasicType).toBe(true);
+        expect(result.isDefined).to.equal(true);
+        expect(result.isBasicType).to.equal(true);
         // saving causes the earliest validity to be updated
-        expect(result.earliestValidity).not.toEqual(0n);
-        expect(result.length).toBe(1);
+        expect(result.earliestValidity).not.to.equal(0n);
+        expect(result.length).to.equal(1);
     });
 
     it("credential can be removed", async () => {
-        const length = await browser.execute(async () => {
+        const length = await runOnPlatform(async () => {
             const cc = await helpers.ccInit();
             const [ref] = await cc.getCredentials();
             await cc.transaction(async (ctx) => {
@@ -57,11 +57,11 @@ describe("credentials", () => {
             const allCredentials = await cc.getCredentials();
             return allCredentials.length;
         });
-        expect(length).toBe(0);
+        expect(length).to.equal(0);
     });
 
     it("credentials can be searched", async () => {
-        const result = await browser.execute(async () => {
+        const result = await runOnPlatform(async () => {
             const clientId = helpers.newClientId();
             const cipherSuite1 =
                 ccModule.CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256;
@@ -104,13 +104,13 @@ describe("credentials", () => {
             };
         });
 
-        expect(result.length1).toBe(1);
-        expect(result.length2).toBe(1);
-        expect(result.areEqual).toBe(false);
+        expect(result.length1).to.equal(1);
+        expect(result.length2).to.equal(1);
+        expect(result.areEqual).to.equal(false);
     });
 
     it("can be checked", async () => {
-        const result = await browser.execute(async () => {
+        const result = await runOnPlatform(async () => {
             try {
                 const cc = await helpers.ccInit({
                     withBasicCredential: true,
@@ -126,6 +126,6 @@ describe("credentials", () => {
                 return { success: false };
             }
         });
-        expect(result.success).toBe(true);
+        expect(result.success).to.equal(true);
     });
 });
