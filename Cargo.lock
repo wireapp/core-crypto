@@ -1167,6 +1167,7 @@ dependencies = [
  "js-sys",
  "log",
  "macro_rules_attribute",
+ "ml-dsa",
  "obfuscate",
  "openmls",
  "openmls_basic_credential",
@@ -1435,6 +1436,7 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77727bb15fa921304124b128af125e7e3b968275d1b108b379190264f4423710"
 dependencies = [
+ "getrandom 0.4.1",
  "hybrid-array",
  "rand_core 0.10.1",
 ]
@@ -3560,6 +3562,7 @@ version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "add6b9d92e496f16f4526d68ff29da1483aba4b119baeab8bed3b9e3544a6f3d"
 dependencies = [
+ "const-oid 0.10.2",
  "crypto-common 0.2.1",
  "ctutils",
  "hybrid-array",
@@ -5571,6 +5574,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "28d567dcbaf0049cb8ac2608a76cd95ff9e4412e1899d389ee400918ca7537f5"
 dependencies = [
  "digest 0.11.2",
+ "rand_core 0.10.1",
 ]
 
 [[package]]

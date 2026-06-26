@@ -64,6 +64,8 @@ chacha20poly1305 = "0.10"
 hmac = "0.13"
 ed25519-dalek = { version = "2.2", features = ["pkcs8"] }
 signature = "2.2"
+# ML-DSA (FIPS-204). >=0.1.1 for GHSA-5x2r-hc65-25f9.
+ml-dsa = "0.1.1"
 ecdsa = { version = "0.16", features = ["der", "pkcs8"] }
 p256 = { version = "0.13", features = ["pkcs8"] }
 p384 = { version = "0.13", features = ["pkcs8"] }
