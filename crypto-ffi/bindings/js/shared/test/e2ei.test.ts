@@ -1,7 +1,7 @@
-import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
+import { runOnPlatform, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { E2eiConversationState } from "@wireapp/core-crypto/browser";
+import { E2eiConversationState } from "#core-crypto";
+import { expect } from "chai";
 
 const TEST_CA_PEM = `
 -----BEGIN CERTIFICATE-----
@@ -28,7 +28,7 @@ afterEach(async () => {
 describe("PKI environment", () => {
     it("should be settable after mls init", async () => {
         // Get unset pki environment
-        const success = await browser.execute(async () => {
+        const success = await runOnPlatform(async () => {
             const cc = await helpers.ccInit({
                 withBasicCredential: false,
             });
@@ -54,11 +54,11 @@ describe("PKI environment", () => {
             await cc.setPkiEnvironment(undefined);
             return (await cc.getPkiEnvironment()) === undefined;
         });
-        expect(success).toBe(true);
+        expect(success).to.equal(true);
     });
 
     it("should be settable before mls init", async () => {
-        const success = await browser.execute(async () => {
+        const success = await runOnPlatform(async () => {
             const database = await helpers.newDatabase();
             const cc = ccModule.CoreCrypto.new(database);
             let pkiEnv = await cc.getPkiEnvironment();
@@ -75,11 +75,11 @@ describe("PKI environment", () => {
 
             return (await cc.getPkiEnvironment()) != undefined;
         });
-        expect(success).toBe(true);
+        expect(success).to.equal(true);
     });
 
     it("should add a trust anchor certificate", async () => {
-        const error = await browser.execute(async (certPem) => {
+        const error = await runOnPlatform(async (certPem) => {
             const database = await helpers.newDatabase();
             const pkiEnvironment = await ccModule.PkiEnvironment.create(
                 pkiEnvironmentHooks,
@@ -94,11 +94,11 @@ describe("PKI environment", () => {
             }
         }, TEST_CA_PEM);
 
-        expect(error).toBe(undefined);
+        expect(error).to.equal(undefined);
     });
 
     it("should add an intermediate certificate", async () => {
-        const error = await browser.execute(async (certPem) => {
+        const error = await runOnPlatform(async (certPem) => {
             const database = await helpers.newDatabase();
             const pkiEnvironment = await ccModule.PkiEnvironment.create(
                 pkiEnvironmentHooks,
@@ -113,13 +113,13 @@ describe("PKI environment", () => {
             }
         }, TEST_CA_PEM);
 
-        expect(error).toBe(undefined);
+        expect(error).to.equal(undefined);
     });
 });
 
 describe("end to end identity", () => {
     it("should instantiate an x509 credential acquisition object", async () => {
-        const acquisitionCreated = await browser.execute(async () => {
+        const acquisitionCreated = await runOnPlatform(async () => {
             const database = await helpers.newDatabase();
             const pkiEnvironment = await ccModule.PkiEnvironment.create(
                 pkiEnvironmentHooks,
@@ -146,11 +146,11 @@ describe("end to end identity", () => {
             return acquisition !== undefined;
         });
 
-        expect(acquisitionCreated).toBe(true);
+        expect(acquisitionCreated).to.equal(true);
     });
 
     it("should instantiate an x509 credential acquisition object from credential ref", async () => {
-        const acquisitionCreated = await browser.execute(async () => {
+        const acquisitionCreated = await runOnPlatform(async () => {
             const clientId = helpers.newClientId();
             const config = ccModule.X509CredentialAcquisitionConfiguration.new({
                 acmeDirectoryUrl: "acme.example.com/directory",
@@ -183,22 +183,22 @@ describe("end to end identity", () => {
             return acquisition !== undefined;
         });
 
-        expect(acquisitionCreated).toBe(true);
+        expect(acquisitionCreated).to.equal(true);
     });
 
     it("should not be enabled on conversation with basic credential", async () => {
-        const conversationState = await browser.execute(async () => {
+        const conversationState = await runOnPlatform(async () => {
             const cc = await helpers.ccInit();
             const conversationId = await helpers.createConversation(cc);
             return await cc.transaction(async (ctx) => {
                 return await ctx.e2eiConversationState(conversationId);
             });
         });
-        expect(conversationState).toBe(E2eiConversationState.NotEnabled);
+        expect(conversationState).to.equal(E2eiConversationState.NotEnabled);
     });
 
     it("identities can be queried by client id", async () => {
-        const success = await browser.execute(async () => {
+        const success = await runOnPlatform(async () => {
             const clientId = helpers.newClientId();
             const cc = await helpers.ccInit({ clientId });
             const conversationId = await helpers.createConversation(cc);
@@ -210,11 +210,11 @@ describe("end to end identity", () => {
 
             return identities.pop()?.clientId?.equals(clientId);
         });
-        expect(success).toBe(true);
+        expect(success).to.equal(true);
     });
 
     it("identities can be queried by user id", async () => {
-        const success = await browser.execute(async () => {
+        const success = await runOnPlatform(async () => {
             const clientId = helpers.newClientId();
             const cc = await helpers.ccInit({ clientId });
             const conversationId = await helpers.createConversation(cc);
@@ -227,6 +227,6 @@ describe("end to end identity", () => {
             const identity = identities.values().next().value?.pop();
             return identity?.clientId?.equals(clientId);
         });
-        expect(success).toBe(true);
+        expect(success).to.equal(true);
     });
 });
