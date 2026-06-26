@@ -1,6 +1,6 @@
-import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
+import { runOnPlatform, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
+import { expect } from "chai";
 
 beforeEach(async () => {
     await setup();
@@ -12,8 +12,8 @@ afterEach(async () => {
 
 describe("epoch observer", () => {
     it("should observe new epochs", async () => {
-        const { length, first_id_hex, convIdSerialized } =
-            await browser.execute(async () => {
+        const { length, first_id_hex, convIdSerialized } = await runOnPlatform(
+            async () => {
                 // set up the observer. this just keeps a list of all observations.
                 type ObservedEpoch = {
                     // @ts-expect-error `window` is not present when ts is checking, but is present in the browser
@@ -65,9 +65,10 @@ describe("epoch observer", () => {
                     first_id_hex,
                     convIdSerialized,
                 };
-            });
+            }
+        );
 
-        expect(length).toEqual(1);
-        expect(first_id_hex).toEqual(convIdSerialized);
+        expect(length).to.equal(1);
+        expect(first_id_hex).to.equal(convIdSerialized);
     });
 });
