@@ -1,6 +1,6 @@
-import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
+import { setup, teardown, runOnPlatform } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
+import { expect } from "chai";
 
 beforeEach(async () => {
     await setup();
@@ -12,25 +12,25 @@ afterEach(async () => {
 
 describe("client identity", () => {
     it("Uuid.toString should work", async () => {
-        const result = await browser.execute(() => {
+        const result = await runOnPlatform(() => {
             const rawUuid = crypto.randomUUID();
             const uuid = new ccModule.Uuid(rawUuid);
 
             return uuid.toString() === rawUuid;
         });
-        expect(result).toBe(true);
+        expect(result).to.equal(true);
     });
 
     it("get client public key should work", async () => {
-        const result = await browser.execute(async () => {
+        const result = await runOnPlatform(async () => {
             const cc = await helpers.ccInit();
             return (await cc.getCredentials())[0]!.publicKeyHash().byteLength;
         });
-        expect(result).toBe(32);
+        expect(result).to.equal(32);
     });
 
     it("requesting client key package should work", async () => {
-        const threwError = await browser.execute(async () => {
+        const threwError = await runOnPlatform(async () => {
             const cc = await helpers.ccInit();
             let threwError = false;
             try {
@@ -41,6 +41,6 @@ describe("client identity", () => {
             }
             return threwError;
         });
-        expect(threwError).toBe(false);
+        expect(threwError).to.equal(false);
     });
 });
