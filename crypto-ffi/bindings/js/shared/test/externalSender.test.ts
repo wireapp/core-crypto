@@ -1,7 +1,7 @@
-import { expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
+import { runOnPlatform, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 import { generateKeyPairSync } from "node:crypto";
+import { expect } from "chai";
 
 beforeEach(async () => {
     await setup();
@@ -20,7 +20,7 @@ function generateEd25519JwkString(): string {
 describe("external sender", () => {
     it("parseJwk produces a sender usable in createConversation", async () => {
         const jwkString = generateEd25519JwkString();
-        const [retrievedBytes, serializedBytes] = await browser.execute(
+        const [retrievedBytes, serializedBytes] = await runOnPlatform(
             async (jwkString) => {
                 const jwk = new TextEncoder().encode(jwkString);
                 const externalSender = ccModule.ExternalSender.parseJwk(jwk);
@@ -45,12 +45,12 @@ describe("external sender", () => {
             jwkString
         );
 
-        expect(retrievedBytes).toEqual(serializedBytes);
+        expect(retrievedBytes).to.deep.equal(serializedBytes);
     });
 
     it("parsePublicKey accepts the bytes produced by serialize", async () => {
         const jwkString = generateEd25519JwkString();
-        const equal = await browser.execute(async (jwkString) => {
+        const equal = await runOnPlatform(async (jwkString) => {
             const jwk = new TextEncoder().encode(jwkString);
             const fromJwk = ccModule.ExternalSender.parseJwk(jwk);
             const fromBytes = ccModule.ExternalSender.parsePublicKey(
@@ -60,11 +60,11 @@ describe("external sender", () => {
             return fromJwk.equals(fromBytes);
         }, jwkString);
 
-        expect(equal).toBe(true);
+        expect(equal).to.equal(true);
     });
 
     it("parseJwk rejects malformed bytes", async () => {
-        const threw = await browser.execute(async () => {
+        const threw = await runOnPlatform(async () => {
             try {
                 ccModule.ExternalSender.parseJwk(new Uint8Array([0, 1, 2, 3]));
                 return false;
@@ -73,6 +73,6 @@ describe("external sender", () => {
             }
         });
 
-        expect(threw).toBe(true);
+        expect(threw).to.equal(true);
     });
 });
