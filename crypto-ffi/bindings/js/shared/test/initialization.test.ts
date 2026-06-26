@@ -1,4 +1,4 @@
-import { setup, teardown } from "./utils";
+import { setup, teardown, runOnPlatform } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {
@@ -11,7 +11,7 @@ afterEach(async () => {
 
 describe("initialization", () => {
     it("should succeed", async () => {
-        await browser.execute(async () => {
+        await runOnPlatform(async () => {
             await helpers.ccInit();
         });
     });
