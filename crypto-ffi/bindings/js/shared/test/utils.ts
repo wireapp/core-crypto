@@ -1,22 +1,15 @@
-import { browser } from "@wdio/globals";
-
-import {
-    type PkiEnvironmentHooks,
-    HttpMethod,
-    HttpHeader,
-} from "@wireapp/core-crypto/browser";
-import { sharedSetup, type LogEntry } from "../shared/utils";
-
-export { teardown } from "../shared/utils";
-
-declare global {
-    var pkiEnvironmentHooks: PkiEnvironmentHooks;
-    var recordedLogs: LogEntry[];
-}
+import { HttpMethod, HttpHeader } from "@wireapp/core-crypto/browser";
+import { sharedSetup, runOnPlatform } from "../shared/utils";
+export { runOnPlatform } from "../shared/utils";
+export { sharedTeardown as teardown } from "../shared/utils";
 
 export async function setup() {
     await sharedSetup();
-    await browser.execute(async () => {
+    await setPkiEnvironmentHooks();
+}
+
+async function setPkiEnvironmentHooks() {
+    await runOnPlatform(async () => {
         pkiEnvironmentHooks = {
             async httpRequest(
                 _method: HttpMethod,
