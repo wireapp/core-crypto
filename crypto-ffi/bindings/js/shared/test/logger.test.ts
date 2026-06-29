@@ -1,6 +1,6 @@
-import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
+import { runOnPlatform, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
+import { expect } from "chai";
 
 beforeEach(async () => {
     await setup();
@@ -12,7 +12,7 @@ afterEach(async () => {
 
 describe("logger", () => {
     it("forwards logs when registered", async () => {
-        const result = await browser.execute(async () => {
+        const result = await runOnPlatform(async () => {
             const cc = await helpers.ccInit();
             const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } = ccModule;
 
@@ -27,11 +27,11 @@ describe("logger", () => {
             return logs;
         });
 
-        expect(result.length).toBeGreaterThan(0);
+        expect(result.length).to.be.greaterThan(0);
     });
 
     it("can be replaced", async () => {
-        const result = await browser.execute(async () => {
+        const result = await runOnPlatform(async () => {
             const cc = await helpers.ccInit();
             const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } = ccModule;
 
@@ -51,11 +51,11 @@ describe("logger", () => {
             return logs;
         });
 
-        expect(result.length).toBeGreaterThan(0);
+        expect(result.length).to.be.greaterThan(0);
     });
 
     it("doesn't forward logs below log level when registered", async () => {
-        const result = await browser.execute(async () => {
+        const result = await runOnPlatform(async () => {
             const cc = await helpers.ccInit();
             const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } = ccModule;
 
@@ -70,11 +70,11 @@ describe("logger", () => {
             return logs;
         });
 
-        expect(result.length).toBe(0);
+        expect(result.length).to.equal(0);
     });
 
     it("forwards logs with context key/value pairs", async () => {
-        const result = await browser.execute(async () => {
+        const result = await runOnPlatform(async () => {
             const alice = await helpers.ccInit();
             const bob = await helpers.ccInit();
             const conversationId = await helpers.createConversation(alice);
@@ -103,15 +103,15 @@ describe("logger", () => {
             (element) => element.message === "Application message"
         )!.context;
 
-        expect(JSON.parse(proteusErrorLog)).toMatchObject({
-            group_id: expect.anything(),
-            sender_client_id: expect.anything(),
-            epoch: expect.anything(),
-        });
+        expect(JSON.parse(proteusErrorLog)).to.have.keys(
+            "group_id",
+            "sender_client_id",
+            "epoch"
+        );
     });
 
     it("forward logs with member changes", async () => {
-        const logs = await browser.execute(async () => {
+        const logs = await runOnPlatform(async () => {
             const alice = await helpers.ccInit();
             const bob = await helpers.ccInit();
             const carolId = helpers.newClientId();
@@ -133,17 +133,26 @@ describe("logger", () => {
             (element) => element.message === "Epoch advanced"
         )!.context;
 
-        expect(JSON.parse(epochChangedContext1)).toMatchObject({
-            group_id: expect.anything(),
-            epoch: expect.anything(),
-            removed: "[]",
-            added: expect.stringContaining("Member"),
-        });
-        expect(JSON.parse(epochChangedContext2)).toMatchObject({
-            group_id: expect.anything(),
-            epoch: expect.anything(),
-            removed: expect.stringContaining("Member"),
-            added: "[]",
-        });
+        const parsed1 = JSON.parse(epochChangedContext1);
+        expect(parsed1).to.have.keys(
+            "removed",
+            "group_id",
+            "epoch",
+            "added",
+            "proposals"
+        );
+        expect(parsed1.added).to.include("Member");
+        expect(parsed1.removed).to.equal("[]");
+
+        const parsed2 = JSON.parse(epochChangedContext2);
+        expect(parsed2).to.have.keys(
+            "removed",
+            "group_id",
+            "epoch",
+            "added",
+            "proposals"
+        );
+        expect(parsed2.added).to.equal("[]");
+        expect(parsed2.removed).to.include("Member");
     });
 });
