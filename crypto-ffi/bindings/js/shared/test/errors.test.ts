@@ -1,10 +1,7 @@
-import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
+import { runOnPlatform, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import {
-    ConversationId,
-    type CommitBundle,
-} from "@wireapp/core-crypto/browser";
+import { ConversationId, type CommitBundle } from "#core-crypto";
+import { expect } from "chai";
 
 beforeEach(async () => {
     await setup();
@@ -22,7 +19,7 @@ afterEach(async () => {
 
 describe("core crypto errors", () => {
     it("should build correctly when constructed by cc", async () => {
-        const result = await browser.execute(async () => {
+        const result = await runOnPlatform(async () => {
             const cc = await helpers.ccInit();
 
             const conversationId = await helpers.createConversation(cc);
@@ -36,9 +33,6 @@ describe("core crypto errors", () => {
                 await cc.transaction(async (cx) => {
                     await cx.createConversation(conversationId, credentialRef!);
                 });
-                return {
-                    errorWasThrown: false,
-                };
             } catch (err) {
                 if (
                     CoreCryptoError.Mls.instanceOf(err) &&
@@ -50,7 +44,6 @@ describe("core crypto errors", () => {
                         err.inner.mlsError.inner.conversationId
                     );
                     return {
-                        errorWasThrown: true,
                         isCorrectInstance: true,
                         errorConvIdMatches:
                             JSON.stringify(conversationIdFromError) ===
@@ -58,22 +51,16 @@ describe("core crypto errors", () => {
                                 new Uint8Array(conversationId.copyBytes())
                             ),
                     };
-                } else {
-                    return {
-                        errorWasThrown: true,
-                        isCorrectInstance: false,
-                        errorConvIdMatches: false,
-                    };
                 }
             }
+            throw new Error("Expected ConversationAlreadyExists error");
         });
-        expect(result.errorWasThrown).toBe(true);
-        expect(result.isCorrectInstance).toBe(true);
-        expect(result.errorConvIdMatches).toBe(true);
+        expect(result.isCorrectInstance).to.equal(true);
+        expect(result.errorConvIdMatches).to.equal(true);
     });
 
     it("should be correct when message rejected", async () => {
-        const result = await browser.execute(async () => {
+        const result = await runOnPlatform(async () => {
             const transport_override = {
                 async sendCommitBundle(_: CommitBundle) {
                     throw ccModule.MlsTransportError.MessageRejected.new({
@@ -96,9 +83,6 @@ describe("core crypto errors", () => {
                 await cc.transaction(async (cx) => {
                     await cx.updateKeyingMaterial(conversationId);
                 });
-                return {
-                    errorWasThrown: false,
-                };
             } catch (err) {
                 return CoreCryptoError.Mls.instanceOf(err) &&
                     MlsError.MessageRejected.instanceOf(err.inner.mlsError)
@@ -113,16 +97,17 @@ describe("core crypto errors", () => {
                           errorTypeAndReasonMatch: false,
                       };
             }
+            throw new Error("Expected MlsError.MessageRejected");
         });
 
-        expect(result.errorWasThrown).toBe(true);
-        expect(result.errorTypeAndReasonMatch).toBe(true);
+        expect(result.errorWasThrown).to.equal(true);
+        expect(result.errorTypeAndReasonMatch).to.equal(true);
     });
 });
 
 it("should build correctly when constructed by ubrn", async () => {
     const convId = crypto.randomUUID();
-    const result = await browser.execute(async (convId) => {
+    const result = await runOnPlatform(async (convId) => {
         const cc = await helpers.ccInit();
 
         try {
@@ -136,26 +121,20 @@ it("should build correctly when constructed by ubrn", async () => {
                     credentialRef!
                 );
             });
-            return {
-                errorWasThrown: false,
-            };
         } catch (err) {
             return {
-                errorWasThrown: true,
-                isCorrectInstance: Error.isError(err),
                 message: Error.isError(err) && err.message,
             };
         }
+        throw Error("Expected Ubrn lowering error");
     }, convId);
 
-    expect(result.errorWasThrown).toBe(true);
-    expect(result.isCorrectInstance).toBe(true);
-    expect(result.message).toBe("Cannot lower this object to a pointer");
+    expect(result.message).to.equal("Cannot lower this object to a pointer");
 });
 
 describe("Error type mapping", () => {
     it("should work for conversation already exists", async () => {
-        const isCorrectErrorInstance = await browser.execute(async () => {
+        const isCorrectErrorInstance = await runOnPlatform(async () => {
             const cc = await helpers.ccInit();
             const conversationId = await helpers.createConversation(cc);
 
@@ -178,9 +157,9 @@ describe("Error type mapping", () => {
                     e.inner.mlsError.inner.conversationId !== undefined
                 );
             }
-            return false;
+            throw new Error("Expected MlsError.ConversationAlreadyExists");
         });
 
-        expect(isCorrectErrorInstance).toBe(true);
+        expect(isCorrectErrorInstance).to.equal(true);
     });
 });

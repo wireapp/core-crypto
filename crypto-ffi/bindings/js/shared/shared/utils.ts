@@ -516,21 +516,19 @@ async function setHelpers() {
 
 async function setDeliveryService() {
     await runOnPlatform(() => {
-        if (globalThis.deliveryService === undefined) {
-            globalThis.deliveryService = {
-                async sendCommitBundle(commitBundle: CommitBundle) {
-                    globalThis._latestCommitBundle = commitBundle;
-                },
-                async prepareForTransport(
-                    secret: HistorySecret
-                ): Promise<MlsTransportData> {
-                    return Promise.resolve(secret.clientId.copyBytes());
-                },
-                async getLatestCommitBundle() {
-                    return globalThis._latestCommitBundle;
-                },
-            };
-        }
+        globalThis.deliveryService = {
+            async sendCommitBundle(commitBundle: CommitBundle) {
+                globalThis._latestCommitBundle = commitBundle;
+            },
+            async prepareForTransport(
+                secret: HistorySecret
+            ): Promise<MlsTransportData> {
+                return Promise.resolve(secret.clientId.copyBytes());
+            },
+            async getLatestCommitBundle() {
+                return globalThis._latestCommitBundle;
+            },
+        };
     });
 }
 
