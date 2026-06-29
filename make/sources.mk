@@ -80,10 +80,15 @@ TS_BROWSER_SRCS := $(TS_SHARED_SRCS) $(shell fd --type f --extension ts --exclud
 TS_SRCS := $(TS_SHARED_SRCS) $(TS_NATIVE_SRCS) $(TS_BROWSER_SRCS)
 
 TS_NATIVE_TEST_FILES := $(shell fd --type f --extension ts . $(TS_NATIVE_DIR)/test | LC_ALL=C sort)
+TS_NATIVE_SHARED_FILES := $(shell fd --type f --extension ts . $(TS_NATIVE_DIR)/shared | LC_ALL=C sort)
 TS_BROWSER_TEST_FILES := $(shell fd --type f --extension ts . $(TS_BROWSER_DIR)/test | LC_ALL=C sort)
-TS_TEST_FILES := $(sort $(TS_NATIVE_TEST_FILES) $(TS_BROWSER_TEST_FILES))
+TS_BROWSER_SHARED_FILES := $(shell fd --type f --extension ts . $(TS_BROWSER_DIR)/shared | LC_ALL=C sort)
+TS_SHARED_TEST_FILES := $(shell fd --type f --extension ts . $(TS_SHARED_DIR)/test | LC_ALL=C sort)
+TS_SHARED_SHARED_FILES := $(shell fd --type f --extension ts . $(TS_SHARED_DIR)/shared | LC_ALL=C sort)
 TS_NATIVE_BENCH_FILES := $(shell fd --type f --extension ts . $(TS_NATIVE_DIR)/benches | LC_ALL=C sort)
 TS_BROWSER_BENCH_FILES := $(shell fd --type f --extension ts . $(TS_BROWSER_DIR)/benches | LC_ALL=C sort)
+TS_SHARED_BENCH_FILES := $(shell fd --type f --extension ts . $(TS_SHARED_DIR)/benches | LC_ALL=C sort)
 
-TS_BENCH_FILES := $(sort $(TS_NATIVE_BENCH_FILES) $(TS_BROWSER_BENCH_FILES))
+TS_TEST_FILES := $(sort $(TS_NATIVE_TEST_FILES) $(TS_NATIVE_SHARED_FILES) $(TS_BROWSER_TEST_FILES) $(TS_BROWSER_SHARED_FILES) $(TS_SHARED_BENCH_FILES) $(TS_SHARED_SHARED_FILES))
+TS_BENCH_FILES := $(sort $(TS_NATIVE_BENCH_FILES) $(TS_NATIVE_SHARED_FILES) $(TS_BROWSER_BENCH_FILES) $(TS_BROWSER_SHARED_FILES) $(TS_SHARED_BENCH_FILES) $(TS_SHARED_SHARED_FILES))
 JSON_FILES := $(shell fd --type f --extension json . $(JS_DIR) | LC_ALL=C sort)
