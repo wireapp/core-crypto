@@ -1,8 +1,9 @@
-import { describe, expect, test } from "bun:test";
+import { describe } from "mocha";
+import { expect } from "chai";
 import { buildMetadata } from "@wireapp/core-crypto/native";
 
 describe("native package output", () => {
-    test("package export loads the platform addon", async () => {
-        expect(buildMetadata()).toHaveProperty("gitDescribe");
+    it("package export loads the platform addon", async () => {
+        expect(buildMetadata()).to.have.property("gitDescribe");
     });
 });
