@@ -1,6 +1,6 @@
-import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
+import { runOnPlatform, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
+import { expect } from "chai";
 
 beforeEach(async () => {
     await setup();
@@ -13,7 +13,7 @@ afterEach(async () => {
 describe("set_data()", () => {
     it("should persist data to DB", async () => {
         const text = "my message processing checkpoint";
-        const result = await browser.execute(async (text) => {
+        const result = await runOnPlatform(async (text) => {
             const cc = await helpers.ccInit();
             const encoder = new TextEncoder();
             const data = encoder.encode(text);
@@ -32,7 +32,7 @@ describe("set_data()", () => {
             };
         }, text);
 
-        expect(result.beforeSet).toBeUndefined();
-        expect(result.afterSet).toBe(text);
+        expect(result.beforeSet).to.equal(undefined);
+        expect(result.afterSet).to.equal(text);
     });
 });
