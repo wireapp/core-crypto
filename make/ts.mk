@@ -206,9 +206,9 @@ $(STAMPS)/ts-native-test: $(ts-native-test-deps)
 	@set -euo pipefail; \
 	cd $(JS_DIR) && \
 	if [ -n "$(TEST)" ]; then \
-		bun --conditions=cc-native test --test-name-pattern "$(TEST)" ./packages/native/test; \
+		bun --conditions=cc-native node_modules/mocha/bin/mocha.js ./shared/test/**.test.ts ./packages/native/test/**.test.ts --grep "$(TEST)"; \
 	else \
-		bun --conditions=cc-native test ./packages/native/test; \
+		bun --conditions cc-native node_modules/mocha/bin/mocha.js ./shared/test/**.test.ts ./packages/native/test/**.test.ts; \
 	fi
 	$(TOUCH_STAMP)
 
