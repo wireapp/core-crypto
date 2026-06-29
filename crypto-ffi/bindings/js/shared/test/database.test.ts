@@ -1,6 +1,6 @@
-import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
+import { runOnPlatform, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
+import { expect } from "chai";
 
 beforeEach(async () => {
     await setup();
@@ -12,63 +12,44 @@ afterEach(async () => {
 
 describe("database", () => {
     it("open previously created db works", async () => {
-        await expect(
-            browser.execute(async () => {
-                const databaseName = crypto.randomUUID();
-                const key = new Uint8Array(32);
-                crypto.getRandomValues(key);
+        const result = await runOnPlatform(async () => {
+            const databaseName = crypto.randomUUID();
+            const key = helpers.newDatabaseKey();
+            await helpers.newDatabase(databaseName, key);
+            const db = await helpers.newDatabase(databaseName, key);
+            return db !== undefined;
+        });
 
-                await ccModule.Database.open(
-                    databaseName,
-                    new ccModule.DatabaseKey(key)
-                );
-
-                const db = await ccModule.Database.open(
-                    databaseName,
-                    new ccModule.DatabaseKey(key)
-                );
-
-                return { dbIsDefined: db !== undefined };
-            })
-        ).resolves.toMatchObject({ dbIsDefined: true });
+        expect(result).to.equal(true);
     });
 
     it("can get the database location", async () => {
-        await expect(
-            browser.execute(async () => {
-                const databaseName = crypto.randomUUID();
-                const key = new Uint8Array(32);
-                crypto.getRandomValues(key);
+        const location = crypto.randomUUID();
+        const result = await runOnPlatform(async (location) => {
+            const db = await helpers.newDatabase(location);
 
-                const db = await ccModule.Database.open(
-                    databaseName,
-                    new ccModule.DatabaseKey(key)
-                );
+            return await db.getLocation();
+        }, location);
 
-                return {
-                    locationMatches: databaseName === (await db.getLocation()),
-                };
-            })
-        ).resolves.toMatchObject({ locationMatches: true });
+        expect(result).to.equal(location);
     });
 
     it("key must have correct length", async () => {
-        await expect(
-            browser.execute(async () => {
+        const result = await runOnPlatform(async () => {
+            try {
                 new ccModule.DatabaseKey(new Uint8Array(11));
-            })
-        ).rejects.toThrow();
+            } catch (err) {
+                return ccModule.CoreCryptoError.Other.instanceOf(err);
+            }
+            throw new Error("Expected CoreCryptoError.Other");
+        });
+        expect(result).to.equal(true);
     });
 
     it("key update works", async () => {
-        const [pubkey1, pubkey2] = await browser.execute(async () => {
-            const databaseName = crypto.randomUUID();
-
-            const keyBytes = new Uint8Array(32);
-            crypto.getRandomValues(keyBytes);
-            const key = new ccModule.DatabaseKey(keyBytes);
-
-            const database = await ccModule.Database.open(databaseName, key);
+        const [pubkey1, pubkey2] = await runOnPlatform(async () => {
+            const key = helpers.newDatabaseKey();
+            const database = await helpers.newDatabase(undefined, key);
             const clientId = helpers.newClientId();
             let cc = await helpers.ccInit({
                 withBasicCredential: true,
@@ -80,9 +61,7 @@ describe("database", () => {
                 await cc.findCredentials({ clientId })
             )[0]!.publicKeyHash();
 
-            const newKeyBytes = new Uint8Array(32);
-            crypto.getRandomValues(newKeyBytes);
-            const newKey = new ccModule.DatabaseKey(newKeyBytes);
+            const newKey = helpers.newDatabaseKey();
 
             try {
                 await database.updateKey(newKey);
@@ -100,11 +79,10 @@ describe("database", () => {
             const pubkey2 = (
                 await cc.findCredentials({ clientId })
             )[0]!.publicKeyHash();
-            await database.close();
 
             return [JSON.stringify(pubkey1), JSON.stringify(pubkey2)];
         });
 
-        expect(JSON.parse(pubkey1)).toEqual(JSON.parse(pubkey2));
+        expect(JSON.parse(pubkey1)).to.deep.equal(JSON.parse(pubkey2));
     });
 });
