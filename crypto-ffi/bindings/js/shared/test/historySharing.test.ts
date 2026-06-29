@@ -1,10 +1,7 @@
-import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
+import { runOnPlatform, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import {
-    ConversationId,
-    type HistorySecret,
-} from "@wireapp/core-crypto/browser";
+import { ConversationId, type HistorySecret } from "#core-crypto";
+import { expect } from "chai";
 
 beforeEach(async () => {
     await setup();
@@ -16,7 +13,7 @@ afterEach(async () => {
 
 describe("history sharing", () => {
     it("enable and disable should work", async () => {
-        const result = await browser.execute(async () => {
+        const result = await runOnPlatform(async () => {
             // set up the observer. this just keeps a list of all observations.
             type ObservedHistoryClient = {
                 conversationId: ConversationId;
@@ -86,10 +83,10 @@ describe("history sharing", () => {
             };
         });
 
-        expect(result.length).toBe(1);
-        expect(result.enabledBeforeEnabling).toBe(false);
-        expect(result.enabledAfterEnabling).toBe(true);
-        expect(result.firstIdString).toBe(result.convIdSerialized);
-        expect(result.commitHasEncryptedMessage).toBe(true);
+        expect(result.length).to.equal(1);
+        expect(result.enabledBeforeEnabling).to.equal(false);
+        expect(result.enabledAfterEnabling).to.equal(true);
+        expect(result.firstIdString).to.equal(result.convIdSerialized);
+        expect(result.commitHasEncryptedMessage).to.equal(true);
     });
 });
