@@ -1,7 +1,7 @@
-import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
+import { runOnPlatform, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { CoreCryptoContext } from "@wireapp/core-crypto/browser";
+import { CoreCryptoContext } from "#core-crypto";
+import { expect } from "chai";
 
 beforeEach(async () => {
     await setup();
@@ -14,20 +14,24 @@ afterEach(async () => {
 describe("transaction context", () => {
     it("should propagate JS error", async () => {
         const expectedErrorMessage = "Message of expected error";
-        await expect(
-            browser.execute(async (expectedMessage) => {
-                const cc = await helpers.ccInit();
+        const result = await runOnPlatform(async (expectedMessage) => {
+            const cc = await helpers.ccInit();
+
+            try {
                 await cc.transaction(async () => {
                     throw new Error(expectedMessage);
                 });
-            }, expectedErrorMessage)
-            // wdio wraps the error and prepends the original message with
-            // the error type as prefix
-        ).rejects.toThrow(new Error(`Error: ${expectedErrorMessage}`));
+                throw new Error("Expected transaction to throw");
+            } catch (err) {
+                return Error.isError(err) && err.message;
+            }
+        }, expectedErrorMessage);
+
+        expect(result).to.equal(expectedErrorMessage);
     });
 
     it("should throw error when using invalid context", async () => {
-        const result = await browser.execute(async () => {
+        const result = await runOnPlatform(async () => {
             const CoreCryptoError = ccModule.CoreCryptoError;
             const MlsError = ccModule.MlsError;
             const cc = await helpers.ccInit();
@@ -42,7 +46,6 @@ describe("transaction context", () => {
             } catch (err) {
                 const e = err as { context?: { context?: { msg?: string } } };
                 return {
-                    errorWasThrown: true,
                     isCorrectInstance:
                         CoreCryptoError.Mls.instanceOf(e) &&
                         MlsError.Other.instanceOf(e.inner.mlsError),
@@ -52,21 +55,16 @@ describe("transaction context", () => {
                         e.inner.mlsError.inner.msg,
                 };
             }
-            return {
-                errorWasThrown: false,
-                isCorrectInstance: false,
-                message: false,
-            };
+            throw new Error("Expected getKeyPackages to throw");
         });
-        expect(result.errorWasThrown).toBe(true);
-        expect(result.isCorrectInstance).toBe(true);
-        expect(result.message).toBe(
+        expect(result.isCorrectInstance).to.equal(true);
+        expect(result.message).to.equal(
             "This transaction context has already been finished and can no longer be used."
         );
     });
 
     it("should roll back transaction after error", async () => {
-        const error = await browser.execute(async () => {
+        const error = await runOnPlatform(async () => {
             const cc = await helpers.ccInit();
             const basicCredentialType = ccModule.CredentialType.Basic;
             const conversationId = new ccModule.ConversationId(
@@ -124,6 +122,6 @@ describe("transaction context", () => {
             }
             throw new Error("Expected 'Conversation already exists' error");
         });
-        expect(error.message).toBe("MlsError.ConversationAlreadyExists");
+        expect(error.message).to.equal("MlsError.ConversationAlreadyExists");
     });
 });
