@@ -1,4 +1,5 @@
 import {
+    DatabaseKey,
     type CipherSuite,
     type ClientId,
     type CommitBundle,
@@ -80,7 +81,8 @@ export type CcInitOptions =
 export interface Helpers {
     newClientId(): ClientId;
     newConversationId(): ConversationId;
-    newDatabase(): Promise<Database>;
+    newDatabaseKey(): DatabaseKey;
+    newDatabase(location?: string, key?: DatabaseKey): Promise<Database>;
     generateKeyPackage(
         cc: CoreCrypto,
         cipherSuite?: CipherSuite
@@ -124,7 +126,7 @@ export interface Helpers {
 }
 
 export interface PlatformHelpers {
-    newDatabase(): Promise<Database>;
+    newDatabase(location?: string, key?: DatabaseKey): Promise<Database>;
 }
 
 async function setHelpers() {
@@ -157,8 +159,17 @@ async function setHelpers() {
                 );
             }
 
-            async newDatabase(): Promise<Database> {
-                return platformHelpers.newDatabase();
+            newDatabaseKey(): DatabaseKey {
+                return new ccModule.DatabaseKey(
+                    crypto.getRandomValues(new Uint8Array(32))
+                );
+            }
+
+            async newDatabase(
+                location?: string,
+                key?: DatabaseKey
+            ): Promise<Database> {
+                return platformHelpers.newDatabase(location, key);
             }
 
             async generateKeyPackage(

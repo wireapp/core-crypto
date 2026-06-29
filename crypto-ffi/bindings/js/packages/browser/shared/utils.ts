@@ -2,7 +2,7 @@ import { browser } from "@wdio/globals";
 import type { local } from "webdriver";
 import { logLevel } from "../../../shared/shared/utils";
 import { type PlatformHelpers } from "../../../shared/shared/utils";
-import type { Database } from "@wireapp/core-crypto/browser";
+import { type Database, DatabaseKey } from "@wireapp/core-crypto/browser";
 
 export async function sharedSetup() {
     if ((await browser.getUrl()) === "about:blank") {
