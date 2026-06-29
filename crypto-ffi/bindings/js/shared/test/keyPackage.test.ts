@@ -1,6 +1,6 @@
-import { browser, expect } from "@wdio/globals";
-import { setup, teardown } from "./utils";
+import { runOnPlatform, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
+import { expect } from "chai";
 
 beforeEach(async () => {
     await setup();
@@ -12,7 +12,7 @@ afterEach(async () => {
 
 describe("key package", () => {
     it("can be created", async () => {
-        const { threwError, wasDefined } = await browser.execute(async () => {
+        const { threwError, wasDefined } = await runOnPlatform(async () => {
             const cc = await helpers.ccInit();
 
             let threwError = false;
@@ -28,13 +28,13 @@ describe("key package", () => {
             return { threwError, wasDefined };
         });
 
-        expect(threwError).toBe(false);
-        expect(wasDefined).toBe(true);
+        expect(threwError).to.equal(false);
+        expect(wasDefined).to.equal(true);
     });
 
     it("can be serialized", async () => {
-        const { wasDefined, wasEmpty, roundtripMatches } =
-            await browser.execute(async () => {
+        const { wasDefined, wasEmpty, roundtripMatches } = await runOnPlatform(
+            async () => {
                 const cc = await helpers.ccInit();
                 const keyPackage = await helpers.generateKeyPackage(cc);
 
@@ -57,16 +57,17 @@ describe("key package", () => {
                 }
 
                 return { wasDefined, wasEmpty, roundtripMatches };
-            });
+            }
+        );
 
-        expect(wasDefined).toBe(true);
-        expect(wasEmpty).toBe(false);
-        expect(roundtripMatches).toBe(true);
+        expect(wasDefined).to.equal(true);
+        expect(wasEmpty).to.equal(false);
+        expect(roundtripMatches).to.equal(true);
     });
 
     it("can be retrieved in bulk", async () => {
         const { wasDefined, wasArray, arraySize, firstItemDefined } =
-            await browser.execute(async () => {
+            await runOnPlatform(async () => {
                 const cc = await helpers.ccInit();
                 await helpers.generateKeyPackage(cc);
 
@@ -84,14 +85,14 @@ describe("key package", () => {
                 return { wasDefined, wasArray, arraySize, firstItemDefined };
             });
 
-        expect(wasDefined).toBe(true);
-        expect(wasArray).toBe(true);
-        expect(arraySize).toBe(1);
-        expect(firstItemDefined).toBe(true);
+        expect(wasDefined).to.equal(true);
+        expect(wasArray).to.equal(true);
+        expect(arraySize).to.equal(1);
+        expect(firstItemDefined).to.equal(true);
     });
 
     it("can be removed", async () => {
-        const { wasDefined, wasArray, arraySize } = await browser.execute(
+        const { wasDefined, wasArray, arraySize } = await runOnPlatform(
             async () => {
                 const clientId = helpers.newClientId();
                 const cc = await helpers.ccInit({
@@ -126,16 +127,16 @@ describe("key package", () => {
             }
         );
 
-        expect(wasDefined).toBe(true);
-        expect(wasArray).toBe(true);
-        expect(arraySize).toBe(1);
+        expect(wasDefined).to.equal(true);
+        expect(wasArray).to.equal(true);
+        expect(arraySize).to.equal(1);
     });
 
     it("can be removed by credentialref", async () => {
         const KEYPACKAGES_PER_CREDENTIAL = 2;
 
         const { beforeRemovalArraySize, afterRemovalArraySize } =
-            await browser.execute(async (KEYPACKAGES_PER_CREDENTIAL) => {
+            await runOnPlatform(async (KEYPACKAGES_PER_CREDENTIAL) => {
                 const clientId = helpers.newClientId();
                 const cc = await helpers.ccInit({
                     withBasicCredential: false,
@@ -180,7 +181,7 @@ describe("key package", () => {
             }, KEYPACKAGES_PER_CREDENTIAL);
 
         // 2 credentials with the same n keypackages each
-        expect(beforeRemovalArraySize).toBe(KEYPACKAGES_PER_CREDENTIAL * 2);
-        expect(afterRemovalArraySize).toBe(KEYPACKAGES_PER_CREDENTIAL);
+        expect(beforeRemovalArraySize).to.equal(KEYPACKAGES_PER_CREDENTIAL * 2);
+        expect(afterRemovalArraySize).to.equal(KEYPACKAGES_PER_CREDENTIAL);
     });
 });
