@@ -25,7 +25,7 @@ jobs:
   uniffi-bindgen-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
       - uses: ./.github/actions/make/uniffi-bindgen
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
@@ -34,7 +34,7 @@ jobs:
   ffi-library-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
       - uses: ./.github/actions/make/ffi-library
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
@@ -52,7 +52,7 @@ jobs:
       - uniffi-bindgen-linux
       - ffi-library-linux
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
       - uses: ./.github/actions/make/android/bindings
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
@@ -77,7 +77,7 @@ jobs:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
       - uses: ./.github/actions/make/jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
@@ -89,7 +89,7 @@ jobs:
   build-jvm-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
       - uses: ./.github/actions/make/jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
@@ -101,7 +101,7 @@ jobs:
       - ffi-library-linux
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
       - uses: ./.github/actions/make/bindings-kotlin-jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
@@ -159,7 +159,7 @@ jobs:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
       - uses: ./.github/actions/make/bindings-swift
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
@@ -189,7 +189,7 @@ jobs:
   bindings-ts-browser:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
@@ -202,7 +202,7 @@ jobs:
   bindings-ts-native-linux:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
@@ -215,7 +215,7 @@ jobs:
   bindings-ts-native-darwin:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
@@ -283,7 +283,7 @@ jobs:
 
     steps:
       - name: checkout repository
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.0
 
       - uses: ./.github/actions/setup-and-cache-rust
       - run: cargo doc --all --no-deps --locked
@@ -306,7 +306,7 @@ jobs:
     steps:
       # Needed for parity between github and self-hosted runner
       - run: brew install make
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
       - uses: ./.github/actions/make/interop/build
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}

@@ -18,7 +18,7 @@ jobs:
         with:
           java-version: 25
           distribution: adopt
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
       - name: install ktlint
         run: |
           curl -sSLO https://github.com/pinterest/ktlint/releases/download/1.7.0/ktlint

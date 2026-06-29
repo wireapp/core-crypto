@@ -21,7 +21,7 @@ jobs:
           - task: android-armv8
           - task: android-x86
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
 
       - name: setup android sdk
         uses: android-actions/setup-android@v4

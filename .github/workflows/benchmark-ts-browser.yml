@@ -73,7 +73,7 @@ jobs:
       BENCHMARK_USER_COUNTS: ${{ inputs.benchmark_user_counts }}
       BENCHMARK_CIPHER_SUITES: ${{ inputs.benchmark_cipher_suites }}
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
 
       - uses: oven-sh/setup-bun@v2
         with:

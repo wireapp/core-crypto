@@ -30,7 +30,7 @@ jobs:
     outputs:
       tag_name: ${{ steps.set-tag.outputs.tag_name }}
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
 
       - name: Set tag name
         id: set-tag
