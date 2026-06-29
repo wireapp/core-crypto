@@ -21,6 +21,11 @@
             "cc-browser": "@wireapp/core-crypto/browser",
             "cc-native": "@wireapp/core-crypto/native",
             "default": "@wireapp/core-crypto/browser"
+        },
+        "#shared-utils": {
+            "cc-browser": "./packages/browser/shared/utils.ts",
+            "cc-native": "./packages/native/test/utils.ts",
+            "default": "./packages/browser/shared/utils.ts"
         }
     },
     "devDependencies": {
