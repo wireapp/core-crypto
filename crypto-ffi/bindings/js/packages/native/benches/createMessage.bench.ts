@@ -4,8 +4,9 @@ import {
     logResults,
     messageBenchmarkParameters,
     tinybenchSetup,
+    setup,
+    teardown,
 } from "../../../shared/benches/utils";
-import { ccInit, createConversation, setup, teardown } from "../test/utils";
 
 async function run() {
     await setup();
@@ -21,8 +22,11 @@ async function run() {
 
     for (const { count, size, cipherSuite } of parameters) {
         const message = new Uint8Array(size);
-        const cc = await ccInit({ withBasicCredential: true, cipherSuite });
-        const conversationId = await createConversation(cc);
+        const cc = await helpers.ccInit({
+            withBasicCredential: true,
+            cipherSuite,
+        });
+        const conversationId = await helpers.createConversation(cc);
 
         bench.add(
             `cipherSuite=${CipherSuite[cipherSuite]} size=${size}B count=${count}`,

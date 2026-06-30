@@ -2,16 +2,11 @@ import {
     logResults,
     tinybenchSetup,
     userBenchmarkParameters,
+    setup,
+    teardown,
 } from "../../../shared/benches/utils";
 import { CipherSuite, type KeyPackage } from "@wireapp/core-crypto/native";
 import { Bench } from "tinybench";
-import {
-    setup,
-    ccInit,
-    teardown,
-    createConversation,
-    generateKeyPackage,
-} from "../test/utils";
 
 async function run() {
     await setup();
@@ -29,19 +24,23 @@ async function run() {
         bench.add(
             `cipherSuite=${CipherSuite[cipherSuite]} userCount=${userCount}`,
             async () => {
-                const aliceCc = await ccInit({
+                const aliceCc = await helpers.ccInit({
                     withBasicCredential: true,
                     cipherSuite,
                 });
-                const conversationId = await createConversation(aliceCc);
+                const conversationId =
+                    await helpers.createConversation(aliceCc);
                 const keyPackages: KeyPackage[] = [];
 
                 for (let i = 0; i < userCount; i++) {
-                    const bobCc = await ccInit({
+                    const bobCc = await helpers.ccInit({
                         withBasicCredential: true,
                         cipherSuite,
                     });
-                    const kp = await generateKeyPackage(bobCc, cipherSuite);
+                    const kp = await helpers.generateKeyPackage(
+                        bobCc,
+                        cipherSuite
+                    );
                     keyPackages.push(kp);
                 }
 

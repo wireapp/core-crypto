@@ -4,14 +4,9 @@ import {
     logResults,
     messageBenchmarkParameters,
     tinybenchSetup,
-} from "../../../shared/benches/utils";
-import {
-    ccInit,
     setup,
     teardown,
-    createConversation,
-    invite,
-} from "../test/utils";
+} from "../../../shared/benches/utils";
 
 async function run() {
     await setup();
@@ -26,15 +21,18 @@ async function run() {
     });
 
     for (const { count, size, cipherSuite } of parameters) {
-        const aliceCc = await ccInit({
+        const aliceCc = await helpers.ccInit({
             withBasicCredential: true,
             cipherSuite,
         });
 
-        const bobCc = await ccInit({ withBasicCredential: true, cipherSuite });
-        const conversationId = await createConversation(aliceCc);
+        const bobCc = await helpers.ccInit({
+            withBasicCredential: true,
+            cipherSuite,
+        });
+        const conversationId = await helpers.createConversation(aliceCc);
 
-        await invite(aliceCc, bobCc, conversationId, cipherSuite);
+        await helpers.invite(aliceCc, bobCc, conversationId, cipherSuite);
 
         const message = new Uint8Array(size);
 

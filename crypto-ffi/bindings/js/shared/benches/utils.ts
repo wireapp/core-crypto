@@ -4,6 +4,11 @@ import { isNumberObject } from "node:util/types";
 import { mkdir } from "node:fs/promises";
 import { writeFile } from "node:fs/promises";
 
+export {
+    sharedSetup as setup,
+    sharedTeardown as teardown,
+} from "../shared/utils";
+
 export function tinybenchSetup(task?: Task, mode?: string) {
     console.log(`Executing ${mode} ${task?.name}`);
 }
