@@ -17,6 +17,7 @@ import {
 import {
     sharedSetup as platformSharedSetup,
     sharedTeardown as platformSharedTeardown,
+    setPlatformHelpers,
 } from "#shared-utils";
 
 export { runOnPlatform } from "#shared-utils";
@@ -25,6 +26,7 @@ type ccModuleType = typeof import("#core-crypto");
 
 declare global {
     var ccModule: ccModuleType;
+    var platformHelpers: PlatformHelpers;
     var helpers: Helpers;
     var _latestCommitBundle: CommitBundle;
     var deliveryService: DeliveryService;
@@ -120,9 +122,14 @@ export interface Helpers {
     ): Promise<string | null>;
 }
 
+export interface PlatformHelpers {
+    newDatabase(): Promise<Database>;
+}
+
 async function setHelpers() {
+    await setPlatformHelpers();
     await runOnPlatform(() => {
-        class Helpers {
+        class HelpersImpl implements Helpers {
             /**
              * Construct a new ClientId
              **/
@@ -150,12 +157,7 @@ async function setHelpers() {
             }
 
             async newDatabase(): Promise<Database> {
-                const key = new Uint8Array(32);
-                crypto.getRandomValues(key);
-                return ccModule.Database.open(
-                    crypto.randomUUID(),
-                    new ccModule.DatabaseKey(key)
-                );
+                return platformHelpers.newDatabase();
             }
 
             async generateKeyPackage(
@@ -507,7 +509,7 @@ async function setHelpers() {
                 return decoder.decode(decrypted);
             }
         }
-        globalThis.helpers = new Helpers();
+        globalThis.helpers = new HelpersImpl();
     });
 }
 

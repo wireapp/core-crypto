@@ -1,6 +1,8 @@
 import { browser } from "@wdio/globals";
 import type { local } from "webdriver";
 import { logLevel } from "../../../shared/shared/utils";
+import { type PlatformHelpers } from "../../../shared/shared/utils";
+import type { Database } from "@wireapp/core-crypto/browser";
 
 export async function sharedSetup() {
     if ((await browser.getUrl()) === "about:blank") {
@@ -37,4 +39,29 @@ function logEvents(entry: local.LogEntry) {
     if (logLevel >= 1) {
         console.log(`[${entry.level}] ${entry.text}`);
     }
+}
+
+export async function setPlatformHelpers() {
+    return await browser.execute(() => {
+        class PlatformHelpersImpl implements PlatformHelpers {
+            async newDatabase(
+                location?: string,
+                key?: DatabaseKey
+            ): Promise<Database> {
+                const finalKey = key ?? helpers.newDatabaseKey();
+                const finalLocation = location ?? crypto.randomUUID();
+                return ccModule.Database.open(finalLocation, finalKey);
+            }
+        }
+        globalThis.platformHelpers = new PlatformHelpersImpl();
+    });
+}
+
+type ExecuteScript = Parameters<typeof browser.execute>[0];
+
+export async function runOnPlatform<Args extends unknown[], T>(
+    script: (...args: Args) => T,
+    ...args: Args
+): Promise<T> {
+    return browser.execute(script as ExecuteScript, ...args) as Promise<T>;
 }
