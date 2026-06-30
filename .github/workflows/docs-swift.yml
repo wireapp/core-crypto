@@ -41,7 +41,7 @@ jobs:
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '26.6.0'
+          xcode-version: '26.3.0'
       - name: Set up Ruby environment
         uses: ruby/setup-ruby@v1
         with:
