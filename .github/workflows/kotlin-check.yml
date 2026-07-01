@@ -25,11 +25,11 @@ jobs:
           chmod a+x ktlint
           echo "$PWD" >> $GITHUB_PATH
       - name: gradle setup
-        uses: gradle/actions/setup-gradle@v6.1.1
+        uses: gradle/actions/setup-gradle@v6.2.0
         with:
           cache-provider: basic
       - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v6.1.1
+        uses: gradle/actions/wrapper-validation@v6.2.0
 
       - name: download linux library
         uses: ./.github/actions/make/jvm
