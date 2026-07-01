@@ -39,7 +39,7 @@ $(STAMPS)/docs-ts: $(BROWSER_OUT) $(TS_NATIVE_OUT)
 	  --displayBasePath ./packages \
 	  --entryPoints packages/browser/src/CoreCrypto.ts \
 	  --entryPoints packages/native/src/CoreCrypto.ts \
-	  --tsconfig tsconfig.json \
+	  --tsconfig tsconfig.typedoc.json \
 	  --out ../../../target/typescript/doc \
 	  --readme none \
 	  --treatWarningsAsErrors \
