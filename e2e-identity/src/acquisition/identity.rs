@@ -164,7 +164,7 @@ fn try_extract_san(cert: &x509_cert::TbsCertificate) -> Result<(String, Qualifie
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
+    use core_crypto_keystore::Database;
     use rstest::rstest;
     use wasm_bindgen_test::*;
 
@@ -204,8 +204,7 @@ OfqfZA1YMtN5NLz/AA==
 
     #[rstest::fixture]
     async fn pki_env() -> PkiEnvironment {
-        let key = DatabaseKey::generate();
-        let db = Database::open(ConnectionType::InMemory, &key).await.unwrap();
+        let db = Database::open_in_memory().unwrap();
         PkiEnvironment::with_dummy_hooks(db).await.unwrap()
     }
 
