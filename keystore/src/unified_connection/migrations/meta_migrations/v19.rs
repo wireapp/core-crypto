@@ -2,7 +2,7 @@ use crate::{
     CryptoKeystoreResult,
     entities::{PersistedMlsGroup, StoredCredential},
     migrations::{detect_duplicate_credentials, make_least_used_ciphersuite},
-    traits::EntityBase as _,
+    traits::UnifiedEntity as _,
 };
 
 pub(crate) const VERSION: i32 = 19;

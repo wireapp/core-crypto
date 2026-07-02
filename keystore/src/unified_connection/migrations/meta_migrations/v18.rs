@@ -2,7 +2,7 @@ use crate::{
     CryptoKeystoreResult,
     entities::{PersistedMlsGroup, StoredCredential},
     migrations::{V6Credential, make_ciphersuite_for_signature_scheme},
-    traits::EntityBase as _,
+    traits::UnifiedEntity as _,
 };
 
 pub(crate) const VERSION: i32 = 18;

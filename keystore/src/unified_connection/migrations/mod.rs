@@ -155,8 +155,8 @@ pub(crate) mod test {
                 .await
                 .unwrap();
 
-            let mut stmt = db
-                .conn
+            let conn = db.conn().await;
+            let mut stmt = conn
                 .prepare(&format!(
                     "SELECT
                         session_id,
@@ -184,17 +184,15 @@ pub(crate) mod test {
                 .expect("credential from row");
 
             // Ciphersuites need to be ambiguous w.r.t their signature scheme to be a relevant duplicate
-            db.conn
-                .execute(
-                    "UPDATE mls_credentials_new SET ciphersuite = ?1",
-                    [Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u16],
-                )
-                .expect("updating ciphersuite");
+            conn.execute(
+                "UPDATE mls_credentials_new SET ciphersuite = ?1",
+                [Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u16],
+            )
+            .expect("updating ciphersuite");
 
             // Create a duplicate from this credential
-            db.conn
-                .execute(
-                    "INSERT INTO mls_credentials_new (
+            conn.execute(
+                "INSERT INTO mls_credentials_new (
                         session_id,
                         credential,
                         created_at,
@@ -203,19 +201,18 @@ pub(crate) mod test {
                         private_key
                     )
                     VALUES (?1, ?2, datetime(?3, 'unixepoch'), ?4, ?5, ?6)",
-                    (
-                        credential.session_id.clone(),
-                        credential.credential.clone(),
-                        credential.created_at,
-                        Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 as u16,
-                        credential.public_key.clone(),
-                        credential.private_key.clone(),
-                    ),
-                )
-                .expect("inserting duplicate");
+                (
+                    credential.session_id.clone(),
+                    credential.credential.clone(),
+                    credential.created_at,
+                    Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 as u16,
+                    credential.public_key.clone(),
+                    credential.private_key.clone(),
+                ),
+            )
+            .expect("inserting duplicate");
 
-            let count = db
-                .conn
+            let count = conn
                 .query_row("SELECT COUNT(*) FROM mls_credentials_new", [], |row| {
                     row.get::<_, i32>(0)
                 })
@@ -224,10 +221,12 @@ pub(crate) mod test {
             assert_eq!(count, 2);
 
             drop(stmt);
+            drop(conn);
             drop(db);
 
             let db = Database::open(path, &new_key).await.unwrap();
-            let deduplicated_credentials = StoredCredential::load_all(&db.conn).expect("deduplicated credentials");
+            let deduplicated_credentials =
+                StoredCredential::load_all(&*db.conn().await).expect("deduplicated credentials");
 
             let deduplicated_count = deduplicated_credentials.len();
 
