@@ -51,6 +51,15 @@ impl ConversationConfiguration {
         MlsCiphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519,
         MlsCiphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
         MlsCiphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+        MlsCiphersuite::MLS_128_MLKEM768X25519_AES128GCM_SHA256_Ed25519,
+        MlsCiphersuite::MLS_128_MLKEM768X25519_AES256GCM_SHA384_Ed25519,
+        MlsCiphersuite::MLS_128_MLKEM768P256_AES128GCM_SHA256_P256,
+        MlsCiphersuite::MLS_128_MLKEM768P256_AES256GCM_SHA384_P256,
+        MlsCiphersuite::MLS_192_MLKEM1024P384_AES256GCM_SHA384_P384,
+        MlsCiphersuite::MLS_128_MLKEM768_AES256GCM_SHA384_P256,
+        MlsCiphersuite::MLS_192_MLKEM1024_AES256GCM_SHA384_P384,
+        MlsCiphersuite::MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65,
+        MlsCiphersuite::MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87,
     ];
 
     /// Not used at the moment
@@ -68,7 +77,7 @@ impl ConversationConfiguration {
             .max_past_epochs(MAX_PAST_EPOCHS)
             .padding_size(Self::PADDING_SIZE)
             .number_of_resumption_psks(Self::NUMBER_RESUMPTION_PSK)
-            .leaf_capabilities(Self::default_leaf_capabilities())
+            .leaf_capabilities(Self::leaf_capabilities_for(self.cipher_suite.into()))
             .required_capabilities(self.default_required_capabilities())
             .sender_ratchet_configuration(SenderRatchetConfiguration::new(
                 self.custom.out_of_order_tolerance,
@@ -85,6 +94,24 @@ impl ConversationConfiguration {
         Capabilities::new(
             Some(&[Self::DEFAULT_PROTOCOL_VERSION]),
             Some(Self::DEFAULT_SUPPORTED_CIPHERSUITES),
+            Some(&[]),
+            Some(&[]),
+            Some(Self::DEFAULT_SUPPORTED_CREDENTIALS),
+        )
+    }
+
+    /// A leaf must advertise the group's ciphersuite (RFC 9420 7.2) or it is rejected
+    /// with InsufficientCapabilities, so add non-default suites to the list.
+    pub(crate) fn leaf_capabilities_for(cipher_suite: MlsCiphersuite) -> Capabilities {
+        if Self::DEFAULT_SUPPORTED_CIPHERSUITES.contains(&cipher_suite) {
+            return Self::default_leaf_capabilities();
+        }
+
+        let mut ciphersuites = Self::DEFAULT_SUPPORTED_CIPHERSUITES.to_vec();
+        ciphersuites.push(cipher_suite);
+        Capabilities::new(
+            Some(&[Self::DEFAULT_PROTOCOL_VERSION]),
+            Some(&ciphersuites),
             Some(&[]),
             Some(&[]),
             Some(Self::DEFAULT_SUPPORTED_CREDENTIALS),
@@ -258,6 +285,8 @@ mod tests {
                 SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::P384,
                 SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::P521,
                 SignatureScheme::ED448 => unreachable!(),
+                // the all_cred_cipher test fixtures don't cover PQ signature schemes
+                SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87 => unreachable!(),
             };
 
             let jwk = wire_e2e_identity::generate_jwk(alg);

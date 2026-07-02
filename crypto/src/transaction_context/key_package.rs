@@ -41,7 +41,9 @@ impl TransactionContext {
         };
 
         Keypackage::builder()
-            .leaf_node_capabilities(ConversationConfiguration::default_leaf_capabilities())
+            .leaf_node_capabilities(ConversationConfiguration::leaf_capabilities_for(
+                credential.cipher_suite.into(),
+            ))
             .key_package_lifetime(lifetime)
             .build(
                 config,
