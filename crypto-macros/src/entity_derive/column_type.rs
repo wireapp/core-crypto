@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
-use syn::{Lifetime, Type, parse_quote};
+use syn::{Type, parse_quote};
 
 fn string_types() -> [Type; 3] {
     [
@@ -71,14 +71,6 @@ impl IdColumnType {
             Self::Bytes => quote!([u8]),
         }
     }
-
-    /// Emit the borrowed form of this type.
-    ///
-    /// Note that this _includes_ the `&` sigil and lifetime in appropriate positions.
-    pub(super) fn borrowed_with_sigil(&self, lifetime: &Lifetime) -> TokenStream {
-        let without_sigil = self.borrowed();
-        quote!(&#lifetime #without_sigil)
-    }
 }
 
 /// Legal types for any other column
@@ -87,27 +79,6 @@ pub(super) enum ColumnType {
     String,
     Bytes,
     OptionalBytes,
-}
-
-impl ColumnType {
-    /// Encypting this column may change the column type.
-    ///
-    /// In particular, strings get encrypted into byte vectors.
-    pub(super) fn encrypted_form(&self) -> Self {
-        match self {
-            ColumnType::String => Self::Bytes,
-            ColumnType::Bytes | ColumnType::OptionalBytes => *self,
-        }
-    }
-
-    /// emit the owned form of this type
-    pub(super) fn owned(&self) -> TokenStream {
-        match self {
-            Self::String => quote!(String),
-            Self::Bytes => quote!(Vec<u8>),
-            Self::OptionalBytes => quote!(Option<Vec<u8>>),
-        }
-    }
 }
 
 impl TryFrom<Type> for ColumnType {
