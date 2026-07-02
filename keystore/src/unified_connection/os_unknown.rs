@@ -60,6 +60,12 @@ pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<
 #[debug("RelaxedIdbUtil")]
 pub(super) struct FsAbstraction(RelaxedIdbUtil);
 
+// SAFETY: so this is a lie, it's not safe.
+// But on the other hand we only ever compile this where `target_os = "unknown"`,
+// specifically `wasm32-unknown-unknown`, where there is never more than one thread anyway.
+// So we can be confident about getting away with it.
+unsafe impl Send for FsAbstraction {}
+
 #[async_trait(?Send)]
 impl super::Filesystem for FsAbstraction {
     async fn delete(&self, path: &str) -> CryptoKeystoreResult<()> {
