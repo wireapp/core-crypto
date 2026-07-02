@@ -72,5 +72,5 @@ impl_keytype_for_integer!(i32);
 impl_keytype_for_integer!(i64);
 impl_keytype_for_integer!(i128);
 
-/// Some unique entities use a single byte as a key type
+// Some unique entities use a single byte as a key type
 impl_keytype!([u8; 1], |self| self, |bytes| bytes.try_into().ok());

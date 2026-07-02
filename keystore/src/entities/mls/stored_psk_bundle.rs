@@ -1,5 +1,7 @@
 use zeroize::Zeroize;
 
+use crate::traits::{BorrowPrimaryKey, PrimaryKey};
+
 /// Entity representing a persisted PSK Bundle
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
@@ -7,6 +9,22 @@ use zeroize::Zeroize;
 pub struct StoredPskBundle {
     pub psk_id: Vec<u8>,
     pub psk: Vec<u8>,
+}
+
+impl PrimaryKey for StoredPskBundle {
+    type PrimaryKey = Vec<u8>;
+
+    fn primary_key(&self) -> Self::PrimaryKey {
+        self.psk_id.clone()
+    }
+}
+
+impl BorrowPrimaryKey for StoredPskBundle {
+    type BorrowedPrimaryKey = [u8];
+
+    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+        &self.psk_id
+    }
 }
 
 impl crate::traits::UnifiedEntity for StoredPskBundle {

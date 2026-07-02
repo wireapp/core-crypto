@@ -1,15 +1,19 @@
 mod encryption;
+mod entity_extension_methods;
+mod fetch_from_database;
 mod filesystem;
 #[cfg(target_os = "unknown")]
 mod idb_migration;
 #[cfg(target_os = "ios")]
 mod ios_wal_compat;
+mod keystore_transaction;
 mod migrations;
 #[cfg(target_os = "unknown")]
 mod os_unknown;
-mod transaction;
 
-use async_lock::{Mutex, Semaphore};
+use std::sync::Arc;
+
+use async_lock::{Mutex, MutexGuard, Semaphore};
 use rusqlite::Connection;
 #[cfg(feature = "log-queries")]
 use rusqlite::trace::{TraceEvent, TraceEventCodes};
@@ -32,14 +36,18 @@ fn log_query(event: TraceEvent) {
 
 // Intentionally not `Clone`; outer users should wrap this entire thing in an `Arc` (or `Arc<Mutex<Option<Self>>>`
 // etc) as required for their desired semantics.
-#[derive(Debug, derive_more::Deref, derive_more::DerefMut)]
+#[derive(Debug)]
 pub struct Database {
-    #[deref]
-    #[deref_mut]
-    pub(crate) conn: Connection,
-    pub(crate) filesystem: Box<dyn Filesystem>,
+    // internal connection; mutexed in order to ensure unique access
+    // and provide `Sync`
+    conn: Mutex<Connection>,
+    // handler with which to delete the database;
+    // mutexed to provide `Sync`
+    pub(crate) filesystem: Mutex<Box<dyn Filesystem>>,
     pub(crate) transaction: Mutex<Option<KeystoreTransaction>>,
-    transaction_semaphore: Semaphore,
+    // we need this `Arc` so we can create an owned guard, so that
+    // `self.transaction` doesn't need a self-referential lifetime.
+    transaction_semaphore: Arc<Semaphore>,
 }
 
 impl Database {
@@ -96,12 +104,13 @@ impl Database {
         }
 
         migrations::run_migrations(&mut conn, migration_target)?;
+        let conn = conn.into();
 
         Ok(Self {
             conn,
-            filesystem,
+            filesystem: filesystem.into(),
             transaction: Default::default(),
-            transaction_semaphore: Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT),
+            transaction_semaphore: Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT)),
         })
     }
 
@@ -113,17 +122,17 @@ impl Database {
     ///
     /// When compiled normally, this opens a database encrypted via sqlcipher at a path in the
     /// local filesystem.
-    pub async fn open(path: &str, database_key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
+    pub async fn open(path: &str, database_key: &DatabaseKey) -> CryptoKeystoreResult<Arc<Self>> {
         let (conn, filesystem) = Self::open_internal(path, database_key).await?;
-        Self::init(conn, filesystem, MigrationTarget::Latest)
+        Self::init(conn, filesystem, MigrationTarget::Latest).map(Into::into)
     }
 
     /// Open an in-memory `Database`.
     ///
     /// In-memory databases are never encrypted.
-    pub fn open_in_memory() -> CryptoKeystoreResult<Self> {
+    pub fn open_in_memory() -> CryptoKeystoreResult<Arc<Self>> {
         let connection = Connection::open_in_memory()?;
-        Self::init(connection, Box::new(filesystem::Nop), MigrationTarget::Latest)
+        Self::init(connection, Box::new(filesystem::Nop), MigrationTarget::Latest).map(Into::into)
     }
 
     /// Open an encrypted `Database` at the provided location.
@@ -143,9 +152,24 @@ impl Database {
         Self::init(conn, filesystem, migration_target)
     }
 
-    /// Change the database key for this connection.
-    pub fn update_key(&mut self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()> {
-        encryption::rekey(&mut self.conn, new_key)
+    /// Change the encryption key for this database.
+    pub async fn update_key(&mut self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()> {
+        let mut guard = self.conn.lock().await;
+        encryption::rekey(&mut guard, new_key)
+    }
+
+    /// Wait for any running transaction to finish, then take the connection out of this database,
+    /// preventing this from being used again.
+    async fn take(self) -> CryptoKeystoreResult<(Connection, Box<dyn Filesystem>)> {
+        let _semaphore = self.transaction_semaphore.acquire().await;
+        Ok((self.conn.into_inner(), self.filesystem.into_inner()))
+    }
+
+    // Close this database connection
+    pub async fn close(self) -> CryptoKeystoreResult<()> {
+        let (conn, _fs) = self.take().await?;
+        conn.close().map_err(|(_conn, err)| err)?;
+        Ok(())
     }
 
     /// Close and remove this database.
@@ -154,13 +178,27 @@ impl Database {
     /// Future opens will always succeed with any arbitrary encryption key; they will
     /// simply open an empty database.
     pub async fn wipe(self) -> CryptoKeystoreResult<()> {
-        let location = self.conn.path().map(ToOwned::to_owned);
-        self.conn.close().map_err(|(_conn, err)| err)?;
+        let (conn, fs) = self.take().await?;
+        conn.execute_batch(
+            "
+            PRAGMA writable_schema = 1;
+            DELETE FROM sqlite_master WHERE type IN ('table', 'index', 'trigger');
+            PRAGMA writable_schema = 0;
+            VACUUM;
+        ",
+        )?;
+        let location = conn.path().map(ToOwned::to_owned);
+        conn.close().map_err(|(_conn, err)| err)?;
         if let Some(path) = location {
             // not in-memory
-            self.filesystem.delete(&path).await?;
+            fs.delete(&path).await?;
         }
         Ok(())
+    }
+
+    /// Get a reference to this database's connection.
+    pub(crate) async fn conn(&self) -> MutexGuard<'_, Connection> {
+        self.conn.lock().await
     }
 
     /// Export a copy of the database to the specified path using VACUUM INTO.
@@ -172,7 +210,7 @@ impl Database {
     /// * `destination_path` - The file path where the database copy should be created
     #[cfg(not(target_os = "unknown"))]
     pub async fn export_copy(&self, destination_path: &str) -> CryptoKeystoreResult<()> {
-        self.conn.execute("VACUUM INTO ?1", [destination_path])?;
+        self.conn().await.execute("VACUUM INTO ?1", [destination_path])?;
         Ok(())
     }
 }
@@ -212,7 +250,8 @@ mod export_test {
             let test_id = 12345;
             {
                 // Create a test table
-                db.conn
+                db.conn()
+                    .await
                     .execute(
                         "CREATE TABLE IF NOT EXISTS test_export_data (id INTEGER PRIMARY KEY, data BLOB)",
                         [],
@@ -220,7 +259,8 @@ mod export_test {
                     .unwrap();
 
                 // Insert test data
-                db.conn
+                db.conn()
+                    .await
                     .execute(
                         "INSERT INTO test_export_data (id, data) VALUES (?1, ?2)",
                         [&test_id as &dyn rusqlite::ToSql, &test_data.as_slice()],
@@ -236,8 +276,8 @@ mod export_test {
 
             // Read the data from the exported database
             {
-                let mut stmt = exported_db
-                    .conn
+                let conn = exported_db.conn().await;
+                let mut stmt = conn
                     .prepare("SELECT id, data FROM test_export_data WHERE id = ?1")
                     .unwrap();
                 let mut rows = stmt.query([test_id]).unwrap();

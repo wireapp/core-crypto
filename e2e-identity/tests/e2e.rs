@@ -29,7 +29,7 @@ use std::{
     sync::Arc,
 };
 
-use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
+use core_crypto_keystore::Database;
 use jwt_simple::prelude::*;
 use rstest::rstest;
 use rusty_jwt_tools::prelude::*;
@@ -224,10 +224,7 @@ async fn prepare_pki_env_and_config(
         wire_server_context,
     });
 
-    let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
-        .await
-        .unwrap();
-
+    let db = Database::open_in_memory().unwrap();
     let pki_env = PkiEnvironment::new(hooks, db).await.unwrap();
     pki_env.add_trust_anchor(acme_cert).await.unwrap();
     (pki_env, config)

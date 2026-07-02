@@ -7,7 +7,6 @@ mod parse;
 use darling::FromDeriveInput;
 use heck::ToSnakeCase;
 use proc_macro2::Ident;
-use syn::Visibility;
 
 use crate::entity_derive::{
     column::{Column, IdColumn},
@@ -18,7 +17,6 @@ use crate::entity_derive::{
 /// ready for usage in `quote!()`.
 pub(super) struct Entity {
     upsert: bool,
-    visibility: Visibility,
     struct_name: Ident,
     collection_name: String,
     id_column: IdColumn,
@@ -30,7 +28,6 @@ impl TryFrom<parse::Entity> for Entity {
 
     fn try_from(value: parse::Entity) -> Result<Self, Self::Error> {
         let parse::Entity {
-            vis: visibility,
             ident: struct_name,
             outer_attributes,
             data,
@@ -46,7 +43,6 @@ impl TryFrom<parse::Entity> for Entity {
 
         Ok(Self {
             upsert,
-            visibility,
             struct_name,
             collection_name,
             id_column,

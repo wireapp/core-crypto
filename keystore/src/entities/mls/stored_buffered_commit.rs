@@ -21,8 +21,8 @@ use zeroize::Zeroize;
 pub struct StoredBufferedCommit {
     #[entity(id)]
     #[sensitive]
-    conversation_id: Vec<u8>,
-    commit_data: Vec<u8>,
+    pub(crate) conversation_id: Vec<u8>,
+    pub(crate) commit_data: Vec<u8>,
 }
 
 impl StoredBufferedCommit {

@@ -1,5 +1,7 @@
 use zeroize::Zeroize;
 
+use crate::traits::PrimaryKey;
+
 #[derive(core_crypto_macros::Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct ProteusPrekey {
@@ -38,21 +40,29 @@ impl ProteusPrekey {
         self.id_bytes = self.id.to_le_bytes().into();
     }
 
-    pub async fn get_free_id(conn: &crate::Database) -> crate::CryptoKeystoreResult<u16> {
-        use crate::traits::FetchFromDatabase as _;
+    pub async fn get_free_id(db: &crate::Database) -> crate::CryptoKeystoreResult<u16> {
+        use crate::traits::UnifiedEntity as _;
         let mut id = 1u16;
         let limit = u16::MAX;
         while id <= limit {
             if id == limit {
                 return Err(crate::CryptoKeystoreError::NoFreePrekeyId);
             }
-            if conn.get::<Self>(&id).await?.is_none() {
+            if Self::get(&*db.conn().await, &id)?.is_none() {
                 break;
             }
             id += 1;
         }
 
         Ok(id)
+    }
+}
+
+impl PrimaryKey for ProteusPrekey {
+    type PrimaryKey = u16;
+
+    fn primary_key(&self) -> u16 {
+        self.id
     }
 }
 

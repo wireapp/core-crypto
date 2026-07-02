@@ -13,8 +13,7 @@ use certval::{
     CertSource, CertVector as _, CertificationPathSettings, Error as CertvalError, PathValidationStatus, TaSource,
 };
 use core_crypto_keystore::{
-    CryptoKeystoreError,
-    connection::Database,
+    CryptoKeystoreError, Database,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
     traits::{FetchFromDatabase, UnifiedUniqueEntity},
 };
@@ -369,7 +368,6 @@ impl PkiEnvironment {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::{ConnectionType, DatabaseKey};
     use spki::der::DecodePem as _;
 
     use super::*;
@@ -390,9 +388,7 @@ LOVS/gxNk618+PKA2bYq67MZQXCYGgk=
 
     #[tokio::test]
     async fn can_add_trust_anchor() {
-        let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
-            .await
-            .unwrap();
+        let db = Database::open_in_memory().unwrap();
         let pki_env = PkiEnvironment::with_dummy_hooks(db).await.unwrap();
         let cert = x509_cert::Certificate::from_pem(EXAMPLE_CERT_PEM).unwrap();
         assert!(pki_env.add_trust_anchor(cert).await.is_ok());
@@ -400,9 +396,7 @@ LOVS/gxNk618+PKA2bYq67MZQXCYGgk=
 
     #[tokio::test]
     async fn can_remove_trust_anchor() {
-        let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
-            .await
-            .unwrap();
+        let db = Database::open_in_memory().unwrap();
         let pki_env = PkiEnvironment::with_dummy_hooks(db).await.unwrap();
         let cert = x509_cert::Certificate::from_pem(EXAMPLE_CERT_PEM).unwrap();
         pki_env.add_trust_anchor(cert.clone()).await.unwrap();
@@ -419,9 +413,7 @@ LOVS/gxNk618+PKA2bYq67MZQXCYGgk=
 
     #[tokio::test]
     async fn can_add_intermediate_cert() {
-        let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
-            .await
-            .unwrap();
+        let db = Database::open_in_memory().unwrap();
         let pki_env = PkiEnvironment::with_dummy_hooks(db).await.unwrap();
         let cert = x509_cert::Certificate::from_pem(EXAMPLE_CERT_PEM).unwrap();
         assert!(pki_env.add_intermediate_cert(cert).await.is_ok());

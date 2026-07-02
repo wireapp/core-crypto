@@ -5,8 +5,6 @@ mod common;
 
 #[cfg(test)]
 mod tests {
-    #[cfg(target_os = "unknown")]
-    use idb::builder::{DatabaseBuilder, ObjectStoreBuilder};
     use wasm_bindgen_test::*;
 
     use crate::common::*;
@@ -26,51 +24,5 @@ mod tests {
         let store2 = setup("ios-wal-compat-2", true).await;
         drop(store2);
         let _store1 = setup("ios-wal-compat", false).await;
-    }
-
-    #[cfg(target_os = "unknown")]
-    #[wasm_bindgen_test]
-    pub(crate) async fn can_migrate_new_idb_db_versions() {
-        let store_name = store_name();
-        let idb = DatabaseBuilder::new(&store_name)
-            .version(10_002_001) // DB_VERSION_1
-            .add_object_store(ObjectStoreBuilder::new("regression_check").auto_increment(false))
-            .build()
-            .await
-            .unwrap();
-
-        assert!(idb.store_names().contains(&"regression_check".into()));
-
-        idb.close();
-
-        core_crypto_keystore::Database::migrate_db_key_type_to_bytes(&store_name, "test1234", &TEST_ENCRYPTION_KEY)
-            .await
-            .unwrap();
-
-        let store = core_crypto_keystore::Database::open(
-            core_crypto_keystore::ConnectionType::Persistent(&store_name),
-            &TEST_ENCRYPTION_KEY,
-        )
-        .await
-        .unwrap();
-
-        let mut conn = store.conn().await.unwrap();
-        use core_crypto_keystore::connection::storage::WasmStorageWrapper;
-        let WasmStorageWrapper::Persistent(db) = conn.storage_mut().wrapper() else {
-            panic!("Storage isn't persistent");
-        };
-
-        let store_names = db.store_names();
-
-        assert!(store_names.contains(&"mls_psk_bundles".into()));
-        assert!(store_names.contains(&"mls_hpke_private_keys".into()));
-        assert!(store_names.contains(&"mls_encryption_keypairs".into()));
-        assert!(store_names.contains(&"mls_keypackages".into()));
-        assert!(store_names.contains(&"mls_credentials".into()));
-        assert!(store_names.contains(&"mls_groups".into()));
-        assert!(store_names.contains(&"mls_pending_groups".into()));
-        assert!(store_names.contains(&"proteus_prekeys".into()));
-        assert!(store_names.contains(&"proteus_identities".into()));
-        assert!(store_names.contains(&"proteus_sessions".into()));
     }
 }

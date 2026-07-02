@@ -1,21 +1,10 @@
 use crate::{
     CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, EntityBase, EntityGetBorrowed, PrimaryKey, UniqueEntity},
+    traits::{BorrowPrimaryKey, PrimaryKey, UnifiedEntity, UnifiedEntityGetBorrowed, UnifiedUniqueEntity},
 };
 
 #[derive(Debug, Eq, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct DummyStoreValue;
-
-#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
-impl EntityBase for DummyStoreValue {
-    type ConnectionType = crate::connection::KeystoreDatabaseConnection;
-    const COLLECTION_NAME: &'static str = "";
-
-    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        unimplemented!("Not implemented")
-    }
-}
 
 impl PrimaryKey for DummyStoreValue {
     type PrimaryKey = Vec<u8>;
@@ -31,40 +20,7 @@ impl BorrowPrimaryKey for DummyStoreValue {
     }
 }
 
-#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
-impl Entity for DummyStoreValue {
-    async fn get(_conn: &mut Self::ConnectionType, _key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
-        Ok(None)
-    }
-
-    /// Count the number of entities of this type in the database.
-    async fn count(_conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<u32> {
-        Ok(0)
-    }
-
-    /// Retrieve all entities of this type from the database.
-    async fn load_all(_conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
-        Ok(Vec::new())
-    }
-}
-
-#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
-impl EntityGetBorrowed for DummyStoreValue {
-    async fn get_borrowed(
-        _conn: &mut Self::ConnectionType,
-        _key: &Self::BorrowedPrimaryKey,
-    ) -> CryptoKeystoreResult<Option<Self>> {
-        Ok(None)
-    }
-}
-
-impl UniqueEntity for DummyStoreValue {
-    const KEY: Self::PrimaryKey = Vec::new();
-}
-
-impl crate::traits::UnifiedEntity for DummyStoreValue {
+impl UnifiedEntity for DummyStoreValue {
     const COLLECTION_NAME: &'static str = "";
 
     fn get(_conn: &rusqlite::Connection, _key: &Vec<u8>) -> CryptoKeystoreResult<Option<Self>> {
@@ -80,7 +36,7 @@ impl crate::traits::UnifiedEntity for DummyStoreValue {
     }
 }
 
-impl crate::traits::UnifiedEntityGetBorrowed for DummyStoreValue {
+impl UnifiedEntityGetBorrowed for DummyStoreValue {
     fn get_borrowed(_conn: &rusqlite::Connection, _key: &[u8]) -> CryptoKeystoreResult<Option<Self>>
     where
         for<'pk> &'pk [u8]: crate::traits::KeyType,
@@ -89,7 +45,7 @@ impl crate::traits::UnifiedEntityGetBorrowed for DummyStoreValue {
     }
 }
 
-impl crate::traits::UnifiedUniqueEntity for DummyStoreValue {
+impl UnifiedUniqueEntity for DummyStoreValue {
     const KEY: Vec<u8> = Vec::new();
 }
 

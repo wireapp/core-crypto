@@ -1,0 +1,57 @@
+use crate::{
+    CryptoKeystoreResult,
+    entities::ConsumerData,
+    unified_connection::idb_migration::legacy::{
+        connection::KeystoreDatabaseConnection,
+        traits::{
+            DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, EntityBase, UniqueEntity as _,
+            UniqueEntityImplementationHelper,
+        },
+    },
+};
+
+impl EntityBase for ConsumerData {
+    type ConnectionType = KeystoreDatabaseConnection;
+    const COLLECTION_NAME: &'static str = "consumer_data";
+
+    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
+        crate::transaction::dynamic_dispatch::Entity::ConsumerData(self.into())
+    }
+}
+
+impl UniqueEntityImplementationHelper for ConsumerData {
+    fn new(content: Vec<u8>) -> Self {
+        Self { content }
+    }
+
+    fn content(&self) -> &[u8] {
+        &self.content
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub(crate) struct ConsumerDataEncrypted {
+    content: Vec<u8>,
+}
+
+impl<'a> Encrypting<'a> for ConsumerData {
+    type EncryptedForm = ConsumerDataEncrypted;
+
+    fn encrypt(&'a self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::EncryptedForm> {
+        let content = <Self as EncryptData>::encrypt_data(self, cipher, &self.content)?;
+        Ok(ConsumerDataEncrypted { content })
+    }
+}
+
+impl Decrypting<'static> for ConsumerDataEncrypted {
+    type DecryptedForm = ConsumerData;
+
+    fn decrypt(self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::DecryptedForm> {
+        let content = <ConsumerData as DecryptData>::decrypt_data(cipher, &ConsumerData::KEY, &self.content)?;
+        Ok(ConsumerData { content })
+    }
+}
+
+impl Decryptable<'static> for ConsumerData {
+    type DecryptableFrom = ConsumerDataEncrypted;
+}
