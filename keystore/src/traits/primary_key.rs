@@ -1,5 +1,3 @@
-use async_trait::async_trait;
-
 use crate::traits::OwnedKeyType;
 
 /// Something which has a distinct primary key which can uniquely identify it.
