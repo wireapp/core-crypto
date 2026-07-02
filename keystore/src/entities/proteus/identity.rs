@@ -1,5 +1,7 @@
 use zeroize::Zeroize;
 
+use crate::traits::{PrimaryKey, UnifiedUniqueEntity};
+
 #[derive(core_crypto_macros::Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 #[sensitive]
@@ -79,11 +81,22 @@ impl crate::traits::UnifiedEntityDatabaseMutation for ProteusIdentity {
 }
 
 #[cfg(not(target_os = "unknown"))]
-impl crate::traits::UnifiedUniqueEntity for ProteusIdentity {
-    const KEY: () = ();
-}
+type KeyType = ();
 
 #[cfg(target_os = "unknown")]
-impl crate::traits::UnifiedUniqueEntity for ProteusIdentity {
-    const KEY: [u8; 1] = [1];
+type KeyType = [u8; 1];
+
+impl PrimaryKey for ProteusIdentity {
+    type PrimaryKey = KeyType;
+    fn primary_key(&self) -> Self::PrimaryKey {
+        Self::KEY
+    }
+}
+
+impl UnifiedUniqueEntity for ProteusIdentity {
+    #[cfg(not(target_os = "unknown"))]
+    const KEY: Self::PrimaryKey = ();
+
+    #[cfg(target_os = "unknown")]
+    const KEY: Self::PrimaryKey = [1];
 }

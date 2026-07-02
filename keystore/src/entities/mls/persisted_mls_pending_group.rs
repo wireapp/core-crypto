@@ -1,4 +1,7 @@
+use rusqlite::Connection;
 use zeroize::Zeroize;
+
+use crate::traits::{BorrowPrimaryKey, PrimaryKey};
 
 /// Entity representing a temporarily persisted `MlsGroup`
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
@@ -13,10 +16,26 @@ pub struct PersistedMlsPendingGroup {
     pub custom_configuration: Vec<u8>,
 }
 
+impl PrimaryKey for PersistedMlsPendingGroup {
+    type PrimaryKey = Vec<u8>;
+
+    fn primary_key(&self) -> Self::PrimaryKey {
+        self.id.clone()
+    }
+}
+
+impl BorrowPrimaryKey for PersistedMlsPendingGroup {
+    type BorrowedPrimaryKey = [u8];
+
+    fn borrow_primary_key(&self) -> &[u8] {
+        &self.id
+    }
+}
+
 impl crate::traits::UnifiedEntity for PersistedMlsPendingGroup {
     const COLLECTION_NAME: &'static str = "mls_pending_groups";
 
-    fn get(conn: &rusqlite::Connection, key: &Vec<u8>) -> crate::CryptoKeystoreResult<Option<Self>> {
+    fn get(conn: &Connection, key: &Vec<u8>) -> crate::CryptoKeystoreResult<Option<Self>> {
         crate::entities::helpers::get_helper(conn, "id", key.as_slice(), |row| {
             Ok(Self {
                 id: row.get("id")?,
@@ -27,11 +46,11 @@ impl crate::traits::UnifiedEntity for PersistedMlsPendingGroup {
         })
     }
 
-    fn count(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<u32> {
+    fn count(conn: &Connection) -> crate::CryptoKeystoreResult<u32> {
         crate::entities::helpers::count_helper::<Self>(conn)
     }
 
-    fn load_all(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<Vec<Self>> {
+    fn load_all(conn: &Connection) -> crate::CryptoKeystoreResult<Vec<Self>> {
         crate::entities::helpers::load_all_helper(conn, |row| {
             Ok(Self {
                 id: row.get("id")?,
@@ -44,7 +63,7 @@ impl crate::traits::UnifiedEntity for PersistedMlsPendingGroup {
 }
 
 impl crate::traits::UnifiedEntityGetBorrowed for PersistedMlsPendingGroup {
-    fn get_borrowed(conn: &rusqlite::Connection, key: &[u8]) -> crate::CryptoKeystoreResult<Option<Self>>
+    fn get_borrowed(conn: &Connection, key: &[u8]) -> crate::CryptoKeystoreResult<Option<Self>>
     where
         for<'pk> &'pk [u8]: crate::traits::KeyType,
     {

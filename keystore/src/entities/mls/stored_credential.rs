@@ -1,6 +1,9 @@
 use zeroize::Zeroize;
 
-use crate::{Sha256Hash, traits::KeyType};
+use crate::{
+    Sha256Hash,
+    traits::{KeyType, PrimaryKey},
+};
 
 /// This type exists so that we can efficiently search for credentials by a variety of metrics at the database level.
 ///
@@ -43,6 +46,14 @@ pub struct StoredCredential {
     pub public_key: Vec<u8>,
     #[sensitive]
     pub private_key: Vec<u8>,
+}
+
+impl PrimaryKey for StoredCredential {
+    type PrimaryKey = Sha256Hash;
+
+    fn primary_key(&self) -> Self::PrimaryKey {
+        Sha256Hash::hash_from(&self.public_key)
+    }
 }
 
 impl crate::traits::UnifiedEntity for StoredCredential {
