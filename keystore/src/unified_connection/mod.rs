@@ -122,17 +122,17 @@ impl Database {
     ///
     /// When compiled normally, this opens a database encrypted via sqlcipher at a path in the
     /// local filesystem.
-    pub async fn open(path: &str, database_key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
+    pub async fn open(path: &str, database_key: &DatabaseKey) -> CryptoKeystoreResult<Arc<Self>> {
         let (conn, filesystem) = Self::open_internal(path, database_key).await?;
-        Self::init(conn, filesystem, MigrationTarget::Latest)
+        Self::init(conn, filesystem, MigrationTarget::Latest).map(Into::into)
     }
 
     /// Open an in-memory `Database`.
     ///
     /// In-memory databases are never encrypted.
-    pub fn open_in_memory() -> CryptoKeystoreResult<Self> {
+    pub fn open_in_memory() -> CryptoKeystoreResult<Arc<Self>> {
         let connection = Connection::open_in_memory()?;
-        Self::init(connection, Box::new(filesystem::Nop), MigrationTarget::Latest)
+        Self::init(connection, Box::new(filesystem::Nop), MigrationTarget::Latest).map(Into::into)
     }
 
     /// Open an encrypted `Database` at the provided location.
