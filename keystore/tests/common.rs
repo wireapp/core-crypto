@@ -5,7 +5,6 @@ use std::{
     sync::{Arc, LazyLock},
 };
 
-use core_crypto_keystore::connection::{ConnectionType, DatabaseConnection, KeystoreDatabaseConnection};
 pub(crate) use core_crypto_keystore::{Database as CryptoKeystore, DatabaseKey};
 pub(crate) use rstest::*;
 pub(crate) use rstest_reuse::{self, *};
@@ -39,18 +38,19 @@ pub fn store_name() -> String {
 
 #[fixture(name = store_name(), in_memory = false)]
 pub async fn setup(name: impl AsRef<str>, in_memory: bool) -> KeystoreTestContext {
-    let location = if in_memory {
-        ConnectionType::InMemory
-    } else {
-        ConnectionType::Persistent(name.as_ref())
-    };
     #[cfg(target_os = "unknown")]
     console_error_panic_hook::set_once();
-    let store = core_crypto_keystore::Database::open(location, &TEST_ENCRYPTION_KEY)
-        .await
-        .expect("Could not open keystore");
-    store.new_transaction().await.expect("Could not create transaction");
-    KeystoreTestContext { store: Some(store) }
+
+    let database = if in_memory {
+        core_crypto_keystore::Database::open_in_memory().expect("Could not open keystore")
+    } else {
+        core_crypto_keystore::Database::open(name.as_ref(), &TEST_ENCRYPTION_KEY)
+            .await
+            .expect("Could not open keystore")
+    };
+    database.new_transaction().await.expect("Could not create transaction");
+
+    KeystoreTestContext { store: Some(database) }
 }
 
 pub(crate) struct KeystoreTestContext {
@@ -67,11 +67,10 @@ impl Drop for KeystoreTestContext {
     fn drop(&mut self) {
         if let Some(store) = self.store.take() {
             let rollback_and_wipe = async move {
-                store
-                    .rollback_transaction()
-                    .await
-                    .expect("could not rollback transaction");
-                store.wipe().await.expect("Could not wipe store");
+                let db = Arc::into_inner(store)
+                    .expect("when a test is dropped there are no more database refs floating around");
+                db.rollback_transaction().await.expect("could not rollback transaction");
+                db.wipe().await.expect("Could not wipe store");
             };
 
             #[cfg(not(target_os = "unknown"))]
