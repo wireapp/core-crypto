@@ -1,6 +1,6 @@
 use zeroize::Zeroize;
 
-use crate::traits::EntityBase as _;
+use crate::traits::UnifiedEntity as _;
 
 /// Entity representing an enrollment instance used to fetch a x509 certificate and persisted when
 /// context switches and the memory it lives in is about to be erased

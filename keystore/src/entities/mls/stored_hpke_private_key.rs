@@ -1,5 +1,7 @@
 use zeroize::Zeroize;
 
+use crate::traits::{BorrowPrimaryKey, PrimaryKey};
+
 /// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
@@ -7,6 +9,22 @@ use zeroize::Zeroize;
 pub struct StoredHpkePrivateKey {
     pub sk: Vec<u8>,
     pub pk: Vec<u8>,
+}
+
+impl PrimaryKey for StoredHpkePrivateKey {
+    type PrimaryKey = Vec<u8>;
+
+    fn primary_key(&self) -> Vec<u8> {
+        self.pk.clone()
+    }
+}
+
+impl BorrowPrimaryKey for StoredHpkePrivateKey {
+    type BorrowedPrimaryKey = [u8];
+
+    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+        &self.pk
+    }
 }
 
 impl crate::traits::UnifiedEntity for StoredHpkePrivateKey {
