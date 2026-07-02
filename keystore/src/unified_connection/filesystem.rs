@@ -5,7 +5,7 @@ use crate::CryptoKeystoreResult;
 
 #[cfg_attr(not(target_os = "unknown"), async_trait)]
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]
-pub(crate) trait Filesystem: std::fmt::Debug {
+pub(crate) trait Filesystem: std::fmt::Debug + Send {
     /// Remove the file at the specified location.
     async fn delete(&self, path: &str) -> CryptoKeystoreResult<()>;
 }
