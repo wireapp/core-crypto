@@ -45,7 +45,7 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
+    use core_crypto_keystore::Database;
     use rusty_jwt_tools::prelude::{HashAlgorithm, JwsAlgorithm};
 
     use super::*;
@@ -94,14 +94,9 @@ mod tests {
     #[tokio::test]
     async fn can_serialize_and_deserialize_dpop_challenge_completed_acquisition() {
         let pki_env = Arc::new(
-            PkiEnvironment::new(
-                Arc::new(UnusedPkiEnvironmentHooks),
-                Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
-                    .await
-                    .unwrap(),
-            )
-            .await
-            .unwrap(),
+            PkiEnvironment::new(Arc::new(UnusedPkiEnvironmentHooks), Database::open_in_memory().unwrap())
+                .await
+                .unwrap(),
         );
         let client_id = ClientId::try_new(Uuid::new_v4().to_string(), 1, "wire.example").unwrap();
         let config = X509CredentialConfiguration {
