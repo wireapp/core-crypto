@@ -2,7 +2,7 @@ use darling::{
     ast::Data,
     util::{Flag, SpannedValue},
 };
-use syn::{Ident, Type, Visibility};
+use syn::{Ident, Type};
 
 /// Parse the outer attributes.
 ///
@@ -28,15 +28,12 @@ pub(super) struct OuterAttributes {
 ///     hex_field: Vec<u8>,
 ///     #[entity(column = "my_column")]
 ///     rename_this_field: Vec<u8>,
-///     #[entity(unencrypted_wasm)]
-///     unencrypted_probably_an_index: Vec<u8>,
 /// }
 /// ```
 #[derive(Default, darling::FromMeta)]
 pub(super) struct FieldAttributes {
     pub(super) id: Flag,
     pub(super) column: Option<String>,
-    pub(super) unencrypted_wasm: Flag,
 }
 
 /// Parse the column
@@ -55,8 +52,6 @@ pub(super) type Columns = Data<(), SpannedValue<Column>>;
 #[derive(darling::FromDeriveInput)]
 #[darling(attributes(entity), supports(struct_named))]
 pub(super) struct Entity {
-    /// Visibility of the type the trait is implemented on
-    pub(super) vis: Visibility,
     /// Name of the type to implement the trait on
     pub(super) ident: Ident,
     /// Parsed outer attributes of the struct

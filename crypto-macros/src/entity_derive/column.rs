@@ -12,8 +12,6 @@ pub(super) struct GenericColumn<Type> {
     pub(super) column_type: Type,
     /// Only present if it differs from the field name
     pub(super) column_name: Option<String>,
-    /// When set, do not encrypt or decrypt this field in wasm.
-    pub(super) skip_encryption: bool,
 }
 
 pub(super) type Column = GenericColumn<ColumnType>;
@@ -32,13 +30,11 @@ where
             .expect("we have nice error messages from `supports(struct_named)");
         let column_type = CType::try_from(value.ty)?;
         let column_name = value.field_attrs.column;
-        let skip_encryption = value.field_attrs.unencrypted_wasm.is_present();
 
         Ok(Self {
             field_name,
             column_type,
             column_name,
-            skip_encryption,
         })
     }
 }
