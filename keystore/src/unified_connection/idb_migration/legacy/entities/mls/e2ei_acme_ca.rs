@@ -1,0 +1,56 @@
+use crate::{
+    CryptoKeystoreResult,
+    entities::E2eiAcmeCA,
+    unified_connection::idb_migration::legacy::{
+        connection::KeystoreDatabaseConnection,
+        traits::{
+            DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, EntityBase, UniqueEntity as _,
+            UniqueEntityImplementationHelper,
+        },
+    },
+};
+
+impl EntityBase for E2eiAcmeCA {
+    type ConnectionType = KeystoreDatabaseConnection;
+    const COLLECTION_NAME: &'static str = "e2ei_acme_ca";
+
+    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
+        crate::transaction::dynamic_dispatch::Entity::E2eiAcmeCA(self.into())
+    }
+}
+
+impl UniqueEntityImplementationHelper for E2eiAcmeCA {
+    fn new(content: Vec<u8>) -> Self {
+        Self { content }
+    }
+    fn content(&self) -> &[u8] {
+        &self.content
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub(crate) struct E2eiAcmeCAEncrypted {
+    content: Vec<u8>,
+}
+
+impl<'a> Encrypting<'a> for E2eiAcmeCA {
+    type EncryptedForm = E2eiAcmeCAEncrypted;
+
+    fn encrypt(&'a self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::EncryptedForm> {
+        let content = <Self as EncryptData>::encrypt_data(self, cipher, &self.content)?;
+        Ok(E2eiAcmeCAEncrypted { content })
+    }
+}
+
+impl Decrypting<'static> for E2eiAcmeCAEncrypted {
+    type DecryptedForm = E2eiAcmeCA;
+
+    fn decrypt(self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::DecryptedForm> {
+        let content = <E2eiAcmeCA as DecryptData>::decrypt_data(cipher, &E2eiAcmeCA::KEY, &self.content)?;
+        Ok(E2eiAcmeCA { content })
+    }
+}
+
+impl Decryptable<'static> for E2eiAcmeCA {
+    type DecryptableFrom = E2eiAcmeCAEncrypted;
+}

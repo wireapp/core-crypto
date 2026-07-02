@@ -1,8 +1,0 @@
-CREATE TABLE mls_credentials_new (
-    session_id BLOB NOT NULL,
-    credential BLOB NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    ciphersuite INT NOT NULL,
-    public_key BLOB NOT NULL,
-    private_key BLOB NOT NULL
-);
