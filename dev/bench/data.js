@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1782877386307,
+  "lastUpdate": 1783053245773,
   "repoUrl": "https://github.com/wireapp/core-crypto",
   "entries": {
     "JVM Benchmarks": [
@@ -49782,6 +49782,838 @@ window.BENCHMARK_DATA = {
           {
             "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"userCount\":\"100\"} )",
             "value": 305.8149881376991,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]",
+            "email": "49699333+dependabot[bot]@users.noreply.github.com"
+          },
+          "committer": {
+            "name": "Felix Werner",
+            "username": "fewerner",
+            "email": "felix.werner@wire.com"
+          },
+          "id": "dfcd8b5d237e8c91a85e11ebdde2053c68088720",
+          "message": "build(deps): bump vergen-gitcl from 10.0.0 to 10.0.1\n\nBumps [vergen-gitcl](https://github.com/rustyhorde/vergen) from 10.0.0 to 10.0.1.\n- [Release notes](https://github.com/rustyhorde/vergen/releases)\n- [Commits](https://github.com/rustyhorde/vergen/compare/v10.0.0...10.0.1)\n\n---\nupdated-dependencies:\n- dependency-name: vergen-gitcl\n  dependency-version: 10.0.1\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>",
+          "timestamp": "2026-07-02T09:28:56Z",
+          "url": "https://github.com/wireapp/core-crypto/commit/dfcd8b5d237e8c91a85e11ebdde2053c68088720"
+        },
+        "date": 1783053223248,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"userCount\":\"1\"} )",
+            "value": 2050.162074699489,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"userCount\":\"10\"} )",
+            "value": 592.8402157792314,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"userCount\":\"100\"} )",
+            "value": 44.76592297611423,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"userCount\":\"1\"} )",
+            "value": 690.2755528257334,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"userCount\":\"10\"} )",
+            "value": 133.11567001248076,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"userCount\":\"100\"} )",
+            "value": 12.547226408249273,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"userCount\":\"1\"} )",
+            "value": 2021.706069878121,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"userCount\":\"10\"} )",
+            "value": 588.6789512082323,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"userCount\":\"100\"} )",
+            "value": 44.96446227125242,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"userCount\":\"1\"} )",
+            "value": 234.35425157301216,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"userCount\":\"10\"} )",
+            "value": 39.952396309534834,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"userCount\":\"100\"} )",
+            "value": 4.202222265212151,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"userCount\":\"1\"} )",
+            "value": 328.87200464421977,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"userCount\":\"10\"} )",
+            "value": 55.78512622461069,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"userCount\":\"100\"} )",
+            "value": 5.732358598688078,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 7444.246383365625,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 6934.488649233981,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 1250.448490443727,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 1674.9078027289124,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 1372.2040613652819,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 135.77041484216596,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 190.81621015809407,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 157.29053033713996,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 13.513954081911555,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 3167.3839361460277,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 3056.3665759121077,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 928.6888037166582,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 416.9357317742175,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 396.5764583260125,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 98.98100396903197,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 43.61007694997566,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 41.321022741361915,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 9.898763492355702,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 7717.4942545777985,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 7275.7384777742045,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 1619.5109001034884,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 1712.1191288147388,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 1501.3616330686405,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 180.9655562038124,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 197.36687693335776,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 173.7466825779232,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 18.068894620901897,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 1185.4348822081988,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 1168.3330017676071,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 662.6992479531251,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 128.99198135899866,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 127.71859537261619,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 68.62699070614673,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 12.900911439817332,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 12.746342067422535,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 6.855677766451021,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 1702.383657830934,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 1675.1601998776696,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 801.168532749728,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 195.1258915002706,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 192.03921024995898,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 84.08957705174487,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 19.550118385838562,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 19.231246721907446,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 8.388150138566509,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"userCount\":\"1\"} )",
+            "value": 1749.898876030235,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"userCount\":\"10\"} )",
+            "value": 905.6410363927616,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"userCount\":\"100\"} )",
+            "value": 164.87218871397334,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"userCount\":\"1\"} )",
+            "value": 570.148012627184,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"userCount\":\"10\"} )",
+            "value": 183.07503310180692,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"userCount\":\"100\"} )",
+            "value": 25.901933795781076,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"userCount\":\"1\"} )",
+            "value": 1842.3546925309668,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"userCount\":\"10\"} )",
+            "value": 873.3723171551619,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"userCount\":\"100\"} )",
+            "value": 164.56715871251592,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"userCount\":\"1\"} )",
+            "value": 186.4031241452371,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"userCount\":\"10\"} )",
+            "value": 54.51914125690605,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"userCount\":\"100\"} )",
+            "value": 7.4486800496370025,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"userCount\":\"1\"} )",
+            "value": 254.83419793447297,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"userCount\":\"10\"} )",
+            "value": 75.68356368320174,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"userCount\":\"100\"} )",
+            "value": 10.356560006224452,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 4843.407679538116,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 4785.567371773543,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 1264.4754765839405,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 1414.9331916985932,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 1264.5925155740752,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 142.42296348283872,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 155.2316114727766,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 133.88833896788393,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 14.733594607211675,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 2770.809315756418,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 2675.406595468364,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 872.4082270307363,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 447.32382935029307,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 423.82881413560756,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 98.31788239038482,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 45.27611139982615,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 42.97965539104042,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 9.968156776796521,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 4952.67878015875,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 4803.963484805181,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 1551.5450827614409,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 1371.8673878555715,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 1331.283455827543,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 199.79796536423154,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 171.699891444148,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 155.80132310415527,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 19.952939168152973,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 1244.612432423982,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 1237.1580109303627,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 664.5791557516975,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 147.01371578157176,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 144.62326708724603,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 72.66532529362195,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 14.77020498949237,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 14.61071970616519,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 7.301756174525794,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 1556.5157976039186,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 1531.8368907810463,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 774.7146346628557,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 201.14126198982126,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 198.22021292740675,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 84.44028927295292,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 20.338531683775575,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 20.035818358450705,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 8.494656434090604,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"userCount\":\"1\"} )",
+            "value": 2452.4242193331756,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"userCount\":\"10\"} )",
+            "value": 2263.55693206047,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519\",\"userCount\":\"100\"} )",
+            "value": 1036.7660627165965,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"userCount\":\"1\"} )",
+            "value": 807.2234178362796,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"userCount\":\"10\"} )",
+            "value": 745.3090010512566,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMP256_AES128GCM_SHA256_P256\",\"userCount\":\"100\"} )",
+            "value": 547.1972107671243,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"userCount\":\"1\"} )",
+            "value": 2633.0234339239164,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"userCount\":\"10\"} )",
+            "value": 1783.6149539786081,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519\",\"userCount\":\"100\"} )",
+            "value": 987.5642728229193,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"userCount\":\"1\"} )",
+            "value": 264.5040291469538,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"userCount\":\"10\"} )",
+            "value": 251.54302780976178,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP521_AES256GCM_SHA512_P521\",\"userCount\":\"100\"} )",
+            "value": 219.02530378804204,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"userCount\":\"1\"} )",
+            "value": 378.08436749969485,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"userCount\":\"10\"} )",
+            "value": 365.1740218253457,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"MLS_256_DHKEMP384_AES256GCM_SHA384_P384\",\"userCount\":\"100\"} )",
+            "value": 304.6189306467662,
             "unit": "ops/s",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
