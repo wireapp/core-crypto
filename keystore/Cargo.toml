@@ -19,7 +19,7 @@ serde = []
 dummy-entity = []
 
 [dependencies]
-aes-gcm = "0.10"
+aes-gcm = "0.11"
 async-lock.workspace = true
 async-trait.workspace = true
 core-crypto-macros.workspace = true
