@@ -3,8 +3,9 @@ use std::{borrow::Borrow, sync::Arc};
 use async_trait::async_trait;
 use core_crypto_keystore::{
     CryptoKeystoreResult, Database,
-    connection::KeystoreDatabaseConnection,
-    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, KeyType, SearchableEntity},
+    traits::{
+        BorrowPrimaryKey, FetchFromDatabase, KeyType, UnifiedEntity, UnifiedEntityGetBorrowed, UnifiedSearchableEntity,
+    },
 };
 
 /// This database only exposes immutable operations.
@@ -22,28 +23,28 @@ pub struct ImmutableDatabase(Arc<Database>);
 impl FetchFromDatabase for ImmutableDatabase {
     async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<E>>
     where
-        E: Entity<ConnectionType = KeystoreDatabaseConnection> + Clone + Send + Sync,
+        E: UnifiedEntity + Clone + Send + Sync + 'static,
     {
         self.0.get::<E>(id).await
     }
 
     async fn count<E>(&self) -> CryptoKeystoreResult<u32>
     where
-        E: Entity<ConnectionType = KeystoreDatabaseConnection> + Clone + Send + Sync,
+        E: UnifiedEntity + Clone + Send + Sync + 'static,
     {
         self.0.count::<E>().await
     }
 
     async fn load_all<E>(&self) -> CryptoKeystoreResult<Vec<E>>
     where
-        E: Entity<ConnectionType = KeystoreDatabaseConnection> + Clone + Send + Sync,
+        E: UnifiedEntity + Clone + Send + Sync + 'static,
     {
         self.0.load_all::<E>().await
     }
 
     async fn get_borrowed<E>(&self, id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey) -> CryptoKeystoreResult<Option<E>>
     where
-        E: EntityGetBorrowed<ConnectionType = KeystoreDatabaseConnection> + Clone + Send + Sync,
+        E: UnifiedEntityGetBorrowed + Clone + Send + Sync + 'static,
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
         for<'a> &'a E::BorrowedPrimaryKey: KeyType,
     {
@@ -52,7 +53,7 @@ impl FetchFromDatabase for ImmutableDatabase {
 
     async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<E>>
     where
-        E: Entity<ConnectionType = KeystoreDatabaseConnection> + SearchableEntity<SearchKey> + Clone + Send + Sync,
+        E: UnifiedEntity + UnifiedSearchableEntity<SearchKey> + Clone + Send + Sync + 'static,
         SearchKey: KeyType,
     {
         self.0.search::<E, SearchKey>(search_key).await
