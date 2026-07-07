@@ -78,6 +78,11 @@ The native package runs on Node and Bun, and currently ships prebuilt libraries 
 (x86_64, glibc); the appropriate one is selected automatically at runtime. Other platforms—including Intel macOS, ARM
 Linux, musl-based distributions, and Windows—are not currently prebuilt.
 
+> [!NOTE]
+> When using `@wireapp/core-crypto/native` you need to install two additional dependencies: `@ubjs/node` and
+> `@ubjs/core`. In CC 11 we will split the npm package into two separate npm packages. The native package will then
+> include these dependencies.
+
 ### Removing non-browser WASM support
 
 In 9.x it was possible to instantiate WASM clients in a node-like runtime, though without persistence. With the addition
