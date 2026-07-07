@@ -28,8 +28,8 @@ pub(crate) use self::{epoch_observer::TestEpochObserver, history_observer::TestH
 pub use self::{error::Error as TestError, message::*, test_context::*, test_conversation::TestConversation};
 pub use crate::CredentialType;
 use crate::{
-    CertificateBundle, ClientId, CommitBundle, ConnectionType, ConversationId, CoreCrypto, Credential, CredentialRef,
-    Database, DatabaseKey, Error, GroupInfoBundle, MlsTransport, RecursiveError, Session, TransportData,
+    CertificateBundle, ClientId, CommitBundle, ConversationId, CoreCrypto, Credential, CredentialRef, Database,
+    DatabaseKey, Error, GroupInfoBundle, MlsTransport, RecursiveError, Session, TransportData,
     mls::HistoryObserver,
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     transaction_context::TransactionContext,
@@ -107,9 +107,7 @@ impl SessionContext {
         // We need to store the `TempDir` struct for the duration of the test session,
         // because its drop implementation takes care of the directory deletion.
         let (db_path, db_dir) = tmp_db_file();
-        let db = Database::open(ConnectionType::Persistent(&db_path), &DatabaseKey::generate())
-            .await
-            .unwrap();
+        let db = Database::open(&db_path, &DatabaseKey::generate()).await.unwrap();
 
         let core_crypto = CoreCrypto::new(db.clone());
         let transaction = core_crypto.new_transaction().await.unwrap();

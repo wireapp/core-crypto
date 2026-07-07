@@ -10,7 +10,7 @@ use super::{
     x509::{CertificateParams, X509TestChain},
 };
 use crate::{
-    CertificateBundle, ClientId, ConnectionType, Credential, CredentialRef, Database, DatabaseKey, ExternalSender,
+    CertificateBundle, ClientId, Credential, CredentialRef, Database, DatabaseKey, ExternalSender,
     test_utils::SessionContext,
 };
 pub use crate::{CipherSuite, ConversationConfiguration, CredentialType, CustomConfiguration, WirePolicy};
@@ -107,9 +107,7 @@ impl TestContext {
     }
 
     pub async fn create_in_memory_database(&mut self) -> Arc<Database> {
-        let database = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
-            .await
-            .unwrap();
+        let database = Database::open_in_memory().unwrap();
         let out = database.clone();
         self.db = Some((database, None));
         out
@@ -146,9 +144,7 @@ impl TestContext {
     /// Use this only if you're not instantiating a [SessionContext] in your test.
     pub async fn create_persistent_db(&mut self) -> Arc<Database> {
         let (db_dir_string, db_dir) = tmp_db_file();
-        let db = Database::open(ConnectionType::Persistent(&db_dir_string), &DatabaseKey::generate())
-            .await
-            .unwrap();
+        let db = Database::open(&db_dir_string, &DatabaseKey::generate()).await.unwrap();
         let out = db.clone();
         self.db = Some((db, Some(db_dir.into())));
         out

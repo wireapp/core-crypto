@@ -23,14 +23,13 @@
 
 use std::{borrow::Borrow, sync::Arc};
 
-use core_crypto_keystore::{ConnectionType, Database};
+use core_crypto_keystore::Database;
 use obfuscate::{Obfuscate, Obfuscated};
 use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
     CipherSuite, ClientId, ClientIdRef, CoreCrypto, CoreCryptoTransportNotImplementedProvider, Credential, Error,
-    OpenMlsError, RecursiveError, Result, Session,
-    mls_provider::{CryptoProvider, DatabaseKey},
+    OpenMlsError, RecursiveError, Result, Session, mls_provider::CryptoProvider,
 };
 
 /// We always instantiate history clients with this prefix in their client id, so
@@ -68,9 +67,8 @@ pub(crate) async fn generate_history_secret(cipher_suite: CipherSuite) -> Result
     // generate a new client id
     let session_id = ClientId::new_ephemeral();
 
-    let database = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
-        .await
-        .unwrap();
+    let database =
+        Database::open_in_memory().expect("Opening an in-memory database to generate a history secret cannot fail");
 
     let cc = CoreCrypto::new(database.clone());
     let tx = cc
@@ -133,9 +131,8 @@ impl CoreCrypto {
         }
 
         // pass in-memory database
-        let database = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
-            .await
-            .unwrap();
+        let database =
+            Database::open_in_memory().expect("Opening an in-memory database for a history client cannot fail");
 
         let cc = CoreCrypto::new(database.clone());
         let tx = cc

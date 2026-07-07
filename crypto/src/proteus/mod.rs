@@ -88,7 +88,7 @@ impl ProteusCentral {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::{ConnectionType, DatabaseKey};
+    use core_crypto_keystore::DatabaseKey;
 
     use super::*;
     use crate::test_utils::*;
@@ -100,17 +100,13 @@ mod tests {
         #[cfg(target_os = "unknown")]
         let (path, _) = tmp_db_file();
         let key = DatabaseKey::generate();
-        let keystore = core_crypto_keystore::Database::open(ConnectionType::Persistent(&path), &key)
-            .await
-            .unwrap();
+        let keystore = core_crypto_keystore::Database::open(&path, &key).await.unwrap();
         keystore.new_transaction().await.unwrap();
         let central = ProteusCentral::try_new(&keystore).await.unwrap();
         let identity = (*central.proteus_identity).clone();
         keystore.commit_transaction().await.unwrap();
 
-        let keystore = core_crypto_keystore::Database::open(ConnectionType::Persistent(&path), &key)
-            .await
-            .unwrap();
+        let keystore = core_crypto_keystore::Database::open(&path, &key).await.unwrap();
         keystore.new_transaction().await.unwrap();
         let central = ProteusCentral::try_new(&keystore).await.unwrap();
         keystore.commit_transaction().await.unwrap();

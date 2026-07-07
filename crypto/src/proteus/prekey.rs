@@ -88,7 +88,7 @@ impl ProteusCentral {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::{ConnectionType, DatabaseKey};
+    use core_crypto_keystore::DatabaseKey;
 
     use super::*;
     use crate::test_utils::{proteus_utils::*, *};
@@ -103,9 +103,7 @@ mod tests {
         let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 
         let key = DatabaseKey::generate();
-        let keystore = core_crypto_keystore::Database::open(ConnectionType::Persistent(&path), &key)
-            .await
-            .unwrap();
+        let keystore = core_crypto_keystore::Database::open(&path, &key).await.unwrap();
         keystore.new_transaction().await.unwrap();
         let mut alice = ProteusCentral::try_new(&keystore).await.unwrap();
 
@@ -146,9 +144,7 @@ mod tests {
         let (path, _) = tmp_db_file();
 
         let key = DatabaseKey::generate();
-        let keystore = core_crypto_keystore::Database::open(ConnectionType::Persistent(&path), &key)
-            .await
-            .unwrap();
+        let keystore = core_crypto_keystore::Database::open(&path, &key).await.unwrap();
         keystore.new_transaction().await.unwrap();
         let alice = ProteusCentral::try_new(&keystore).await.unwrap();
 

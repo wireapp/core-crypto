@@ -56,7 +56,7 @@ impl CoreCrypto {
 mod tests {
     use std::sync::Arc;
 
-    use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
+    use core_crypto_keystore::{Database, DatabaseKey};
 
     use super::*;
     use crate::test_utils::{x509::X509TestChain, *};
@@ -67,9 +67,7 @@ mod tests {
         let (path, db_file) = tmp_db_file();
         #[cfg(target_os = "unknown")]
         let (path, _) = tmp_db_file();
-        let db = Database::open(ConnectionType::Persistent(&path), &DatabaseKey::generate())
-            .await
-            .unwrap();
+        let db = Database::open(&path, &DatabaseKey::generate()).await.unwrap();
 
         let cc = CoreCrypto::new(db);
         let context = cc.new_transaction().await.unwrap();
@@ -90,9 +88,7 @@ mod tests {
         let (path, db_file) = tmp_db_file();
         #[cfg(target_os = "unknown")]
         let (path, _) = tmp_db_file();
-        let db = Database::open(ConnectionType::Persistent(&path), &DatabaseKey::generate())
-            .await
-            .unwrap();
+        let db = Database::open(&path, &DatabaseKey::generate()).await.unwrap();
 
         let cc = CoreCrypto::new(db.clone());
         let hooks = Arc::new(DummyPkiEnvironmentHooks);
