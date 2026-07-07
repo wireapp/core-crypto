@@ -1,10 +1,26 @@
 rootProject.name = "core-crypto-kotlin"
 
 pluginManagement {
+    includeBuild("../../../gobley/build-logic")
     repositories {
         gradlePluginPortal()
         google()
         mavenCentral()
+    }
+}
+
+includeBuild("../../../gobley/build-logic") {
+    dependencySubstitution {
+        val projectNames = arrayOf(
+            "gobley-gradle",
+            "gobley-gradle-cargo",
+            "gobley-gradle-rust",
+            "gobley-gradle-uniffi",
+        )
+        for (projectName in projectNames) {
+            substitute(module("dev.gobley.uniffi:$projectName"))
+                .using(project(":$projectName"))
+        }
     }
 }
 

@@ -53,6 +53,11 @@ kotlin {
     // macOS ARM64 target
     macosArm64()
 
+    // JS target
+    js {
+        browser()
+    }
+
     sourceSets {
         val commonMain by getting {
             sourceSets {
@@ -97,6 +102,20 @@ kotlin {
                 implementation(libs.android.junit)
                 implementation(libs.espresso)
                 implementation(libs.assertj.core)
+            }
+        }
+
+        val jsMain by getting {
+            dependencies {
+                // requires first running `make ts-package`
+                implementation(npm("@wireapp/core-crypto", rootProject.file("js/packages/core-crypto/wireapp-core-crypto-10.0.0.tgz").absolutePath))
+            }
+        }
+
+        val jsTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.coroutines.test)
             }
         }
     }
@@ -207,9 +226,11 @@ afterEvaluate {
 }
 
 uniffi {
+    bindgenFromPath(layout.settingsDirectory.dir("../../../gobley/crates/gobley-uniffi-bindgen"))
     generateFromLibrary {
         namespace = "core_crypto_ffi"
         packageName = "com.wire.crypto"
+        jsNpmModule.set("@wireapp/core-crypto/browser")
     }
 }
 
@@ -255,4 +276,16 @@ val copyCinterop = tasks.register("copyCinteropDefinitions", Copy::class) {
 tasks.withType<CargoBuildTask>().configureEach {
     dependsOn(copyCinterop)
     enabled = false
+}
+
+// Disable the WASM build too — the JS target uses the pre-built npm package instead.
+tasks.withType<gobley.gradle.cargo.tasks.TransformWasmTask>().configureEach {
+    enabled = false
+}
+
+// The shared commonTest sources use JVM-only APIs (java.*, @Volatile, synchronized).
+// Exclude them from JS test compilation; the JS tests live in jsTest instead.
+tasks.named<org.jetbrains.kotlin.gradle.tasks.Kotlin2JsCompile>("compileTestKotlinJs") {
+    val sharedTestDir = file("../shared/src/commonTest/kotlin").canonicalPath
+    exclude { it.file.canonicalPath.startsWith(sharedTestDir) }
 }
