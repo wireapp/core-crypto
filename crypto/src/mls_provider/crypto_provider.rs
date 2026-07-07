@@ -50,8 +50,8 @@ impl Default for RustCrypto {
 }
 
 impl RustCrypto {
-    // TODO: remove this expect(unused) once reseeding has been restored.
-    #[expect(unused)]
+    // determinism tests use this; drop the cfg-gated expect once reseeding is back
+    #[cfg_attr(not(test), expect(unused))]
     pub(crate) fn new_with_seed(seed: EntropySeed) -> Self {
         Self {
             rng: Arc::new(rand_chacha::ChaCha20Rng::from_seed(seed.0).into()),
@@ -1095,5 +1095,402 @@ impl OpenMlsRand for RustCrypto {
         let mut out = vec![0u8; len];
         rng.try_fill_bytes(&mut out).map_err(|_| Error::UnsufficientEntropy)?;
         Ok(out)
+    }
+}
+
+// Wiring only: scheme dispatch, key lengths, malformed-key rejection.
+// FIPS-204 conformance is the ml-dsa crate's job.
+#[cfg(test)]
+mod mldsa_tests {
+    use openmls_traits::crypto::OpenMlsCrypto;
+
+    use super::*;
+
+    // (scheme, public key length, signature length) for the two ML-DSA variants
+    const MLDSA65: (SignatureScheme, usize, usize) = (SignatureScheme::MLDSA65, 1952, 3309);
+    const MLDSA87: (SignatureScheme, usize, usize) = (SignatureScheme::MLDSA87, 2592, 4627);
+
+    #[test]
+    fn signature_public_key_len_matches_fips204() {
+        let provider = RustCrypto::default();
+        assert_eq!(provider.signature_public_key_len(MLDSA65.0), MLDSA65.1);
+        assert_eq!(provider.signature_public_key_len(MLDSA87.0), MLDSA87.1);
+    }
+
+    #[test]
+    fn keygen_sign_verify_round_trip() {
+        for (scheme, pk_len, sig_len) in [MLDSA65, MLDSA87] {
+            let provider = RustCrypto::default();
+            let (private_key, public_key) = provider
+                .signature_key_gen(scheme)
+                .expect("key generation should succeed");
+
+            assert_eq!(public_key.len(), pk_len, "public key length for {scheme:?}");
+
+            let message = b"the quick brown fox jumps over the lazy dog";
+            let signature = provider
+                .sign(scheme, message, &private_key)
+                .expect("signing should succeed");
+
+            assert_eq!(signature.len(), sig_len, "signature length for {scheme:?}");
+
+            provider
+                .verify_signature(scheme, message, &public_key, &signature)
+                .expect("verification of a valid signature should succeed");
+        }
+    }
+
+    #[test]
+    fn validate_signature_key_accepts_valid_and_rejects_invalid() {
+        for (scheme, pk_len, _) in [MLDSA65, MLDSA87] {
+            let provider = RustCrypto::default();
+            let (_, public_key) = provider.signature_key_gen(scheme).unwrap();
+
+            provider
+                .validate_signature_key(scheme, &public_key)
+                .expect("a freshly generated public key must validate");
+
+            let too_short = vec![0u8; pk_len - 1];
+            assert!(
+                provider.validate_signature_key(scheme, &too_short).is_err(),
+                "an undersized key must be rejected for {scheme:?}"
+            );
+        }
+    }
+
+    /// MLS wants the deterministic empty-context variant, so signing twice must match.
+    #[test]
+    fn signing_is_deterministic() {
+        for (scheme, ..) in [MLDSA65, MLDSA87] {
+            let provider = RustCrypto::default();
+            let (private_key, _) = provider.signature_key_gen(scheme).unwrap();
+            let message = b"deterministic";
+            let sig_a = provider.sign(scheme, message, &private_key).unwrap();
+            let sig_b = provider.sign(scheme, message, &private_key).unwrap();
+            assert_eq!(sig_a, sig_b, "signatures must be deterministic for {scheme:?}");
+        }
+    }
+}
+
+// Wiring only: that each PQ HpkeConfig maps to the right KEM/KDF/AEAD. Keypair
+// sizes are pinned, which is what catches a wrong generic parameter.
+#[cfg(test)]
+mod pq_hpke_tests {
+    use openmls_traits::{
+        crypto::OpenMlsCrypto,
+        types::{HpkeAeadType, HpkeConfig, HpkeKdfType, HpkeKemType},
+    };
+
+    use super::*;
+
+    // All 7 PQ HpkeConfigs that must be wired (stored as tuples since
+    // HpkeConfig doesn't derive Copy/Clone; each field type is Copy)
+    fn pq_configs() -> Vec<(HpkeKemType, HpkeKdfType, HpkeAeadType)> {
+        vec![
+            (
+                HpkeKemType::MlKem768X25519,
+                HpkeKdfType::Shake256,
+                HpkeAeadType::AesGcm128,
+            ),
+            (
+                HpkeKemType::MlKem768X25519,
+                HpkeKdfType::Shake256,
+                HpkeAeadType::AesGcm256,
+            ),
+            (
+                HpkeKemType::MlKem768P256,
+                HpkeKdfType::Shake256,
+                HpkeAeadType::AesGcm128,
+            ),
+            (
+                HpkeKemType::MlKem768P256,
+                HpkeKdfType::Shake256,
+                HpkeAeadType::AesGcm256,
+            ),
+            (
+                HpkeKemType::MlKem1024P384,
+                HpkeKdfType::Shake256,
+                HpkeAeadType::AesGcm256,
+            ),
+            (HpkeKemType::MlKem768, HpkeKdfType::Shake256, HpkeAeadType::AesGcm256),
+            (HpkeKemType::MlKem1024, HpkeKdfType::Shake256, HpkeAeadType::AesGcm256),
+        ]
+    }
+
+    // Expected (private_key_len, public_key_len) for each KEM type in order matching pq_configs().
+    // Source: hpke crate KEM implementations (Serializable::OutputSize):
+    //   XWing:         sk=32  (U32),  pk=1216 (U1216)
+    //   MlKem768P256:  sk=32  (U32),  pk=1249 (U1249)
+    //   MlKem1024P384: sk=32  (U32),  pk=1665 (U1665)
+    //   MlKem768:      sk=64  (U64),  pk=1184 (EncapsulationKey<MlKem768Params>::KeySize)
+    //   MlKem1024:     sk=64  (U64),  pk=1568 (EncapsulationKey<MlKem1024Params>::KeySize)
+    fn pq_keypair_sizes() -> Vec<(usize, usize)> {
+        vec![
+            (32, 1216), // XWing (MlKem768X25519) - AesGcm128
+            (32, 1216), // XWing (MlKem768X25519) - AesGcm256 (same KEM)
+            (32, 1249), // MlKem768P256            - AesGcm128
+            (32, 1249), // MlKem768P256            - AesGcm256
+            (32, 1665), // MlKem1024P384           - AesGcm256
+            (64, 1184), // MlKem768                - AesGcm256
+            (64, 1568), // MlKem1024               - AesGcm256
+        ]
+    }
+
+    /// Derive, seal, open, and check the keypair byte lengths.
+    #[test]
+    fn pq_hpke_seal_open_round_trip() {
+        let provider = RustCrypto::default();
+        let plaintext = b"pq-hpke round-trip test";
+        let info = b"test-info";
+        let aad = b"test-aad";
+
+        for ((kem, kdf, aead), (expected_sk_len, expected_pk_len)) in pq_configs().into_iter().zip(pq_keypair_sizes()) {
+            // 64-byte IKM, big enough for any of the PQ KEMs
+            let ikm = vec![0x42u8; 64];
+            let kp = provider
+                .derive_hpke_keypair(HpkeConfig(kem, kdf, aead), &ikm)
+                .unwrap_or_else(|e| panic!("derive_hpke_keypair failed for ({kem:?},{kdf:?},{aead:?}): {e:?}"));
+
+            // pin the keypair wire sizes explicitly
+            assert_eq!(
+                kp.private.len(),
+                expected_sk_len,
+                "private key length mismatch for ({kem:?},{kdf:?},{aead:?})"
+            );
+            assert_eq!(
+                kp.public.len(),
+                expected_pk_len,
+                "public key length mismatch for ({kem:?},{kdf:?},{aead:?})"
+            );
+
+            let ciphertext = provider
+                .hpke_seal(HpkeConfig(kem, kdf, aead), &kp.public, info, aad, plaintext)
+                .unwrap_or_else(|e| panic!("hpke_seal failed for ({kem:?},{kdf:?},{aead:?}): {e:?}"));
+
+            let recovered = provider
+                .hpke_open(HpkeConfig(kem, kdf, aead), &ciphertext, &kp.private, info, aad)
+                .unwrap_or_else(|e| panic!("hpke_open failed for ({kem:?},{kdf:?},{aead:?}): {e:?}"));
+
+            assert_eq!(
+                recovered, plaintext,
+                "seal\u{2192}open round-trip mismatch for ({kem:?},{kdf:?},{aead:?})"
+            );
+        }
+    }
+
+    /// Sender and receiver must agree on the exported secret.
+    #[test]
+    fn pq_hpke_export_sender_receiver_agree() {
+        let provider = RustCrypto::default();
+        let info = b"export-info";
+        let exporter_ctx = b"exporter-context";
+        let export_len = 32usize;
+
+        for (kem, kdf, aead) in pq_configs() {
+            let ikm = vec![0x37u8; 64];
+            let kp = provider
+                .derive_hpke_keypair(HpkeConfig(kem, kdf, aead), &ikm)
+                .unwrap_or_else(|e| panic!("derive_hpke_keypair failed for ({kem:?},{kdf:?},{aead:?}): {e:?}"));
+
+            let (enc, tx_export) = provider
+                .hpke_setup_sender_and_export(HpkeConfig(kem, kdf, aead), &kp.public, info, exporter_ctx, export_len)
+                .unwrap_or_else(|e| {
+                    panic!("hpke_setup_sender_and_export failed for ({kem:?},{kdf:?},{aead:?}): {e:?}")
+                });
+
+            let rx_export = provider
+                .hpke_setup_receiver_and_export(
+                    HpkeConfig(kem, kdf, aead),
+                    &enc,
+                    &kp.private,
+                    info,
+                    exporter_ctx,
+                    export_len,
+                )
+                .unwrap_or_else(|e| {
+                    panic!("hpke_setup_receiver_and_export failed for ({kem:?},{kdf:?},{aead:?}): {e:?}")
+                });
+
+            assert_eq!(
+                &*tx_export, &*rx_export,
+                "sender/receiver export mismatch for ({kem:?},{kdf:?},{aead:?})"
+            );
+        }
+    }
+
+    /// 0xF001-0xF009 must be advertised as supported.
+    #[test]
+    fn pq_official_suites_supported() {
+        let provider = RustCrypto::default();
+        let supported = provider.supported_ciphersuites();
+        use openmls_traits::types::Ciphersuite;
+        let pq_suites = [
+            Ciphersuite::MLS_128_MLKEM768X25519_AES128GCM_SHA256_Ed25519,
+            Ciphersuite::MLS_128_MLKEM768X25519_AES256GCM_SHA384_Ed25519,
+            Ciphersuite::MLS_128_MLKEM768P256_AES128GCM_SHA256_P256,
+            Ciphersuite::MLS_128_MLKEM768P256_AES256GCM_SHA384_P256,
+            Ciphersuite::MLS_192_MLKEM1024P384_AES256GCM_SHA384_P384,
+            Ciphersuite::MLS_128_MLKEM768_AES256GCM_SHA384_P256,
+            Ciphersuite::MLS_192_MLKEM1024_AES256GCM_SHA384_P384,
+            Ciphersuite::MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65,
+            Ciphersuite::MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87,
+        ];
+        for suite in pq_suites {
+            assert!(
+                supported.contains(&suite),
+                "PQ suite {suite:?} must appear in supported_ciphersuites()"
+            );
+            assert!(
+                provider.supports(suite).is_ok(),
+                "PQ suite {suite:?} must return Ok from supports()"
+            );
+        }
+    }
+
+    /// Same seed in, same ciphertext out. Guards against hpke reaching for the OS
+    /// RNG instead of the provider's seeded one.
+    #[test]
+    fn hpke_seal_is_deterministic_under_seeded_rng() {
+        use crate::mls_provider::EntropySeed;
+
+        let plaintext = b"determinism test plaintext";
+        let info = b"determinism-info";
+        let aad = b"determinism-aad";
+
+        // (kem, kdf, aead, ikm-byte): one classical suite, one PQ suite
+        let cases: Vec<(HpkeKemType, HpkeKdfType, HpkeAeadType, u8)> = vec![
+            (
+                HpkeKemType::DhKem25519,
+                HpkeKdfType::HkdfSha256,
+                HpkeAeadType::AesGcm128,
+                0x11,
+            ),
+            (
+                HpkeKemType::MlKem768X25519,
+                HpkeKdfType::Shake256,
+                HpkeAeadType::AesGcm256,
+                0x22,
+            ),
+        ];
+
+        for (kem, kdf, aead, ikm_byte) in cases {
+            // Fixed seed for both providers => identical RNG streams
+            let seed = EntropySeed::from_raw([0x5Au8; 32]);
+            let provider_a = RustCrypto::new_with_seed(seed.clone());
+            let provider_b = RustCrypto::new_with_seed(seed);
+
+            // derive takes no RNG, so both providers get the same keypair
+            let ikm = vec![ikm_byte; 64];
+            let kp = RustCrypto::default()
+                .derive_hpke_keypair(HpkeConfig(kem, kdf, aead), &ikm)
+                .unwrap_or_else(|e| panic!("derive_hpke_keypair failed for ({kem:?},{kdf:?},{aead:?}): {e:?}"));
+
+            let ct_a = provider_a
+                .hpke_seal(HpkeConfig(kem, kdf, aead), &kp.public, info, aad, plaintext)
+                .unwrap_or_else(|e| panic!("hpke_seal (a) failed for ({kem:?},{kdf:?},{aead:?}): {e:?}"));
+            let ct_b = provider_b
+                .hpke_seal(HpkeConfig(kem, kdf, aead), &kp.public, info, aad, plaintext)
+                .unwrap_or_else(|e| panic!("hpke_seal (b) failed for ({kem:?},{kdf:?},{aead:?}): {e:?}"));
+
+            assert_eq!(
+                ct_a.kem_output.as_slice(),
+                ct_b.kem_output.as_slice(),
+                "kem_output not deterministic under identical seed for ({kem:?},{kdf:?},{aead:?})"
+            );
+            assert_eq!(
+                ct_a.ciphertext.as_slice(),
+                ct_b.ciphertext.as_slice(),
+                "ciphertext not deterministic under identical seed for ({kem:?},{kdf:?},{aead:?})"
+            );
+
+            // Sanity: the sealed message still opens correctly
+            let recovered = provider_a
+                .hpke_open(HpkeConfig(kem, kdf, aead), &ct_a, &kp.private, info, aad)
+                .unwrap_or_else(|e| panic!("hpke_open failed for ({kem:?},{kdf:?},{aead:?}): {e:?}"));
+            assert_eq!(
+                recovered, plaintext,
+                "round-trip mismatch for ({kem:?},{kdf:?},{aead:?})"
+            );
+        }
+    }
+
+    /// hpke_open must reject a tampered ciphertext, a tampered encapsulation and a
+    /// wrong key. Pins that our wrapper propagates the error rather than swallowing it.
+    #[test]
+    fn pq_hpke_open_fails_closed() {
+        let provider = RustCrypto::default();
+        let plaintext = b"pq-hpke rejection test";
+        let info = b"test-info";
+        let aad = b"test-aad";
+
+        for (kem, kdf, aead) in pq_configs() {
+            let kp = provider
+                .derive_hpke_keypair(HpkeConfig(kem, kdf, aead), &[0x55u8; 64])
+                .unwrap_or_else(|e| panic!("derive_hpke_keypair failed for ({kem:?},{kdf:?},{aead:?}): {e:?}"));
+            let sealed = provider
+                .hpke_seal(HpkeConfig(kem, kdf, aead), &kp.public, info, aad, plaintext)
+                .unwrap_or_else(|e| panic!("hpke_seal failed for ({kem:?},{kdf:?},{aead:?}): {e:?}"));
+
+            // Flipping the last ciphertext byte invalidates the authentication tag
+            let mut ct_bytes = sealed.ciphertext.as_slice().to_vec();
+            let last = ct_bytes.len() - 1;
+            ct_bytes[last] ^= 0x01;
+            let flipped_ct = types::HpkeCiphertext {
+                kem_output: sealed.kem_output.clone(),
+                ciphertext: ct_bytes.into(),
+            };
+            assert!(
+                provider
+                    .hpke_open(HpkeConfig(kem, kdf, aead), &flipped_ct, &kp.private, info, aad)
+                    .is_err(),
+                "hpke_open MUST reject a flipped ciphertext for ({kem:?},{kdf:?},{aead:?})"
+            );
+
+            // A corrupted encapsulation makes decap yield the wrong shared secret
+            let mut ko_bytes = sealed.kem_output.as_slice().to_vec();
+            assert!(
+                !ko_bytes.is_empty(),
+                "kem_output is empty for ({kem:?},{kdf:?},{aead:?})"
+            );
+            ko_bytes[0] ^= 0xff;
+            let flipped_ko = types::HpkeCiphertext {
+                kem_output: ko_bytes.into(),
+                ciphertext: sealed.ciphertext.clone(),
+            };
+            assert!(
+                provider
+                    .hpke_open(HpkeConfig(kem, kdf, aead), &flipped_ko, &kp.private, info, aad)
+                    .is_err(),
+                "hpke_open MUST reject a flipped kem_output for ({kem:?},{kdf:?},{aead:?})"
+            );
+
+            // A different keypair's private key must not open this ciphertext
+            let other = provider
+                .derive_hpke_keypair(HpkeConfig(kem, kdf, aead), &[0xBBu8; 64])
+                .unwrap_or_else(|e| panic!("derive_hpke_keypair failed for ({kem:?},{kdf:?},{aead:?}): {e:?}"));
+            assert!(
+                provider
+                    .hpke_open(HpkeConfig(kem, kdf, aead), &sealed, &other.private, info, aad)
+                    .is_err(),
+                "hpke_open MUST reject a wrong private key for ({kem:?},{kdf:?},{aead:?})"
+            );
+        }
+    }
+}
+
+#[cfg(test)]
+mod shake_kdf_tests {
+    use super::*;
+
+    #[test]
+    fn shake256_kdf_derive_matches_fips202_empty_vector() {
+        use openmls_traits::crypto::OpenMlsCrypto;
+        let provider = RustCrypto::default();
+        // FIPS-202 SHAKE256("") first 32 bytes (distinguishes SHAKE256 from SHAKE128)
+        let expected = hex::decode("46b9dd2b0ba88d13233b3feb743eeb243fcd52ea62b81b82b50c27646ed5762f").unwrap();
+        let out = provider.shake256_kdf_derive(b"", 32).unwrap();
+        assert_eq!(out.as_slice(), expected.as_slice());
+        let out64 = provider.shake256_kdf_derive(b"", 64).unwrap();
+        assert_eq!(&out64.as_slice()[..32], expected.as_slice());
     }
 }
