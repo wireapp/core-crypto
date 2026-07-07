@@ -55,7 +55,6 @@ impl ProteusCentral {
         } else {
             let last_resort = proteus_wasm::keys::PreKey::last_resort();
 
-            use core_crypto_keystore::CryptoKeystoreProteus as _;
             keystore
                 .proteus_store_prekey(
                     Self::last_resort_prekey_id(),

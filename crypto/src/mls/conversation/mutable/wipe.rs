@@ -1,4 +1,3 @@
-use core_crypto_keystore::CryptoKeystoreMls as _;
 use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::Result;

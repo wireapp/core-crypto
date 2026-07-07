@@ -157,7 +157,6 @@ mod tests {
         #![allow(missing_docs)]
 
         pub async fn find_keypackages(&self, backend: &CryptoProvider) -> Result<Vec<openmls::prelude::KeyPackage>> {
-            use core_crypto_keystore::CryptoKeystoreMls as _;
             let kps = backend
                 .key_store()
                 .mls_fetch_key_packages::<openmls::prelude::KeyPackage>(u32::MAX)

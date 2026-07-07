@@ -4,10 +4,7 @@
 
 use std::sync::Arc;
 
-use core_crypto_keystore::{
-    CryptoKeystoreMls as _,
-    entities::{MlsPendingMessage, PersistedMlsPendingGroup},
-};
+use core_crypto_keystore::entities::{MlsPendingMessage, PersistedMlsPendingGroup};
 use log::trace;
 use openmls::{
     credentials::CredentialWithKey,

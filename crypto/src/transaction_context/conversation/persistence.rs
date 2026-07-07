@@ -1,4 +1,3 @@
-use core_crypto_keystore::CryptoKeystoreMls as _;
 use openmls::{
     group::{InnerState, MlsGroup},
     prelude::Welcome,

@@ -130,7 +130,6 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::CryptoKeystoreMls;
 
     use super::Error;
     use crate::{ConversationConfiguration, LeafError, test_utils::*};

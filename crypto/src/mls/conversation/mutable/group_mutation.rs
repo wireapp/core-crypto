@@ -1,4 +1,4 @@
-use core_crypto_keystore::{CryptoKeystoreMls as _, Database};
+use core_crypto_keystore::Database;
 use openmls::group::{InnerState, MlsGroup};
 
 use super::{ConversationMut, Result};
