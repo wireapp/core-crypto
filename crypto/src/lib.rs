@@ -33,7 +33,7 @@ use std::sync::Arc;
 use async_lock::Mutex;
 use async_lock::RwLock;
 pub(crate) use bytes_wrapper::bytes_wrapper;
-pub use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
+pub use core_crypto_keystore::{Database, DatabaseKey};
 #[cfg(test)]
 pub use core_crypto_macros::{dispotent, durable, idempotent};
 pub(crate) use immutable_database::ImmutableDatabase;
