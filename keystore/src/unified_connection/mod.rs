@@ -68,7 +68,7 @@ impl Database {
             if exists {
                 encryption::decrypt(&mut conn, database_key)?;
             } else {
-                encryption::rekey(&mut conn, database_key)?;
+                encryption::key(&mut conn, database_key)?;
             }
             (conn, filesystem::NativeFs)
         };
