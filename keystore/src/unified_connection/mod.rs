@@ -202,6 +202,17 @@ impl Database {
         self.conn.lock().await
     }
 
+    /// Get the location of the database.
+    ///
+    /// Returns None if the database is in-memory.
+    pub async fn location(&self) -> Option<String> {
+        self.conn()
+            .await
+            .path()
+            .filter(|s| !s.is_empty())
+            .map(ToString::to_string)
+    }
+
     /// Export a copy of the database to the specified path using VACUUM INTO.
     ///
     /// This creates a fully vacuumed and optimized copy of the database.
