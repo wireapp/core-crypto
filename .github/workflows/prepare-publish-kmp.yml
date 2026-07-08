@@ -1,0 +1,128 @@
+name: prepare to publish kmp packages
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-prepare-publish-kmp"
+
+on:
+  workflow_call:
+    secrets:
+      SONATYPE_USERNAME:
+        required: true
+      SONATYPE_PASSWORD:
+        required: true
+      PGP_KEY_ID:
+        required: true
+      PGP_SIGNING_KEY:
+        required: true
+      PGP_PASSPHRASE:
+        required: true
+    outputs:
+      staging_repository_id:
+        description: "The Sonatype staging repository id created during the prepare phase."
+        value: ${{ jobs.kmp.outputs.staging_repository_id }}
+
+env:
+  RELEASE: 1
+
+jobs:
+  kmp:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: ubuntu-latest
+    outputs:
+      staging_repository_id: ${{ steps.stage.outputs.staging_repository_id }}
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - name: set up jdk 25
+        uses: actions/setup-java@v5.4.0
+        with:
+          java-version: 25
+          distribution: adopt
+
+      - name: gradle setup
+        uses: gradle/actions/setup-gradle@v6.2.0
+        with:
+          cache-provider: basic
+
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6.2.0
+
+      - name: download ffi library
+        uses: ./.github/actions/make/ffi-library
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: download armv7-linux-androideabi binaries
+        uses: ./.github/actions/make/android/lib
+        with:
+          task: android-armv7
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: download aarch64-linux-android binaries
+        uses: ./.github/actions/make/android/lib
+        with:
+          task: android-armv8
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: download x86_64-linux-android binaries
+        uses: ./.github/actions/make/android/lib
+        with:
+          task: android-x86
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: download artifacts for ios device
+        uses: ./.github/actions/make/ios/build
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          task: ios-device
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: download artifacts for ios simulator
+        uses: ./.github/actions/make/ios/build
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          task: ios-simulator-arm
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: download x86_64 linux artifact
+        uses: ./.github/actions/make/jvm
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      # The specific jvm action uses `uname -s` to determine which `jvm` make rule to call.
+      # Because this workflow runs on ubuntu, we're using the generic action
+      - name: download aarch64 apple darwin artifact
+        uses: ./.github/actions/make
+        with:
+          key: jvm-darwin
+          make-rule: jvm-darwin
+          target-path: target/aarch64-apple-darwin/release/libcore_crypto_ffi.dylib
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: stage artifact in sonatype
+        id: stage
+        run: |
+          cd crypto-ffi/bindings
+          ./gradlew :core-crypto-kmp:publishAllPublicationsToSonatypeRepository closeSonatypeStagingRepository --no-configuration-cache | tee gradle-stage.log
+
+          # grepping logs for this stuff isn't ideal, but technically should work, as long as the log string
+          # never changes. But we should keep an eye on it. Currently:
+          # https://github.com/gradle-nexus/publish-plugin/blob/c550fe9a15d177bad06b7902af9e497f837b6579/src/main/kotlin/io/github/gradlenexus/publishplugin/InitializeNexusStagingRepository.kt#L47
+          repo_id=$(grep -oP "Created staging repository '\K[^']+" gradle-stage.log | head -n1)
+          if [[ -z "$repo_id" ]]; then
+            echo "::error ::Could not determine the staging repository id from the Gradle output"
+            exit 1
+          fi
+          echo "::notice title=KMP staging repository::Created and closed staging repository ${repo_id}"
+          echo "staging_repository_id=${repo_id}" >> "$GITHUB_OUTPUT"
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.PGP_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.PGP_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.PGP_PASSPHRASE }}
