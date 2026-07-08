@@ -174,6 +174,67 @@ jobs:
       PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
 
+  prepare-kmp:
+    if: >
+      (inputs.registry == 'all' || inputs.registry == 'kmp') &&
+      inputs.sonatype-action == 'prepare-and-release'
+    uses: ./.github/workflows/prepare-publish-kmp.yml
+    secrets:
+      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
+      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+
+  kmp-staging-repository-id:
+    runs-on: ubuntu-latest
+    needs: prepare-kmp
+    # always() lets this run even when prepare-kmp was skipped (sonatype-action == 'release').
+    # The result check ensures we don't run if prepare-kmp actually failed.
+    if: >
+      always() &&
+      (inputs.registry == 'all' || inputs.registry == 'kmp') &&
+      (needs.prepare-kmp.result == 'success' || needs.prepare-kmp.result == 'skipped')
+    env:
+      COMPUTED_ID: ${{ needs.prepare-kmp.outputs.staging_repository_id }}
+      PROVIDED_ID: ${{ inputs.kmp-staging-repository-id }}
+    steps:
+      - name: ensure the kmp staging repository id
+        id: ensure-staging-repo
+        run: |
+          if [ -n "$COMPUTED_ID" ]; then
+            staging_repository_id="$COMPUTED_ID"
+          elif [ -n "$PROVIDED_ID" ]; then
+            staging_repository_id="$PROVIDED_ID"
+          else
+            echo "::error ::When 'sonatype-action' is 'release' you must manually specify the 'kmp-staging-repository-id' input"
+            exit 1
+          fi
+          echo "staging_repository_id=$staging_repository_id" >> "$GITHUB_OUTPUT"
+    outputs:
+      staging_repository_id: ${{ steps.ensure-staging-repo.outputs.staging_repository_id }}
+
+  release-kmp:
+    needs:
+      - prepare-kmp
+      - kmp-staging-repository-id
+    # always() lets this run even when prepare-kmp was skipped (sonatype-action == 'release').
+    # The result check ensures we don't run if prepare-kmp actually failed.
+    if: >
+      always() &&
+      (inputs.registry == 'all' || inputs.registry == 'kmp') &&
+      (needs.prepare-kmp.result == 'success' || needs.prepare-kmp.result == 'skipped') &&
+      needs.kmp-staging-repository-id.result == 'success'
+    uses: ./.github/workflows/publish-kmp.yml
+    with:
+      staging_repository_id: ${{ needs.kmp-staging-repository-id.outputs.staging_repository_id }}
+    secrets:
+      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
+      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+
   publish-npm:
     # The npm tarball is uploaded to the GH release during the automatic pipeline run.
     # Its presence means "not yet published"; we publish then delete it.
