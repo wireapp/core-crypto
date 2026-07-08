@@ -289,6 +289,42 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
+    async fn should_fail_when_certificate_signature_doesnt_match_ciphersuite(case: TestContext) {
+        use openmls::prelude::Ciphersuite;
+        if !case.is_x509() {
+            return;
+        }
+
+        let [alice] = case.sessions_x509().await;
+        let conversation = case.create_conversation([&alice]).await;
+
+        let other_cipher_suite = match case.cipher_suite() {
+            CipherSuite(Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519) => {
+                CipherSuite(Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256)
+            }
+            _ => CipherSuite(Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519),
+        };
+
+        let x509_test_chain = X509TestChain::init_empty(other_cipher_suite.signature_algorithm());
+        let [bob_id] = case.x509_client_ids();
+        let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
+        let certificate = CertificateBundle::rand(&bob_id, x509_intermediate);
+        let credential = Credential::x509(other_cipher_suite, certificate).unwrap();
+        let bob = SessionContext::new_with_credential(&case, credential, Some(&x509_test_chain))
+            .await
+            .unwrap();
+
+        let bob_kp = bob
+            .transaction
+            .generate_key_package(&bob.initial_credential, None)
+            .await
+            .unwrap()
+            .into();
+
+        assert!(conversation.guard().await.add_members(vec![bob_kp]).await.is_err());
+    }
+
+    #[apply(all_cred_cipher)]
     async fn should_not_fail_but_degrade_when_certificate_expired(case: TestContext) {
         if !case.is_x509() {
             return;
