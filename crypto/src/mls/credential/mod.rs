@@ -204,11 +204,9 @@ impl PartialEq for Credential {
 // Requires more than 1 ciphersuite supported at the moment.
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
     use super::{x509::CertificateBundle, *};
     use crate::{
-        ClientIdentifier, CredentialType, E2eiConversationState,
+        CredentialType, E2eiConversationState,
         mls::credential::x509::CertificatePrivateKey,
         mls_provider::PkiKeypair,
         test_utils::{
@@ -258,13 +256,10 @@ mod tests {
 
         let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
 
-        let mut certs = CertificateBundle::rand(&"alice".into(), x509_intermediate);
-        certs.certificate_chain = vec![];
-        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), certs)]));
+        let mut cert = CertificateBundle::rand(&"alice".into(), x509_intermediate);
+        cert.certificate_chain = vec![];
+        let err = Credential::x509(case.cipher_suite(), cert).unwrap_err();
 
-        let err = SessionContext::new_with_identifier(&case, alice_identifier, Some(&x509_test_chain))
-            .await
-            .unwrap_err();
         assert!(innermost_source_matches!(err, Error::InvalidIdentity));
     }
 
@@ -285,11 +280,8 @@ mod tests {
             private_key: eve_key,
             signature_scheme: case.cipher_suite().signature_algorithm(),
         };
-        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
+        let err = Credential::x509(case.cipher_suite(), cb).unwrap_err();
 
-        let err = SessionContext::new_with_identifier(&case, alice_identifier, Some(&x509_test_chain))
-            .await
-            .unwrap_err();
         assert!(innermost_source_matches!(
             err,
             crate::OpenMlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::MismatchKeypair),
@@ -307,12 +299,14 @@ mod tests {
             let expiration_time = core::time::Duration::from_secs(14);
             let start = web_time::Instant::now();
 
-            let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
-            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", Some(expiration_time));
-            let alice = SessionContext::new_with_identifier(&case, alice_identifier, Some(&x509_test_chain))
+            let alice_cert = x509_test_chain.issue_simple_certificate_bundle("alice", None);
+            let alice_cred = Credential::x509(case.cipher_suite(), alice_cert).unwrap();
+            let bob_cert = x509_test_chain.issue_simple_certificate_bundle("bob", Some(expiration_time));
+            let bob_cred = Credential::x509(case.cipher_suite(), bob_cert).unwrap();
+            let alice = SessionContext::new_with_credential(&case, alice_cred, Some(&x509_test_chain))
                 .await
                 .unwrap();
-            let bob = SessionContext::new_with_identifier(&case, bob_identifier, Some(&x509_test_chain))
+            let bob = SessionContext::new_with_credential(&case, bob_cred, Some(&x509_test_chain))
                 .await
                 .unwrap();
 
@@ -408,10 +402,7 @@ mod tests {
             })
         };
         let cb = CertificateBundle::from_certificate_and_issuer(&alice_cert, local_ca);
-        let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
-        let err = SessionContext::new_with_identifier(&case, alice_identifier, Some(&x509_test_chain))
-            .await
-            .unwrap_err();
+        let err = Credential::x509(case.cipher_suite(), cb).unwrap_err();
 
         assert!(innermost_source_matches!(
             err,

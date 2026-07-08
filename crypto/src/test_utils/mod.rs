@@ -14,7 +14,7 @@ pub mod x509;
 #[cfg(feature = "proteus")]
 pub mod proteus_utils;
 
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use async_lock::RwLock;
 use openmls::framing::MlsMessageOut;
@@ -90,7 +90,6 @@ use crate::{RecursiveError::Test, ephemeral::HistorySecret, test_utils::TestErro
 pub struct SessionContext {
     pub transaction: TransactionContext,
     pub session: Arc<RwLock<Session>>,
-    pub identifier: ClientIdentifier,
     pub initial_credential: CredentialRef,
     mls_transport: Arc<RwLock<Arc<dyn MlsTransportTestExt + 'static>>>,
     x509_test_chain: Arc<Option<X509TestChain>>,
@@ -104,9 +103,9 @@ pub struct SessionContext {
 impl SessionContext {
     /// Use this if you want to instantiate a session with a credential different from
     /// the default one of the test context
-    pub async fn new_with_identifier(
+    pub async fn new_with_credential(
         context: &TestContext,
-        identifier: ClientIdentifier,
+        credential: Credential,
         chain: Option<&X509TestChain>,
     ) -> crate::Result<Self> {
         // We need to store the `TempDir` struct for the duration of the test session,
@@ -129,12 +128,7 @@ impl SessionContext {
             chain.register_with_central(&transaction).await;
         }
 
-        let pki_env = core_crypto.get_pki_environment().await;
-        let session_id = identifier
-            .get_id(pki_env.as_deref())
-            .await
-            .map_err(RecursiveError::mls_client("getting client id"))?
-            .into_owned();
+        let session_id = credential.client_id().to_owned();
         transaction
             .mls_init(session_id, context.transport.clone())
             .await
@@ -142,15 +136,12 @@ impl SessionContext {
 
         let session = transaction.session().await.unwrap();
 
-        let credential = Credential::from_identifier(&identifier, context.cipher_suite())
-            .map_err(RecursiveError::mls_credential("creating credential from identifier"))?;
         let initial_credential = transaction.add_credential(credential).await.unwrap();
 
         let session_context = Self {
             transaction,
             session: Arc::new(RwLock::new(session)),
             initial_credential,
-            identifier,
             mls_transport: Arc::new(RwLock::new(context.transport.clone())),
             x509_test_chain: Arc::new(chain.cloned()),
             history_observer: Default::default(),
@@ -179,37 +170,19 @@ impl SessionContext {
             chain.register_with_central(&transaction).await;
         }
 
-        let identifier = context.generate_identifier(chain).await;
-        let initial_credential = Credential::from_identifier(&identifier, context.cipher_suite())
-            .expect("creating credential from identifier");
+        let initial_credential = context.generate_credential(chain).await;
         let initial_credential = CredentialRef::from_credential(&initial_credential);
 
         Self {
             transaction,
             session: Arc::new(RwLock::new(session)),
             initial_credential,
-            identifier,
             mls_transport: Arc::new(RwLock::new(transport)),
             x509_test_chain: Arc::new(chain.cloned()),
             history_observer: Default::default(),
             core_crypto,
             _db: None,
         }
-    }
-
-    fn x509_client_id(
-        client_id: &ClientId,
-        signature_scheme: SignatureScheme,
-        chain: &X509TestChain,
-    ) -> ClientIdentifier {
-        let issuer = chain.find_local_intermediate_ca();
-        let bundle = chain
-            .actors
-            .iter()
-            .find(|actor| &actor.client_id == client_id)
-            .map(|actor| CertificateBundle::from_certificate_and_issuer(&actor.certificate, issuer))
-            .unwrap_or_else(|| CertificateBundle::new_with_exact_client_id(client_id, issuer));
-        ClientIdentifier::X509(HashMap::from([(signature_scheme, bundle)]))
     }
 
     pub fn x509_chain(&self) -> Option<&X509TestChain> {

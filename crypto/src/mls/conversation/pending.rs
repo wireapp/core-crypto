@@ -369,11 +369,6 @@ mod tests {
                 }
             }
 
-            println!("alice: {:?}", alice.identifier);
-            println!("bob: {:?}", bob.identifier);
-            println!("charlie: {:?}", charlie.identifier);
-            println!("debbie: {:?}", debbie.identifier);
-
             assert_eq!(conversation.member_count().await, 3);
             assert!(conversation.is_functional().await);
             assert!(conversation.is_functional_and_contains([&alice, &bob, &charlie]).await);

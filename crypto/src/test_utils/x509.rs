@@ -5,7 +5,6 @@ use x509_cert::der::EncodePem;
 
 use crate::{
     CertificateBundle, ClientId,
-    mls::session::identifier::ClientIdentifier,
     mls_provider::{CRYPTO, CertProfile, CertificateGenerationArgs, PkiKeypair},
     transaction_context::TransactionContext,
 };
@@ -297,7 +296,7 @@ impl X509TestChain {
         &mut self,
         name: &str,
         expiration: Option<std::time::Duration>,
-    ) -> (ClientIdentifier, &X509Certificate) {
+    ) -> CertificateBundle {
         let intermediate = self.find_local_intermediate_ca();
 
         let common_name = format!("{name} Smith");
@@ -316,7 +315,6 @@ impl X509TestChain {
 
         let certificate = intermediate.create_and_sign_end_identity(cert_params);
 
-        let sc = intermediate.signature_scheme;
         let cert_bundle = CertificateBundle::from_certificate_and_issuer(&certificate, intermediate);
 
         self.actors.push(X509TestChainActor {
@@ -327,9 +325,7 @@ impl X509TestChain {
             certificate,
         });
 
-        let cert = &self.actors.last().unwrap().certificate;
-
-        (ClientIdentifier::X509([(sc, cert_bundle)].into()), cert)
+        cert_bundle
     }
 }
 

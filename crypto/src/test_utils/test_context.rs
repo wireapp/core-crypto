@@ -6,14 +6,14 @@ pub use rstest::*;
 pub use rstest_reuse::{self, *};
 
 use super::{
-    ClientIdentifier, CoreCryptoTransportSuccessProvider, MlsTransportTestExt, TestConversation, init_x509_test_chain,
-    tmp_db_file,
+    CoreCryptoTransportSuccessProvider, MlsTransportTestExt, TestConversation, init_x509_test_chain, tmp_db_file,
     x509::{CertificateParams, X509TestChain, qualified_e2ei_cid, qualified_e2ei_cid_from_user_id},
 };
-pub use crate::{CipherSuite, ConversationConfiguration, CredentialType, CustomConfiguration, WirePolicy};
 use crate::{
-    ClientId, ConnectionType, CredentialRef, Database, DatabaseKey, ExternalSender, test_utils::SessionContext,
+    CertificateBundle, ClientId, ConnectionType, Credential, CredentialRef, Database, DatabaseKey, ExternalSender,
+    test_utils::SessionContext,
 };
+pub use crate::{CipherSuite, ConversationConfiguration, CredentialType, CustomConfiguration, WirePolicy};
 
 #[template]
 #[rstest(
@@ -191,47 +191,54 @@ impl TestContext {
         chain
     }
 
-    async fn x509_identifiers<const N: usize>(
+    async fn x509_credentials<const N: usize>(
         &self,
         client_ids: [ClientId; N],
         chain: &X509TestChain,
-    ) -> [ClientIdentifier; N] {
-        let mut x509_identifiers = Vec::with_capacity(N);
-        let signature_scheme = self.signature_scheme();
+    ) -> [Credential; N] {
+        let mut credentials = Vec::with_capacity(N);
+        let x509_intermediate = chain.find_local_intermediate_ca();
         for client_id in &client_ids {
-            x509_identifiers.push(SessionContext::x509_client_id(client_id, signature_scheme, chain))
+            let certificate = chain
+                .actors
+                .iter()
+                .find(|actor| &actor.client_id == client_id)
+                .map(|actor| CertificateBundle::from_certificate_and_issuer(&actor.certificate, x509_intermediate))
+                .unwrap_or_else(|| CertificateBundle::new_with_exact_client_id(client_id, x509_intermediate));
+            let credential = Credential::x509(self.cipher_suite(), certificate).unwrap();
+            credentials.push(credential)
         }
-        x509_identifiers.try_into().expect("Vector should be of length N.")
+        credentials.try_into().expect("Vector should be of length N.")
     }
 
-    fn basic_identifiers<const N: usize>(client_ids: [ClientId; N]) -> [ClientIdentifier; N] {
+    fn basic_credentials<const N: usize>(&self, client_ids: [ClientId; N]) -> [Credential; N] {
         client_ids
             .iter()
-            .map(|id| ClientIdentifier::Basic(id.clone()))
+            .map(|id| Credential::basic(self.cipher_suite(), id.to_owned()).unwrap())
             .collect::<Vec<_>>()
             .try_into()
             .expect("Vector should be of length N")
     }
 
-    /// Generate a single client identifier of a type matching the credential type.
+    /// Generate a single credential of a type matching the credential type.
     ///
-    /// This operation is _not_ idempotent; it generates a new identifier each time.
+    /// This operation is _not_ idempotent; it generates a new credential each time.
     ///
     /// If a test chain is provided, it is used only in the x509 case. If the case is x509,
     /// a test chain must be provided.
-    pub(crate) async fn generate_identifier(&self, chain: Option<&X509TestChain>) -> ClientIdentifier {
-        let [identifier] = match self.credential_type {
+    pub(crate) async fn generate_credential(&self, chain: Option<&X509TestChain>) -> Credential {
+        let [credential] = match self.credential_type {
             CredentialType::Basic => {
                 let client_ids = self.basic_client_ids::<1>();
-                Self::basic_identifiers(client_ids)
+                self.basic_credentials(client_ids)
             }
             CredentialType::X509 => {
                 let client_ids = self.x509_client_ids::<1>();
                 let chain = chain.expect("a test chain must be provided in the x509 case");
-                self.x509_identifiers(client_ids, chain).await
+                self.x509_credentials(client_ids, chain).await
             }
         };
-        identifier
+        credential
     }
 
     pub async fn sessions<const N: usize>(&self) -> [SessionContext; N] {
@@ -288,16 +295,16 @@ impl TestContext {
         chain: Option<&X509TestChain>,
         credential_type: CredentialType,
     ) -> [SessionContext; N] {
-        let identifiers = if credential_type == CredentialType::X509 {
-            self.x509_identifiers(client_ids, chain.expect("must instantiate an x509 chain in x509 tests"))
+        let credentials = if credential_type == CredentialType::X509 {
+            self.x509_credentials(client_ids, chain.expect("must instantiate an x509 chain in x509 tests"))
                 .await
         } else {
-            Self::basic_identifiers(client_ids)
+            self.basic_credentials(client_ids)
         };
         let mut sessions = Vec::with_capacity(N);
-        for client_id in identifiers {
+        for credential in credentials {
             sessions.push(
-                SessionContext::new_with_identifier(self, client_id, chain)
+                SessionContext::new_with_credential(self, credential, chain)
                     .await
                     .unwrap(),
             );
