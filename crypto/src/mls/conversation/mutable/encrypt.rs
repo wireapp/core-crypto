@@ -78,6 +78,52 @@ mod tests {
         .await
     }
 
+    /// The official SHAKE256 PQ suites (0xF001-0xF009), now driven end to end by the
+    /// SHAKE256 one-shot key schedule. One classical-signature variant (Ed25519, 0xF001)
+    /// and one ML-DSA variant (ML-DSA-65, 0xF008), so a full PQ group gets exercised.
+    #[rstest::rstest]
+    #[case::ed25519(openmls::prelude::Ciphersuite::MLS_128_MLKEM768X25519_AES128GCM_SHA256_Ed25519)]
+    #[case::mldsa65(openmls::prelude::Ciphersuite::MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65)]
+    #[test_attr(macro_rules_attribute::apply(smol_macros::test))]
+    async fn official_pq_suite_full_conversation_roundtrip(#[case] ciphersuite: openmls::prelude::Ciphersuite) {
+        let case = TestContext::new(CredentialType::Basic, ciphersuite);
+        let [alice, bob] = case.sessions().await;
+        Box::pin(async move {
+            // create + add: alice creates the conversation and invites bob
+            let conversation = case.create_conversation([&alice, &bob]).await;
+            assert_eq!(conversation.member_count().await, 2);
+
+            // app-message round-trip: alice -> bob
+            let msg = b"Hello bob, this is a post-quantum greeting";
+            let encrypted = conversation.guard().await.encrypt_message(msg).await.unwrap();
+            assert_ne!(&msg[..], &encrypted[..]);
+            let decrypted = conversation
+                .guard_of(&bob)
+                .await
+                .decrypt_message(encrypted)
+                .await
+                .unwrap()
+                .app_msg
+                .unwrap();
+            assert_eq!(&decrypted[..], &msg[..]);
+
+            // app-message round-trip: bob -> alice
+            let reply = b"Hello alice, post-quantum reply received";
+            let encrypted = conversation.guard_of(&bob).await.encrypt_message(reply).await.unwrap();
+            assert_ne!(&reply[..], &encrypted[..]);
+            let decrypted = conversation
+                .guard()
+                .await
+                .decrypt_message(encrypted)
+                .await
+                .unwrap()
+                .app_msg
+                .unwrap();
+            assert_eq!(&decrypted[..], &reply[..]);
+        })
+        .await
+    }
+
     // Ensures encrypting an application message is durable
     #[apply(all_cred_cipher)]
     async fn can_encrypt_consecutive_messages(case: TestContext) {
