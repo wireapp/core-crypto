@@ -18,17 +18,17 @@ impl Database {
     /// Open or create a database.
     #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::constructor)]
     pub async fn open(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
-        core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::Persistent(location), key.as_ref())
+        core_crypto_keystore::Database::open(location, key.as_ref())
             .await
             .map(Database)
             .map_err(CoreCryptoError::generic())
     }
 
     /// Create an in-memory database whose data will be lost when the instance is dropped.
+    /// In-memory databases are never encrypted.
     #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::constructor)]
-    pub async fn in_memory(key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
-        core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::InMemory, key.as_ref())
-            .await
+    pub async fn in_memory() -> CoreCryptoResult<Self> {
+        core_crypto_keystore::Database::open_in_memory()
             .map(Database)
             .map_err(CoreCryptoError::generic())
     }
@@ -45,8 +45,8 @@ pub async fn open_database(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoR
 /// Create an in-memory database whose data will be lost when the instance is dropped.
 #[cfg(not(any(feature = "wasm", feature = "napi", target_os = "unknown")))]
 #[uniffi::export]
-pub async fn in_memory_database(key: Arc<DatabaseKey>) -> CoreCryptoResult<Database> {
-    Database::in_memory(key).await
+pub async fn in_memory_database() -> CoreCryptoResult<Database> {
+    Database::in_memory().await
 }
 
 #[uniffi::export]
@@ -54,8 +54,8 @@ impl Database {
     /// Get the location of the database.
     ///
     /// Returns null if the database is in-memory.
-    pub async fn get_location(&self) -> CoreCryptoResult<Option<String>> {
-        self.location().await.map_err(CoreCryptoError::generic())
+    pub async fn get_location(&self) -> Option<String> {
+        self.location().await
     }
 
     /// Updates the key of the database.
