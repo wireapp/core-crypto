@@ -139,9 +139,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
     log::info!("Using cipher suite {CIPHERSUITE_IN_USE}");
 
     let mut spinner = util::RunningProcess::new("[MLS] Step 0: Initializing clients & env...", true);
-    let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
-        .await
-        .unwrap();
+    let db = Database::open_in_memory().unwrap();
 
     let mut clients = create_mls_clients(chrome_driver_addr, web_server).await;
 
@@ -298,9 +296,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server:
         client.init().await?;
     }
 
-    let db = Database::open(ConnectionType::InMemory, &DatabaseKey::generate())
-        .await
-        .unwrap();
+    let db = Database::open_in_memory().unwrap();
 
     let master_client = CoreCrypto::new(db);
     let transaction = master_client.new_transaction().await?;
