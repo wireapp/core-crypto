@@ -152,6 +152,13 @@ impl TestContext {
         out
     }
 
+    pub fn client_ids<const N: usize>(&self) -> [ClientId; N] {
+        match self.credential_type {
+            CredentialType::Basic => self.basic_client_ids(),
+            CredentialType::X509 => self.x509_client_ids(),
+        }
+    }
+
     pub fn x509_client_ids<const N: usize>(&self) -> [ClientId; N] {
         std::array::from_fn(|_| qualified_e2ei_cid())
     }
@@ -169,7 +176,7 @@ impl TestContext {
         std::array::from_fn(|_| qualified_e2ei_cid_from_user_id(user))
     }
 
-    async fn test_chain(
+    pub(crate) async fn set_test_chain(
         &self,
         client_ids: &[ClientId],
         revoked_display_names: &[String],
@@ -191,15 +198,17 @@ impl TestContext {
         chain
     }
 
-    async fn x509_credentials<const N: usize>(
-        &self,
-        client_ids: [ClientId; N],
-        chain: &X509TestChain,
-    ) -> [Credential; N] {
+    pub async fn x509_credentials<const N: usize>(&self, client_ids: [ClientId; N]) -> [Credential; N] {
+        if self.chain.read().await.is_none() {
+            self.set_test_chain(&client_ids, &[], None).await;
+        }
+
+        let test_chain = self.chain.read().await;
+        let test_chain = test_chain.as_ref().unwrap();
         let mut credentials = Vec::with_capacity(N);
-        let x509_intermediate = chain.find_local_intermediate_ca();
+        let x509_intermediate = test_chain.find_local_intermediate_ca();
         for client_id in &client_ids {
-            let certificate = chain
+            let certificate = test_chain
                 .actors
                 .iter()
                 .find(|actor| &actor.client_id == client_id)
@@ -211,10 +220,10 @@ impl TestContext {
         credentials.try_into().expect("Vector should be of length N.")
     }
 
-    fn basic_credentials<const N: usize>(&self, client_ids: [ClientId; N]) -> [Credential; N] {
+    pub(crate) fn basic_credentials<const N: usize>(&self, client_ids: [ClientId; N]) -> [Credential; N] {
         client_ids
-            .iter()
-            .map(|id| Credential::basic(self.cipher_suite(), id.to_owned()).unwrap())
+            .into_iter()
+            .map(|id| Credential::basic(self.cipher_suite(), id).unwrap())
             .collect::<Vec<_>>()
             .try_into()
             .expect("Vector should be of length N")
@@ -223,20 +232,15 @@ impl TestContext {
     /// Generate a single credential of a type matching the credential type.
     ///
     /// This operation is _not_ idempotent; it generates a new credential each time.
-    ///
-    /// If a test chain is provided, it is used only in the x509 case. If the case is x509,
-    /// a test chain must be provided.
-    pub(crate) async fn generate_credential(&self, chain: Option<&X509TestChain>) -> Credential {
+    pub(crate) async fn generate_credential(&self) -> Credential {
+        let [client_id] = self.client_ids();
+        self.generate_credential_wtih_client_id(client_id).await
+    }
+
+    pub(crate) async fn generate_credential_wtih_client_id(&self, client_id: ClientId) -> Credential {
         let [credential] = match self.credential_type {
-            CredentialType::Basic => {
-                let client_ids = self.basic_client_ids::<1>();
-                self.basic_credentials(client_ids)
-            }
-            CredentialType::X509 => {
-                let client_ids = self.x509_client_ids::<1>();
-                let chain = chain.expect("a test chain must be provided in the x509 case");
-                self.x509_credentials(client_ids, chain).await
-            }
+            CredentialType::Basic => self.basic_credentials([client_id]),
+            CredentialType::X509 => self.x509_credentials([client_id]).await,
         };
         credential
     }
@@ -250,7 +254,9 @@ impl TestContext {
 
     pub async fn sessions_basic<const N: usize>(&self) -> [SessionContext; N] {
         let client_ids = self.basic_client_ids::<N>();
-        return self.sessions_inner(client_ids, None, CredentialType::Basic).await;
+        return self
+            .sessions_with_credential_type(client_ids, CredentialType::Basic)
+            .await;
     }
 
     /// Use this to create sessions with both x509 and basic credential types.
@@ -259,9 +265,7 @@ impl TestContext {
         &self,
     ) -> ([SessionContext; N], [SessionContext; M]) {
         let x509_sessions = self.sessions_x509().await;
-        let chain = x509_sessions[0].x509_chain_unchecked();
-        let basic_ids = self.basic_client_ids();
-        let basic_sessions = self.sessions_inner(basic_ids, Some(chain), CredentialType::Basic).await;
+        let basic_sessions = self.sessions_basic().await;
         (x509_sessions, basic_sessions)
     }
 
@@ -269,8 +273,7 @@ impl TestContext {
         &self,
         client_ids: [ClientId; N],
     ) -> [SessionContext; N] {
-        let test_chain = self.test_chain(&client_ids, &[], None).await;
-        self.sessions_inner(client_ids, Some(&test_chain), CredentialType::X509)
+        self.sessions_with_credential_type(client_ids, CredentialType::X509)
             .await
     }
 
@@ -279,8 +282,8 @@ impl TestContext {
         client_ids: [ClientId; N],
         revoked_display_names: &[String],
     ) -> [SessionContext; N] {
-        let test_chain = self.test_chain(&client_ids, revoked_display_names, None).await;
-        self.sessions_inner(client_ids, Some(&test_chain), CredentialType::X509)
+        self.set_test_chain(&client_ids, revoked_display_names, None).await;
+        self.sessions_with_credential_type(client_ids, CredentialType::X509)
             .await
     }
 
@@ -289,25 +292,19 @@ impl TestContext {
         self.sessions_x509_with_client_ids(client_ids).await
     }
 
-    async fn sessions_inner<const N: usize>(
+    async fn sessions_with_credential_type<const N: usize>(
         &self,
         client_ids: [ClientId; N],
-        chain: Option<&X509TestChain>,
         credential_type: CredentialType,
     ) -> [SessionContext; N] {
         let credentials = if credential_type == CredentialType::X509 {
-            self.x509_credentials(client_ids, chain.expect("must instantiate an x509 chain in x509 tests"))
-                .await
+            self.x509_credentials(client_ids).await
         } else {
             self.basic_credentials(client_ids)
         };
         let mut sessions = Vec::with_capacity(N);
         for credential in credentials {
-            sessions.push(
-                SessionContext::new_with_credential(self, credential, chain)
-                    .await
-                    .unwrap(),
-            );
+            sessions.push(SessionContext::new_with_credential(self, credential).await.unwrap());
         }
         sessions.try_into().expect("Vector should be of length N.")
     }

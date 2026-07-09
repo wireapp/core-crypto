@@ -26,6 +26,7 @@ use wire_e2e_identity::pki_env::PkiEnvironment;
 use self::error::Result;
 pub(crate) use self::{epoch_observer::TestEpochObserver, history_observer::TestHistoryObserver};
 pub use self::{error::Error as TestError, message::*, test_context::*, test_conversation::TestConversation};
+pub use crate::CredentialType;
 use crate::{
     CertificateBundle, ClientId, CommitBundle, ConnectionType, ConversationId, CoreCrypto, Credential, CredentialRef,
     Database, DatabaseKey, Error, GroupInfoBundle, MlsTransport, RecursiveError, Session, TransportData,
@@ -33,7 +34,6 @@ use crate::{
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     transaction_context::TransactionContext,
 };
-pub use crate::{ClientIdentifier, CredentialType};
 
 pub const GROUP_SAMPLE_SIZE: usize = 9;
 
@@ -103,11 +103,7 @@ pub struct SessionContext {
 impl SessionContext {
     /// Use this if you want to instantiate a session with a credential different from
     /// the default one of the test context
-    pub async fn new_with_credential(
-        context: &TestContext,
-        credential: Credential,
-        chain: Option<&X509TestChain>,
-    ) -> crate::Result<Self> {
+    pub async fn new_with_credential(context: &TestContext, credential: Credential) -> crate::Result<Self> {
         // We need to store the `TempDir` struct for the duration of the test session,
         // because its drop implementation takes care of the directory deletion.
         let (db_path, db_dir) = tmp_db_file();
@@ -118,8 +114,9 @@ impl SessionContext {
         let core_crypto = CoreCrypto::new(db.clone());
         let transaction = core_crypto.new_transaction().await.unwrap();
 
-        // Setup the X509 PKI environment
-        if let Some(chain) = chain.as_ref() {
+        let maybe_chain = context.chain.read().await.clone();
+        if let Some(chain) = maybe_chain.as_ref() {
+            // Setup the X509 PKI environment
             let dummy_hooks = Arc::new(DummyPkiEnvironmentHooks);
             let pki_env = PkiEnvironment::new(dummy_hooks, db.clone())
                 .await
@@ -143,7 +140,7 @@ impl SessionContext {
             session: Arc::new(RwLock::new(session)),
             initial_credential,
             mls_transport: Arc::new(RwLock::new(context.transport.clone())),
-            x509_test_chain: Arc::new(chain.cloned()),
+            x509_test_chain: Arc::new(maybe_chain),
             history_observer: Default::default(),
             core_crypto,
             _db: Some((db, db_dir.into())),
@@ -151,17 +148,14 @@ impl SessionContext {
         Ok(session_context)
     }
 
-    pub(crate) async fn new_from_cc(
-        context: &TestContext,
-        core_crypto: Arc<CoreCrypto>,
-        chain: Option<&X509TestChain>,
-    ) -> Self {
+    pub(crate) async fn new_from_cc(context: &TestContext, core_crypto: Arc<CoreCrypto>) -> Self {
         let transport = context.transport.clone();
         let transaction = core_crypto.new_transaction().await.unwrap();
 
         let session = core_crypto.mls_session().await.unwrap();
+        let maybe_chain = context.chain.read().await.clone();
         // Setup the X509 PKI environment
-        if let Some(chain) = chain.as_ref() {
+        if let Some(chain) = maybe_chain.as_ref() {
             let dummy_hooks = Arc::new(DummyPkiEnvironmentHooks);
             let pki_env = PkiEnvironment::new(dummy_hooks, core_crypto.database.clone())
                 .await
@@ -170,7 +164,7 @@ impl SessionContext {
             chain.register_with_central(&transaction).await;
         }
 
-        let initial_credential = context.generate_credential(chain).await;
+        let initial_credential = context.generate_credential().await;
         let initial_credential = CredentialRef::from_credential(&initial_credential);
 
         Self {
@@ -178,7 +172,7 @@ impl SessionContext {
             session: Arc::new(RwLock::new(session)),
             initial_credential,
             mls_transport: Arc::new(RwLock::new(transport)),
-            x509_test_chain: Arc::new(chain.cloned()),
+            x509_test_chain: Arc::new(maybe_chain),
             history_observer: Default::default(),
             core_crypto,
             _db: None,
