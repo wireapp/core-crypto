@@ -213,10 +213,10 @@ mod tests {
         async fn should_read_revoked_device() {
             let case = TestContext::default_x509();
 
-            let [alice_client_id, bob_client_id] = case.x509_client_ids();
+            let [alice_client_id, bob_client_id] = case.client_ids();
 
-            let rupert_user_id = uuid::Uuid::new_v4();
-            let [rupert_client_id] = case.x509_client_ids_for_user(rupert_user_id);
+            let [rupert_client_id] = case.client_ids();
+            let rupert_user_id = rupert_client_id.as_user_id();
 
             let sessions = case
                 .sessions_x509_with_client_ids_and_revocation(
@@ -289,8 +289,8 @@ mod tests {
         #[macro_rules_attribute::apply(smol_macros::test)]
         async fn should_read_users() {
             let case = TestContext::default_x509();
-            let [alice_android, alice_ios] = case.x509_client_ids_for_user(uuid::Uuid::new_v4());
-            let [bob_android] = case.x509_client_ids();
+            let [alice_android, alice_ios] = case.client_ids_for_user(uuid::Uuid::new_v4());
+            let [bob_android] = case.client_ids();
 
             let sessions = case
                 .sessions_x509_with_client_ids([alice_android, alice_ios, bob_android])

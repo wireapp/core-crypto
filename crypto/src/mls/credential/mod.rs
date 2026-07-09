@@ -286,7 +286,7 @@ mod tests {
         };
 
         let x509_test_chain = case.set_test_chain(&[], &[], None).await;
-        let [bob_id] = case.x509_client_ids();
+        let [bob_id] = case.client_ids();
         let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
         let certificate = CertificateBundle::rand(&bob_id, x509_intermediate);
         let credential = Credential::x509(other_cipher_suite, certificate).unwrap();
@@ -401,7 +401,7 @@ mod tests {
             let name = "alice";
             let common_name = format!("{name} Smith");
             let handle = format!("{}_wire", name.to_lowercase());
-            let client_id = crate::test_utils::x509::qualified_e2ei_cid_with_domain("wire.com");
+            let [client_id] = case.client_ids();
             local_ca.create_and_sign_end_identity(CertificateParams {
                 common_name: Some(common_name.clone()),
                 handle: Some(handle.clone()),

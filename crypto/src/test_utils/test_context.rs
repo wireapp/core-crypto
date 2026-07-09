@@ -7,7 +7,7 @@ pub use rstest_reuse::{self, *};
 
 use super::{
     CoreCryptoTransportSuccessProvider, MlsTransportTestExt, TestConversation, init_x509_test_chain, tmp_db_file,
-    x509::{CertificateParams, X509TestChain, qualified_e2ei_cid, qualified_e2ei_cid_from_user_id},
+    x509::{CertificateParams, X509TestChain},
 };
 use crate::{
     CertificateBundle, ClientId, ConnectionType, Credential, CredentialRef, Database, DatabaseKey, ExternalSender,
@@ -81,6 +81,8 @@ pub struct TestContext {
 }
 
 impl TestContext {
+    const DOMAIN: &str = "wire.com";
+
     pub fn new(credential_type: CredentialType, cs: openmls::prelude::Ciphersuite) -> Self {
         Self {
             credential_type,
@@ -152,28 +154,25 @@ impl TestContext {
         out
     }
 
+    /// Generate muliple client ids with unique user ids and unique device ids.
     pub fn client_ids<const N: usize>(&self) -> [ClientId; N] {
-        match self.credential_type {
-            CredentialType::Basic => self.basic_client_ids(),
-            CredentialType::X509 => self.x509_client_ids(),
-        }
-    }
-
-    pub fn x509_client_ids<const N: usize>(&self) -> [ClientId; N] {
-        std::array::from_fn(|_| qualified_e2ei_cid())
-    }
-
-    pub fn basic_client_ids<const N: usize>(&self) -> [ClientId; N] {
-        fn generate() -> ClientId {
+        let generate = |_| {
             let user_id = uuid::Uuid::new_v4();
             let device_id = rand::random::<u64>();
-            ClientId::new(user_id, device_id, "wire.com")
-        }
-        std::array::from_fn(|_| generate())
+            ClientId::new(user_id, device_id, Self::DOMAIN)
+        };
+
+        std::array::from_fn(generate)
     }
 
-    pub fn x509_client_ids_for_user<const N: usize>(&self, user: uuid::Uuid) -> [ClientId; N] {
-        std::array::from_fn(|_| qualified_e2ei_cid_from_user_id(user))
+    /// Generate muliple client ids with identical user id and unique device ids.
+    pub fn client_ids_for_user<const N: usize>(&self, user_id: uuid::Uuid) -> [ClientId; N] {
+        let generate = |_| {
+            let device_id = rand::random::<u64>();
+            ClientId::new(user_id, device_id, Self::DOMAIN)
+        };
+
+        std::array::from_fn(generate)
     }
 
     pub(crate) async fn set_test_chain(
@@ -253,7 +252,7 @@ impl TestContext {
     }
 
     pub async fn sessions_basic<const N: usize>(&self) -> [SessionContext; N] {
-        let client_ids = self.basic_client_ids::<N>();
+        let client_ids = self.client_ids::<N>();
         return self
             .sessions_with_credential_type(client_ids, CredentialType::Basic)
             .await;
@@ -288,7 +287,7 @@ impl TestContext {
     }
 
     pub async fn sessions_x509<const N: usize>(&self) -> [SessionContext; N] {
-        let client_ids = self.x509_client_ids();
+        let client_ids = self.client_ids();
         self.sessions_x509_with_client_ids(client_ids).await
     }
 

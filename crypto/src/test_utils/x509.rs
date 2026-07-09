@@ -9,25 +9,7 @@ use crate::{
     transaction_context::TransactionContext,
 };
 
-const DOMAIN: &str = "wire.com";
 const DEFAULT_CRL_DOMAIN: &str = "localhost";
-
-pub(crate) fn qualified_e2ei_cid() -> ClientId {
-    qualified_e2ei_cid_from_user_id(uuid::Uuid::new_v4())
-}
-
-pub(crate) fn qualified_e2ei_cid_with_domain(domain: &str) -> ClientId {
-    qualified_e2ei_cid_from_user_id_and_domain(uuid::Uuid::new_v4(), domain)
-}
-
-pub(crate) fn qualified_e2ei_cid_from_user_id(user_id: uuid::Uuid) -> ClientId {
-    qualified_e2ei_cid_from_user_id_and_domain(user_id, DOMAIN)
-}
-
-pub(crate) fn qualified_e2ei_cid_from_user_id_and_domain(user_id: uuid::Uuid, domain: &str) -> ClientId {
-    let device_id = rand::random::<u64>();
-    ClientId::new(user_id, device_id, domain)
-}
 
 /// Params for generating the Certificate chain
 #[derive(Debug, Clone)]
@@ -301,7 +283,9 @@ impl X509TestChain {
 
         let common_name = format!("{name} Smith");
         let handle = format!("{}_wire", name.to_lowercase());
-        let client_id = qualified_e2ei_cid_with_domain("world.com");
+        let user_id = uuid::Uuid::new_v4();
+        let device_id = rand::random::<u64>();
+        let client_id = ClientId::new(user_id, device_id, "world.com");
         let mut cert_params = CertificateParams {
             common_name: Some(common_name.clone()),
             handle: Some(handle.clone()),
