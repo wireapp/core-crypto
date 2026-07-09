@@ -72,6 +72,7 @@ jobs:
       - name: stage artifact in sonatype
         id: stage
         run: |
+          set -o pipefail
           cd crypto-ffi/bindings
           ./gradlew :jvm:publishAllPublicationsToSonatypeRepository closeSonatypeStagingRepository --no-configuration-cache | tee gradle-stage.log
 
