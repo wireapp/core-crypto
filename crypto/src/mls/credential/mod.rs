@@ -200,8 +200,6 @@ impl PartialEq for Credential {
     }
 }
 
-// TODO: ensure certificate signature must match the group's ciphersuite ; fails otherwise. Tracking issue: WPB-9632
-// Requires more than 1 ciphersuite supported at the moment.
 #[cfg(test)]
 mod tests {
     use super::{x509::CertificateBundle, *};
