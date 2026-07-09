@@ -4,7 +4,6 @@ mod epoch_observer;
 mod error;
 mod history_observer;
 pub(crate) mod id;
-pub(crate) mod identifier;
 pub(crate) mod key_package;
 pub(crate) mod user_id;
 

@@ -68,7 +68,6 @@ pub use crate::{
         session::{
             EpochObserver, HistoryObserver, Session,
             id::{ClientId, ClientIdRef},
-            identifier::ClientIdentifier,
             user_id::UserId,
         },
     },
