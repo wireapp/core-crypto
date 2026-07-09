@@ -57,6 +57,19 @@ allprojects {
             }
         }
     }
+
+    // Gobley attaches the same generated `generated/uniffi/nativeMain/kotlin` directory to each
+    // native leaf source set (iosArm64/iosSimulatorArm64/macosArm64) —
+    //
+    // Disabling until https://github.com/gobley/gobley/issues/290 is fixed
+    afterEvaluate {
+        dokka {
+            dokkaSourceSets.configureEach {
+                val generatedDir = layout.buildDirectory.dir("generated/uniffi/nativeMain").get().asFile
+                sourceRoots.setFrom(sourceRoots.files.filterNot { it.startsWith(generatedDir) })
+            }
+        }
+    }
 }
 
 tasks.withType<Wrapper>().configureEach {
