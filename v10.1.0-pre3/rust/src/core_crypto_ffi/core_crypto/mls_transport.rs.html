@@ -1,0 +1,75 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crypto-ffi/src/core_crypto/mls_transport.rs`."><title>mls_transport.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-17e0aaed.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core_crypto_ffi" data-themes="" data-resource-suffix="" data-rustdoc-version="1.96.1 (31fca3adb 2026-06-26)" data-channel="1.96.1" data-search-js="search-b5634cc7.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5013f961.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core_crypto_ffi/core_crypto/</div>mls_transport.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-2"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! Implement the MLS Transport interface.
+<a href=#2 id=2 data-nosnippet>2</a>//!
+<a href=#3 id=3 data-nosnippet>3</a>//! Unfortunately, there is no good way to reuse code between uniffi and wasm for an interface
+<a href=#4 id=4 data-nosnippet>4</a>//! like this; the fundamental techniques in use are very different. So we just have to feature-gate
+<a href=#5 id=5 data-nosnippet>5</a>//! everything.
+<a href=#6 id=6 data-nosnippet>6</a></span><span class="kw">use </span>std::{fmt, sync::Arc};
+<a href=#7 id=7 data-nosnippet>7</a>
+<a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span>core_crypto::{CommitBundle <span class="kw">as </span>CryptoCommitBundle, HistorySecret};
+<a href=#9 id=9 data-nosnippet>9</a>
+<a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>crate::{ClientId, CommitBundle, HistorySecret <span class="kw">as </span>HistorySecretFfi, error::mls_transport::MlsTransportResult};
+<a href=#11 id=11 data-nosnippet>11</a>
+<a href=#12 id=12 data-nosnippet>12</a><span class="doccomment">/// Application data packaged to be encrypted and transmitted in an MLS application message.
+<a href=#13 id=13 data-nosnippet>13</a></span><span class="comment">//
+<a href=#14 id=14 data-nosnippet>14</a>// TODO: We derive Constructor here only because we need to construct an instance in interop.
+<a href=#15 id=15 data-nosnippet>15</a>// Remove it once we drop the FFI client from interop.
+<a href=#16 id=16 data-nosnippet>16</a></span><span class="attr">#[derive(Debug, derive_more::From, derive_more::Into, derive_more::Deref, derive_more::Constructor)]
+<a href=#17 id=17 data-nosnippet>17</a></span><span class="kw">pub struct </span>MlsTransportData(core_crypto::TransportData);
+<a href=#18 id=18 data-nosnippet>18</a>
+<a href=#19 id=19 data-nosnippet>19</a><span class="macro">uniffi::custom_type!</span>(MlsTransportData, Vec&lt;u8&gt;, {
+<a href=#20 id=20 data-nosnippet>20</a>    lower: |key| key.<span class="number">0</span>.to_vec(),
+<a href=#21 id=21 data-nosnippet>21</a>    try_lift: |vec| {
+<a href=#22 id=22 data-nosnippet>22</a>        <span class="prelude-val">Ok</span>(MlsTransportData(core_crypto::TransportData::from(vec)))
+<a href=#23 id=23 data-nosnippet>23</a>    }
+<a href=#24 id=24 data-nosnippet>24</a>});
+<a href=#25 id=25 data-nosnippet>25</a>
+<a href=#26 id=26 data-nosnippet>26</a><span class="doccomment">/// Used by CoreCrypto to send commits or application messages to the delivery service.
+<a href=#27 id=27 data-nosnippet>27</a>///
+<a href=#28 id=28 data-nosnippet>28</a>/// This trait must be implemented before calling any functions that produce commits.
+<a href=#29 id=29 data-nosnippet>29</a></span><span class="attr">#[uniffi::export(with_foreign)]
+<a href=#30 id=30 data-nosnippet>30</a>#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+<a href=#31 id=31 data-nosnippet>31</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
+<a href=#32 id=32 data-nosnippet>32</a></span><span class="kw">pub trait </span>MlsTransport: Send + Sync {
+<a href=#33 id=33 data-nosnippet>33</a>    <span class="doccomment">/// Send a commit bundle to the corresponding endpoint.
+<a href=#34 id=34 data-nosnippet>34</a>    </span><span class="kw">async fn </span>send_commit_bundle(<span class="kw-2">&amp;</span><span class="self">self</span>, commit_bundle: CommitBundle) -&gt; MlsTransportResult;
+<a href=#35 id=35 data-nosnippet>35</a>    <span class="doccomment">/// Prepare a history secret before transmission.
+<a href=#36 id=36 data-nosnippet>36</a>    </span><span class="kw">async fn </span>prepare_for_transport(<span class="kw-2">&amp;</span><span class="self">self</span>, history_secret: HistorySecretFfi) -&gt; MlsTransportData;
+<a href=#37 id=37 data-nosnippet>37</a>}
+<a href=#38 id=38 data-nosnippet>38</a>
+<a href=#39 id=39 data-nosnippet>39</a><span class="attr">#[derive(derive_more::Constructor)]
+<a href=#40 id=40 data-nosnippet>40</a></span><span class="kw">struct </span>MlsTransportShim(Arc&lt;<span class="kw">dyn </span>MlsTransport&gt;);
+<a href=#41 id=41 data-nosnippet>41</a>
+<a href=#42 id=42 data-nosnippet>42</a><span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>MlsTransportShim {
+<a href=#43 id=43 data-nosnippet>43</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
+<a href=#44 id=44 data-nosnippet>44</a>        f.debug_tuple(<span class="string">"MlsTransportShim"</span>)
+<a href=#45 id=45 data-nosnippet>45</a>            .field(<span class="kw-2">&amp;</span>fmt::from_fn(|f| <span class="macro">write!</span>(f, <span class="string">"{:p}"</span>, Arc::as_ptr(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0</span>))))
+<a href=#46 id=46 data-nosnippet>46</a>            .finish()
+<a href=#47 id=47 data-nosnippet>47</a>    }
+<a href=#48 id=48 data-nosnippet>48</a>}
+<a href=#49 id=49 data-nosnippet>49</a>
+<a href=#50 id=50 data-nosnippet>50</a><span class="attr">#[cfg_attr(target_os = <span class="string">"unknown"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+<a href=#51 id=51 data-nosnippet>51</a>#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), async_trait::async_trait)]
+<a href=#52 id=52 data-nosnippet>52</a></span><span class="kw">impl </span>core_crypto::MlsTransport <span class="kw">for </span>MlsTransportShim {
+<a href=#53 id=53 data-nosnippet>53</a>    <span class="kw">async fn </span>send_commit_bundle(<span class="kw-2">&amp;</span><span class="self">self</span>, commit_bundle: CryptoCommitBundle) -&gt; core_crypto::Result&lt;()&gt; {
+<a href=#54 id=54 data-nosnippet>54</a>        <span class="kw">let </span>commit_bundle = CommitBundle::try_from(commit_bundle)
+<a href=#55 id=55 data-nosnippet>55</a>            .map_err(|e| core_crypto::Error::ErrorDuringMlsTransport(e.to_string()))<span class="question-mark">?</span>;
+<a href=#56 id=56 data-nosnippet>56</a>        <span class="self">self</span>.<span class="number">0</span>.send_commit_bundle(commit_bundle).<span class="kw">await</span>.map_err(Into::into)
+<a href=#57 id=57 data-nosnippet>57</a>    }
+<a href=#58 id=58 data-nosnippet>58</a>
+<a href=#59 id=59 data-nosnippet>59</a>    <span class="kw">async fn </span>prepare_for_transport(<span class="kw-2">&amp;</span><span class="self">self</span>, secret: <span class="kw-2">&amp;</span>HistorySecret) -&gt; core_crypto::Result&lt;core_crypto::TransportData&gt; {
+<a href=#60 id=60 data-nosnippet>60</a>        <span class="kw">let </span>client_id = ClientId::from(secret.client_id.clone()).into();
+<a href=#61 id=61 data-nosnippet>61</a>        <span class="kw">let </span>history_secret = rmp_serde::to_vec(<span class="kw-2">&amp;</span>secret)
+<a href=#62 id=62 data-nosnippet>62</a>            .map(|secret| HistorySecretFfi {
+<a href=#63 id=63 data-nosnippet>63</a>                client_id,
+<a href=#64 id=64 data-nosnippet>64</a>                data: secret,
+<a href=#65 id=65 data-nosnippet>65</a>            })
+<a href=#66 id=66 data-nosnippet>66</a>            .map_err(|e| core_crypto::Error::ErrorDuringMlsTransport(e.to_string()))<span class="question-mark">?</span>;
+<a href=#67 id=67 data-nosnippet>67</a>        <span class="prelude-val">Ok</span>(<span class="self">self</span>.<span class="number">0</span>.prepare_for_transport(history_secret).<span class="kw">await</span>.into())
+<a href=#68 id=68 data-nosnippet>68</a>    }
+<a href=#69 id=69 data-nosnippet>69</a>}
+<a href=#70 id=70 data-nosnippet>70</a>
+<a href=#71 id=71 data-nosnippet>71</a><span class="doccomment">/// In uniffi, `MlsTransport` is a trait which we need to wrap
+<a href=#72 id=72 data-nosnippet>72</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>callback_shim(callbacks: Arc&lt;<span class="kw">dyn </span>MlsTransport&gt;) -&gt; Arc&lt;<span class="kw">dyn </span>core_crypto::MlsTransport&gt; {
+<a href=#73 id=73 data-nosnippet>73</a>    Arc::new(MlsTransportShim::new(callbacks))
+<a href=#74 id=74 data-nosnippet>74</a>}
+</code></pre></div></section></main></body></html>
