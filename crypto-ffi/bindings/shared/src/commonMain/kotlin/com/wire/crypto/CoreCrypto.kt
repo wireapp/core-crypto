@@ -94,7 +94,6 @@ class CoreCrypto(private val cc: CoreCryptoFfi) : CoreCryptoFfiInterface by cc {
     }
 
     @Deprecated("Use transaction(block) instead", level = DeprecationLevel.HIDDEN)
-    @JvmSynthetic
     override suspend fun transactionFfi(command: CoreCryptoCommand) = cc.transactionFfi(command)
 
     /**
