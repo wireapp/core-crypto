@@ -1,5 +1,3 @@
-#[cfg(test)]
-use std::collections::HashMap;
 use std::fmt;
 
 use derive_more::derive;
@@ -270,22 +268,5 @@ impl CertificateBundle {
             private_key: CertificatePrivateKey::new(cert.pki_keypair.signing_key_bytes()),
             signature_scheme: cert.signature_scheme,
         }
-    }
-
-    pub fn rand_identifier_certs(
-        client_id: &ClientId,
-        signers: &[&crate::test_utils::x509::X509Certificate],
-    ) -> HashMap<SignatureScheme, CertificateBundle> {
-        signers
-            .iter()
-            .map(|signer| (signer.signature_scheme, Self::rand(client_id, signer)))
-            .collect()
-    }
-
-    pub fn rand_identifier(
-        client_id: &ClientId,
-        signers: &[&crate::test_utils::x509::X509Certificate],
-    ) -> crate::ClientIdentifier {
-        crate::ClientIdentifier::X509(Self::rand_identifier_certs(client_id, signers))
     }
 }

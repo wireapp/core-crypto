@@ -59,10 +59,7 @@ mod tests {
     use core_crypto_keystore::{ConnectionType, Database, DatabaseKey};
 
     use super::*;
-    use crate::{
-        CertificateBundle, ClientIdentifier, CredentialType,
-        test_utils::{x509::X509TestChain, *},
-    };
+    use crate::test_utils::{x509::X509TestChain, *};
 
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn cc_can_init() {
@@ -87,7 +84,7 @@ mod tests {
     async fn cc_can_2_phase_init(case: TestContext) {
         use wire_e2e_identity::pki_env::PkiEnvironment;
 
-        use crate::{ClientId, Credential, test_utils::DummyPkiEnvironmentHooks};
+        use crate::test_utils::DummyPkiEnvironmentHooks;
 
         #[cfg(not(target_os = "unknown"))]
         let (path, db_file) = tmp_db_file();
@@ -108,22 +105,10 @@ mod tests {
         // proteus is initialized, prekeys can be generated
         assert!(transaction.proteus_new_prekey(1).await.is_ok());
         // 👇 and so a unique 'client_id' can be fetched from wire-server
-        let session_id = ClientId::from("alice");
         let transport = Arc::new(CoreCryptoTransportSuccessProvider::default());
-        let identifier = match case.credential_type {
-            CredentialType::Basic => ClientIdentifier::Basic(session_id),
-            CredentialType::X509 => {
-                CertificateBundle::rand_identifier(&session_id, &[x509_test_chain.find_local_intermediate_ca()])
-            }
-        };
-        let pki_env = cc.get_pki_environment().await;
-        let session_id = identifier
-            .get_id(pki_env.as_deref())
-            .await
-            .expect("Getting session id from identifier")
-            .into_owned();
+        let credential = case.generate_credential().await;
+        let session_id = credential.client_id().to_owned();
         transaction.mls_init(session_id, transport).await.unwrap();
-        let credential = Credential::from_identifier(&identifier, case.cipher_suite()).unwrap();
         let credential_ref = transaction.add_credential(credential).await.unwrap();
 
         // expect MLS to work

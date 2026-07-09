@@ -13,11 +13,7 @@ pub use session::{EpochObserver, HistoryObserver};
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        CertificateBundle, ClientIdentifier, CoreCrypto, CredentialType,
-        test_utils::{x509::X509TestChain, *},
-        transaction_context::Error as TransactionError,
-    };
+    use crate::{CoreCrypto, test_utils::*, transaction_context::Error as TransactionError};
 
     mod conversation_epoch {
         use super::*;
@@ -83,9 +79,9 @@ mod tests {
 
             use wire_e2e_identity::pki_env::PkiEnvironment;
 
-            use crate::{ClientId, Credential, test_utils::DummyPkiEnvironmentHooks};
+            use crate::test_utils::DummyPkiEnvironmentHooks;
 
-            let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+            let x509_test_chain = case.set_test_chain(&[], &[], None).await;
 
             // phase 1: init without initialized mls_client
             let cc = CoreCrypto::new(db.clone());
@@ -98,19 +94,8 @@ mod tests {
             x509_test_chain.register_with_central(&context).await;
 
             // phase 2: init mls_client
-            let session_id = ClientId::from("alice");
-            let identifier = match case.credential_type {
-                CredentialType::Basic => ClientIdentifier::Basic(session_id),
-                CredentialType::X509 => {
-                    CertificateBundle::rand_identifier(&session_id, &[x509_test_chain.find_local_intermediate_ca()])
-                }
-            };
-            let pki_env = cc.get_pki_environment().await;
-            let session_id = identifier
-                .get_id(pki_env.as_deref())
-                .await
-                .expect("get session_id from identifier")
-                .into_owned();
+            let credential = case.generate_credential().await;
+            let session_id = credential.client_id().to_owned();
             context
                 .mls_init(
                     session_id.clone(),
@@ -119,7 +104,6 @@ mod tests {
                 .await
                 .unwrap();
 
-            let credential = Credential::from_identifier(&identifier, case.cipher_suite()).unwrap();
             let credential_ref = context.add_credential(credential).await.unwrap();
 
             // expect mls_client to work

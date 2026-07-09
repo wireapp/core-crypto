@@ -23,7 +23,7 @@ pub use self::{
     credential_type::CredentialType,
     error::Error,
 };
-use crate::{CipherSuite, ClientId, ClientIdRef, ClientIdentifier, OpenMlsError, RecursiveError, mls_provider::CRYPTO};
+use crate::{CipherSuite, ClientId, ClientIdRef, OpenMlsError, RecursiveError, mls_provider::CRYPTO};
 
 /// A cryptographic credential.
 ///
@@ -161,24 +161,6 @@ impl Credential {
     }
 }
 
-impl Credential {
-    /// Create a credential from an identifier
-    // currently only used in test code, but generally applicable
-    #[cfg_attr(not(test), expect(dead_code))]
-    pub(crate) fn from_identifier(identifier: &ClientIdentifier, cipher_suite: CipherSuite) -> Result<Self> {
-        match identifier {
-            ClientIdentifier::Basic(client_id) => Self::basic(cipher_suite, client_id.clone()),
-            ClientIdentifier::X509(certs) => {
-                let signature_scheme = cipher_suite.signature_algorithm();
-                let cert = certs
-                    .get(&signature_scheme)
-                    .ok_or(Error::SignatureSchemeNotPresentInX509Identity(signature_scheme))?;
-                Self::x509(cipher_suite, cert.clone())
-            }
-        }
-    }
-}
-
 impl From<Credential> for CredentialWithKey {
     fn from(cb: Credential) -> Self {
         Self {
@@ -303,14 +285,12 @@ mod tests {
             _ => CipherSuite(Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519),
         };
 
-        let x509_test_chain = X509TestChain::init_empty(other_cipher_suite.signature_algorithm());
+        let x509_test_chain = case.set_test_chain(&[], &[], None).await;
         let [bob_id] = case.x509_client_ids();
         let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
         let certificate = CertificateBundle::rand(&bob_id, x509_intermediate);
         let credential = Credential::x509(other_cipher_suite, certificate).unwrap();
-        let bob = SessionContext::new_with_credential(&case, credential, Some(&x509_test_chain))
-            .await
-            .unwrap();
+        let bob = SessionContext::new_with_credential(&case, credential).await.unwrap();
 
         let bob_kp = bob
             .transaction
@@ -328,8 +308,7 @@ mod tests {
             return;
         }
         Box::pin(async move {
-            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-
+            let mut x509_test_chain = case.set_test_chain(&[], &[], None).await;
             let expiration_time = core::time::Duration::from_secs(14);
             let start = web_time::Instant::now();
 
@@ -337,12 +316,8 @@ mod tests {
             let alice_cred = Credential::x509(case.cipher_suite(), alice_cert).unwrap();
             let bob_cert = x509_test_chain.issue_simple_certificate_bundle("bob", Some(expiration_time));
             let bob_cred = Credential::x509(case.cipher_suite(), bob_cert).unwrap();
-            let alice = SessionContext::new_with_credential(&case, alice_cred, Some(&x509_test_chain))
-                .await
-                .unwrap();
-            let bob = SessionContext::new_with_credential(&case, bob_cred, Some(&x509_test_chain))
-                .await
-                .unwrap();
+            let alice = SessionContext::new_with_credential(&case, alice_cred).await.unwrap();
+            let bob = SessionContext::new_with_credential(&case, bob_cred).await.unwrap();
 
             let conversation = case.create_conversation([&alice, &bob]).await;
             // this should work since the certificate is not yet expired
