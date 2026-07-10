@@ -23,7 +23,8 @@ group = findProperty("GROUP") as String
 val dokkaHtmlJar = tasks.register<Jar>("dokkaHtmlJar") {
     dependsOn(tasks.dokkaGeneratePublicationHtml)
     from(tasks.dokkaGeneratePublicationHtml.flatMap { it.outputDirectory })
-    archiveClassifier.set("html-docs")
+    // Published as the javadoc jar required by Maven Central (see publishing block below).
+    archiveClassifier.set("javadoc")
 }
 
 val buildVariant = if (System.getenv("RELEASE") == "1") Variant.Release else Variant.Debug
@@ -160,36 +161,34 @@ afterEvaluate {
     }
 
     publishing {
-        publications {
-            create<MavenPublication>("library") {
-                // We replace regular javadoc with dokka html docs since we are running into this bug:
-                // https://youtrack.jetbrains.com/issue/KT-60197/Dokka-JDK-17-PermittedSubclasses-requires-ASM9-during-compilation
-                artifact(tasks.named("dokkaHtmlJar"))
+        publications.withType<MavenPublication>().configureEach {
+            // We replace regular javadoc with dokka html docs since we are running into this bug:
+            // https://youtrack.jetbrains.com/issue/KT-60197/Dokka-JDK-17-PermittedSubclasses-requires-ASM9-during-compilation
+            artifact(tasks.named("dokkaHtmlJar"))
 
-                pom {
-                    name.set(findProperty("POM_NAME") as String)
-                    description.set(findProperty("POM_DESCRIPTION") as String)
-                    url.set(findProperty("POM_URL") as String)
+            pom {
+                name.set(findProperty("POM_NAME") as String)
+                description.set(findProperty("POM_DESCRIPTION") as String)
+                url.set(findProperty("POM_URL") as String)
 
-                    licenses {
-                        license {
-                            name.set(findProperty("POM_LICENSE_NAME") as String)
-                            url.set(findProperty("POM_LICENSE_URL") as String)
-                            distribution.set(findProperty("POM_LICENSE_DIST") as String)
-                        }
+                licenses {
+                    license {
+                        name.set(findProperty("POM_LICENSE_NAME") as String)
+                        url.set(findProperty("POM_LICENSE_URL") as String)
+                        distribution.set(findProperty("POM_LICENSE_DIST") as String)
                     }
+                }
 
-                    scm {
-                        url.set(findProperty("POM_SCM_URL") as String)
-                        connection.set(findProperty("POM_SCM_CONNECTION") as String)
-                        developerConnection.set(findProperty("POM_SCM_DEV_CONNECTION") as String)
-                    }
+                scm {
+                    url.set(findProperty("POM_SCM_URL") as String)
+                    connection.set(findProperty("POM_SCM_CONNECTION") as String)
+                    developerConnection.set(findProperty("POM_SCM_DEV_CONNECTION") as String)
+                }
 
-                    developers {
-                        developer {
-                            name.set(findProperty("POM_DEVELOPER_NAME") as String)
-                            email.set(findProperty("POM_DEVELOPER_EMAIL") as String)
-                        }
+                developers {
+                    developer {
+                        name.set(findProperty("POM_DEVELOPER_NAME") as String)
+                        email.set(findProperty("POM_DEVELOPER_EMAIL") as String)
                     }
                 }
             }
