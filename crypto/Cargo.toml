@@ -72,7 +72,6 @@ p256 = { workspace = true, features = ["pkcs8"] }
 p384 = { workspace = true, features = ["pkcs8"] }
 p521 = { workspace = true, features = ["pkcs8"] }
 hkdf = "0.13"
-hpke = { version = "0.14", features = ["x25519", "nistp", "aes"] }
 x509-cert = { workspace = true, features = ["builder", "hazmat"] }
 web-time.workspace = true
 rand.workspace = true
@@ -80,8 +79,19 @@ getrandom.workspace = true
 rand_core = "0.10"
 rand_chacha = "0.10"
 
+[dependencies.hpke]
+version = "0.14"
+default-features = false
+# nistp covers p256/p384/p521, mlkem pulls the X-Wing and ML-KEM hybrid KEMs
+features = ["alloc", "getrandom", "x25519", "nistp", "aes", "chacha", "mlkem"]
+
 [target.'cfg(target_os = "unknown")'.dependencies]
 serde-wasm-bindgen.workspace = true
+# hpke's AEAD stack pulls getrandom 0.4, whose wasm backend needs wasm_js. Renamed
+# because getrandom 0.2 is already a direct dep, this entry only enables the feature
+getrandom_v04 = { package = "getrandom", version = "0.4", features = [
+  "wasm_js",
+] }
 
 [dev-dependencies]
 itertools.workspace = true

@@ -71,11 +71,18 @@ impl RustCrypto {
         ptxt: &[u8],
     ) -> Result<HpkeCiphertext, CryptoError> {
         let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
+        let mut hpke_rng = HpkeRng(&mut rng);
 
         match config {
             HpkeConfig(HpkeKemType::DhKem25519, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
                 hpke_core::hpke_seal_psk::<hpke::aead::AesGcm128, hpke::kdf::HkdfSha256, hpke::kem::X25519HkdfSha256>(
-                    pk_r, info, aad, psk, psk_id, ptxt, &mut *rng,
+                    pk_r,
+                    info,
+                    aad,
+                    psk,
+                    psk_id,
+                    ptxt,
+                    &mut hpke_rng,
                 )
             }
             HpkeConfig(HpkeKemType::DhKem25519, HpkeKdfType::HkdfSha256, HpkeAeadType::ChaCha20Poly1305) => {
@@ -83,21 +90,39 @@ impl RustCrypto {
                     hpke::aead::ChaCha20Poly1305,
                     hpke::kdf::HkdfSha256,
                     hpke::kem::X25519HkdfSha256,
-                >(pk_r, info, aad, psk, psk_id, ptxt, &mut *rng)
+                >(pk_r, info, aad, psk, psk_id, ptxt, &mut hpke_rng)
             }
             HpkeConfig(HpkeKemType::DhKemP256, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
                 hpke_core::hpke_seal_psk::<hpke::aead::AesGcm128, hpke::kdf::HkdfSha256, hpke::kem::DhP256HkdfSha256>(
-                    pk_r, info, aad, psk, psk_id, ptxt, &mut *rng,
+                    pk_r,
+                    info,
+                    aad,
+                    psk,
+                    psk_id,
+                    ptxt,
+                    &mut hpke_rng,
                 )
             }
             HpkeConfig(HpkeKemType::DhKemP384, HpkeKdfType::HkdfSha384, HpkeAeadType::AesGcm256) => {
                 hpke_core::hpke_seal_psk::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha384, hpke::kem::DhP384HkdfSha384>(
-                    pk_r, info, aad, psk, psk_id, ptxt, &mut *rng,
+                    pk_r,
+                    info,
+                    aad,
+                    psk,
+                    psk_id,
+                    ptxt,
+                    &mut hpke_rng,
                 )
             }
             HpkeConfig(HpkeKemType::DhKemP521, HpkeKdfType::HkdfSha512, HpkeAeadType::AesGcm256) => {
                 hpke_core::hpke_seal_psk::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha512, hpke::kem::DhP521HkdfSha512>(
-                    pk_r, info, aad, psk, psk_id, ptxt, &mut *rng,
+                    pk_r,
+                    info,
+                    aad,
+                    psk,
+                    psk_id,
+                    ptxt,
+                    &mut hpke_rng,
                 )
             }
             _ => Err(CryptoError::UnsupportedKem),
