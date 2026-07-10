@@ -27,7 +27,7 @@ env:
 jobs:
   kmp:
     if: github.repository == 'wireapp/core-crypto'
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     outputs:
       staging_repository_id: ${{ steps.stage.outputs.staging_repository_id }}
     steps:
