@@ -197,7 +197,7 @@ impl TestContext {
         chain
     }
 
-    pub async fn x509_credentials<const N: usize>(&self, client_ids: [ClientId; N]) -> [Credential; N] {
+    async fn x509_credentials<const N: usize>(&self, client_ids: [ClientId; N]) -> [Credential; N] {
         if self.chain.read().await.is_none() {
             self.set_test_chain(&client_ids, &[], None).await;
         }
@@ -219,7 +219,7 @@ impl TestContext {
         credentials.try_into().expect("Vector should be of length N.")
     }
 
-    pub(crate) fn basic_credentials<const N: usize>(&self, client_ids: [ClientId; N]) -> [Credential; N] {
+    fn basic_credentials<const N: usize>(&self, client_ids: [ClientId; N]) -> [Credential; N] {
         client_ids
             .into_iter()
             .map(|id| Credential::basic(self.cipher_suite(), id).unwrap())
@@ -233,10 +233,6 @@ impl TestContext {
     /// This operation is _not_ idempotent; it generates a new credential each time.
     pub(crate) async fn generate_credential(&self) -> Credential {
         let [client_id] = self.client_ids();
-        self.generate_credential_wtih_client_id(client_id).await
-    }
-
-    pub(crate) async fn generate_credential_wtih_client_id(&self, client_id: ClientId) -> Credential {
         let [credential] = match self.credential_type {
             CredentialType::Basic => self.basic_credentials([client_id]),
             CredentialType::X509 => self.x509_credentials([client_id]).await,
