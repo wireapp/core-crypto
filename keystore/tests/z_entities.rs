@@ -207,7 +207,6 @@ mod tests {
         ));
 
         // It's required by cleanup to have a running transaction before finishing the test
-        store.rollback_transaction().await.unwrap();
         store.new_transaction().await.unwrap();
     }
 
