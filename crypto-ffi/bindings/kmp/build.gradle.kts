@@ -4,7 +4,9 @@ import gobley.gradle.cargo.dsl.jvm
 import gobley.gradle.cargo.tasks.CargoBuildTask
 import gobley.gradle.rust.CrateType
 import gobley.gradle.uniffi.tasks.BuildUniffiBindingsTask
+import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
 import org.gradle.api.tasks.bundling.Jar
+import org.gradle.plugins.signing.Sign
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -217,6 +219,14 @@ tasks.withType<Sign>().configureEach {
     if (System.getenv("CI") == null) {
         enabled = false
     }
+}
+
+// Every publication attaches the same dokka javadoc jar, so each publication's signing task signs
+// the same file that the other publications' publish tasks consume. Gradle can't infer that
+// ordering and fails the build, so make every publish task run after every signing task
+// (KGP + signing plugin interaction, https://youtrack.jetbrains.com/issue/KT-46466).
+tasks.withType<AbstractPublishToMaven>().configureEach {
+    mustRunAfter(tasks.withType<Sign>())
 }
 
 // Provide our own cinterop defs files since we aren't building the ffi libraries with the cargo
