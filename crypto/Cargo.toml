@@ -63,7 +63,7 @@ hmac = "0.13"
 ed25519-dalek = { version = "2.2", features = ["pkcs8"] }
 signature = "2.2"
 # ML-DSA (FIPS-204). >=0.1.1 for GHSA-5x2r-hc65-25f9
-ml-dsa = { version = "0.1.1" }
+ml-dsa = { version = "0.1.1", features = ["zeroize"] }
 ecdsa = { version = "0.16", features = ["der", "pkcs8"] }
 p256 = { version = "0.13", features = ["pkcs8"] }
 p384 = { version = "0.13", features = ["pkcs8"] }
@@ -81,6 +81,14 @@ version = "0.14.0"
 default-features = false
 # nistp covers p256/p384/p521, mlkem pulls the X-Wing and ML-KEM hybrid KEMs
 features = ["alloc", "getrandom", "x25519", "nistp", "aes", "chacha", "mlkem"]
+
+# direct dep only to unify the zeroize feature onto the x-wing and, through it,
+# x25519-dalek instances that hpke uses. hpke 0.14 pulls x-wing with just
+# hazmat, so zeroize-on-drop for the KEM and X25519 secrets is compiled out
+[dependencies.x-wing]
+version = "0.1.0"
+default-features = false
+features = ["hazmat", "zeroize"]
 
 [target.'cfg(not(target_os = "unknown"))'.dependencies]
 async-fs = { version = "2.2", optional = true }
