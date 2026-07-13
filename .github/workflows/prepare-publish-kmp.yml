@@ -100,7 +100,7 @@ jobs:
         with:
           key: jvm-darwin
           make-rule: jvm-darwin
-          target-path: target/aarch64-apple-darwin/release/libcore_crypto_ffi.dylib
+          target-path: target/aarch64-apple-darwin/release/libcore_crypto_ffi.a
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
