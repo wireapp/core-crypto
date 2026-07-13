@@ -22,7 +22,14 @@ runs:
             target="aarch64-apple-darwin"
             rule="jvm-darwin"
           fi
-          echo "target-path=target/${target}/release/libcore_crypto_ffi.${library_extension}" >> $GITHUB_OUTPUT
+          # The jvm-darwin/jvm-linux make rules build both a dynamic library (dylib/so) and a
+          # static library (.a); upload both so consumers that link statically can use the .a.
+          {
+            echo "target-path<<EOF"
+            echo "target/${target}/release/libcore_crypto_ffi.${library_extension}"
+            echo "target/${target}/release/libcore_crypto_ffi.a"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
           echo "rule=${rule}" >> $GITHUB_OUTPUT
           echo "target=${target}" >> $GITHUB_OUTPUT
         shell: bash -euo pipefail {0}
