@@ -480,7 +480,7 @@ const _: () = {
                 }
             }
             #[doc(hidden)]
-            const FIELDS: &'static [&'static str] = &["id", "keypairs"];
+            const FIELDS: &[&str] = &["id", "keypairs"];
             _serde::Deserializer::deserialize_struct(
                 __deserializer,
                 "StoredEpochEncryptionKeypairDecrypt",

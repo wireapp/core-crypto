@@ -478,7 +478,7 @@ const _: () = {
                 }
             }
             #[doc(hidden)]
-            const FIELDS: &'static [&'static str] = &["ski_aki_pair", "content"];
+            const FIELDS: &[&str] = &["ski_aki_pair", "content"];
             _serde::Deserializer::deserialize_struct(
                 __deserializer,
                 "E2eiIntermediateCertDecrypt",

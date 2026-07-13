@@ -508,7 +508,7 @@ const _: () = {
                 }
             }
             #[doc(hidden)]
-            const FIELDS: &'static [&'static str] = &["id", "parent_id", "state"];
+            const FIELDS: &[&str] = &["id", "parent_id", "state"];
             _serde::Deserializer::deserialize_struct(
                 __deserializer,
                 "PersistedMlsGroupDecrypt",

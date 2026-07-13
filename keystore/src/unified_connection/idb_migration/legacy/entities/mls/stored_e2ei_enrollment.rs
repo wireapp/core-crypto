@@ -477,7 +477,7 @@ const _: () = {
                 }
             }
             #[doc(hidden)]
-            const FIELDS: &'static [&'static str] = &["id", "content"];
+            const FIELDS: &[&str] = &["id", "content"];
             _serde::Deserializer::deserialize_struct(
                 __deserializer,
                 "StoredE2eiEnrollmentDecrypt",

@@ -477,7 +477,7 @@ const _: () = {
                 }
             }
             #[doc(hidden)]
-            const FIELDS: &'static [&'static str] = &["keypackage_ref", "keypackage"];
+            const FIELDS: &[&str] = &["keypackage_ref", "keypackage"];
             _serde::Deserializer::deserialize_struct(
                 __deserializer,
                 "StoredKeypackageDecrypt",

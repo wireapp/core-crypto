@@ -478,7 +478,7 @@ const _: () = {
                 }
             }
             #[doc(hidden)]
-            const FIELDS: &'static [&'static str] = &["distribution_point", "content"];
+            const FIELDS: &[&str] = &["distribution_point", "content"];
             _serde::Deserializer::deserialize_struct(
                 __deserializer,
                 "E2eiCrlDecrypt",

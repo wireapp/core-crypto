@@ -477,7 +477,7 @@ const _: () = {
                 }
             }
             #[doc(hidden)]
-            const FIELDS: &'static [&'static str] = &["id", "session"];
+            const FIELDS: &[&str] = &["id", "session"];
             _serde::Deserializer::deserialize_struct(
                 __deserializer,
                 "ProteusSessionDecrypt",

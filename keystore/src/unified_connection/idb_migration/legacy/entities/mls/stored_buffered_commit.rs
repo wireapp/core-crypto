@@ -477,7 +477,7 @@ const _: () = {
                 }
             }
             #[doc(hidden)]
-            const FIELDS: &'static [&'static str] = &["conversation_id", "commit_data"];
+            const FIELDS: &[&str] = &["conversation_id", "commit_data"];
             _serde::Deserializer::deserialize_struct(
                 __deserializer,
                 "StoredBufferedCommitDecrypt",
