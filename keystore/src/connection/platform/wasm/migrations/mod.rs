@@ -123,7 +123,10 @@ mod tests {
     use std::sync::LazyLock;
 
     use idb::builder::{DatabaseBuilder, ObjectStoreBuilder};
-    use rand::Rng as _;
+    use rand::{
+        Rng as _,
+        distributions::{Alphanumeric, DistString as _},
+    };
     use serde::Serialize as _;
     use wasm_bindgen::JsValue;
     use wasm_bindgen_test::wasm_bindgen_test;
@@ -139,14 +142,19 @@ mod tests {
 
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
+    fn store_name() -> String {
+        let mut rng = rand::thread_rng();
+        format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rng, 12))
+    }
+
     #[wasm_bindgen_test]
     pub(crate) async fn can_run_migrations() {
-        let name = "test";
+        let name = store_name();
         let factory = Factory::new().expect("factory");
-        factory.delete(name).expect("delete request").await.expect("wiping db");
+        factory.delete(&name).expect("delete request").await.expect("wiping db");
 
         let test_builder = |version| -> DatabaseBuilder {
-            v03::get_builder(name)
+            v03::get_builder(&name)
                 .add_object_store(ObjectStoreBuilder::new("regression_check").auto_increment(false))
                 .version(version)
         };
@@ -156,7 +164,7 @@ mod tests {
         assert!(idb.store_names().contains(&"regression_check".into()));
         idb.close();
 
-        crate::Database::migrate_db_key_type_to_bytes(name, "test1234", &TEST_ENCRYPTION_KEY)
+        crate::Database::migrate_db_key_type_to_bytes(&name, "test1234", &TEST_ENCRYPTION_KEY)
             .await
             .unwrap();
 
@@ -184,22 +192,22 @@ mod tests {
         assert!(store_names.contains(&"proteus_sessions".into()));
         conn.close().await.expect("closing connection");
 
-        let migrated_db = crate::Database::open(crate::ConnectionType::Persistent(name), &TEST_ENCRYPTION_KEY)
+        let migrated_db = crate::Database::open(crate::ConnectionType::Persistent(&name), &TEST_ENCRYPTION_KEY)
             .await
             .expect("completing migrations");
 
         migrated_db.close().await.expect("closing connection");
         let factory = Factory::new().expect("factory");
-        factory.delete(name).expect("delete request").await.expect("wiping db");
+        factory.delete(&name).expect("delete request").await.expect("wiping db");
     }
 
     #[wasm_bindgen_test]
     pub(crate) async fn v9_schema_allows_multiple_creds_per_session() {
-        let name = "test";
+        let name = store_name();
         const LEN_RANGE: std::ops::Range<usize> = 1024..8192;
         let mut rng = rand::thread_rng();
 
-        let builder = v09::get_builder(name);
+        let builder = v09::get_builder(&name);
         let conn = crate::Database::migration_connection(builder, &TEST_ENCRYPTION_KEY)
             .await
             .expect("DB_VERSION_9");
@@ -238,7 +246,7 @@ mod tests {
         .await
         .expect("inserting test data");
 
-        let builder = v09::get_builder(name);
+        let builder = v09::get_builder(&name);
         let mut conn = crate::Database::migration_connection(builder, &TEST_ENCRYPTION_KEY)
             .await
             .expect("DB_VERSION_9");
@@ -249,25 +257,25 @@ mod tests {
 
         assert_eq!(count, 2);
 
-        let migrated_db = crate::Database::open(crate::ConnectionType::Persistent(name), &TEST_ENCRYPTION_KEY)
+        let migrated_db = crate::Database::open(crate::ConnectionType::Persistent(&name), &TEST_ENCRYPTION_KEY)
             .await
             .expect("completing migrations");
 
         migrated_db.close().await.expect("closing connection");
         let factory = Factory::new().expect("factory");
-        factory.delete(name).expect("delete request").await.expect("wiping db");
+        factory.delete(&name).expect("delete request").await.expect("wiping db");
     }
 
     #[wasm_bindgen_test]
     pub(crate) async fn data_is_preserved_through_migrations() {
-        const DB_NAME: &str = "test";
+        let db_name = store_name();
         // this entity type is simple, stable from v0 through v10, and we do not expect
         // it to change in the future
         const COLLECTION_NAME: &str = ProteusPrekey::COLLECTION_NAME;
 
         // clear the factory before beginning
         let factory = Factory::new().unwrap();
-        factory.delete(DB_NAME).unwrap().await.unwrap();
+        factory.delete(&db_name).unwrap().await.unwrap();
 
         const ENTITY_KEY: u16 = 12345;
         const ENTITY_VALUE: &[u8] = b"here is a test entity, do not mess with it";
@@ -275,7 +283,7 @@ mod tests {
         // put some data into a version 4 database
         {
             // version 4 is the earliest version that we natively generate anymore
-            let database = open_at(DB_NAME, &TEST_ENCRYPTION_KEY, DB_VERSION_4).await;
+            let database = open_at(&db_name, &TEST_ENCRYPTION_KEY, DB_VERSION_4).await;
             let transaction = database
                 .transaction(&[COLLECTION_NAME], idb::TransactionMode::ReadWrite)
                 .unwrap();
@@ -296,11 +304,12 @@ mod tests {
             object_store.put(&js_entity, Some(&js_key)).unwrap();
 
             transaction.commit().unwrap();
+            database.close();
         }
 
         // get the same data from a current-version database
         {
-            let database = open_at(DB_NAME, &TEST_ENCRYPTION_KEY, TARGET_VERSION).await;
+            let database = open_at(&db_name, &TEST_ENCRYPTION_KEY, TARGET_VERSION).await;
             let transaction = database
                 .transaction(&[COLLECTION_NAME], idb::TransactionMode::ReadOnly)
                 .unwrap();
@@ -335,6 +344,9 @@ mod tests {
                 })
                 .collect::<Vec<_>>();
             assert_eq!(prekey, ENTITY_VALUE);
+            database.close();
         }
+
+        factory.delete(&db_name).unwrap().await.unwrap();
     }
 }
