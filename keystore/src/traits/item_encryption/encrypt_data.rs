@@ -16,14 +16,14 @@ fn encrypt_with_nonce_and_aad(
 ) -> CryptoKeystoreResult<Vec<u8>> {
     use aes_gcm::aead::Aead as _;
 
-    let nonce = aes_gcm::Nonce::from_slice(nonce);
+    let nonce = aes_gcm::Nonce::try_from(nonce)?;
     let payload = aes_gcm::aead::Payload { msg, aad };
 
     let mut encrypted = cipher
-        .encrypt(nonce, payload)
+        .encrypt(&nonce, payload)
         .map_err(|_| CryptoKeystoreError::AesGcmError("encrypting with nonce and aad"))?;
     let mut message = Vec::with_capacity(nonce.len() + encrypted.len());
-    message.extend_from_slice(nonce);
+    message.extend_from_slice(&nonce[..]);
     message.append(&mut encrypted);
     Ok(message)
 }

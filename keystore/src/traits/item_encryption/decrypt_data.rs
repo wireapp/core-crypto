@@ -12,11 +12,11 @@ fn decrypt_with_nonce_and_aad(
 ) -> CryptoKeystoreResult<Vec<u8>> {
     use aes_gcm::aead::Aead as _;
 
-    let nonce = aes_gcm::Nonce::from_slice(nonce);
+    let nonce = aes_gcm::Nonce::try_from(nonce)?;
     let payload = aes_gcm::aead::Payload { msg, aad };
 
     let cleartext = cipher
-        .decrypt(nonce, payload)
+        .decrypt(&nonce, payload)
         .map_err(|_| CryptoKeystoreError::AesGcmError("decrypting with nonce and aad"))?;
 
     Ok(cleartext)
