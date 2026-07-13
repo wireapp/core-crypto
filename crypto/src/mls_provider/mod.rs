@@ -3,7 +3,7 @@
 use std::sync::Arc;
 
 use async_lock::RwLock;
-pub use core_crypto_keystore::{Database, DatabaseKey};
+pub use core_crypto_keystore::Database;
 
 mod crypto_provider;
 mod error;
@@ -158,14 +158,6 @@ impl CryptoProvider {
     /// If [None] is provided, the new entropy will be pulled through the current OS target's capabilities
     pub fn reseed(&self, entropy_seed: Option<EntropySeed>) -> MlsProviderResult<()> {
         self.crypto.reseed(entropy_seed)
-    }
-
-    /// Wait for any keystore transaction to finish, then close the database connection.
-    ///
-    /// Note: This does **not** destroy the data on-disk in case of persistent backing store
-    pub async fn close(&self) -> MlsProviderResult<()> {
-        self.key_store.close().await?;
-        Ok(())
     }
 }
 

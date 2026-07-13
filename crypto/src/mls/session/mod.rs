@@ -101,19 +101,6 @@ impl Session {
             .map_err(Into::into)
     }
 
-    /// Waits for running transactions to finish, then closes the connection with the local KeyStore.
-    ///
-    /// # Errors
-    /// KeyStore errors, such as IO, and if there is more than one strong reference
-    /// to the connection.
-    pub async fn close(&self) -> crate::mls::Result<()> {
-        self.crypto_provider
-            .close()
-            .await
-            .map_err(OpenMlsError::wrap("closing connection with keystore"))
-            .map_err(Into::into)
-    }
-
     /// Get read-only access to the database.
     pub fn database(&self) -> &ImmutableDatabase {
         &self.database
