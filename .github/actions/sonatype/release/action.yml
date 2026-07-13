@@ -1,0 +1,50 @@
+name: Release Sonatype staging repository
+description: Set up the JVM/Gradle toolchain and release (promote to Maven Central) a previously
+  staged and closed Sonatype staging repository, identified by its staging repository id.
+  Assumes the repository is already checked out.
+
+inputs:
+  staging-repository-id:
+    description: The Sonatype staging repository id to release, as emitted by the prepare phase.
+    required: true
+  sonatype-username:
+    required: true
+  sonatype-password:
+    required: true
+  pgp-key-id:
+    required: true
+  pgp-signing-key:
+    required: true
+  pgp-passphrase:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: set up jdk 25
+      uses: actions/setup-java@v5.4.0
+      with:
+        java-version: 25
+        distribution: adopt
+
+    - name: gradle setup
+      uses: gradle/actions/setup-gradle@v6.2.0
+      with:
+        cache-provider: basic
+
+    - name: validate gradle wrapper
+      uses: gradle/actions/wrapper-validation@v6.2.0
+
+    - name: release artifact
+      shell: bash
+      working-directory: crypto-ffi/bindings
+      run: |
+        ./gradlew releaseSonatypeStagingRepository --staging-repository-id="$STAGING_REPOSITORY_ID" --no-configuration-cache
+      env:
+        RELEASE: "1"
+        STAGING_REPOSITORY_ID: ${{ inputs.staging-repository-id }}
+        ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ inputs.sonatype-password }}
+        ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ inputs.sonatype-username }}
+        ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ inputs.pgp-key-id }}
+        ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ inputs.pgp-signing-key }}
+        ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ inputs.pgp-passphrase }}

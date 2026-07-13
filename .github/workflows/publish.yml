@@ -103,15 +103,18 @@ jobs:
       (inputs.registry == 'all' || inputs.registry == 'jvm') &&
       (needs.prepare-jvm.result == 'success' || needs.prepare-jvm.result == 'skipped') &&
       needs.jvm-staging-repository-id.result == 'success'
-    uses: ./.github/workflows/publish-jvm.yml
-    with:
-      staging_repository_id: ${{ needs.jvm-staging-repository-id.outputs.staging_repository_id }}
-    secrets:
-      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
-      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
-      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - name: release artifact
+        uses: ./.github/actions/sonatype/release
+        with:
+          staging-repository-id: ${{ needs.jvm-staging-repository-id.outputs.staging_repository_id }}
+          sonatype-username: ${{ secrets.SONATYPE_USERNAME }}
+          sonatype-password: ${{ secrets.SONATYPE_PASSWORD }}
+          pgp-key-id: ${{ secrets.PGP_KEY_ID }}
+          pgp-signing-key: ${{ secrets.PGP_SIGNING_KEY }}
+          pgp-passphrase: ${{ secrets.PGP_PASSPHRASE }}
 
   prepare-android:
     if: >
@@ -164,15 +167,18 @@ jobs:
       (inputs.registry == 'all' || inputs.registry == 'android') &&
       (needs.prepare-android.result == 'success' || needs.prepare-android.result == 'skipped') &&
       needs.android-staging-repository-id.result == 'success'
-    uses: ./.github/workflows/publish-android.yml
-    with:
-      staging_repository_id: ${{ needs.android-staging-repository-id.outputs.staging_repository_id }}
-    secrets:
-      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
-      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
-      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - name: release artifact
+        uses: ./.github/actions/sonatype/release
+        with:
+          staging-repository-id: ${{ needs.android-staging-repository-id.outputs.staging_repository_id }}
+          sonatype-username: ${{ secrets.SONATYPE_USERNAME }}
+          sonatype-password: ${{ secrets.SONATYPE_PASSWORD }}
+          pgp-key-id: ${{ secrets.PGP_KEY_ID }}
+          pgp-signing-key: ${{ secrets.PGP_SIGNING_KEY }}
+          pgp-passphrase: ${{ secrets.PGP_PASSPHRASE }}
 
   prepare-kmp:
     if: >
@@ -225,15 +231,18 @@ jobs:
       (inputs.registry == 'all' || inputs.registry == 'kmp') &&
       (needs.prepare-kmp.result == 'success' || needs.prepare-kmp.result == 'skipped') &&
       needs.kmp-staging-repository-id.result == 'success'
-    uses: ./.github/workflows/publish-kmp.yml
-    with:
-      staging_repository_id: ${{ needs.kmp-staging-repository-id.outputs.staging_repository_id }}
-    secrets:
-      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
-      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
-      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - name: release artifact
+        uses: ./.github/actions/sonatype/release
+        with:
+          staging-repository-id: ${{ needs.kmp-staging-repository-id.outputs.staging_repository_id }}
+          sonatype-username: ${{ secrets.SONATYPE_USERNAME }}
+          sonatype-password: ${{ secrets.SONATYPE_PASSWORD }}
+          pgp-key-id: ${{ secrets.PGP_KEY_ID }}
+          pgp-signing-key: ${{ secrets.PGP_SIGNING_KEY }}
+          pgp-passphrase: ${{ secrets.PGP_PASSPHRASE }}
 
   publish-npm:
     # The npm tarball is uploaded to the GH release during the automatic pipeline run.
