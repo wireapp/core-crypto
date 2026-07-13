@@ -53,7 +53,7 @@ mod tests_impl {
     use super::common::*;
     use crate::{ENTITY_COUNT, utils::EntityRandomUpdateExt};
 
-    pub(crate) async fn can_save_entity<'a, E>(store: &CryptoKeystore) -> E
+    pub(crate) async fn can_save_entity<E>(store: &CryptoKeystore) -> E
     where
         E: Clone + EntityRandomUpdateExt + UnifiedEntity + UnifiedEntityDatabaseMutation + Send + Sync,
     {
@@ -62,7 +62,7 @@ mod tests_impl {
         entity
     }
 
-    pub(crate) async fn can_find_entity<'a, E>(store: &CryptoKeystore, entity: &E)
+    pub(crate) async fn can_find_entity<E>(store: &CryptoKeystore, entity: &E)
     where
         E: 'static
             + Clone
@@ -99,7 +99,7 @@ mod tests_impl {
         };
     }
 
-    pub(crate) async fn can_update_entity<'a, E>(store: &CryptoKeystore, entity: &mut E)
+    pub(crate) async fn can_update_entity<E>(store: &CryptoKeystore, entity: &mut E)
     where
         E: 'static
             + Clone
@@ -117,7 +117,7 @@ mod tests_impl {
         assert_eq!(*entity, entity2);
     }
 
-    pub(crate) async fn can_remove_entity<'a, E>(store: &CryptoKeystore, entity: E)
+    pub(crate) async fn can_remove_entity<E>(store: &CryptoKeystore, entity: E)
     where
         E: 'static + Clone + EntityRandomUpdateExt + UnifiedEntity + UnifiedEntityDatabaseMutation + Send + Sync,
     {
@@ -126,7 +126,7 @@ mod tests_impl {
         assert!(entity2.is_none());
     }
 
-    pub(super) async fn insert_count_entities<'a, E>(store: &CryptoKeystore)
+    pub(super) async fn insert_count_entities<E>(store: &CryptoKeystore)
     where
         E: Clone + EntityRandomUpdateExt + UnifiedEntity + UnifiedEntityDatabaseMutation + Send + Sync,
     {
@@ -136,7 +136,7 @@ mod tests_impl {
         }
     }
 
-    pub(crate) async fn can_list_entities_with_find_all<'a, E>(store: &CryptoKeystore, ignore_entity_count: bool)
+    pub(crate) async fn can_list_entities_with_find_all<E>(store: &CryptoKeystore, ignore_entity_count: bool)
     where
         E: 'static + Clone + EntityRandomUpdateExt + UnifiedEntity + UnifiedEntityDatabaseMutation + Send + Sync,
     {
