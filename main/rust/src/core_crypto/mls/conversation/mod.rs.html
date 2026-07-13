@@ -213,10 +213,10 @@
 <a href=#213 id=213 data-nosnippet>213</a>        </span><span class="kw">async fn </span>should_read_revoked_device() {
 <a href=#214 id=214 data-nosnippet>214</a>            <span class="kw">let </span>case = TestContext::default_x509();
 <a href=#215 id=215 data-nosnippet>215</a>
-<a href=#216 id=216 data-nosnippet>216</a>            <span class="kw">let </span>[alice_client_id, bob_client_id] = case.x509_client_ids();
+<a href=#216 id=216 data-nosnippet>216</a>            <span class="kw">let </span>[alice_client_id, bob_client_id] = case.client_ids();
 <a href=#217 id=217 data-nosnippet>217</a>
-<a href=#218 id=218 data-nosnippet>218</a>            <span class="kw">let </span>rupert_user_id = uuid::Uuid::new_v4();
-<a href=#219 id=219 data-nosnippet>219</a>            <span class="kw">let </span>[rupert_client_id] = case.x509_client_ids_for_user(rupert_user_id);
+<a href=#218 id=218 data-nosnippet>218</a>            <span class="kw">let </span>[rupert_client_id] = case.client_ids();
+<a href=#219 id=219 data-nosnippet>219</a>            <span class="kw">let </span>rupert_user_id = rupert_client_id.as_user_id();
 <a href=#220 id=220 data-nosnippet>220</a>
 <a href=#221 id=221 data-nosnippet>221</a>            <span class="kw">let </span>sessions = case
 <a href=#222 id=222 data-nosnippet>222</a>                .sessions_x509_with_client_ids_and_revocation(
@@ -289,8 +289,8 @@
 <a href=#289 id=289 data-nosnippet>289</a>        <span class="attr">#[macro_rules_attribute::apply(smol_macros::test)]
 <a href=#290 id=290 data-nosnippet>290</a>        </span><span class="kw">async fn </span>should_read_users() {
 <a href=#291 id=291 data-nosnippet>291</a>            <span class="kw">let </span>case = TestContext::default_x509();
-<a href=#292 id=292 data-nosnippet>292</a>            <span class="kw">let </span>[alice_android, alice_ios] = case.x509_client_ids_for_user(uuid::Uuid::new_v4());
-<a href=#293 id=293 data-nosnippet>293</a>            <span class="kw">let </span>[bob_android] = case.x509_client_ids();
+<a href=#292 id=292 data-nosnippet>292</a>            <span class="kw">let </span>[alice_android, alice_ios] = case.client_ids_for_user(uuid::Uuid::new_v4());
+<a href=#293 id=293 data-nosnippet>293</a>            <span class="kw">let </span>[bob_android] = case.client_ids();
 <a href=#294 id=294 data-nosnippet>294</a>
 <a href=#295 id=295 data-nosnippet>295</a>            <span class="kw">let </span>sessions = case
 <a href=#296 id=296 data-nosnippet>296</a>                .sessions_x509_with_client_ids([alice_android, alice_ios, bob_android])
