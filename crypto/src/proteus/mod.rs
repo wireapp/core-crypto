@@ -112,7 +112,6 @@ mod tests {
         keystore.commit_transaction().await.unwrap();
         assert_eq!(identity, *central.proteus_identity);
 
-        keystore.wipe().await.unwrap();
         #[cfg(not(target_os = "unknown"))]
         drop(db_file);
     }

@@ -105,7 +105,6 @@ mod tests {
         assert_eq!(decrypted, message);
 
         keystore.commit_transaction().await.unwrap();
-        keystore.wipe().await.unwrap();
         #[cfg(not(target_os = "unknown"))]
         drop(db_file);
     }

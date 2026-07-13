@@ -127,7 +127,6 @@ mod tests {
 
         assert_eq!(message, decrypted.as_slice());
         keystore.commit_transaction().await.unwrap();
-        keystore.wipe().await.unwrap();
         #[cfg(not(target_os = "unknown"))]
         drop(db_file);
     }
@@ -199,7 +198,6 @@ mod tests {
             assert_eq!(prekey.prekey_id.value(), pk_id);
         }
         keystore.commit_transaction().await.unwrap();
-        keystore.wipe().await.unwrap();
         #[cfg(not(target_os = "unknown"))]
         drop(db_file);
     }
