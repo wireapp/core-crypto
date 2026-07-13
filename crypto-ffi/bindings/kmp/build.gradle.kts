@@ -132,6 +132,7 @@ cargo {
     installTargetBeforeBuild = false
 
     jvmVariant = buildVariant
+    nativeVariant = buildVariant
 
     // Only build JVM native libraries for the current host platform
     // This disables cross-compilation for other JVM targets (e.g., Linux ARM64 on macOS)
