@@ -215,6 +215,8 @@ pub(crate) fn make_ciphersuite_for_signature_scheme(
             }
             SignatureScheme::ED25519 => ed25519,
             SignatureScheme::ED448 => ed448,
+            // no ciphersuite mapping for the PQ signature schemes
+            SignatureScheme::MLDSA44 | SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87 => None,
         }
     };
     Ok(ciphersuite_for_signature_scheme)
