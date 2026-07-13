@@ -79,7 +79,7 @@ jobs:
           # grepping logs for this stuff isn't ideal, but technically should work, as long as the log string
           # never changes. But we should keep an eye on it. Currently:
           # https://github.com/gradle-nexus/publish-plugin/blob/c550fe9a15d177bad06b7902af9e497f837b6579/src/main/kotlin/io/github/gradlenexus/publishplugin/InitializeNexusStagingRepository.kt#L47
-          repo_id=$(grep -oP "Created staging repository '\K[^']+" gradle-stage.log | head -n1)
+          repo_id=$(sed -n "s/.*Created staging repository '\([^']*\)'.*/\1/p" gradle-stage.log | head -n1)
           if [[ -z "$repo_id" ]]; then
             echo "::error ::Could not determine the staging repository id from the Gradle output"
             exit 1
