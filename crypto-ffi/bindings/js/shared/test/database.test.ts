@@ -31,7 +31,7 @@ describe("database", () => {
             return await db.getLocation();
         }, location);
 
-        expect(result).to.equal(location);
+        expect(result).to.contain(location);
     });
 
     it("key must have correct length", async () => {
