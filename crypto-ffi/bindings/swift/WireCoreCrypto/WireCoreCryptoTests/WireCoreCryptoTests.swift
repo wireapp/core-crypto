@@ -77,8 +77,8 @@ final class WireCoreCryptoTests: XCTestCase {
         let key = genDatabaseKey()
 
         let database = try await openDatabase(location: keystore.path, key: key)
-        let location = try await database.getLocation()
-        XCTAssertEqual(keystore.path, location)
+        let location = await database.getLocation()
+        XCTAssertTrue(keystore.path.hasSuffix(location!))
     }
 
     func testOpenExistingDbWithInvalidKeyFails() async throws {

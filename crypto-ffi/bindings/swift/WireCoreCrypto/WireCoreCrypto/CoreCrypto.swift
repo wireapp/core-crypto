@@ -59,7 +59,7 @@ public final class CoreCrypto: CoreCryptoProtocol, @unchecked Sendable {
     public func transaction<Result>(
         _ block: @escaping (_ context: CoreCryptoContextProtocol) async throws -> Result
     ) async throws -> Result {
-        let dbLocation = try await database?.getLocation()
+        let dbLocation = await database?.getLocation()
         let filePath = dbLocation.map { FilePath(stringLiteral: $0) }
         let transactionExecutor = try TransactionExecutor<Result>(
             keystorePath: filePath, block)
