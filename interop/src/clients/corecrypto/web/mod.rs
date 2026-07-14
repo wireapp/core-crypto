@@ -131,7 +131,6 @@ impl EmulatedClient for CoreCryptoWebClient {
             .execute_async(
                 r#"
     const [databaseName, callback] = arguments;
-    await window.database.close();
     const result = window.indexedDB.deleteDatabase(databaseName);
     result.onsuccess = callback;
     result.onfailure = callback;
