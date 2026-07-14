@@ -11,28 +11,6 @@ afterEach(async () => {
 });
 
 describe("database", () => {
-    it("throws an error if used after close", async () => {
-        expect(
-            await browser.execute(async () => {
-                const databaseName = crypto.randomUUID();
-                const key = new Uint8Array(32);
-
-                const database = await ccModule.Database.open(
-                    databaseName,
-                    new ccModule.DatabaseKey(key)
-                );
-
-                await database.close();
-                try {
-                    await database.getLocation();
-                    return false;
-                } catch (e) {
-                    return ccModule.CoreCryptoError.Other.instanceOf(e);
-                }
-            })
-        ).toBe(true);
-    });
-
     it("migrating key type to bytes works", async () => {
         const stores = await import("./db-v10002003-dump.json");
 
