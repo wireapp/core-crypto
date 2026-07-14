@@ -1,12 +1,5 @@
 CREATE TABLE proteus_prekeys (id INT UNIQUE, KEY BLOB);
 
-CREATE TABLE mls_pending_groups (
-  id BLOB,
-  state BLOB,
-  cfg BLOB,
-  parent_id BLOB
-);
-
 CREATE TABLE proteus_identities (sk BLOB, pk BLOB);
 
 CREATE TABLE proteus_sessions (id VARCHAR(255) UNIQUE, SESSION BLOB);
@@ -89,3 +82,10 @@ CREATE TABLE "mls_buffered_commits" (
 );
 
 CREATE INDEX idx_mls_buffered_commits_conversation_id ON mls_buffered_commits(conversation_id);
+
+CREATE TABLE "mls_pending_groups" (
+  id BLOB PRIMARY KEY,
+  state BLOB,
+  cfg BLOB,
+  parent_id BLOB
+);
