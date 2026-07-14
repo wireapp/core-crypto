@@ -92,9 +92,10 @@ impl Database {
         #[cfg(feature = "log-queries")]
         conn.trace_v2(TraceEventCodes::SQLITE_TRACE_STMT, Some(log_query));
 
-        // we only actually use the path variable on ios
-        #[cfg_attr(not(target_os = "ios"), expect(unused_variables))]
-        if let Some(path) = conn.path() {
+        // path is an empty string for in-memory databases
+        if let Some(path) = conn.path()
+            && !path.is_empty()
+        {
             // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
             #[cfg(target_os = "ios")]
             ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
