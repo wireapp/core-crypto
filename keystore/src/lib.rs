@@ -1,3 +1,4 @@
+pub mod connection;
 mod database_key;
 pub mod entities;
 mod error;
@@ -8,7 +9,6 @@ pub(crate) mod mls;
 pub(crate) mod proteus;
 pub mod traits;
 pub mod transaction;
-pub mod unified_connection;
 
 pub use hash::Sha256Hash;
 pub(crate) use hash::sha256;
@@ -16,8 +16,8 @@ pub(crate) use hash::sha256;
 #[cfg(feature = "dummy-entity")]
 pub use self::entities::{DummyStoreValue, DummyValue};
 pub use self::{
+    connection::Database,
     database_key::DatabaseKey,
     error::{CryptoKeystoreError, CryptoKeystoreResult},
     mls::{deser, ser},
-    unified_connection::Database,
 };
