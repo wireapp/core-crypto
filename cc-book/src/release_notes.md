@@ -1,5 +1,9 @@
 # Release Notes
 
+## Unreleased
+
+- Unified Database layer for browser and native platforms
+
 ## CoreCrypto 10
 
 ### v10.1.1 - 2026-07-21

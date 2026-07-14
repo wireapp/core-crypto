@@ -10,6 +10,11 @@
   - [The Client](concepts/mls/client.md)
   - [Transactions](concepts/mls/transactions.md)
 
+# Unreleased
+
+- [Migration Guide](unreleased/migration_guide.md)
+  - [TypeScript](unreleased/migration/typescript.md)
+
 # CoreCrypto 10
 
 - [What's New](cc10/whats-new.md)
