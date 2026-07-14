@@ -4,9 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     CryptoKeystoreResult, Database,
-    traits::{
-        BorrowPrimaryKey, FetchFromDatabase, KeyType, UnifiedEntity, UnifiedEntityGetBorrowed, UnifiedSearchableEntity,
-    },
+    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, KeyType, SearchableEntity},
 };
 
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]
@@ -14,7 +12,7 @@ use crate::{
 impl FetchFromDatabase for Database {
     async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<E>>
     where
-        E: 'static + UnifiedEntity + Clone + Send + Sync,
+        E: 'static + Entity + Clone + Send + Sync,
     {
         // If a transaction is in progress...
         if let Some(transaction) = self.transaction.lock().await.as_ref()
@@ -31,7 +29,7 @@ impl FetchFromDatabase for Database {
 
     async fn get_borrowed<E>(&self, id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey) -> CryptoKeystoreResult<Option<E>>
     where
-        E: 'static + UnifiedEntityGetBorrowed + Clone + Send + Sync,
+        E: 'static + EntityGetBorrowed + Clone + Send + Sync,
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
         for<'a> &'a E::BorrowedPrimaryKey: KeyType,
     {
@@ -50,7 +48,7 @@ impl FetchFromDatabase for Database {
 
     async fn count<E>(&self) -> CryptoKeystoreResult<u32>
     where
-        E: 'static + UnifiedEntity + Clone + Send + Sync,
+        E: 'static + Entity + Clone + Send + Sync,
     {
         if self.transaction.lock().await.is_some() {
             // Unfortunately, we have to do this because of possible record id overlap
@@ -65,7 +63,7 @@ impl FetchFromDatabase for Database {
 
     async fn load_all<E>(&self) -> CryptoKeystoreResult<Vec<E>>
     where
-        E: 'static + UnifiedEntity + Clone + Send + Sync,
+        E: 'static + Entity + Clone + Send + Sync,
     {
         let conn = self.conn().await;
         let persisted_records = E::load_all(&conn)?;
@@ -79,7 +77,7 @@ impl FetchFromDatabase for Database {
 
     async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<E>>
     where
-        E: 'static + UnifiedEntity + UnifiedSearchableEntity<SearchKey> + Clone + Send + Sync,
+        E: 'static + Entity + SearchableEntity<SearchKey> + Clone + Send + Sync,
         SearchKey: KeyType,
     {
         let conn = self.conn().await;

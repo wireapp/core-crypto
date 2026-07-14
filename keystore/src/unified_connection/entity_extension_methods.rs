@@ -3,7 +3,7 @@
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Database,
     entities::{MlsPendingMessage, PersistedMlsGroup},
-    traits::UnifiedSearchableEntity as _,
+    traits::SearchableEntity as _,
 };
 
 // These and all other database impls shold not refer directly to `self.conn` but should go through the `self.conn()`

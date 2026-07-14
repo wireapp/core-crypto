@@ -2,12 +2,12 @@ use rusqlite::Transaction;
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, KeyType, UnifiedEntity},
+    traits::{BorrowPrimaryKey, Entity, KeyType},
     transaction::dynamic_dispatch,
 };
 
 /// Extend an [`Entity`] with db-mutating operations which can be performed when provided with a transaction.
-pub trait UnifiedEntityDatabaseMutation: UnifiedEntity + Into<dynamic_dispatch::Entity> {
+pub trait EntityDatabaseMutation: Entity + Into<dynamic_dispatch::Entity> {
     /// The `pre_save` method might generate or update some fields of the item. The canonical example is an `updated_at`
     /// field.
     ///
@@ -50,7 +50,7 @@ pub trait UnifiedEntityDatabaseMutation: UnifiedEntity + Into<dynamic_dispatch::
 }
 
 /// Extend an [`Entity`] with db-mutating operations which can be performed when provided with a transaction.
-pub trait UnifiedEntityDeleteBorrowed: UnifiedEntityDatabaseMutation + BorrowPrimaryKey {
+pub trait EntityDeleteBorrowed: EntityDatabaseMutation + BorrowPrimaryKey {
     /// Delete an entity by a borrowed form of its primary key.
     fn delete_borrowed(tx: &Transaction, id: &Self::BorrowedPrimaryKey) -> CryptoKeystoreResult<bool>
     where

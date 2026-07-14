@@ -3,7 +3,7 @@ use rusqlite::{Connection, OptionalExtension as _, ToSql, Transaction, params};
 use crate::{
     CryptoKeystoreResult,
     entities::helpers::{count_helper, count_helper_tx, delete_helper, load_all_helper},
-    traits::{PrimaryKey, UnifiedEntity, entity_database_mutation::UnifiedEntityDatabaseMutation},
+    traits::{Entity, PrimaryKey, entity_database_mutation::EntityDatabaseMutation},
     transaction::dynamic_dispatch,
 };
 
@@ -31,7 +31,7 @@ use crate::{
 /// If your old `UniqueEntity` implementation defined anything other than the two required methods,
 /// you mut implement these traits manually to preserve the existing behaviors. Otherwise the
 /// behaviors will change!
-pub trait UnifiedUniqueEntityImplementationHelper {
+pub trait UniqueEntityImplementationHelper {
     /// Table name for this entity.
     const COLLECTION_NAME: &str;
     fn new(content: Vec<u8>) -> Self;
@@ -41,24 +41,24 @@ pub trait UnifiedUniqueEntityImplementationHelper {
 // unfortunately we have to implement this trait twice, with nearly-identical but distinct bounds
 
 #[cfg(target_os = "unknown")]
-impl<T> UnifiedUniqueEntity for T
+impl<T> UniqueEntity for T
 where
-    T: UnifiedEntity + UnifiedUniqueEntityImplementationHelper + PrimaryKey<PrimaryKey = u32>,
+    T: Entity + UniqueEntityImplementationHelper + PrimaryKey<PrimaryKey = u32>,
 {
     const KEY: u32 = 0;
 }
 
 #[cfg(not(target_os = "unknown"))]
-impl<T> UnifiedUniqueEntity for T
+impl<T> UniqueEntity for T
 where
-    T: UnifiedEntity + UnifiedUniqueEntityImplementationHelper + PrimaryKey<PrimaryKey = u64>,
+    T: Entity + UniqueEntityImplementationHelper + PrimaryKey<PrimaryKey = u64>,
 {
     const KEY: u64 = 0;
 }
 
 impl<T> PrimaryKey for T
 where
-    T: UnifiedUniqueEntityImplementationHelper,
+    T: UniqueEntityImplementationHelper,
 {
     // The old keystore trait used usize as the primary key type, but that would vary
     // in width across various implementations and so is intentionally not a `KeyType`.
@@ -74,13 +74,13 @@ where
 }
 
 /// A unique entity can appear either 0 or 1 times in the database.
-pub trait UnifiedUniqueEntity: PrimaryKey {
+pub trait UniqueEntity: PrimaryKey {
     /// The id used as they key when storing this entity in a KV store.
     const KEY: Self::PrimaryKey;
 }
 
 /// Unique entities get some convenience methods implemented automatically.
-pub trait UnifiedUniqueEntityExt: UnifiedUniqueEntity + UnifiedEntityDatabaseMutation {
+pub trait UniqueEntityExt: UniqueEntity + EntityDatabaseMutation {
     /// Get this unique entity from the database.
     fn get_unique(conn: &Connection) -> CryptoKeystoreResult<Option<Self>>;
 
@@ -99,9 +99,9 @@ pub trait UnifiedUniqueEntityExt: UnifiedUniqueEntity + UnifiedEntityDatabaseMut
     fn exists(conn: &Connection) -> CryptoKeystoreResult<bool>;
 }
 
-impl<E> UnifiedUniqueEntityExt for E
+impl<E> UniqueEntityExt for E
 where
-    E: UnifiedUniqueEntity + UnifiedEntityDatabaseMutation + Sync,
+    E: UniqueEntity + EntityDatabaseMutation + Sync,
 {
     /// Get this unique entity from the database.
     fn get_unique(conn: &Connection) -> CryptoKeystoreResult<Option<Self>> {
@@ -122,7 +122,7 @@ where
     ///
     /// Returns `true` if the entity was saved, or `false` if it aborted due to an already-existing entity.
     fn set_if_absent(&self, tx: &Transaction) -> CryptoKeystoreResult<bool> {
-        let count = <Self as UnifiedEntityDatabaseMutation>::count(tx)?;
+        let count = <Self as EntityDatabaseMutation>::count(tx)?;
         if count > 0 {
             return Ok(false);
         }
@@ -132,21 +132,21 @@ where
 
     /// Returns whether or not the database contains an instance of this unique entity.
     fn exists(conn: &Connection) -> CryptoKeystoreResult<bool> {
-        <Self as UnifiedEntity>::count(conn).map(|count| count > 0)
+        <Self as Entity>::count(conn).map(|count| count > 0)
     }
 }
 
-impl<T> UnifiedEntity for T
+impl<T> Entity for T
 where
-    T: PrimaryKey + UnifiedUniqueEntityImplementationHelper,
+    T: PrimaryKey + UniqueEntityImplementationHelper,
     <T as PrimaryKey>::PrimaryKey: ToSql,
 {
-    const COLLECTION_NAME: &'static str = <Self as UnifiedUniqueEntityImplementationHelper>::COLLECTION_NAME;
+    const COLLECTION_NAME: &'static str = <Self as UniqueEntityImplementationHelper>::COLLECTION_NAME;
 
     fn get(conn: &Connection, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         let mut statement = conn.prepare_cached(&format!(
             "SELECT content FROM {collection_name} WHERE id = ?",
-            collection_name = <Self as UnifiedEntity>::COLLECTION_NAME
+            collection_name = <Self as Entity>::COLLECTION_NAME
         ))?;
         statement
             .query_row([key], |row| Ok(Self::new(row.get("content")?)))
@@ -165,9 +165,9 @@ where
     }
 }
 
-impl<T> UnifiedEntityDatabaseMutation for T
+impl<T> EntityDatabaseMutation for T
 where
-    T: UnifiedEntity + UnifiedUniqueEntityImplementationHelper + Into<dynamic_dispatch::Entity> + UnifiedUniqueEntity,
+    T: Entity + UniqueEntityImplementationHelper + Into<dynamic_dispatch::Entity> + UniqueEntity,
     <T as PrimaryKey>::PrimaryKey: ToSql,
 {
     type AutoGeneratedFields = ();
@@ -175,7 +175,7 @@ where
     fn save(&self, tx: &Transaction) -> CryptoKeystoreResult<()> {
         let mut stmt = tx.prepare_cached(&format!(
             "INSERT OR REPLACE INTO {collection_name} (id, content) VALUES (?, ?)",
-            collection_name = <Self as UnifiedEntity>::COLLECTION_NAME,
+            collection_name = <Self as Entity>::COLLECTION_NAME,
         ))?;
         stmt.execute(params![Self::KEY, self.content()])?;
         Ok(())

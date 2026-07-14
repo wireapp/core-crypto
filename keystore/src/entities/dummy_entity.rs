@@ -1,6 +1,6 @@
 use crate::{
     CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, PrimaryKey, UnifiedEntity, UnifiedEntityGetBorrowed, UnifiedUniqueEntity},
+    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, PrimaryKey, UniqueEntity},
 };
 
 #[derive(Debug, Eq, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -20,7 +20,7 @@ impl BorrowPrimaryKey for DummyStoreValue {
     }
 }
 
-impl UnifiedEntity for DummyStoreValue {
+impl Entity for DummyStoreValue {
     const COLLECTION_NAME: &'static str = "";
 
     fn get(_conn: &rusqlite::Connection, _key: &Vec<u8>) -> CryptoKeystoreResult<Option<Self>> {
@@ -36,7 +36,7 @@ impl UnifiedEntity for DummyStoreValue {
     }
 }
 
-impl UnifiedEntityGetBorrowed for DummyStoreValue {
+impl EntityGetBorrowed for DummyStoreValue {
     fn get_borrowed(_conn: &rusqlite::Connection, _key: &[u8]) -> CryptoKeystoreResult<Option<Self>>
     where
         for<'pk> &'pk [u8]: crate::traits::KeyType,
@@ -45,7 +45,7 @@ impl UnifiedEntityGetBorrowed for DummyStoreValue {
     }
 }
 
-impl UnifiedUniqueEntity for DummyStoreValue {
+impl UniqueEntity for DummyStoreValue {
     const KEY: Vec<u8> = Vec::new();
 }
 

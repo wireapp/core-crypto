@@ -112,7 +112,7 @@ pub(crate) mod test {
 
     use crate::{
         entities::StoredCredential,
-        traits::UnifiedEntity,
+        traits::Entity,
         unified_connection::{Database, DatabaseKey, migrate_db_key_type_to_bytes, migrations::MigrationTarget},
     };
 

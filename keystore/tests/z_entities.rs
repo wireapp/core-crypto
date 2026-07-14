@@ -47,7 +47,7 @@ mod tests_impl {
 
     use core_crypto_keystore::{
         entities::{MlsPendingMessage, StoredCredential},
-        traits::{FetchFromDatabase as _, PrimaryKey as _, UnifiedEntity, UnifiedEntityDatabaseMutation},
+        traits::{Entity, EntityDatabaseMutation, FetchFromDatabase as _, PrimaryKey as _},
     };
 
     use super::common::*;
@@ -55,7 +55,7 @@ mod tests_impl {
 
     pub(crate) async fn can_save_entity<E>(store: &CryptoKeystore) -> E
     where
-        E: Clone + EntityRandomUpdateExt + UnifiedEntity + UnifiedEntityDatabaseMutation + Send + Sync,
+        E: Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
     {
         let entity = E::random();
         store.save(entity.clone()).await.unwrap();
@@ -69,8 +69,8 @@ mod tests_impl {
             + std::fmt::Debug
             + Eq
             + EntityRandomUpdateExt
-            + UnifiedEntity
-            + UnifiedEntityDatabaseMutation
+            + Entity
+            + EntityDatabaseMutation
             + Send
             + Sync,
     {
@@ -106,8 +106,8 @@ mod tests_impl {
             + std::fmt::Debug
             + Eq
             + EntityRandomUpdateExt
-            + UnifiedEntity
-            + UnifiedEntityDatabaseMutation
+            + Entity
+            + EntityDatabaseMutation
             + Send
             + Sync,
     {
@@ -119,7 +119,7 @@ mod tests_impl {
 
     pub(crate) async fn can_remove_entity<E>(store: &CryptoKeystore, entity: E)
     where
-        E: 'static + Clone + EntityRandomUpdateExt + UnifiedEntity + UnifiedEntityDatabaseMutation + Send + Sync,
+        E: 'static + Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
     {
         store.remove::<E>(&entity.primary_key()).await.unwrap();
         let entity2: Option<E> = store.get(&entity.primary_key()).await.unwrap();
@@ -128,7 +128,7 @@ mod tests_impl {
 
     pub(super) async fn insert_count_entities<E>(store: &CryptoKeystore)
     where
-        E: Clone + EntityRandomUpdateExt + UnifiedEntity + UnifiedEntityDatabaseMutation + Send + Sync,
+        E: Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
     {
         for _ in 0..ENTITY_COUNT {
             let entity = E::random();
@@ -138,7 +138,7 @@ mod tests_impl {
 
     pub(crate) async fn can_list_entities_with_find_all<E>(store: &CryptoKeystore, ignore_entity_count: bool)
     where
-        E: 'static + Clone + EntityRandomUpdateExt + UnifiedEntity + UnifiedEntityDatabaseMutation + Send + Sync,
+        E: 'static + Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
     {
         let entities = store.load_all::<E>().await.unwrap();
         if !ignore_entity_count {
@@ -149,7 +149,7 @@ mod tests_impl {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::{CryptoKeystoreError, traits::UnifiedEntity as _};
+    use core_crypto_keystore::{CryptoKeystoreError, traits::Entity as _};
     use wasm_bindgen_test::*;
 
     use crate::{

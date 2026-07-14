@@ -1,6 +1,6 @@
 use rusqlite::{Connection, OptionalExtension, Row, ToSql, Transaction};
 
-use crate::{CryptoKeystoreResult, traits::UnifiedEntity};
+use crate::{CryptoKeystoreResult, traits::Entity};
 
 /// Helper to perform an SQL query to get an entity by its primary key
 ///
@@ -19,7 +19,7 @@ pub(crate) fn get_helper<E, FromRow>(
     from_row: FromRow,
 ) -> CryptoKeystoreResult<Option<E>>
 where
-    E: UnifiedEntity,
+    E: Entity,
     FromRow: FnOnce(&Row<'_>) -> rusqlite::Result<E>,
 {
     let mut statement = conn.prepare_cached(&format!(
@@ -35,7 +35,7 @@ where
 /// Helper to perform an SQL query to count these entities in the database.
 ///
 /// This function prepares and caches a statement of the form `SELECT count(*) FROM collection_name`.
-pub(crate) fn count_helper<E: UnifiedEntity>(conn: &Connection) -> CryptoKeystoreResult<u32> {
+pub(crate) fn count_helper<E: Entity>(conn: &Connection) -> CryptoKeystoreResult<u32> {
     let mut statement = conn.prepare_cached(&format!(
         "SELECT count(*) FROM {collection_name}",
         collection_name = E::COLLECTION_NAME
@@ -46,7 +46,7 @@ pub(crate) fn count_helper<E: UnifiedEntity>(conn: &Connection) -> CryptoKeystor
 /// Helper to perform an SQL query to count these entities in the database.
 ///
 /// This function prepares and caches a statement of the form `SELECT count(*) FROM collection_name`.
-pub(crate) fn count_helper_tx<E: UnifiedEntity>(tx: &Transaction<'_>) -> CryptoKeystoreResult<u32> {
+pub(crate) fn count_helper_tx<E: Entity>(tx: &Transaction<'_>) -> CryptoKeystoreResult<u32> {
     let mut statement = tx.prepare_cached(&format!(
         "SELECT count(*) FROM {collection_name}",
         collection_name = E::COLLECTION_NAME
@@ -65,7 +65,7 @@ pub(crate) fn count_helper_tx<E: UnifiedEntity>(tx: &Transaction<'_>) -> CryptoK
 /// but if it absolutely must handle errors, consider mapping them to [`rusqlite::Error::UserFunctionError`].
 pub(crate) fn load_all_helper<E, FromRow>(conn: &Connection, from_row: FromRow) -> CryptoKeystoreResult<Vec<E>>
 where
-    E: UnifiedEntity,
+    E: Entity,
     FromRow: FnMut(&Row<'_>) -> rusqlite::Result<E>,
 {
     let mut statement = conn.prepare_cached(&format!(
@@ -84,7 +84,7 @@ where
 /// You need to provide the primary key's column name and the actual primary key.
 ///
 /// Returns `true` if at least one entity was deleted, or `false` if the id was not found in the database.
-pub(crate) fn delete_helper<E: UnifiedEntity>(
+pub(crate) fn delete_helper<E: Entity>(
     tx: &Transaction<'_>,
     primary_key_column_name: &str,
     primary_key: impl ToSql,

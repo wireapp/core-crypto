@@ -3,7 +3,7 @@ use zeroize::Zeroize;
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{KeyType, UnifiedEntityGetBorrowed as _, UnifiedSearchableEntity},
+    traits::{EntityGetBorrowed as _, KeyType, SearchableEntity},
 };
 
 /// This type exists so that we can efficiently search for the children of a given group.
@@ -53,7 +53,7 @@ impl PersistedMlsGroup {
     }
 }
 
-impl<'a> UnifiedSearchableEntity<ParentGroupId<'a>> for PersistedMlsGroup {
+impl<'a> SearchableEntity<ParentGroupId<'a>> for PersistedMlsGroup {
     fn find_all_matching(conn: &Connection, parent_id: &ParentGroupId<'a>) -> CryptoKeystoreResult<Vec<Self>> {
         let parent_id = *parent_id.as_ref();
 

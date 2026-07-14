@@ -14,10 +14,7 @@ use crate::{
         PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment,
         StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
-    traits::{
-        BorrowPrimaryKey, KeyType, OwnedKeyType as _, UnifiedDeletableBySearchKey as _, UnifiedEntity,
-        UnifiedEntityDatabaseMutation,
-    },
+    traits::{BorrowPrimaryKey, DeletableBySearchKey as _, Entity, EntityDatabaseMutation, KeyType, OwnedKeyType as _},
     transaction::dynamic_dispatch::EntityType,
 };
 
@@ -37,7 +34,7 @@ impl fmt::Display for EntityId {
 impl EntityId {
     fn primary_key<E>(&self) -> CryptoKeystoreResult<E::PrimaryKey>
     where
-        E: UnifiedEntity,
+        E: Entity,
     {
         E::PrimaryKey::from_bytes(&self.id)
             .ok_or(CryptoKeystoreError::InvalidPrimaryKeyBytes(self.typ.collection_name()))
@@ -45,7 +42,7 @@ impl EntityId {
 
     pub(crate) fn from_key<E>(primary_key: Cow<'_, [u8]>) -> Option<Self>
     where
-        E: UnifiedEntity,
+        E: Entity,
     {
         let typ = EntityType::from_collection_name(E::COLLECTION_NAME)?;
         let id = primary_key.into_owned();
@@ -54,21 +51,21 @@ impl EntityId {
 
     pub(crate) fn from_entity<E>(entity: &E) -> Option<Self>
     where
-        E: UnifiedEntity,
+        E: Entity,
     {
         Self::from_key::<E>(entity.primary_key().bytes())
     }
 
     pub(crate) fn from_primary_key<E>(primary_key: &E::PrimaryKey) -> Option<Self>
     where
-        E: UnifiedEntity,
+        E: Entity,
     {
         Self::from_key::<E>(primary_key.bytes())
     }
 
     pub(crate) fn from_borrowed_primary_key<E>(primary_key: &E::BorrowedPrimaryKey) -> Option<Self>
     where
-        E: UnifiedEntity + BorrowPrimaryKey,
+        E: Entity + BorrowPrimaryKey,
     {
         Self::from_key::<E>(primary_key.to_owned().bytes())
     }

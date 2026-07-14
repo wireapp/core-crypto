@@ -8,7 +8,7 @@ use crate::{
         PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredE2eiEnrollment, StoredEncryptionKeyPair,
         StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
-    traits::{FetchFromDatabase, UnifiedEntity as _},
+    traits::{Entity as _, FetchFromDatabase},
 };
 
 impl crate::Database {

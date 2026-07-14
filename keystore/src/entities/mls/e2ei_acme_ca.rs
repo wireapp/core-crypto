@@ -6,7 +6,7 @@ pub struct E2eiAcmeCA {
     pub content: Vec<u8>,
 }
 
-impl crate::traits::UnifiedUniqueEntityImplementationHelper for E2eiAcmeCA {
+impl crate::traits::UniqueEntityImplementationHelper for E2eiAcmeCA {
     const COLLECTION_NAME: &str = "e2ei_acme_ca";
 
     fn new(content: Vec<u8>) -> Self {

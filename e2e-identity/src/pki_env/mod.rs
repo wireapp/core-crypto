@@ -15,7 +15,7 @@ use certval::{
 use core_crypto_keystore::{
     CryptoKeystoreError, Database,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
-    traits::{FetchFromDatabase, UnifiedUniqueEntity},
+    traits::{FetchFromDatabase, UniqueEntity},
 };
 use openmls_traits::authentication_service::{CredentialAuthenticationStatus, CredentialRef};
 use x509_cert::{
@@ -256,7 +256,7 @@ impl PkiEnvironment {
         // TODO: make this work for multiple trust anchors, see WPB-25632
         self.transactionally(async || {
             self.database
-                .remove::<E2eiAcmeCA>(&<E2eiAcmeCA as UnifiedUniqueEntity>::KEY)
+                .remove::<E2eiAcmeCA>(&<E2eiAcmeCA as UniqueEntity>::KEY)
                 .await
         })
         .await?;

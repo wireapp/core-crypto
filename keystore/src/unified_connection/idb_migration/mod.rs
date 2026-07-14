@@ -18,7 +18,7 @@ use crate::{
         PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment,
         StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
-    traits::UnifiedEntityDatabaseMutation as _,
+    traits::EntityDatabaseMutation as _,
     unified_connection::migrations::MigrationTarget,
 };
 

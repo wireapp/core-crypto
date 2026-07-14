@@ -2,7 +2,7 @@ use crate::{
     CryptoKeystoreResult,
     entities::StoredCredential,
     migrations::{StoredSignatureKeypair, V5Credential, migrate_to_new_credential},
-    traits::UnifiedEntity as _,
+    traits::Entity as _,
 };
 
 pub(crate) const VERSION: i32 = 16;

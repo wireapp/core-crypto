@@ -11,9 +11,7 @@ use crate::{
 /// Something which can be stored in our database.
 ///
 /// It has a primary key, which uniquely identifies it.
-//
-// During WPB-23775 we need to rename this and all other `Unified*` traits to just the bare form
-pub trait UnifiedEntity: PrimaryKey + Sized {
+pub trait Entity: PrimaryKey + Sized {
     /// The table name for this entity
     const COLLECTION_NAME: &'static str;
 
@@ -36,7 +34,7 @@ pub trait UnifiedEntity: PrimaryKey + Sized {
     fn load_all(conn: &Connection) -> CryptoKeystoreResult<Vec<Self>>;
 }
 
-pub trait UnifiedEntityGetBorrowed: UnifiedEntity + BorrowPrimaryKey {
+pub trait EntityGetBorrowed: Entity + BorrowPrimaryKey {
     /// Get an entity by a borrowed form of its primary key.
     fn get_borrowed(conn: &Connection, key: &Self::BorrowedPrimaryKey) -> CryptoKeystoreResult<Option<Self>>
     where

@@ -13,7 +13,7 @@ use crate::{
         PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment,
         StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
-    traits::{UnifiedEntityDatabaseMutation as _, UnifiedUniqueEntityExt as _},
+    traits::{EntityDatabaseMutation as _, UniqueEntityExt as _},
 };
 
 #[derive(Debug)]

@@ -8,7 +8,7 @@ use crate::{
         PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment,
         StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
-    traits::UnifiedEntity as _,
+    traits::Entity as _,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
