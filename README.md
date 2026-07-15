@@ -626,7 +626,7 @@ The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.or
 
 #### Consider when making a release from a release branch<a name="consider-when-making-a-release-from-a-release-branch"></a>
 
-1. Isolate the changes to [index.md](docs/index.md) and `[release notes](cc-book/src/release_notes.md)` from the release
+1. Isolate the changes to [index.md](docs/index.md) and [release notes](cc-book/src/release_notes.md) from the release
    commit itself
 1. After the release is finished, cherry-pick the changes to [index.md](docs/index.md) and
-   `[release notes](cc-book/src/release_notes.md)` and get them into `main`
+   [release notes](cc-book/src/release_notes.md) and get them into `main`
