@@ -61,4 +61,12 @@ impl CoreCryptoCancellationToken {
             poisoned.into_inner()
         })
     }
+
+    /// Return a future that resolves when this token is cancelled.
+    pub(crate) fn cancelled(self: &Arc<Self>) -> Cancelled {
+        Cancelled {
+            token: self.clone(),
+            wakers_index: None,
+        }
+    }
 }
