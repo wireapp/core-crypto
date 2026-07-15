@@ -33,7 +33,10 @@ async fn history_client_inner(history_secret: HistorySecret) -> CoreCryptoResult
         rmp_serde::from_slice::<CoreCryptoHistorySecret>(&history_secret.data).map_err(CoreCryptoError::generic())?;
     CoreCrypto::history_client(secret)
         .await
-        .map(|inner| CoreCryptoFfi { inner })
+        .map(|inner| CoreCryptoFfi {
+            inner,
+            cancellation_slot: Default::default(),
+        })
         .map_err(Into::into)
 }
 
