@@ -80,7 +80,7 @@ impl CoreCryptoContext {
     /// Calling it multiple times with varying parameters might succeed, but this is not a supported or tested mode of
     /// operation.
     pub async fn mls_init(&self, client_id: &Arc<ClientId>, transport: Arc<dyn MlsTransport>) -> CoreCryptoResult<()> {
-        let transport = callback_shim(transport);
+        let transport = callback_shim(transport, self.cancellation_slot.clone());
         self.inner
             .mls_init(client_id.as_ref().as_ref().to_owned(), transport)
             .await?;
