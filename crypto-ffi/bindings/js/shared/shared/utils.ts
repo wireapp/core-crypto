@@ -302,15 +302,9 @@ async function setHelpers() {
                 cipherSuite?: CipherSuite
             ): Promise<GroupInfoBundle> {
                 const kp = await helpers.generateKeyPackage(cc2, cipherSuite);
-                const clients = await cc1.getClientIds(conversationId);
-                console.log("clients");
-                console.log(clients);
-
-                console.log("inviting bob");
                 await cc1.transaction((ctx) =>
                     ctx.addClientsToConversation(conversationId, [kp])
                 );
-                console.log("processing welcome");
                 const commitBundle =
                     await deliveryService.getLatestCommitBundle();
                 await cc2.transaction((ctx) =>
