@@ -18,9 +18,11 @@ async function run() {
 
     const bench = new Bench({
         name: "Removing a User",
-        time: 1000,
-        iterations: 5,
+        time: 0,
+        iterations: 10,
+        warmup: true,
         warmupIterations: 1,
+        warmupTime: 0,
         setup: tinybenchSetup,
         teardown: teardown,
     });

@@ -17,10 +17,12 @@ describe("benchmark", () => {
 
             void (async (parameters) => {
                 bench = new tinybench.Bench({
-                    name: "Adding a User",
-                    time: 1000,
-                    iterations: 5,
+                    name: "Removing a User",
+                    time: 0,
+                    iterations: 10,
+                    warmup: true,
                     warmupIterations: 1,
+                    warmupTime: 0,
                 });
                 for (const { userCount, cipherSuite } of parameters) {
                     bench.add(
