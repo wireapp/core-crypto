@@ -63,8 +63,19 @@ public final class CoreCrypto: CoreCryptoProtocol, @unchecked Sendable {
         let filePath = dbLocation.map { FilePath(stringLiteral: $0) }
         let transactionExecutor = try TransactionExecutor<Result>(
             keystorePath: filePath, block)
+        let token = CoreCryptoCancellationToken()
+
         do {
-            try await coreCryptoFfi.transactionFfi(command: transactionExecutor)
+            try await withTaskCancellationHandler {
+                try await coreCryptoFfi.transactionFfiCancellable(
+                    command: transactionExecutor,
+                    cancellation: token
+                )
+            } onCancel: {
+                token.cancel()
+            }
+        } catch CoreCryptoError.TransactionCanceled {
+            throw CancellationError()
         } catch {
             throw await transactionExecutor.innerError ?? error
         }
