@@ -13,12 +13,13 @@ mod randomness;
 
 use std::sync::Arc;
 
-use crate::{CoreCryptoResult, Database};
+use crate::{CoreCryptoResult, Database, cancellation::CancellationSlot};
 
 /// CoreCrypto wraps around MLS and Proteus implementations and provides a transactional interface for each.
 #[derive(Debug, uniffi::Object)]
 pub struct CoreCryptoFfi {
     pub(crate) inner: Arc<core_crypto::CoreCrypto>,
+    pub(crate) cancellation_slot: Arc<CancellationSlot>,
 }
 
 /// Construct a new `CoreCryptoFfi` instance.
@@ -32,7 +33,10 @@ pub fn core_crypto_new(database: &Arc<Database>) -> CoreCryptoResult<CoreCryptoF
     let db = database.as_ref().clone().into();
     let inner = core_crypto::CoreCrypto::new(db);
 
-    Ok(CoreCryptoFfi { inner })
+    Ok(CoreCryptoFfi {
+        inner,
+        cancellation_slot: Default::default(),
+    })
 }
 
 #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::export)]

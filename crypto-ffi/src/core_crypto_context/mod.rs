@@ -6,7 +6,7 @@ use std::{ops::Deref, sync::Arc};
 
 use core_crypto::transaction_context::TransactionContext;
 
-use crate::CoreCryptoResult;
+use crate::{CoreCryptoResult, cancellation::CancellationSlot};
 
 /// The `CoreCryptoContext` holds the primary `CoreCrypto` APIs.
 ///
@@ -17,6 +17,7 @@ use crate::CoreCryptoResult;
 #[derive(Debug, uniffi::Object)]
 pub struct CoreCryptoContext {
     pub(crate) inner: Arc<TransactionContext>,
+    pub(crate) cancellation_slot: Arc<CancellationSlot>,
 }
 
 impl Deref for CoreCryptoContext {
