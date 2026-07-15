@@ -3,7 +3,9 @@ pub(crate) mod transaction_helper;
 
 use std::sync::Arc;
 
-use crate::{CoreCryptoContext, CoreCryptoFfi, CoreCryptoResult};
+use futures_util::FutureExt;
+
+use crate::{CoreCryptoCancellationToken, CoreCryptoContext, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult};
 
 /// A `CoreCryptoCommand` has an `execute` method which accepts a `CoreCryptoContext` and returns nothing.
 ///
@@ -54,6 +56,7 @@ impl CoreCryptoFfi {
 
         let context = CoreCryptoContext {
             inner: inner_context.clone(),
+            cancellation_slot: self.cancellation_slot.clone(),
         };
 
         // We need one more layer of Arc-wrapping in uniffi. It's kind of silly, given the
@@ -63,6 +66,64 @@ impl CoreCryptoFfi {
 
         log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 3; "created context; executing command");
         let result = command.execute(context).await;
+        match result {
+            Ok(()) => {
+                log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 4, command_success = true; "command succeeded; committing transaction");
+                inner_context.finish().await?;
+                log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 5, command_success = true; "exiting successfully");
+                Ok(())
+            }
+            Err(err) => {
+                log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 4, command_success = false; "command failed; aborting transaction");
+                inner_context.abort().await?;
+                log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 5, command_success = false, err:err; "exiting propagating error");
+                Err(err)
+            }
+        }
+    }
+
+    /// Like `transaction_ffi`, but cancellable.
+    ///
+    /// Cancelling the token aborts the transaction and stops waiting for any
+    /// in-flight `MlsTransport` callback associated with it.
+    pub async fn transaction_ffi_cancellable(
+        &self,
+        command: Command,
+        cancellation: Arc<CoreCryptoCancellationToken>,
+    ) -> CoreCryptoResult<()> {
+        log::info!(
+            scope = "CoreCryptoFfi::transaction_ffi", stage = 1;
+            "racing cancellation token against acquisition of transaction semaphore"
+        );
+        // Prefer cancellation so a pre-cancelled token cannot start a transaction.
+        let inner_context = futures_util::select_biased! {
+            _ = cancellation.cancelled().fuse() => return Err(CoreCryptoError::TransactionCanceled),
+            inner_context_result = self.inner.new_transaction().fuse() => inner_context_result?,
+        };
+
+        log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 2; "acquired semaphore; creating context");
+        let inner_context = Arc::new(inner_context);
+
+        // Only the transaction owning the semaphore may publish its token. This guard
+        // is declared after the context so the slot is cleared before the semaphore is released.
+        let _cancellation_guard = self.cancellation_slot.enter(cancellation.clone())?;
+
+        let context = CoreCryptoContext {
+            inner: inner_context.clone(),
+            cancellation_slot: self.cancellation_slot.clone(),
+        };
+
+        let context = Arc::new(context);
+
+        log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 3; "created context; racing command against cancellation");
+
+        // Prefer cancellation when both futures become ready together. This also
+        // normalizes cancellation observed by an MLS transport callback.
+        let result = futures_util::select_biased! {
+            _ = cancellation.cancelled().fuse() => Err(CoreCryptoError::TransactionCanceled),
+            result = command.execute(context).fuse() => result,
+        };
+
         match result {
             Ok(()) => {
                 log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 4, command_success = true; "command succeeded; committing transaction");
