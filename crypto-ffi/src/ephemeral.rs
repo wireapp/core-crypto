@@ -36,6 +36,7 @@ async fn history_client_inner(history_secret: HistorySecret) -> CoreCryptoResult
         .map(|inner| CoreCryptoFfi {
             inner,
             cancellation_slot: Default::default(),
+            pki_environment: Default::default(),
         })
         .map_err(Into::into)
 }
