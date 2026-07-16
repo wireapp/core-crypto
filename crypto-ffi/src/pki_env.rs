@@ -286,9 +286,11 @@ pub async fn create_pki_environment(
 impl CoreCryptoFfi {
     /// Set the PKI environment of the CoreCrypto instance.
     pub async fn set_pki_environment(&self, pki_environment: Option<Arc<PkiEnvironment>>) {
+        let mut current = self.pki_environment.write().await;
         self.inner
-            .set_pki_environment(pki_environment.map(|env| env.0.clone()))
+            .set_pki_environment(pki_environment.as_ref().map(|env| env.inner.clone()))
             .await;
+        *current = pki_environment;
     }
 
     /// Get the PKI environment of the CoreCrypto instance.
