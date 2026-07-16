@@ -17,7 +17,7 @@ describe("benchmark", () => {
 
             void (async (parameters) => {
                 bench = new tinybench.Bench({
-                    name: "Adding a User",
+                    name: "Joining a Group",
                     time: 1000,
                     iterations: 5,
                     warmupIterations: 1,
