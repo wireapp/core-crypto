@@ -1,9 +1,10 @@
 use std::{fmt, sync::Arc};
 
+use futures_util::{FutureExt as _, TryFutureExt as _};
 use wire_e2e_identity::pki_env;
 use x509_cert::der::DecodePem as _;
 
-use crate::{CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, Database};
+use crate::{CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, Database, cancellation::CancellationSlot};
 
 /// HttpMethod used for PKI hooks.
 #[derive(uniffi::Enum)]
@@ -174,12 +175,15 @@ pub trait PkiEnvironmentHooks: Send + Sync {
 }
 
 #[derive(derive_more::Constructor)]
-struct PkiEnvironmentHooksShim(Arc<dyn PkiEnvironmentHooks>);
+struct PkiEnvironmentHooksShim {
+    callbacks: Arc<dyn PkiEnvironmentHooks>,
+    cancellation_slot: Arc<CancellationSlot>,
+}
 
 impl std::fmt::Debug for PkiEnvironmentHooksShim {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_tuple("PkiEnvironmentHooksShim")
-            .field(&fmt::from_fn(|f| write!(f, "{:p}", Arc::as_ptr(&self.0))))
+            .field(&fmt::from_fn(|f| write!(f, "{:p}", Arc::as_ptr(&self.callbacks))))
             .finish()
     }
 }
@@ -195,11 +199,14 @@ impl pki_env::hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
         body: Vec<u8>,
     ) -> Result<pki_env::hooks::HttpResponse, pki_env::hooks::PkiEnvironmentHooksError> {
         let headers = headers.into_iter().map(Into::into).collect();
-        self.0
-            .http_request(method.into(), url, headers, body)
-            .await
-            .map(Into::into)
-            .map_err(Into::into)
+        race_callback(
+            &self.cancellation_slot,
+            self.callbacks
+                .http_request(method.into(), url, headers, body)
+                .map_ok(Into::into)
+                .map_err(Into::into),
+        )
+        .await
     }
 
     async fn authenticate(
@@ -209,35 +216,70 @@ impl pki_env::hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
         acme_aud: String,
         acquisition_snapshot: Vec<u8>,
     ) -> Result<String, pki_env::hooks::PkiEnvironmentHooksError> {
-        self.0
-            .authenticate(idp, key_auth, acme_aud, acquisition_snapshot)
-            .await
-            .map_err(Into::into)
+        race_callback(
+            &self.cancellation_slot,
+            self.callbacks
+                .authenticate(idp, key_auth, acme_aud, acquisition_snapshot)
+                .map_err(Into::into),
+        )
+        .await
     }
 
     async fn get_backend_nonce(&self) -> Result<String, pki_env::hooks::PkiEnvironmentHooksError> {
-        self.0.get_backend_nonce().await.map_err(Into::into)
+        race_callback(
+            &self.cancellation_slot,
+            self.callbacks.get_backend_nonce().map_err(Into::into),
+        )
+        .await
     }
 
     async fn fetch_backend_access_token(
         &self,
         dpop: String,
     ) -> Result<String, pki_env::hooks::PkiEnvironmentHooksError> {
-        self.0.fetch_backend_access_token(dpop).await.map_err(Into::into)
+        race_callback(
+            &self.cancellation_slot,
+            self.callbacks.fetch_backend_access_token(dpop).map_err(Into::into),
+        )
+        .await
+    }
+}
+
+async fn race_callback<T>(
+    slot: &CancellationSlot,
+    callback: impl Future<Output = Result<T, pki_env::hooks::PkiEnvironmentHooksError>>,
+) -> Result<T, pki_env::hooks::PkiEnvironmentHooksError> {
+    let Some(token) = slot
+        .current()
+        .map_err(|error| pki_env::hooks::PkiEnvironmentHooksError {
+            reason: error.to_string(),
+        })?
+    else {
+        return callback.await;
+    };
+
+    futures_util::select_biased! {
+        _ = token.cancelled().fuse() => Err(pki_env::hooks::PkiEnvironmentHooksError {
+            reason: "cancelled via cancellation token".into(),
+        }),
+        result = callback.fuse() => result,
     }
 }
 
 /// The PKI environment used for certificate management during X509 credential acquisition.
-#[derive(uniffi::Object)]
-pub struct PkiEnvironment(Arc<wire_e2e_identity::pki_env::PkiEnvironment>);
+#[derive(Debug, uniffi::Object)]
+pub struct PkiEnvironment {
+    inner: Arc<wire_e2e_identity::pki_env::PkiEnvironment>,
+    pub(crate) cancellation_slot: Arc<CancellationSlot>,
+}
 
 impl PkiEnvironment {
     pub(crate) fn clone_inner(&self) -> Arc<wire_e2e_identity::pki_env::PkiEnvironment> {
-        self.0.clone()
+        self.inner.clone()
     }
 
     pub(crate) fn database(&self) -> Database {
-        self.0.database_arc().into()
+        self.inner.database_arc().into()
     }
 }
 
@@ -246,9 +288,13 @@ impl PkiEnvironment {
     /// Create a new PKI environment.
     #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::constructor)]
     pub async fn new(hooks: Arc<dyn PkiEnvironmentHooks>, database: Arc<Database>) -> CoreCryptoResult<Self> {
-        let shim = Arc::new(PkiEnvironmentHooksShim::new(hooks));
+        let cancellation_slot = Arc::new(CancellationSlot::default());
+        let shim = Arc::new(PkiEnvironmentHooksShim::new(hooks, cancellation_slot.clone()));
         let pki_env = wire_e2e_identity::pki_env::PkiEnvironment::new(shim, database.as_ref().clone().into()).await?;
-        Ok(Self(Arc::new(pki_env)))
+        Ok(Self {
+            inner: Arc::new(pki_env),
+            cancellation_slot,
+        })
     }
 }
 
@@ -260,14 +306,14 @@ impl PkiEnvironment {
     /// times will overwrite any previously added trust anchor.
     pub async fn add_trust_anchor(&self, cert_pem: &str) -> CoreCryptoResult<()> {
         let cert = x509_cert::Certificate::from_pem(cert_pem).map_err(CoreCryptoError::generic())?;
-        self.0.add_trust_anchor(cert).await?;
+        self.inner.add_trust_anchor(cert).await?;
         Ok(())
     }
 
     /// Add a PEM-encoded certificate as an intermediate certificate.
     pub async fn add_intermediate_cert(&self, cert_pem: &str) -> CoreCryptoResult<()> {
         let cert = x509_cert::Certificate::from_pem(cert_pem).map_err(CoreCryptoError::generic())?;
-        self.0.add_intermediate_cert(cert).await?;
+        self.inner.add_intermediate_cert(cert).await?;
         Ok(())
     }
 }
@@ -297,9 +343,6 @@ impl CoreCryptoFfi {
     ///
     /// Returns null if it is not set.
     pub async fn get_pki_environment(&self) -> Option<Arc<PkiEnvironment>> {
-        self.inner
-            .get_pki_environment()
-            .await
-            .map(|inner| Arc::new(PkiEnvironment(inner)))
+        self.pki_environment.read().await.clone()
     }
 }

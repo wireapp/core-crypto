@@ -85,7 +85,7 @@ impl CoreCryptoFfi {
     /// Like `transaction_ffi`, but cancellable.
     ///
     /// Cancelling the token aborts the transaction and stops waiting for any
-    /// in-flight `MlsTransport` callback associated with it.
+    /// in-flight `MlsTransport` callback or `PkiEnvironment` hook associated with it.
     pub async fn transaction_ffi_cancellable(
         &self,
         command: Command,
@@ -104,9 +104,18 @@ impl CoreCryptoFfi {
         log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 2; "acquired semaphore; creating context");
         let inner_context = Arc::new(inner_context);
 
-        // Only the transaction owning the semaphore may publish its token. This guard
-        // is declared after the context so the slot is cleared before the semaphore is released.
+        // Only the transaction owning the semaphore may publish its token. These guards
+        // are declared after the context so the slots are cleared before the semaphore is released.
         let _cancellation_guard = self.cancellation_slot.enter(cancellation.clone())?;
+        let pki_cancellation_slot = self
+            .pki_environment
+            .read()
+            .await
+            .as_ref()
+            .map(|environment| environment.cancellation_slot.clone());
+        let _pki_cancellation_guard = pki_cancellation_slot
+            .map(|slot| slot.enter(cancellation.clone()))
+            .transpose()?;
 
         let context = CoreCryptoContext {
             inner: inner_context.clone(),
