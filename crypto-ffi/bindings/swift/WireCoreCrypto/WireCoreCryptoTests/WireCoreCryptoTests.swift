@@ -294,6 +294,96 @@ final class WireCoreCryptoTests: XCTestCase {
         )
     }
 
+    // swiftlint:disable:next function_body_length
+    func testCancellingTransactionStopsWaitingForLongRunningCallbacks() async throws {
+        // Verifies that cancellation stops waiting for PKI and MLS transport callbacks.
+        let database = try await newDatabase()
+
+        // This struct implements send commit bundle and x509 credential finalization by just waiting.
+        // Also, we're passing in expectations that are used as checkpoints.
+        let sendCommitStarted = expectation(description: "send commit started")
+        let sendCommitExited = expectation(description: "send commit exited")
+        let httpRequestStarted = expectation(description: "http request started")
+        let httpRequestExited = expectation(description: "http request exited")
+        let longRunningCallbacks = LongRunningCallbacks(
+            sencCommitStarted: sendCommitStarted,
+            sencCommitExited: sendCommitExited,
+            httpRequestStarted: httpRequestStarted,
+            httpRequestExited: httpRequestExited
+        )
+
+        let clientId = genClientId()
+        let coreCrypto = try CoreCrypto(database: database)
+
+        let pkiEnvironment = try await PkiEnvironment(
+            hooks: longRunningCallbacks, database: database)
+        await coreCrypto.setPkiEnvironment(pkiEnvironment: pkiEnvironment)
+        let acquisition = try X509CredentialAcquisition(
+            pkiEnvironment: pkiEnvironment,
+            config: X509CredentialAcquisitionConfiguration(
+                acmeDirectoryUrl: "https://acme.example.com/directory",
+                cipherSuite: cipherSuiteDefault(),
+                displayName: "Alice Smith",
+                clientId: clientId,
+                handle: "alice_wire",
+                domain: "world.com",
+                team: nil,
+                validityPeriodSecs: 3600
+            )
+        )
+
+        let conversationId = genConversationId()
+        let credential = try Credential.basic(
+            cipherSuite: cipherSuiteDefault(),
+            clientId: clientId
+        )
+
+        try await coreCrypto.transaction { context in
+            try await context.mlsInit(clientId: clientId, transport: longRunningCallbacks)
+            let credentialRef = try await context.addCredential(credential: credential)
+            try await context.createConversation(
+                conversationId: conversationId,
+                credentialRef: credentialRef,
+                externalSender: nil
+            )
+        }
+
+        let transactionTask = Task {
+            try await coreCrypto.transaction { context in
+                try await context.setData(data: Data("This data should not be committed.".utf8))
+
+                // Start the long-running callbacks concurrently within the cancellable transaction.
+                async let update: () = context.updateKeyingMaterial(
+                    conversationId: conversationId
+                )
+                async let acquiredCredential = acquisition.finalize()
+                _ = try await (update, acquiredCredential)
+            }
+        }
+
+        // Wait until both long-running callbacks have started before cancelling.
+        await fulfillment(of: [sendCommitStarted, httpRequestStarted])
+        transactionTask.cancel()
+
+        // Assert that cancellation is triggered without waiting for either callback result.
+        do {
+            try await transactionTask.value
+            XCTFail("Expected the transaction to be cancelled")
+        } catch is CancellationError {
+            // Expected.
+        } catch {
+            XCTFail("Expected CancellationError, got \(error)")
+        }
+
+        await fulfillment(of: [sendCommitExited, httpRequestExited])
+
+        // Assert that work performed before the callbacks was rolled back.
+        let data = try await coreCrypto.transaction { context in
+            try await context.getData()
+        }
+        XCTAssertNil(data)
+    }
+
     func testParallelTransactionsArePerformedSeriallyAcrossMultipleCoreCryptoInstances()
         async throws
     {
@@ -850,6 +940,79 @@ final class WireCoreCryptoTests: XCTestCase {
             dpop: String
         ) async -> String {
             return "mock-backend-access-token"
+        }
+    }
+
+    private final actor LongRunningCallbacks: MlsTransport, PkiEnvironmentHooks {
+        private let sencCommitStarted: XCTestExpectation
+        private let sendCommitExited: XCTestExpectation
+        private let httpRequestStarted: XCTestExpectation
+        private let httpRequestExited: XCTestExpectation
+
+        init(
+            sencCommitStarted: XCTestExpectation,
+            sencCommitExited: XCTestExpectation,
+            httpRequestStarted: XCTestExpectation,
+            httpRequestExited: XCTestExpectation
+        ) {
+            self.sencCommitStarted = sencCommitStarted
+            self.sendCommitExited = sencCommitExited
+            self.httpRequestStarted = httpRequestStarted
+            self.httpRequestExited = httpRequestExited
+        }
+
+        func sendCommitBundle(commitBundle: CommitBundle) async {
+            sencCommitStarted.fulfill()
+            do {
+                try await Task.sleep(for: .milliseconds(9999))
+                XCTFail("Expected the Task.sleep() to be cancelled")
+            } catch is CancellationError {
+                sendCommitExited.fulfill()
+            } catch {
+                XCTFail("Unexpected error: \(error)")
+            }
+        }
+
+        func prepareForTransport(historySecret: WireCoreCryptoUniffi.HistorySecret) async
+            -> WireCoreCryptoUniffi.MlsTransportData
+        {
+            Data()
+        }
+
+        func httpRequest(
+            method: HttpMethod,
+            url: String,
+            headers: [HttpHeader],
+            body: Data
+        ) async -> HttpResponse {
+            httpRequestStarted.fulfill()
+            do {
+                try await Task.sleep(for: .milliseconds(9999))
+                XCTFail("Expected Task.sleep() to be cancelled")
+            } catch is CancellationError {
+                httpRequestExited.fulfill()
+            } catch {
+                XCTFail("Unexpected error: \(error)")
+            }
+
+            return HttpResponse(status: 200, headers: [], body: Data())
+        }
+
+        func authenticate(
+            idp: String,
+            keyAuth: String,
+            acmeAud: String,
+            acquisitionSnapshot: Data
+        ) async -> String {
+            "mock-id-token"
+        }
+
+        func getBackendNonce() async -> String {
+            "mock-backend-nonce"
+        }
+
+        func fetchBackendAccessToken(dpop: String) async -> String {
+            "mock-backend-access-token"
         }
     }
 
