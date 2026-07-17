@@ -21,6 +21,7 @@ workspace = true
 
 [features]
 default = ["proteus"]
+cancellable-transactions = ["dep:futures-channel"]
 proteus = ["core-crypto/proteus", "dep:proteus-wasm"]
 wasm = ["dep:uniffi_ubrn"]
 napi = ["dep:uniffi_ubrn"]

@@ -35,7 +35,9 @@ async fn history_client_inner(history_secret: HistorySecret) -> CoreCryptoResult
         .await
         .map(|inner| CoreCryptoFfi {
             inner,
+            #[cfg(feature = "cancellable-transactions")]
             cancellation_slot: Default::default(),
+            #[cfg(feature = "cancellable-transactions")]
             pki_environment: Default::default(),
         })
         .map_err(Into::into)

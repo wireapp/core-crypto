@@ -27,6 +27,7 @@ pub enum CoreCryptoError {
     #[error("Transaction rolled back due to unexpected uniffi error: {error:?}")]
     TransactionFailed { error: String },
     /// The transaction was canceled via the cancellation token.
+    #[cfg(feature = "cancellable-transactions")]
     #[error("The transaction was canceled via the cancellation token.")]
     TransactionCanceled,
     /// An unclassified error.
