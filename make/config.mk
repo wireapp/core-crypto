@@ -18,6 +18,8 @@ else
   RELEASE_MODE := release
 endif
 
+SWIFT_CARGO_BUILD_ARGS := $(CARGO_BUILD_ARGS) --features cancellable-transactions
+
 TARGET_DIR := target/$(RELEASE_MODE)
 
 # Detect host platform for NDK and library extensions
