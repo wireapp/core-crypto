@@ -13,6 +13,7 @@ uniffi::setup_scaffolding!("core_crypto_ffi");
 
 mod bundles;
 mod bytes_wrapper;
+#[cfg(feature = "cancellable-transactions")]
 mod cancellation;
 mod cipher_suite;
 mod client_id;
@@ -36,6 +37,7 @@ mod signature_scheme;
 mod timestamp;
 
 pub use bundles::{commit::CommitBundle, group_info::GroupInfoBundle, proteus_auto_prekey::ProteusAutoPrekeyBundle};
+#[cfg(feature = "cancellable-transactions")]
 pub use cancellation::CoreCryptoCancellationToken;
 pub use cipher_suite::{CipherSuite, cipher_suite_default, cipher_suite_from_u16};
 pub use client_id::{ClientId, DeserializedClientId, DeviceId, Uuid};

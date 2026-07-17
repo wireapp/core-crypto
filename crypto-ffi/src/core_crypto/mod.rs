@@ -13,15 +13,20 @@ mod randomness;
 
 use std::sync::Arc;
 
+#[cfg(feature = "cancellable-transactions")]
 use async_lock::RwLock;
 
-use crate::{CoreCryptoResult, Database, PkiEnvironment, cancellation::CancellationSlot};
+use crate::{CoreCryptoResult, Database};
+#[cfg(feature = "cancellable-transactions")]
+use crate::{PkiEnvironment, cancellation::CancellationSlot};
 
 /// CoreCrypto wraps around MLS and Proteus implementations and provides a transactional interface for each.
 #[derive(Debug, uniffi::Object)]
 pub struct CoreCryptoFfi {
     pub(crate) inner: Arc<core_crypto::CoreCrypto>,
+    #[cfg(feature = "cancellable-transactions")]
     pub(crate) cancellation_slot: Arc<CancellationSlot>,
+    #[cfg(feature = "cancellable-transactions")]
     pub(crate) pki_environment: RwLock<Option<Arc<PkiEnvironment>>>,
 }
 
@@ -38,7 +43,9 @@ pub fn core_crypto_new(database: &Arc<Database>) -> CoreCryptoResult<CoreCryptoF
 
     Ok(CoreCryptoFfi {
         inner,
+        #[cfg(feature = "cancellable-transactions")]
         cancellation_slot: Default::default(),
+        #[cfg(feature = "cancellable-transactions")]
         pki_environment: Default::default(),
     })
 }

@@ -6,7 +6,9 @@ use std::{ops::Deref, sync::Arc};
 
 use core_crypto::transaction_context::TransactionContext;
 
-use crate::{CoreCryptoResult, cancellation::CancellationSlot};
+use crate::CoreCryptoResult;
+#[cfg(feature = "cancellable-transactions")]
+use crate::cancellation::CancellationSlot;
 
 /// The `CoreCryptoContext` holds the primary `CoreCrypto` APIs.
 ///
@@ -17,6 +19,7 @@ use crate::{CoreCryptoResult, cancellation::CancellationSlot};
 #[derive(Debug, uniffi::Object)]
 pub struct CoreCryptoContext {
     pub(crate) inner: Arc<TransactionContext>,
+    #[cfg(feature = "cancellable-transactions")]
     pub(crate) cancellation_slot: Arc<CancellationSlot>,
 }
 

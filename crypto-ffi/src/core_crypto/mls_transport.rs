@@ -6,12 +6,12 @@
 use std::{fmt, sync::Arc};
 
 use core_crypto::{CommitBundle as CryptoCommitBundle, HistorySecret};
+#[cfg(feature = "cancellable-transactions")]
 use futures_util::{FutureExt as _, TryFutureExt as _};
 
-use crate::{
-    ClientId, CommitBundle, HistorySecret as HistorySecretFfi, cancellation::CancellationSlot,
-    error::mls_transport::MlsTransportResult,
-};
+#[cfg(feature = "cancellable-transactions")]
+use crate::cancellation::CancellationSlot;
+use crate::{ClientId, CommitBundle, HistorySecret as HistorySecretFfi, error::mls_transport::MlsTransportResult};
 
 /// Application data packaged to be encrypted and transmitted in an MLS application message.
 //
@@ -43,6 +43,7 @@ pub trait MlsTransport: Send + Sync {
 #[derive(derive_more::Constructor)]
 struct MlsTransportShim {
     callbacks: Arc<dyn MlsTransport>,
+    #[cfg(feature = "cancellable-transactions")]
     cancellation_slot: Arc<CancellationSlot>,
 }
 
@@ -61,13 +62,20 @@ impl core_crypto::MlsTransport for MlsTransportShim {
         let commit_bundle = CommitBundle::try_from(commit_bundle)
             .map_err(|e| core_crypto::Error::ErrorDuringMlsTransport(e.to_string()))?;
 
-        race_callback(
-            &self.cancellation_slot,
-            async { self.callbacks.send_commit_bundle(commit_bundle) }
-                .await
-                .map_err(Into::into),
-        )
-        .await
+        #[cfg(feature = "cancellable-transactions")]
+        {
+            return race_callback(
+                &self.cancellation_slot,
+                self.callbacks.send_commit_bundle(commit_bundle).map_err(Into::into),
+            )
+            .await;
+        }
+
+        #[cfg(not(feature = "cancellable-transactions"))]
+        self.callbacks
+            .send_commit_bundle(commit_bundle)
+            .await
+            .map_err(Into::into)
     }
 
     async fn prepare_for_transport(&self, secret: &HistorySecret) -> core_crypto::Result<core_crypto::TransportData> {
@@ -86,6 +94,7 @@ impl core_crypto::MlsTransport for MlsTransportShim {
 
 /// In uniffi, `MlsTransport` is a trait which we need to wrap, and we need to provide the transport shim with the
 /// cancellation slot of core crypto.
+#[cfg(feature = "cancellable-transactions")]
 pub(crate) fn callback_shim(
     callbacks: Arc<dyn MlsTransport>,
     cancellation_slot: Arc<CancellationSlot>,
@@ -93,6 +102,12 @@ pub(crate) fn callback_shim(
     Arc::new(MlsTransportShim::new(callbacks, cancellation_slot))
 }
 
+#[cfg(not(feature = "cancellable-transactions"))]
+pub(crate) fn callback_shim(callbacks: Arc<dyn MlsTransport>) -> Arc<dyn core_crypto::MlsTransport> {
+    Arc::new(MlsTransportShim::new(callbacks))
+}
+
+#[cfg(feature = "cancellable-transactions")]
 async fn race_callback<T>(
     slot: &CancellationSlot,
     callback: impl Future<Output = core_crypto::Result<T>>,

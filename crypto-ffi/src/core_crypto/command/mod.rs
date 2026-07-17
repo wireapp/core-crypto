@@ -3,9 +3,12 @@ pub(crate) mod transaction_helper;
 
 use std::sync::Arc;
 
+#[cfg(feature = "cancellable-transactions")]
 use futures_util::FutureExt;
 
-use crate::{CoreCryptoCancellationToken, CoreCryptoContext, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult};
+#[cfg(feature = "cancellable-transactions")]
+use crate::{CoreCryptoCancellationToken, CoreCryptoError};
+use crate::{CoreCryptoContext, CoreCryptoFfi, CoreCryptoResult};
 
 /// A `CoreCryptoCommand` has an `execute` method which accepts a `CoreCryptoContext` and returns nothing.
 ///
@@ -56,6 +59,7 @@ impl CoreCryptoFfi {
 
         let context = CoreCryptoContext {
             inner: inner_context.clone(),
+            #[cfg(feature = "cancellable-transactions")]
             cancellation_slot: self.cancellation_slot.clone(),
         };
 
@@ -81,7 +85,11 @@ impl CoreCryptoFfi {
             }
         }
     }
+}
 
+#[cfg(feature = "cancellable-transactions")]
+#[uniffi::export]
+impl CoreCryptoFfi {
     /// Like `transaction_ffi`, but cancellable.
     ///
     /// Cancelling the token aborts the transaction and stops waiting for any

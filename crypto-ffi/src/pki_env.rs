@@ -1,10 +1,13 @@
 use std::{fmt, sync::Arc};
 
+#[cfg(feature = "cancellable-transactions")]
 use futures_util::{FutureExt as _, TryFutureExt as _};
 use wire_e2e_identity::pki_env;
 use x509_cert::der::DecodePem as _;
 
-use crate::{CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, Database, cancellation::CancellationSlot};
+#[cfg(feature = "cancellable-transactions")]
+use crate::cancellation::CancellationSlot;
+use crate::{CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, Database};
 
 /// HttpMethod used for PKI hooks.
 #[derive(uniffi::Enum)]
@@ -177,6 +180,7 @@ pub trait PkiEnvironmentHooks: Send + Sync {
 #[derive(derive_more::Constructor)]
 struct PkiEnvironmentHooksShim {
     callbacks: Arc<dyn PkiEnvironmentHooks>,
+    #[cfg(feature = "cancellable-transactions")]
     cancellation_slot: Arc<CancellationSlot>,
 }
 
@@ -199,14 +203,24 @@ impl pki_env::hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
         body: Vec<u8>,
     ) -> Result<pki_env::hooks::HttpResponse, pki_env::hooks::PkiEnvironmentHooksError> {
         let headers = headers.into_iter().map(Into::into).collect();
-        race_callback(
-            &self.cancellation_slot,
-            self.callbacks
-                .http_request(method.into(), url, headers, body)
-                .map_ok(Into::into)
-                .map_err(Into::into),
-        )
-        .await
+        #[cfg(feature = "cancellable-transactions")]
+        {
+            return race_callback(
+                &self.cancellation_slot,
+                self.callbacks
+                    .http_request(method.into(), url, headers, body)
+                    .map_ok(Into::into)
+                    .map_err(Into::into),
+            )
+            .await;
+        }
+
+        #[cfg(not(feature = "cancellable-transactions"))]
+        self.callbacks
+            .http_request(method.into(), url, headers, body)
+            .await
+            .map(Into::into)
+            .map_err(Into::into)
     }
 
     async fn authenticate(
@@ -216,35 +230,60 @@ impl pki_env::hooks::PkiEnvironmentHooks for PkiEnvironmentHooksShim {
         acme_aud: String,
         acquisition_snapshot: Vec<u8>,
     ) -> Result<String, pki_env::hooks::PkiEnvironmentHooksError> {
-        race_callback(
-            &self.cancellation_slot,
-            self.callbacks
-                .authenticate(idp, key_auth, acme_aud, acquisition_snapshot)
-                .map_err(Into::into),
-        )
-        .await
+        #[cfg(feature = "cancellable-transactions")]
+        {
+            return race_callback(
+                &self.cancellation_slot,
+                self.callbacks
+                    .authenticate(idp, key_auth, acme_aud, acquisition_snapshot)
+                    .map_err(Into::into),
+            )
+            .await;
+        }
+
+        #[cfg(not(feature = "cancellable-transactions"))]
+        self.callbacks
+            .authenticate(idp, key_auth, acme_aud, acquisition_snapshot)
+            .await
+            .map_err(Into::into)
     }
 
     async fn get_backend_nonce(&self) -> Result<String, pki_env::hooks::PkiEnvironmentHooksError> {
-        race_callback(
-            &self.cancellation_slot,
-            self.callbacks.get_backend_nonce().map_err(Into::into),
-        )
-        .await
+        #[cfg(feature = "cancellable-transactions")]
+        {
+            return race_callback(
+                &self.cancellation_slot,
+                self.callbacks.get_backend_nonce().map_err(Into::into),
+            )
+            .await;
+        }
+
+        #[cfg(not(feature = "cancellable-transactions"))]
+        self.callbacks.get_backend_nonce().await.map_err(Into::into)
     }
 
     async fn fetch_backend_access_token(
         &self,
         dpop: String,
     ) -> Result<String, pki_env::hooks::PkiEnvironmentHooksError> {
-        race_callback(
-            &self.cancellation_slot,
-            self.callbacks.fetch_backend_access_token(dpop).map_err(Into::into),
-        )
-        .await
+        #[cfg(feature = "cancellable-transactions")]
+        {
+            return race_callback(
+                &self.cancellation_slot,
+                self.callbacks.fetch_backend_access_token(dpop).map_err(Into::into),
+            )
+            .await;
+        }
+
+        #[cfg(not(feature = "cancellable-transactions"))]
+        self.callbacks
+            .fetch_backend_access_token(dpop)
+            .await
+            .map_err(Into::into)
     }
 }
 
+#[cfg(feature = "cancellable-transactions")]
 async fn race_callback<T>(
     slot: &CancellationSlot,
     callback: impl Future<Output = Result<T, pki_env::hooks::PkiEnvironmentHooksError>>,
@@ -270,6 +309,7 @@ async fn race_callback<T>(
 #[derive(Debug, uniffi::Object)]
 pub struct PkiEnvironment {
     inner: Arc<wire_e2e_identity::pki_env::PkiEnvironment>,
+    #[cfg(feature = "cancellable-transactions")]
     pub(crate) cancellation_slot: Arc<CancellationSlot>,
 }
 
@@ -288,11 +328,19 @@ impl PkiEnvironment {
     /// Create a new PKI environment.
     #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::constructor)]
     pub async fn new(hooks: Arc<dyn PkiEnvironmentHooks>, database: Arc<Database>) -> CoreCryptoResult<Self> {
+        #[cfg(feature = "cancellable-transactions")]
         let cancellation_slot = Arc::new(CancellationSlot::default());
-        let shim = Arc::new(PkiEnvironmentHooksShim::new(hooks, cancellation_slot.clone()));
+
+        let shim = Arc::new(PkiEnvironmentHooksShim::new(
+            hooks,
+            #[cfg(feature = "cancellable-transactions")]
+            cancellation_slot.clone(),
+        ));
+
         let pki_env = wire_e2e_identity::pki_env::PkiEnvironment::new(shim, database.as_ref().clone().into()).await?;
         Ok(Self {
             inner: Arc::new(pki_env),
+            #[cfg(feature = "cancellable-transactions")]
             cancellation_slot,
         })
     }
@@ -332,17 +380,30 @@ pub async fn create_pki_environment(
 impl CoreCryptoFfi {
     /// Set the PKI environment of the CoreCrypto instance.
     pub async fn set_pki_environment(&self, pki_environment: Option<Arc<PkiEnvironment>>) {
+        #[cfg(feature = "cancellable-transactions")]
         let mut current = self.pki_environment.write().await;
         self.inner
             .set_pki_environment(pki_environment.as_ref().map(|env| env.inner.clone()))
             .await;
-        *current = pki_environment;
+        #[cfg(feature = "cancellable-transactions")]
+        {
+            *current = pki_environment;
+        }
     }
 
     /// Get the PKI environment of the CoreCrypto instance.
     ///
     /// Returns null if it is not set.
     pub async fn get_pki_environment(&self) -> Option<Arc<PkiEnvironment>> {
-        self.pki_environment.read().await.clone()
+        #[cfg(feature = "cancellable-transactions")]
+        {
+            return self.pki_environment.read().await.clone();
+        }
+
+        #[cfg(not(feature = "cancellable-transactions"))]
+        self.inner
+            .get_pki_environment()
+            .await
+            .map(|inner| Arc::new(PkiEnvironment { inner }))
     }
 }
