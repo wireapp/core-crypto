@@ -1,4 +1,4 @@
-name: Fetch or make ffi library
+name: Fetch or make ffi library for linux
 
 inputs:
   gh-token:
@@ -10,23 +10,11 @@ runs:
   using: composite
 
   steps:
-    - name: ffi library extension
-      run: |
-        os="$(uname -s)"
-        echo "ARTIFACT_NAME=uniffi-${os}" >> $GITHUB_ENV
-        if [ "$os" = "Linux" ]; then
-          library_extension="so"
-        elif [ "$os" = "Darwin" ]; then
-          library_extension="dylib"
-        fi
-        echo "LIBRARY_EXTENSION=${library_extension}" >> $GITHUB_ENV
-      shell: bash -euo pipefail {0}
-
     - uses: ./.github/actions/make
       with:
-        key: libcore_crypto_ffi.${{ env.LIBRARY_EXTENSION }}
+        key: libcore_crypto_ffi.so
         make-rule: ffi-library
-        target-path: target/release/libcore_crypto_ffi.${{ env.LIBRARY_EXTENSION }}
+        target-path: target/release/libcore_crypto_ffi.so
         gh-token: ${{ inputs.gh-token }}
         uses-rust: true
         rust-target: x86_64-unknown-linux-gnu
