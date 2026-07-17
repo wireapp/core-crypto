@@ -11,7 +11,7 @@ $(IOS_DEVICE): $(ios-device-deps)
 	  --crate-type=cdylib \
 	  --crate-type=staticlib \
 	  --package core-crypto-ffi \
-	  $(CARGO_BUILD_ARGS) -- $(RUST_STRIP_FLAGS)
+	  $(SWIFT_CARGO_BUILD_ARGS) -- $(RUST_STRIP_FLAGS)
 
 .PHONY: ios-device
 ios-device: $(IOS_DEVICE) ## Build core-crypto-ffi for aarch64-apple-ios for iOS 16.4 (macOS only)
@@ -28,7 +28,7 @@ $(IOS_SIMULATOR_ARM): $(ios-simulator-arm-deps)
 	  --crate-type=cdylib \
 	  --crate-type=staticlib \
 	  --package core-crypto-ffi \
-	  --release -- $(RUST_STRIP_FLAGS)
+	  $(filter-out --release,$(SWIFT_CARGO_BUILD_ARGS)) --release -- $(RUST_STRIP_FLAGS)
 
 .PHONY: ios-simulator-arm
 ios-simulator-arm: $(IOS_SIMULATOR_ARM) ## Build for aarch64-apple-ios-sim, iOS 16.4 (macOS only). Always builds in release mode (see WPB-25954).

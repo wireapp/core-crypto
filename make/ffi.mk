@@ -26,7 +26,7 @@ $(UNIFFI_BINDGEN): $(uniffi-bindgen-deps)
 		--bin uniffi-bindgen
 
 # Build the FFI library
-FFI_LIBRARY := $(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+FFI_LIBRARY := $(TARGET_DIR)/libcore_crypto_ffi.so
 ffi-library-deps := $(RUST_SOURCES)
 $(FFI_LIBRARY): $(ffi-library-deps)
 	cargo build $(CARGO_BUILD_ARGS) \
@@ -34,16 +34,29 @@ $(FFI_LIBRARY): $(ffi-library-deps)
 		--package core-crypto-ffi \
 		--lib
 
+# Build a separate feature-enabled host library for Swift binding generation.
+SWIFT_FFI_TARGET_DIR := target/swift-bindgen
+SWIFT_FFI_LIBRARY := $(SWIFT_FFI_TARGET_DIR)/$(RELEASE_MODE)/libcore_crypto_ffi.dylib
+swift-ffi-library-deps := $(RUST_SOURCES)
+$(SWIFT_FFI_LIBRARY): $(swift-ffi-library-deps)
+	cargo build $(SWIFT_CARGO_BUILD_ARGS) \
+		--target-dir $(SWIFT_FFI_TARGET_DIR) \
+		--locked \
+		--package core-crypto-ffi \
+		--lib
+
 # Make aliases
-.PHONY: uniffi-bindgen ffi-library
+.PHONY: uniffi-bindgen ffi-library swift-ffi-library
 uniffi-bindgen: $(UNIFFI_BINDGEN)  ## Build the uniffi bindgen binary
 ffi-library: $(FFI_LIBRARY) ## Build the libcore_crypto_ffi library
+swift-ffi-library: $(SWIFT_FFI_LIBRARY) ## Build the feature-enabled host library for Swift bindgen
 
 #-------------------------------------------------------------------------------
 # Use stamp files for generators: only re-run when inputs change
 #-------------------------------------------------------------------------------
 
 bindings-deps := $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
+swift-bindings-deps := $(UNIFFI_BINDGEN) $(SWIFT_FFI_LIBRARY)
 
 # Swift bindings
 UNIFFI_SWIFT_OUTPUT := crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift
@@ -53,17 +66,17 @@ $(UNIFFI_SWIFT_OUTPUT):
 	$(warning Skipping build for "bindings-swift", as swift bindings generation is only supported on \
 	          Darwin because OpenSSL can't be cross-compiled on non-Darwin systems; this is "$(UNAME_S)".)
 else
-$(UNIFFI_SWIFT_OUTPUT): $(bindings-deps)
+$(UNIFFI_SWIFT_OUTPUT): $(swift-bindings-deps)
 	mkdir -p crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi
 	$(UNIFFI_BINDGEN) generate \
 	  --config crypto-ffi/uniffi.toml \
 	  --language swift \
 	  --out-dir crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi \
-	  --library $(FFI_LIBRARY)
+	  --library $(SWIFT_FFI_LIBRARY)
 endif
 
 .PHONY: bindings-swift swift
-bindings-swift-deps := $(bindings-deps)
+bindings-swift-deps := $(swift-bindings-deps)
 bindings-swift: $(UNIFFI_SWIFT_OUTPUT) ## Generate Swift bindings
 
 swift: bindings-swift $(STAMPS)/docs-swift
