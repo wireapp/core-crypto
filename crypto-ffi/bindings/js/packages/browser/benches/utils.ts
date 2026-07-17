@@ -1,14 +1,11 @@
 import { browser } from "@wdio/globals";
-import type { Bench } from "tinybench";
 import {
     logResults,
     setup as sharedSetup,
 } from "../../../shared/benches/utils";
 
 declare global {
-    var tinybench: typeof import("tinybench");
     var benchRunning: boolean;
-    var bench: Bench;
 }
 
 export async function setup() {

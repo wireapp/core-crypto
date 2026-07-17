@@ -1,8 +1,13 @@
-import type { Task } from "tinybench";
+import type { Bench, Task } from "tinybench";
 import { CipherSuite } from "#core-crypto";
 import { isNumberObject } from "node:util/types";
 import { mkdir } from "node:fs/promises";
 import { writeFile } from "node:fs/promises";
+
+declare global {
+    var tinybench: typeof import("tinybench");
+    var bench: Bench;
+}
 
 export {
     sharedSetup as setup,
