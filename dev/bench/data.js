@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1784345332990,
+  "lastUpdate": 1784346439324,
   "repoUrl": "https://github.com/wireapp/core-crypto",
   "entries": {
     "JVM Benchmarks": [
@@ -70937,6 +70937,868 @@ window.BENCHMARK_DATA = {
             "range": "11.08%",
             "unit": "ops/s",
             "extra": "Average Latency (ns): 646540000 ± 11.45%\nMedian Latency (ns): 641600000 ± 12200000\nMedian Throughput (ops/s): 2 ± 0\nSamples: 5"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Felix Werner",
+            "username": "fewerner",
+            "email": "felix.werner@wire.com"
+          },
+          "committer": {
+            "name": "Felix Werner",
+            "username": "fewerner",
+            "email": "felix.werner@wire.com"
+          },
+          "id": "54c73ba4e4c67a07c7b6dd328b26357b28f76c0e",
+          "message": "test(ts): do 10 iterations for \"Remove User\" benchmark\n\nFilling the sample time for this benchmark takes a lot of iterations.\nThe per iteration setup cost is very large for this benchmark. This\nresults in hours of runtime to gather a few seconds of samples.\nWe set the number of iterations to 10 without minimum sample time to\nfinish this benchmark faster.",
+          "timestamp": "2026-07-15T11:52:52Z",
+          "url": "https://github.com/wireapp/core-crypto/commit/54c73ba4e4c67a07c7b6dd328b26357b28f76c0e"
+        },
+        "date": 1784346411332,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "Adding a User - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 userCount=1",
+            "value": 291,
+            "range": "2.74%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 3714074 ± 6.98%\nMedian Latency (ns): 3500000 ± 600000\nMedian Throughput (ops/s): 286 ± 48\nSamples: 270"
+          },
+          {
+            "name": "Adding a User - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 userCount=1",
+            "value": 267,
+            "range": "3.16%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4083673 ± 5.18%\nMedian Latency (ns): 3700000 ± 600000\nMedian Throughput (ops/s): 270 ± 42\nSamples: 245"
+          },
+          {
+            "name": "Adding a User - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 userCount=1",
+            "value": 106,
+            "range": "2.71%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 9647115 ± 3.59%\nMedian Latency (ns): 9200000 ± 600000\nMedian Throughput (ops/s): 109 ± 8\nSamples: 104"
+          },
+          {
+            "name": "Adding a User - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 userCount=1",
+            "value": 40,
+            "range": "4.14%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 25648718 ± 6.34%\nMedian Latency (ns): 24600000 ± 1100000\nMedian Throughput (ops/s): 41 ± 2\nSamples: 39"
+          },
+          {
+            "name": "Adding a User - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 userCount=1",
+            "value": 31,
+            "range": "3.20%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 32322581 ± 3.43%\nMedian Latency (ns): 31600000 ± 1700000\nMedian Throughput (ops/s): 32 ± 2\nSamples: 31"
+          },
+          {
+            "name": "Adding a User - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 userCount=10",
+            "value": 225,
+            "range": "3.46%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4847343 ± 4.93%\nMedian Latency (ns): 4300000 ± 800000\nMedian Throughput (ops/s): 233 ± 45\nSamples: 207"
+          },
+          {
+            "name": "Adding a User - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 userCount=10",
+            "value": 241,
+            "range": "2.68%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4555000 ± 8.49%\nMedian Latency (ns): 3900000 ± 400000\nMedian Throughput (ops/s): 256 ± 29\nSamples: 220"
+          },
+          {
+            "name": "Adding a User - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 userCount=10",
+            "value": 46,
+            "range": "1.27%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 21627660 ± 1.38%\nMedian Latency (ns): 21300000 ± 400000\nMedian Throughput (ops/s): 47 ± 1\nSamples: 47"
+          },
+          {
+            "name": "Adding a User - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 userCount=10",
+            "value": 14,
+            "range": "3.24%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 71685714 ± 3.62%\nMedian Latency (ns): 69950000 ± 500000\nMedian Throughput (ops/s): 14 ± 0\nSamples: 14"
+          },
+          {
+            "name": "Adding a User - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 userCount=10",
+            "value": 11,
+            "range": "0.71%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 93790909 ± 0.72%\nMedian Latency (ns): 93800000 ± 800000\nMedian Throughput (ops/s): 11 ± 0\nSamples: 11"
+          },
+          {
+            "name": "Adding a User - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 userCount=100",
+            "value": 59,
+            "range": "3.49%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 17506897 ± 5.19%\nMedian Latency (ns): 16300000 ± 650000\nMedian Throughput (ops/s): 61 ± 2\nSamples: 58"
+          },
+          {
+            "name": "Adding a User - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 userCount=100",
+            "value": 63,
+            "range": "1.39%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 15831250 ± 1.93%\nMedian Latency (ns): 15600000 ± 200000\nMedian Throughput (ops/s): 64 ± 1\nSamples: 64"
+          },
+          {
+            "name": "Adding a User - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 userCount=100",
+            "value": 7,
+            "range": "0.39%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 142387500 ± 0.39%\nMedian Latency (ns): 142400000 ± 450000\nMedian Throughput (ops/s): 7 ± 0\nSamples: 8"
+          },
+          {
+            "name": "Adding a User - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 userCount=100",
+            "value": 2,
+            "range": "0.67%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 496160000 ± 0.67%\nMedian Latency (ns): 494600000 ± 600000\nMedian Throughput (ops/s): 2 ± 0\nSamples: 5"
+          },
+          {
+            "name": "Adding a User - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 userCount=100",
+            "value": 1,
+            "range": "0.61%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 673960000 ± 0.61%\nMedian Latency (ns): 673300000 ± 1300000\nMedian Throughput (ops/s): 1 ± 0\nSamples: 5"
+          },
+          {
+            "name": "Removing a User - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 userCount=1",
+            "value": 432,
+            "range": "22.20%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2580000 ± 28.15%\nMedian Latency (ns): 2200000 ± 300000\nMedian Throughput (ops/s): 455 ± 68\nSamples: 10"
+          },
+          {
+            "name": "Removing a User - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 userCount=1",
+            "value": 394,
+            "range": "18.47%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2690000 ± 17.53%\nMedian Latency (ns): 2750000 ± 600000\nMedian Throughput (ops/s): 364 ± 84\nSamples: 10"
+          },
+          {
+            "name": "Removing a User - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 userCount=1",
+            "value": 138,
+            "range": "13.91%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 7490000 ± 14.76%\nMedian Latency (ns): 7250000 ± 1150000\nMedian Throughput (ops/s): 138 ± 21\nSamples: 10"
+          },
+          {
+            "name": "Removing a User - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 userCount=1",
+            "value": 55,
+            "range": "13.33%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 18770000 ± 16.59%\nMedian Latency (ns): 17000000 ± 1400000\nMedian Throughput (ops/s): 59 ± 5\nSamples: 10"
+          },
+          {
+            "name": "Removing a User - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 userCount=1",
+            "value": 44,
+            "range": "9.75%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 23300000 ± 10.18%\nMedian Latency (ns): 22050000 ± 1850000\nMedian Throughput (ops/s): 45 ± 4\nSamples: 10"
+          },
+          {
+            "name": "Removing a User - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 userCount=10",
+            "value": 354,
+            "range": "26.73%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 3410000 ± 42.43%\nMedian Latency (ns): 2900000 ± 700000\nMedian Throughput (ops/s): 345 ± 84\nSamples: 10"
+          },
+          {
+            "name": "Removing a User - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 userCount=10",
+            "value": 349,
+            "range": "13.22%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2970000 ± 15.40%\nMedian Latency (ns): 2750000 ± 350000\nMedian Throughput (ops/s): 364 ± 46\nSamples: 10"
+          },
+          {
+            "name": "Removing a User - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 userCount=10",
+            "value": 138,
+            "range": "10.82%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 7460000 ± 13.76%\nMedian Latency (ns): 6900000 ± 300000\nMedian Throughput (ops/s): 145 ± 6\nSamples: 10"
+          },
+          {
+            "name": "Removing a User - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 userCount=10",
+            "value": 56,
+            "range": "8.46%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 18230000 ± 8.83%\nMedian Latency (ns): 18400000 ± 1250000\nMedian Throughput (ops/s): 54 ± 4\nSamples: 10"
+          },
+          {
+            "name": "Removing a User - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 userCount=10",
+            "value": 40,
+            "range": "13.41%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 26060000 ± 15.34%\nMedian Latency (ns): 24450000 ± 3100000\nMedian Throughput (ops/s): 41 ± 6\nSamples: 10"
+          },
+          {
+            "name": "Removing a User - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 userCount=100",
+            "value": 230,
+            "range": "14.35%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4500000 ± 12.89%\nMedian Latency (ns): 4600000 ± 300000\nMedian Throughput (ops/s): 217 ± 15\nSamples: 10"
+          },
+          {
+            "name": "Removing a User - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 userCount=100",
+            "value": 255,
+            "range": "14.25%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4090000 ± 16.23%\nMedian Latency (ns): 3900000 ± 600000\nMedian Throughput (ops/s): 256 ± 44\nSamples: 10"
+          },
+          {
+            "name": "Removing a User - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 userCount=100",
+            "value": 91,
+            "range": "20.87%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 11910000 ± 22.61%\nMedian Latency (ns): 10650000 ± 2250000\nMedian Throughput (ops/s): 96 ± 23\nSamples: 10"
+          },
+          {
+            "name": "Removing a User - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 userCount=100",
+            "value": 50,
+            "range": "9.28%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 20180000 ± 9.99%\nMedian Latency (ns): 19150000 ± 1550000\nMedian Throughput (ops/s): 52 ± 4\nSamples: 10"
+          },
+          {
+            "name": "Removing a User - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 userCount=100",
+            "value": 37,
+            "range": "12.34%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 27930000 ± 18.37%\nMedian Latency (ns): 25700000 ± 1350000\nMedian Throughput (ops/s): 39 ± 2\nSamples: 10"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=16B count=1",
+            "value": 1217,
+            "range": "2.57%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 994732 ± 3.53%\nMedian Latency (ns): 900000 ± 200000\nMedian Throughput (ops/s): 1111 ± 317\nSamples: 1006"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=16B count=1",
+            "value": 1313,
+            "range": "2.54%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 924677 ± 3.38%\nMedian Latency (ns): 800000 ± 200000\nMedian Throughput (ops/s): 1250 ± 341\nSamples: 1082"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=16B count=1",
+            "value": 549,
+            "range": "3.00%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2123355 ± 4.71%\nMedian Latency (ns): 1800000 ± 400000\nMedian Throughput (ops/s): 556 ± 156\nSamples: 471"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=16B count=1",
+            "value": 235,
+            "range": "3.54%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4858738 ± 11.07%\nMedian Latency (ns): 4100000 ± 700000\nMedian Throughput (ops/s): 244 ± 42\nSamples: 206"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=16B count=1",
+            "value": 188,
+            "range": "3.15%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 5625843 ± 3.90%\nMedian Latency (ns): 5200000 ± 800000\nMedian Throughput (ops/s): 192 ± 30\nSamples: 178"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=1024B count=1",
+            "value": 1248,
+            "range": "2.77%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 987364 ± 3.43%\nMedian Latency (ns): 900000 ± 300000\nMedian Throughput (ops/s): 1111 ± 317\nSamples: 1013"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=1024B count=1",
+            "value": 1245,
+            "range": "2.53%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 964547 ± 3.29%\nMedian Latency (ns): 900000 ± 200000\nMedian Throughput (ops/s): 1111 ± 317\nSamples: 1038"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=1024B count=1",
+            "value": 511,
+            "range": "2.60%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2143683 ± 3.08%\nMedian Latency (ns): 2000000 ± 400000\nMedian Throughput (ops/s): 500 ± 115\nSamples: 467"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=1024B count=1",
+            "value": 229,
+            "range": "3.68%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4841546 ± 5.66%\nMedian Latency (ns): 4200000 ± 700000\nMedian Throughput (ops/s): 238 ± 48\nSamples: 207"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=1024B count=1",
+            "value": 191,
+            "range": "3.11%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 5539227 ± 4.16%\nMedian Latency (ns): 5000000 ± 700000\nMedian Throughput (ops/s): 200 ± 28\nSamples: 181"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=65536B count=1",
+            "value": 319,
+            "range": "3.23%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 3458621 ± 4.18%\nMedian Latency (ns): 3100000 ± 600000\nMedian Throughput (ops/s): 323 ± 64\nSamples: 290"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=65536B count=1",
+            "value": 423,
+            "range": "2.94%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2608831 ± 3.55%\nMedian Latency (ns): 2400000 ± 500000\nMedian Throughput (ops/s): 417 ± 83\nSamples: 385"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=65536B count=1",
+            "value": 245,
+            "range": "3.82%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4528507 ± 4.89%\nMedian Latency (ns): 4000000 ± 900000\nMedian Throughput (ops/s): 250 ± 61\nSamples: 221"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=65536B count=1",
+            "value": 158,
+            "range": "3.98%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 6920690 ± 6.45%\nMedian Latency (ns): 6200000 ± 1000000\nMedian Throughput (ops/s): 161 ± 24\nSamples: 145"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=65536B count=1",
+            "value": 131,
+            "range": "4.07%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 8443697 ± 11.33%\nMedian Latency (ns): 7400000 ± 1100000\nMedian Throughput (ops/s): 135 ± 20\nSamples: 119"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=16B count=10",
+            "value": 257,
+            "range": "3.29%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4209244 ± 4.88%\nMedian Latency (ns): 4000000 ± 600000\nMedian Throughput (ops/s): 250 ± 37\nSamples: 238"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=16B count=10",
+            "value": 254,
+            "range": "2.77%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4160581 ± 3.68%\nMedian Latency (ns): 4000000 ± 500000\nMedian Throughput (ops/s): 250 ± 28\nSamples: 241"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=16B count=10",
+            "value": 71,
+            "range": "4.32%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 14659420 ± 5.56%\nMedian Latency (ns): 14100000 ± 1400000\nMedian Throughput (ops/s): 71 ± 7\nSamples: 69"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=16B count=10",
+            "value": 25,
+            "range": "6.67%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 40640000 ± 7.49%\nMedian Latency (ns): 38200000 ± 4700000\nMedian Throughput (ops/s): 26 ± 3\nSamples: 25"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=16B count=10",
+            "value": 19,
+            "range": "7.87%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 53626316 ± 8.58%\nMedian Latency (ns): 53900000 ± 6600000\nMedian Throughput (ops/s): 19 ± 2\nSamples: 19"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=1024B count=10",
+            "value": 226,
+            "range": "3.50%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4788038 ± 4.71%\nMedian Latency (ns): 4600000 ± 700000\nMedian Throughput (ops/s): 217 ± 33\nSamples: 209"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=1024B count=10",
+            "value": 228,
+            "range": "3.49%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4784689 ± 5.36%\nMedian Latency (ns): 4400000 ± 700000\nMedian Throughput (ops/s): 227 ± 36\nSamples: 209"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=1024B count=10",
+            "value": 66,
+            "range": "5.59%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 16055556 ± 8.04%\nMedian Latency (ns): 14900000 ± 2300000\nMedian Throughput (ops/s): 67 ± 11\nSamples: 63"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=1024B count=10",
+            "value": 25,
+            "range": "8.40%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 41945833 ± 10.40%\nMedian Latency (ns): 38300000 ± 4900000\nMedian Throughput (ops/s): 26 ± 3\nSamples: 24"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=1024B count=10",
+            "value": 15,
+            "range": "8.81%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 66706667 ± 8.93%\nMedian Latency (ns): 63500000 ± 9700000\nMedian Throughput (ops/s): 16 ± 2\nSamples: 15"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=65536B count=10",
+            "value": 35,
+            "range": "9.67%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 31290625 ± 12.71%\nMedian Latency (ns): 27350000 ± 5850000\nMedian Throughput (ops/s): 37 ± 8\nSamples: 32"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=65536B count=10",
+            "value": 51,
+            "range": "5.85%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 20518367 ± 7.43%\nMedian Latency (ns): 19700000 ± 2800000\nMedian Throughput (ops/s): 51 ± 7\nSamples: 49"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=65536B count=10",
+            "value": 27,
+            "range": "7.50%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 38657692 ± 8.68%\nMedian Latency (ns): 36800000 ± 4100000\nMedian Throughput (ops/s): 27 ± 3\nSamples: 26"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=65536B count=10",
+            "value": 17,
+            "range": "6.05%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 59129412 ± 6.23%\nMedian Latency (ns): 59900000 ± 4600000\nMedian Throughput (ops/s): 17 ± 1\nSamples: 17"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=65536B count=10",
+            "value": 12,
+            "range": "12.72%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 85883333 ± 17.50%\nMedian Latency (ns): 79000000 ± 8850000\nMedian Throughput (ops/s): 13 ± 2\nSamples: 12"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=16B count=100",
+            "value": 26,
+            "range": "10.11%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 42066667 ± 15.15%\nMedian Latency (ns): 39100000 ± 3350000\nMedian Throughput (ops/s): 26 ± 2\nSamples: 24"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=16B count=100",
+            "value": 29,
+            "range": "6.88%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 35989286 ± 7.90%\nMedian Latency (ns): 33600000 ± 3750000\nMedian Throughput (ops/s): 30 ± 3\nSamples: 28"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=16B count=100",
+            "value": 6,
+            "range": "21.50%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 167800000 ± 20.63%\nMedian Latency (ns): 169750000 ± 33400000\nMedian Throughput (ops/s): 6 ± 1\nSamples: 6"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=16B count=100",
+            "value": 2,
+            "range": "18.63%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 487560000 ± 18.06%\nMedian Latency (ns): 506500000 ± 54900000\nMedian Throughput (ops/s): 2 ± 0\nSamples: 5"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=16B count=100",
+            "value": 2,
+            "range": "15.44%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 568460000 ± 14.19%\nMedian Latency (ns): 570400000 ± 32100000\nMedian Throughput (ops/s): 2 ± 0\nSamples: 5"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=1024B count=100",
+            "value": 23,
+            "range": "8.05%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 45631818 ± 8.28%\nMedian Latency (ns): 45600000 ± 6600000\nMedian Throughput (ops/s): 22 ± 3\nSamples: 22"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=1024B count=100",
+            "value": 27,
+            "range": "6.02%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 37422222 ± 7.97%\nMedian Latency (ns): 36100000 ± 3000000\nMedian Throughput (ops/s): 28 ± 3\nSamples: 27"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=1024B count=100",
+            "value": 7,
+            "range": "9.57%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 150971429 ± 8.90%\nMedian Latency (ns): 152000000 ± 11100000\nMedian Throughput (ops/s): 7 ± 0\nSamples: 7"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=1024B count=100",
+            "value": 2,
+            "range": "8.45%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 408360000 ± 8.07%\nMedian Latency (ns): 406300000 ± 24500000\nMedian Throughput (ops/s): 2 ± 0\nSamples: 5"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=1024B count=100",
+            "value": 2,
+            "range": "10.50%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 505240000 ± 10.12%\nMedian Latency (ns): 516900000 ± 31300000\nMedian Throughput (ops/s): 2 ± 0\nSamples: 5"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=65536B count=100",
+            "value": 4,
+            "range": "16.44%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 260860000 ± 17.44%\nMedian Latency (ns): 238300000 ± 5800000\nMedian Throughput (ops/s): 4 ± 0\nSamples: 5"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=65536B count=100",
+            "value": 5,
+            "range": "3.05%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 192816667 ± 3.13%\nMedian Latency (ns): 191600000 ± 2800000\nMedian Throughput (ops/s): 5 ± 0\nSamples: 6"
+          },
+          {
+            "name": "create message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=65536B count=100",
+            "value": 3,
+            "range": "7.54%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 337580000 ± 7.64%\nMedian Latency (ns): 328300000 ± 13200000\nMedian Throughput (ops/s): 3 ± 0\nSamples: 5"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=65536B count=100",
+            "value": 2,
+            "range": "10.03%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 589840000 ± 10.19%\nMedian Latency (ns): 579500000 ± 36900000\nMedian Throughput (ops/s): 2 ± 0\nSamples: 5"
+          },
+          {
+            "name": "create message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=65536B count=100",
+            "value": 1,
+            "range": "8.14%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 687860000 ± 8.31%\nMedian Latency (ns): 662500000 ± 19400000\nMedian Throughput (ops/s): 2 ± 0\nSamples: 5"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=16B count=1",
+            "value": 1518,
+            "range": "2.47%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 818643 ± 3.57%\nMedian Latency (ns): 700000 ± 200000\nMedian Throughput (ops/s): 1429 ± 429\nSamples: 1223"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=16B count=1",
+            "value": 1516,
+            "range": "2.55%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 842003 ± 4.97%\nMedian Latency (ns): 700000 ± 200000\nMedian Throughput (ops/s): 1429 ± 429\nSamples: 1188"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=16B count=1",
+            "value": 613,
+            "range": "2.74%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1875094 ± 4.56%\nMedian Latency (ns): 1700000 ± 400000\nMedian Throughput (ops/s): 588 ± 134\nSamples: 534"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=16B count=1",
+            "value": 257,
+            "range": "2.95%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4174167 ± 4.21%\nMedian Latency (ns): 3800000 ± 600000\nMedian Throughput (ops/s): 263 ± 49\nSamples: 240"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=16B count=1",
+            "value": 185,
+            "range": "4.02%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 5901765 ± 5.14%\nMedian Latency (ns): 5300000 ± 1100000\nMedian Throughput (ops/s): 189 ± 39\nSamples: 170"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=1024B count=1",
+            "value": 1520,
+            "range": "2.19%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 793418 ± 2.93%\nMedian Latency (ns): 700000 ± 200000\nMedian Throughput (ops/s): 1429 ± 429\nSamples: 1261"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=1024B count=1",
+            "value": 1464,
+            "range": "2.53%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 862672 ± 4.28%\nMedian Latency (ns): 700000 ± 200000\nMedian Throughput (ops/s): 1429 ± 519\nSamples: 1160"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=1024B count=1",
+            "value": 575,
+            "range": "2.94%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2042653 ± 5.24%\nMedian Latency (ns): 1700000 ± 400000\nMedian Throughput (ops/s): 588 ± 134\nSamples: 490"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=1024B count=1",
+            "value": 259,
+            "range": "3.09%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4159336 ± 4.04%\nMedian Latency (ns): 3700000 ± 600000\nMedian Throughput (ops/s): 270 ± 52\nSamples: 241"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=1024B count=1",
+            "value": 193,
+            "range": "3.21%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 5491803 ± 3.92%\nMedian Latency (ns): 5100000 ± 800000\nMedian Throughput (ops/s): 196 ± 35\nSamples: 183"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=65536B count=1",
+            "value": 400,
+            "range": "3.00%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2852273 ± 5.54%\nMedian Latency (ns): 2300000 ± 400000\nMedian Throughput (ops/s): 435 ± 65\nSamples: 352"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=65536B count=1",
+            "value": 510,
+            "range": "2.76%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2233705 ± 4.57%\nMedian Latency (ns): 2000000 ± 400000\nMedian Throughput (ops/s): 500 ± 125\nSamples: 448"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=65536B count=1",
+            "value": 280,
+            "range": "3.05%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 3855385 ± 3.85%\nMedian Latency (ns): 3500000 ± 600000\nMedian Throughput (ops/s): 286 ± 59\nSamples: 260"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=65536B count=1",
+            "value": 172,
+            "range": "3.32%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 6220497 ± 6.03%\nMedian Latency (ns): 5600000 ± 900000\nMedian Throughput (ops/s): 179 ± 29\nSamples: 161"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=65536B count=1",
+            "value": 149,
+            "range": "3.28%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 7072028 ± 4.58%\nMedian Latency (ns): 6400000 ± 800000\nMedian Throughput (ops/s): 156 ± 19\nSamples: 143"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=16B count=10",
+            "value": 526,
+            "range": "3.11%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2208830 ± 4.37%\nMedian Latency (ns): 1900000 ± 500000\nMedian Throughput (ops/s): 526 ± 140\nSamples: 453"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=16B count=10",
+            "value": 632,
+            "range": "2.06%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1730796 ± 3.03%\nMedian Latency (ns): 1500000 ± 200000\nMedian Throughput (ops/s): 667 ± 103\nSamples: 578"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=16B count=10",
+            "value": 114,
+            "range": "2.80%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 9017117 ± 3.78%\nMedian Latency (ns): 8300000 ± 600000\nMedian Throughput (ops/s): 120 ± 9\nSamples: 111"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=16B count=10",
+            "value": 33,
+            "range": "4.78%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 30915152 ± 7.77%\nMedian Latency (ns): 28900000 ± 2000000\nMedian Throughput (ops/s): 35 ± 2\nSamples: 33"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=16B count=10",
+            "value": 25,
+            "range": "3.50%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 39773077 ± 3.80%\nMedian Latency (ns): 38850000 ± 2250000\nMedian Throughput (ops/s): 26 ± 1\nSamples: 26"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=1024B count=10",
+            "value": 514,
+            "range": "2.26%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2119703 ± 3.25%\nMedian Latency (ns): 1800000 ± 300000\nMedian Throughput (ops/s): 556 ± 79\nSamples: 472"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=1024B count=10",
+            "value": 567,
+            "range": "2.04%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1920921 ± 3.58%\nMedian Latency (ns): 1700000 ± 200000\nMedian Throughput (ops/s): 588 ± 78\nSamples: 521"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=1024B count=10",
+            "value": 107,
+            "range": "3.40%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 9953465 ± 8.80%\nMedian Latency (ns): 9000000 ± 900000\nMedian Throughput (ops/s): 111 ± 11\nSamples: 101"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=1024B count=10",
+            "value": 31,
+            "range": "5.91%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 32945161 ± 7.12%\nMedian Latency (ns): 31700000 ± 3500000\nMedian Throughput (ops/s): 32 ± 4\nSamples: 31"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=1024B count=10",
+            "value": 25,
+            "range": "4.31%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 40540000 ± 5.09%\nMedian Latency (ns): 39600000 ± 2400000\nMedian Throughput (ops/s): 25 ± 2\nSamples: 25"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=65536B count=10",
+            "value": 55,
+            "range": "4.75%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 18712963 ± 5.71%\nMedian Latency (ns): 17400000 ± 1900000\nMedian Throughput (ops/s): 57 ± 7\nSamples: 54"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=65536B count=10",
+            "value": 85,
+            "range": "3.56%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 12213253 ± 5.72%\nMedian Latency (ns): 11200000 ± 900000\nMedian Throughput (ops/s): 89 ± 8\nSamples: 83"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=65536B count=10",
+            "value": 39,
+            "range": "4.37%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 26465789 ± 5.18%\nMedian Latency (ns): 24750000 ± 1700000\nMedian Throughput (ops/s): 40 ± 3\nSamples: 38"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=65536B count=10",
+            "value": 20,
+            "range": "8.84%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 52050000 ± 11.05%\nMedian Latency (ns): 46950000 ± 4150000\nMedian Throughput (ops/s): 21 ± 2\nSamples: 20"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=65536B count=10",
+            "value": 17,
+            "range": "6.63%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 59322222 ± 8.14%\nMedian Latency (ns): 55250000 ± 2900000\nMedian Throughput (ops/s): 18 ± 1\nSamples: 18"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=16B count=100",
+            "value": 84,
+            "range": "4.50%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 12541250 ± 6.70%\nMedian Latency (ns): 11550000 ± 1550000\nMedian Throughput (ops/s): 87 ± 12\nSamples: 80"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=16B count=100",
+            "value": 85,
+            "range": "4.38%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 12382716 ± 5.36%\nMedian Latency (ns): 11300000 ± 1400000\nMedian Throughput (ops/s): 88 ± 12\nSamples: 81"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=16B count=100",
+            "value": 12,
+            "range": "7.18%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 84825000 ± 8.00%\nMedian Latency (ns): 82250000 ± 5350000\nMedian Throughput (ops/s): 12 ± 1\nSamples: 12"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=16B count=100",
+            "value": 3,
+            "range": "13.12%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 303860000 ± 13.17%\nMedian Latency (ns): 306000000 ± 12100000\nMedian Throughput (ops/s): 3 ± 0\nSamples: 5"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=16B count=100",
+            "value": 2,
+            "range": "6.57%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 440860000 ± 6.53%\nMedian Latency (ns): 446100000 ± 19900000\nMedian Throughput (ops/s): 2 ± 0\nSamples: 5"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=1024B count=100",
+            "value": 64,
+            "range": "4.96%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 16308065 ± 6.00%\nMedian Latency (ns): 15850000 ± 2450000\nMedian Throughput (ops/s): 63 ± 10\nSamples: 62"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=1024B count=100",
+            "value": 75,
+            "range": "4.84%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 14093056 ± 5.94%\nMedian Latency (ns): 12350000 ± 1350000\nMedian Throughput (ops/s): 81 ± 10\nSamples: 72"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=1024B count=100",
+            "value": 11,
+            "range": "8.29%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 88816667 ± 9.04%\nMedian Latency (ns): 84800000 ± 6450000\nMedian Throughput (ops/s): 12 ± 1\nSamples: 12"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=1024B count=100",
+            "value": 4,
+            "range": "6.90%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 284360000 ± 6.72%\nMedian Latency (ns): 284700000 ± 6300000\nMedian Throughput (ops/s): 4 ± 0\nSamples: 5"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=1024B count=100",
+            "value": 2,
+            "range": "9.44%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 408900000 ± 9.30%\nMedian Latency (ns): 413000000 ± 20200000\nMedian Throughput (ops/s): 2 ± 0\nSamples: 5"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Aes128gcmSha256Ed25519 size=65536B count=100",
+            "value": 6,
+            "range": "13.75%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 171233333 ± 15.78%\nMedian Latency (ns): 160550000 ± 7550000\nMedian Throughput (ops/s): 6 ± 0\nSamples: 6"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519 size=65536B count=100",
+            "value": 8,
+            "range": "14.35%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 129337500 ± 15.93%\nMedian Latency (ns): 122550000 ± 14550000\nMedian Throughput (ops/s): 8 ± 1\nSamples: 8"
+          },
+          {
+            "name": "process message - cipherSuite=Mls128Dhkemp256Aes128gcmSha256P256 size=65536B count=100",
+            "value": 4,
+            "range": "11.93%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 257480000 ± 11.95%\nMedian Latency (ns): 256600000 ± 15400000\nMedian Throughput (ops/s): 4 ± 0\nSamples: 5"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp384Aes256gcmSha384P384 size=65536B count=100",
+            "value": 2,
+            "range": "15.31%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 529800000 ± 14.31%\nMedian Latency (ns): 553600000 ± 42100000\nMedian Throughput (ops/s): 2 ± 0\nSamples: 5"
+          },
+          {
+            "name": "process message - cipherSuite=Mls256Dhkemp521Aes256gcmSha512P521 size=65536B count=100",
+            "value": 2,
+            "range": "5.66%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 581700000 ± 5.81%\nMedian Latency (ns): 575500000 ± 14000000\nMedian Throughput (ops/s): 2 ± 0\nSamples: 5"
           }
         ]
       }
