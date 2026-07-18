@@ -151,7 +151,8 @@ impl CiphersuiteOccurences {
             | Ciphersuite::MLS_128_MLKEM768_AES256GCM_SHA384_P256
             | Ciphersuite::MLS_192_MLKEM1024_AES256GCM_SHA384_P384
             | Ciphersuite::MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65
-            | Ciphersuite::MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87 => None,
+            | Ciphersuite::MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87
+            | Ciphersuite::MLS_128_MLKEM768_AES256GCM_SHA384_Ed25519 => None,
         }
     }
 }

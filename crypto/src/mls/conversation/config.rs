@@ -61,6 +61,7 @@ impl ConversationConfiguration {
         MlsCiphersuite::MLS_192_MLKEM1024_AES256GCM_SHA384_P384,
         MlsCiphersuite::MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65,
         MlsCiphersuite::MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87,
+        MlsCiphersuite::MLS_128_MLKEM768_AES256GCM_SHA384_Ed25519,
     ];
 
     /// Not used at the moment
