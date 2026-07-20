@@ -26,7 +26,7 @@ $(UNIFFI_BINDGEN): $(uniffi-bindgen-deps)
 		--bin uniffi-bindgen
 
 # Build the FFI library
-FFI_LIBRARY := $(TARGET_DIR)/libcore_crypto_ffi.so
+FFI_LIBRARY := $(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 ffi-library-deps := $(RUST_SOURCES)
 $(FFI_LIBRARY): $(ffi-library-deps)
 	cargo build $(CARGO_BUILD_ARGS) \
