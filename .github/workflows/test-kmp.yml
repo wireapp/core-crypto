@@ -11,7 +11,10 @@ env:
 
 jobs:
   test-jvm:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v7.0.0
@@ -33,7 +36,7 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
-      - name: download linux library
+      - name: download platform jvm library
         uses: ./.github/actions/make/jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
