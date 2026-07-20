@@ -48,4 +48,8 @@ export async function setup() {
                 await import("/node_modules/tinybench/dist/index.js");
         }
     });
+
+    if (globalThis.tinybenchTeardown === undefined) {
+        globalThis.tinybenchTeardown = () => {};
+    }
 }

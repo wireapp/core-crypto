@@ -3,19 +3,26 @@ import { CipherSuite } from "#core-crypto";
 import { isNumberObject } from "node:util/types";
 import { mkdir } from "node:fs/promises";
 import { writeFile } from "node:fs/promises";
+import { sharedSetup } from "../shared/utils";
 
 declare global {
     var tinybench: typeof import("tinybench");
+    var tinybenchSetup: () => void;
+    var tinybenchTeardown: () => Promise<void> | void;
     var bench: Bench;
 }
 
-export {
-    sharedSetup as setup,
-    sharedTeardown as teardown,
-} from "../shared/utils";
+export { sharedTeardown as teardown } from "../shared/utils";
 
 export function tinybenchSetup(task?: Task, mode?: string) {
     console.log(`Executing ${mode} ${task?.name}`);
+}
+
+export async function setup() {
+    await sharedSetup();
+    if (globalThis.tinybenchSetup === undefined) {
+        globalThis.tinybenchSetup = tinybenchSetup;
+    }
 }
 
 type MessageParameterSet = {
