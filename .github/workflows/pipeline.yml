@@ -40,6 +40,15 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
+  ffi-library-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - uses: ./.github/actions/make/ffi-library
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
   #################
   # Android
 
@@ -145,6 +154,8 @@ jobs:
 
   test-kmp:
     needs:
+      - ffi-library-linux
+      - ffi-library-macos
       - build-jvm-linux
       - build-jvm-darwin
     uses: ./.github/workflows/test-kmp.yml
