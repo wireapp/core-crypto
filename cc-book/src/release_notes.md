@@ -2,6 +2,10 @@
 
 ## CoreCrypto 10
 
+### v10.1.0 - 2026-07-20
+
+- Swift/iOS: CoreCrypto transactions are now cancellable
+
 ### v10.0.0 - 2026-06-23
 
 - Reworked E2EI
