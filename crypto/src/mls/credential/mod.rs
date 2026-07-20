@@ -285,12 +285,8 @@ mod tests {
             _ => CipherSuite(Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519),
         };
 
-        let x509_test_chain = case.set_test_chain(&[], &[], None).await;
-        let [bob_id] = case.client_ids();
-        let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
-        let certificate = CertificateBundle::rand(&bob_id, x509_intermediate);
-        let credential = Credential::x509(other_cipher_suite, certificate).unwrap();
-        let bob = SessionContext::new_with_credential(&case, credential).await.unwrap();
+        let mixed_cipher_suite_case = TestContext::new(CredentialType::X509, *other_cipher_suite);
+        let [bob] = mixed_cipher_suite_case.sessions_x509().await;
 
         let bob_kp = bob
             .transaction
