@@ -34,6 +34,7 @@ core-crypto.workspace = true
 wire-e2e-identity.workspace = true
 derive_more.workspace = true
 futures-util.workspace = true
+futures-channel = { version = "0.3", optional = true }
 hex.workspace = true
 jwt-simple.workspace = true
 log-reload.workspace = true
