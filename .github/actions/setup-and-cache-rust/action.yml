@@ -39,6 +39,11 @@ runs:
         rustflags: ${{ inputs.rustflags }}
         components: ${{ inputs.components }}
         cache: false
+    - name: Cleanup unused Rust toolchains
+      if: runner.environment == 'self-hosted'
+      shell: bash
+      run: |
+        ./scripts/uninstall_inactive_rust_toolchains.sh
     - name: Cleanup on post
       uses: gacts/run-and-post-run@v1
       with:
