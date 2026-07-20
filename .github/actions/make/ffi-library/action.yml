@@ -1,4 +1,4 @@
-name: Fetch or make ffi library
+name: Fetch or make ffi library. Note, don't use this for swift, use make/bindings-swift instead.
 
 inputs:
   gh-token:
