@@ -149,3 +149,8 @@ strip = false
 
 [profile.dev.package.backtrace]
 opt-level = 3
+
+# We require a pre-release version of x509-ocsp because certval depends on it.
+# Once x509-ocsp 0.3 is released and certval moves to it, drop the patch.
+[patch.crates-io]
+x509-ocsp = { git = "https://github.com/RustCrypto/formats.git", package = "x509-ocsp", version = "0.3.0-pre" }
