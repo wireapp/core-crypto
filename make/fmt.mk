@@ -61,7 +61,7 @@ kotlin-check: $(STAMPS)/kotlin-check ## Lint Kotlin files via ktlint and detekt
 
 $(STAMPS)/ts-fmt: $(TS_SRCS) $(TS_TEST_FILES) $(TS_BENCH_FILES) $(JSON_FILES)
 	cd $(JS_DIR) && bun eslint --max-warnings=0 --fix && \
-	bun x prettier --write **/*.json
+	bun x prettier --write $(JSON_FILES)
 	$(TOUCH_STAMP)
 
 .PHONY: ts-fmt
@@ -71,7 +71,7 @@ $(STAMPS)/ts-check: $(TS_SRCS) $(TS_TEST_FILES) $(TS_BENCH_FILES) $(BROWSER_OUT)
 	cd $(JS_DIR) && bun eslint --max-warnings=0 && \
 	bun x tsc --noEmit --project ./packages/browser/tsconfig.json && \
 	bun x tsc --noEmit --project ./packages/native/tsconfig.json && \
-	bun x prettier --check **/*.json
+	bun x prettier --check $(JSON_FILES)
 	$(TOUCH_STAMP)
 
 .PHONY: ts-check
