@@ -27,7 +27,14 @@ pub(crate) async fn migrate_db_key_type_to_bytes(
     // The database could have been originally at version 3, or some older version,
     // but after migration, it has to be at 3.
     let version = db.version()?;
-    assert!(version == DB_VERSION_3);
+    if version != DB_VERSION_3 {
+        db.close();
+        return Err(CryptoKeystoreError::MigrationFailed(
+            "key type migration from string to bytes can and should only be done once, on legacy \
+             IndexedDB databases corresponding to a core crypto version <= 5."
+                .to_string(),
+        ));
+    }
 
     rekey_entities!(
         db,

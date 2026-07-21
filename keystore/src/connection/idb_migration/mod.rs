@@ -51,6 +51,18 @@ pub async fn delete_legacy_idb(name: &str) -> CryptoKeystoreResult<()> {
     Ok(())
 }
 
+/// Rekey a legacy IndexedDB database from the old string-derived cipher to the new bytes [`DatabaseKey`].
+///
+/// As a straight passthrough to a `pub(crate)` function, this really only exists so that its caller in the
+/// parent module has a nicer call path.
+pub(super) async fn migrate_legacy_idb_key_type_to_bytes(
+    name: &str,
+    old_key: &str,
+    new_key: &DatabaseKey,
+) -> CryptoKeystoreResult<()> {
+    self::legacy::connection::platform::wasm::migrations::migrate_db_key_type_to_bytes(name, old_key, new_key).await
+}
+
 /// If a legacy IDB database exists at `name`, migrate all its data into the new connection
 /// stored in the VFS identified by `vfs_name`, then delete the legacy IDB.
 ///

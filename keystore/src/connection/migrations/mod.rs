@@ -3,7 +3,7 @@ mod meta_migrations;
 use refinery::Target;
 use rusqlite::functions::FunctionFlags;
 
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey};
+use crate::{CryptoKeystoreResult, DatabaseKey};
 
 refinery::embed_migrations!("src/connection/migrations");
 
@@ -64,43 +64,61 @@ fn run_meta_migration(sql_migration_version: i32, conn: &mut rusqlite::Connectio
     }
 }
 
+/// Migrate a database encrypted with a string key to the new raw-bytes [`DatabaseKey`].
+///
+/// This is intended to be called only once, when migrating from CoreCrypto 5.x to 6.x, before
+/// opening the database via [`super::Database::open`].
 pub async fn migrate_db_key_type_to_bytes(
     path: &str,
     old_key: &str,
     new_key: &DatabaseKey,
 ) -> CryptoKeystoreResult<()> {
-    let mut conn = rusqlite::Connection::open(path)?;
-
-    conn.pragma_update(None, "key", old_key)?;
-
-    // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
-    #[cfg(target_os = "ios")]
-    super::ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
-
-    /// This is the latest schema version our test db dump is compatible with.
-    const MAX_SUPPORTED_SCHEMA_VERSION: u8 = 15;
-
-    let version = conn.query_row("PRAGMA user_version;", [], |row| row.get::<_, i32>(0))?;
-    if version >= MAX_SUPPORTED_SCHEMA_VERSION as i32 {
-        return Err(CryptoKeystoreError::MigrationFailed(
-            "key type migration from string to bytes can and should only be done once and on database versions
-                    corresponding to a core crypto version <= 9."
-                .to_string(),
-        ));
+    // On WASM the legacy data lives in an IndexedDB database. This rekeys that legacy store in place,
+    // re-encrypting every entity from the old string-derived cipher to the new bytes key. The
+    // subsequent [`super::Database::open`] then copies the data into the unified rusqlite database.
+    #[cfg(target_os = "unknown")]
+    {
+        super::idb_migration::migrate_legacy_idb_key_type_to_bytes(path, old_key, new_key).await
     }
 
-    // Enable WAL journaling mode
-    conn.pragma_update(None, "journal_mode", "wal")?;
+    // On native platforms we implement the migration directly.
+    #[cfg(not(target_os = "unknown"))]
+    {
+        use crate::CryptoKeystoreError;
 
-    // Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
-    conn.pragma_update(None, "foreign_keys", "OFF")?;
+        let mut conn = rusqlite::Connection::open(path)?;
 
-    // Now update the database to the latest compatible schema version. The other, following migrations
-    // will be run when the database is opened regularly.
-    run_migrations(&mut conn, MigrationTarget::Version(MAX_SUPPORTED_SCHEMA_VERSION as u16))?;
+        conn.pragma_update(None, "key", old_key)?;
 
-    // Rekey the database.
-    super::encryption::rekey(&mut conn, new_key)
+        // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
+        #[cfg(target_os = "ios")]
+        super::ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
+
+        /// This is the latest schema version our test db dump is compatible with.
+        const MAX_SUPPORTED_SCHEMA_VERSION: u8 = 15;
+
+        let version = conn.query_row("PRAGMA user_version;", [], |row| row.get::<_, i32>(0))?;
+        if version >= MAX_SUPPORTED_SCHEMA_VERSION as i32 {
+            return Err(CryptoKeystoreError::MigrationFailed(
+                "key type migration from string to bytes can and should only be done once and on database versions
+                    corresponding to a core crypto version <= 9."
+                    .to_string(),
+            ));
+        }
+
+        // Enable WAL journaling mode
+        conn.pragma_update(None, "journal_mode", "wal")?;
+
+        // Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
+        conn.pragma_update(None, "foreign_keys", "OFF")?;
+
+        // Now update the database to the latest compatible schema version. The other, following migrations
+        // will be run when the database is opened regularly.
+        run_migrations(&mut conn, MigrationTarget::Version(MAX_SUPPORTED_SCHEMA_VERSION as u16))?;
+
+        // Rekey the database.
+        super::encryption::rekey(&mut conn, new_key)
+    }
 }
 
 #[cfg(all(test, not(target_os = "unknown")))]

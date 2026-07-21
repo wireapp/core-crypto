@@ -14,7 +14,7 @@ mod v09;
 mod v10;
 mod v11;
 
-pub(super) use db_key_type_to_bytes::migrate_db_key_type_to_bytes;
+pub(crate) use db_key_type_to_bytes::migrate_db_key_type_to_bytes;
 pub(super) use delete_credential_by_session_id::delete_credential_by_session_id;
 use idb::{Database, Factory};
 
