@@ -2,9 +2,13 @@
 
 ## CoreCrypto 10
 
-### v10.1.0 - 2026-07-20
+### v10.1.1 - 2026-07-21
 
 - Swift/iOS: CoreCrypto transactions are now cancellable
+
+### v10.1.0 - 2026-07-20
+
+- Skipped this release due to issues with the release pipeline. Do not use this CoreCrypto version.
 
 ### v10.0.0 - 2026-06-23
 
