@@ -141,3 +141,6 @@ strip = false
 
 [profile.dev.package.backtrace]
 opt-level = 3
+
+[patch.crates-io]
+x509-ocsp = { git = "https://github.com/RustCrypto/formats.git", package = "x509-ocsp", version = "0.3.0-pre" }

@@ -53,6 +53,7 @@ web-time.workspace = true
 hex.workspace = true
 flagset.workspace = true
 certval.workspace = true
+x509-ocsp = { git = "https://github.com/RustCrypto/formats.git", package = "x509-ocsp", version = "0.3.0-pre" }
 der.workspace = true
 const-oid.workspace = true
 base64.workspace = true
