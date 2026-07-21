@@ -79,9 +79,10 @@ uuid = "1.23"
 x509-cert = "0.2"
 zeroize = "1.8"
 
-certval = { git = "https://github.com/wireapp/rust-pki.git", branch = "wire/stable", package = "certval", default-features = false, features = [
+certval = { git = "https://github.com/carl-wallace/rust-pki.git", rev = "b6f91a2bd01ebd1f6ef313d25fbca61b537ae476", package = "certval", default-features = false, features = [
   "revocation",
 ] }
+
 const-oid = { version = "0.9", default-features = false, features = ["std"] }
 der = { version = "0.8", default-features = false, features = ["std"] }
 ecdsa = { version = "0.16", default-features = false }
