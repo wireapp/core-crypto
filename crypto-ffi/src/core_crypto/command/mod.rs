@@ -94,6 +94,8 @@ impl CoreCryptoFfi {
     ///
     /// Cancelling the token aborts the transaction and stops waiting for any
     /// in-flight `MlsTransport` callback or `PkiEnvironment` hook associated with it.
+    ///
+    /// For implementation details, see the rust module docs of this crate's `cancellation` module.
     pub async fn transaction_ffi_cancellable(
         &self,
         command: Command,
