@@ -1,4 +1,4 @@
-use core_crypto_keystore::Database;
+use core_crypto_keystore::connection::migrate_db_key_type_to_bytes;
 
 use crate::{CoreCryptoError, CoreCryptoResult, bytes_wrapper::bytes_wrapper};
 
@@ -23,7 +23,7 @@ pub async fn migrate_database_key_type_to_bytes(
     old_key: &str,
     new_key: &DatabaseKey,
 ) -> CoreCryptoResult<()> {
-    Database::migrate_db_key_type_to_bytes(path, old_key, &new_key.0)
+    migrate_db_key_type_to_bytes(path, old_key, &new_key.0)
         .await
         .map_err(CoreCryptoError::generic())
 }
