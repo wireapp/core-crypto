@@ -50,6 +50,39 @@ jobs:
             exit 1
           fi
 
+      - name: Ensure the tag name matches all package versions to publish
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          EXPECTED_VERSION=${TAG_NAME#v}
+
+          if [[ "$TAG_NAME" != v* || -z "$EXPECTED_VERSION" ]]; then
+            echo "Release tag '$TAG_NAME' must have the form v<version>"
+            exit 1
+          fi
+
+          CARGO_VERSION=$(sed -n 's/^version = "\([^"]*\)"/\1/p' crypto-ffi/Cargo.toml)
+          GRADLE_VERSION=$(sed -n 's/^VERSION_NAME=//p' crypto-ffi/bindings/gradle.properties)
+          NPM_VERSION=$(jq -er '.version' crypto-ffi/bindings/js/packages/core-crypto/package.json)
+
+          exitcode=0
+
+          if [[ "$CARGO_VERSION" != "$EXPECTED_VERSION" ]]; then
+            echo "Cargo package core-crypto-ffi version '$CARGO_VERSION' does not match release tag '$TAG_NAME'"
+            exitcode=1
+          fi
+
+          if [[ "$GRADLE_VERSION" != "$EXPECTED_VERSION" ]]; then
+            echo "Gradle packages version '$GRADLE_VERSION' does not match release tag '$TAG_NAME'"
+            exitcode=1
+          fi
+
+          if [[ "$NPM_VERSION" != "$EXPECTED_VERSION" ]]; then
+            echo "npm package @wireapp/core-crypto version '$NPM_VERSION' does not match release tag '$TAG_NAME'"
+            exitcode=1
+          fi
+
+          exit "$exitcode"
+
   jvm:
     needs: verify-tag
     uses: ./.github/workflows/prepare-publish-jvm.yml
