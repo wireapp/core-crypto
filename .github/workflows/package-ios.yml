@@ -42,7 +42,7 @@ jobs:
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.4.0'
+          xcode-version: '26.6.0'
 
       - name: create xcframework
         uses: ./.github/actions/make
