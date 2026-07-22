@@ -58,7 +58,7 @@ jobs:
         run: cargo test --doc --locked
       - name: "upload test results"
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v3.0.1
+        uses: softprops/action-gh-release@fe965f7af51af5f2602596916f38a38df2e33de0 # v3.0.2
         with:
           files: target/nextest/default/junit.xml
           fail_on_unmatched_files: true

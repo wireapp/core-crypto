@@ -81,7 +81,7 @@ jobs:
 
       - name: upload artifacts
         if: ${{ inputs.prepare == true }}
-        uses: softprops/action-gh-release@v3.0.1
+        uses: softprops/action-gh-release@fe965f7af51af5f2602596916f38a38df2e33de0 # v3.0.2
         with:
           files: "${{ steps.package.outputs.path }}"
           fail_on_unmatched_files: true
