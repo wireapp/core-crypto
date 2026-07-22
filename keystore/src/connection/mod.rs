@@ -69,6 +69,16 @@ impl Database {
             } else {
                 encryption::key(&mut conn, database_key)?;
             }
+
+            // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
+            // Use the caller-provided path here rather than `Connection::path()`, which SQLite
+            // canonicalizes. The iOS WAL compatibility salt is keyed by the path, so changing a
+            // relative path into an absolute one would make existing databases use the wrong salt.
+            #[cfg(target_os = "ios")]
+            if !path.is_empty() {
+                ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
+            }
+
             (conn, filesystem::NativeFs)
         };
 
@@ -95,10 +105,6 @@ impl Database {
         if let Some(path) = conn.path()
             && !path.is_empty()
         {
-            // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
-            #[cfg(target_os = "ios")]
-            ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
-
             // Enable WAL journaling mode when not in memory
             conn.pragma_update(None, "journal_mode", "wal")?;
         }
