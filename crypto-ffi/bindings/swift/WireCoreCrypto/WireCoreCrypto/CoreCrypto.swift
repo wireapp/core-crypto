@@ -224,9 +224,20 @@ extension Database {
 
     /// Initialise an in-memory Database whose data will be lost when the instance is dropped.
     ///
-    /// - Parameter key: secret key to unlock the database
-    public static func open(key: DatabaseKey) async throws -> Database {
-        return try await inMemoryDatabase(key: key)
+    /// The `key` parameter is now deprecated as in-memory databases are never encrypted.
+    @available(
+        *, deprecated, renamed: "open()",
+        message: "in-memory databases are never encrypted, so the key is ignored"
+    )
+    public static func open(key _: DatabaseKey) async throws -> Database {
+        return try await inMemoryDatabase()
+    }
+
+    /// Initialize an in-memory Database whose data will be lost when the instance is dropped.
+    ///
+    /// In-memory databases are never encrypted.
+    public static func open() async throws -> Database {
+        return try await inMemoryDatabase()
     }
 }
 
