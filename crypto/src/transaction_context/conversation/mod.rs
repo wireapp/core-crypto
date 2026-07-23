@@ -43,22 +43,27 @@ impl TransactionContext {
         if let Some(inner) = inner {
             return Ok(ConversationMut::new(inner, self.clone()));
         }
-        // Check if there is a pending conversation with
-        // the same id
-        let pending = self.pending_conversation(id).await.map(Error::PendingConversation)?;
-        Err(pending)
+
+        // Check if there is a pending conversation with the same id
+        if let Some(pending) = self.pending_conversation(id).await? {
+            return Err(Error::PendingConversation(pending));
+        }
+
+        Err(LeafError::ConversationNotFound(id.to_owned()).into())
     }
 
-    pub(crate) async fn pending_conversation(&self, id: &ConversationIdRef) -> Result<PendingConversation> {
+    pub(crate) async fn pending_conversation(&self, id: &ConversationIdRef) -> Result<Option<PendingConversation>> {
         let keystore = self.database().await?;
         let Some(pending_group) = keystore
             .get_borrowed::<PersistedMlsPendingGroup>(id.as_ref())
             .await
             .map_err(KeystoreError::wrap("finding persisted mls pending group"))?
         else {
-            return Err(LeafError::ConversationNotFound(id.to_owned()).into());
+            return Ok(None);
         };
-        Ok(PendingConversation::new(pending_group, self.clone()))
+
+        let pending_conversation = PendingConversation::new(pending_group, self.clone());
+        Ok(Some(pending_conversation))
     }
 
     /// Create a new empty conversation
