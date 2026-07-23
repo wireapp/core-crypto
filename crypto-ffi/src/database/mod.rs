@@ -68,12 +68,18 @@ impl Database {
 
 #[cfg_attr(feature = "wasm", uniffi::export)]
 impl Database {
-    /// Close the database.
+    /// Infalible noop.
     ///
-    /// Closing the database makes any `PkiEnvironment` and `CoreCrypto` instance created with it unusable.
+    /// This used to close the database, persisting its state while rendering the handle unusable.
+    /// That feature is no longer required or supported.
+    ///
+    /// This function has been deprecated and all call sites can simply remove it.
     #[cfg(feature = "wasm")]
+    // We can't formally use a `#[deprecated]` annotation because our wasm build pipeline
+    // fails on the deprecation warning, and ubrn doesn't appear to propagate the deprecation
+    // notice to downstream consumers anyway. But if it were possible, this would be deprecated.
     pub async fn close(&self) -> CoreCryptoResult<()> {
-        self.0.close().await.map_err(CoreCryptoError::generic())
+        Ok(())
     }
 }
 
