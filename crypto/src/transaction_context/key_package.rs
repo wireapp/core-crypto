@@ -2,7 +2,10 @@
 
 use std::time::Duration;
 
-use core_crypto_keystore::entities::{StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage};
+use core_crypto_keystore::{
+    entities::{StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
+    traits::FetchFromDatabase as _,
+};
 use openmls::prelude::{CryptoConfig, Lifetime};
 
 use super::{Error, Result, TransactionContext};
@@ -142,5 +145,42 @@ impl TransactionContext {
             None => Ok(()),
             Some(err) => Err(err),
         }
+    }
+
+    /// Restore a key package that was deleted in this transaction by removing it from the deleted list. This is
+    /// idempotent: if the key package doesn't exist in the deleted list, do nothing.
+    ///
+    /// NOTE: This will only work if the key package has been added in an earlier transaction, because otherwise,
+    /// removing its id from the deleted list wouldn't suffice: we'd need to replay its insertion.
+    pub(crate) async fn restore_key_package(&self, key_package_ref: &[u8]) -> Result<()> {
+        let database = self.database().await?;
+        database
+            .restore::<StoredKeypackage>(key_package_ref)
+            .await
+            .map_err(KeystoreError::wrap(
+                "restoring key package deleted in current transaction",
+            ))?;
+
+        let Some(key_package) = database
+            .get_borrowed::<StoredKeypackage>(key_package_ref)
+            .await
+            .map_err(KeystoreError::wrap("loading keypackage from database"))?
+            .map(|stored_keypackage| crate::mls::session::key_package::from_stored(&stored_keypackage))
+            .transpose()
+            .map_err(RecursiveError::mls_client("loading key package"))?
+        else {
+            return Ok(());
+        };
+
+        database
+            .restore::<StoredHpkePrivateKey>(key_package.hpke_init_key().as_slice())
+            .await
+            .map_err(KeystoreError::wrap("restoring private key from keystore"))?;
+        database
+            .restore::<StoredEncryptionKeyPair>(key_package.leaf_node().encryption_key().as_slice())
+            .await
+            .map_err(KeystoreError::wrap("restoring encryption keypair from keystore"))?;
+
+        Ok(())
     }
 }

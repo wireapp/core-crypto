@@ -3,7 +3,7 @@ use core_crypto_keystore::{entities::StoredKeypackage, traits::FetchFromDatabase
 use super::Result;
 use crate::{Keypackage, KeypackageRef, KeystoreError, Session, mls::key_package::KeypackageExt};
 
-fn from_stored(stored_keypackage: &StoredKeypackage) -> Result<Keypackage> {
+pub(crate) fn from_stored(stored_keypackage: &StoredKeypackage) -> Result<Keypackage> {
     core_crypto_keystore::deser::<Keypackage>(&stored_keypackage.keypackage)
         .map_err(KeystoreError::wrap("deserializing keypackage"))
         .map_err(Into::into)

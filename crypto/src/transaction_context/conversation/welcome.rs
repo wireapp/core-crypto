@@ -31,10 +31,21 @@ impl TransactionContext {
             ..Default::default()
         };
 
-        let conversation = self
-            .persist_conversation_from_welcome_message(welcome, configuration)
-            .await?;
+        let welcome_clone = welcome.clone();
+        let conversation_result = self
+            .persist_conversation_from_welcome_message(welcome_clone, configuration)
+            .await;
 
+        if conversation_result.is_err() {
+            // If persisting failed, we want to pretend we didn't process the welcome at all and restore the key
+            // package that may have been marked for deletion by openmls:
+            // https://github.com/wireapp/openmls/blob/c9cde17076508968c9cbead5728454f0a1f60c4f/openmls/src/group/mls_group/creation.rs#L166
+            for key_package_hash_ref in welcome.secrets().iter().map(|secret| secret.new_member().as_slice()) {
+                self.restore_key_package(key_package_hash_ref).await?;
+            }
+        }
+
+        let conversation = conversation_result?;
         let id = conversation.id().to_owned();
 
         Ok(id)
