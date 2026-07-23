@@ -1,4 +1,4 @@
-use certval::{ExtensionProcessing, PDVCertificate, PDVExtension};
+use certval::{ExtensionProcessing, PDVCertificate, PDVExtension, TimeOfInterest};
 use const_oid::db::rfc5912::{ID_CE_CRL_DISTRIBUTION_POINTS, ID_CE_ISSUING_DISTRIBUTION_POINT};
 use x509_cert::{
     crl::CertificateList,
@@ -6,7 +6,8 @@ use x509_cert::{
     ext::pkix::IssuingDistributionPoint,
 };
 
-pub(crate) fn check_crl_valid_at_toi(toi: u64, crl: &CertificateList) -> bool {
+pub(crate) fn check_crl_valid_at_toi(toi: TimeOfInterest, crl: &CertificateList) -> bool {
+    let toi = toi.as_unix_secs();
     if toi == 0 {
         return false;
     }
