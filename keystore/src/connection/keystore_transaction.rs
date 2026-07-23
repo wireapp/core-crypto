@@ -142,4 +142,17 @@ impl Database {
         self.with_transaction(async |transaction| transaction.remove_borrowed::<E>(id).await)
             .await
     }
+
+    /// Restore an entity that was deleted in this transaction by removing it from the deleted list. This is
+    /// idempotent: if the entity doesn't exist in the deleted list, do nothing.
+    ///
+    /// NOTE: This will only work if the entity has been added in an earlier transaction, because otherwise,
+    /// removing its id from the deleted list wouldn't suffice: we'd need to replay its insertion.
+    pub async fn restore<E>(&self, id: &E::BorrowedPrimaryKey) -> CryptoKeystoreResult<()>
+    where
+        E: Entity + EntityDatabaseMutation + BorrowPrimaryKey + EntityDeleteBorrowed,
+    {
+        self.with_transaction(async |transaction| transaction.restore::<E>(id).await)
+            .await
+    }
 }

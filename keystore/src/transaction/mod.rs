@@ -121,6 +121,22 @@ impl KeystoreTransaction {
         self.remove_by_entity_id::<E>(entity_id).await
     }
 
+    /// Restore an entity that was deleted in this transaction by removing it from the deleted list. This is
+    /// idempotent: if the entity doesn't exist in the deleted list, do nothing.
+    ///
+    /// NOTE: This will only work if the entity has been added in an earlier transaction, because otherwise,
+    /// removing its id from the deleted list wouldn't suffice: we'd need to replay its insertion.
+    pub(crate) async fn restore<E>(&self, id: &E::BorrowedPrimaryKey) -> CryptoKeystoreResult<()>
+    where
+        E: EntityDeleteBorrowed + BorrowPrimaryKey,
+    {
+        let entity_id = EntityId::from_borrowed_primary_key::<E>(id)
+            .ok_or(CryptoKeystoreError::UnknownCollectionName(E::COLLECTION_NAME))?;
+        let mut deleted = self.deleted.write().await;
+        deleted.remove(&entity_id);
+        Ok(())
+    }
+
     pub(crate) async fn child_groups(
         &self,
         entity: PersistedMlsGroup,
