@@ -28,9 +28,21 @@ suspend fun Database.Companion.open(
 ) = openDatabase(location, key)
 
 /** Initialise an in-memory Database whose data will be lost when the instance is dropped */
+@Deprecated(
+    message = "in-memory databases are never encrypted, so the key is ignored",
+    replaceWith = ReplaceWith("open()"),
+    level = DeprecationLevel.WARNING,
+)
+@Suppress("UnusedParameter")
 suspend fun Database.Companion.open(
     key: DatabaseKey
-) = inMemoryDatabase(key)
+) = inMemoryDatabase()
+
+/** Initialise an in-memory Database whose data will be lost when the instance is dropped
+ *
+ * In-memory databases are never encrypted.
+ */
+suspend fun Database.Companion.open() = inMemoryDatabase()
 
 /** Create a new PKI environment */
 suspend fun PkiEnvironment.Companion.new(
