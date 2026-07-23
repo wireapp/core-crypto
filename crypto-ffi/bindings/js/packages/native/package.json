@@ -1,10 +1,10 @@
 {
     "name": "@wireapp/core-crypto-native",
     "version": "10.1.1",
+    "license": "GPL-3.0",
     "type": "module",
     "dependencies": {
         "@ubjs/core": "0.31.0-3",
         "@ubjs/node": "0.31.0-3"
-    },
-    "license": "GPL-3.0"
+    }
 }

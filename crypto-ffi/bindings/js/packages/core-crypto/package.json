@@ -1,31 +1,23 @@
 {
     "name": "@wireapp/core-crypto",
     "version": "10.1.1",
+    "description": "CoreCrypto bindings for browser and native JavaScript runtimes",
+    "keywords": [
+        "corecrypto",
+        "e2ee",
+        "mls",
+        "proteus",
+        "wire"
+    ],
+    "homepage": "https://github.com/wireapp/core-crypto",
+    "bugs": {
+        "url": "https://github.com/wireapp/core-crypto/issues"
+    },
+    "license": "GPL-3.0",
     "author": "Wire CoreCrypto team <team.corecrypto@wire.com>",
     "repository": {
         "type": "git",
         "url": "git@github.com:wireapp/core-crypto.git"
-    },
-    "type": "module",
-    "exports": {
-        "./browser": {
-            "types": "./dist/browser/corecrypto.d.ts",
-            "import": "./dist/browser/corecrypto.js"
-        },
-        "./native": {
-            "types": "./dist/native/corecrypto.d.ts",
-            "import": "./dist/native/corecrypto.js"
-        }
-    },
-    "typesVersions": {
-        "*": {
-            "browser": [
-                "./dist/browser/corecrypto.d.ts"
-            ],
-            "native": [
-                "./dist/native/corecrypto.d.ts"
-            ]
-        }
     },
     "files": [
         "dist/browser/corecrypto.js",
@@ -36,19 +28,27 @@
         "dist/native/corecrypto.d.ts",
         "dist/native/libcore_crypto_ffi.*"
     ],
-    "bugs": {
-        "url": "https://github.com/wireapp/core-crypto/issues"
+    "type": "module",
+    "typesVersions": {
+        "*": {
+            "browser": [
+                "./dist/browser/corecrypto.d.ts"
+            ],
+            "native": [
+                "./dist/native/corecrypto.d.ts"
+            ]
+        }
     },
-    "description": "CoreCrypto bindings for browser and native JavaScript runtimes",
-    "homepage": "https://github.com/wireapp/core-crypto",
-    "keywords": [
-        "wire",
-        "e2ee",
-        "corecrypto",
-        "mls",
-        "proteus"
-    ],
-    "license": "GPL-3.0",
+    "exports": {
+        "./browser": {
+            "types": "./dist/browser/corecrypto.d.ts",
+            "import": "./dist/browser/corecrypto.js"
+        },
+        "./native": {
+            "types": "./dist/native/corecrypto.d.ts",
+            "import": "./dist/native/corecrypto.js"
+        }
+    },
     "publishConfig": {
         "access": "public"
     }
