@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, Mutex, MutexGuard},
 };
 
-use certval::{CrlScope, CrlSource, ExtensionProcessing, PDVCertificate, PDVExtension, name_to_string};
+use certval::{CrlScope, CrlSource, ExtensionProcessing, PDVCertificate, PDVExtension, TimeOfInterest, name_to_string};
 use const_oid::db::rfc5912::ID_CE_AUTHORITY_KEY_IDENTIFIER;
 use x509_cert::{crl::CertificateList, der::Encode};
 
@@ -95,12 +95,12 @@ impl CrlStore {
         )
     }
 
-    pub(crate) fn index_crls(&self, time_of_interest: u64) -> RustyX509CheckResult<()> {
+    pub(crate) fn index_crls(&self, toi: TimeOfInterest) -> RustyX509CheckResult<()> {
         let crls = self.crls.lock().map_err(|_| RustyX509CheckError::LockPoisonError)?;
         let mut crl_info = self.crl_info.lock().map_err(|_| RustyX509CheckError::LockPoisonError)?;
         for crl in crls.iter() {
             match CrlInfo::try_from(crl) {
-                Ok(info) if check_crl_valid_at_toi(time_of_interest, crl) => {
+                Ok(info) if check_crl_valid_at_toi(toi, crl) => {
                     self.add_crl_info_with_guard(crl, info, &mut crl_info)?;
                 }
                 _ => continue,
