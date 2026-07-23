@@ -83,7 +83,7 @@ mod tests {
     async fn process_welcome_should_fail_when_already_exists(case: TestContext) {
         use crate::LeafError;
 
-        let [alice, bob] = case.sessions().await;
+        let [alice, mut bob] = case.sessions().await;
         Box::pin(async move {
             let credential_ref = &bob.initial_credential;
             let commit = case.create_conversation([&alice]).await.invite([&bob]).await;
@@ -96,11 +96,26 @@ mod tests {
                     .await
                     .unwrap();
 
+                // Bob's key packages before processing the welcome
+                let key_package_refs_before = bob.transaction.get_key_package_refs().await.unwrap();
+
                 let welcome = conversation.transport().await.latest_welcome_message().await;
+
+                // We need Bob's created key package to be persisted, so we can restore it on error.
+                // Assuming that key package creation happens in its own transaction matches a sufficiently large
+                // portion of real-world usage.
+                bob.commit_transaction().await;
+
                 let join_welcome = bob
                     .transaction
                     .process_welcome_message(welcome)
                     .await;
+
+                // Bob's key packages after processing the welcome
+                let key_package_refs_after = bob.transaction.get_key_package_refs().await.unwrap();
+
+                assert!(!key_package_refs_before.is_empty());
+                assert_eq!(key_package_refs_before, key_package_refs_after);
                 assert!(innermost_source_matches!(join_welcome.unwrap_err(), LeafError::ConversationAlreadyExists(i) if i == &id));
             })
         .await;
