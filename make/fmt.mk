@@ -60,22 +60,22 @@ kotlin-check: $(STAMPS)/kotlin-check ## Lint Kotlin files via ktlint and detekt
 # TypeScript
 
 $(STAMPS)/ts-fmt: $(TS_SRCS) $(TS_TEST_FILES) $(TS_BENCH_FILES) $(JSON_FILES)
-	cd $(JS_DIR) && bun eslint --max-warnings=0 --fix && \
-	bun x prettier --write $(JSON_FILES)
+	cd $(JS_DIR) && bun oxlint --max-warnings=0 --fix && \
+	bun oxfmt
 	$(TOUCH_STAMP)
 
 .PHONY: ts-fmt
-ts-fmt: $(STAMPS)/ts-fmt ## Format TypeScript files via eslint
+ts-fmt: $(STAMPS)/ts-fmt ## Format TypeScript files
 
 $(STAMPS)/ts-check: $(TS_SRCS) $(TS_TEST_FILES) $(TS_BENCH_FILES) $(BROWSER_OUT) $(TS_NATIVE_OUT) $(JSON_FILES)
-	cd $(JS_DIR) && bun eslint --max-warnings=0 && \
+	cd $(JS_DIR) && bun oxlint --max-warnings=0 && \
 	bun x tsc --noEmit --project ./packages/browser/tsconfig.json && \
 	bun x tsc --noEmit --project ./packages/native/tsconfig.json && \
-	bun x prettier --check $(JSON_FILES)
+	bun oxfmt --check $(JSON_FILES)
 	$(TOUCH_STAMP)
 
 .PHONY: ts-check
-ts-check: $(STAMPS)/ts-check ## Lint TypeScript files via eslint and tsc
+ts-check: $(STAMPS)/ts-check ## Lint TypeScript files
 
 .PHONY: fmt
 fmt: rust-fmt swift-fmt kotlin-fmt ts-fmt ## Format all files
