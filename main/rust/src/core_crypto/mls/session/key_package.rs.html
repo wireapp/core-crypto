@@ -3,7 +3,7 @@
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span><span class="kw">super</span>::Result;
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span>crate::{Keypackage, KeypackageRef, KeystoreError, Session, mls::key_package::KeypackageExt};
 <a href=#5 id=5 data-nosnippet>5</a>
-<a href=#6 id=6 data-nosnippet>6</a><span class="kw">fn </span>from_stored(stored_keypackage: <span class="kw-2">&amp;</span>StoredKeypackage) -&gt; <span class="prelude-ty">Result</span>&lt;Keypackage&gt; {
+<a href=#6 id=6 data-nosnippet>6</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>from_stored(stored_keypackage: <span class="kw-2">&amp;</span>StoredKeypackage) -&gt; <span class="prelude-ty">Result</span>&lt;Keypackage&gt; {
 <a href=#7 id=7 data-nosnippet>7</a>    core_crypto_keystore::deser::&lt;Keypackage&gt;(<span class="kw-2">&amp;</span>stored_keypackage.keypackage)
 <a href=#8 id=8 data-nosnippet>8</a>        .map_err(KeystoreError::wrap(<span class="string">"deserializing keypackage"</span>))
 <a href=#9 id=9 data-nosnippet>9</a>        .map_err(Into::into)
