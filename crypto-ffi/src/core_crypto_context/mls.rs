@@ -200,6 +200,9 @@ impl CoreCryptoContext {
     }
 
     /// Joins a conversation by processing an MLS Welcome message, returning the new conversation's ID.
+    ///
+    /// NOTE: Will retain the referenced key package in case of an error only if it was created in an earlier
+    /// transaction.
     pub async fn process_welcome_message(&self, welcome_message: Arc<Welcome>) -> CoreCryptoResult<ConversationId> {
         let result = self
             .inner
