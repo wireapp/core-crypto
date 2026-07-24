@@ -31,6 +31,15 @@ impl TransactionContext {
     ///
     /// This helper struct permits mutations on a conversation.
     pub async fn conversation(&self, id: &ConversationIdRef) -> Result<ConversationMut> {
+        self.conversation_maybe(id)
+            .await?
+            .ok_or_else(|| LeafError::ConversationNotFound(id.to_owned()).into())
+    }
+
+    /// Acquire a conversation guard if the conversation exists.
+    ///
+    /// This helper struct permits mutations on a conversation.
+    pub async fn conversation_maybe(&self, id: &ConversationIdRef) -> Result<Option<ConversationMut>> {
         let keystore = self.database().await?;
         let session = self.session().await?;
         let inner = self
@@ -41,24 +50,29 @@ impl TransactionContext {
             .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?;
 
         if let Some(inner) = inner {
-            return Ok(ConversationMut::new(inner, self.clone()));
+            return Ok(Some(ConversationMut::new(inner, self.clone())));
         }
-        // Check if there is a pending conversation with
-        // the same id
-        let pending = self.pending_conversation(id).await.map(Error::PendingConversation)?;
-        Err(pending)
+
+        // Check if there is a pending conversation with the same id
+        if let Some(pending) = self.pending_conversation(id).await? {
+            return Err(Error::PendingConversation(pending));
+        }
+
+        Ok(None)
     }
 
-    pub(crate) async fn pending_conversation(&self, id: &ConversationIdRef) -> Result<PendingConversation> {
+    pub(crate) async fn pending_conversation(&self, id: &ConversationIdRef) -> Result<Option<PendingConversation>> {
         let keystore = self.database().await?;
         let Some(pending_group) = keystore
             .get_borrowed::<PersistedMlsPendingGroup>(id.as_ref())
             .await
             .map_err(KeystoreError::wrap("finding persisted mls pending group"))?
         else {
-            return Err(LeafError::ConversationNotFound(id.to_owned()).into());
+            return Ok(None);
         };
-        Ok(PendingConversation::new(pending_group, self.clone()))
+
+        let pending_conversation = PendingConversation::new(pending_group, self.clone());
+        Ok(Some(pending_conversation))
     }
 
     /// Create a new empty conversation

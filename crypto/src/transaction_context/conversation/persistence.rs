@@ -86,8 +86,28 @@ impl TransactionContext {
 
         let id = ConversationId::from(group.group_id().as_slice());
 
-        if self.conversation_exists(&id).await? || self.pending_conversation_exists(&id).await? {
-            return Err(LeafError::ConversationAlreadyExists(id).into());
+        // If the conversation exists locally as a pending conversation or as a conversation with epoch 0, we can clear
+        // it and keep the one we just created, because this will lead to the desired state, compatible with what we had
+        // locally. A fresh group with this `id`, just not created by us.
+        // This resolves WPB-21116.
+        if let Some(mut pending_conversation) = self.pending_conversation(&id).await? {
+            pending_conversation
+                .clear()
+                .await
+                .map_err(RecursiveError::mls_conversation(
+                    "clearing pending conversation while processing welcome",
+                ))?;
+        }
+
+        if let Some(mut conv) = self.conversation_maybe(&id).await? {
+            if conv.epoch().await > 0 {
+                // If the conversation has already processed commits, this is an error.
+                return Err(LeafError::ConversationAlreadyExists(id).into());
+            }
+
+            conv.wipe().await.map_err(RecursiveError::mls_conversation(
+                "wiping existing conversation at epoch 0 while processing welcome",
+            ))?;
         }
 
         self.persist_conversation_from_mls_group(group, configuration).await
