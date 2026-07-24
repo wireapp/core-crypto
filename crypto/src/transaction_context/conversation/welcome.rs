@@ -124,4 +124,30 @@ mod tests {
             })
         .await;
     }
+
+    #[apply(all_cred_cipher)]
+    async fn process_welcome_should_work_when_already_exists_at_epoch_0(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        Box::pin(async move {
+            let commit = case.create_conversation([&alice]).await.invite([&bob]).await;
+
+            // Meanwhile, Bob creates a conversation with the exact same id as the one he's trying to join.
+            //
+            // However, this group is fresh (epoch 0), so it will be wiped automatically after processing the welcome
+            // and discovering that the IDs match.
+            let conversation_id = commit.conversation().id();
+            bob.transaction
+                .new_conversation(conversation_id, &bob.initial_credential, case.cfg.clone())
+                .await
+                .unwrap();
+
+            // The conversation exists locally.
+            assert!(bob.transaction.conversation_exists(conversation_id).await.unwrap());
+
+            // Bob processes the welcome successfully.
+            let conversation = commit.notify_members().await;
+            assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
+        })
+        .await;
+    }
 }
