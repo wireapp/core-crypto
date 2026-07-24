@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use certval::TimeOfInterest;
 use core_crypto_keystore::{Transaction, entities::X509Crl};
 
 use super::{Error, Result};
@@ -36,11 +37,13 @@ impl PkiEnvironment {
     /// Validate the CRL (trust anchors must be configured prior to this) and
     /// save it to the database.
     pub async fn save_crl(&self, tx: &Transaction, crl_dp: &str, crl_der: &[u8]) -> Result<()> {
+        let toi = TimeOfInterest::from_unix_secs(now()?)?;
+
         let mut guard = self.rjt_pki_env.lock().await;
         let crl = guard.validate_crl_with_raw(crl_der)?;
 
         let crl_source = CrlStore::from([crl.clone()].as_slice());
-        crl_source.index_crls(now()?)?;
+        crl_source.index_crls(toi)?;
 
         guard.add_crl_source(Box::new(crl_source));
 

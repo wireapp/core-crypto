@@ -19,8 +19,8 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
 
         // This is the primary key
         let fingerprint = cert
-            .tbs_certificate
-            .subject_public_key_info
+            .tbs_certificate()
+            .subject_public_key_info()
             .fingerprint_bytes()
             .map_err(|e| CryptoKeystoreError::MigrationFailed(e.to_string()))?
             .to_vec();
