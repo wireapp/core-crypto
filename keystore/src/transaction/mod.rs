@@ -19,14 +19,14 @@ pub(crate) mod dynamic_dispatch;
 /// table: primary key -> entity reference
 type InMemoryTable = HashMap<EntityId, dynamic_dispatch::Entity>;
 /// collection: collection name -> table
-type InMemoryCollection = Arc<RwLock<HashMap<&'static str, InMemoryTable>>>;
+type InMemoryCollection = RwLock<HashMap<&'static str, InMemoryTable>>;
 
 /// This represents a transaction, where all operations will be done in memory and committed at the
 /// end
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct KeystoreTransaction {
     cache: InMemoryCollection,
-    deleted: Arc<RwLock<HashSet<EntityId>>>,
+    deleted: RwLock<HashSet<EntityId>>,
     _semaphore_guard: Arc<SemaphoreGuardArc>,
 }
 
@@ -37,7 +37,7 @@ impl KeystoreTransaction {
     pub(crate) async fn new(semaphore_guard: SemaphoreGuardArc) -> CryptoKeystoreResult<Self> {
         Ok(Self {
             cache: Default::default(),
-            deleted: Arc::new(Default::default()),
+            deleted: Default::default(),
             _semaphore_guard: Arc::new(semaphore_guard),
         })
     }
