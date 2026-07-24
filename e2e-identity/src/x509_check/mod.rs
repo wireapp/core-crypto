@@ -1,4 +1,4 @@
-use certval::PathValidationStatus;
+use certval::{ExtensionProcessing as _, PathValidationStatus};
 
 pub mod reexports {
     pub use certval;
@@ -84,8 +84,7 @@ pub fn extract_crl_uris(
     use x509_cert::ext::pkix::name::{DistributionPointName, GeneralName};
 
     Ok(PDVCertificate::try_from(cert.clone())?
-        .parsed_extensions
-        .get(&const_oid::db::rfc5280::ID_CE_CRL_DISTRIBUTION_POINTS)
+        .get_extension(&const_oid::db::rfc5280::ID_CE_CRL_DISTRIBUTION_POINTS)?
         .and_then(|ext| {
             let PDVExtension::CrlDistributionPoints(crl_distribution_points) = ext else {
                 return None;

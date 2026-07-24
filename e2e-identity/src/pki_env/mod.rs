@@ -11,6 +11,7 @@ use std::{collections::HashSet, sync::Arc};
 use async_lock::Mutex;
 use certval::{
     CertSource, CertVector as _, CertificationPathSettings, Error as CertvalError, PathValidationStatus, TaSource,
+    TimeOfInterest,
 };
 use core_crypto_keystore::{
     Database, Transaction,
@@ -206,7 +207,7 @@ impl PkiEnvironment {
             .iter()
             .filter_map(|choice| match choice.decoded_ta {
                 TrustAnchorChoice::Certificate(ref cert)
-                    if cert.tbs_certificate.serial_number.as_bytes() != serial_number =>
+                    if cert.tbs_certificate().serial_number().as_bytes() != serial_number =>
                 {
                     Some(cert.clone())
                 }
@@ -240,6 +241,8 @@ impl PkiEnvironment {
     /// CRL (Certificate Revocation List) distribution points are extracted from the certificate and
     /// an attempt is made to fetch a CRL from each one.
     pub async fn add_intermediate_cert(&self, tx: &Transaction, cert: Certificate) -> Result<()> {
+        let toi = TimeOfInterest::from_unix_secs(now()?)?;
+
         // Save cert's DER representation to the database
         let (ski, aki) = RjtPkiEnvironment::extract_ski_aki_from_cert(&cert)?;
         let ski_aki_pair = format!("{ski}:{}", aki.unwrap_or_default());
@@ -261,7 +264,7 @@ impl PkiEnvironment {
         }
 
         let mut cps = CertificationPathSettings::new();
-        certval::set_time_of_interest(&mut cps, now()?);
+        cps.set_time_of_interest(toi);
         let mut cert_source = CertSource::new();
         cert_source.push(certval::CertFile {
             filename: "".to_string(),
@@ -370,7 +373,7 @@ LOVS/gxNk618+PKA2bYq67MZQXCYGgk=
         assert_eq!(certs.len(), 1);
 
         pki_env
-            .remove_trust_anchor(&tx, certs[0].tbs_certificate.serial_number.as_bytes())
+            .remove_trust_anchor(&tx, certs[0].tbs_certificate().serial_number().as_bytes())
             .await
             .unwrap();
         assert_eq!(pki_env.get_trust_anchors().await.len(), 0);
