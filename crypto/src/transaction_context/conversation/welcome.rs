@@ -89,17 +89,21 @@ mod tests {
             let commit = case.create_conversation([&alice]).await.invite([&bob]).await;
             let conversation = commit.conversation();
             let id = conversation.id().clone();
-                // Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
+                let welcome = conversation.transport().await.latest_welcome_message().await;
+
+                // Meanwhile, Bob creates a conversation with the exact same id as the one he's trying to join.
                 bob
                     .transaction
                     .new_conversation(&id, credential_ref, case.cfg.clone())
                     .await
                     .unwrap();
 
+                // Bob's local conversation must be in epoch > 0 to match the definition of an already-existing conversation.
+                let mut bob_conversation = bob.transaction.conversation(&id).await.unwrap();
+                bob_conversation.update_key_material().await.unwrap();
+
                 // Bob's key packages before processing the welcome
                 let key_package_refs_before = bob.transaction.get_key_package_refs().await.unwrap();
-
-                let welcome = conversation.transport().await.latest_welcome_message().await;
 
                 // We need Bob's created key package to be persisted, so we can restore it on error.
                 // Assuming that key package creation happens in its own transaction matches a sufficiently large
