@@ -76,7 +76,7 @@ typed-builder = "0.23.2"
 uniffi = "0.29.5"
 url = "2.5"
 uuid = "1.23"
-x509-cert = "0.2"
+x509-cert = "0.3"
 zeroize = "1.8"
 
 certval = { git = "https://github.com/carl-wallace/rust-pki.git", rev = "b6f91a2bd01ebd1f6ef313d25fbca61b537ae476", package = "certval", default-features = false, features = [
