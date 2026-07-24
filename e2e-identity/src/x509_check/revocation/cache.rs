@@ -3,7 +3,9 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use certval::{PDVCertificate, PathValidationStatus, RevocationStatusCache, buffer_to_hex, name_to_string};
+use certval::{
+    PDVCertificate, PathValidationStatus, RevocationStatusCache, TimeOfInterest, buffer_to_hex, name_to_string,
+};
 
 #[derive(Clone, Copy, Debug)]
 struct StatusAndTime {
@@ -19,19 +21,20 @@ pub(crate) struct RevocationCache {
 }
 
 fn get_name_serial_pair(cert: &PDVCertificate) -> (String, String) {
-    let name = name_to_string(&cert.decoded_cert.tbs_certificate.issuer);
-    let serial = buffer_to_hex(cert.decoded_cert.tbs_certificate.serial_number.as_bytes());
+    let cert = cert.decoded().tbs_certificate();
+    let name = name_to_string(cert.issuer());
+    let serial = buffer_to_hex(cert.serial_number().as_bytes());
     (name, serial)
 }
 
 impl RevocationStatusCache for RevocationCache {
-    fn get_status(&self, cert: &PDVCertificate, time_of_interest: u64) -> PathValidationStatus {
+    fn get_status(&self, cert: &PDVCertificate, time_of_interest: TimeOfInterest) -> PathValidationStatus {
         let Ok(cache_map) = self.cache_map.lock() else {
             return PathValidationStatus::RevocationStatusNotDetermined;
         };
 
         if let Some(status_and_time) = cache_map.get(&get_name_serial_pair(cert))
-            && status_and_time.valid_until > time_of_interest
+            && status_and_time.valid_until > time_of_interest.as_unix_secs()
         {
             return status_and_time.status;
         }

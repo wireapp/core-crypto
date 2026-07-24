@@ -221,8 +221,8 @@ impl X509TestChain {
                 actor
                     .certificate
                     .certificate
-                    .tbs_certificate
-                    .serial_number
+                    .tbs_certificate()
+                    .serial_number()
                     .as_bytes()
                     .into()
             })
@@ -384,7 +384,7 @@ impl X509Certificate {
             .generate_cert(CertificateGenerationArgs {
                 signature_scheme,
                 profile: CertProfile::SubCA {
-                    issuer: self.certificate.tbs_certificate.subject.clone(),
+                    issuer: self.certificate.tbs_certificate().subject().clone(),
                     path_len_constraint: Some(1),
                 },
                 serial: serial as _,
@@ -445,7 +445,7 @@ impl X509Certificate {
             .generate_cert(CertificateGenerationArgs {
                 signature_scheme,
                 profile: CertProfile::Leaf {
-                    issuer: self.certificate.tbs_certificate.subject.clone(),
+                    issuer: self.certificate.tbs_certificate().subject().clone(),
                     enable_key_agreement: false,
                     enable_key_encipherment: false,
                     include_subject_key_identifier: true,

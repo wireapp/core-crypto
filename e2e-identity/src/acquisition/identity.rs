@@ -37,13 +37,14 @@ pub trait WireIdentityReader {
 
 impl WireIdentityReader for x509_cert::Certificate {
     async fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity> {
-        let serial_number = hex::encode(self.tbs_certificate.serial_number.as_bytes());
-        let not_before = self.tbs_certificate.validity.not_before.to_unix_duration().as_secs();
-        let not_after = self.tbs_certificate.validity.not_after.to_unix_duration().as_secs();
-        let (client_id, handle) = try_extract_san(&self.tbs_certificate)?;
-        let (display_name, domain) = try_extract_subject(&self.tbs_certificate)?;
+        let validity = self.tbs_certificate().validity();
+        let serial_number = hex::encode(self.tbs_certificate().serial_number().as_bytes());
+        let not_before = validity.not_before.to_unix_duration().as_secs();
+        let not_after = validity.not_after.to_unix_duration().as_secs();
+        let (client_id, handle) = try_extract_san(self.tbs_certificate())?;
+        let (display_name, domain) = try_extract_subject(self.tbs_certificate())?;
         let status = IdentityStatus::from_cert(self, env).await;
-        let thumbprint = try_compute_jwk_canonicalized_thumbprint(&self.tbs_certificate, hash_alg)?;
+        let thumbprint = try_compute_jwk_canonicalized_thumbprint(self.tbs_certificate(), hash_alg)?;
 
         Ok(WireIdentity {
             client_id,
@@ -59,13 +60,18 @@ impl WireIdentityReader for x509_cert::Certificate {
     }
 
     fn extract_created_at(&self) -> Result<u64> {
-        Ok(self.tbs_certificate.validity.not_before.to_unix_duration().as_secs())
+        Ok(self
+            .tbs_certificate()
+            .validity()
+            .not_before
+            .to_unix_duration()
+            .as_secs())
     }
 
     fn extract_public_key(&self) -> Result<Vec<u8>> {
         Ok(self
-            .tbs_certificate
-            .subject_public_key_info
+            .tbs_certificate()
+            .subject_public_key_info()
             .subject_public_key
             .raw_bytes()
             .to_vec())
@@ -106,7 +112,7 @@ fn try_extract_subject(cert: &x509_cert::TbsCertificate) -> Result<(String, Stri
     let mut display_name = None;
     let mut domain = None;
 
-    let mut subjects = cert.subject.0.iter().flat_map(|n| n.0.iter());
+    let mut subjects = cert.subject().iter().flat_map(|n| n.0.iter());
     subjects.try_for_each(|s| -> Result<()> {
         match s.oid {
             const_oid::db::rfc4519::ORGANIZATION_NAME => {
@@ -127,7 +133,7 @@ fn try_extract_subject(cert: &x509_cert::TbsCertificate) -> Result<(String, Stri
 
 /// extract Subject Alternative Name to pick client-id & display name
 fn try_extract_san(cert: &x509_cert::TbsCertificate) -> Result<(String, QualifiedHandle)> {
-    let extensions = cert.extensions.as_ref().ok_or(CertificateError::InvalidFormat)?;
+    let extensions = cert.extensions().ok_or(CertificateError::InvalidFormat)?;
 
     let san = extensions
         .iter()

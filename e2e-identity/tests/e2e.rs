@@ -318,8 +318,8 @@ async fn should_fail_without_trust_anchor(test_env: TestEnvironment) {
         .remove_trust_anchor(
             &tx,
             &certs[0]
-                .tbs_certificate
-                .subject_public_key_info
+                .tbs_certificate()
+                .subject_public_key_info()
                 .fingerprint_bytes()
                 .expect("Getting fingerprint of subject plublic key info"),
         )

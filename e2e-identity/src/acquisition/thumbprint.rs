@@ -28,7 +28,7 @@ pub(crate) fn try_compute_jwk_canonicalized_thumbprint(
     cert: &x509_cert::TbsCertificate,
     hash_alg: HashAlgorithm,
 ) -> Result<String, CertificateError> {
-    let jwk = try_into_jwk(&cert.subject_public_key_info)?;
+    let jwk = try_into_jwk(cert.subject_public_key_info())?;
     let thumbprint = JwkThumbprint::generate(&jwk, hash_alg)?;
     Ok(thumbprint.kid)
 }

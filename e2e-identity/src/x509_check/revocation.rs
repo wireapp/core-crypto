@@ -3,8 +3,7 @@
 use certval::{
     CertSource, CertVector, CertificationPath, CertificationPathResults, CertificationPathSettings, DeferDecodeSigned,
     EXTS_OF_INTEREST, ExtensionProcessing, PDVTrustAnchorChoice, TaSource, TimeOfInterest, check_revocation,
-    get_validation_status, populate_5280_pki_environment, set_check_crls, set_forbid_self_signed_ee,
-    set_require_ta_store, validate_path_rfc5280,
+    validate_path_rfc5280,
     validator::{PDVCertificate, path_validator::check_validity},
     verify_signatures,
 };
@@ -57,7 +56,7 @@ impl std::fmt::Debug for PkiEnvironment {
 }
 
 fn check_cpr(cpr: CertificationPathResults) -> RustyX509CheckResult<()> {
-    if let Some(validation_status) = get_validation_status(&cpr) {
+    if let Some(validation_status) = cpr.get_validation_status() {
         match validation_status {
             certval::PathValidationStatus::Valid => Ok(()),
             // No CRL is available, this is fine
@@ -131,7 +130,7 @@ impl PkiEnvironment {
         let mut cert_source = CertSource::new();
         for (i, cert) in params.intermediates.iter().enumerate() {
             cert_source.push(certval::CertFile {
-                filename: format!("Intermediate CA #{i} [{}]", cert.tbs_certificate.subject),
+                filename: format!("Intermediate CA #{i} [{}]", cert.tbs_certificate().subject()),
                 bytes: cert.to_der()?,
             });
         }
@@ -156,7 +155,7 @@ impl PkiEnvironment {
         crl_source.index_crls(toi)?;
 
         let mut pe = certval::environment::PkiEnvironment::default();
-        populate_5280_pki_environment(&mut pe);
+        pe.populate_5280_pki_environment();
         pe.add_trust_anchor_source(Box::new(trust_anchors));
         pe.add_crl_source(Box::new(crl_source));
         pe.add_revocation_cache(Box::new(revocation_cache));
@@ -178,7 +177,7 @@ impl PkiEnvironment {
         cert.parse_extensions(EXTS_OF_INTEREST);
 
         let ta = PDVTrustAnchorChoice::try_from(x509_cert::anchor::TrustAnchorChoice::Certificate(
-            cert.decoded_cert.clone(),
+            cert.decoded().clone(),
         ))?;
         let mut certification_path = CertificationPath::new(ta, vec![], cert);
 
@@ -216,7 +215,7 @@ impl PkiEnvironment {
                 spki_list.extend(
                     intermediates
                         .into_iter()
-                        .map(|c| &c.decoded_cert.tbs_certificate.subject_public_key_info),
+                        .map(|c| c.decoded().tbs_certificate().subject_public_key_info()),
                 );
             }
         }
@@ -232,7 +231,7 @@ impl PkiEnvironment {
             self.pe
                 .get_cert_by_name(&crl.tbs_cert_list.issuer)
                 .into_iter()
-                .map(|c| &c.decoded_cert.tbs_certificate.subject_public_key_info),
+                .map(|c| c.decoded().tbs_certificate().subject_public_key_info()),
         );
 
         spki_list.dedup();
@@ -269,15 +268,14 @@ impl PkiEnvironment {
 
         let mut cps = CertificationPathSettings::default();
         cps.set_time_of_interest(toi);
-        set_require_ta_store(&mut cps, true);
-        set_forbid_self_signed_ee(&mut cps, true);
+        cps.set_require_ta_store(true);
+        cps.set_forbid_self_signed_ee(true);
 
         let mut end_identity_cert = PDVCertificate::try_from(end_identity_cert.clone())?;
         end_identity_cert.parse_extensions(EXTS_OF_INTEREST);
 
         let mut paths = vec![];
-        self.pe
-            .get_paths_for_target(&self.pe, &end_identity_cert, &mut paths, 0, toi)?;
+        self.pe.get_paths_for_target(&end_identity_cert, &mut paths, 0, toi)?;
 
         if paths.is_empty() {
             return Err(RustyX509CheckError::CertValError(certval::Error::PathValidation(
@@ -297,7 +295,7 @@ impl PkiEnvironment {
             }
 
             if perform_revocation_check {
-                set_check_crls(&mut cps, true);
+                cps.set_check_crls(true);
                 let mut cpr = CertificationPathResults::new();
                 let _ = check_revocation(&self.pe, &cps, &mut path, &mut cpr);
                 let r = check_cpr(cpr);

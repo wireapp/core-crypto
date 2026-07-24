@@ -53,7 +53,7 @@ async fn verify_leaf_certificate(
     // Make sure that the algorithm specified by the certificate matches the one of the signing
     // keypair.
     let alg = crate::utils::jws_alg_to_x509_identifier(config.sign_alg);
-    if cert.tbs_certificate.subject_public_key_info.algorithm != alg {
+    if cert.tbs_certificate().subject_public_key_info().algorithm != alg {
         return Err(CertificateError::AlgorithmMismatch);
     }
 
@@ -63,8 +63,8 @@ async fn verify_leaf_certificate(
     // broken.
     let sign_kp_bytes = crate::utils::public_key_bytes(config.sign_alg, sign_kp).expect("sign_kp must be valid PEM");
     let cert_pubkey_bytes = cert
-        .tbs_certificate
-        .subject_public_key_info
+        .tbs_certificate()
+        .subject_public_key_info()
         .subject_public_key
         .raw_bytes();
     if sign_kp_bytes != cert_pubkey_bytes {
