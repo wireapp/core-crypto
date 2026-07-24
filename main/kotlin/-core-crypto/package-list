@@ -11,11 +11,12 @@ $dokka.location:com.wire.crypto//coreCryptoHistoryClient/#com.wire.crypto.Histor
 $dokka.location:com.wire.crypto//coreCryptoNew/#com.wire.crypto.Database/PointingToDeclaration/-core-crypto/com.wire.crypto/core-crypto-new.html
 $dokka.location:com.wire.crypto//createPkiEnvironment/#com.wire.crypto.PkiEnvironmentHooks#com.wire.crypto.Database/PointingToDeclaration/-core-crypto/com.wire.crypto/create-pki-environment.html
 $dokka.location:com.wire.crypto//exportDatabaseCopy/#com.wire.crypto.Database#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/export-database-copy.html
-$dokka.location:com.wire.crypto//inMemoryDatabase/#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/in-memory-database.html
+$dokka.location:com.wire.crypto//inMemoryDatabase/#/PointingToDeclaration/-core-crypto/com.wire.crypto/in-memory-database.html
 $dokka.location:com.wire.crypto//lift/com.wire.crypto.CoreCryptoFfi#/PointingToDeclaration/-core-crypto/com.wire.crypto/lift.html
 $dokka.location:com.wire.crypto//migrateDatabaseKeyTypeToBytes/#kotlin.String#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/migrate-database-key-type-to-bytes.html
 $dokka.location:com.wire.crypto//new/com.wire.crypto.PkiEnvironment.Companion#com.wire.crypto.PkiEnvironmentHooks#com.wire.crypto.Database/PointingToDeclaration/-core-crypto/com.wire.crypto/new.html
 $dokka.location:com.wire.crypto//newFromCredentialRef/com.wire.crypto.X509CredentialAcquisition.Companion#com.wire.crypto.PkiEnvironment#com.wire.crypto.X509CredentialAcquisitionConfiguration#com.wire.crypto.CredentialRef#com.wire.crypto.Database?/PointingToDeclaration/-core-crypto/com.wire.crypto/new-from-credential-ref.html
+$dokka.location:com.wire.crypto//open/com.wire.crypto.Database.Companion#/PointingToDeclaration/-core-crypto/com.wire.crypto/open.html
 $dokka.location:com.wire.crypto//open/com.wire.crypto.Database.Companion#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/open.html
 $dokka.location:com.wire.crypto//open/com.wire.crypto.Database.Companion#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/open.html
 $dokka.location:com.wire.crypto//openDatabase/#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/-core-crypto/com.wire.crypto/open-database.html

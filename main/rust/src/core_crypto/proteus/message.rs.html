@@ -66,7 +66,7 @@
 <a href=#66 id=66 data-nosnippet>66</a>
 <a href=#67 id=67 data-nosnippet>67</a><span class="attr">#[cfg(test)]
 <a href=#68 id=68 data-nosnippet>68</a></span><span class="kw">mod </span>tests {
-<a href=#69 id=69 data-nosnippet>69</a>    <span class="kw">use </span>core_crypto_keystore::{ConnectionType, DatabaseKey};
+<a href=#69 id=69 data-nosnippet>69</a>    <span class="kw">use </span>core_crypto_keystore::DatabaseKey;
 <a href=#70 id=70 data-nosnippet>70</a>
 <a href=#71 id=71 data-nosnippet>71</a>    <span class="kw">use </span>super::<span class="kw-2">*</span>;
 <a href=#72 id=72 data-nosnippet>72</a>    <span class="kw">use </span><span class="kw">crate</span>::test_utils::{proteus_utils::<span class="kw-2">*</span>, <span class="kw-2">*</span>};
@@ -81,35 +81,32 @@
 <a href=#81 id=81 data-nosnippet>81</a>        <span class="kw">let </span>session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 <a href=#82 id=82 data-nosnippet>82</a>
 <a href=#83 id=83 data-nosnippet>83</a>        <span class="kw">let </span>key = DatabaseKey::generate();
-<a href=#84 id=84 data-nosnippet>84</a>        <span class="kw">let </span>keystore = core_crypto_keystore::Database::open(ConnectionType::Persistent(<span class="kw-2">&amp;</span>path), <span class="kw-2">&amp;</span>key)
-<a href=#85 id=85 data-nosnippet>85</a>            .<span class="kw">await
-<a href=#86 id=86 data-nosnippet>86</a>            </span>.unwrap();
-<a href=#87 id=87 data-nosnippet>87</a>        keystore.new_transaction().<span class="kw">await</span>.unwrap();
+<a href=#84 id=84 data-nosnippet>84</a>        <span class="kw">let </span>keystore = core_crypto_keystore::Database::open(<span class="kw-2">&amp;</span>path, <span class="kw-2">&amp;</span>key).<span class="kw">await</span>.unwrap();
+<a href=#85 id=85 data-nosnippet>85</a>        keystore.new_transaction().<span class="kw">await</span>.unwrap();
+<a href=#86 id=86 data-nosnippet>86</a>
+<a href=#87 id=87 data-nosnippet>87</a>        <span class="kw">let </span><span class="kw-2">mut </span>alice = ProteusCentral::try_new(<span class="kw-2">&amp;</span>keystore).<span class="kw">await</span>.unwrap();
 <a href=#88 id=88 data-nosnippet>88</a>
-<a href=#89 id=89 data-nosnippet>89</a>        <span class="kw">let </span><span class="kw-2">mut </span>alice = ProteusCentral::try_new(<span class="kw-2">&amp;</span>keystore).<span class="kw">await</span>.unwrap();
-<a href=#90 id=90 data-nosnippet>90</a>
-<a href=#91 id=91 data-nosnippet>91</a>        <span class="kw">let </span><span class="kw-2">mut </span>bob = CryptoboxLike::init();
-<a href=#92 id=92 data-nosnippet>92</a>        <span class="kw">let </span>bob_pk_bundle = bob.new_prekey();
-<a href=#93 id=93 data-nosnippet>93</a>
-<a href=#94 id=94 data-nosnippet>94</a>        alice
-<a href=#95 id=95 data-nosnippet>95</a>            .session_from_prekey(<span class="kw-2">&amp;</span>session_id, <span class="kw-2">&amp;</span>bob_pk_bundle.serialise().unwrap())
-<a href=#96 id=96 data-nosnippet>96</a>            .<span class="kw">await
-<a href=#97 id=97 data-nosnippet>97</a>            </span>.unwrap();
+<a href=#89 id=89 data-nosnippet>89</a>        <span class="kw">let </span><span class="kw-2">mut </span>bob = CryptoboxLike::init();
+<a href=#90 id=90 data-nosnippet>90</a>        <span class="kw">let </span>bob_pk_bundle = bob.new_prekey();
+<a href=#91 id=91 data-nosnippet>91</a>
+<a href=#92 id=92 data-nosnippet>92</a>        alice
+<a href=#93 id=93 data-nosnippet>93</a>            .session_from_prekey(<span class="kw-2">&amp;</span>session_id, <span class="kw-2">&amp;</span>bob_pk_bundle.serialise().unwrap())
+<a href=#94 id=94 data-nosnippet>94</a>            .<span class="kw">await
+<a href=#95 id=95 data-nosnippet>95</a>            </span>.unwrap();
+<a href=#96 id=96 data-nosnippet>96</a>
+<a href=#97 id=97 data-nosnippet>97</a>        <span class="kw">let </span>message = <span class="string">b"Hello world"</span>;
 <a href=#98 id=98 data-nosnippet>98</a>
-<a href=#99 id=99 data-nosnippet>99</a>        <span class="kw">let </span>message = <span class="string">b"Hello world"</span>;
-<a href=#100 id=100 data-nosnippet>100</a>
-<a href=#101 id=101 data-nosnippet>101</a>        <span class="kw">let </span>encrypted = alice.encrypt(<span class="kw-2">&amp;</span>keystore, <span class="kw-2">&amp;</span>session_id, message).<span class="kw">await</span>.unwrap();
-<a href=#102 id=102 data-nosnippet>102</a>        <span class="kw">let </span>decrypted = bob.decrypt(<span class="kw-2">&amp;</span>session_id, <span class="kw-2">&amp;</span>encrypted).<span class="kw">await</span>;
-<a href=#103 id=103 data-nosnippet>103</a>        <span class="macro">assert_eq!</span>(decrypted, message);
-<a href=#104 id=104 data-nosnippet>104</a>
-<a href=#105 id=105 data-nosnippet>105</a>        <span class="kw">let </span>encrypted = bob.encrypt(<span class="kw-2">&amp;</span>session_id, message);
-<a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span>decrypted = alice.decrypt(<span class="kw-2">&amp;</span>keystore, <span class="kw-2">&amp;</span>session_id, <span class="kw-2">&amp;</span>encrypted).<span class="kw">await</span>.unwrap();
-<a href=#107 id=107 data-nosnippet>107</a>        <span class="macro">assert_eq!</span>(decrypted, message);
-<a href=#108 id=108 data-nosnippet>108</a>
-<a href=#109 id=109 data-nosnippet>109</a>        keystore.commit_transaction().<span class="kw">await</span>.unwrap();
-<a href=#110 id=110 data-nosnippet>110</a>        keystore.wipe().<span class="kw">await</span>.unwrap();
-<a href=#111 id=111 data-nosnippet>111</a>        <span class="attr">#[cfg(not(target_os = <span class="string">"unknown"</span>))]
-<a href=#112 id=112 data-nosnippet>112</a>        </span>drop(db_file);
-<a href=#113 id=113 data-nosnippet>113</a>    }
-<a href=#114 id=114 data-nosnippet>114</a>}
+<a href=#99 id=99 data-nosnippet>99</a>        <span class="kw">let </span>encrypted = alice.encrypt(<span class="kw-2">&amp;</span>keystore, <span class="kw-2">&amp;</span>session_id, message).<span class="kw">await</span>.unwrap();
+<a href=#100 id=100 data-nosnippet>100</a>        <span class="kw">let </span>decrypted = bob.decrypt(<span class="kw-2">&amp;</span>session_id, <span class="kw-2">&amp;</span>encrypted).<span class="kw">await</span>;
+<a href=#101 id=101 data-nosnippet>101</a>        <span class="macro">assert_eq!</span>(decrypted, message);
+<a href=#102 id=102 data-nosnippet>102</a>
+<a href=#103 id=103 data-nosnippet>103</a>        <span class="kw">let </span>encrypted = bob.encrypt(<span class="kw-2">&amp;</span>session_id, message);
+<a href=#104 id=104 data-nosnippet>104</a>        <span class="kw">let </span>decrypted = alice.decrypt(<span class="kw-2">&amp;</span>keystore, <span class="kw-2">&amp;</span>session_id, <span class="kw-2">&amp;</span>encrypted).<span class="kw">await</span>.unwrap();
+<a href=#105 id=105 data-nosnippet>105</a>        <span class="macro">assert_eq!</span>(decrypted, message);
+<a href=#106 id=106 data-nosnippet>106</a>
+<a href=#107 id=107 data-nosnippet>107</a>        keystore.commit_transaction().<span class="kw">await</span>.unwrap();
+<a href=#108 id=108 data-nosnippet>108</a>        <span class="attr">#[cfg(not(target_os = <span class="string">"unknown"</span>))]
+<a href=#109 id=109 data-nosnippet>109</a>        </span>drop(db_file);
+<a href=#110 id=110 data-nosnippet>110</a>    }
+<a href=#111 id=111 data-nosnippet>111</a>}
 </code></pre></div></section></main></body></html>

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["MAX_BLOB_LEN"],"enum":["ConnectionType"],"mod":["platform"],"struct":["ConnectionGuard","Database"],"trait":["DatabaseConnection","DatabaseConnectionRequirements"]};
+window.SIDEBAR_ITEMS = {"fn":["migrate_db_key_type_to_bytes"],"struct":["Database"]};
