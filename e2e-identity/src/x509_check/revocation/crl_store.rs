@@ -157,7 +157,7 @@ impl CrlSource for CrlStore {
         }
 
         // Issuer fallback
-        let issuer_name = name_to_string(&cert.decoded_cert.tbs_certificate.issuer);
+        let issuer_name = name_to_string(&cert.decoded().tbs_certificate().issuer());
         let issuers = self.issuers.lock().map_err(|_| certval::Error::Unrecognized)?;
         if let Some(indices) = issuers.get(&issuer_name) {
             let mut retval = vec![];

@@ -143,11 +143,11 @@ impl PkiKeypair {
     }
 }
 
-pub use x509_cert::builder::Profile as CertProfile;
+pub use x509_cert::builder::profile::BuilderProfile;
 
 pub struct CertificateGenerationArgs<'a> {
     pub signature_scheme: SignatureScheme,
-    pub profile: CertProfile,
+    pub profile: BuilderProfile,
     pub serial: u64,
     /// Duration since UNIX EPOCH
     pub validity_start: Option<std::time::Duration>,
@@ -386,7 +386,7 @@ impl PkiKeypair {
         let tbs_cert_list = x509_cert::crl::TbsCertList {
             version: x509_cert::Version::V3,
             signature: signature_algorithm.ref_to_owned(),
-            issuer: issuer_cert.tbs_certificate.subject.clone(),
+            issuer: issuer_cert.tbs_certificate().subject().clone(),
             this_update: now,
             next_update: None,
             revoked_certificates: Some(revoked_certificates),
@@ -457,7 +457,7 @@ impl PkiKeypair {
                 x509_cert::der::asn1::GeneralizedTime::from_unix_duration(validity_start + args.validity_from_start)
                     .map_err(|_| E2eIdentityError::CertificateGenerationError)?
                     .into();
-            x509_cert::time::Validity { not_before, not_after }
+            x509_cert::time::Validity::new(not_before, not_after)
         };
 
         let serial_number = x509_cert::serial_number::SerialNumber::from(args.serial);
