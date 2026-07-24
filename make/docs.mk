@@ -33,17 +33,18 @@ docs-kotlin: $(STAMPS)/docs-kotlin ## Generate Kotlin docs
 
 # TypeScript docs via Typedoc
 $(STAMPS)/docs-ts: $(BROWSER_OUT) $(TS_NATIVE_OUT)
-	cd crypto-ffi/bindings/js && \
+	cd crypto-ffi/bindings/js/typedoc && \
+	bun install && \
 	bun typedoc \
-	  --basePath ./ \
-	  --displayBasePath ./packages \
-	  --entryPoints packages/browser/src/CoreCrypto.ts \
-	  --entryPoints packages/native/src/CoreCrypto.ts \
-	  --tsconfig tsconfig.typedoc.json \
-	  --out ../../../target/typescript/doc \
-	  --readme none \
-	  --treatWarningsAsErrors \
-	  --plugin ./typedoc-ignore-warnings.cjs
+		--basePath ../ \
+		--displayBasePath ../packages \
+		--entryPoints ../packages/browser/src/CoreCrypto.ts \
+		--entryPoints ../packages/native/src/CoreCrypto.ts \
+		--tsconfig ../tsconfig.typedoc.json \
+		--out ../../../../target/typescript/doc \
+		--readme none \
+		--treatWarningsAsErrors \
+		--plugin ../typedoc-ignore-warnings.cjs
 	$(TOUCH_STAMP)
 
 .PHONY: docs-ts
