@@ -52,7 +52,7 @@
         "tinybench": "^6.0.2",
         "ts-loader": "^9.6.2",
         "typedoc": "0.28.20",
-        "typescript": "^6.0.3",
+        "typescript": "^7.0.2",
         "typescript-eslint": "^8.63.0",
         "uniffi-bindgen-react-native": "^0.31.0-3",
         "yarn": "^1.22.22"
