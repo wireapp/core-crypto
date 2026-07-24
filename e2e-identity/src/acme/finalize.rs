@@ -85,8 +85,8 @@ impl RustyAcme {
             value: dn_display_name_value,
         };
 
-        let domain = x509_cert::name::RelativeDistinguishedName(vec![dn_domain].try_into()?);
-        let display_name = x509_cert::name::RelativeDistinguishedName(vec![dn_display_name].try_into()?);
+        let domain = x509_cert::name::RelativeDistinguishedName::try_from(vec![dn_domain])?;
+        let display_name = x509_cert::name::RelativeDistinguishedName::try_from(vec![dn_display_name])?;
         let subject = x509_cert::name::DistinguishedName::from(vec![domain, display_name]);
         Ok(subject)
     }

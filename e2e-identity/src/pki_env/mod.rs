@@ -11,6 +11,7 @@ use std::{collections::HashSet, sync::Arc};
 use async_lock::Mutex;
 use certval::{
     CertSource, CertVector as _, CertificationPathSettings, Error as CertvalError, PathValidationStatus, TaSource,
+    TimeOfInterest,
 };
 use core_crypto_keystore::{
     Database, Transaction,
@@ -20,7 +21,6 @@ use core_crypto_keystore::{
 use openmls_traits::authentication_service::{CredentialAuthenticationStatus, CredentialRef};
 use x509_cert::{
     Certificate,
-    anchor::TrustAnchorChoice,
     der::{Decode as _, Encode as _},
 };
 
@@ -140,10 +140,7 @@ impl PkiEnvironment {
             .await
             .get_trust_anchors()
             .iter()
-            .filter_map(|choice| match choice.decoded_ta {
-                TrustAnchorChoice::Certificate(ref cert) => Some(cert.clone()),
-                _ => None,
-            })
+            .map(|choice| Certificate::from_der(&choice.encoded_ta).expect("valid DER"))
             .collect()
     }
 
@@ -173,8 +170,8 @@ impl PkiEnvironment {
         self.rjt_pki_env.lock().await.validate_trust_anchor_cert(&cert)?;
 
         let fingerprint = cert
-            .tbs_certificate
-            .subject_public_key_info
+            .tbs_certificate()
+            .subject_public_key_info()
             .fingerprint_bytes()
             .map_err(Error::Spki)?
             .to_vec();
@@ -239,6 +236,8 @@ impl PkiEnvironment {
     /// CRL (Certificate Revocation List) distribution points are extracted from the certificate and
     /// an attempt is made to fetch a CRL from each one.
     pub async fn add_intermediate_cert(&self, tx: &Transaction, cert: Certificate) -> Result<()> {
+        let toi = TimeOfInterest::from_unix_secs(now()?)?;
+
         // Save cert's DER representation to the database
         let (ski, aki) = RjtPkiEnvironment::extract_ski_aki_from_cert(&cert)?;
         let ski_aki_pair = format!("{ski}:{}", aki.unwrap_or_default());
@@ -260,7 +259,7 @@ impl PkiEnvironment {
         }
 
         let mut cps = CertificationPathSettings::new();
-        certval::set_time_of_interest(&mut cps, now()?);
+        cps.set_time_of_interest(toi);
         let mut cert_source = CertSource::new();
         cert_source.push(certval::CertFile {
             filename: "".to_string(),
@@ -376,8 +375,8 @@ LOVS/gxNk618+PKA2bYq67MZQXCYGgk=
             .remove_trust_anchor(
                 &tx,
                 &certs[0]
-                    .tbs_certificate
-                    .subject_public_key_info
+                    .tbs_certificate()
+                    .subject_public_key_info()
                     .fingerprint_bytes()
                     .expect("Getting fingerprint of subject plublic key info"),
             )
