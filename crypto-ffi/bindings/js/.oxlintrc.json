@@ -6,6 +6,9 @@
         "commonjs": true,
         "mocha": true
     },
+    "options": {
+        "typeAware": true
+    },
     "globals": {
         "$": "readonly",
         "$$": "readonly",
