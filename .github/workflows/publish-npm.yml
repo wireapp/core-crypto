@@ -91,15 +91,16 @@ jobs:
         if: ${{ inputs.prepare == false && inputs.release == true }}
         run: |
           cd crypto-ffi/bindings/js/packages/core-crypto
-          gh release download "${{ github.ref_name }}" --pattern "*.tgz" --dir . 2>/dev/null || true
+          gh release download "$GH_REF_NAME" --pattern "*.tgz" --dir . 2>/dev/null || true
           filename=$(ls *.tgz 2>/dev/null | head -n 1)
           if [[ -z "$filename" ]]; then
-            echo "::error ::No npm tarball found in release '${{ github.ref_name }}'"
+            echo "::error ::No npm tarball found in release '$GH_REF_NAME'"
             exit 1
           else
             echo "filename=$filename" >> "$GITHUB_OUTPUT"
           fi
         env:
+          GH_REF_NAME: ${{ github.ref_name }}
           GH_TOKEN: ${{ github.token }}
 
       - name: resolve tarball filename

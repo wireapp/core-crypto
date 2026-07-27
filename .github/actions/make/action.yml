@@ -110,14 +110,17 @@ runs:
         tar -xzf artifact.tar.gz
         # This is necessary because the github checkout action doesn't preserve
         # timestamps on checked out files.
-        paths="${{ inputs.target-path }}"
-        for dir in $paths; do
+        while read -r dir; do
+          [[ -z "$dir" ]] && continue
+
           if [ -d "$dir" ]; then
             find "$dir" -type f -exec touch {} +
           elif [ -f "$dir" ]; then
             touch "$dir"
           fi
-        done
+        done <<< "$TARGET_PATH"
+      env:
+        TARGET_PATH: ${{ inputs.target-path }}
       shell: bash -euo pipefail {0}
 
     - name: setup-and-cache-rust
@@ -129,7 +132,9 @@ runs:
 
     - name: Run make ${{ inputs.make-rule }} if needed
       if: steps.download.outputs.found != 'true' || inputs.always-run == 'true'
-      run: $MAKE ${{ inputs.make-rule }}
+      run: $MAKE "$MAKE_RULE"
+      env:
+        MAKE_RULE: ${{ inputs.make-rule }}
       shell: bash -euo pipefail {0}
 
     - name: Prepare artifact

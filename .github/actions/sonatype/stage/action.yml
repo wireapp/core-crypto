@@ -34,7 +34,7 @@ runs:
       working-directory: crypto-ffi/bindings
       run: |
         set -o pipefail
-        ./gradlew ${{ inputs.project }}:publishAllPublicationsToSonatypeRepository closeSonatypeStagingRepository --no-configuration-cache | tee gradle-stage.log
+        ./gradlew "$PROJECT:publishAllPublicationsToSonatypeRepository" closeSonatypeStagingRepository --no-configuration-cache | tee gradle-stage.log
 
         # Scraping the log for the staging repository id isn't ideal, but technically should work, as
         # long as the log string never changes. But we should keep an eye on it. Currently:
@@ -44,9 +44,11 @@ runs:
           echo "::error ::Could not determine the staging repository id from the Gradle output"
           exit 1
         fi
-        echo "::notice title=${{ inputs.label }} staging repository::Created and closed staging repository ${repo_id}"
+        echo "::notice title="$LABEL" staging repository::Created and closed staging repository ${repo_id}"
         echo "staging_repository_id=${repo_id}" >> "$GITHUB_OUTPUT"
       env:
+        PROJECT: ${{ inputs.project }}
+        LABLE: ${{ inputs.label }}
         ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ inputs.sonatype-password }}
         ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ inputs.sonatype-username }}
         ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ inputs.pgp-key-id }}

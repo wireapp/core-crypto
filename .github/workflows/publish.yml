@@ -258,16 +258,17 @@ jobs:
       - name: download npm tarball from release
         id: download
         run: |
-          gh release download "${{ inputs.tag }}" --pattern "*.tgz" --dir . 2>/dev/null || true
+          gh release download "$TAG" --pattern "*.tgz" --dir . 2>/dev/null || true
           filename=$(ls *.tgz 2>/dev/null | head -n 1)
           if [[ -z "$filename" ]]; then
-            echo "No npm tarball found in release '${{ inputs.tag }}' — already published or never uploaded"
+            echo "No npm tarball found in release '$TAG' — already published or never uploaded"
             echo "found=false" >> "$GITHUB_OUTPUT"
           else
             echo "found=true" >> "$GITHUB_OUTPUT"
             echo "filename=$filename" >> "$GITHUB_OUTPUT"
           fi
         env:
+          TAG: ${{ inputs.tag }}
           GH_TOKEN: ${{ github.token }}
 
       - name: set up node
@@ -280,6 +281,7 @@ jobs:
 
       - name: delete tarball from release
         if: steps.download.outputs.found == 'true'
-        run: gh release delete-asset "${{ inputs.tag }}" "${{ steps.download.outputs.filename }}" --yes
+        run: gh release delete-asset "$TAG" "${{ steps.download.outputs.filename }}" --yes
         env:
+          TAG: ${{ inputs.tag }}
           GH_TOKEN: ${{ github.token }}
