@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `DecryptedMessage` is now an enum with `Text`, `Commit`, and `Proposal` variants. For migration, see the migration
+  guide.
+
 ## CoreCrypto 10
 
 ### v10.2.0 - 2026-07-28
