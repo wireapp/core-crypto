@@ -1,5 +1,5 @@
 import {
-    DatabaseKey,
+    type DatabaseKey,
     type CipherSuite,
     type ClientId,
     type CommitBundle,
@@ -422,11 +422,24 @@ async function setHelpers() {
                     }
                 );
 
-                const decoder = new TextDecoder();
-                const result1 = decoder.decode(decryptedByClient1.message);
-                const result2 = decoder.decode(decryptedByClient2.message);
-
-                return [result1, result2];
+                if (
+                    ccModule.DecryptedMessage.Text.instanceOf(
+                        decryptedByClient1
+                    ) &&
+                    ccModule.DecryptedMessage.Text.instanceOf(
+                        decryptedByClient2
+                    )
+                ) {
+                    const decoder = new TextDecoder();
+                    const result1 = decoder.decode(
+                        decryptedByClient1.inner.plaintext
+                    );
+                    const result2 = decoder.decode(
+                        decryptedByClient2.inner.plaintext
+                    );
+                    return [result1, result2];
+                }
+                return ["", ""];
             }
 
             /**
