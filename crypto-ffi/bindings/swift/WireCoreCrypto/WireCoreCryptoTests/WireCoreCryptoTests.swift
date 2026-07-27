@@ -556,9 +556,10 @@ final class WireCoreCryptoTests: XCTestCase {
         let decrypted = try await alice.transaction { ctx in
             try await ctx.decryptMessage(conversationId: conversationId, payload: commit!)
         }
-        XCTAssertNil(decrypted.message)
-        XCTAssertNil(decrypted.commitDelay)
-        XCTAssertNil(decrypted.senderClientId)
+        guard case .commit = decrypted else {
+            XCTFail("Expected a decrypted commit")
+            return
+        }
     }
 
     func testEncryptMessageCanBeDecryptedByReceiver() async throws {
@@ -577,9 +578,12 @@ final class WireCoreCryptoTests: XCTestCase {
         }
         XCTAssertNotEqual(ciphertext, message)
 
-        let plaintext = try await bob.transaction { ctx in
+        let decrypted = try await bob.transaction { ctx in
             try await ctx.decryptMessage(conversationId: conversationId, payload: ciphertext)
-                .message
+        }
+        guard case .text(let plaintext, _, _) = decrypted else {
+            XCTFail("Expected decrypted text")
+            return
         }
         XCTAssertEqual(plaintext, message)
 
