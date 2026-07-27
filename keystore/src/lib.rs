@@ -9,9 +9,11 @@ pub(crate) mod mls;
 pub(crate) mod proteus;
 pub mod traits;
 pub mod transaction;
+mod unique_arc;
 
 pub use hash::Sha256Hash;
 pub(crate) use hash::sha256;
+pub use unique_arc::UniqueArc;
 
 #[cfg(feature = "dummy-entity")]
 pub use self::entities::{DummyStoreValue, DummyValue};
