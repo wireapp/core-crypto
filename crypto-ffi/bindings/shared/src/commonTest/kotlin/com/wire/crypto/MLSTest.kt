@@ -194,9 +194,7 @@ class MLSTest {
         val commit = MockMlsTransportSuccessProvider.getInstance().getLatestCommit()
 
         val decrypted = alice.transaction { ctx -> ctx.decryptMessage(groupId, commit) }
-        assertThat(decrypted.message).isNull()
-        assertThat(decrypted.commitDelay).isNull()
-        assertThat(decrypted.senderClientId).isNull()
+        assertIs<DecryptedMessage.Commit>(decrypted)
     }
 
     @Test
@@ -222,7 +220,10 @@ class MLSTest {
         val ciphertextMsg = alice.transaction { ctx -> ctx.encryptMessage(groupId, msg) }
         assertThat(ciphertextMsg).isNotEqualTo(msg)
 
-        val plaintextMsg = bob.transaction { ctx -> ctx.decryptMessage(groupId, ciphertextMsg).message!! }
+        val plaintextMsg =
+            bob.transaction { ctx ->
+                assertIs<DecryptedMessage.Text>(ctx.decryptMessage(groupId, ciphertextMsg)).plaintext
+            }
         assertThat(plaintextMsg).isNotEmpty().isEqualTo(msg)
 
         val expectedException =
@@ -248,7 +249,7 @@ class MLSTest {
         val commit = MockMlsTransportSuccessProvider.getInstance().getLatestCommit()
 
         val decrypted = alice.transaction { ctx -> ctx.decryptMessage(conversationId, commit) }
-        assertThat(decrypted.message).isNull()
+        assertIs<DecryptedMessage.Commit>(decrypted)
 
         val members = alice.transaction { ctx -> ctx.getClientIds(conversationId) }
         assertThat(members).containsAll(listOf(aliceId, bobId, carolId))
@@ -283,7 +284,7 @@ class MLSTest {
         val commit = MockMlsTransportSuccessProvider.getInstance().getLatestCommit()
 
         val decrypted = alice.transaction { ctx -> ctx.decryptMessage(conversationId, commit) }
-        assertThat(decrypted.message).isNull()
+        assertIs<DecryptedMessage.Commit>(decrypted)
     }
 
     @Test
