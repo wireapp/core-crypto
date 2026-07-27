@@ -14,13 +14,12 @@ impl FetchFromDatabase for Database {
     where
         E: 'static + Entity + Clone + Send + Sync,
     {
-        // If a transaction is in progress...
-        if let Some(transaction) = self.transaction.lock().await.as_ref()
-            //... and it has information about this entity, ...
-            && let Some(cached_record) = transaction.get(id).await
+        if let Ok(Some(cached_record)) = self
+            .with_transaction(async |transaction| Ok(transaction.get::<E>(id).await))
+            .await
         {
             return Ok(cached_record.map(Arc::unwrap_or_clone));
-        }
+        };
 
         // Otherwise get it from the database
         let conn = self.conn().await;
@@ -33,10 +32,9 @@ impl FetchFromDatabase for Database {
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
         for<'a> &'a E::BorrowedPrimaryKey: KeyType,
     {
-        // If a transaction is in progress...
-        if let Some(transaction) = self.transaction.lock().await.as_ref()
-            //... and it has information about this entity, ...
-            && let Some(cached_record) = transaction.get_borrowed(id).await
+        if let Ok(Some(cached_record)) = self
+            .with_transaction(async |transaction| Ok(transaction.get_borrowed::<E>(id).await))
+            .await
         {
             return Ok(cached_record.map(Arc::unwrap_or_clone));
         }
@@ -68,11 +66,10 @@ impl FetchFromDatabase for Database {
         let conn = self.conn().await;
         let persisted_records = E::load_all(&conn)?;
 
-        let transaction_guard = self.transaction.lock().await;
-        let Some(transaction) = transaction_guard.as_ref() else {
-            return Ok(persisted_records);
-        };
-        transaction.find_all(persisted_records).await
+        self.merge_with_transaction(persisted_records, async |transaction, persisted_records| {
+            transaction.find_all(persisted_records).await
+        })
+        .await
     }
 
     async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<E>>
@@ -83,11 +80,9 @@ impl FetchFromDatabase for Database {
         let conn = self.conn().await;
         let persisted_records = E::find_all_matching(&conn, search_key)?;
 
-        let transaction_guard = self.transaction.lock().await;
-        let Some(transaction) = transaction_guard.as_ref() else {
-            return Ok(persisted_records);
-        };
-
-        transaction.search(persisted_records, search_key).await
+        self.merge_with_transaction(persisted_records, async |transaction, persisted_records| {
+            transaction.search(persisted_records, search_key).await
+        })
+        .await
     }
 }
