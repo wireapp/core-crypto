@@ -67,10 +67,32 @@ impl Database {
         operation: impl AsyncFnOnce(&KeystoreTransaction) -> CryptoKeystoreResult<R>,
     ) -> CryptoKeystoreResult<R> {
         let guard = self.transaction.lock().await;
-        let Some(transaction) = guard.as_ref() else {
-            return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);
+        let transaction = guard
+            .as_ref()
+            .ok_or(CryptoKeystoreError::MutatingOperationWithoutTransaction)?
+            .upgrade()
+            .await
+            .ok_or(CryptoKeystoreError::MutatingOperationWithoutTransaction)?;
+
+        operation(&transaction).await
+    }
+
+    /// Merge database records with the active transaction's view of them.
+    ///
+    /// If no transaction is in progress, the database records are returned unchanged.
+    pub(super) async fn merge_with_transaction<E>(
+        &self,
+        persisted_records: Vec<E>,
+        merge: impl AsyncFnOnce(&KeystoreTransaction, Vec<E>) -> CryptoKeystoreResult<Vec<E>>,
+    ) -> CryptoKeystoreResult<Vec<E>> {
+        let guard = self.transaction.lock().await;
+        let Some(weak) = guard.as_ref() else {
+            return Ok(persisted_records);
         };
-        operation(transaction).await
+        let Some(tx) = weak.upgrade().await else {
+            return Ok(persisted_records);
+        };
+        merge(&tx, persisted_records).await
     }
 }
 
