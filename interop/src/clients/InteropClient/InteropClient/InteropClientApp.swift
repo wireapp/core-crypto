@@ -213,9 +213,10 @@ struct InteropClientApp: App {
                 )
             }
 
-            if let plaintext = decryptedMessage.message {
+            switch decryptedMessage {
+            case .text(let plaintext, _, _):
                 return plaintext.base64EncodedString()
-            } else {
+            case .commit, .proposal:
                 return "decrypted protocol message"
             }
 

@@ -6,6 +6,7 @@ import com.wire.crypto.ConversationId
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.Credential
 import com.wire.crypto.DatabaseKey
+import com.wire.crypto.DecryptedMessage
 import com.wire.crypto.DeviceId
 import com.wire.crypto.HistorySecret
 import com.wire.crypto.KeyPackage
@@ -67,12 +68,16 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
             }
 
             is InteropAction.MLS.DecryptMessage -> {
-                coreCrypto.transaction { context ->
-                    context.decryptMessage(ConversationId(bytes = action.conversationId), action.message)
-                }.message?.let {
-                    return Result.success(Base64.Default.encode(it))
+                when (
+                    val decryptedMessage = coreCrypto.transaction { context ->
+                        context.decryptMessage(ConversationId(bytes = action.conversationId), action.message)
+                    }
+                ) {
+                    is DecryptedMessage.Text -> Result.success(Base64.Default.encode(decryptedMessage.plaintext))
+
+                    is DecryptedMessage.Commit,
+                    is DecryptedMessage.Proposal -> Result.success("decrypted protocol message")
                 }
-                Result.success("decrypted protocol message")
             }
 
             is InteropAction.MLS.EncryptMessage -> {

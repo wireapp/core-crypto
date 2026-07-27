@@ -113,13 +113,16 @@ export async function encryptMessage() {
 }
 
 export async function decryptMessage() {
-    const { ConversationId } = await import("./corecrypto.js");
+    const { ConversationId, DecryptedMessage } = await import("./corecrypto.js");
     const [cId, encMessage] = arguments;
     const conversationId = new ConversationId(Uint8Array.from(Object.values(cId)));
     const encryptedMessage = Uint8Array.from(Object.values(encMessage));
 
-    const { message } = await window.cc.transaction((ctx) =>
+    const decryptedMessage = await window.cc.transaction((ctx) =>
         ctx.decryptMessage(conversationId, encryptedMessage)
     );
-    return new Uint8Array(message);
+    if (DecryptedMessage.Text.instanceOf(decryptedMessage)) {
+        return decryptedMessage.inner.plaintext;
+    }
+    return null;
 }

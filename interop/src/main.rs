@@ -259,8 +259,9 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
             .unwrap()
             .decrypt_message(message_to_decrypt)
             .await?
-            .app_msg
-            .ok_or_else(|| anyhow!("[MLS] No message received on master client"))?;
+            .into_text()
+            .map_err(|_| anyhow!("[MLS] No message received on master client"))?
+            .plaintext;
 
         let decrypted_master = String::from_utf8(decrypted_master_raw)?;
 
