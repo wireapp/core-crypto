@@ -305,8 +305,6 @@ impl ConversationMut {
                     })
                     .await?;
 
-                let delay = self.compute_next_commit_delay().await;
-
                 // can't use `.then` because async
                 let mut buffered_messages = None;
                 if recursion_policy == RecursionPolicy::AsNecessary {
@@ -330,7 +328,7 @@ impl ConversationMut {
                 DecryptedMessage {
                     app_msg: None,
                     is_active,
-                    delay,
+                    delay: None,
                     sender_client_id: None,
                     identity,
                     buffered_messages,
