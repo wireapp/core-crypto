@@ -24,6 +24,7 @@ pub use self::idb_migration::{delete_legacy_idb, legacy_idb_exists};
 pub use self::migrations::migrate_db_key_type_to_bytes;
 use crate::{
     CryptoKeystoreResult, DatabaseKey, connection::migrations::MigrationTarget, transaction::KeystoreTransaction,
+    unique_arc::UniqueWeak,
 };
 
 #[cfg(feature = "log-queries")]
@@ -43,7 +44,7 @@ pub struct Database {
     // handler with which to delete the database;
     // mutexed to provide `Sync`
     pub(crate) filesystem: Mutex<Box<dyn Filesystem>>,
-    pub(crate) transaction: Mutex<Option<KeystoreTransaction>>,
+    pub(crate) transaction: Mutex<Option<UniqueWeak<KeystoreTransaction>>>,
     // we need this `Arc` so we can create an owned guard, so that
     // `self.transaction` doesn't need a self-referential lifetime.
     transaction_semaphore: Arc<Semaphore>,

@@ -5,8 +5,10 @@
 //! `Send` at a minimum in order to keep the transaction around and manipulate it concurrently
 //! from various tasks.
 
+use std::sync::Arc;
+
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, Database,
+    CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc,
     traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed},
     transaction::KeystoreTransaction,
 };
@@ -14,85 +16,42 @@ use crate::{
 /// These impls control the keystore transaction lifecycle.
 impl Database {
     /// Waits for the current transaction to be committed or rolled back, then starts a new one.
-    pub async fn new_transaction(&self) -> CryptoKeystoreResult<()> {
+    pub async fn new_transaction(self: &Arc<Self>) -> CryptoKeystoreResult<UniqueArc<KeystoreTransaction>> {
         let semaphore = self.transaction_semaphore.acquire_arc().await;
-        let mut transaction_guard = self.transaction.lock().await;
-        debug_assert!(
-            transaction_guard.is_none(),
-            "transaction already existed despite acquiring semaphore"
-        );
-
-        // we'll need to adjust the `KeystoreTransaction` constructor not to require an Arc version of the semaphore
-        // guard
-        let transaction = KeystoreTransaction::new(semaphore).await?;
-        *transaction_guard = Some(transaction);
-        Ok(())
+        KeystoreTransaction::new(semaphore, self.clone()).await
     }
 
     /// Start a new transaction if no other transaction is currently in progress.
     ///
     /// If a transaction is currently in progress, this will produce a `TransactionInProgress` error.
-    pub async fn try_new_immediate_transaction(&self) -> CryptoKeystoreResult<()> {
+    pub async fn try_new_immediate_transaction(
+        self: &Arc<Self>,
+    ) -> CryptoKeystoreResult<UniqueArc<KeystoreTransaction>> {
         let semaphore = self
             .transaction_semaphore
             .try_acquire_arc()
             .ok_or(CryptoKeystoreError::TransactionInProgress)?;
-        let mut transaction_guard = self.transaction.lock().await;
-        debug_assert!(
-            transaction_guard.is_none(),
-            "transaction already existed despite acquiring semaphore"
-        );
-
-        // we'll need to adjust the `KeystoreTransaction` constructor not to require an Arc version of the semaphore
-        // guard
-        let transaction = KeystoreTransaction::new(semaphore).await?;
-        *transaction_guard = Some(transaction);
-        Ok(())
-    }
-
-    pub async fn commit_transaction(&self) -> CryptoKeystoreResult<()> {
-        let mut transaction_guard = self.transaction.lock().await;
-        let Some(transaction) = transaction_guard.take() else {
-            return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);
-        };
-        debug_assert!(
-            transaction_guard.is_none(),
-            "taking the transaction leaves `None` behind"
-        );
-
-        transaction.commit(self).await?;
-        Ok(())
-    }
-
-    pub async fn rollback_transaction(&self) -> CryptoKeystoreResult<()> {
-        let mut transaction_guard = self.transaction.lock().await;
-        if transaction_guard.is_none() {
-            return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);
-        };
-        *transaction_guard = None;
-        Ok(())
+        KeystoreTransaction::new(semaphore, self.clone()).await
     }
 
     /// Do an operation on a keystore transaction on this database.
     ///
-    /// This is a convenience method abstracting over [`Self::new_transaction`],
-    /// [`Self::commit_transaction`], and [`Self::rollback_transaction`].
+    /// This is a convenience method abstracting over the transaction lifecycle;
+    /// it creates a new transaction (including waiting for any existing transaction to finish),
+    /// then performs its operation.
     ///
     /// If the operation succeeds, the transaction is committed.
     /// Otherwise, it is rolled back.
     pub async fn transactionally<R>(
-        &self,
+        self: &Arc<Self>,
         operation: impl AsyncFnOnce(&KeystoreTransaction) -> CryptoKeystoreResult<R>,
     ) -> CryptoKeystoreResult<R> {
-        // we don't actually delegate to the internal lifecycle constructs because
-        // they include mutations and checks we don't need, given that we
-        // know that this function's lifetime exceeds that of the internal transaction.
         let semaphore = self.transaction_semaphore.acquire_arc().await;
-        let transaction = KeystoreTransaction::new(semaphore).await?;
+        let transaction = KeystoreTransaction::new(semaphore, self.clone()).await?;
 
         let result = operation(&transaction).await;
         if result.is_ok() {
-            transaction.commit(self).await?;
+            transaction.commit().await?;
         }
         // otherwise implicit abort on tx drop
 

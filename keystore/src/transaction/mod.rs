@@ -8,7 +8,7 @@ use async_lock::{RwLock, SemaphoreGuardArc};
 use itertools::Itertools;
 
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, Database,
+    CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc,
     entities::{MlsPendingMessage, PersistedMlsGroup},
     traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType, SearchableEntity},
     transaction::dynamic_dispatch::EntityId,
@@ -28,18 +28,36 @@ pub struct KeystoreTransaction {
     cache: InMemoryCollection,
     deleted: RwLock<HashSet<EntityId>>,
     _semaphore_guard: Arc<SemaphoreGuardArc>,
+    database: Arc<Database>,
 }
 
 impl KeystoreTransaction {
     /// Instantiate a new transaction.
     ///
     /// Requires a semaphore guard to ensure that only one exists at a time.
-    pub(crate) async fn new(semaphore_guard: SemaphoreGuardArc) -> CryptoKeystoreResult<Self> {
-        Ok(Self {
+    pub(crate) async fn new(
+        semaphore_guard: SemaphoreGuardArc,
+        database: Arc<Database>,
+    ) -> CryptoKeystoreResult<UniqueArc<Self>> {
+        let transaction = UniqueArc::from(Self {
             cache: Default::default(),
             deleted: Default::default(),
             _semaphore_guard: Arc::new(semaphore_guard),
-        })
+            database,
+        });
+
+        let weak = UniqueArc::downgrade(&transaction);
+
+        {
+            let mut transaction_guard = transaction.database.transaction.lock().await;
+            // this transaction guard may be `None` if the database is new or the previous transaction
+            // was committed.
+            // it may be `Some(_)` if the previous transaction was rolled back by means of dropping the `UniqueArc<Transaction>`.
+            // either way, it's correct to simply replace it without checking the previous value.
+            *transaction_guard = Some(weak);
+        }
+
+        Ok(transaction)
     }
 
     /// Save an entity into this transaction.
@@ -356,12 +374,20 @@ impl KeystoreTransaction {
             })
             .collect()
     }
+}
 
+impl UniqueArc<KeystoreTransaction> {
     /// Persists all the operations in the database. It will effectively open a transaction
     /// internally, perform all the buffered operations and commit.
-    pub(crate) async fn commit(self, db: &Database) -> Result<(), CryptoKeystoreError> {
-        let cache = self.cache.read().await;
-        let deleted_ids = self.deleted.read().await;
+    pub async fn commit(self) -> Result<(), CryptoKeystoreError> {
+        let KeystoreTransaction {
+            cache,
+            deleted,
+            database,
+            ..
+        } = UniqueArc::into_inner(self).await;
+        let cache = cache.into_inner();
+        let deleted_ids = deleted.into_inner();
 
         let table_names_with_deletion = deleted_ids.iter().map(|entity_id| entity_id.collection_name());
         let table_names_with_save = cache
@@ -378,7 +404,7 @@ impl KeystoreTransaction {
         // open a database transaction
         // Because `rusqlite::Transaction: !Send + !Sync`, it's critical that
         // we don't hold this transaction over any `.await` points.
-        let mut conn = db.conn().await;
+        let mut conn = database.conn().await;
         let tx = conn.transaction()?;
 
         for entity in cache.values().flat_map(|table| table.values()) {
