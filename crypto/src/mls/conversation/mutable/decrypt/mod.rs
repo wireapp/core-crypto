@@ -183,7 +183,9 @@ impl ConversationMut {
 
         let decrypt_message = decrypt_message_result?;
 
-        if !decrypt_message.is_active {
+        if let Some(decrypted_message) = decrypt_message.as_commit()
+            && !decrypted_message.is_active
+        {
             self.wipe().await?;
         }
         Ok(decrypt_message)
@@ -210,12 +212,14 @@ impl ConversationMut {
             let ct = self.extract_confirmation_tag_from_own_commit(&message).await?;
             let mut decrypted_message = self.handle_own_commit(ct).await?;
 
-            debug_assert!(
-                decrypted_message.buffered_messages.is_none(),
-                "decrypted message should be constructed with empty buffer"
-            );
-            if recursion_policy == RecursionPolicy::AsNecessary {
-                decrypted_message.buffered_messages = self.restore_and_clear_pending_messages().await?;
+            if let Some(decrypted_message) = decrypted_message.as_commit_mut() {
+                debug_assert!(
+                    decrypted_message.buffered_messages.is_none(),
+                    "decrypted message should be constructed with empty buffer"
+                );
+                if recursion_policy == RecursionPolicy::AsNecessary {
+                    decrypted_message.buffered_messages = self.restore_and_clear_pending_messages().await?;
+                }
             }
 
             return Ok(decrypted_message);
@@ -246,16 +250,18 @@ impl ConversationMut {
             .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
-        let sender_client_id = credential
+        // We only need this in the ProcessedMessageContent::ApplicationMessage match arm below, however, at that point
+        // we cannot borrow from `message` anymore, because it is moved by `message.into_content()`.
+        let sender_client_id_result = credential
             .credential
             .identity()
             .try_into()
-            .inspect_err(|e| log::info!("sender client id couldn't be parsed into the expected format: {e:?}"))
-            .ok();
+            .map_err(RecursiveError::mls_client("client id from credential"));
 
         let decrypted = match message.into_content() {
             ProcessedMessageContent::ApplicationMessage(app_msg) => {
                 let conversation = self;
+                let sender_client_id = sender_client_id_result?;
                 debug!(
                     group_id = conversation.id().to_owned(),
                     epoch = epoch.as_u64(),
@@ -263,14 +269,11 @@ impl ConversationMut {
                     "Application message"
                 );
 
-                DecryptedMessage {
-                    app_msg: Some(app_msg.into_bytes()),
-                    is_active: true,
-                    delay: None,
+                DecryptedMessage::Text(Text {
+                    plaintext: app_msg.into_bytes(),
                     sender_client_id,
                     identity,
-                    buffered_messages: None,
-                }
+                })
             }
             ProcessedMessageContent::ProposalMessage(proposal) => {
                 self.mutate_group(async |_, group, id| {
@@ -317,14 +320,7 @@ impl ConversationMut {
 
                 let delay = self.compute_next_commit_delay().await;
 
-                DecryptedMessage {
-                    app_msg: None,
-                    is_active: true,
-                    delay,
-                    sender_client_id: None,
-                    identity,
-                    buffered_messages: None,
-                }
+                DecryptedMessage::Proposal(Proposal { delay, identity })
             }
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
                 self.validate_commit(&staged_commit).await?;
@@ -380,14 +376,11 @@ impl ConversationMut {
                     .await
                     .map_err(RecursiveError::transaction("queueing epoch changed notification"))?;
 
-                DecryptedMessage {
-                    app_msg: None,
+                DecryptedMessage::Commit(Commit {
                     is_active,
-                    delay: None,
-                    sender_client_id: None,
-                    identity,
                     buffered_messages,
-                }
+                    identity,
+                })
             }
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
                 self.mutate_group(async |_, group, id| {
@@ -403,14 +396,7 @@ impl ConversationMut {
 
                 let delay = self.compute_next_commit_delay().await;
 
-                DecryptedMessage {
-                    app_msg: None,
-                    is_active: true,
-                    delay,
-                    sender_client_id: None,
-                    identity,
-                    buffered_messages: None,
-                }
+                DecryptedMessage::Proposal(Proposal { delay, identity })
             }
         };
 

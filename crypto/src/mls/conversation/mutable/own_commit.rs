@@ -7,7 +7,10 @@ use openmls::{
 use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::{ConversationMut, Error, Result};
-use crate::{DecryptedMessage, RecursiveError, mls::credential::ext::CredentialExt};
+use crate::{
+    DecryptedMessage, RecursiveError,
+    mls::{conversation::mutable::decrypt::Commit, credential::ext::CredentialExt},
+};
 
 impl ConversationMut {
     /// Returns the confirmation tag from a public message that is an own commit.
@@ -95,14 +98,13 @@ impl ConversationMut {
             .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
-        Ok(DecryptedMessage {
-            identity,
-            delay: self.compute_next_commit_delay().await,
+        let decrypted_message = DecryptedMessage::Commit(Commit {
             is_active: self.group().await.is_active(),
-            app_msg: None,
-            sender_client_id: None,
             buffered_messages: None,
-        })
+            identity,
+        });
+
+        Ok(decrypted_message)
     }
 }
 
