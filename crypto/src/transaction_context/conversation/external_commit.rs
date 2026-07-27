@@ -2,7 +2,7 @@
 
 use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
-use super::{Error, Result};
+use super::Result;
 use crate::{
     CommitBundle, ConversationConfiguration, ConversationId, CredentialRef, GroupInfoBundle, LeafError, OpenMlsError,
     RecursiveError,
@@ -120,19 +120,14 @@ impl TransactionContext {
     }
 
     pub(crate) async fn pending_conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
-        match self.pending_conversation(id).await {
-            Ok(_) => Ok(true),
-            Err(Error::Leaf(LeafError::ConversationNotFound(_))) => Ok(false),
-            Err(e) => Err(e),
-        }
+        Ok(self.pending_conversation(id).await?.is_some())
     }
 }
 
 #[cfg(test)]
 mod tests {
 
-    use super::Error;
-    use crate::{ConversationConfiguration, LeafError, test_utils::*};
+    use crate::{ConversationConfiguration, LeafError, test_utils::*, transaction_context::Error};
 
     #[apply(all_cred_cipher)]
     async fn join_by_external_commit_should_succeed(case: TestContext) {
@@ -245,19 +240,17 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    async fn should_fail_when_no_pending_external_commit(case: TestContext) {
+    async fn should_not_find_conversation_when_no_pending_external_commit(case: TestContext) {
         let [session] = case.sessions().await;
         let non_existent_id = conversation_id();
         // try to get a non-existent pending group
-        let err = session
+        let pending_conversation_option = session
             .transaction
             .pending_conversation(&non_existent_id)
             .await
-            .unwrap_err();
+            .unwrap();
 
-        assert!(matches!(
-           err, Error::Leaf(LeafError::ConversationNotFound(id)) if non_existent_id == id
-        ));
+        assert!(pending_conversation_option.is_none());
     }
 
     #[apply(all_cred_cipher)]
