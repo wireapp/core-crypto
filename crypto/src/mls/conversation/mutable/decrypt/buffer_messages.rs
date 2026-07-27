@@ -191,25 +191,24 @@ mod tests {
                 .unwrap();
 
             // Finally, Bob receives the green light from the DS and he can merge the external commit
-            let DecryptedMessage {
-                buffered_messages: Some(restored_messages),
-                ..
-            } = conversation
+            let restored_messages = conversation
                 .guard_of(&bob)
                 .await
                 .decrypt_message(unmerged_commit.to_bytes().unwrap())
                 .await
                 .unwrap()
-            else {
-                panic!("Alice's messages should have been restored at this point");
-            };
+                .into_commit()
+                .unwrap()
+                .buffered_messages
+                .expect("Alice's messages should have been restored at this point");
 
-            for (idx, msg) in restored_messages.iter().enumerate() {
+            for (idx, buffered_message) in restored_messages.into_iter().enumerate() {
+                let text = DecryptedMessage::from(buffered_message).into_text();
                 if idx == 0 {
                     // this is the application message
-                    assert_eq!(msg.app_msg.as_deref(), Some("Hello Bob !".as_bytes()));
+                    assert_eq!(text.unwrap().plaintext, b"Hello Bob !");
                 } else {
-                    assert!(msg.app_msg.is_none());
+                    assert!(text.is_err());
                 }
             }
 
@@ -289,23 +288,22 @@ mod tests {
 
             // Finally, Alice receives the original commit for this epoch
             let original_commit = ext_commit.to_bytes().unwrap();
-            let DecryptedMessage {
-                buffered_messages: Some(restored_messages),
-                ..
-            } = conversation
+            let restored_messages = conversation
                 .guard()
                 .await
                 .decrypt_message(original_commit)
                 .await
                 .unwrap()
-            else {
-                panic!("Alice's messages should have been restored at this point");
-            };
-            for (idx, msg) in restored_messages.into_iter().enumerate() {
+                .into_commit()
+                .unwrap()
+                .buffered_messages
+                .expect("Alice's messages should have been restored at this point");
+            for (idx, buffered_message) in restored_messages.into_iter().enumerate() {
+                let text = DecryptedMessage::from(buffered_message).into_text();
                 if idx == 0 {
-                    assert_eq!(msg.app_msg.as_deref(), Some(b"Hello Alice !" as _));
+                    assert_eq!(text.unwrap().plaintext, b"Hello Alice !");
                 } else {
-                    assert!(msg.app_msg.is_none());
+                    assert!(text.is_err());
                 }
             }
 

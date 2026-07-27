@@ -238,7 +238,7 @@ impl SessionContext {
             let client_id = mls_identity.client_id.clone().unwrap();
             let client_id_bytes = client_id.as_bytes();
 
-            let decrypted_identity = &decrypted.identity;
+            let decrypted_identity = decrypted.identity();
 
             let leaf: Vec<u8> = certificate.certificates.first().unwrap().clone().into();
             let identity = leaf

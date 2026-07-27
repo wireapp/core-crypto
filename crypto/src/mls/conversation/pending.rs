@@ -285,6 +285,8 @@ mod tests {
     async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestContext) {
         let [alice, bob, charlie, debbie] = case.sessions().await;
         Box::pin(async move {
+            use crate::mls::conversation::mutable::decrypt::Commit;
+
             let conversation = case.create_conversation([&alice, &debbie]).await;
             // Bob tries to join Alice's group with an external commit
             let (commit_guard, _pending_conversation) = conversation.external_join_unmerged(&bob).await;
@@ -343,10 +345,10 @@ mod tests {
                 .unwrap();
 
             // Finally, Bob receives the green light from the DS and he can merge the external commit
-            let DecryptedMessage {
+            let DecryptedMessage::Commit(Commit {
                 buffered_messages: Some(restored_messages),
                 ..
-            } = pending_conversation
+            }) = pending_conversation
                 .try_process_own_join_commit(external_commit.to_bytes().unwrap())
                 .await
                 .unwrap()
@@ -354,12 +356,14 @@ mod tests {
                 panic!("Alice's messages should have been restored at this point");
             };
 
-            for (idx, msg) in restored_messages.iter().enumerate() {
+            for (idx, buffered_message) in restored_messages.into_iter().enumerate() {
+                let text = DecryptedMessage::from(buffered_message).into_text();
                 if idx == 0 {
                     // the only application message
-                    assert_eq!(msg.app_msg.as_deref(), Some(b"Hello Bob !" as _));
+                    let msg = text.unwrap().plaintext;
+                    assert_eq!(msg, b"Hello Bob !");
                 } else {
-                    assert!(msg.app_msg.is_none());
+                    assert!(text.is_err());
                 }
             }
 

@@ -169,12 +169,12 @@ mod tests {
             let charlie_hypothetical_position = 1;
 
             assert_eq!(
-                bob_decrypted_message.delay,
+                bob_decrypted_message.as_proposal().unwrap().delay,
                 Some(DELAY_POS_LINEAR_INCR * bob_hypothetical_position)
             );
 
             assert_eq!(
-                charlie_decrypted_message.delay,
+                charlie_decrypted_message.as_proposal().unwrap().delay,
                 Some(DELAY_POS_LINEAR_INCR * charlie_hypothetical_position)
             );
         })

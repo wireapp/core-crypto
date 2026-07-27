@@ -548,7 +548,7 @@ mod tests {
                     .notify_member_fallible(&alice)
                     .await;
                 let decrypted = decrypted.unwrap();
-                assert!(decrypted.is_active)
+                assert!(decrypted.as_commit().is_some_and(|commit| commit.is_active))
             })
             .await
         }
@@ -567,7 +567,7 @@ mod tests {
                     .notify_member_fallible(&alice)
                     .await;
                 let decrypted = decrypted.unwrap();
-                assert!(!decrypted.is_active)
+                assert!(decrypted.as_commit().is_some_and(|commit| !commit.is_active))
             })
             .await
         }
@@ -596,8 +596,7 @@ mod tests {
 
                 let epoch_after = commit.finish().guard_of(&bob).await.epoch().await;
                 assert_eq!(epoch_after, epoch_before + 1);
-                assert!(decrypted.delay.is_none());
-                assert!(decrypted.app_msg.is_none());
+                assert!(decrypted.as_commit().is_some());
 
                 alice
                     .verify_sender_identity(&case, &alice.initial_credential, &decrypted)
@@ -609,15 +608,14 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        async fn should_not_return_sender_client_id(case: TestContext) {
+        async fn should_be_commit_variant(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
 
                 let (_commit, decrypted) = conversation.update().await.notify_member_fallible(&bob).await;
 
-                let sender_client_id = decrypted.unwrap().sender_client_id;
-                assert!(sender_client_id.is_none());
+                assert!(decrypted.unwrap().as_commit().is_some());
             })
             .await
         }
@@ -627,15 +625,18 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        async fn should_not_return_sender_client_id(case: TestContext) {
+        async fn should_be_proposal_variant(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
 
-                let (_commit, decrypted) = conversation.update_unmerged().await.notify_member_fallible(&bob).await;
+                let (_commit, decrypted) = conversation
+                    .remove_proposal(&bob)
+                    .await
+                    .notify_member_fallible(&bob)
+                    .await;
 
-                let sender_client_id = decrypted.unwrap().sender_client_id;
-                assert!(sender_client_id.is_none());
+                assert!(decrypted.unwrap().as_proposal().is_some());
             })
             .await
         }
@@ -673,8 +674,8 @@ mod tests {
                     .decrypt_message(encrypted)
                     .await
                     .unwrap();
-                let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
-                assert_eq!(dec_msg, &msg[..]);
+                let dec_msg = &decrypted.as_text().unwrap().plaintext;
+                assert_eq!(dec_msg, msg);
                 assert!(!bob_observer.has_changed().await);
                 alice
                     .verify_sender_identity(&case, &alice.initial_credential, &decrypted)
@@ -684,7 +685,7 @@ mod tests {
                 let encrypted = conversation.guard_of(&bob).await.encrypt_message(msg).await.unwrap();
                 assert_ne!(&msg[..], &encrypted[..]);
                 let decrypted = conversation.guard().await.decrypt_message(encrypted).await.unwrap();
-                let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
+                let dec_msg = &decrypted.as_text().unwrap().plaintext;
                 assert_eq!(dec_msg, &msg[..]);
                 assert!(!alice_observer.has_changed().await);
                 bob.verify_sender_identity(&case, &bob.initial_credential, &decrypted)
@@ -733,10 +734,11 @@ mod tests {
                 assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
 
                 let (_, decrypted_commit) = commit_guard.notify_member_fallible(&bob).await;
-                let decrypted_commit = decrypted_commit.unwrap();
-                let buffered_msg = decrypted_commit.buffered_messages.unwrap();
-                let decrypted_msg = buffered_msg.first().unwrap().app_msg.clone().unwrap();
-                assert_eq!(&decrypted_msg, msg);
+                let decrypted_commit = decrypted_commit.unwrap().into_commit().unwrap();
+                let buffered_msg = decrypted_commit.buffered_messages.unwrap().remove(0);
+                let decrypted_msg = crate::DecryptedMessage::from(buffered_msg);
+                let decrypted_msg = &decrypted_msg.as_text().unwrap().plaintext;
+                assert_eq!(&decrypted_msg, &msg);
             })
             .await
         }
@@ -762,7 +764,8 @@ mod tests {
                 for (i, (original, encrypted)) in messages.iter().rev().enumerate() {
                     let decrypt = conversation.guard_of(&bob).await.decrypt_message(encrypted).await;
                     if i < out_of_order_tolerance as usize {
-                        let decrypted = decrypt.unwrap().app_msg.unwrap();
+                        let decrypt = decrypt.unwrap();
+                        let decrypted = &decrypt.as_text().unwrap().plaintext;
                         assert_eq!(decrypted, original.as_bytes());
                     } else {
                         assert!(matches!(decrypt.unwrap_err(), Error::DuplicateMessage))
@@ -789,8 +792,8 @@ mod tests {
                     .await
                     .unwrap();
 
-                let sender_client_id = decrypted.sender_client_id.unwrap();
-                assert_eq!(sender_client_id, alice.get_client_id().await);
+                let sender_client_id = &decrypted.as_text().unwrap().sender_client_id;
+                assert_eq!(sender_client_id, &alice.get_client_id().await);
             })
             .await
         }
@@ -828,7 +831,7 @@ mod tests {
                     .decrypt_message(&bob_message1)
                     .await
                     .unwrap();
-                assert_eq!(decrypt.app_msg.unwrap(), b"Hello Bob");
+                assert_eq!(decrypt.as_text().unwrap().plaintext, b"Hello Bob");
 
                 // Moving the epochs once more should cause an error
                 let conversation = conversation.update_notify().await;
