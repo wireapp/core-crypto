@@ -33,7 +33,7 @@ pub use self::{
     immutable::Conversation,
     mutable::{
         ConversationMut,
-        decrypt::{BufferedDecryptedMessage, DecryptedMessage},
+        decrypt::{BufferedCommit, BufferedDecryptedMessage, Commit, DecryptedMessage, Proposal, Text},
     },
     welcome::WelcomeMessage,
 };

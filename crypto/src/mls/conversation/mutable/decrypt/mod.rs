@@ -33,52 +33,107 @@ use crate::{
     mls::{conversation::Error, credential::ext::CredentialExt as _},
 };
 
-/// Represents the potential items a consumer might require after passing us an encrypted message we
-/// have decrypted for him
+/// A decrypted MLS application message
 #[derive(Debug)]
-pub struct DecryptedMessage {
+pub struct Text {
     /// Decrypted text message
-    pub app_msg: Option<Vec<u8>>,
-    /// Is the conversation still active after receiving this commit aka has the user been removed from the group
-    pub is_active: bool,
+    pub plaintext: Vec<u8>,
+    /// The sender's [ClientId].
+    pub sender_client_id: ClientId,
+    /// Identity claims present in the sender credential
+    pub identity: WireIdentity,
+}
+
+/// The data relevant after a Proposal was processed.
+#[derive(Debug)]
+pub struct Proposal {
     /// Delay time in seconds to feed caller timer for committing
     pub delay: Option<u64>,
-    /// [ClientId] of the sender of the message being decrypted. Only present for application messages.
-    pub sender_client_id: Option<ClientId>,
     /// Identity claims present in the sender credential
-    ///
-    /// Present for all messages
     pub identity: WireIdentity,
-    /// Only set when the decrypted message is a commit.
-    ///
+}
+
+/// The data relevant after a Commit was processed.
+#[derive(Debug)]
+pub struct Commit {
+    /// Is the conversation still active after receiving this commit, i.e., has the user been removed from the group
+    pub is_active: bool,
     /// Contains buffered messages for next epoch which were received before the commit creating the epoch
     /// because the DS did not fan them out in order.
     pub buffered_messages: Option<Vec<BufferedDecryptedMessage>>,
-}
-
-/// Type safe recursion of [DecryptedMessage]
-#[derive(Debug)]
-pub struct BufferedDecryptedMessage {
-    /// see [DecryptedMessage::app_msg]
-    pub app_msg: Option<Vec<u8>>,
-    /// see [DecryptedMessage::is_active]
-    pub is_active: bool,
-    /// see [DecryptedMessage::delay]
-    pub delay: Option<u64>,
-    /// see [DecryptedMessage::sender_client_id]
-    pub sender_client_id: Option<ClientId>,
-    /// see [DecryptedMessage::identity]
+    /// Identity claims present in the sender credential
     pub identity: WireIdentity,
 }
 
+/// The data relevant after a buffered Commit was processed.
+#[derive(Debug)]
+pub struct BufferedCommit {
+    /// Is the conversation still active after receiving this commit, i.e., has the user been removed from the group
+    pub is_active: bool,
+    /// Identity claims present in the sender credential
+    pub identity: WireIdentity,
+}
+
+/// Represents the potential items a consumer might require after passing us an encrypted message we
+/// have decrypted for him
+#[derive(Debug, enum_as_inner::EnumAsInner)]
+pub enum DecryptedMessage {
+    /// The decrypted message is a text message.
+    Text(Text),
+    /// The decrypted message is a commit.
+    Commit(Commit),
+    /// The decrypted message is a proposal.
+    Proposal(Proposal),
+}
+
+impl DecryptedMessage {
+    /// Identity claims present in the sender credential
+    pub fn identity(&self) -> &WireIdentity {
+        match self {
+            DecryptedMessage::Text(text) => &text.identity,
+            DecryptedMessage::Commit(commit) => &commit.identity,
+            DecryptedMessage::Proposal(proposal) => &proposal.identity,
+        }
+    }
+}
+
+/// A decrypted message that was buffered due to out-of-order delivery by the delivery service.
+/// It represents messages for the new epoch that arrived before the commit that created it.
+#[derive(Debug)]
+pub enum BufferedDecryptedMessage {
+    /// The decrypted message is a text message.
+    Text(Text),
+    /// The decrypted message is a commit.
+    Commit(BufferedCommit),
+    /// The decrypted message is a proposal.
+    Proposal(Proposal),
+}
+
 impl From<DecryptedMessage> for BufferedDecryptedMessage {
-    fn from(from: DecryptedMessage) -> Self {
-        Self {
-            app_msg: from.app_msg,
-            is_active: from.is_active,
-            delay: from.delay,
-            sender_client_id: from.sender_client_id,
-            identity: from.identity,
+    fn from(value: DecryptedMessage) -> Self {
+        match value {
+            DecryptedMessage::Text(text) => Self::Text(text),
+            DecryptedMessage::Commit(commit) => Self::Commit({
+                BufferedCommit {
+                    is_active: commit.is_active,
+                    identity: commit.identity,
+                }
+            }),
+            DecryptedMessage::Proposal(proposal) => Self::Proposal(proposal),
+        }
+    }
+}
+
+impl From<BufferedDecryptedMessage> for DecryptedMessage {
+    fn from(value: BufferedDecryptedMessage) -> Self {
+        match value {
+            BufferedDecryptedMessage::Text(text) => Self::Text(text),
+            BufferedDecryptedMessage::Commit(buffered_commit) => Self::Commit(Commit {
+                is_active: buffered_commit.is_active,
+                buffered_messages: None,
+                identity: buffered_commit.identity,
+            }),
+            BufferedDecryptedMessage::Proposal(proposal) => Self::Proposal(proposal),
         }
     }
 }
