@@ -88,6 +88,10 @@ impl CertificateBundle {
             SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ED25519 => HashAlgorithm::SHA256,
             SignatureScheme::ECDSA_SECP384R1_SHA384 => HashAlgorithm::SHA384,
             SignatureScheme::ED448 | SignatureScheme::ECDSA_SECP521R1_SHA512 => HashAlgorithm::SHA512,
+            // ML-DSA has no X.509 credential path
+            SignatureScheme::MLDSA44 | SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87 => {
+                return Err(Error::UnsupportedAlgorithm);
+            }
         };
 
         let identity = leaf
