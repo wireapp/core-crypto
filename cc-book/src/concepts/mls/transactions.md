@@ -145,3 +145,68 @@ val bytes = ctx.getData()
 
 These were implemented for the purpose of checkpointing during initial sync / batch decryption, but are not limited to
 that use.
+
+## Transaction Cancellation (Swift)
+
+The foreign-language wrappers can associate a `CoreCryptoCancellationToken` with a transaction, i.e., this is invisible
+to users of the wrappers. However, currently **only the Swift wrapper** supports cancellable transactions. The
+`CoreCryptoCancellationToken` is created through FFI but lives on the Rust side. Once the transaction owns the
+transaction semaphore, Rust publishes the token in the `CoreCrypto` cancellation slot and, when a PKI environment
+exists, in its separate slot. The returned guards keep the slots filled for exactly the lifetime of the transaction.
+
+The following shows a transaction with a cancellable foreign callback, such as `MlsTransport.sendCommitBundle()` or a
+`PkiEnvironment` hook. A transaction that does not invoke such a callback skips the callback portion of the sequence.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Foreign as Foreign language Wrapper
+    participant Tx as Rust transaction
+    participant Slots as Rust cancellation slots
+    participant Callback as Foreign callback
+
+    Foreign->>Foreign: create cancellation token
+    Foreign->>Tx: start cancellable transaction
+    Tx->>Tx: race cancellation against semaphore acquisition
+
+    alt Token is cancelled before acquisition
+        Foreign->>Tx: cancel token
+        Tx-->>Foreign: TransactionCanceled (slots remain empty)
+    else Transaction semaphore is acquired
+        Tx->>Slots: enter token in CoreCrypto slot
+        Slots-->>Tx: cancellation guard
+        opt PKI environment exists
+            Tx->>Slots: enter token in PKI slot
+            Slots-->>Tx: cancellation guard
+        end
+        Tx->>Foreign: execute command with context
+        Foreign->>Tx: context operation
+        Tx->>Slots: read active token
+        Slots-->>Tx: shared token
+        Tx->>Callback: invoke callback and race its result against cancellation
+
+        alt Command finishes first
+            Callback-->>Tx: callback result
+            Tx-->>Foreign: context operation result
+            Foreign-->>Tx: command result
+            alt Command succeeded
+                Tx->>Tx: commit
+            else Command failed
+                Tx->>Tx: abort
+            end
+        else Token is cancelled while callback is running
+            Foreign->>Tx: cancel token
+            Tx-xCallback: drop callback future, causing UniFFI to cancel the foreign task
+            Tx->>Tx: drop command future and abort
+        end
+
+        Tx->>Slots: drop guards and clear both slots
+        Tx->>Tx: drop context and release semaphore
+        Tx-->>Foreign: success, command error, or TransactionCanceled
+    end
+```
+
+The guards are deliberately created after the transaction context. Rust drops local values in reverse declaration order,
+so both slots are cleared before dropping the context that releases the semaphore. Consequently, the next transaction
+cannot observe the previous transaction's token. If cancellation wins a callback race, dropping the Rust future also
+causes UniFFI's generated foreign-language binding to cancel the task executing that callback.
