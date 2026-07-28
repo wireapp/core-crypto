@@ -142,7 +142,7 @@ checksum = "291e6a250ff86cd4a820112fb8898808a366d8f9f58ce16d1f538353ad55747d"
 dependencies = [
  "anstyle",
  "once_cell_polyfill",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1132,7 +1132,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.19",
  "time",
- "tls_codec",
+ "tls_codec 0.5.0",
  "typed-builder",
  "url",
  "uuid",
@@ -1174,7 +1174,7 @@ dependencies = [
  "smol-macros",
  "testing_logger",
  "thiserror 2.0.19",
- "tls_codec",
+ "tls_codec 0.5.0",
  "uniffi 0.29.5",
  "uniffi 0.31.0",
  "uuid",
@@ -2847,7 +2847,7 @@ dependencies = [
  "spinoff",
  "tempfile",
  "thiserror 2.0.19",
- "tls_codec",
+ "tls_codec 0.5.0",
  "tokio",
  "tree-sitter",
  "tree-sitter-typescript",
@@ -3032,7 +3032,7 @@ dependencies = [
  "serde-transcode",
  "serde_json",
  "smol-macros",
- "tls_codec",
+ "tls_codec 0.5.0",
  "wire-e2e-identity",
 ]
 
@@ -3563,7 +3563,7 @@ dependencies = [
  "serde",
  "subtle",
  "thiserror 1.0.69",
- "tls_codec",
+ "tls_codec 0.4.2",
  "web-time",
  "x509-cert",
 ]
@@ -3583,7 +3583,7 @@ dependencies = [
  "rand_core 0.6.4",
  "secrecy",
  "serde",
- "tls_codec",
+ "tls_codec 0.4.2",
 ]
 
 [[package]]
@@ -3599,7 +3599,7 @@ dependencies = [
  "rand_core 0.6.4",
  "serde",
  "signature",
- "tls_codec",
+ "tls_codec 0.4.2",
  "zeroize",
 ]
 
@@ -3616,7 +3616,7 @@ dependencies = [
  "percent-encoding",
  "secrecy",
  "serde",
- "tls_codec",
+ "tls_codec 0.4.2",
  "uuid",
  "web-time",
  "x509-cert",
@@ -4609,7 +4609,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5203,7 +5203,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a766e1110788c36f4fa1c2b71b387a7815aa65f88ce0229841826633d93723e"
 dependencies = [
  "libc",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5517,7 +5517,7 @@ dependencies = [
  "getrandom 0.4.1",
  "once_cell",
  "rustix 1.1.4",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5701,7 +5701,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0de2e01245e2bb89d6f05801c564fa27624dbd7b1846859876c7dad82e90bf6b"
 dependencies = [
  "serde",
- "tls_codec_derive",
+ "tls_codec_derive 0.4.2",
+ "zeroize",
+]
+
+[[package]]
+name = "tls_codec"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18cc98286004cea38f717e2b03d990fc774fbfd38a82720de40e5c94365067c8"
+dependencies = [
+ "tls_codec_derive 0.5.0",
  "zeroize",
 ]
 
@@ -5710,6 +5720,17 @@ name = "tls_codec_derive"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d2e76690929402faae40aebdda620a2c0e25dd6d3b9afe48867dfd95991f4bd"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
+
+[[package]]
+name = "tls_codec_derive"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "674f41dd95f76cdeb005c83f9444e20cf43daebef37cde9e49a9ca6f4e87b423"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -7340,7 +7361,7 @@ dependencies = [
  "sha1",
  "signature",
  "spki",
- "tls_codec",
+ "tls_codec 0.4.2",
 ]
 
 [[package]]
