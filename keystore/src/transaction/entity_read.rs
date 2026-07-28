@@ -6,12 +6,12 @@ use std::{borrow::Cow, sync::Arc};
 use crate::{
     CryptoKeystoreResult,
     traits::{BorrowPrimaryKey, Entity, KeyType, SearchableEntity},
-    transaction::KeystoreTransaction,
+    transaction::Transaction,
 };
 
 use super::dynamic_dispatch::EntityId;
 
-impl KeystoreTransaction {
+impl Transaction {
     async fn find_in_cache<E>(&self, entity_id: &EntityId) -> Option<Arc<E>>
     where
         E: 'static + Entity + Send + Sync,

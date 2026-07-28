@@ -6,10 +6,10 @@ mod filesystem;
 mod idb_migration;
 #[cfg(target_os = "ios")]
 mod ios_wal_compat;
-mod keystore_transaction;
 mod migrations;
 #[cfg(target_os = "unknown")]
 mod os_unknown;
+mod transaction;
 
 use std::sync::Arc;
 
@@ -23,7 +23,7 @@ pub(crate) use self::filesystem::Filesystem;
 pub use self::idb_migration::{delete_legacy_idb, legacy_idb_exists};
 pub use self::migrations::migrate_db_key_type_to_bytes;
 use crate::{
-    CryptoKeystoreResult, DatabaseKey, connection::migrations::MigrationTarget, transaction::KeystoreTransaction,
+    CryptoKeystoreResult, DatabaseKey, connection::migrations::MigrationTarget, transaction::Transaction,
     unique_arc::UniqueWeak,
 };
 
@@ -36,7 +36,7 @@ fn log_query(event: TraceEvent) {
 
 // Intentionally not `Clone`; outer users should wrap this entire thing in an `Arc` (or `Arc<Mutex<Option<Self>>>`
 // etc) as required for their desired semantics.
-#[derive(Debug)]
+#[derive(derive_more::Debug)]
 pub struct Database {
     // internal connection; mutexed in order to ensure unique access
     // and provide `Sync`
@@ -44,7 +44,8 @@ pub struct Database {
     // handler with which to delete the database;
     // mutexed to provide `Sync`
     pub(crate) filesystem: Mutex<Box<dyn Filesystem>>,
-    pub(crate) transaction: Mutex<Option<UniqueWeak<KeystoreTransaction>>>,
+    #[debug(skip)]
+    pub(crate) transaction: Mutex<Option<UniqueWeak<Transaction>>>,
     // we need this `Arc` so we can create an owned guard, so that
     // `self.transaction` doesn't need a self-referential lifetime.
     transaction_semaphore: Arc<Semaphore>,

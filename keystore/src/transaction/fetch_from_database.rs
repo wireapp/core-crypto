@@ -11,12 +11,12 @@ use async_trait::async_trait;
 use crate::{
     CryptoKeystoreResult,
     traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, KeyType, SearchableEntity},
-    transaction::KeystoreTransaction,
+    transaction::Transaction,
 };
 
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait)]
-impl FetchFromDatabase for KeystoreTransaction {
+impl FetchFromDatabase for Transaction {
     async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<E>>
     where
         E: 'static + Entity + Clone + Send + Sync,

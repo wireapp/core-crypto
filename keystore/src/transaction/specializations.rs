@@ -6,12 +6,12 @@ use crate::{
     CryptoKeystoreResult,
     entities::{MlsPendingMessage, PersistedMlsGroup},
     traits::{BorrowPrimaryKey, KeyType as _},
-    transaction::KeystoreTransaction,
+    transaction::Transaction,
 };
 
 use super::dynamic_dispatch::EntityId;
 
-impl KeystoreTransaction {
+impl Transaction {
     pub(crate) async fn child_groups(
         &self,
         entity: PersistedMlsGroup,

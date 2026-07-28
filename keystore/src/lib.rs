@@ -21,4 +21,5 @@ pub use self::{
     database_key::DatabaseKey,
     error::{CryptoKeystoreError, CryptoKeystoreResult},
     mls::{deser, ser},
+    transaction::Transaction,
 };

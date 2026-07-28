@@ -17,17 +17,24 @@ use crate::{
 
 pub(crate) mod dynamic_dispatch;
 
-/// This represents a transaction, where all operations will be done in memory and committed at the
-/// end
-#[derive(Debug)]
-pub struct KeystoreTransaction {
+/// This is an in-flight transaction: all operations are buffered in memory, and only
+/// applied to the database on [`commit`][UniqueArc<Self>::commit].
+///
+/// Dropping the transaction without committing performs an implicit rollback.
+///
+/// This type is always wrapped in a [`UniqueArc`], which keeps things efficient,
+/// at the cost of prohibiting `Clone`. In case you need to share this around,
+/// there are weak references available via [`UniqueArc::downgrade`].
+/// Alternately, wrap the entire thing in an `Arc<Mutex<Option<UniqueArc<Self>>>>` or similar.
+/// Just be aware that you'll need to take the unique arc out in order to commit.
+pub struct Transaction {
     cache: RwLock<OrderMap<EntityId, dynamic_dispatch::Entity>>,
     deleted: RwLock<HashSet<EntityId>>,
     _semaphore_guard: Arc<SemaphoreGuardArc>,
     database: Arc<Database>,
 }
 
-impl KeystoreTransaction {
+impl Transaction {
     /// Instantiate a new transaction.
     ///
     /// Requires a semaphore guard to ensure that only one exists at a time.
@@ -85,11 +92,11 @@ impl KeystoreTransaction {
     }
 }
 
-impl UniqueArc<KeystoreTransaction> {
+impl UniqueArc<Transaction> {
     /// Persists all the operations in the database. It will effectively open a transaction
     /// internally, perform all the buffered operations and commit.
     pub async fn commit(self) -> Result<(), CryptoKeystoreError> {
-        let KeystoreTransaction {
+        let Transaction {
             cache,
             deleted,
             database,
