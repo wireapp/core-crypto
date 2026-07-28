@@ -15,8 +15,10 @@ runs:
   steps:
     - name: map task to target
       shell: bash
+      env:
+        TASK: ${{ inputs.task }}
       run: |
-        case "${{ inputs.task }}" in
+        case "$TASK" in
           android-armv7)
             target="armv7-linux-androideabi"
             ;;
@@ -27,7 +29,7 @@ runs:
             target="x86_64-linux-android"
             ;;
           *)
-            echo "Unknown task: ${{ inputs.task }}" >&2
+            echo "Unknown task: $TASK" >&2
             exit 1
             ;;
         esac

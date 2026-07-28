@@ -40,7 +40,7 @@ jobs:
         run: echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
       - name: Force fetch the tag
-        run: git fetch -f origin ${{ github.ref }}:${{ github.ref }}
+        run: git fetch -f origin "$GITHUB_REF:$GITHUB_REF"
 
       - name: Ensure the tag is signed
         run: |

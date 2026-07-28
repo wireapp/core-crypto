@@ -140,7 +140,9 @@ runs:
     - name: Prepare artifact
       run: |
         mkdir -p .stamps
-        printf '%s\n' "${{ inputs.target-path }}" | tar -czf artifact.tar.gz -T - .stamps
+        printf '%s\n' "$TARGET_PATH" | tar -czf artifact.tar.gz -T - .stamps
+      env:
+        TARGET_PATH: ${{ inputs.target-path }}
       shell: bash -euo pipefail {0}
 
     - name: Upload artifact if it doesn't exist for this workflow run
