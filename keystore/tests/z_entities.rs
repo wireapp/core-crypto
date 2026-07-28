@@ -46,21 +46,25 @@ macro_rules! test_for_entity {
 
 #[cfg(test)]
 mod tests_impl {
-    use std::any::Any;
+    use std::{any::Any, sync::Arc};
 
     use core_crypto_keystore::{
-        entities::{MlsPendingMessage, StoredCredential},
+        entities::{MlsPendingMessage, PersistedMlsPendingGroup, StoredCredential},
         traits::{Entity, EntityDatabaseMutation, FetchFromDatabase as _, PrimaryKey as _},
     };
 
     use super::common::*;
-    use crate::{ENTITY_COUNT, utils::EntityRandomUpdateExt};
+    use crate::{
+        ENTITY_COUNT,
+        utils::{EntityRandomExt, EntityRandomUpdateExt},
+    };
 
-    pub(crate) async fn can_save_entity<E>(store: &CryptoKeystore) -> E
+    pub(crate) async fn can_save_entity<E>(store: &Arc<CryptoKeystore>) -> E
     where
         E: 'static + Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
     {
         let mut entity = E::random();
+        let tx = store.new_transaction().await.unwrap();
 
         // pending messages have a foreign key constraint which must be satisfied
         {
@@ -69,19 +73,16 @@ mod tests_impl {
                 let pending_groups = PersistedMlsPendingGroup::random();
                 pending_message.foreign_id = pending_groups.id.clone();
 
-                let tx = store.new_transaction().await.unwrap();
-                store.save(pending_groups).await.unwrap();
-                tx.commit().await.unwrap();
+                tx.save(pending_groups).await.unwrap();
             }
         }
 
-        let tx = store.new_transaction().await.unwrap();
-        store.save(entity.clone()).await.unwrap();
+        tx.save(entity.clone()).await.unwrap();
         tx.commit().await.unwrap();
         entity
     }
 
-    pub(crate) async fn can_find_entity<E>(store: &CryptoKeystore, entity: &E)
+    pub(crate) async fn can_find_entity<E>(store: &Arc<CryptoKeystore>, entity: &E)
     where
         E: 'static
             + Clone
@@ -118,7 +119,7 @@ mod tests_impl {
         };
     }
 
-    pub(crate) async fn can_update_entity<E>(store: &CryptoKeystore, entity: &mut E)
+    pub(crate) async fn can_update_entity<E>(store: &Arc<CryptoKeystore>, entity: &mut E)
     where
         E: 'static
             + Clone
@@ -131,31 +132,37 @@ mod tests_impl {
             + Sync,
     {
         entity.random_update();
-        store.save(entity.clone()).await.unwrap();
+        let tx = store.new_transaction().await.unwrap();
+        tx.save(entity.clone()).await.unwrap();
+        tx.commit().await.unwrap();
         let entity2: E = store.get(&entity.primary_key()).await.unwrap().unwrap();
         assert_eq!(*entity, entity2);
     }
 
-    pub(crate) async fn can_remove_entity<E>(store: &CryptoKeystore, entity: E)
+    pub(crate) async fn can_remove_entity<E>(store: &Arc<CryptoKeystore>, entity: E)
     where
         E: 'static + Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
     {
-        store.remove::<E>(&entity.primary_key()).await.unwrap();
+        let tx = store.new_transaction().await.unwrap();
+        tx.remove::<E>(&entity.primary_key()).await.unwrap();
+        tx.commit().await.unwrap();
         let entity2: Option<E> = store.get(&entity.primary_key()).await.unwrap();
         assert!(entity2.is_none());
     }
 
-    pub(super) async fn insert_count_entities<E>(store: &CryptoKeystore)
+    pub(super) async fn insert_count_entities<E>(store: &Arc<CryptoKeystore>)
     where
         E: Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
     {
+        let tx = store.new_transaction().await.unwrap();
         for _ in 0..ENTITY_COUNT {
             let entity = E::random();
-            store.save(entity).await.unwrap();
+            tx.save(entity).await.unwrap();
         }
+        tx.commit().await.unwrap();
     }
 
-    pub(crate) async fn can_list_entities_with_find_all<E>(store: &CryptoKeystore, ignore_entity_count: bool)
+    pub(crate) async fn can_list_entities_with_find_all<E>(store: &Arc<CryptoKeystore>, ignore_entity_count: bool)
     where
         E: 'static + Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
     {
@@ -206,23 +213,21 @@ mod tests {
         let store = context.store();
 
         let mut entity = StoredE2eiEnrollment::random();
-        store.save(entity.clone()).await.unwrap();
-        store.commit_transaction().await.unwrap();
+        let tx = store.new_transaction().await.unwrap();
+        tx.save(entity.clone()).await.unwrap();
+        tx.commit().await.unwrap();
 
         // Start a new transaction so that the database constraints will trigger on committing the
         // transaction
-        store.new_transaction().await.unwrap();
+        let tx = store.new_transaction().await.unwrap();
         entity.random_update();
-        store.save(entity).await.unwrap();
-        let error = store.commit_transaction().await.unwrap_err();
+        tx.save(entity).await.unwrap();
+        let error = tx.commit().await.unwrap_err();
 
         assert!(matches!(
             error,
             CryptoKeystoreError::AlreadyExists(StoredE2eiEnrollment::COLLECTION_NAME)
         ));
-
-        // It's required by cleanup to have a running transaction before finishing the test
-        store.new_transaction().await.unwrap();
     }
 
     #[apply(all_storage_types)]
@@ -237,14 +242,15 @@ mod tests {
         let consumer_data = store.get_unique::<ConsumerData>().await.unwrap();
         assert!(consumer_data.is_none());
 
+        let tx = store.new_transaction().await.unwrap();
+
         eprintln!("saving some consumer data");
         const DATA: &[u8] = b"here is some arbitrary data";
-        store
-            .save(ConsumerData {
-                content: DATA.to_owned(),
-            })
-            .await
-            .unwrap();
+        tx.save(ConsumerData {
+            content: DATA.to_owned(),
+        })
+        .await
+        .unwrap();
 
         // from transaction
         eprintln!("checking retrieving consumer data from active transaction");
@@ -253,9 +259,7 @@ mod tests {
         assert_eq!(consumer_data.content, DATA);
 
         eprintln!("committing transaction");
-        store.commit_transaction().await.unwrap();
-        // don't forget to open a new (blank) transaction
-        store.new_transaction().await.unwrap();
+        tx.commit().await.unwrap();
 
         // from storage (fallthrough)
         eprintln!("checking retrieving consumer data from storage");
