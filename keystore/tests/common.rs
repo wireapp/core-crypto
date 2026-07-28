@@ -6,7 +6,7 @@ use std::{
 };
 
 pub(crate) use core_crypto_keystore::{Database as CryptoKeystore, DatabaseKey};
-use core_crypto_keystore::{Database, UniqueArc, transaction::KeystoreTransaction};
+use core_crypto_keystore::{Database, UniqueArc, transaction::Transaction};
 pub(crate) use rstest::*;
 pub(crate) use rstest_reuse::{self, *};
 
