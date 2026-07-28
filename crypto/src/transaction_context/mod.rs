@@ -18,6 +18,7 @@ pub mod conversation;
 mod credential;
 pub mod e2e_identity;
 mod error;
+mod inner_guard;
 pub mod key_package;
 #[cfg(feature = "proteus")]
 pub mod proteus;
@@ -30,21 +31,21 @@ pub mod test_utils;
 /// causes data to be persisted needs to be done through this struct. This struct will buffer all
 /// operations in memory and when [TransactionContext::finish] is called, it will persist the data into
 /// the keystore.
+///
+/// Due to uniffi's design, we can't force the context to be dropped after the transaction is
+/// committed. To work around that keep everything important in `TransactionContextInner`;
+/// see `inner` and `take_inner`.
 #[derive(Debug, Clone)]
 pub struct TransactionContext {
-    inner: Arc<RwLock<TransactionContextInner>>,
+    inner: Arc<RwLock<Option<TransactionContextInner>>>,
 }
 
-/// Due to uniffi's design, we can't force the context to be dropped after the transaction is
-/// committed. To work around that we switch the value to `Invalid` when the context is finished
-/// and throw errors if something is called
-#[derive(Debug, Clone)]
-enum TransactionContextInner {
-    Valid {
-        core_crypto: Arc<CoreCrypto>,
-        pending_epoch_changes: Arc<Mutex<Vec<(ConversationId, u64)>>>,
-    },
-    Invalid,
+#[derive(derive_more::Debug)]
+struct TransactionContextInner {
+    core_crypto: Arc<CoreCrypto>,
+    pending_epoch_changes: Arc<Mutex<Vec<(ConversationId, u64)>>>,
+    #[debug(skip)]
+    transaction: UniqueArc<core_crypto_keystore::Transaction>,
 }
 
 impl CoreCrypto {
@@ -58,19 +59,17 @@ impl CoreCrypto {
 
 impl TransactionContext {
     async fn new(core_crypto: Arc<CoreCrypto>) -> Result<Self> {
-        core_crypto
+        let transaction = core_crypto
             .database
             .new_transaction()
             .await
             .map_err(OpenMlsError::wrap("creating new transaction"))?;
         Ok(Self {
-            inner: Arc::new(
-                TransactionContextInner::Valid {
-                    core_crypto,
-                    pending_epoch_changes: Default::default(),
-                }
-                .into(),
-            ),
+            inner: Arc::new(RwLock::new(Some(TransactionContextInner {
+                core_crypto,
+                pending_epoch_changes: Default::default(),
+                transaction,
+            }))),
         })
     }
 
@@ -321,5 +320,11 @@ impl TransactionContext {
             Err(CryptoKeystoreError::NotFound(..)) => Ok(None),
             Err(err) => Err(KeystoreError::wrap("finding unique consumer data")(err).into()),
         }
+    }
+}
+
+impl TransactionContextInner {
+    pub(crate) fn transaction(&self) -> &core_crypto_keystore::Transaction {
+        &self.transaction
     }
 }
