@@ -15,7 +15,7 @@ macro_rules! pat_to_bool {
 }
 
 macro_rules! test_for_entity {
-    ($test_name:ident, $entity:ident $(ignore_entity_count:$ignore_entity_count:literal)? $(ignore_update:$ignore_update:literal)? $(ignore_find_many:$ignore_find_many:literal)?) => {
+    ($test_name:ident, $entity:ident $(ignore_entity_count:$ignore_entity_count:literal)? $(ignore_update:$ignore_update:literal)? $(ignore_remove:$ignore_remove:literal)? $(ignore_find_many:$ignore_find_many:literal)?) => {
         #[apply(all_storage_types)]
         async fn $test_name(context: KeystoreTestContext) {
             let store = context.store();
@@ -23,19 +23,22 @@ macro_rules! test_for_entity {
             let mut entity = crate::tests_impl::can_save_entity::<$entity>(&store).await;
 
             crate::tests_impl::can_find_entity::<$entity>(&store, &entity).await;
-            let ignore_update = pat_to_bool!($($ignore_update)?);
 
             // TODO: entities which do not support update tend not to have a primary key constraint. Tracking issue: WPB-9649
             // This can cause complications with the "default" remove implementation which does not support deleting many entities.
             // We should have an automated way to test this here
 
-            if !ignore_update {
+            if !pat_to_bool!($($ignore_update)?) {
                 crate::tests_impl::can_update_entity::<$entity>(&store, &mut entity).await;
             }
-            crate::tests_impl::can_remove_entity::<$entity>(&store, entity).await;
+            if !pat_to_bool!($($ignore_remove)?) {
+                crate::tests_impl::can_remove_entity::<$entity>(&store, entity).await;
+            }
 
             let ignore_count = pat_to_bool!($($ignore_entity_count)?);
-            crate::tests_impl::insert_count_entities::<$entity>(&store).await;
+            if !ignore_count {
+                crate::tests_impl::insert_count_entities::<$entity>(&store).await;
+            }
             crate::tests_impl::can_list_entities_with_find_all::<$entity>(&store, ignore_count).await;
         }
     };
@@ -55,10 +58,26 @@ mod tests_impl {
 
     pub(crate) async fn can_save_entity<E>(store: &CryptoKeystore) -> E
     where
-        E: Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
+        E: 'static + Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
     {
-        let entity = E::random();
+        let mut entity = E::random();
+
+        // pending messages have a foreign key constraint which must be satisfied
+        {
+            let any_e: &mut dyn Any = &mut entity;
+            if let Some(pending_message) = any_e.downcast_mut::<MlsPendingMessage>() {
+                let pending_groups = PersistedMlsPendingGroup::random();
+                pending_message.foreign_id = pending_groups.id.clone();
+
+                let tx = store.new_transaction().await.unwrap();
+                store.save(pending_groups).await.unwrap();
+                tx.commit().await.unwrap();
+            }
+        }
+
+        let tx = store.new_transaction().await.unwrap();
         store.save(entity.clone()).await.unwrap();
+        tx.commit().await.unwrap();
         entity
     }
 
@@ -163,7 +182,7 @@ mod tests {
 
     test_for_entity!(test_persisted_mls_group, PersistedMlsGroup);
     test_for_entity!(test_persisted_mls_pending_group, PersistedMlsPendingGroup);
-    test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_update:true ignore_find_many:true);
+    test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_entity_count: true ignore_update:true ignore_remove:true ignore_find_many:true);
     test_for_entity!(test_mls_credential, StoredCredential ignore_update:true);
     test_for_entity!(test_mls_keypackage, StoredKeypackage);
     test_for_entity!(test_mls_psk_bundle, StoredPskBundle);
