@@ -1,13 +1,16 @@
 version: 2
 updates:
   - package-ecosystem: "cargo"
+    rebase-strategy: "disabled"
     directory: "/"
     schedule:
       interval: "daily"
     open-pull-requests-limit: 30
     cooldown:
       default-days: 7
+
   - package-ecosystem: "bun"
+    rebase-strategy: "disabled"
     directory: "crypto-ffi/bindings/js"
     schedule:
       interval: "daily"
@@ -15,9 +18,12 @@ updates:
       js-dependencies:
         patterns:
           - "*"
+
     cooldown:
       default-days: 7
+
   - package-ecosystem: "github-actions"
+    rebase-strategy: "disabled"
     directories: # actions have to be listed explicitly
       - "/" # workflows
       - "/.github/actions/**"
@@ -25,7 +31,9 @@ updates:
       interval: "weekly"
     cooldown:
       default-days: 7
+
   - package-ecosystem: "rust-toolchain"
+    rebase-strategy: "disabled"
     directory: /
     schedule:
       interval: "monthly"
