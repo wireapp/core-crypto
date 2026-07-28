@@ -55,9 +55,9 @@ mod persisted_mls_groups {
         let entity = random_entity();
         let search_key = get_search_key(&entity);
 
+        let tx = store.new_transaction().await.unwrap();
         store.save(entity.clone()).await.unwrap();
-        store.commit_transaction().await.unwrap();
-        store.new_transaction().await.unwrap();
+        tx.commit().await.unwrap();
 
         let found = store
             .search::<PersistedMlsGroup, ParentGroupId>(&search_key)
@@ -76,11 +76,11 @@ mod persisted_mls_groups {
 
         entities[1].parent_id = entities[0].parent_id.clone();
 
+        let tx = store.new_transaction().await.unwrap();
         for entity in &entities {
             store.save(entity.clone()).await.unwrap();
         }
-        store.commit_transaction().await.unwrap();
-        store.new_transaction().await.unwrap();
+        tx.commit().await.unwrap();
 
         let search_key = get_search_key(&entities[0]);
         let mut found = store
@@ -105,11 +105,11 @@ mod persisted_mls_groups {
             irrelevant_entity.parent_id.as_ref().unwrap()
         );
 
+        let tx = store.new_transaction().await.unwrap();
         for entity in [&relevant_entity, &irrelevant_entity] {
             store.save(entity.clone()).await.unwrap();
         }
-        store.commit_transaction().await.unwrap();
-        store.new_transaction().await.unwrap();
+        tx.commit().await.unwrap();
 
         let search_key = get_search_key(&relevant_entity);
         let found = store
@@ -128,6 +128,7 @@ mod persisted_mls_groups {
         let entity = random_entity();
         let search_key = get_search_key(&entity);
 
+        let _tx = store.new_transaction().await.unwrap();
         store.save(entity.clone()).await.unwrap();
 
         let found = store
@@ -147,9 +148,10 @@ mod persisted_mls_groups {
         let entity = random_entity();
         let search_key = get_search_key(&entity);
 
+        let tx = store.new_transaction().await.unwrap();
         store.save(entity.clone()).await.unwrap();
-        store.commit_transaction().await.unwrap();
-        store.new_transaction().await.unwrap();
+        tx.commit().await.unwrap();
+        let _tx = store.new_transaction().await.unwrap();
 
         store
             .remove_borrowed::<PersistedMlsGroup>(entity.borrow_primary_key())
@@ -221,12 +223,11 @@ mod stored_credential {
 
         let mut entity = random_entity();
 
+        let tx = store.new_transaction().await.unwrap();
         entity.created_at = store.save(entity.clone()).await.unwrap();
+        tx.commit().await.unwrap();
+
         let search_key = get_search_key(&entity);
-
-        store.commit_transaction().await.unwrap();
-        store.new_transaction().await.unwrap();
-
         let found = store
             .search::<StoredCredential, CredentialFindFilters>(&search_key)
             .await
@@ -243,13 +244,12 @@ mod stored_credential {
         entities.sort_unstable_by(|e1, e2| e1.public_key.cmp(&e2.public_key));
         entities[1].ciphersuite = entities[0].ciphersuite;
 
+        let tx = store.new_transaction().await.unwrap();
         for entity in &mut entities {
             entity.created_at = store.save(entity.clone()).await.unwrap();
         }
         entities[1].created_at = entities[0].created_at;
-
-        store.commit_transaction().await.unwrap();
-        store.new_transaction().await.unwrap();
+        tx.commit().await.unwrap();
 
         let search_key = get_search_key(&entities[0]);
         let mut found = store
@@ -273,13 +273,13 @@ mod stored_credential {
         // ensure the irrelevant entity will definitely not accidentally match
         irrelevant_entity.ciphersuite = relevant_entity.ciphersuite + 1;
 
+        let tx = store.new_transaction().await.unwrap();
         for entity in [&mut relevant_entity, &mut irrelevant_entity] {
             entity.created_at = store.save(entity.clone()).await.unwrap();
             // ensure the entities are created in different seconds so they don't accidentally match
             smol::Timer::after(std::time::Duration::from_secs(1)).await;
         }
-        store.commit_transaction().await.unwrap();
-        store.new_transaction().await.unwrap();
+        tx.commit().await.unwrap();
 
         let search_key = get_search_key(&relevant_entity);
         let found = store
@@ -296,6 +296,7 @@ mod stored_credential {
         let _ = env_logger::try_init();
 
         let mut entity = random_entity();
+        let _tx = store.new_transaction().await.unwrap();
         entity.created_at = store.save(entity.clone()).await.unwrap();
         let search_key = get_search_key(&entity);
 
@@ -314,9 +315,10 @@ mod stored_credential {
         let entity = random_entity();
         let search_key = get_search_key(&entity);
 
+        let tx = store.new_transaction().await.unwrap();
         store.save(entity.clone()).await.unwrap();
-        store.commit_transaction().await.unwrap();
-        store.new_transaction().await.unwrap();
+        tx.commit().await.unwrap();
+        let _tx = store.new_transaction().await.unwrap();
 
         store.remove::<StoredCredential>(&entity.primary_key()).await.unwrap();
 

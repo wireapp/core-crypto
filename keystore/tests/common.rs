@@ -6,6 +6,7 @@ use std::{
 };
 
 pub(crate) use core_crypto_keystore::{Database as CryptoKeystore, DatabaseKey};
+use core_crypto_keystore::{Database, UniqueArc, transaction::KeystoreTransaction};
 pub(crate) use rstest::*;
 pub(crate) use rstest_reuse::{self, *};
 
@@ -42,24 +43,23 @@ pub async fn setup(name: impl AsRef<str>, in_memory: bool) -> KeystoreTestContex
     console_error_panic_hook::set_once();
 
     let database = if in_memory {
-        core_crypto_keystore::Database::open_in_memory().expect("Could not open keystore")
+        Database::open_in_memory().expect("Could not open keystore")
     } else {
-        core_crypto_keystore::Database::open(name.as_ref(), &TEST_ENCRYPTION_KEY)
+        Database::open(name.as_ref(), &TEST_ENCRYPTION_KEY)
             .await
             .expect("Could not open keystore")
     };
-    database.new_transaction().await.expect("Could not create transaction");
 
     KeystoreTestContext { store: Some(database) }
 }
 
 pub(crate) struct KeystoreTestContext {
-    store: Option<Arc<core_crypto_keystore::Database>>,
+    store: Option<Arc<Database>>,
 }
 
 impl KeystoreTestContext {
-    pub(crate) fn store(&self) -> &core_crypto_keystore::Database {
-        self.store.as_ref().expect("KeystoreTestFixture store is missing")
+    pub(crate) fn store(&self) -> Arc<Database> {
+        self.store.clone().expect("KeystoreTestFixture store is missing")
     }
 }
 
@@ -69,7 +69,6 @@ impl Drop for KeystoreTestContext {
             let rollback_and_wipe = async move {
                 let db = Arc::into_inner(store)
                     .expect("when a test is dropped there are no more database refs floating around");
-                db.rollback_transaction().await.expect("could not rollback transaction");
                 db.wipe().await.expect("Could not wipe store");
             };
 
