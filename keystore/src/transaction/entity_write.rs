@@ -4,10 +4,10 @@ use super::dynamic_dispatch::EntityId;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
     traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed},
-    transaction::KeystoreTransaction,
+    transaction::Transaction,
 };
 
-impl KeystoreTransaction {
+impl Transaction {
     /// Save an entity into this transaction.
     ///
     /// This is a multi-step process:

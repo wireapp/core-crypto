@@ -7,27 +7,25 @@
 
 use std::sync::Arc;
 
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc, transaction::KeystoreTransaction};
+use crate::{CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc, transaction::Transaction};
 
 /// These impls control the keystore transaction lifecycle.
 impl Database {
     /// Waits for the current transaction to be committed or rolled back, then starts a new one.
-    pub async fn new_transaction(self: &Arc<Self>) -> CryptoKeystoreResult<UniqueArc<KeystoreTransaction>> {
+    pub async fn new_transaction(self: &Arc<Self>) -> CryptoKeystoreResult<UniqueArc<Transaction>> {
         let semaphore = self.transaction_semaphore.acquire_arc().await;
-        KeystoreTransaction::new(semaphore, self.clone()).await
+        Transaction::new(semaphore, self.clone()).await
     }
 
     /// Start a new transaction if no other transaction is currently in progress.
     ///
     /// If a transaction is currently in progress, this will produce a `TransactionInProgress` error.
-    pub async fn try_new_immediate_transaction(
-        self: &Arc<Self>,
-    ) -> CryptoKeystoreResult<UniqueArc<KeystoreTransaction>> {
+    pub async fn try_new_immediate_transaction(self: &Arc<Self>) -> CryptoKeystoreResult<UniqueArc<Transaction>> {
         let semaphore = self
             .transaction_semaphore
             .try_acquire_arc()
             .ok_or(CryptoKeystoreError::TransactionInProgress)?;
-        KeystoreTransaction::new(semaphore, self.clone()).await
+        Transaction::new(semaphore, self.clone()).await
     }
 
     /// Do an operation on a keystore transaction on this database.
@@ -40,10 +38,10 @@ impl Database {
     /// Otherwise, it is rolled back.
     pub async fn transactionally<R>(
         self: &Arc<Self>,
-        operation: impl AsyncFnOnce(&KeystoreTransaction) -> CryptoKeystoreResult<R>,
+        operation: impl AsyncFnOnce(&Transaction) -> CryptoKeystoreResult<R>,
     ) -> CryptoKeystoreResult<R> {
         let semaphore = self.transaction_semaphore.acquire_arc().await;
-        let transaction = KeystoreTransaction::new(semaphore, self.clone()).await?;
+        let transaction = Transaction::new(semaphore, self.clone()).await?;
 
         let result = operation(&transaction).await;
         if result.is_ok() {
@@ -60,7 +58,7 @@ impl Database {
     /// helper to acquire it while creating appropriate errors.
     pub(crate) async fn with_transaction<R>(
         &self,
-        operation: impl AsyncFnOnce(&KeystoreTransaction) -> CryptoKeystoreResult<R>,
+        operation: impl AsyncFnOnce(&Transaction) -> CryptoKeystoreResult<R>,
     ) -> CryptoKeystoreResult<R> {
         let guard = self.transaction.lock().await;
         let transaction = guard
@@ -79,7 +77,7 @@ impl Database {
     pub(super) async fn merge_with_transaction<E>(
         &self,
         persisted_records: Vec<E>,
-        merge: impl AsyncFnOnce(&KeystoreTransaction, Vec<E>) -> CryptoKeystoreResult<Vec<E>>,
+        merge: impl AsyncFnOnce(&Transaction, Vec<E>) -> CryptoKeystoreResult<Vec<E>>,
     ) -> CryptoKeystoreResult<Vec<E>> {
         let guard = self.transaction.lock().await;
         let Some(weak) = guard.as_ref() else {

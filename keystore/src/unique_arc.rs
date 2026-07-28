@@ -84,7 +84,7 @@ struct ArcWithReadGuard<T> {
 ///
 /// This allocation is accessed by calling `with_upgrade` or `with_upgrade_sync` on the `UniqueWeak`, each of which
 /// accepts a function which accepts an `&T` parameter.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UniqueWeak<T> {
     weak: Weak<T>,
     /// Shared with the originating [`UniqueArc`]; a shared lease is held for the duration of each
