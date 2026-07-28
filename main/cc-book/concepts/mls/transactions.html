@@ -36,7 +36,7 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-722af05c.js";
+            window.path_to_searchindex_js = "../../searchindex-cfeae3ca.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../../toc-6ea44124.js"></script>
@@ -314,6 +314,66 @@ val bytes = ctx.getData()
 
 <p>These were implemented for the purpose of checkpointing during initial sync / batch decryption, but are not limited to
 that use.</p>
+<h2 id="transaction-cancellation-swift"><a class="header" href="#transaction-cancellation-swift">Transaction Cancellation (Swift)</a></h2>
+<p>The foreign-language wrappers can associate a <code>CoreCryptoCancellationToken</code> with a transaction, i.e., this is invisible
+to users of the wrappers. However, currently <strong>only the Swift wrapper</strong> supports cancellable transactions. The
+<code>CoreCryptoCancellationToken</code> is created through FFI but lives on the Rust side. Once the transaction owns the
+transaction semaphore, Rust publishes the token in the <code>CoreCrypto</code> cancellation slot and, when a PKI environment
+exists, in its separate slot. The returned guards keep the slots filled for exactly the lifetime of the transaction.</p>
+<p>The following shows a transaction with a cancellable foreign callback, such as <code>MlsTransport.sendCommitBundle()</code> or a
+<code>PkiEnvironment</code> hook. A transaction that does not invoke such a callback skips the callback portion of the sequence.</p>
+<pre class="mermaid">sequenceDiagram
+    autonumber
+    participant Foreign as Foreign language Wrapper
+    participant Tx as Rust transaction
+    participant Slots as Rust cancellation slots
+    participant Callback as Foreign callback
+
+    Foreign-&gt;&gt;Foreign: create cancellation token
+    Foreign-&gt;&gt;Tx: start cancellable transaction
+    Tx-&gt;&gt;Tx: race cancellation against semaphore acquisition
+
+    alt Token is cancelled before acquisition
+        Foreign-&gt;&gt;Tx: cancel token
+        Tx--&gt;&gt;Foreign: TransactionCanceled (slots remain empty)
+    else Transaction semaphore is acquired
+        Tx-&gt;&gt;Slots: enter token in CoreCrypto slot
+        Slots--&gt;&gt;Tx: cancellation guard
+        opt PKI environment exists
+            Tx-&gt;&gt;Slots: enter token in PKI slot
+            Slots--&gt;&gt;Tx: cancellation guard
+        end
+        Tx-&gt;&gt;Foreign: execute command with context
+        Foreign-&gt;&gt;Tx: context operation
+        Tx-&gt;&gt;Slots: read active token
+        Slots--&gt;&gt;Tx: shared token
+        Tx-&gt;&gt;Callback: invoke callback and race its result against cancellation
+
+        alt Command finishes first
+            Callback--&gt;&gt;Tx: callback result
+            Tx--&gt;&gt;Foreign: context operation result
+            Foreign--&gt;&gt;Tx: command result
+            alt Command succeeded
+                Tx-&gt;&gt;Tx: commit
+            else Command failed
+                Tx-&gt;&gt;Tx: abort
+            end
+        else Token is cancelled while callback is running
+            Foreign-&gt;&gt;Tx: cancel token
+            Tx-xCallback: drop callback future, causing UniFFI to cancel the foreign task
+            Tx-&gt;&gt;Tx: drop command future and abort
+        end
+
+        Tx-&gt;&gt;Slots: drop guards and clear both slots
+        Tx-&gt;&gt;Tx: drop context and release semaphore
+        Tx--&gt;&gt;Foreign: success, command error, or TransactionCanceled
+    end
+</pre>
+
+<p>The guards are deliberately created after the transaction context. Rust drops local values in reverse declaration order,
+so both slots are cleared before dropping the context that releases the semaphore. Consequently, the next transaction
+cannot observe the previous transaction’s token. If cancellation wins a callback race, dropping the Rust future also
+causes UniFFI’s generated foreign-language binding to cancel the task executing that callback.</p>
 
                     </main>
 
