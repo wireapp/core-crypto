@@ -190,7 +190,7 @@ impl AcmeOrder {
         let same_display_name = a.display_name == b.display_name;
         let same_domain = a.domain == b.domain;
         if !(same_handle && same_display_name && same_domain) {
-            return Err(AcmeOrderError::WrongIdentifiers)?;
+            Err(AcmeOrderError::WrongIdentifiers)?;
         }
 
         let now = time::OffsetDateTime::now_utc().unix_timestamp();
@@ -201,7 +201,7 @@ impl AcmeOrder {
             .map(|expires| expires < now)
             .unwrap_or_default();
         if is_expired {
-            return Err(AcmeOrderError::Expired)?;
+            Err(AcmeOrderError::Expired)?;
         }
 
         let is_after = self
@@ -210,7 +210,7 @@ impl AcmeOrder {
             .map(|not_after| not_after < now)
             .unwrap_or_default();
         if is_after {
-            return Err(AcmeOrderError::Expired)?;
+            Err(AcmeOrderError::Expired)?;
         }
 
         let is_before = self
@@ -219,7 +219,7 @@ impl AcmeOrder {
             .map(|not_before| now < not_before)
             .unwrap_or_default();
         if is_before {
-            return Err(AcmeOrderError::NotYetValid)?;
+            Err(AcmeOrderError::NotYetValid)?;
         }
 
         Ok(())

@@ -105,7 +105,7 @@ impl AcmeAuthz {
                 .map(time::OffsetDateTime::unix_timestamp)
                 .is_some_and(|expires| expires < now);
             if is_expired {
-                return Err(AcmeAuthzError::Expired)?;
+                Err(AcmeAuthzError::Expired)?;
             }
 
             // RFC 8555 security considerations

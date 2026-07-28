@@ -284,7 +284,7 @@ pub(crate) async fn start_acme_server(ca_cfg: &CaCfg) -> AcmeServer {
     .await;
 
     let port = node.get_host_port_ipv4(PORT).await.unwrap();
-    let uri = format!("https://{}:{}", &ca_cfg.host, port);
+    let uri = format!("https://{}:{}", ca_cfg.host, port);
     let ca_cert = ca_cert(&host_volume);
 
     let ip = std::net::IpAddr::V4("127.0.0.1".parse().unwrap());

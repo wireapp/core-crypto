@@ -48,7 +48,7 @@ impl PkiEnvironmentHooks for TestPkiEnvironmentHooks {
         };
 
         let req = req.body(body);
-        log::debug!("HTTP request:\n{:#?}", &req);
+        log::debug!("HTTP request:\n{:#?}", req);
 
         let resp = req.send().await.map_err(|err| err.to_string())?;
         let status = resp.status();
@@ -68,7 +68,7 @@ impl PkiEnvironmentHooks for TestPkiEnvironmentHooks {
             body,
         };
 
-        log::debug!("HTTP response:\n{:#?}", &response);
+        log::debug!("HTTP response:\n{:#?}", response);
         Ok(response)
     }
 

@@ -114,7 +114,7 @@ impl Display for X509TestChain {
             write!(
                 f,
                 "{}",
-                &actor
+                actor
                     .certificate
                     .certificate
                     .to_pem(x509_cert::der::pem::LineEnding::LF)
