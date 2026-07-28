@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["migrate_db_key_type_to_bytes"],"struct":["Database"]};
