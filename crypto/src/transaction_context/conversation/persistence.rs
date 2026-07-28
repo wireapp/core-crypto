@@ -32,7 +32,7 @@ impl TransactionContext {
             "getting session from tx context to persist",
         ))?;
 
-        // we're actually out of order from the docs, beause this leads to a better data flow
+        // we're actually out of order from the docs, because this leads to a better data flow
         let database = self.database().await?;
         let group_state = core_crypto_keystore::ser(&group).map_err(KeystoreError::wrap("serializing group state"))?;
         database

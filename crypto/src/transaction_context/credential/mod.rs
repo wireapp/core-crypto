@@ -18,8 +18,9 @@ impl TransactionContext {
         &self,
         mut credential: Credential,
     ) -> Result<Arc<Credential>> {
+        let inner = self.inner().await?;
         let _credential_ref = credential
-            .save(&*self.database().await?)
+            .save(&inner.transaction)
             .await
             .map_err(RecursiveError::mls_credential("saving credential"))?;
 
@@ -54,10 +55,10 @@ impl TransactionContext {
             return Err(Error::WrongCredential);
         }
 
-        let database = self.database().await?;
+        let inner = self.inner().await?;
 
         let credential = credential_ref
-            .load(&*database)
+            .load(&inner.transaction)
             .await
             .map_err(RecursiveError::mls_credential_ref(
                 "loading all credentials from ref to remove from session identities",
@@ -90,7 +91,7 @@ impl TransactionContext {
 
         // finally remove the credentials from the keystore so they won't be loaded on next mls_init
         credential
-            .delete(&database)
+            .delete(&inner.transaction)
             .await
             .map_err(RecursiveError::mls_credential("deleting credential from keystore"))
             .map_err(Into::into)

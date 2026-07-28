@@ -33,15 +33,15 @@ impl TransactionContext {
     pub async fn conversation(&self, id: &ConversationIdRef) -> Result<ConversationMut> {
         let keystore = self.database().await?;
         let session = self.session().await?;
-        let inner = self
+        let conversation = self
             .mls_groups()
             .await?
             .get_or_fetch(id, &keystore, session)
             .await
             .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?;
 
-        if let Some(inner) = inner {
-            return Ok(ConversationMut::new(inner, self.clone()));
+        if let Some(conversation) = conversation {
+            return Ok(ConversationMut::new(conversation, self.clone()));
         }
         // Check if there is a pending conversation with
         // the same id
@@ -50,8 +50,9 @@ impl TransactionContext {
     }
 
     pub(crate) async fn pending_conversation(&self, id: &ConversationIdRef) -> Result<PendingConversation> {
-        let keystore = self.database().await?;
-        let Some(pending_group) = keystore
+        let inner = self.inner().await?;
+        let Some(pending_group) = inner
+            .transaction
             .get_borrowed::<PersistedMlsPendingGroup>(id.as_ref())
             .await
             .map_err(KeystoreError::wrap("finding persisted mls pending group"))?

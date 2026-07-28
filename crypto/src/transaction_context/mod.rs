@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use async_lock::{Mutex, MutexGuardArc, RwLock};
-use core_crypto_keystore::{CryptoKeystoreError, entities::ConsumerData, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{CryptoKeystoreError, UniqueArc, entities::ConsumerData, traits::FetchFromDatabase as _};
 pub use error::{Error, Result};
 use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::pki_env::PkiEnvironment;
@@ -74,10 +74,8 @@ impl TransactionContext {
     }
 
     pub(crate) async fn session(&self) -> Result<Session> {
-        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
-            return Err(Error::InvalidTransactionContext);
-        };
-        core_crypto.mls.read().await.as_ref().cloned().ok_or(
+        let inner = self.inner().await?;
+        inner.core_crypto.mls.read().await.as_ref().cloned().ok_or(
             RecursiveError::mls_client("Getting mls session from transaction context")(
                 mls::session::Error::MlsNotInitialized,
             )
@@ -87,85 +85,76 @@ impl TransactionContext {
 
     #[cfg(test)]
     pub(crate) async fn set_session_if_exists(&self, new_session: Session) {
-        let TransactionContextInner::Valid { core_crypto, .. } = &*self.inner.read().await else {
+        let Ok(inner) = self.inner().await else {
             return;
         };
-
-        let mut guard = core_crypto.mls.write().await;
+        let mut guard = inner.core_crypto.mls.write().await;
         if guard.as_ref().is_some() {
             *guard = Some(new_session)
         }
     }
 
     pub(crate) async fn mls_transport(&self) -> Result<Arc<dyn MlsTransport + 'static>> {
-        match &*self.inner.read().await {
-            TransactionContextInner::Valid { core_crypto, .. } => core_crypto
-                .mls
-                .read()
-                .await
-                .as_ref()
-                .map(|s| s.transport.clone())
-                .ok_or(
-                    RecursiveError::mls_client("Getting mls session from transaction context")(
-                        mls::session::Error::MlsNotInitialized,
-                    )
-                    .into(),
-                ),
-
-            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
-        }
+        let inner = self.inner().await?;
+        inner
+            .core_crypto
+            .mls
+            .read()
+            .await
+            .as_ref()
+            .map(|s| s.transport.clone())
+            .ok_or(
+                RecursiveError::mls_client("Getting mls session from transaction context")(
+                    mls::session::Error::MlsNotInitialized,
+                )
+                .into(),
+            )
     }
 
     /// Clones the [CryptoProvider].
     pub async fn crypto_provider(&self) -> Result<CryptoProvider> {
-        match &*self.inner.read().await {
-            TransactionContextInner::Valid { core_crypto, .. } => core_crypto
-                .mls
-                .read()
-                .await
-                .as_ref()
-                .map(|s| s.crypto_provider.clone())
-                .ok_or(
-                    RecursiveError::mls_client("Getting mls session from transaction context")(
-                        mls::session::Error::MlsNotInitialized,
-                    )
-                    .into(),
-                ),
-            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
-        }
+        let inner = self.inner().await?;
+        inner
+            .core_crypto
+            .mls
+            .read()
+            .await
+            .as_ref()
+            .map(|s| s.crypto_provider.clone())
+            .ok_or(
+                RecursiveError::mls_client("Getting mls session from transaction context")(
+                    mls::session::Error::MlsNotInitialized,
+                )
+                .into(),
+            )
     }
 
     pub(crate) async fn database(&self) -> Result<Arc<Database>> {
-        match &*self.inner.read().await {
-            TransactionContextInner::Valid { core_crypto, .. } => Ok(core_crypto.database.clone()),
-            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
-        }
+        let inner = self.inner().await?;
+        Ok(inner.core_crypto.database.clone())
     }
 
     pub(crate) async fn pki_environment(&self) -> Result<Arc<PkiEnvironment>> {
-        match &*self.inner.read().await {
-            TransactionContextInner::Valid { core_crypto, .. } => core_crypto
-                .pki_environment
-                .read()
-                .await
-                .as_ref()
-                .map(Clone::clone)
-                .ok_or(
-                    RecursiveError::transaction("getting PKI environment from transaction context")(
-                        e2e_identity::Error::PkiEnvironmentUnset,
-                    )
-                    .into(),
-                ),
-            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
-        }
+        let inner = self.inner().await?;
+        inner
+            .core_crypto
+            .pki_environment
+            .read()
+            .await
+            .as_ref()
+            .map(Clone::clone)
+            .ok_or(
+                RecursiveError::transaction("getting PKI environment from transaction context")(
+                    e2e_identity::Error::PkiEnvironmentUnset,
+                )
+                .into(),
+            )
     }
 
     pub(crate) async fn mls_groups(&self) -> Result<MutexGuardArc<ConversationCache>> {
-        let guard = self.inner.read().await;
-        let TransactionContextInner::Valid { core_crypto, .. } = &*guard else {
-            return Err(Error::InvalidTransactionContext);
-        };
-        let cache = core_crypto
+        let inner = self.inner().await?;
+        let cache = inner
+            .core_crypto
             .mls
             .read()
             .await
@@ -181,34 +170,23 @@ impl TransactionContext {
     }
 
     pub(crate) async fn queue_epoch_changed(&self, conversation_id: ConversationId, epoch: u64) -> Result<()> {
-        match &*self.inner.read().await {
-            TransactionContextInner::Valid {
-                pending_epoch_changes, ..
-            } => {
-                pending_epoch_changes.lock().await.push((conversation_id, epoch));
-                Ok(())
-            }
-            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
-        }
+        let inner = self.inner().await?;
+        inner.pending_epoch_changes.lock().await.push((conversation_id, epoch));
+        Ok(())
     }
 
     /// Commits the transaction, meaning it takes all the enqueued operations and persist them into
     /// the keystore. After that the internal state is switched to invalid, causing errors if
     /// something is called from this object.
     pub async fn finish(&self) -> Result<()> {
-        let mut guard = self.inner.write().await;
-        let TransactionContextInner::Valid {
+        let TransactionContextInner {
             core_crypto,
             pending_epoch_changes,
-            inner,
-        } = &*guard
-        else {
-            return Err(Error::InvalidTransactionContext);
-        };
+            transaction: tx,
+        } = self.take_inner().await?;
 
-        let commit_result = core_crypto
-            .database
-            .commit_transaction()
+        let commit_result = tx
+            .commit()
             .await
             .map_err(KeystoreError::wrap("commiting transaction"))
             .map_err(Into::into);
@@ -229,7 +207,6 @@ impl TransactionContext {
             }
         }
 
-        *guard = TransactionContextInner::Invalid;
         commit_result
     }
 
@@ -237,27 +214,15 @@ impl TransactionContext {
     /// After that the internal state is switched to invalid, causing errors if
     /// something is called from this object.
     pub async fn abort(&self) -> Result<()> {
-        let mut guard = self.inner.write().await;
-
-        let TransactionContextInner::Valid { core_crypto, .. } = &*guard else {
-            return Err(Error::InvalidTransactionContext);
-        };
+        let inner = self.take_inner().await?;
 
         // Drop any in-memory conversation state mutated during this transaction; it never reached
         // the keystore and would otherwise diverge from disk after rollback.
-        if let Some(session) = core_crypto.mls.read().await.as_ref() {
+        if let Some(session) = inner.core_crypto.mls.read().await.as_ref() {
             session.conversation_cache.lock().await.clear();
         }
 
-        let result = core_crypto
-            .database
-            .rollback_transaction()
-            .await
-            .map_err(KeystoreError::wrap("rolling back transaction"))
-            .map_err(Into::into);
-
-        *guard = TransactionContextInner::Invalid;
-        result
+        Ok(())
     }
 
     /// Initializes the MLS client of [super::CoreCrypto].
@@ -273,14 +238,10 @@ impl TransactionContext {
 
     /// Set the `mls_session` Arc (also sets it on the transaction's CoreCrypto instance)
     pub(crate) async fn set_mls_session(&self, session: Session) -> Result<()> {
-        match &*self.inner.read().await {
-            TransactionContextInner::Valid { core_crypto, .. } => {
-                let mut guard = core_crypto.mls.write().await;
-                *guard = Some(session);
-                Ok(())
-            }
-            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
-        }
+        let inner = self.inner().await?;
+        let mut guard = inner.core_crypto.mls.write().await;
+        *guard = Some(session);
+        Ok(())
     }
 
     /// see [Session::id]
@@ -304,8 +265,9 @@ impl TransactionContext {
     /// This is meant to be used as a check point at the end of a transaction.
     /// The data should be limited to a reasonable size.
     pub async fn set_data(&self, data: Vec<u8>) -> Result<()> {
-        self.database()
-            .await?
+        let inner = self.inner().await?;
+        inner
+            .transaction
             .save(ConsumerData::from(data))
             .await
             .map_err(KeystoreError::wrap("saving consumer data"))?;
@@ -315,7 +277,8 @@ impl TransactionContext {
     /// Get the data that has previously been set by [TransactionContext::set_data].
     /// This is meant to be used as a check point at the end of a transaction.
     pub async fn get_data(&self) -> Result<Option<Vec<u8>>> {
-        match self.database().await?.get_unique::<ConsumerData>().await {
+        let inner = self.inner().await?;
+        match inner.transaction.get_unique::<ConsumerData>().await {
             Ok(maybe_data) => Ok(maybe_data.map(Into::into)),
             Err(CryptoKeystoreError::NotFound(..)) => Ok(None),
             Err(err) => Err(KeystoreError::wrap("finding unique consumer data")(err).into()),

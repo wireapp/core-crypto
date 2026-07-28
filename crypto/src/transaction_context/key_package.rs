@@ -32,10 +32,10 @@ impl TransactionContext {
         credential_ref: &CredentialRef,
         lifetime: Option<Duration>,
     ) -> Result<Keypackage> {
+        let inner = self.inner().await?;
         let lifetime = Lifetime::new(lifetime.unwrap_or(KEYPACKAGE_DEFAULT_LIFETIME).as_secs());
-        let database = self.database().await?;
         let credential = credential_ref
-            .load(&*database)
+            .load(&inner.transaction)
             .await
             .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
         let config = CryptoConfig {
@@ -85,14 +85,20 @@ impl TransactionContext {
             return Ok(());
         };
 
-        let db = self.database().await?;
-        db.remove_borrowed::<StoredKeypackage>(kp_ref.hash_ref())
+        let inner = self.inner().await?;
+        inner
+            .transaction
+            .remove_borrowed::<StoredKeypackage>(kp_ref.hash_ref())
             .await
             .map_err(KeystoreError::wrap("removing key package from keystore"))?;
-        db.remove_borrowed::<StoredHpkePrivateKey>(kp.hpke_init_key().as_slice())
+        inner
+            .transaction
+            .remove_borrowed::<StoredHpkePrivateKey>(kp.hpke_init_key().as_slice())
             .await
             .map_err(KeystoreError::wrap("removing private key from keystore"))?;
-        db.remove_borrowed::<StoredEncryptionKeyPair>(kp.leaf_node().encryption_key().as_slice())
+        inner
+            .transaction
+            .remove_borrowed::<StoredEncryptionKeyPair>(kp.leaf_node().encryption_key().as_slice())
             .await
             .map_err(KeystoreError::wrap("removing encryption keypair from keystore"))?;
 
@@ -107,9 +113,9 @@ impl TransactionContext {
     /// if removing one returns an error. In that case, only the first produced error is returned.
     /// This helps ensure that as many keypackages for the given credential ref are removed as possible.
     pub async fn remove_key_packages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
-        let database = self.database().await?;
+        let inner = self.inner().await?;
         let credential = credential_ref
-            .load(&*database)
+            .load(&inner.transaction)
             .await
             .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
         let signature_public_key = credential.signature_key_pair.public();
@@ -153,15 +159,18 @@ impl TransactionContext {
     /// NOTE: This will only work if the key package has been added in an earlier transaction, because otherwise,
     /// removing its id from the deleted list wouldn't suffice: we'd need to replay its insertion.
     pub(crate) async fn restore_key_package(&self, key_package_ref: &[u8]) -> Result<()> {
-        let database = self.database().await?;
-        database
+        let inner = self.inner().await?;
+
+        inner
+            .transaction
             .restore::<StoredKeypackage>(key_package_ref)
             .await
             .map_err(KeystoreError::wrap(
                 "restoring key package deleted in current transaction",
             ))?;
 
-        let Some(key_package) = database
+        let Some(key_package) = inner
+            .transaction
             .get_borrowed::<StoredKeypackage>(key_package_ref)
             .await
             .map_err(KeystoreError::wrap("loading keypackage from database"))?
@@ -172,11 +181,13 @@ impl TransactionContext {
             return Ok(());
         };
 
-        database
+        inner
+            .transaction
             .restore::<StoredHpkePrivateKey>(key_package.hpke_init_key().as_slice())
             .await
             .map_err(KeystoreError::wrap("restoring private key from keystore"))?;
-        database
+        inner
+            .transaction
             .restore::<StoredEncryptionKeyPair>(key_package.leaf_node().encryption_key().as_slice())
             .await
             .map_err(KeystoreError::wrap("restoring encryption keypair from keystore"))?;
