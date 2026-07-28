@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `e2e-identity/src/acme/order.rs`."><title>order.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-17e0aaed.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="wire_e2e_identity" data-themes="" data-resource-suffix="" data-rustdoc-version="1.96.1 (31fca3adb 2026-06-26)" data-channel="1.96.1" data-search-js="search-b5634cc7.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-5013f961.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">wire_e2e_identity/acme/</div>order.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>std::collections::HashSet;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `e2e-identity/src/acme/order.rs`."><title>order.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-17e0aaed.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="wire_e2e_identity" data-themes="" data-resource-suffix="" data-rustdoc-version="1.97.1 (8bab26f4f 2026-07-14)" data-channel="1.97.1" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">wire_e2e_identity/acme/</div>order.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>std::collections::HashSet;
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span>rusty_jwt_tools::prelude::{ClientId, Handle, JwsAlgorithm, Pem};
 <a href=#4 id=4 data-nosnippet>4</a>
@@ -84,7 +84,7 @@
 <a href=#84 id=84 data-nosnippet>84</a>        </span><span class="kw">let </span>acct_url = account.acct_url()<span class="question-mark">?</span>;
 <a href=#85 id=85 data-nosnippet>85</a>
 <a href=#86 id=86 data-nosnippet>86</a>        <span class="comment">// No payload required for authz
-<a href=#87 id=87 data-nosnippet>87</a>        </span><span class="kw">let </span>payload = None::&lt;serde_json::Value&gt;;
+<a href=#87 id=87 data-nosnippet>87</a>        </span><span class="kw">let </span>payload = <span class="prelude-val">None</span>::&lt;serde_json::Value&gt;;
 <a href=#88 id=88 data-nosnippet>88</a>        <span class="kw">let </span>req = AcmeJws::new(alg, previous_nonce, <span class="kw-2">&amp;</span>order_url, <span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>acct_url), payload, kp)<span class="question-mark">?</span>;
 <a href=#89 id=89 data-nosnippet>89</a>        <span class="prelude-val">Ok</span>(req)
 <a href=#90 id=90 data-nosnippet>90</a>    }
@@ -190,7 +190,7 @@
 <a href=#190 id=190 data-nosnippet>190</a>        <span class="kw">let </span>same_display_name = a.display_name == b.display_name;
 <a href=#191 id=191 data-nosnippet>191</a>        <span class="kw">let </span>same_domain = a.domain == b.domain;
 <a href=#192 id=192 data-nosnippet>192</a>        <span class="kw">if </span>!(same_handle &amp;&amp; same_display_name &amp;&amp; same_domain) {
-<a href=#193 id=193 data-nosnippet>193</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(AcmeOrderError::WrongIdentifiers)<span class="question-mark">?</span>;
+<a href=#193 id=193 data-nosnippet>193</a>            <span class="prelude-val">Err</span>(AcmeOrderError::WrongIdentifiers)<span class="question-mark">?</span>;
 <a href=#194 id=194 data-nosnippet>194</a>        }
 <a href=#195 id=195 data-nosnippet>195</a>
 <a href=#196 id=196 data-nosnippet>196</a>        <span class="kw">let </span>now = time::OffsetDateTime::now_utc().unix_timestamp();
@@ -201,7 +201,7 @@
 <a href=#201 id=201 data-nosnippet>201</a>            .map(|expires| expires &lt; now)
 <a href=#202 id=202 data-nosnippet>202</a>            .unwrap_or_default();
 <a href=#203 id=203 data-nosnippet>203</a>        <span class="kw">if </span>is_expired {
-<a href=#204 id=204 data-nosnippet>204</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(AcmeOrderError::Expired)<span class="question-mark">?</span>;
+<a href=#204 id=204 data-nosnippet>204</a>            <span class="prelude-val">Err</span>(AcmeOrderError::Expired)<span class="question-mark">?</span>;
 <a href=#205 id=205 data-nosnippet>205</a>        }
 <a href=#206 id=206 data-nosnippet>206</a>
 <a href=#207 id=207 data-nosnippet>207</a>        <span class="kw">let </span>is_after = <span class="self">self
@@ -210,7 +210,7 @@
 <a href=#210 id=210 data-nosnippet>210</a>            .map(|not_after| not_after &lt; now)
 <a href=#211 id=211 data-nosnippet>211</a>            .unwrap_or_default();
 <a href=#212 id=212 data-nosnippet>212</a>        <span class="kw">if </span>is_after {
-<a href=#213 id=213 data-nosnippet>213</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(AcmeOrderError::Expired)<span class="question-mark">?</span>;
+<a href=#213 id=213 data-nosnippet>213</a>            <span class="prelude-val">Err</span>(AcmeOrderError::Expired)<span class="question-mark">?</span>;
 <a href=#214 id=214 data-nosnippet>214</a>        }
 <a href=#215 id=215 data-nosnippet>215</a>
 <a href=#216 id=216 data-nosnippet>216</a>        <span class="kw">let </span>is_before = <span class="self">self
@@ -219,7 +219,7 @@
 <a href=#219 id=219 data-nosnippet>219</a>            .map(|not_before| now &lt; not_before)
 <a href=#220 id=220 data-nosnippet>220</a>            .unwrap_or_default();
 <a href=#221 id=221 data-nosnippet>221</a>        <span class="kw">if </span>is_before {
-<a href=#222 id=222 data-nosnippet>222</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(AcmeOrderError::NotYetValid)<span class="question-mark">?</span>;
+<a href=#222 id=222 data-nosnippet>222</a>            <span class="prelude-val">Err</span>(AcmeOrderError::NotYetValid)<span class="question-mark">?</span>;
 <a href=#223 id=223 data-nosnippet>223</a>        }
 <a href=#224 id=224 data-nosnippet>224</a>
 <a href=#225 id=225 data-nosnippet>225</a>        <span class="prelude-val">Ok</span>(())
@@ -282,12 +282,12 @@
 <a href=#282 id=282 data-nosnippet>282</a>    <span class="kw">use </span>serde_json::json;
 <a href=#283 id=283 data-nosnippet>283</a>    <span class="kw">use </span>wasm_bindgen_test::<span class="kw-2">*</span>;
 <a href=#284 id=284 data-nosnippet>284</a>
-<a href=#285 id=285 data-nosnippet>285</a>    <span class="kw">use </span>super::<span class="kw-2">*</span>;
+<a href=#285 id=285 data-nosnippet>285</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#286 id=286 data-nosnippet>286</a>
 <a href=#287 id=287 data-nosnippet>287</a>    <span class="macro">wasm_bindgen_test_configure!</span>(run_in_browser);
 <a href=#288 id=288 data-nosnippet>288</a>
 <a href=#289 id=289 data-nosnippet>289</a>    <span class="kw">mod </span>json {
-<a href=#290 id=290 data-nosnippet>290</a>        <span class="kw">use </span>super::<span class="kw-2">*</span>;
+<a href=#290 id=290 data-nosnippet>290</a>        <span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#291 id=291 data-nosnippet>291</a>
 <a href=#292 id=292 data-nosnippet>292</a>        <span class="attr">#[test]
 <a href=#293 id=293 data-nosnippet>293</a>        #[wasm_bindgen_test]
@@ -326,7 +326,7 @@
 <a href=#326 id=326 data-nosnippet>326</a>    }
 <a href=#327 id=327 data-nosnippet>327</a>
 <a href=#328 id=328 data-nosnippet>328</a>    <span class="kw">mod </span>verify {
-<a href=#329 id=329 data-nosnippet>329</a>        <span class="kw">use </span>super::<span class="kw-2">*</span>;
+<a href=#329 id=329 data-nosnippet>329</a>        <span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#330 id=330 data-nosnippet>330</a>
 <a href=#331 id=331 data-nosnippet>331</a>        <span class="attr">#[test]
 <a href=#332 id=332 data-nosnippet>332</a>        #[wasm_bindgen_test]
@@ -419,7 +419,7 @@
 <a href=#419 id=419 data-nosnippet>419</a>    }
 <a href=#420 id=420 data-nosnippet>420</a>
 <a href=#421 id=421 data-nosnippet>421</a>    <span class="kw">mod </span>creation {
-<a href=#422 id=422 data-nosnippet>422</a>        <span class="kw">use </span>super::<span class="kw-2">*</span>;
+<a href=#422 id=422 data-nosnippet>422</a>        <span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#423 id=423 data-nosnippet>423</a>
 <a href=#424 id=424 data-nosnippet>424</a>        <span class="attr">#[test]
 <a href=#425 id=425 data-nosnippet>425</a>        #[wasm_bindgen_test]
@@ -482,7 +482,7 @@
 <a href=#482 id=482 data-nosnippet>482</a>    }
 <a href=#483 id=483 data-nosnippet>483</a>
 <a href=#484 id=484 data-nosnippet>484</a>    <span class="kw">mod </span>check {
-<a href=#485 id=485 data-nosnippet>485</a>        <span class="kw">use </span>super::<span class="kw-2">*</span>;
+<a href=#485 id=485 data-nosnippet>485</a>        <span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#486 id=486 data-nosnippet>486</a>
 <a href=#487 id=487 data-nosnippet>487</a>        <span class="attr">#[test]
 <a href=#488 id=488 data-nosnippet>488</a>        #[wasm_bindgen_test]

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crypto/src/mls/conversation/mutable/decrypt/mod.rs`."><title>mod.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../../static.files/rustdoc-17e0aaed.css"><meta name="rustdoc-vars" data-root-path="../../../../../../" data-static-root-path="../../../../../../static.files/" data-current-crate="core_crypto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.96.1 (31fca3adb 2026-06-26)" data-channel="1.96.1" data-search-js="search-b5634cc7.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../../src-files.js"></script><script defer src="../../../../../../static.files/main-5013f961.js"></script><noscript><link rel="stylesheet" href="../../../../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core_crypto/mls/conversation/mutable/decrypt/</div>mod.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! MLS defines 3 kind of messages: Proposal, Commits and Application messages. Since they can (should)
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crypto/src/mls/conversation/mutable/decrypt/mod.rs`."><title>mod.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../../static.files/rustdoc-17e0aaed.css"><meta name="rustdoc-vars" data-root-path="../../../../../../" data-static-root-path="../../../../../../static.files/" data-current-crate="core_crypto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.97.1 (8bab26f4f 2026-07-14)" data-channel="1.97.1" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../../src-files.js"></script><script defer src="../../../../../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../../../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core_crypto/mls/conversation/mutable/decrypt/</div>mod.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="doccomment">//! MLS defines 3 kind of messages: Proposal, Commits and Application messages. Since they can (should)
 <a href=#2 id=2 data-nosnippet>2</a>//! be all encrypted we need to first decrypt them before deciding what to do with them.
 <a href=#3 id=3 data-nosnippet>3</a>//!
 <a href=#4 id=4 data-nosnippet>4</a>//! This table summarizes when a MLS group can decrypt any message:
@@ -27,8 +27,8 @@
 <a href=#27 id=27 data-nosnippet>27</a><span class="kw">use </span>openmls_traits::OpenMlsCryptoProvider <span class="kw">as _</span>;
 <a href=#28 id=28 data-nosnippet>28</a><span class="kw">use </span>tls_codec::Deserialize <span class="kw">as _</span>;
 <a href=#29 id=29 data-nosnippet>29</a>
-<a href=#30 id=30 data-nosnippet>30</a><span class="kw">use </span>super::{ConversationMut, <span class="prelude-ty">Result</span>};
-<a href=#31 id=31 data-nosnippet>31</a><span class="kw">use </span>crate::{
+<a href=#30 id=30 data-nosnippet>30</a><span class="kw">use super</span>::{ConversationMut, <span class="prelude-ty">Result</span>};
+<a href=#31 id=31 data-nosnippet>31</a><span class="kw">use crate</span>::{
 <a href=#32 id=32 data-nosnippet>32</a>    ClientId, E2eiConversationState, OpenMlsError, RecursiveError, Session, WireIdentity,
 <a href=#33 id=33 data-nosnippet>33</a>    mls::{conversation::Error, credential::ext::CredentialExt <span class="kw">as _</span>},
 <a href=#34 id=34 data-nosnippet>34</a>};
@@ -487,13 +487,13 @@
 <a href=#487 id=487 data-nosnippet>487</a>
 <a href=#488 id=488 data-nosnippet>488</a><span class="attr">#[cfg(test)]
 <a href=#489 id=489 data-nosnippet>489</a></span><span class="kw">mod </span>tests {
-<a href=#490 id=490 data-nosnippet>490</a>    <span class="kw">use </span>crate::{
+<a href=#490 id=490 data-nosnippet>490</a>    <span class="kw">use crate</span>::{
 <a href=#491 id=491 data-nosnippet>491</a>        mls::conversation::{config::MAX_PAST_EPOCHS, error::Error},
 <a href=#492 id=492 data-nosnippet>492</a>        test_utils::<span class="kw-2">*</span>,
 <a href=#493 id=493 data-nosnippet>493</a>    };
 <a href=#494 id=494 data-nosnippet>494</a>
 <a href=#495 id=495 data-nosnippet>495</a>    <span class="kw">mod </span>is_active {
-<a href=#496 id=496 data-nosnippet>496</a>        <span class="kw">use </span>super::<span class="kw-2">*</span>;
+<a href=#496 id=496 data-nosnippet>496</a>        <span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#497 id=497 data-nosnippet>497</a>
 <a href=#498 id=498 data-nosnippet>498</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#499 id=499 data-nosnippet>499</a>        </span><span class="kw">pub async fn </span>decrypting_a_regular_commit_should_leave_conversation_active(case: TestContext) {
@@ -535,7 +535,7 @@
 <a href=#535 id=535 data-nosnippet>535</a>    }
 <a href=#536 id=536 data-nosnippet>536</a>
 <a href=#537 id=537 data-nosnippet>537</a>    <span class="kw">mod </span>commit {
-<a href=#538 id=538 data-nosnippet>538</a>        <span class="kw">use </span>super::<span class="kw-2">*</span>;
+<a href=#538 id=538 data-nosnippet>538</a>        <span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#539 id=539 data-nosnippet>539</a>
 <a href=#540 id=540 data-nosnippet>540</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#541 id=541 data-nosnippet>541</a>        </span><span class="kw">pub async fn </span>decrypting_a_commit_should_succeed(case: TestContext) {
@@ -585,7 +585,7 @@
 <a href=#585 id=585 data-nosnippet>585</a>    }
 <a href=#586 id=586 data-nosnippet>586</a>
 <a href=#587 id=587 data-nosnippet>587</a>    <span class="kw">mod </span>proposal {
-<a href=#588 id=588 data-nosnippet>588</a>        <span class="kw">use </span>super::<span class="kw-2">*</span>;
+<a href=#588 id=588 data-nosnippet>588</a>        <span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#589 id=589 data-nosnippet>589</a>
 <a href=#590 id=590 data-nosnippet>590</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#591 id=591 data-nosnippet>591</a>        </span><span class="kw">async fn </span>should_not_return_sender_client_id(case: TestContext) {
@@ -603,7 +603,7 @@
 <a href=#603 id=603 data-nosnippet>603</a>    }
 <a href=#604 id=604 data-nosnippet>604</a>
 <a href=#605 id=605 data-nosnippet>605</a>    <span class="kw">mod </span>app_message {
-<a href=#606 id=606 data-nosnippet>606</a>        <span class="kw">use </span>super::<span class="kw-2">*</span>;
+<a href=#606 id=606 data-nosnippet>606</a>        <span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#607 id=607 data-nosnippet>607</a>
 <a href=#608 id=608 data-nosnippet>608</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#609 id=609 data-nosnippet>609</a>        </span><span class="kw">async fn </span>can_decrypt_app_message(case: TestContext) {
@@ -758,7 +758,7 @@
 <a href=#758 id=758 data-nosnippet>758</a>    }
 <a href=#759 id=759 data-nosnippet>759</a>
 <a href=#760 id=760 data-nosnippet>760</a>    <span class="kw">mod </span>epoch_sync {
-<a href=#761 id=761 data-nosnippet>761</a>        <span class="kw">use </span>super::<span class="kw-2">*</span>;
+<a href=#761 id=761 data-nosnippet>761</a>        <span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#762 id=762 data-nosnippet>762</a>
 <a href=#763 id=763 data-nosnippet>763</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#764 id=764 data-nosnippet>764</a>        </span><span class="kw">async fn </span>should_throw_specialized_error_when_epoch_too_old(<span class="kw-2">mut </span>case: TestContext) {
