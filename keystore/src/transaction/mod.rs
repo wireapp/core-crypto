@@ -1,5 +1,6 @@
 mod entity_read;
 mod entity_write;
+mod fetch_from_database;
 mod specializations;
 
 use std::{borrow::Cow, collections::HashSet, sync::Arc};
