@@ -1,7 +1,5 @@
 //! These methods alow mutating the transaction. Mutations will be propagated to the database on commit.
 
-use std::collections::hash_map::Entry;
-
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
     traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed},
@@ -28,10 +26,12 @@ impl KeystoreTransaction {
         let entity_id =
             EntityId::from_entity(&entity).ok_or(CryptoKeystoreError::UnknownCollectionName(E::COLLECTION_NAME))?;
         {
-            // start by adding the entity
             let mut cache_guard = self.cache.write().await;
-            let table = cache_guard.entry(E::COLLECTION_NAME).or_default();
-            table.insert(entity_id.clone(), entity.into());
+            // We need to ensure that we always move the entity to the end of the insertion order, so that
+            // we don't accidentally overwrite an old entity in the transaction and end up playing it back
+            // in the real transaction too early, in a way that would violate a constraint.
+            let cache_len = cache_guard.len();
+            cache_guard.insert_before(cache_len, entity_id.clone(), entity.into());
         }
         {
             // at this point remove the entity from the set of deleted entities to ensure that
@@ -50,11 +50,7 @@ impl KeystoreTransaction {
         // rm this entity from the set of added/modified items
         // it might never touch the real db at all
         let mut cache_guard = self.cache.write().await;
-        if let Entry::Occupied(mut table) = cache_guard.entry(E::COLLECTION_NAME)
-            && let Entry::Occupied(cached_record) = table.get_mut().entry(entity_id.clone())
-        {
-            cached_record.remove_entry();
-        };
+        cache_guard.remove(&entity_id);
 
         // add this entity to the set of items which should be deleted from the persisted db
         let mut deleted_set = self.deleted.write().await;

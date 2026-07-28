@@ -9,7 +9,7 @@ use crate::{
     transaction::KeystoreTransaction,
 };
 
-use super::dynamic_dispatch::{self, EntityId};
+use super::dynamic_dispatch::EntityId;
 
 impl KeystoreTransaction {
     async fn find_in_cache<E>(&self, entity_id: &EntityId) -> Option<Arc<E>>
@@ -17,9 +17,7 @@ impl KeystoreTransaction {
         E: 'static + Entity + Send + Sync,
     {
         let cache_guard = self.cache.read().await;
-        cache_guard
-            .get(E::COLLECTION_NAME)
-            .and_then(|table| table.get(entity_id).and_then(|entity| entity.downcast()))
+        cache_guard.get(entity_id).and_then(|entity| entity.downcast())
     }
 
     /// The result of this function will have different contents for different scenarios:
@@ -70,19 +68,9 @@ impl KeystoreTransaction {
     {
         let cache_guard = self.cache.read().await;
         cache_guard
-            .get(E::COLLECTION_NAME)
-            .map(|table| {
-                table
-                    .values()
-                    .map(|record: &dynamic_dispatch::Entity| {
-                        record
-                            .downcast::<E>()
-                            .expect("all entries in this table are of this type")
-                            .clone()
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .unwrap_or_default()
+            .values()
+            .filter_map(|entity| entity.downcast::<E>())
+            .collect()
     }
 
     async fn search_in_cache<E, SearchKey>(&self, search_key: &SearchKey) -> Vec<Arc<E>>
@@ -92,20 +80,10 @@ impl KeystoreTransaction {
     {
         let cache_guard = self.cache.read().await;
         cache_guard
-            .get(E::COLLECTION_NAME)
-            .map(|table| {
-                table
-                    .values()
-                    .filter_map(|record: &dynamic_dispatch::Entity| {
-                        let entity = record
-                            .downcast::<E>()
-                            .expect("all entries in this table are of this type")
-                            .clone();
-                        entity.matches(search_key).then_some(entity)
-                    })
-                    .collect()
-            })
-            .unwrap_or_default()
+            .values()
+            .filter_map(|entity| entity.downcast::<E>())
+            .filter(|entity| entity.matches(search_key))
+            .collect()
     }
 
     pub(crate) async fn find_all<E>(&self, persisted_records: Vec<E>) -> CryptoKeystoreResult<Vec<E>>

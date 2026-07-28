@@ -2,14 +2,11 @@ mod entity_read;
 mod entity_write;
 mod specializations;
 
-use std::{
-    borrow::Cow,
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::{borrow::Cow, collections::HashSet, sync::Arc};
 
 use async_lock::{RwLock, SemaphoreGuardArc};
 use itertools::Itertools;
+use ordermap::OrderMap;
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc,
@@ -19,16 +16,11 @@ use crate::{
 
 pub(crate) mod dynamic_dispatch;
 
-/// table: primary key -> entity reference
-type InMemoryTable = HashMap<EntityId, dynamic_dispatch::Entity>;
-/// collection: collection name -> table
-type InMemoryCollection = RwLock<HashMap<&'static str, InMemoryTable>>;
-
 /// This represents a transaction, where all operations will be done in memory and committed at the
 /// end
 #[derive(Debug)]
 pub struct KeystoreTransaction {
-    cache: InMemoryCollection,
+    cache: RwLock<OrderMap<EntityId, dynamic_dispatch::Entity>>,
     deleted: RwLock<HashSet<EntityId>>,
     _semaphore_guard: Arc<SemaphoreGuardArc>,
     database: Arc<Database>,
@@ -105,14 +97,7 @@ impl UniqueArc<KeystoreTransaction> {
         let cache = cache.into_inner();
         let deleted_ids = deleted.into_inner();
 
-        let table_names_with_deletion = deleted_ids.iter().map(|entity_id| entity_id.collection_name());
-        let table_names_with_save = cache
-            .values()
-            .flat_map(|table| table.keys())
-            .map(|entity_id| entity_id.collection_name());
-        let any_tables_are_modified = table_names_with_deletion.chain(table_names_with_save).next().is_some();
-
-        if !any_tables_are_modified {
+        if cache.is_empty() && deleted_ids.is_empty() {
             log::debug!("Empty transaction was committed.");
             return Ok(());
         }
@@ -123,7 +108,7 @@ impl UniqueArc<KeystoreTransaction> {
         let mut conn = database.conn().await;
         let tx = conn.transaction()?;
 
-        for entity in cache.values().flat_map(|table| table.values()) {
+        for entity in cache.values() {
             entity.execute_save(&tx)?;
         }
 
