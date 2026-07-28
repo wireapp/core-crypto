@@ -127,6 +127,8 @@ impl Entity {
         let field_assignments = std::iter::once(id_column.field_assignment())
             .chain(other_columns.iter().map(|column| column.field_assignment()));
 
+        let bind_key = id_column.column_type.bind_key();
+
         quote! {
             impl crate::traits::EntityGetBorrowed for #struct_name {
                 fn get_borrowed(conn: &rusqlite::Connection, key: &Self::BorrowedPrimaryKey)
@@ -134,8 +136,7 @@ impl Entity {
                 where
                     for<'pk> &'pk Self::BorrowedPrimaryKey: crate::traits::KeyType,
                 {
-                    let key = <&Self::BorrowedPrimaryKey as crate::traits::KeyType>::bytes(&key);
-                    let key = key.as_ref();
+                    #bind_key
                     crate::entities::helpers::get_helper::<Self, _>(conn, #pk_column_name, key, |row| {
                         Ok(Self {
                             #( #field_assignments, )*
@@ -180,6 +181,7 @@ impl Entity {
         } = self;
 
         let id_column_name = id_column.sql_name();
+        let bind_key = id_column.column_type.bind_key();
 
         quote! {
             impl crate::traits::EntityDeleteBorrowed for #struct_name {
@@ -190,8 +192,8 @@ impl Entity {
                 where
                     for<'pk> &'pk <Self as crate::traits::BorrowPrimaryKey>::BorrowedPrimaryKey: crate::traits::KeyType,
                 {
-                    let key = <&<Self as crate::traits::BorrowPrimaryKey>::BorrowedPrimaryKey as crate::traits::KeyType>::bytes(&id);
-                    let key = key.as_ref();
+                    let key = id;
+                    #bind_key
                     crate::entities::helpers::delete_helper::<Self>(tx, #id_column_name, key)
                 }
             }
