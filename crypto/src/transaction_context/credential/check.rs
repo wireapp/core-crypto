@@ -17,10 +17,10 @@ impl TransactionContext {
     /// This function must be called at least once every 24 hours. It is recommended to do this during an idle period,
     /// because in case x509 credentials are used, HTTP requests are done to fetch new certificate revocation lists.
     pub async fn check_credentials(&self) -> Result<()> {
-        let database = self.database().await?;
+        let inner = self.inner().await?;
         let env = self.pki_environment().await?;
 
-        let credentials = Credential::get_all(&*database)
+        let credentials = Credential::get_all(&inner.transaction)
             .await
             .map_err(RecursiveError::mls_credential("getting all credentials"))?;
         let trust_anchors = env.get_trust_anchors().await;
@@ -43,7 +43,7 @@ impl TransactionContext {
 
         // store fresh CRLs
         for (crl_uri, crl) in crls {
-            env.save_crl(&crl_uri, &crl)
+            env.save_crl(&inner.transaction, &crl_uri, &crl)
                 .await
                 .map_err(RecursiveError::e2e_identity("saving CRL"))?;
         }
@@ -101,14 +101,16 @@ impl TransactionContext {
     }
 
     async fn clean_up_irrelevant_crls(&self, relevant_crl_uris: &CrlUris) -> Result<()> {
-        let database = self.database().await?;
-        for db_crl in database
+        let inner = self.inner().await?;
+        for db_crl in inner
+            .transaction
             .load_all::<E2eiCrl>()
             .await
             .map_err(KeystoreError::wrap("getting all database CRLs"))?
         {
             if !relevant_crl_uris.contains(&db_crl.distribution_point) {
-                database
+                inner
+                    .transaction
                     .remove::<E2eiCrl>(&db_crl.distribution_point)
                     .await
                     .map_err(KeystoreError::wrap("removing irrelevant CRL"))?;
