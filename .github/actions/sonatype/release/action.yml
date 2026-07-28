@@ -32,9 +32,6 @@ runs:
       with:
         cache-provider: basic
 
-    - name: validate gradle wrapper
-      uses: gradle/actions/wrapper-validation@v6.2.0
-
     - name: release artifact
       shell: bash
       working-directory: crypto-ffi/bindings

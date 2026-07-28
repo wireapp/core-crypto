@@ -43,9 +43,6 @@ jobs:
         with:
           cache-provider: basic
 
-      - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v6.2.0
-
       - name: download ffi library
         uses: ./.github/actions/make/ffi-library
         with:
