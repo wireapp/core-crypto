@@ -33,6 +33,7 @@ openmls = { workspace = true }
 openmls_basic_credential = { workspace = true }
 openmls_traits = { workspace = true }
 openmls_x509_credential = { workspace = true }
+ordermap = "1.2.0"
 postcard = { version = "1.1", default-features = false, features = ["use-std"] }
 proteus-traits = { workspace = true, optional = true }
 rand = { workspace = true, features = ["getrandom"] }
