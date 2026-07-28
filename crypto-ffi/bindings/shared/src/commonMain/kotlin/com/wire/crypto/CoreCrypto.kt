@@ -86,7 +86,7 @@ class CoreCrypto(private val cc: CoreCryptoFfi) : CoreCryptoFfiInterface by cc {
             error = error ?: e
         }
         if (error != null) {
-            throw error as Throwable
+            throw error
         }
 
         // Since we know that the transaction will either succeed or throw it's safe to do an unchecked cast here
