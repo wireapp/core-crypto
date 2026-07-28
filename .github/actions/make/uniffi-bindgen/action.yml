@@ -9,9 +9,6 @@ runs:
   using: composite
 
   steps:
-    - name: Set MAKE
-      uses: ./.github/actions/make/set-make-executable
-
     - name: write uniffi version file
       run: $MAKE .stamps/uniffi-version
       shell: bash -euo pipefail {0}

@@ -1,9 +1,15 @@
-name: Set make executable based on OS
+name: Prepare Make action
+description: Sets up tools needed to use make action
 
 runs:
   using: composite
 
   steps:
+    - name: setup fd
+      uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
+      with:
+        tool: fd-find
+
     - name: set make executable based on OS
       shell: bash
       run: |

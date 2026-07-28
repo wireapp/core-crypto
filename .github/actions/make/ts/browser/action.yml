@@ -10,9 +10,6 @@ runs:
   using: composite
 
   steps:
-      - name: Set MAKE
-        uses: ./.github/actions/make/set-make-executable
-
       - name: Install wasm-bindgen-cli
         uses: ./.github/actions/setup-wasm-bindgen
 

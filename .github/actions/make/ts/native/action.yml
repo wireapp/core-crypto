@@ -10,9 +10,6 @@ runs:
   using: composite
 
   steps:
-      - name: Set MAKE
-        uses: ./.github/actions/make/set-make-executable
-
       # ensure bun deps are installed freshly before any command using bun is invoked
       - name: install bun deps
         run: |
