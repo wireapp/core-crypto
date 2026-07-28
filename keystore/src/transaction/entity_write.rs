@@ -43,10 +43,7 @@ impl Transaction {
         Ok(auto_generated_fields)
     }
 
-    async fn remove_by_entity_id<E>(&self, entity_id: EntityId) -> CryptoKeystoreResult<()>
-    where
-        E: Entity + EntityDatabaseMutation,
-    {
+    async fn remove_by_entity_id(&self, entity_id: EntityId) -> CryptoKeystoreResult<()> {
         // rm this entity from the set of added/modified items
         // it might never touch the real db at all
         let mut cache_guard = self.cache.write().await;
@@ -70,7 +67,7 @@ impl Transaction {
     {
         let entity_id = EntityId::from_primary_key::<E>(id)
             .ok_or(CryptoKeystoreError::UnknownCollectionName(E::COLLECTION_NAME))?;
-        self.remove_by_entity_id::<E>(entity_id).await
+        self.remove_by_entity_id(entity_id).await
     }
 
     /// Remove an entity by the borrowed form of its primary key.
@@ -83,7 +80,7 @@ impl Transaction {
     {
         let entity_id = EntityId::from_borrowed_primary_key::<E>(id)
             .ok_or(CryptoKeystoreError::UnknownCollectionName(E::COLLECTION_NAME))?;
-        self.remove_by_entity_id::<E>(entity_id).await
+        self.remove_by_entity_id(entity_id).await
     }
 
     /// Restore an entity that was deleted in this transaction by removing it from the deleted list. This is

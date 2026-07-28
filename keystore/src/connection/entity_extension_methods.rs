@@ -37,9 +37,10 @@ impl Database {
         conversation_id: impl AsRef<[u8]> + Send,
     ) -> CryptoKeystoreResult<()> {
         self.with_transaction(async |transaction| {
-            Ok(transaction
+            transaction
                 .remove_pending_messages_by_conversation_id(conversation_id)
-                .await)
+                .await;
+            Ok(())
         })
         .await
     }
