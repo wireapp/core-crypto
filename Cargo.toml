@@ -85,7 +85,7 @@ certval = { git = "https://github.com/wireapp/rust-pki.git", branch = "wire/stab
 const-oid = { version = "0.9", default-features = false, features = ["std"] }
 der = { version = "0.8", default-features = false, features = ["std"] }
 ecdsa = { version = "0.16", default-features = false }
-ed25519-dalek = { version = "2.2", default-features = false }
+ed25519-dalek = { version = "3.0", default-features = false }
 flagset = { version = "0.4", default-features = false }
 getrandom = { version = "0.2.8", default-features = false }
 jwt-simple = { version = "0.13", git = "https://github.com/wireapp/rust-jwt-simple", tag = "v0.13.0-pre.core-crypto-1.0.0", default-features = false }
