@@ -45,7 +45,7 @@ runs:
       run: |
         ./scripts/uninstall_inactive_rust_toolchains.sh
     - name: Cleanup on post
-      uses: gacts/run-and-post-run@v1
+      uses: gacts/run-and-post-run@598d7a875d5620e0457490555b5e18e46082aa47 # v1.4.4
       with:
           post: |
             sh ./scripts/clean.sh
