@@ -73,11 +73,11 @@ mod tests_impl {
                 let pending_groups = PersistedMlsPendingGroup::random();
                 pending_message.foreign_id = pending_groups.id.clone();
 
-                store.save(pending_groups).await.unwrap();
+                tx.save(pending_groups).await.unwrap();
             }
         }
 
-        store.save(entity.clone()).await.unwrap();
+        tx.save(entity.clone()).await.unwrap();
         tx.commit().await.unwrap();
         entity
     }
@@ -133,7 +133,7 @@ mod tests_impl {
     {
         entity.random_update();
         let tx = store.new_transaction().await.unwrap();
-        store.save(entity.clone()).await.unwrap();
+        tx.save(entity.clone()).await.unwrap();
         tx.commit().await.unwrap();
         let entity2: E = store.get(&entity.primary_key()).await.unwrap().unwrap();
         assert_eq!(*entity, entity2);
@@ -144,7 +144,7 @@ mod tests_impl {
         E: 'static + Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
     {
         let tx = store.new_transaction().await.unwrap();
-        store.remove::<E>(&entity.primary_key()).await.unwrap();
+        tx.remove::<E>(&entity.primary_key()).await.unwrap();
         tx.commit().await.unwrap();
         let entity2: Option<E> = store.get(&entity.primary_key()).await.unwrap();
         assert!(entity2.is_none());
@@ -157,7 +157,7 @@ mod tests_impl {
         let tx = store.new_transaction().await.unwrap();
         for _ in 0..ENTITY_COUNT {
             let entity = E::random();
-            store.save(entity).await.unwrap();
+            tx.save(entity).await.unwrap();
         }
         tx.commit().await.unwrap();
     }
@@ -214,14 +214,14 @@ mod tests {
 
         let mut entity = StoredE2eiEnrollment::random();
         let tx = store.new_transaction().await.unwrap();
-        store.save(entity.clone()).await.unwrap();
+        tx.save(entity.clone()).await.unwrap();
         tx.commit().await.unwrap();
 
         // Start a new transaction so that the database constraints will trigger on committing the
         // transaction
         let tx = store.new_transaction().await.unwrap();
         entity.random_update();
-        store.save(entity).await.unwrap();
+        tx.save(entity).await.unwrap();
         let error = tx.commit().await.unwrap_err();
 
         assert!(matches!(
@@ -246,12 +246,11 @@ mod tests {
 
         eprintln!("saving some consumer data");
         const DATA: &[u8] = b"here is some arbitrary data";
-        store
-            .save(ConsumerData {
-                content: DATA.to_owned(),
-            })
-            .await
-            .unwrap();
+        tx.save(ConsumerData {
+            content: DATA.to_owned(),
+        })
+        .await
+        .unwrap();
 
         // from transaction
         eprintln!("checking retrieving consumer data from active transaction");

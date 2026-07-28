@@ -56,7 +56,7 @@ mod persisted_mls_groups {
         let search_key = get_search_key(&entity);
 
         let tx = store.new_transaction().await.unwrap();
-        store.save(entity.clone()).await.unwrap();
+        tx.save(entity.clone()).await.unwrap();
         tx.commit().await.unwrap();
 
         let found = store
@@ -78,7 +78,7 @@ mod persisted_mls_groups {
 
         let tx = store.new_transaction().await.unwrap();
         for entity in &entities {
-            store.save(entity.clone()).await.unwrap();
+            tx.save(entity.clone()).await.unwrap();
         }
         tx.commit().await.unwrap();
 
@@ -107,7 +107,7 @@ mod persisted_mls_groups {
 
         let tx = store.new_transaction().await.unwrap();
         for entity in [&relevant_entity, &irrelevant_entity] {
-            store.save(entity.clone()).await.unwrap();
+            tx.save(entity.clone()).await.unwrap();
         }
         tx.commit().await.unwrap();
 
@@ -128,8 +128,8 @@ mod persisted_mls_groups {
         let entity = random_entity();
         let search_key = get_search_key(&entity);
 
-        let _tx = store.new_transaction().await.unwrap();
-        store.save(entity.clone()).await.unwrap();
+        let tx = store.new_transaction().await.unwrap();
+        tx.save(entity.clone()).await.unwrap();
 
         let found = store
             .search::<PersistedMlsGroup, ParentGroupId>(&search_key)
@@ -149,12 +149,11 @@ mod persisted_mls_groups {
         let search_key = get_search_key(&entity);
 
         let tx = store.new_transaction().await.unwrap();
-        store.save(entity.clone()).await.unwrap();
+        tx.save(entity.clone()).await.unwrap();
         tx.commit().await.unwrap();
-        let _tx = store.new_transaction().await.unwrap();
+        let tx = store.new_transaction().await.unwrap();
 
-        store
-            .remove_borrowed::<PersistedMlsGroup>(entity.borrow_primary_key())
+        tx.remove_borrowed::<PersistedMlsGroup>(entity.borrow_primary_key())
             .await
             .unwrap();
 
@@ -224,7 +223,7 @@ mod stored_credential {
         let mut entity = random_entity();
 
         let tx = store.new_transaction().await.unwrap();
-        entity.created_at = store.save(entity.clone()).await.unwrap();
+        entity.created_at = tx.save(entity.clone()).await.unwrap();
         tx.commit().await.unwrap();
 
         let search_key = get_search_key(&entity);
@@ -246,7 +245,7 @@ mod stored_credential {
 
         let tx = store.new_transaction().await.unwrap();
         for entity in &mut entities {
-            entity.created_at = store.save(entity.clone()).await.unwrap();
+            entity.created_at = tx.save(entity.clone()).await.unwrap();
         }
         entities[1].created_at = entities[0].created_at;
         tx.commit().await.unwrap();
@@ -275,7 +274,7 @@ mod stored_credential {
 
         let tx = store.new_transaction().await.unwrap();
         for entity in [&mut relevant_entity, &mut irrelevant_entity] {
-            entity.created_at = store.save(entity.clone()).await.unwrap();
+            entity.created_at = tx.save(entity.clone()).await.unwrap();
             // ensure the entities are created in different seconds so they don't accidentally match
             smol::Timer::after(std::time::Duration::from_secs(1)).await;
         }
@@ -296,8 +295,8 @@ mod stored_credential {
         let _ = env_logger::try_init();
 
         let mut entity = random_entity();
-        let _tx = store.new_transaction().await.unwrap();
-        entity.created_at = store.save(entity.clone()).await.unwrap();
+        let tx = store.new_transaction().await.unwrap();
+        entity.created_at = tx.save(entity.clone()).await.unwrap();
         let search_key = get_search_key(&entity);
 
         let found = store
@@ -316,11 +315,11 @@ mod stored_credential {
         let search_key = get_search_key(&entity);
 
         let tx = store.new_transaction().await.unwrap();
-        store.save(entity.clone()).await.unwrap();
+        tx.save(entity.clone()).await.unwrap();
         tx.commit().await.unwrap();
-        let _tx = store.new_transaction().await.unwrap();
 
-        store.remove::<StoredCredential>(&entity.primary_key()).await.unwrap();
+        let tx = store.new_transaction().await.unwrap();
+        tx.remove::<StoredCredential>(&entity.primary_key()).await.unwrap();
 
         let found = store
             .search::<StoredCredential, CredentialFindFilters>(&search_key)
