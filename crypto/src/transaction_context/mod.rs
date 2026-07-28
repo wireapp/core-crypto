@@ -201,7 +201,7 @@ impl TransactionContext {
         let TransactionContextInner::Valid {
             core_crypto,
             pending_epoch_changes,
-            ..
+            inner,
         } = &*guard
         else {
             return Err(Error::InvalidTransactionContext);

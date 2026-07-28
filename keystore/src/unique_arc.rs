@@ -1,9 +1,18 @@
 use std::{
+    borrow::Borrow,
     ops::Deref,
     sync::{Arc, Weak},
 };
 
 use async_lock::{RwLock, RwLockReadGuardArc};
+use async_trait::async_trait;
+
+use crate::{
+    CryptoKeystoreResult,
+    traits::{
+        BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, KeyType, SearchableEntity, UniqueEntityExt,
+    },
+};
 
 /// A smart pointer which has exactly one strong reference to the inner type,
 /// but may have several weak references.
@@ -104,6 +113,72 @@ impl<T> UniqueWeak<T> {
     pub fn upgrade_sync(&self) -> Option<impl Deref<Target = T>> {
         let _guard = self.gate.try_read_arc()?;
         self.weak.upgrade().map(move |t| ArcWithReadGuard { _guard, t })
+    }
+}
+
+#[cfg_attr(target_os = "unknown", async_trait(?Send))]
+#[cfg_attr(not(target_os = "unknown"), async_trait)]
+impl<T> FetchFromDatabase for UniqueArc<T>
+where
+    T: FetchFromDatabase,
+{
+    /// Get an instance of `E` from the database by its primary key.
+    async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<E>>
+    where
+        E: 'static + Entity + Clone + Send + Sync,
+    {
+        <T as FetchFromDatabase>::get::<E>(&self.arc, id).await
+    }
+
+    /// Count the number of `E`s in the database.
+    async fn count<E>(&self) -> CryptoKeystoreResult<u32>
+    where
+        E: 'static + Entity + Clone + Send + Sync,
+    {
+        <T as FetchFromDatabase>::count::<E>(&self.arc).await
+    }
+
+    /// Load all `E`s from the database.
+    async fn load_all<E>(&self) -> CryptoKeystoreResult<Vec<E>>
+    where
+        E: 'static + Entity + Clone + Send + Sync,
+    {
+        <T as FetchFromDatabase>::load_all::<E>(&self.arc).await
+    }
+
+    /// Get an instance of `E` from the database by the borrowed form of its primary key.
+    async fn get_borrowed<E>(&self, id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey) -> CryptoKeystoreResult<Option<E>>
+    where
+        E: 'static + EntityGetBorrowed + Clone + Send + Sync,
+        E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
+        for<'a> &'a E::BorrowedPrimaryKey: KeyType,
+    {
+        <T as FetchFromDatabase>::get_borrowed::<E>(&self.arc, id).await
+    }
+
+    /// Get the requested unique entity from the database.
+    async fn get_unique<'a, U>(&self) -> CryptoKeystoreResult<Option<U>>
+    where
+        U: 'static + UniqueEntityExt + Entity + Clone + Send + Sync,
+    {
+        <T as FetchFromDatabase>::get_unique(&self.arc).await
+    }
+
+    /// Determine whether a unique entity is present in the database.
+    async fn exists<'a, U>(&self) -> CryptoKeystoreResult<bool>
+    where
+        U: 'static + UniqueEntityExt + Entity + Clone + Send + Sync,
+    {
+        <T as FetchFromDatabase>::exists::<U>(&self.arc).await
+    }
+
+    /// Search for relevant instances of `E` given a search key.
+    async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<E>>
+    where
+        E: 'static + Entity + SearchableEntity<SearchKey> + Clone + Send + Sync,
+        SearchKey: KeyType,
+    {
+        <T as FetchFromDatabase>::search::<E, SearchKey>(&self.arc, search_key).await
     }
 }
 
