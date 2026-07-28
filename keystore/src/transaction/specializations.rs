@@ -1,12 +1,12 @@
 //! These methods are specialized for performing certain entity-specific queries.
 
-use std::{borrow::Cow, collections::hash_map::Entry, sync::Arc};
+use std::{borrow::Cow, sync::Arc};
 
 use super::dynamic_dispatch::EntityId;
 use crate::{
     CryptoKeystoreResult,
     entities::{MlsPendingMessage, PersistedMlsGroup},
-    traits::{BorrowPrimaryKey, Entity, KeyType as _},
+    traits::{BorrowPrimaryKey, KeyType as _},
     transaction::KeystoreTransaction,
 };
 
@@ -38,16 +38,15 @@ impl KeystoreTransaction {
     pub(crate) async fn remove_pending_messages_by_conversation_id(&self, conversation_id: impl AsRef<[u8]> + Send) {
         let conversation_id = conversation_id.as_ref();
 
-        let mut cache_guard = self.cache.write().await;
-        if let Entry::Occupied(mut table) = cache_guard.entry(MlsPendingMessage::COLLECTION_NAME) {
-            table.get_mut().retain(|_key, entity| {
-                let pending_message = entity
-                    .downcast::<MlsPendingMessage>()
-                    .expect("table for MlsPendingMessage contains only that type");
+        {
+            let mut cache_guard = self.cache.write().await;
+            cache_guard.retain(|_entity_id, entity| {
+                let Some(pending_message) = entity.downcast::<MlsPendingMessage>() else {
+                    return true;
+                };
                 pending_message.foreign_id != conversation_id
             });
         }
-        drop(cache_guard);
 
         let mut deleted_set = self.deleted.write().await;
         deleted_set.insert(

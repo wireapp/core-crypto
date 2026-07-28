@@ -70,10 +70,6 @@ impl EntityId {
         Self::from_key::<E>(primary_key.to_owned().bytes())
     }
 
-    pub(crate) fn collection_name(&self) -> &'static str {
-        self.typ.collection_name()
-    }
-
     pub(crate) fn execute_delete(&self, tx: &Transaction<'_>) -> CryptoKeystoreResult<bool> {
         match self.typ {
             EntityType::HpkePrivateKey => {
