@@ -6,6 +6,11 @@
 
 ## CoreCrypto 10
 
+### v10.2.0 - 2026-07-28
+
+- Key packages are retained in case of a `ConversationAlreadyExists` error during `processWelcomeMessage()`, however,
+  only if the key package was created in an earlier CoreCrypto transaction.
+
 ### v10.1.1 - 2026-07-21
 
 - Swift/iOS: CoreCrypto transactions are now cancellable
