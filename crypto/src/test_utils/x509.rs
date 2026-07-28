@@ -248,20 +248,21 @@ impl X509TestChain {
     pub async fn register_with_central(&self, context: &TransactionContext) {
         use x509_cert::der::Encode as _;
 
+        let inner = context.inner().await.unwrap();
         let env = context.pki_environment().await.unwrap();
 
-        env.add_trust_anchor(self.trust_anchor.certificate.clone())
+        env.add_trust_anchor(inner.transaction(), self.trust_anchor.certificate.clone())
             .await
             .expect("can add trust anchor");
 
         for intermediate in &self.intermediates {
-            env.add_intermediate_cert(intermediate.certificate.clone())
+            env.add_intermediate_cert(inner.transaction(), intermediate.certificate.clone())
                 .await
                 .expect("can add intermediate cert");
         }
 
         for (crl_dp, crl) in &self.crls {
-            env.save_crl(crl_dp, crl.to_der().unwrap().as_slice())
+            env.save_crl(inner.transaction(), crl_dp, crl.to_der().unwrap().as_slice())
                 .await
                 .expect("can save CRL");
         }

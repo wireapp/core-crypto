@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use core_crypto_keystore::entities::E2eiCrl;
+use core_crypto_keystore::{Transaction, entities::E2eiCrl};
 
 use super::{Error, Result};
 use crate::{
@@ -35,7 +35,7 @@ impl PkiEnvironment {
 
     /// Validate the CRL (trust anchors must be configured prior to this) and
     /// save it to the database.
-    pub async fn save_crl(&self, crl_dp: &str, crl_der: &[u8]) -> Result<()> {
+    pub async fn save_crl(&self, tx: &Transaction, crl_dp: &str, crl_der: &[u8]) -> Result<()> {
         let mut guard = self.rjt_pki_env.lock().await;
         let crl = guard.validate_crl_with_raw(crl_der)?;
 
@@ -48,6 +48,7 @@ impl PkiEnvironment {
             content: RjtPkiEnvironment::encode_crl_to_der(&crl)?,
             distribution_point: crl_dp.to_owned(),
         };
-        self.transactionally(async || self.database.save(crl_data).await).await
+
+        tx.save(crl_data).await.map_err(Into::into)
     }
 }
