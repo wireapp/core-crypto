@@ -13,7 +13,7 @@ use certval::{
     CertSource, CertVector as _, CertificationPathSettings, Error as CertvalError, PathValidationStatus, TaSource,
 };
 use core_crypto_keystore::{
-    CryptoKeystoreError, Database,
+    Database, Transaction,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
     traits::{FetchFromDatabase, UniqueEntity},
 };
@@ -160,32 +160,6 @@ impl PkiEnvironment {
         self.database.clone()
     }
 
-    /// Wrap an operation which requires a transaction.
-    ///
-    /// If a transaction does not already exist, creates one.
-    ///
-    /// After the operation finishes, if we created a transaction, then either
-    /// commit or rollback the operation according to the operation's success.
-    async fn transactionally<T, E>(&self, operation: impl AsyncFnOnce() -> std::result::Result<T, E>) -> Result<T>
-    where
-        E: Into<Error>,
-    {
-        let created_transaction = match self.database.try_new_immediate_transaction().await {
-            Ok(()) => true,
-            Err(CryptoKeystoreError::TransactionInProgress) => false,
-            Err(err) => return Err(err.into()),
-        };
-        let operation_outcome = operation().await;
-        if created_transaction {
-            if operation_outcome.is_ok() {
-                self.database.commit_transaction().await?;
-            } else {
-                self.database.rollback_transaction().await?;
-            }
-        }
-        operation_outcome.map_err(Into::into)
-    }
-
     /// Adds the certificate as a trust anchor to the PKI environment.
     ///
     /// The certificate is saved to the database, and included in the PKI environment for
@@ -195,7 +169,7 @@ impl PkiEnvironment {
     ///
     /// Adding a trust anchor will replace any existing trust anchor. This limitation
     /// will be relaxed in the future.
-    pub async fn add_trust_anchor(&self, cert: Certificate) -> Result<()> {
+    pub async fn add_trust_anchor(&self, tx: &Transaction, cert: Certificate) -> Result<()> {
         // Validate it (expiration & signature only)
         self.rjt_pki_env.lock().await.validate_trust_anchor_cert(&cert)?;
 
@@ -205,8 +179,7 @@ impl PkiEnvironment {
             content: cert.to_der()?,
         };
 
-        self.transactionally(async || self.database.save(cert_data).await)
-            .await?;
+        tx.save(cert_data).await?;
 
         let mut trust_anchors = TaSource::new();
         trust_anchors.push(certval::CertFile {
@@ -225,7 +198,7 @@ impl PkiEnvironment {
     ///
     /// Note that any certificates relying on the removed trust anchor may no longer
     /// validate.
-    pub async fn remove_trust_anchor(&self, serial_number: &[u8]) -> Result<()> {
+    pub async fn remove_trust_anchor(&self, tx: &Transaction, serial_number: &[u8]) -> Result<()> {
         let mut guard = self.rjt_pki_env.lock().await;
 
         let certs: Vec<_> = guard
@@ -254,12 +227,7 @@ impl PkiEnvironment {
         guard.add_trust_anchor_source(Box::new(trust_anchors));
 
         // TODO: make this work for multiple trust anchors, see WPB-25632
-        self.transactionally(async || {
-            self.database
-                .remove::<E2eiAcmeCA>(&<E2eiAcmeCA as UniqueEntity>::KEY)
-                .await
-        })
-        .await?;
+        tx.remove::<E2eiAcmeCA>(&<E2eiAcmeCA as UniqueEntity>::KEY).await?;
 
         Ok(())
     }
@@ -271,7 +239,7 @@ impl PkiEnvironment {
     ///
     /// CRL (Certificate Revocation List) distribution points are extracted from the certificate and
     /// an attempt is made to fetch a CRL from each one.
-    pub async fn add_intermediate_cert(&self, cert: Certificate) -> Result<()> {
+    pub async fn add_intermediate_cert(&self, tx: &Transaction, cert: Certificate) -> Result<()> {
         // Save cert's DER representation to the database
         let (ski, aki) = RjtPkiEnvironment::extract_ski_aki_from_cert(&cert)?;
         let ski_aki_pair = format!("{ski}:{}", aki.unwrap_or_default());
@@ -281,21 +249,16 @@ impl PkiEnvironment {
             ski_aki_pair,
         };
 
-        self.transactionally(async || {
-            self.database.save(intermediate_cert).await?;
+        tx.save(intermediate_cert).await?;
 
-            // Get CRL distribution points and CRLs
-            let dps: Vec<String> = extract_crl_uris(&cert)?.iter().flatten().cloned().collect();
-            let crls = self.fetch_crls(dps.iter().map(AsRef::as_ref)).await?;
+        // Get CRL distribution points and CRLs
+        let dps: Vec<String> = extract_crl_uris(&cert)?.iter().flatten().cloned().collect();
+        let crls = self.fetch_crls(dps.iter().map(AsRef::as_ref)).await?;
 
-            // Save all CRLs to the database
-            for (distribution_point, crl) in &crls {
-                self.save_crl(distribution_point, crl).await?;
-            }
-
-            Result::Ok(())
-        })
-        .await?;
+        // Save all CRLs to the database
+        for (distribution_point, crl) in &crls {
+            self.save_crl(tx, distribution_point, crl).await?;
+        }
 
         let mut cps = CertificationPathSettings::new();
         certval::set_time_of_interest(&mut cps, now()?);
@@ -389,23 +352,25 @@ LOVS/gxNk618+PKA2bYq67MZQXCYGgk=
     #[tokio::test]
     async fn can_add_trust_anchor() {
         let db = Database::open_in_memory().unwrap();
+        let tx = db.new_transaction().await.unwrap();
         let pki_env = PkiEnvironment::with_dummy_hooks(db).await.unwrap();
         let cert = x509_cert::Certificate::from_pem(EXAMPLE_CERT_PEM).unwrap();
-        assert!(pki_env.add_trust_anchor(cert).await.is_ok());
+        assert!(pki_env.add_trust_anchor(&tx, cert).await.is_ok());
     }
 
     #[tokio::test]
     async fn can_remove_trust_anchor() {
         let db = Database::open_in_memory().unwrap();
+        let tx = db.new_transaction().await.unwrap();
         let pki_env = PkiEnvironment::with_dummy_hooks(db).await.unwrap();
         let cert = x509_cert::Certificate::from_pem(EXAMPLE_CERT_PEM).unwrap();
-        pki_env.add_trust_anchor(cert.clone()).await.unwrap();
+        pki_env.add_trust_anchor(&tx, cert.clone()).await.unwrap();
 
         let certs = pki_env.get_trust_anchors().await;
         assert_eq!(certs.len(), 1);
 
         pki_env
-            .remove_trust_anchor(certs[0].tbs_certificate.serial_number.as_bytes())
+            .remove_trust_anchor(&tx, certs[0].tbs_certificate.serial_number.as_bytes())
             .await
             .unwrap();
         assert_eq!(pki_env.get_trust_anchors().await.len(), 0);
@@ -414,8 +379,9 @@ LOVS/gxNk618+PKA2bYq67MZQXCYGgk=
     #[tokio::test]
     async fn can_add_intermediate_cert() {
         let db = Database::open_in_memory().unwrap();
+        let tx = db.new_transaction().await.unwrap();
         let pki_env = PkiEnvironment::with_dummy_hooks(db).await.unwrap();
         let cert = x509_cert::Certificate::from_pem(EXAMPLE_CERT_PEM).unwrap();
-        assert!(pki_env.add_intermediate_cert(cert).await.is_ok());
+        assert!(pki_env.add_intermediate_cert(&tx, cert).await.is_ok());
     }
 }

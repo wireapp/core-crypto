@@ -29,7 +29,7 @@ use std::{
     sync::Arc,
 };
 
-use core_crypto_keystore::Database;
+use core_crypto_keystore::{Database, Transaction, UniqueArc};
 use jwt_simple::prelude::*;
 use rstest::rstest;
 use rusty_jwt_tools::prelude::*;
@@ -137,7 +137,7 @@ fn test_env() -> TestEnvironment {
 async fn prepare_pki_env_and_config(
     test_env: &TestEnvironment,
     sign_alg: JwsAlgorithm,
-) -> (PkiEnvironment, X509CredentialConfiguration) {
+) -> (PkiEnvironment, X509CredentialConfiguration, UniqueArc<Transaction>) {
     let wire_server_keypair = wire_e2e_identity::utils::generate_key(sign_alg).unwrap();
     let template = r#"{{.DeviceID}}"#;
     let wire_server_uri = test_env.wire_server.uri();
@@ -225,9 +225,10 @@ async fn prepare_pki_env_and_config(
     });
 
     let db = Database::open_in_memory().unwrap();
+    let tx = db.new_transaction().await.unwrap();
     let pki_env = PkiEnvironment::new(hooks, db).await.unwrap();
-    pki_env.add_trust_anchor(acme_cert).await.unwrap();
-    (pki_env, config)
+    pki_env.add_trust_anchor(&tx, acme_cert).await.unwrap();
+    (pki_env, config, tx)
 }
 
 // This test checks that certificate acquisition works for all key types
@@ -246,7 +247,7 @@ async fn prepare_pki_env_and_config(
 #[case(JwsAlgorithm::P521)]
 #[case(JwsAlgorithm::Ed25519)]
 async fn x509_cert_acquisition_works(test_env: TestEnvironment, #[case] sign_alg: JwsAlgorithm) {
-    let (pki_env, config) = prepare_pki_env_and_config(&test_env, sign_alg).await;
+    let (pki_env, config, _) = prepare_pki_env_and_config(&test_env, sign_alg).await;
     let acq = X509CredentialAcquisition::try_new(Arc::new(pki_env), config).unwrap();
     let (_sign_kp, _certs) = acq
         .complete_dpop_challenge()
@@ -264,7 +265,7 @@ async fn x509_cert_acquisition_works(test_env: TestEnvironment, #[case] sign_alg
 #[case(JwsAlgorithm::P521)]
 #[case(JwsAlgorithm::Ed25519)]
 async fn fetching_crls_works(test_env: TestEnvironment, #[case] sign_alg: JwsAlgorithm) {
-    let (pki_env, config) = prepare_pki_env_and_config(&test_env, sign_alg).await;
+    let (pki_env, config, _) = prepare_pki_env_and_config(&test_env, sign_alg).await;
     let pki_env = Arc::new(pki_env);
     let acq = X509CredentialAcquisition::try_new(pki_env.clone(), config).unwrap();
     let (_sign_kp, certs) = acq
@@ -308,13 +309,13 @@ async fn fetching_crls_works(test_env: TestEnvironment, #[case] sign_alg: JwsAlg
 #[rstest]
 #[tokio::test]
 async fn should_fail_without_trust_anchor(test_env: TestEnvironment) {
-    let (pki_env, config) = prepare_pki_env_and_config(&test_env, JwsAlgorithm::P256).await;
+    let (pki_env, config, tx) = prepare_pki_env_and_config(&test_env, JwsAlgorithm::P256).await;
 
     let certs = pki_env.get_trust_anchors().await;
     assert_eq!(certs.len(), 1);
 
     pki_env
-        .remove_trust_anchor(certs[0].tbs_certificate.serial_number.as_bytes())
+        .remove_trust_anchor(&tx, certs[0].tbs_certificate.serial_number.as_bytes())
         .await
         .unwrap();
     assert_eq!(pki_env.get_trust_anchors().await.len(), 0);
