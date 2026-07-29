@@ -354,14 +354,28 @@ impl PkiEnvironment {
     /// times will overwrite any previously added trust anchor.
     pub async fn add_trust_anchor(&self, cert_pem: &str) -> CoreCryptoResult<()> {
         let cert = x509_cert::Certificate::from_pem(cert_pem).map_err(CoreCryptoError::generic())?;
-        self.inner.add_trust_anchor(cert).await?;
+
+        self.database()
+            .ensure_transaction::<_, CoreCryptoError>(
+                async |tx| self.inner.add_trust_anchor(tx, cert).await.map_err(Into::into),
+                |err| CoreCryptoError::generic()(err),
+            )
+            .await?;
+
         Ok(())
     }
 
     /// Add a PEM-encoded certificate as an intermediate certificate.
     pub async fn add_intermediate_cert(&self, cert_pem: &str) -> CoreCryptoResult<()> {
         let cert = x509_cert::Certificate::from_pem(cert_pem).map_err(CoreCryptoError::generic())?;
-        self.inner.add_intermediate_cert(cert).await?;
+
+        self.database()
+            .ensure_transaction::<_, CoreCryptoError>(
+                async |tx| self.inner.add_intermediate_cert(tx, cert).await.map_err(Into::into),
+                |err| CoreCryptoError::generic()(err),
+            )
+            .await?;
+
         Ok(())
     }
 }
