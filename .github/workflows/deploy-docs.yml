@@ -1,6 +1,6 @@
 concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}-deploy-docs"
-  cancel-in-progress: true
+  group: deploy-docs-gh-pages
+  cancel-in-progress: false
 
 on:
   workflow_call:
