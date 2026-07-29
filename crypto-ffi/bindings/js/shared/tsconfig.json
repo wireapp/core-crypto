@@ -37,6 +37,6 @@
         "stripInternal": true,
 
         // Custom types
-        "types": ["node", "bun", "@wdio/globals/types", "@types/mocha"]
+        "types": ["node", "bun", "@types/mocha"]
     }
 }
