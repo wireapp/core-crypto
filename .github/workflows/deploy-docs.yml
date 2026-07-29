@@ -27,16 +27,19 @@ jobs:
         path: "./target/doc/${{ env.GIT_TAG }}"
         merge-multiple: false
 
-    - name: copy static files
+    - name: prepare static files
+      if: github.ref == 'refs/heads/main'
       run: |
-        cp docs/*.md target/doc/
+        mkdir -p target/static-doc
+        cp docs/*.md target/static-doc/
 
-    - name: deploy docs
+    - name: deploy static files
+      if: github.ref == 'refs/heads/main'
       uses: peaceiris/actions-gh-pages@v4.1.0
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_branch: gh-pages
-        publish_dir: target/doc
+        publish_dir: target/static-doc
         keep_files: true
         force_orphan: false
         enable_jekyll: true
