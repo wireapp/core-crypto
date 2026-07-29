@@ -1,6 +1,6 @@
 use zeroize::Zeroize;
 
-use crate::traits::PrimaryKey;
+use crate::traits::{FetchFromDatabase, PrimaryKey};
 
 #[derive(core_crypto_macros::Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
@@ -40,8 +40,9 @@ impl ProteusPrekey {
         self.id_bytes = self.id.to_le_bytes().into();
     }
 
-    pub async fn get_free_id(db: &crate::Database) -> crate::CryptoKeystoreResult<u16> {
-        use crate::traits::FetchFromDatabase as _;
+    pub async fn get_free_id(db: &impl FetchFromDatabase) -> crate::CryptoKeystoreResult<u16> {
+        // TODO: now that database unification is accomplished, we can replace this silly loop
+        // with something more efficient which just queries the database directly.
         let mut id = 1u16;
         let limit = u16::MAX;
         while id <= limit {
