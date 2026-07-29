@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Error"],"mod":["conversation","credential","key_package"],"struct":["ExternalSender"],"trait":["EpochObserver","HistoryObserver"],"type":["Result"]};

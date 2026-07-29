@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"struct":["ClientId","QualifiedE2eiClientId","WireQualifiedClientId"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Error"],"mod":["hooks"],"struct":["NewCrlDistributionPoints","PkiEnvironment"],"type":["Result"]};

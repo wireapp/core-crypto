@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Error","GroupInfoEncryptionType","GroupInfoPayload","RatchetTreeType","WirePolicy"],"struct":["BufferedDecryptedMessage","CommitBundle","Conversation","ConversationConfiguration","ConversationId","ConversationIdRef","ConversationMut","CustomConfiguration","DecryptedMessage","GroupInfoBundle","SecretKey","WelcomeMessage"],"type":["Result"]};

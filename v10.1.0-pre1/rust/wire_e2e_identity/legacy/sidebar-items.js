@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["device_status","id"],"struct":["CrlRegistration"]};

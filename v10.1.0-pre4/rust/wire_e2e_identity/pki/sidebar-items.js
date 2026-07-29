@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["CertProfile","PkiKeypair"],"struct":["CertificateGenerationArgs","Ed25519PkiKeypair","Ed25519PkiSignature","P521PkiKeypair","P521PkiVerifyingKey"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["Command","ProteusMessage"],"fn":["main","print_basic_identities","print_members"],"struct":["App","ProteusCipherMessage","ProteusEnvelope","ProteusPreKeyBundle","ProteusPrekeyMessage"]};
