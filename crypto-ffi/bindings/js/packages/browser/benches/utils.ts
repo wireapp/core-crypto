@@ -3,6 +3,7 @@ import {
     logResults,
     setup as sharedSetup,
 } from "../../../shared/benches/utils";
+import { getPage } from "../shared/utils";
 
 declare global {
     var benchRunning: boolean;
@@ -41,7 +42,7 @@ export async function runBenchmark(benchmarkSetup: () => Promise<void>) {
 
 export async function setup() {
     await sharedSetup();
-    await browser.execute(async () => {
+    await getPage().evaluate(async () => {
         if (globalThis.tinybench === undefined) {
             tinybench =
                 // @ts-expect-error TS2307: Cannot find module ./corecrypto.js or its corresponding type declarations.
