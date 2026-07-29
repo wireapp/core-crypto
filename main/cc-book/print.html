@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-2effa853.js";
+            window.path_to_searchindex_js = "searchindex-da2c2353.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-6ea44124.js"></script>
@@ -835,6 +835,58 @@ causes UniFFI’s generated foreign-language binding to cancel the task executin
 <p><code>Database.getLocation</code> now returns the absolute path to the database file for non-web platforms.</p>
 </li>
 </ol>
+<h2 id="decryptedmessage"><a class="header" href="#decryptedmessage">DecryptedMessage</a></h2>
+<p><code>DecryptedMessage</code> is now an enum with <code>Text</code>, <code>Commit</code>, and <code>Proposal</code> variants. Data that was previously exposed
+through optional properties is now carried by the corresponding variant. Match on the variant before accessing its data:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">if (DecryptedMessage.Text.instanceOf(decryptedMessage)) {
+    const { plaintext, senderClientId, identity } = decryptedMessage.inner;
+    // Handle the application message.
+} else if (DecryptedMessage.Commit.instanceOf(decryptedMessage)) {
+    // Handle the commit.
+    const { isActive, bufferedMessages, identity } = decryptedMessage.inner;
+} else if (DecryptedMessage.Proposal.instanceOf(decryptedMessage)) {
+    const { delay, identity } = decryptedMessage.inner;
+    // Handle the proposal.
+}
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">switch decryptedMessage {
+case let .text(plaintext, senderClientId, identity):
+    // Handle the application message.
+case let .commit(isActive, bufferedMessages, identity):
+    // Handle the commit.
+case let .proposal(delay, identity):
+    // Handle the proposal.
+}
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">when (decryptedMessage) {
+    is DecryptedMessage.Text -&gt; {
+        val (plaintext, senderClientId, identity) = decryptedMessage
+        // Handle the application message.
+    }
+    is DecryptedMessage.Commit -&gt; {
+        val (isActive, bufferedMessages, identity) = decryptedMessage
+        // Handle the commit.
+    }
+    is DecryptedMessage.Proposal -&gt; {
+        val (delay, identity) = decryptedMessage
+        // Handle the proposal.
+    }
+}
+</code></pre>
+</div>
+</div>
+</div>
+
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="migrating-to-unreleased-typescript"><a class="header" href="#migrating-to-unreleased-typescript">Migrating to Unreleased: TypeScript</a></h1>
 <p>See the <a href="unreleased/migration-guide.html">common migration guide</a> for changes that apply to all platforms.</p>
@@ -1391,6 +1443,10 @@ log level, use the free function <code>setMaxLogLevel(level: CoreCryptoLogLevel)
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
 <h2 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h2>
+<ul>
+<li><code>DecryptedMessage</code> is now an enum with <code>Text</code>, <code>Commit</code>, and <code>Proposal</code> variants. For migration, see the migration
+guide.</li>
+</ul>
 <h2 id="corecrypto-10"><a class="header" href="#corecrypto-10">CoreCrypto 10</a></h2>
 <h3 id="v1020---2026-07-28"><a class="header" href="#v1020---2026-07-28">v10.2.0 - 2026-07-28</a></h3>
 <ul>

@@ -122,6 +122,9 @@
             <a href="Enums.html">Enumerations</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Enums/BufferedDecryptedMessage.html">BufferedDecryptedMessage</a>
+              </li>
+              <li class="nav-group-task">
                 <a href="WireCoreCryptoUniffi/Enums/CipherSuite.html">CipherSuite</a>
               </li>
               <li class="nav-group-task">
@@ -132,6 +135,9 @@
               </li>
               <li class="nav-group-task">
                 <a href="WireCoreCryptoUniffi/Enums/CredentialType.html">CredentialType</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="WireCoreCryptoUniffi/Enums/DecryptedMessage.html">DecryptedMessage</a>
               </li>
               <li class="nav-group-task">
                 <a href="WireCoreCryptoUniffi/Enums/DeviceStatus.html">DeviceStatus</a>
@@ -320,16 +326,10 @@
             <a href="Structs.html">Structures</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a href="WireCoreCryptoUniffi/Structs/BufferedDecryptedMessage.html">BufferedDecryptedMessage</a>
-              </li>
-              <li class="nav-group-task">
                 <a href="WireCoreCryptoUniffi/Structs/BuildMetadata.html">BuildMetadata</a>
               </li>
               <li class="nav-group-task">
                 <a href="WireCoreCryptoUniffi/Structs/CommitBundle.html">CommitBundle</a>
-              </li>
-              <li class="nav-group-task">
-                <a href="WireCoreCryptoUniffi/Structs/DecryptedMessage.html">DecryptedMessage</a>
               </li>
               <li class="nav-group-task">
                 <a href="WireCoreCryptoUniffi/Structs/DeserializedClientId.html">DeserializedClientId</a>
@@ -383,6 +383,36 @@
           <section class="section task-group-section">
             <div class="task-group">
               <ul>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi24BufferedDecryptedMessageO"></a>
+                    <a name="//apple_ref/swift/Enum/BufferedDecryptedMessage" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi24BufferedDecryptedMessageO">BufferedDecryptedMessage</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>A decrypted message that was buffered due to out-of-order delivery by the delivery service.
+It represents messages for the new epoch that arrived before the commit that created it.</p>
+
+                        <a href="WireCoreCryptoUniffi/Enums/BufferedDecryptedMessage.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">BufferedDecryptedMessage</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">BufferedDecryptedMessage</span><span class="p">:</span> <span class="kt">Sendable</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
                 <li class="item">
                   <div>
                     <code>
@@ -497,6 +527,35 @@
                           <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">CredentialType</span> <span class="p">:</span> <span class="kt">UInt8</span></code></pre>
 <pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">CredentialType</span><span class="p">:</span> <span class="kt">Sendable</span></code></pre>
 <pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">CredentialType</span><span class="p">:</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Hashable</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi16DecryptedMessageO"></a>
+                    <a name="//apple_ref/swift/Enum/DecryptedMessage" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi16DecryptedMessageO">DecryptedMessage</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Represents the items a consumer might require after decrypting a message.</p>
+
+                        <a href="WireCoreCryptoUniffi/Enums/DecryptedMessage.html" class="slightly-smaller">See more</a>
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">public</span> <span class="kd">enum</span> <span class="kt">DecryptedMessage</span></code></pre>
+<pre class="highlight swift"><code><span class="kd">extension</span> <span class="kt">DecryptedMessage</span><span class="p">:</span> <span class="kt">Sendable</span></code></pre>
 
                         </div>
                       </div>

@@ -107,33 +107,29 @@
   <div class="breadcrumbs"><a href="../../../index.html">CoreCrypto</a><span class="delimiter">/</span><a href="../index.html">com.wire.crypto</a><span class="delimiter">/</span><span class="current">DecryptedMessage</span></div>
   <div class="cover ">
     <h1 class="cover"><span>Decrypted</span><wbr></wbr><span><span>Message</span></span></h1>
-    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="index.html">DecryptedMessage</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">var </span>message<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>isActive<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>commitDelay<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-u-long/index.html">ULong</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>senderClientId<span class="token operator">: </span><a href="../-client-id/index.html">ClientId</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>identity<span class="token operator">: </span><a href="../-wire-identity/index.html">WireIdentity</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>bufferedMessages<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../-buffered-decrypted-message/index.html">BufferedDecryptedMessage</a><span class="token operator">&gt;</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span> : <a href="../-disposable/index.html">Disposable</a><span class="source-link-wrapper"><span class="source-link" data-element-type="source-link">(<a href="https://github.com/wireapp/core-crypto/tree/main/crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt#L13321">source</a>)</span></span></div><p class="paragraph">A decrypted message and various associated metadata.</p></div></div>
+    <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="index.html">DecryptedMessage</a> : <a href="../-disposable/index.html">Disposable</a><span class="source-link-wrapper"><span class="source-link" data-element-type="source-link">(<a href="https://github.com/wireapp/core-crypto/tree/main/crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt#L14257">source</a>)</span></span></div><p class="paragraph">Represents the items a consumer might require after decrypting a message.</p><h4 class="tableheader">Inheritors</h4><div class="table"><div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="-text/index.html">Text</a></div></span></div><div></div></div></div><div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="-commit/index.html">Commit</a></div></span></div><div></div></div></div><div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main"><div class="main-subrow keyValue "><div class=""><span class="inline-flex"><div><a href="-proposal/index.html">Proposal</a></div></span></div><div></div></div></div></div></div></div>
   </div>
   <div class="tabbedcontent">
     <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
     <div class="tabs-section-body">
-      <div data-togglable="CONSTRUCTOR">
-        <h2 class="tableheader">Constructors</h2>
-        <div class="table"><a data-name="2062269168%2FConstructors%2F1144021071" anchor-label="DecryptedMessage" id="2062269168%2FConstructors%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row table-row_content" data-togglable="CONSTRUCTOR" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
+      <div data-togglable="TYPE">
+        <h2 class="tableheader">Types</h2>
+        <div class="table"><a data-name="-561529639%2FClasslikes%2F1144021071" anchor-label="Commit" id="-561529639%2FClasslikes%2F1144021071" data-filterable-set=":jvm/main"></a>
+          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="-decrypted-message.html"><span>Decrypted</span><wbr></wbr><span><span>Message</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2062269168%2FConstructors%2F1144021071"></span>
+                  <div><a href="-commit/index.html"><span><span>Commit</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-561529639%2FClasslikes%2F1144021071"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">constructor</span><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">message<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">isActive<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token punctuation">, </span></span><span class="parameter ">commitDelay<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-u-long/index.html">ULong</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">senderClientId<span class="token operator">: </span><a href="../-client-id/index.html">ClientId</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">identity<span class="token operator">: </span><a href="../-wire-identity/index.html">WireIdentity</a><span class="token punctuation">, </span></span><span class="parameter ">bufferedMessages<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../-buffered-decrypted-message/index.html">BufferedDecryptedMessage</a><span class="token operator">&gt;</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-commit/index.html">Commit</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>isActive<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>bufferedMessages<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../-buffered-decrypted-message/index.html">BufferedDecryptedMessage</a><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>identity<span class="token operator">: </span><a href="../-wire-identity/index.html">WireIdentity</a></span></span><span class="token punctuation">)</span> : <a href="index.html">DecryptedMessage</a></div><div class="brief "><p class="paragraph">The decrypted message is a commit.</p></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      <div data-togglable="TYPE">
-        <h2 class="tableheader">Types</h2>
-        <div class="table"><a data-name="1066479686%2FClasslikes%2F1144021071" anchor-label="Companion" id="1066479686%2FClasslikes%2F1144021071" data-filterable-set=":jvm/main"></a>
+<a data-name="1066479686%2FClasslikes%2F1144021071" anchor-label="Companion" id="1066479686%2FClasslikes%2F1144021071" data-filterable-set=":jvm/main"></a>
           <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
@@ -148,96 +144,32 @@
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      <div data-togglable="PROPERTY">
-        <h2 class="tableheader">Properties</h2>
-        <div class="table"><a data-name="-175002288%2FProperties%2F1144021071" anchor-label="bufferedMessages" id="-175002288%2FProperties%2F1144021071" data-filterable-set=":jvm/main"></a>
+<a data-name="-610644034%2FClasslikes%2F1144021071" anchor-label="Proposal" id="-610644034%2FClasslikes%2F1144021071" data-filterable-set=":jvm/main"></a>
           <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="buffered-messages.html"><span>buffered</span><wbr></wbr><span><span>Messages</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-175002288%2FProperties%2F1144021071"></span>
+                  <div><a href="-proposal/index.html"><span><span>Proposal</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-610644034%2FClasslikes%2F1144021071"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">var </span><a href="buffered-messages.html">bufferedMessages</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="../-buffered-decrypted-message/index.html">BufferedDecryptedMessage</a><span class="token operator">&gt;</span><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Only set when the decrypted message is a commit.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-proposal/index.html">Proposal</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>delay<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-u-long/index.html">ULong</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>identity<span class="token operator">: </span><a href="../-wire-identity/index.html">WireIdentity</a></span></span><span class="token punctuation">)</span> : <a href="index.html">DecryptedMessage</a></div><div class="brief "><p class="paragraph">The decrypted message is a proposal.</p></div></div></div>
                 </div>
               </div>
             </div>
           </div>
-<a data-name="-2115468941%2FProperties%2F1144021071" anchor-label="commitDelay" id="-2115468941%2FProperties%2F1144021071" data-filterable-set=":jvm/main"></a>
+<a data-name="-1718758045%2FClasslikes%2F1144021071" anchor-label="Text" id="-1718758045%2FClasslikes%2F1144021071" data-filterable-set=":jvm/main"></a>
           <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
-                  <div><a href="commit-delay.html"><span>commit</span><wbr></wbr><span><span>Delay</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-2115468941%2FProperties%2F1144021071"></span>
+                  <div><a href="-text/index.html"><span><span>Text</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1718758045%2FClasslikes%2F1144021071"></span>
                     <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">var </span><a href="commit-delay.html">commitDelay</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-u-long/index.html">ULong</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Commit delay in seconds.</p></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="219593021%2FProperties%2F1144021071" anchor-label="identity" id="219593021%2FProperties%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="identity.html"><span><span>identity</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="219593021%2FProperties%2F1144021071"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">var </span><a href="identity.html">identity</a><span class="token operator">: </span><a href="../-wire-identity/index.html">WireIdentity</a></div><div class="brief "><p class="paragraph">Identity claims present in the sender credential.</p></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="1567265131%2FProperties%2F1144021071" anchor-label="isActive" id="1567265131%2FProperties%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="is-active.html"><span>is</span><wbr></wbr><span><span>Active</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1567265131%2FProperties%2F1144021071"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">var </span><a href="is-active.html">isActive</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a></div><div class="brief "><p class="paragraph">False if processing this message caused the client to be removed from the group, i.e. due to a Remove commit.</p></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-1802203816%2FProperties%2F1144021071" anchor-label="message" id="-1802203816%2FProperties%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="message.html"><span><span>message</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1802203816%2FProperties%2F1144021071"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">var </span><a href="message.html">message</a><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph">Decrypted plaintext</p></div></div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-<a data-name="-1104256%2FProperties%2F1144021071" anchor-label="senderClientId" id="-1104256%2FProperties%2F1144021071" data-filterable-set=":jvm/main"></a>
-          <div class="table-row table-row_content" data-filterable-current=":jvm/main" data-filterable-set=":jvm/main">
-            <div class="main-subrow keyValue ">
-              <div class=""><span class="inline-flex">
-                  <div><a href="sender-client-id.html"><span>sender</span><wbr></wbr><span>Client</span><wbr></wbr><span><span>Id</span></span></a></div>
-<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1104256%2FProperties%2F1144021071"></span>
-                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
-                  </span></span></div>
-              <div>
-                <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">var </span><a href="sender-client-id.html">senderClientId</a><span class="token operator">: </span><a href="../-client-id/index.html">ClientId</a><span class="token operator">?</span></div><div class="brief "><p class="paragraph"><code class="lang-kotlin">ClientId</code> of the sender of the message being decrypted. Only present for application messages.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":jvm/main"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-text/index.html">Text</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>plaintext<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>senderClientId<span class="token operator">: </span><a href="../-client-id/index.html">ClientId</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>identity<span class="token operator">: </span><a href="../-wire-identity/index.html">WireIdentity</a></span></span><span class="token punctuation">)</span> : <a href="index.html">DecryptedMessage</a></div><div class="brief "><p class="paragraph">The decrypted message is a text message.</p></div></div></div>
                 </div>
               </div>
             </div>

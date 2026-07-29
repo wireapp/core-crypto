@@ -169,12 +169,12 @@
 <a href=#169 id=169 data-nosnippet>169</a>            <span class="kw">let </span>charlie_hypothetical_position = <span class="number">1</span>;
 <a href=#170 id=170 data-nosnippet>170</a>
 <a href=#171 id=171 data-nosnippet>171</a>            <span class="macro">assert_eq!</span>(
-<a href=#172 id=172 data-nosnippet>172</a>                bob_decrypted_message.delay,
+<a href=#172 id=172 data-nosnippet>172</a>                bob_decrypted_message.as_proposal().unwrap().delay,
 <a href=#173 id=173 data-nosnippet>173</a>                <span class="prelude-val">Some</span>(DELAY_POS_LINEAR_INCR * bob_hypothetical_position)
 <a href=#174 id=174 data-nosnippet>174</a>            );
 <a href=#175 id=175 data-nosnippet>175</a>
 <a href=#176 id=176 data-nosnippet>176</a>            <span class="macro">assert_eq!</span>(
-<a href=#177 id=177 data-nosnippet>177</a>                charlie_decrypted_message.delay,
+<a href=#177 id=177 data-nosnippet>177</a>                charlie_decrypted_message.as_proposal().unwrap().delay,
 <a href=#178 id=178 data-nosnippet>178</a>                <span class="prelude-val">Some</span>(DELAY_POS_LINEAR_INCR * charlie_hypothetical_position)
 <a href=#179 id=179 data-nosnippet>179</a>            );
 <a href=#180 id=180 data-nosnippet>180</a>        })
