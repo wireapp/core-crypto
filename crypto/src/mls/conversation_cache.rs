@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use core_crypto_keystore::{Database, entities::PersistedMlsGroup, traits::FetchFromDatabase};
+use core_crypto_keystore::{Transaction, entities::PersistedMlsGroup, traits::FetchFromDatabase};
 use schnellru::{ByLength, LruMap};
 
 use super::conversation::{ConversationId, ConversationIdRef};
@@ -43,7 +43,7 @@ impl ConversationCache {
     pub(crate) async fn get_or_fetch(
         &mut self,
         id: &ConversationIdRef,
-        keystore: &Database,
+        transaction: &Transaction,
         session: Session,
     ) -> Result<Option<Arc<Conversation>>> {
         if let Some(entry) = self.entries.get(id) {
@@ -60,7 +60,7 @@ impl ConversationCache {
         };
 
         if !conversation.group().await.is_active() {
-            keystore
+            transaction
                 .remove_borrowed::<PersistedMlsGroup>(id.as_ref())
                 .await
                 .map_err(KeystoreError::wrap("deleting inactive conversation from keystore"))?;

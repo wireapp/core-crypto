@@ -10,7 +10,7 @@ use tls_codec::Deserialize;
 
 use super::{RecursionPolicy, Result};
 use crate::{
-    BufferedDecryptedMessage, KeystoreError,
+    BufferedDecryptedMessage, KeystoreError, RecursiveError,
     mls::conversation::{ConversationMut, Error},
 };
 
@@ -24,12 +24,15 @@ pub(crate) enum MessageRestorePolicy {
 
 impl ConversationMut {
     pub(super) async fn buffer_future_message(&self, message: impl AsRef<[u8]>) -> Result<()> {
-        let database = self.database().await?;
         let pending_msg = MlsPendingMessage {
             foreign_id: self.id().to_bytes(),
             message: message.as_ref().to_vec(),
         };
-        database
+        let context_inner = self.tx_context.inner().await.map_err(RecursiveError::transaction(
+            "getting transaction inner to buffer future message",
+        ))?;
+        context_inner
+            .transaction()
             .save::<MlsPendingMessage>(pending_msg)
             .await
             .map_err(KeystoreError::wrap("saving pending mls message"))?;

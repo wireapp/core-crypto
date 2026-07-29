@@ -17,7 +17,7 @@ impl ConversationMut {
             .await
             .map_err(RecursiveError::transaction("getting mls conversation cache"))?;
 
-        self.mutate_group(async |database, group, _| {
+        self.mutate_group(async |transaction, group, _| {
             // the own client may or may not have generated an epoch keypair in the previous epoch
             // Since it is a terminal operation, ignoring the error is fine here.
             let _ = group.delete_previous_epoch_keypairs(&provider).await;
@@ -31,7 +31,7 @@ impl ConversationMut {
             for proposal in proposals {
                 // Update proposals rekey the own leaf node. Hence the associated encryption keypair has to be cleared
                 group
-                    .remove_pending_proposal(database, &proposal)
+                    .remove_pending_proposal(transaction, &proposal)
                     .await
                     .map_err(OpenMlsError::wrap("removing pending proposal"))?;
             }

@@ -1,3 +1,4 @@
+use core_crypto_keystore::entities::PersistedMlsGroup;
 use openmls::{
     group::{InnerState, MlsGroup},
     prelude::Welcome,
@@ -33,10 +34,16 @@ impl TransactionContext {
         ))?;
 
         // we're actually out of order from the docs, because this leads to a better data flow
-        let database = self.database().await?;
         let group_state = core_crypto_keystore::ser(&group).map_err(KeystoreError::wrap("serializing group state"))?;
-        database
-            .mls_group_persist(&id, &group_state, None)
+
+        let context_inner = self.inner().await?;
+        context_inner
+            .transaction
+            .save(PersistedMlsGroup {
+                id: id.to_bytes(),
+                state: group_state,
+                parent_id: None,
+            })
             .await
             .map_err(KeystoreError::wrap("persisting mls group"))?;
         group.set_state(InnerState::Persisted);

@@ -109,14 +109,16 @@ impl PendingConversation {
             return self.merge_and_restore_messages().await;
         }
 
-        let keystore = self.keystore().await?;
+        let context_inner = self.context.inner().await.map_err(RecursiveError::transaction(
+            "acquiring transaction to process join commit",
+        ))?;
+        let tx = context_inner.transaction();
 
         let pending_msg = MlsPendingMessage {
             foreign_id: self.id().as_ref().to_owned(),
             message: message.as_ref().to_vec(),
         };
-        keystore
-            .save::<MlsPendingMessage>(pending_msg)
+        tx.save::<MlsPendingMessage>(pending_msg)
             .await
             .map_err(KeystoreError::wrap("saving mls pending message"))?;
         Err(Error::BufferedForPendingConversation)
