@@ -31,12 +31,12 @@ impl TransactionContext {
     ///
     /// This helper struct permits mutations on a conversation.
     pub async fn conversation(&self, id: &ConversationIdRef) -> Result<ConversationMut> {
-        let keystore = self.database().await?;
+        let inner = self.inner().await?;
         let session = self.session().await?;
         let conversation = self
             .mls_groups()
             .await?
-            .get_or_fetch(id, &keystore, session)
+            .get_or_fetch(id, &inner.transaction, session)
             .await
             .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?;
 

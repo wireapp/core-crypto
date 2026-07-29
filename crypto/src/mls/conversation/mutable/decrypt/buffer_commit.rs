@@ -1,11 +1,10 @@
 use core_crypto_keystore::{entities::StoredBufferedCommit, traits::FetchFromDatabase as _};
 use log::info;
 use openmls::framing::MlsMessageIn;
-use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize as _;
 
 use super::{ConversationMut, RecursionPolicy, Result};
-use crate::{DecryptedMessage, KeystoreError, mls::conversation::Error};
+use crate::{DecryptedMessage, KeystoreError, RecursiveError, mls::conversation::Error};
 
 impl ConversationMut {
     /// Cache the bytes of a buffered commit in the backend.
@@ -17,12 +16,15 @@ impl ConversationMut {
 
         let buffered_commit = StoredBufferedCommit::new(self.id().to_bytes(), commit.as_ref().to_owned());
 
-        self.crypto_provider()
-            .await?
-            .key_store()
+        let context_inner = self.tx_context.inner().await.map_err(RecursiveError::transaction(
+            "getting context inner for transaction for buffering commit",
+        ))?;
+        context_inner
+            .transaction()
             .save(buffered_commit)
             .await
             .map_err(KeystoreError::wrap("buffering commit"))?;
+
         Ok(())
     }
 
@@ -59,9 +61,12 @@ impl ConversationMut {
 
     /// Remove the buffered commit for this conversation; it has been applied.
     pub(super) async fn clear_buffered_commit(&self) -> Result<()> {
-        let database = self.database().await?;
         info!(group_id = self.id().to_owned(); "attempting to delete buffered commit");
-        database
+        let context_inner = self.tx_context.inner().await.map_err(RecursiveError::transaction(
+            "getting context inner for transaction for clearing buffered commit",
+        ))?;
+        context_inner
+            .transaction()
             .remove_borrowed::<StoredBufferedCommit>(self.id().as_ref())
             .await
             .map_err(KeystoreError::wrap("attempting to clear buffered commit"))
