@@ -48,6 +48,7 @@ derive_more = { version = "2.1", features = [
   "deref_mut",
   "into_iterator",
 ] }
+enum-as-inner = "0.7"
 futures-util = "0.3"
 hex = "0.4"
 # temporary, until https://github.com/devashishdxt/idb/pull/42 is merged / released
