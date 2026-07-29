@@ -137,12 +137,6 @@ impl CryptoProvider {
         }
     }
 
-    /// Clones the references of the PkiEnvironment and the CryptoProvider into a transaction
-    /// keystore to pass to openmls as the `OpenMlsCryptoProvider`
-    pub async fn new_transaction(&self) -> MlsProviderResult<()> {
-        self.key_store.new_transaction().await.map_err(Into::into)
-    }
-
     /// Set pki_env to a new shared pki environment provider
     pub async fn set_pki_environment(&mut self, pki_env: Option<Arc<PkiEnvironment>>) {
         *self.auth_service.pki_env.write().await = pki_env;
