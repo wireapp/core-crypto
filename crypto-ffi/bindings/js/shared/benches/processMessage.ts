@@ -1,5 +1,5 @@
 import { runOnPlatform } from "#shared-utils";
-import { messageBenchmarkParameters } from "./utils";
+import { messageBenchmarkParameters, runBenchmark } from "./utils";
 
 export async function setupProcessMessageBench() {
     const parameters = await messageBenchmarkParameters();
@@ -63,3 +63,9 @@ export async function setupProcessMessageBench() {
         }
     }, parameters);
 }
+
+async function run() {
+    await runBenchmark(setupProcessMessageBench);
+}
+
+await run();

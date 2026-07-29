@@ -1,6 +1,6 @@
 import type { KeyPackage } from "#core-crypto";
 import { runOnPlatform } from "#shared-utils";
-import { userBenchmarkParameters } from "./utils";
+import { runBenchmark, userBenchmarkParameters } from "./utils";
 
 export async function setupJoinGroupBench() {
     const parameters = await userBenchmarkParameters();
@@ -79,3 +79,9 @@ export async function setupJoinGroupBench() {
         }
     }, parameters);
 }
+
+async function run() {
+    await runBenchmark(setupJoinGroupBench);
+}
+
+await run();

@@ -1,6 +1,6 @@
 import type { ClientId, KeyPackage } from "#core-crypto-ffi";
 import { runOnPlatform } from "#shared-utils";
-import { userBenchmarkParameters } from "./utils";
+import { runBenchmark, userBenchmarkParameters } from "./utils";
 
 export async function setupRemoveUserBench() {
     const parameters = await userBenchmarkParameters();
@@ -69,3 +69,9 @@ export async function setupRemoveUserBench() {
         }
     }, parameters);
 }
+
+async function run() {
+    await runBenchmark(setupRemoveUserBench);
+}
+
+await run();

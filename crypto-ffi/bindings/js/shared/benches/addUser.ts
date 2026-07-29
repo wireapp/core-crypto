@@ -1,5 +1,5 @@
 import type { KeyPackage } from "#core-crypto";
-import { userBenchmarkParameters } from "./utils";
+import { runBenchmark, userBenchmarkParameters } from "./utils";
 import { runOnPlatform } from "../shared/utils";
 
 export async function setupAddUserBench() {
@@ -53,3 +53,9 @@ export async function setupAddUserBench() {
         }
     }, parameters);
 }
+
+async function run() {
+    await runBenchmark(setupAddUserBench);
+}
+
+await run();
