@@ -20,11 +20,11 @@ describe("credentials", () => {
             return {
                 isBasicType:
                     credential.type() === ccModule.CredentialType.Basic,
-                earliestValidity: credential.earliestValidity(),
+                earliestValidity: credential.earliestValidity().toString(),
             };
         });
         expect(result.isBasicType).to.equal(true);
-        expect(result.earliestValidity).to.equal(0n);
+        expect(result.earliestValidity).to.equal("0");
     });
 
     it("credential can be added", async () => {
@@ -35,7 +35,7 @@ describe("credentials", () => {
             return {
                 isDefined: ref !== undefined,
                 isBasicType: ref!.type() === ccModule.CredentialType.Basic,
-                earliestValidity: ref!.earliestValidity(),
+                earliestValidity: Number(ref!.earliestValidity()),
                 length: allCredentials.length,
             };
         });

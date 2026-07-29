@@ -1,6 +1,7 @@
-import { browser, expect } from "@wdio/globals";
 import { setup, teardown } from "../../../shared/test/utils";
 import { afterEach, beforeEach, describe } from "mocha";
+import { getPage } from "../shared/utils";
+import { expect } from "chai";
 
 beforeEach(async () => {
     await setup();
@@ -26,9 +27,9 @@ describe("database", () => {
         if (!response.ok)
             throw new Error(`failed to fetch script: ${response.statusText}`);
 
-        await browser.executeScript(await response.text(), []);
+        await getPage().evaluate(await response.text(), []);
 
-        const result = await browser.execute(async (stores_) => {
+        const result = await getPage().evaluate(async (stores_) => {
             // First, we need to restore the IndexedDB database in the browser.
             const stores: { string: [] } = JSON.parse(stores_);
             const clientName = "alice";
@@ -82,10 +83,10 @@ describe("database", () => {
                     new ccModule.ConversationId(encoder.encode("convId"))
                 );
             });
-            return epoch;
+            return Number(epoch);
         }, JSON.stringify(stores));
 
         // If the migration succeeded, the epoch has to be 1.
-        expect(result).toEqual(1n);
+        expect(result).to.equal(1);
     });
 });

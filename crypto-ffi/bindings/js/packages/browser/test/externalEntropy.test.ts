@@ -1,6 +1,7 @@
-import { browser, expect } from "@wdio/globals";
 import { setup, teardown } from "../../../shared/test/utils";
 import { afterEach, beforeEach, describe } from "mocha";
+import { getPage } from "../shared/utils";
+import { expect } from "chai";
 
 beforeEach(async () => {
     await setup();
@@ -27,7 +28,7 @@ describe("external entropy", () => {
             0x6f4d794b,
         ]);
 
-        const [result1, result2] = await browser.execute(
+        const [result1, result2] = await getPage().evaluate(
             async (length1, length2) => {
                 const cc = await helpers.ccInit();
                 // Null byte seed
@@ -36,23 +37,20 @@ describe("external entropy", () => {
 
                 const produced1 = await cc.randomBytes(length1);
                 const produced2 = await cc.randomBytes(length2);
-                return [
-                    Array.from(new Uint8Array(produced1)),
-                    Array.from(new Uint8Array(produced2)),
-                ];
+                return [Array.from(produced1), Array.from(produced2)];
             },
             vector1.length * vector1.BYTES_PER_ELEMENT,
             vector2.length * vector2.BYTES_PER_ELEMENT
         );
 
-        const resultByteVector1 = new Uint8Array(result1);
-        const resultByteVector2 = new Uint8Array(result2);
+        const resultByteVector1 = new Uint8Array(result1!);
+        const resultByteVector2 = new Uint8Array(result2!);
 
         // Use a DataView to solve endianness issues
         const resultVector1 = new Uint32Array(resultByteVector1.buffer);
         const resultVector2 = new Uint32Array(resultByteVector2.buffer);
 
-        expect(resultVector1).toStrictEqual(vector1);
-        expect(resultVector2).toStrictEqual(vector2);
+        expect(resultVector1).to.deep.equal(vector1);
+        expect(resultVector2).to.deep.equal(vector2);
     });
 });

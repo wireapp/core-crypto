@@ -1,6 +1,8 @@
-import { browser, expect } from "@wdio/globals";
 import { setup, teardown } from "../../../shared/test/utils";
 import { afterEach, beforeEach, describe } from "mocha";
+import { expect } from "chai";
+import { getPage } from "../shared/utils";
+import type { ConsoleMessage } from "puppeteer";
 
 beforeEach(async () => {
     await setup();
@@ -11,40 +13,45 @@ afterEach(async () => {
 });
 
 describe("logger", () => {
-    type BrowserLog = {
-        level: string;
-        message: string;
-        source: string;
-        timestamp: number;
-    };
-
     it("when throwing errors they're reported as errors", async () => {
-        const expectedErrorMessage = "expected test error in logger test";
-        await browser.execute(async (expectedErrorMessage) => {
-            const cc = await helpers.ccInit();
-            const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } = ccModule;
-
-            setLogger({
-                log: (_level, _message, _context) => {
-                    throw Error(expectedErrorMessage);
-                },
+        const page = getPage();
+        type BrowserLog = {
+            level: string;
+            message: string;
+        };
+        const handler = (msg: ConsoleMessage) => {
+            browserLogs.push({
+                level: msg.type(),
+                message: msg.text(),
             });
-            setMaxLogLevel(CoreCryptoLogLevel.Debug);
-            await helpers.createConversation(cc);
-        }, expectedErrorMessage);
+        };
 
-        const logs = (await browser.getLogs("browser")) as BrowserLog[];
-        console.log(JSON.stringify(logs));
-        const errorLogs = logs.filter((log) => {
-            return (
-                log.message.includes(expectedErrorMessage) &&
-                log.source === "console-api"
-            );
-        });
+        const browserLogs: BrowserLog[] = [];
+        page.on("console", handler);
+        try {
+            const expectedErrorMessage = "expected test error in logger test";
+            await page.evaluate(async (expectedErrorMessage) => {
+                const cc = await helpers.ccInit();
+                const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
+                    ccModule;
 
-        expect(errorLogs.length).toBeGreaterThan(0);
-        expect(errorLogs[0]!.message).toEqual(
-            expect.stringContaining(expectedErrorMessage)
-        );
+                setLogger({
+                    log: (_level, _message, _context) => {
+                        throw Error(expectedErrorMessage);
+                    },
+                });
+                setMaxLogLevel(CoreCryptoLogLevel.Debug);
+                await helpers.createConversation(cc);
+            }, expectedErrorMessage);
+
+            const errorLogs = browserLogs.filter((log) => {
+                return log.message.includes(expectedErrorMessage);
+            });
+
+            expect(errorLogs.length).to.be.greaterThan(0);
+            expect(errorLogs[0]!.message).to.contain(expectedErrorMessage);
+        } finally {
+            page.off("console", handler);
+        }
     });
 });
