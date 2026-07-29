@@ -27,6 +27,11 @@
             "cc-browser": "./packages/browser/shared/utils.ts",
             "cc-native": "./packages/native/shared/utils.ts",
             "default": "./packages/browser/shared/utils.ts"
+        },
+        "#bench-utils": {
+            "cc-browser": "./packages/browser/benches/utils.ts",
+            "cc-native": "./packages/native/benches/utils.ts",
+            "default": "./packages/browser/benches/utils.ts"
         }
     },
     "devDependencies": {
