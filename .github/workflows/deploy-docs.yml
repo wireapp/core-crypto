@@ -43,3 +43,14 @@ jobs:
         keep_files: true
         force_orphan: false
         enable_jekyll: true
+
+    - name: deploy versioned docs
+      uses: peaceiris/actions-gh-pages@v4.1.0
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_branch: gh-pages
+        publish_dir: target/doc/${{ env.GIT_TAG }}
+        destination_dir: ${{ env.GIT_TAG }}
+        keep_files: false
+        force_orphan: false
+        enable_jekyll: true
