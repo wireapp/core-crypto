@@ -8,7 +8,7 @@ mod session_cache;
 use std::sync::Arc;
 
 pub use conversation_session::{ProteusConversationSession, SessionIdentifier};
-use core_crypto_keystore::{Database, entities::ProteusIdentity, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{Transaction, entities::ProteusIdentity, traits::FetchFromDatabase as _};
 use proteus_wasm::keys::IdentityKeyPair;
 pub(crate) use session_cache::ProteusSessionCache;
 
@@ -27,8 +27,8 @@ pub struct ProteusCentral {
 
 impl ProteusCentral {
     /// Initializes the [ProteusCentral]
-    pub async fn try_new(keystore: &Database) -> Result<Self> {
-        let proteus_identity: Arc<IdentityKeyPair> = Arc::new(Self::load_or_create_identity(keystore).await?);
+    pub async fn try_new(transaction: &Transaction) -> Result<Self> {
+        let proteus_identity: Arc<IdentityKeyPair> = Arc::new(Self::load_or_create_identity(transaction).await?);
         let proteus_sessions = ProteusSessionCache::new(proteus_identity.clone());
 
         Ok(Self {
@@ -40,13 +40,13 @@ impl ProteusCentral {
     /// This function will try to load a proteus Identity from our keystore; If it cannot, it will create a new one
     /// This means this function doesn't fail except in cases of deeper errors (such as in the Keystore and other crypto
     /// errors)
-    async fn load_or_create_identity(keystore: &Database) -> Result<IdentityKeyPair> {
-        let Some(identity) = keystore
+    async fn load_or_create_identity(transaction: &Transaction) -> Result<IdentityKeyPair> {
+        let Some(identity) = transaction
             .get_unique::<ProteusIdentity>()
             .await
             .map_err(KeystoreError::wrap("finding proteus identity"))?
         else {
-            return Self::create_identity(keystore).await;
+            return Self::create_identity(transaction).await;
         };
 
         let sk = identity.sk_raw();
@@ -59,7 +59,7 @@ impl ProteusCentral {
     }
 
     /// Internal function to create and save a new Proteus Identity
-    async fn create_identity(keystore: &Database) -> Result<IdentityKeyPair> {
+    async fn create_identity(transaction: &Transaction) -> Result<IdentityKeyPair> {
         let kp = IdentityKeyPair::new();
         let pk = kp.public_key.public_key.as_slice().to_vec();
 
@@ -67,7 +67,7 @@ impl ProteusCentral {
             sk: kp.secret_key.to_keypair_bytes().into(),
             pk,
         };
-        keystore
+        transaction
             .save(ks_identity)
             .await
             .map_err(KeystoreError::wrap("saving new proteus identity"))?;
@@ -101,15 +101,15 @@ mod tests {
         let (path, _) = tmp_db_file();
         let key = DatabaseKey::generate();
         let keystore = core_crypto_keystore::Database::open(&path, &key).await.unwrap();
-        keystore.new_transaction().await.unwrap();
-        let central = ProteusCentral::try_new(&keystore).await.unwrap();
+        let tx = keystore.new_transaction().await.unwrap();
+        let central = ProteusCentral::try_new(&tx).await.unwrap();
         let identity = (*central.proteus_identity).clone();
-        keystore.commit_transaction().await.unwrap();
+        tx.commit().await.unwrap();
 
         let keystore = core_crypto_keystore::Database::open(&path, &key).await.unwrap();
-        keystore.new_transaction().await.unwrap();
-        let central = ProteusCentral::try_new(&keystore).await.unwrap();
-        keystore.commit_transaction().await.unwrap();
+        let tx = keystore.new_transaction().await.unwrap();
+        let central = ProteusCentral::try_new(&tx).await.unwrap();
+        tx.commit().await.unwrap();
         assert_eq!(identity, *central.proteus_identity);
 
         #[cfg(not(target_os = "unknown"))]

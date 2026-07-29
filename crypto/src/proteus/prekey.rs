@@ -1,4 +1,4 @@
-use core_crypto_keystore::{Database, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{Transaction, entities::ProteusPrekey, traits::FetchFromDatabase as _};
 use proteus_wasm::keys::PreKeyBundle;
 
 use super::ProteusCentral;
@@ -7,7 +7,7 @@ use crate::{KeystoreError, ProteusError, Result};
 impl ProteusCentral {
     /// Generates a new Proteus PreKey, stores it in the keystore and returns a serialized PreKeyBundle to be consumed
     /// externally
-    pub(crate) async fn new_prekey(&self, id: u16, keystore: &Database) -> Result<Vec<u8>> {
+    pub(crate) async fn new_prekey(&self, id: u16, transaction: &Transaction) -> Result<Vec<u8>> {
         use proteus_wasm::keys::{PreKey, PreKeyId};
 
         let prekey_id = PreKeyId::new(id);
@@ -20,7 +20,7 @@ impl ProteusCentral {
         let bundle = bundle
             .serialise()
             .map_err(ProteusError::wrap("serialising prekey bundle"))?;
-        keystore
+        transaction
             .save(keystore_prekey)
             .await
             .map_err(KeystoreError::wrap("saving keystore prekey"))?;
@@ -30,11 +30,11 @@ impl ProteusCentral {
     /// Generates a new Proteus Prekey, with an automatically auto-incremented ID.
     ///
     /// See [ProteusCentral::new_prekey]
-    pub(crate) async fn new_prekey_auto(&self, keystore: &Database) -> Result<(u16, Vec<u8>)> {
-        let id = core_crypto_keystore::entities::ProteusPrekey::get_free_id(keystore)
+    pub(crate) async fn new_prekey_auto(&self, transaction: &Transaction) -> Result<(u16, Vec<u8>)> {
+        let id = core_crypto_keystore::entities::ProteusPrekey::get_free_id(transaction)
             .await
             .map_err(KeystoreError::wrap("getting proteus prekey by id"))?;
-        Ok((id, self.new_prekey(id, keystore).await?))
+        Ok((id, self.new_prekey(id, transaction).await?))
     }
 
     /// Returns the Proteus last resort prekey ID (u16::MAX = 65535 = 0xFFFF)
@@ -44,8 +44,8 @@ impl ProteusCentral {
 
     /// Returns the Proteus last resort prekey
     /// If it cannot be found, one will be created.
-    pub(crate) async fn last_resort_prekey(&self, keystore: &Database) -> Result<Vec<u8>> {
-        let last_resort = if let Some(last_resort) = keystore
+    pub(crate) async fn last_resort_prekey(&self, transaction: &Transaction) -> Result<Vec<u8>> {
+        let last_resort = if let Some(last_resort) = transaction
             .get::<core_crypto_keystore::entities::ProteusPrekey>(&Self::last_resort_prekey_id())
             .await
             .map_err(KeystoreError::wrap("finding proteus prekey"))?
@@ -54,16 +54,14 @@ impl ProteusCentral {
                 .map_err(ProteusError::wrap("deserialising proteus prekey"))?
         } else {
             let last_resort = proteus_wasm::keys::PreKey::last_resort();
+            let prekey = last_resort
+                .serialise()
+                .map_err(ProteusError::wrap("serializing last resort prekey"))?;
 
-            keystore
-                .proteus_store_prekey(
-                    Self::last_resort_prekey_id(),
-                    &last_resort
-                        .serialise()
-                        .map_err(ProteusError::wrap("serialising last resort prekey"))?,
-                )
+            transaction
+                .save(ProteusPrekey::from_raw(Self::last_resort_prekey_id(), prekey))
                 .await
-                .map_err(KeystoreError::wrap("storing proteus prekey"))?;
+                .map_err(KeystoreError::wrap("storing proteus last resort prekey"))?;
 
             last_resort
         };
@@ -104,29 +102,26 @@ mod tests {
 
         let key = DatabaseKey::generate();
         let keystore = core_crypto_keystore::Database::open(&path, &key).await.unwrap();
-        keystore.new_transaction().await.unwrap();
-        let mut alice = ProteusCentral::try_new(&keystore).await.unwrap();
+        let tx = keystore.new_transaction().await.unwrap();
+        let mut alice = ProteusCentral::try_new(&tx).await.unwrap();
 
         let mut bob = CryptoboxLike::init();
 
-        let alice_prekey_bundle_ser = alice.new_prekey(1, &keystore).await.unwrap();
+        let alice_prekey_bundle_ser = alice.new_prekey(1, &tx).await.unwrap();
 
         bob.init_session_from_prekey_bundle(&session_id, &alice_prekey_bundle_ser);
         let message = b"Hello world!";
         let encrypted = bob.encrypt(&session_id, message);
 
-        let (_, decrypted) = alice
-            .session_from_message(&keystore, &session_id, &encrypted)
-            .await
-            .unwrap();
+        let (_, decrypted) = alice.session_from_message(&tx, &session_id, &encrypted).await.unwrap();
 
         assert_eq!(message, decrypted.as_slice());
 
-        let encrypted = alice.encrypt(&keystore, &session_id, message).await.unwrap();
+        let encrypted = alice.encrypt(&tx, &session_id, message).await.unwrap();
         let decrypted = bob.decrypt(&session_id, &encrypted).await;
 
         assert_eq!(message, decrypted.as_slice());
-        keystore.commit_transaction().await.unwrap();
+        tx.commit().await.unwrap();
         #[cfg(not(target_os = "unknown"))]
         drop(db_file);
     }
@@ -144,11 +139,11 @@ mod tests {
 
         let key = DatabaseKey::generate();
         let keystore = core_crypto_keystore::Database::open(&path, &key).await.unwrap();
-        keystore.new_transaction().await.unwrap();
-        let alice = ProteusCentral::try_new(&keystore).await.unwrap();
+        let tx = keystore.new_transaction().await.unwrap();
+        let alice = ProteusCentral::try_new(&tx).await.unwrap();
 
         for i in ID_TEST_RANGE {
-            let (pk_id, pkb) = alice.new_prekey_auto(&keystore).await.unwrap();
+            let (pk_id, pkb) = alice.new_prekey_auto(&tx).await.unwrap();
             assert_eq!(i, pk_id);
             let prekey = proteus_wasm::keys::PreKeyBundle::deserialise(&pkb).unwrap();
             assert_eq!(prekey.prekey_id.value(), pk_id);
@@ -165,13 +160,13 @@ mod tests {
             gap_ids.dedup();
         }
         for gap_id in gap_ids.iter() {
-            keystore.remove::<ProteusPrekey>(gap_id).await.unwrap();
+            tx.remove::<ProteusPrekey>(gap_id).await.unwrap();
         }
 
         gap_ids.sort();
 
         for gap_id in gap_ids.iter() {
-            let (pk_id, pkb) = alice.new_prekey_auto(&keystore).await.unwrap();
+            let (pk_id, pkb) = alice.new_prekey_auto(&tx).await.unwrap();
             assert_eq!(pk_id, *gap_id);
             let prekey = proteus_wasm::keys::PreKeyBundle::deserialise(&pkb).unwrap();
             assert_eq!(prekey.prekey_id.value(), *gap_id);
@@ -186,18 +181,18 @@ mod tests {
             gap_ids.dedup();
         }
         for gap_id in gap_ids.iter() {
-            keystore.remove::<ProteusPrekey>(gap_id).await.unwrap();
+            tx.remove::<ProteusPrekey>(gap_id).await.unwrap();
         }
 
         let potential_range = *ID_TEST_RANGE.end()..=(*ID_TEST_RANGE.end() * 2);
         let potential_range_check = potential_range.clone();
         for _ in potential_range {
-            let (pk_id, pkb) = alice.new_prekey_auto(&keystore).await.unwrap();
+            let (pk_id, pkb) = alice.new_prekey_auto(&tx).await.unwrap();
             assert!(gap_ids.contains(&pk_id) || potential_range_check.contains(&pk_id));
             let prekey = proteus_wasm::keys::PreKeyBundle::deserialise(&pkb).unwrap();
             assert_eq!(prekey.prekey_id.value(), pk_id);
         }
-        keystore.commit_transaction().await.unwrap();
+        tx.commit().await.unwrap();
         #[cfg(not(target_os = "unknown"))]
         drop(db_file);
     }

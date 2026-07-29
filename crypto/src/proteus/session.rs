@@ -1,4 +1,4 @@
-use core_crypto_keystore::{Database, entities::ProteusSession};
+use core_crypto_keystore::{Transaction, entities::ProteusSession, traits::FetchFromDatabase};
 use proteus_wasm::{keys::PreKeyBundle, message::Envelope, session::Session};
 
 use super::{ProteusCentral, ProteusConversationSession};
@@ -59,12 +59,12 @@ impl ProteusCentral {
     /// Creates a new proteus Session from a received message
     pub(crate) async fn session_from_message(
         &mut self,
-        keystore: &Database,
+        transaction: &Transaction,
         session_id: &str,
         envelope: &[u8],
     ) -> Result<(&mut ProteusConversationSession, Vec<u8>)> {
         let message = Envelope::deserialise(envelope).map_err(ProteusError::wrap("deserialising envelope"))?;
-        let (session, payload) = Session::init_from_message(self.proteus_identity.clone(), keystore, &message)
+        let (session, payload) = Session::init_from_message(self.proteus_identity.clone(), transaction, &message)
             .await
             .map_err(ProteusError::wrap("initializing session from message"))?;
 
@@ -80,14 +80,17 @@ impl ProteusCentral {
     ///
     /// **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting
     /// messages and initializing Sessions
-    pub(crate) async fn session_save(&mut self, keystore: &Database, session_id: &str) -> Result<()> {
-        if let Some(session) = self.proteus_sessions.get_or_fetch(session_id, keystore).await? {
-            Self::session_save_by_ref(keystore, session).await?;
+    pub(crate) async fn session_save(&mut self, transaction: &Transaction, session_id: &str) -> Result<()> {
+        if let Some(session) = self.proteus_sessions.get_or_fetch(session_id, transaction).await? {
+            Self::session_save_by_ref(transaction, session).await?;
         }
         Ok(())
     }
 
-    pub(crate) async fn session_save_by_ref(keystore: &Database, session: &ProteusConversationSession) -> Result<()> {
+    pub(crate) async fn session_save_by_ref(
+        transaction: &Transaction,
+        session: &ProteusConversationSession,
+    ) -> Result<()> {
         let db_session = ProteusSession {
             id: session.identifier().to_string(),
             session: session
@@ -95,7 +98,7 @@ impl ProteusCentral {
                 .serialise()
                 .map_err(ProteusError::wrap("serializing session"))?,
         };
-        keystore
+        transaction
             .save(db_session)
             .await
             .map_err(KeystoreError::wrap("saving proteus session"))?;
@@ -103,8 +106,8 @@ impl ProteusCentral {
     }
 
     /// Deletes a session in the store
-    pub(crate) async fn session_delete(&mut self, keystore: &Database, session_id: &str) -> Result<()> {
-        if keystore.remove_borrowed::<ProteusSession>(session_id).await.is_ok() {
+    pub(crate) async fn session_delete(&mut self, transaction: &Transaction, session_id: &str) -> Result<()> {
+        if transaction.remove_borrowed::<ProteusSession>(session_id).await.is_ok() {
             let _ = self.proteus_sessions.remove(session_id);
         }
         Ok(())
@@ -114,13 +117,13 @@ impl ProteusCentral {
     pub(crate) async fn session(
         &mut self,
         session_id: &str,
-        keystore: &Database,
+        keystore: &impl FetchFromDatabase,
     ) -> Result<Option<&mut ProteusConversationSession>> {
         self.proteus_sessions.get_or_fetch(session_id, keystore).await
     }
 
     /// Session exists
-    pub(crate) async fn session_exists(&mut self, session_id: &str, keystore: &Database) -> bool {
+    pub(crate) async fn session_exists(&mut self, session_id: &str, keystore: &impl FetchFromDatabase) -> bool {
         self.session(session_id, keystore).await.ok().flatten().is_some()
     }
 
@@ -128,7 +131,11 @@ impl ProteusCentral {
     ///
     /// # Errors
     /// When the session is not found
-    pub(crate) async fn fingerprint_local(&mut self, session_id: &str, keystore: &Database) -> Result<String> {
+    pub(crate) async fn fingerprint_local(
+        &mut self,
+        session_id: &str,
+        keystore: &impl FetchFromDatabase,
+    ) -> Result<String> {
         let session = self
             .session(session_id, keystore)
             .await?
@@ -141,7 +148,11 @@ impl ProteusCentral {
     ///
     /// # Errors
     /// When the session is not found
-    pub(crate) async fn fingerprint_remote(&mut self, session_id: &str, keystore: &Database) -> Result<String> {
+    pub(crate) async fn fingerprint_remote(
+        &mut self,
+        session_id: &str,
+        keystore: &impl FetchFromDatabase,
+    ) -> Result<String> {
         let session = self
             .session(session_id, keystore)
             .await?
