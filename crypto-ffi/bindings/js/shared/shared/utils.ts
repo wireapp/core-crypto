@@ -110,7 +110,7 @@ export interface Helpers {
         cc2: CoreCrypto,
         conversationId: ConversationId,
         message: string
-    ): Promise<(string | null)[]>;
+    ): Promise<string[]>;
     proteusInit(): Promise<CoreCrypto>;
     newProteusSessionFromPrekey(
         cc1: CoreCrypto,
@@ -122,7 +122,7 @@ export interface Helpers {
         cc2: CoreCrypto,
         sessionId: string,
         message: string
-    ): Promise<string | null>;
+    ): Promise<string>;
 }
 
 export interface PlatformHelpers {
