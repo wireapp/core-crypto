@@ -114,6 +114,9 @@ impl UniqueArc<Transaction> {
             return Ok(());
         }
 
+        // clear the weak reference to this transaction
+        *database.transaction.lock().await = None;
+
         // open a database transaction
         // Because `rusqlite::Transaction: !Send + !Sync`, it's critical that
         // we don't hold this transaction over any `.await` points.

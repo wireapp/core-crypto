@@ -39,13 +39,9 @@ impl<T> From<T> for UniqueArc<T> {
 impl<T> UniqueArc<T> {
     /// Unpack this `UniqueArc`, returning the inner value.
     ///
-    /// This waits for any in-flight [`UniqueWeak::with_upgrade`] / [`UniqueWeak::with_upgrade_sync`]
-    /// callback to finish before unpacking, so that the sole remaining strong reference is the one
+    /// This waits for any in-flight [`UniqueWeak::upgrade`] / [`UniqueWeak::upgrade_sync`]
+    /// guard to drop before unpacking, so that the sole remaining strong reference is the one
     /// held by this `UniqueArc`.
-    ///
-    /// Note: do not call this from within a `with_upgrade[_sync]` callback operating on a
-    /// [`UniqueWeak`] derived from `this`; the exclusive lease can never be granted while that
-    /// callback holds its shared lease, so it would deadlock.
     pub async fn into_inner(this: Self) -> T {
         let UniqueArc { arc, gate } = this;
         // Wait for all outstanding upgrades to release their shared lease, and prevent new ones,
@@ -74,7 +70,7 @@ impl<T> UniqueArc<T> {
 /// while a strong reference is still live, letting [`UniqueArc::into_inner`] acquire the write
 /// lease and panic on a doubled strong count.
 #[derive(Debug, derive_more::Deref)]
-struct ArcWithReadGuard<T> {
+pub(crate) struct ArcWithReadGuard<T> {
     #[deref(forward)]
     t: Arc<T>,
     _guard: RwLockReadGuardArc<()>,
@@ -82,9 +78,9 @@ struct ArcWithReadGuard<T> {
 
 /// A weak version of [`UniqueArc`] which holds a non-owning, non-lifetimed reference to the managed allocation.
 ///
-/// This allocation is accessed by calling `with_upgrade` or `with_upgrade_sync` on the `UniqueWeak`, each of which
-/// accepts a function which accepts an `&T` parameter.
-#[derive(Debug, Clone)]
+/// This allocation is accessed by calling `upgrade` or `upgrade_sync` on the `UniqueWeak`, each of which
+/// produces a guard which derefs to the contained type.
+#[derive(Debug)]
 pub struct UniqueWeak<T> {
     weak: Weak<T>,
     /// Shared with the originating [`UniqueArc`]; a shared lease is held for the duration of each
@@ -92,15 +88,33 @@ pub struct UniqueWeak<T> {
     gate: Arc<RwLock<()>>,
 }
 
+/// The derived version would have a bound `T: Clone` which we don't want
+impl<T> Clone for UniqueWeak<T> {
+    fn clone(&self) -> Self {
+        Self {
+            weak: self.weak.clone(),
+            gate: self.gate.clone(),
+        }
+    }
+}
+
 impl<T> UniqueWeak<T> {
+    /// Gain access to the wrapped member if it is available.
+    ///
+    /// Prefer [`Self::upgrade`] except where critical. You'll know if you have to have
+    /// a concrete type here. Mostly the type-erased version is better.
+    pub(crate) async fn upgrade_without_type_erasure(&self) -> Option<ArcWithReadGuard<T>> {
+        let _guard = self.gate.read_arc().await;
+        self.weak.upgrade().map(move |t| ArcWithReadGuard { _guard, t })
+    }
+
     /// Gain access to the wrapped member if it is available.
     ///
     /// Note that the return type here is `impl Deref<Target = T>`.
     /// This intentionally masks the real concrete type in order to prevent
     /// receivers from increasing the internal Arc's strong count.
     pub async fn upgrade(&self) -> Option<impl Deref<Target = T>> {
-        let _guard = self.gate.read_arc().await;
-        self.weak.upgrade().map(move |t| ArcWithReadGuard { _guard, t })
+        self.upgrade_without_type_erasure().await
     }
 
     /// Synchronously gain access to the wrapped member if it is available.
