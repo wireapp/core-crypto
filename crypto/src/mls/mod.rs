@@ -1,6 +1,7 @@
 pub(crate) mod cipher_suite;
 pub mod conversation;
 pub(crate) mod conversation_cache;
+mod core_crypto_message;
 pub mod credential;
 mod error;
 mod external_sender;
