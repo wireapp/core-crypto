@@ -2,14 +2,13 @@
 
 ## Unreleased
 
-- Unified Database layer for browser and native platforms
-
 ## CoreCrypto 10
 
 ### v10.2.0 - 2026-07-28
 
 - Key packages are retained in case of a `ConversationAlreadyExists` error during `processWelcomeMessage()`, however,
   only if the key package was created in an earlier CoreCrypto transaction.
+- Unified Database layer for browser and native platforms
 
 ### v10.1.1 - 2026-07-21
 
