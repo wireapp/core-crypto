@@ -41,7 +41,7 @@ pub struct TransactionContext {
 }
 
 #[derive(derive_more::Debug)]
-struct TransactionContextInner {
+pub(crate) struct TransactionContextInner {
     core_crypto: Arc<CoreCrypto>,
     pending_epoch_changes: Arc<Mutex<Vec<(ConversationId, u64)>>>,
     #[debug(skip)]

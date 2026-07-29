@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use core_crypto_keystore::{Database, entities::ProteusSession, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{entities::ProteusSession, traits::FetchFromDatabase};
 use proteus_wasm::{keys::IdentityKeyPair, session::Session};
 use schnellru::{ByLength, LruMap};
 
@@ -41,7 +41,7 @@ impl ProteusSessionCache {
     pub(crate) async fn get_or_fetch(
         &mut self,
         id: &str,
-        keystore: &Database,
+        keystore: &impl FetchFromDatabase,
     ) -> Result<Option<&mut ProteusConversationSession>> {
         if self.entries.peek(id).is_some() {
             return Ok(self.entries.get(id));

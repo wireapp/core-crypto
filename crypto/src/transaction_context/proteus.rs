@@ -6,18 +6,17 @@ use crate::{RecursiveError, proteus::ProteusCentral};
 impl TransactionContext {
     /// Initializes the proteus client
     pub async fn proteus_init(&self) -> Result<()> {
-        let keystore = self.database().await?;
-        let proteus_client = ProteusCentral::try_new(&keystore)
+        let inner = self.inner().await?;
+        let proteus_client = ProteusCentral::try_new(&inner.transaction)
             .await
             .map_err(RecursiveError::root("creating new proteus client"))?;
 
         // ? Make sure the last resort prekey exists
         let _ = proteus_client
-            .last_resort_prekey(&keystore)
+            .last_resort_prekey(&inner.transaction)
             .await
             .map_err(RecursiveError::root("getting last resort prekey"))?;
 
-        let inner = self.inner().await?;
         let mut guard = inner.core_crypto.proteus.lock().await;
         *guard = Some(proteus_client);
         Ok(())
@@ -31,12 +30,11 @@ impl TransactionContext {
         let inner = self.inner().await?;
         let mut guard = inner.core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.database().await?;
         let session = proteus
             .session_from_prekey(session_id, prekey)
             .await
             .map_err(RecursiveError::root("creating proteus session from prekey"))?;
-        ProteusCentral::session_save_by_ref(&keystore, session)
+        ProteusCentral::session_save_by_ref(&inner.transaction, session)
             .await
             .map_err(RecursiveError::root("saving proteus session by ref"))?;
         Ok(())
@@ -50,12 +48,11 @@ impl TransactionContext {
         let inner = self.inner().await?;
         let mut guard = inner.core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.database().await?;
         let (session, message) = proteus
-            .session_from_message(&keystore, session_id, envelope)
+            .session_from_message(&inner.transaction, session_id, envelope)
             .await
             .map_err(RecursiveError::root("creating proteus sesseion from message"))?;
-        ProteusCentral::session_save_by_ref(&keystore, session)
+        ProteusCentral::session_save_by_ref(&inner.transaction, session)
             .await
             .map_err(RecursiveError::root("saving proteus session by ref"))?;
         Ok(message)
@@ -69,9 +66,8 @@ impl TransactionContext {
         let inner = self.inner().await?;
         let mut guard = inner.core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.database().await?;
         proteus
-            .session_save(&keystore, session_id)
+            .session_save(&inner.transaction, session_id)
             .await
             .map_err(RecursiveError::root("saving proteus session"))
             .map_err(Into::into)
@@ -85,9 +81,8 @@ impl TransactionContext {
         let inner = self.inner().await?;
         let mut guard = inner.core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.database().await?;
         proteus
-            .session_delete(&keystore, session_id)
+            .session_delete(&inner.transaction, session_id)
             .await
             .map_err(RecursiveError::root("deleting proteus session"))
             .map_err(Into::into)
@@ -101,8 +96,7 @@ impl TransactionContext {
         let inner = self.inner().await?;
         let mut guard = inner.core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.database().await?;
-        Ok(proteus.session_exists(session_id, &keystore).await)
+        Ok(proteus.session_exists(session_id, &inner.transaction).await)
     }
 
     /// Decrypts a proteus message envelope
@@ -113,9 +107,8 @@ impl TransactionContext {
         let inner = self.inner().await?;
         let mut guard = inner.core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.database().await?;
         proteus
-            .decrypt(&keystore, session_id, ciphertext)
+            .decrypt(&inner.transaction, session_id, ciphertext)
             .await
             .map_err(RecursiveError::root("decrypting proteus message"))
             .map_err(Into::into)
@@ -129,9 +122,8 @@ impl TransactionContext {
         let inner = self.inner().await?;
         let mut guard = inner.core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.database().await?;
         proteus
-            .encrypt(&keystore, session_id, plaintext)
+            .encrypt(&inner.transaction, session_id, plaintext)
             .await
             .map_err(RecursiveError::root("encrypting proteus message"))
             .map_err(Into::into)
@@ -150,9 +142,8 @@ impl TransactionContext {
         let inner = self.inner().await?;
         let mut guard = inner.core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.database().await?;
         proteus
-            .encrypt_batched(&keystore, sessions, plaintext)
+            .encrypt_batched(&inner.transaction, sessions, plaintext)
             .await
             .map_err(RecursiveError::root("batch encrypting proteus message"))
             .map_err(Into::into)
@@ -166,9 +157,8 @@ impl TransactionContext {
         let inner = self.inner().await?;
         let mut guard = inner.core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.database().await?;
         proteus
-            .new_prekey(prekey_id, &keystore)
+            .new_prekey(prekey_id, &inner.transaction)
             .await
             .map_err(RecursiveError::root("new proteus prekey"))
             .map_err(Into::into)
@@ -183,9 +173,8 @@ impl TransactionContext {
         let inner = self.inner().await?;
         let mut guard = inner.core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.database().await?;
         proteus
-            .new_prekey_auto(&keystore)
+            .new_prekey_auto(&inner.transaction)
             .await
             .map_err(RecursiveError::root("proteus new prekey auto"))
             .map_err(Into::into)
@@ -196,10 +185,9 @@ impl TransactionContext {
         let inner = self.inner().await?;
         let mut guard = inner.core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.database().await?;
 
         proteus
-            .last_resort_prekey(&keystore)
+            .last_resort_prekey(&inner.transaction)
             .await
             .map_err(RecursiveError::root("getting proteus last resort prekey"))
             .map_err(Into::into)
@@ -229,9 +217,8 @@ impl TransactionContext {
         let inner = self.inner().await?;
         let mut guard = inner.core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.database().await?;
         proteus
-            .fingerprint_local(session_id, &keystore)
+            .fingerprint_local(session_id, &inner.transaction)
             .await
             .map_err(RecursiveError::root("getting proteus fingerprint local"))
             .map_err(Into::into)
@@ -245,9 +232,8 @@ impl TransactionContext {
         let inner = self.inner().await?;
         let mut guard = inner.core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.database().await?;
         proteus
-            .fingerprint_remote(session_id, &keystore)
+            .fingerprint_remote(session_id, &inner.transaction)
             .await
             .map_err(RecursiveError::root("geeting proteus fingerprint remote"))
             .map_err(Into::into)
