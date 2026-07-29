@@ -2,6 +2,8 @@ mod entity_read;
 mod entity_write;
 mod fetch_from_database;
 mod mls;
+#[cfg(feature = "proteus-keystore")]
+pub mod proteus;
 mod specializations;
 
 use std::{borrow::Cow, collections::HashSet, sync::Arc};
