@@ -12,10 +12,9 @@ use async_trait::async_trait;
 pub(crate) use self::platform::*;
 use super::traits::{Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, SearchableEntity};
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
+    CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey, Transaction,
     entities::{MlsPendingMessage, PersistedMlsGroup},
     traits::{BorrowPrimaryKey, FetchFromDatabase, KeyType},
-    transaction::KeystoreTransaction,
 };
 
 /// Limit on the length of a blob to be stored in the database.
@@ -67,10 +66,11 @@ pub(crate) trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
     fn location(&self) -> Option<&str>;
 }
 
-#[derive(Debug)]
+#[derive(derive_more::Debug)]
 pub(crate) struct Database {
     pub(crate) conn: Mutex<Option<KeystoreDatabaseConnection>>,
-    pub(crate) transaction: Mutex<Option<KeystoreTransaction>>,
+    #[debug(skip)]
+    pub(crate) transaction: Mutex<Option<Transaction>>,
     // we need an internal Arc here so we can hand out `SemaphoreGuardArc`
     // instances without keeping references with lifetimes to the semaphore
     transaction_semaphore: Arc<Semaphore>,
