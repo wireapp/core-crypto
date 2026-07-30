@@ -37,6 +37,7 @@
         "@wireapp/core-crypto": "workspace:*",
         "chai": "^6.2.2",
         "dts-bundle-generator": "^9.5.1",
+        "mocha": "^11.7.6",
         "oxfmt": "^0.60.0",
         "oxlint": "^1.75.0",
         "oxlint-tsgolint": "^7.0.2001",
