@@ -114,32 +114,35 @@ impl CoreCryptoFfi {
         log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 2; "acquired semaphore; creating context");
         let inner_context = Arc::new(inner_context);
 
-        // Only the transaction owning the semaphore may publish its token. These guards
-        // are declared after the context so the slots are cleared before the semaphore is released.
-        let _cancellation_guard = self.cancellation_slot.enter(cancellation.clone())?;
-        let pki_cancellation_slot = self
-            .pki_environment
-            .read()
-            .await
-            .as_ref()
-            .map(|environment| environment.cancellation_slot.clone());
-        let _pki_cancellation_guard = pki_cancellation_slot
-            .map(|slot| slot.enter(cancellation.clone()))
-            .transpose()?;
+        // The cancellation token only needs to be published while the command is running: the
+        // commit and abort paths make no foreign calls, so nothing reads the slots there. Scoping
+        // the guards to the command means the slots are always empty by the time the transaction
+        // semaphore is released, whenever during the commit that happens.
+        let result = {
+            // Only the transaction owning the semaphore may publish its token.
+            let _cancellation_guard = self.cancellation_slot.enter(cancellation.clone())?;
+            let pki_cancellation_slot = self
+                .pki_environment
+                .read()
+                .await
+                .as_ref()
+                .map(|environment| environment.cancellation_slot.clone());
+            let _pki_cancellation_guard = pki_cancellation_slot
+                .map(|slot| slot.enter(cancellation.clone()))
+                .transpose()?;
 
-        let context = CoreCryptoContext {
-            inner: inner_context.clone(),
-            cancellation_slot: self.cancellation_slot.clone(),
-        };
+            let context = Arc::new(CoreCryptoContext {
+                inner: inner_context.clone(),
+                cancellation_slot: self.cancellation_slot.clone(),
+            });
 
-        let context = Arc::new(context);
+            log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 3; "created context; racing command against cancellation");
 
-        log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 3; "created context; racing command against cancellation");
-
-        // Prefer cancellation when both futures become ready together.
-        let result = futures_util::select_biased! {
-            _ = cancellation.cancelled().fuse() => Err(CoreCryptoError::TransactionCanceled),
-            result = command.execute(context).fuse() => result,
+            // Prefer cancellation when both futures become ready together.
+            futures_util::select_biased! {
+                _ = cancellation.cancelled().fuse() => Err(CoreCryptoError::TransactionCanceled),
+                result = command.execute(context).fuse() => result,
+            }
         };
 
         match result {
