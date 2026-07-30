@@ -18,11 +18,12 @@ mod idempotent;
 ///
 /// Intended to be used only within `core-crypto-keystore`.
 ///
-/// All fields in an entity using this derive macro must have one of three types:
+/// All fields in an entity using this derive macro must have one of four types:
 ///
 /// - `Vec<u8>`
 /// - `String`
 /// - `Option<Vec<u8>>`
+/// - `u32`
 ///
 /// There is one exception: the identity field can only be a `Vec<u8>` or `String`; the optional
 /// variant is forbidden in that context.

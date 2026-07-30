@@ -2,6 +2,12 @@ use std::fmt::Formatter;
 
 use crate::{Obfuscate, compute_hash};
 
+impl Obfuscate for u32 {
+    fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        f.write_str(hex::encode(compute_hash(&self.to_le_bytes())).as_str())
+    }
+}
+
 impl Obfuscate for [u8] {
     fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         f.write_str(hex::encode(compute_hash(self)).as_str())
