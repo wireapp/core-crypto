@@ -3,6 +3,7 @@ mod commit_delay;
 mod credential;
 mod duplicate;
 mod e2ei;
+mod encrypt_targeted;
 mod history_sharing;
 mod persistence;
 
