@@ -32,6 +32,17 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
+      - name: install chrome via puppeteer
+        run: |
+          bun x puppeteer browsers install chrome-headless-shell
+
+      # See https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md
+      - name: disable Ubuntu's AppArmor for puppeteer
+        run: |
+          echo disabling AppArmor on ubuntu runner
+          echo "See https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md"
+          echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+
       - name: test
         uses: ./.github/actions/make
         with:
