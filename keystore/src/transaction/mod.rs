@@ -104,7 +104,7 @@ impl UniqueArc<Transaction> {
             cache,
             deleted,
             database,
-            ..
+            _semaphore_guard,
         } = UniqueArc::into_inner(self).await;
         let cache = cache.into_inner();
         let deleted_ids = deleted.into_inner();
