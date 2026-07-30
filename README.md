@@ -189,6 +189,12 @@ Make sure you have all prerequisites:
 
 - Install Bun (follow the instructions on [Bun's website](https://bun.sh/))
 
+- Install chrome via puppeteer for browser tests and benchmarks:
+
+  ```sh
+  cd crypto-ffi/bindings/js && bun x puppeteer browsers install chrome-headless-shell    
+  ```
+
 - Install [wasm-bindgen-cli](https://github.com/wasm-bindgen/wasm-bindgen):
 
   ```sh
@@ -202,7 +208,7 @@ Make sure you have all prerequisites:
   It is important to ensure that the `wasm-bindgen-cli` version always precisely matches the `wasm-bindgen` version in
   `Cargo.lock` (as shown by `cargo info wasm-bindgen`), because otherwise the wasm tests will not run.
 
-- Install [chromedriver](https://getwebdriver.com/chromedriver)
+- Install chromedriver
 
   ```sh
   bunx @puppeteer/browsers install --path ~/bin chrome-headless-shell
