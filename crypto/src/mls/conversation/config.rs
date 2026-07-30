@@ -35,7 +35,7 @@ pub struct ConversationConfiguration {
 }
 
 impl ConversationConfiguration {
-    const PADDING_SIZE: usize = 128;
+    pub(crate) const PADDING_SIZE: usize = 128;
 
     /// Default protocol
     pub(crate) const DEFAULT_PROTOCOL_VERSION: ProtocolVersion = ProtocolVersion::Mls10;

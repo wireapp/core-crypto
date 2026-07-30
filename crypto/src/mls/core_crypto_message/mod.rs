@@ -1,3 +1,5 @@
+mod targeted;
+
 use tls_codec::{TlsDeserialize, TlsSerialize, TlsSize};
 
 /// The version of the Transient and Targeted Messages protocol.
