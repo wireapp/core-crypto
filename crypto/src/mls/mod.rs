@@ -8,6 +8,9 @@ mod external_sender;
 pub mod key_package;
 pub(crate) mod session;
 
+pub use core_crypto_message::{
+    CoreCryptoMessage, CoreCryptoMessageBody, CoreCryptoMessageTBS, PskId, TargetedMessage, TargetedMessageContext,
+};
 pub use error::{Error, Result};
 pub use external_sender::ExternalSender;
 pub use session::{EpochObserver, HistoryObserver};
