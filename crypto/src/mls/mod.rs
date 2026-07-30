@@ -23,6 +23,25 @@ impl TransientAndTargetedMessagesProtocolVersion {
     pub const V1: Self = Self(1);
 }
 
+/// The Wire format used for transient and targeted messages. Using the range reserved for private use by RFC 9420.
+#[derive(TlsSize, TlsSerialize, TlsDeserialize)]
+#[repr(transparent)]
+pub struct CoreCryptoWireFormat(u16);
+
+impl CoreCryptoWireFormat {
+    /// Transient message wire format
+    pub const TRANSIENT: Self = Self(0xF00);
+    /// Targeted message wire format
+    pub const TARGETED: Self = Self(0xF01);
+    /// Transient targeted message wire format
+    pub const TRANSIENT_TARGETED: Self = Self(0xF02);
+
+    /// An iterator over all of the defined [CoreCryptoWireFormat]s.
+    pub(crate) fn all() -> impl Iterator<Item = Self> {
+        [Self::TRANSIENT, Self::TARGETED, Self::TRANSIENT_TARGETED].into_iter()
+    }
+}
+
 /// A shared nonce type for Transient and Targeted Messages.
 #[derive(TlsSize, TlsSerialize, TlsDeserialize)]
 #[repr(transparent)]
