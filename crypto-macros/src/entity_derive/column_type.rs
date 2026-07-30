@@ -26,6 +26,14 @@ fn optional_types(ty: &Type) -> [Type; 3] {
     ]
 }
 
+fn u32_types() -> [Type; 3] {
+    [
+        parse_quote!(u32),
+        parse_quote!(std::primitive::u32),
+        parse_quote!(core::primitive::u32),
+    ]
+}
+
 /// Legal types for an ID column
 #[derive(PartialEq, Eq)]
 pub(super) enum IdColumnType {
@@ -100,6 +108,7 @@ pub(super) enum ColumnType {
     String,
     Bytes,
     OptionalBytes,
+    U32,
 }
 
 impl TryFrom<Type> for ColumnType {
@@ -112,11 +121,13 @@ impl TryFrom<Type> for ColumnType {
             Ok(Self::Bytes)
         } else if bytes_types().iter().flat_map(optional_types).any(|o_type| o_type == ty) {
             Ok(Self::OptionalBytes)
+        } else if u32_types().contains(&ty) {
+            Ok(Self::U32)
         } else {
             let type_string = ty.to_token_stream().to_string();
             Err(syn::Error::new_spanned(
                 ty,
-                format!("Expected `String`, `Vec<u8>`, or `Option<Vec<u8>>`, not `{type_string}`"),
+                format!("Expected `String`, `Vec<u8>`, `Option<Vec<u8>>`, or `u32`, not `{type_string}`"),
             ))
         }
     }
@@ -142,6 +153,7 @@ impl EmitGetExpression for ColumnType {
             ColumnType::Bytes => quote!(Vec<u8>),
             ColumnType::String => quote!(String),
             ColumnType::OptionalBytes => quote!(Option<Vec<u8>>),
+            ColumnType::U32 => quote! {u32},
         }
     }
 }
