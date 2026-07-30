@@ -198,9 +198,9 @@ $(STAMPS)/ts-browser-test: $(ts-browser-test-deps)
 	@set -euo pipefail; \
 	cd $(JS_DIR) && \
 	if [ -n "$(TEST)" ]; then \
-		bun x wdio run ./packages/browser/test/wdio.test.conf.ts --mochaOpts.grep "$(TEST)"; \
+		bun --conditions=cc-browser node_modules/mocha/bin/mocha.js --require packages/browser/test/rootHooks.ts ./shared/test/**.test.ts ./packages/browser/test/**.test.ts --grep "$(TEST)"; \
 	else \
-		bun x wdio run ./packages/browser/test/wdio.test.conf.ts; \
+		bun --conditions cc-browser node_modules/mocha/bin/mocha.js --require packages/browser/test/rootHooks.ts ./shared/test/**.test.ts ./packages/browser/test/**.test.ts; \
 	fi
 	$(TOUCH_STAMP)
 
@@ -222,28 +222,25 @@ $(STAMPS)/ts-test:
 	@$(MAKE) LAZY_MAKE= ts-native-test TEST="$(TEST)"
 	$(TOUCH_STAMP)
 
-# run WebDriver benches
-.PHONY: ts-browser-bench
-ts-browser-bench: $(BROWSER_OUT) ## Run TypeScript wrapper benches in Chrome via wdio
+define run-ts-benches
 	@set -euo pipefail; \
 	cd $(JS_DIR) && \
+	bench_files="./shared/benches/*.bench.ts"; \
 	if [ -n "$(BENCH)" ]; then \
-		bun x wdio run ./packages/browser/benches/wdio.bench.conf.ts --mochaOpts.grep "$(BENCH)"; \
-	else \
-		bun x wdio run ./packages/browser/benches/wdio.bench.conf.ts --log-level warn; \
-	fi
+		bench_files="./shared/benches/*$(BENCH)*.bench.ts"; \
+	fi; \
+	for f in $$bench_files; do \
+		bun --conditions=$(1) run "$$f"; \
+	done
+endef
+
+.PHONY: ts-browser-bench
+ts-browser-bench: $(BROWSER_OUT)
+	$(call run-ts-benches,cc-browser)
 
 .PHONY: ts-native-bench
 ts-native-bench: $(TS_NATIVE_OUT)
-	@set -euo pipefail; \
-	cd $(JS_DIR) && \
-	bench_files="./packages/native/benches/*.bench.ts"; \
-	if [ -n "$(BENCH)" ]; then \
-		bench_files="./packages/native/benches/*$(BENCH)*.bench.ts"; \
-	fi; \
-	for f in $$bench_files; do \
-		bun --conditions=cc-native run "$$f"; \
-	done
+	$(call run-ts-benches,cc-native)
 
 .PHONY: ts-package
 ts-package: $(TS_OUT)  ## Package the ready-to-release tarball
