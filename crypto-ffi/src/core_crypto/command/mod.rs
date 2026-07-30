@@ -158,3 +158,164 @@ impl CoreCryptoFfi {
         }
     }
 }
+
+#[cfg(all(test, feature = "cancellable-transactions", not(target_os = "unknown")))]
+mod tests {
+    use std::sync::Arc;
+
+    use async_lock::Semaphore;
+    use core_crypto::{CipherSuite as CryptoCipherSuite, Credential as CryptoCredential};
+
+    use crate::{
+        ClientId, CommitBundle, ConversationId, CoreCryptoCancellationToken, CoreCryptoCommand, CoreCryptoContext,
+        CoreCryptoResult, Credential, Database, DeviceId, EpochObserver, HistorySecret, MlsTransport, MlsTransportData,
+        MlsTransportResult, Uuid, cipher_suite_default, core_crypto::epoch_observer::EpochChangedReportingError,
+        core_crypto_new,
+    };
+
+    const CLIENT_UUID: &str = "00000000-0000-4000-8000-000000000000";
+    const DOMAIN: &str = "example.com";
+
+    /// Accepts every commit bundle without doing anything.
+    #[derive(Debug)]
+    struct AcceptingTransport;
+
+    #[async_trait::async_trait]
+    impl MlsTransport for AcceptingTransport {
+        async fn send_commit_bundle(&self, _commit_bundle: CommitBundle) -> MlsTransportResult {
+            Ok(())
+        }
+
+        async fn prepare_for_transport(&self, _history_secret: HistorySecret) -> MlsTransportData {
+            unreachable!("this test never shares history")
+        }
+    }
+
+    /// Parks inside the epoch-change notification until `release` is signalled.
+    ///
+    /// `TransactionContext::finish` notifies epoch observers *after* the keystore transaction has
+    /// committed and released the transaction semaphore, so parking here holds the first
+    /// transaction in precisely the window where the second transaction starts.
+    struct ParkingEpochObserver {
+        release: Arc<Semaphore>,
+    }
+
+    #[async_trait::async_trait]
+    impl EpochObserver for ParkingEpochObserver {
+        async fn epoch_changed(
+            &self,
+            _conversation_id: Arc<ConversationId>,
+            _epoch: u64,
+        ) -> Result<(), EpochChangedReportingError> {
+            let _permit = self.release.acquire().await;
+            Ok(())
+        }
+    }
+
+    /// Initializes MLS, adds a basic credential, and creates the conversation the test commits to.
+    struct Setup {
+        client_id: Arc<ClientId>,
+        conversation_id: ConversationId,
+    }
+
+    #[async_trait::async_trait]
+    impl CoreCryptoCommand for Setup {
+        async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()> {
+            context.mls_init(&self.client_id, Arc::new(AcceptingTransport)).await?;
+
+            let credential = CryptoCredential::basic(
+                CryptoCipherSuite::from(cipher_suite_default()),
+                self.client_id.as_ref().as_ref().to_owned(),
+            )?;
+            let credential_ref = context.add_credential(Arc::new(Credential::from(credential))).await?;
+
+            context
+                .create_conversation(&self.conversation_id, &credential_ref, None)
+                .await
+        }
+    }
+
+    /// Updates the conversation's key material, which queues an epoch-change notification.
+    struct ChangeEpoch {
+        conversation_id: ConversationId,
+    }
+
+    #[async_trait::async_trait]
+    impl CoreCryptoCommand for ChangeEpoch {
+        async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()> {
+            context.update_keying_material(&self.conversation_id).await
+        }
+    }
+
+    /// Releases the parked epoch observer so the first transaction can finish.
+    ///
+    /// Running at all is the property under test: this command only executes once
+    /// `transaction_ffi_cancellable` has put its own token into the cancellation slot, which it
+    /// cannot do while the previous transaction's token is still there.
+    struct ReleaseObserver {
+        release: Arc<Semaphore>,
+    }
+
+    #[async_trait::async_trait]
+    impl CoreCryptoCommand for ReleaseObserver {
+        async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()> {
+            self.release.add_permits(1);
+            context.set_data(b"the second transaction ran".to_vec()).await
+        }
+    }
+
+    /// A transaction must be able to start while the previous transaction's epoch observer runs.
+    ///
+    /// The keystore releases the transaction semaphore as its commit completes, which is before
+    /// `finish` notifies epoch observers. So if `transaction_ffi_cancellable` held its cancellation
+    /// guards until it returned, the waiting transaction would acquire the semaphore while the
+    /// previous transaction's token was still in the slot, and `CancellationSlot::enter` would
+    /// panic.
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn transaction_can_start_while_previous_epoch_observer_runs() {
+        let database = Arc::new(Database::in_memory().await.unwrap());
+        let core_crypto = core_crypto_new(&database).unwrap();
+
+        let client_id = Arc::new(ClientId::new(
+            Arc::new(Uuid::new(CLIENT_UUID).unwrap()),
+            Arc::new(DeviceId::new(1)),
+            DOMAIN.to_owned(),
+        ));
+        let conversation_id = ConversationId::new(b"epoch observer conversation".to_vec());
+
+        core_crypto
+            .transaction_ffi(Arc::new(Setup {
+                client_id,
+                conversation_id: conversation_id.clone(),
+            }))
+            .await
+            .unwrap();
+
+        let release = Arc::new(Semaphore::new(0));
+        core_crypto
+            .register_epoch_observer(Arc::new(ParkingEpochObserver {
+                release: release.clone(),
+            }))
+            .await
+            .unwrap();
+
+        // A single-threaded executor polls these in order, so the interleaving is deterministic:
+        // the first transaction acquires the semaphore immediately and runs until it parks in the
+        // epoch observer, by which point it has committed and released the semaphore. Only then
+        // does the second transaction get to acquire it and reach for the cancellation slot.
+        let (epoch_change, next_transaction) = futures_util::future::join(
+            core_crypto.transaction_ffi_cancellable(
+                Arc::new(ChangeEpoch { conversation_id }),
+                Arc::new(CoreCryptoCancellationToken::new()),
+            ),
+            core_crypto.transaction_ffi_cancellable(
+                Arc::new(ReleaseObserver { release }),
+                Arc::new(CoreCryptoCancellationToken::new()),
+            ),
+        )
+        .await;
+
+        epoch_change.unwrap();
+        next_transaction.unwrap();
+    }
+}
