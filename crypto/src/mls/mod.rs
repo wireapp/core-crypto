@@ -6,6 +6,7 @@ mod error;
 mod external_sender;
 pub mod key_package;
 pub(crate) mod session;
+pub mod targeted_message;
 
 pub use error::{Error, Result};
 pub use external_sender::ExternalSender;
