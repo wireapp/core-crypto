@@ -4,6 +4,7 @@
 #![allow(missing_docs)]
 
 use super::config::MAX_PAST_EPOCHS;
+use crate::ClientId;
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
@@ -13,6 +14,8 @@ pub enum Error {
     InappropriateMessageBodyType,
     #[error("The current client id isn't authorized to perform this action")]
     Unauthorized,
+    #[error("Member with id {_0} doesn't exist")]
+    MemberNotFound(ClientId),
     /// Message rejected by the delivery service
     #[error("Message rejected by the delivery service. Reason: {reason}")]
     MessageRejected {
