@@ -58,8 +58,9 @@ impl Transaction {
             let mut transaction_guard = transaction.database.transaction.lock().await;
             // this transaction guard may be `None` if the database is new or the previous transaction
             // was committed.
-            // it may be `Some(_)` if the previous transaction was rolled back by means of dropping the `UniqueArc<Transaction>`.
-            // either way, it's correct to simply replace it without checking the previous value.
+            // it may be `Some(_)` if the previous transaction was rolled back by means of dropping the
+            // `UniqueArc<Transaction>`. either way, it's correct to simply replace it without checking the
+            // previous value.
             *transaction_guard = Some(weak);
         }
 

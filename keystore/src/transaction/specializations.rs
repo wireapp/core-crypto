@@ -2,14 +2,13 @@
 
 use std::{borrow::Cow, sync::Arc};
 
+use super::dynamic_dispatch::EntityId;
 use crate::{
     CryptoKeystoreResult,
     entities::{MlsPendingMessage, PersistedMlsGroup},
     traits::{BorrowPrimaryKey, KeyType as _},
     transaction::Transaction,
 };
-
-use super::dynamic_dispatch::EntityId;
 
 impl Transaction {
     pub(crate) async fn child_groups(

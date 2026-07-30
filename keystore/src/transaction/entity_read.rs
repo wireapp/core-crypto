@@ -3,13 +3,12 @@
 
 use std::{borrow::Cow, sync::Arc};
 
+use super::dynamic_dispatch::EntityId;
 use crate::{
     CryptoKeystoreResult,
     traits::{BorrowPrimaryKey, Entity, KeyType, SearchableEntity},
     transaction::Transaction,
 };
-
-use super::dynamic_dispatch::EntityId;
 
 impl Transaction {
     async fn find_in_cache<E>(&self, entity_id: &EntityId) -> Option<Arc<E>>
