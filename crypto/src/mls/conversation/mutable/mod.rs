@@ -1,6 +1,7 @@
 mod commit;
 pub(crate) mod decrypt;
 mod encrypt;
+mod encrypt_targeted;
 mod group_mutation;
 mod history_sharing;
 mod merge;
@@ -11,6 +12,7 @@ mod wipe;
 use std::sync::Arc;
 
 use core_crypto_keystore::Database;
+pub use encrypt_targeted::TargetedMessagePolicy;
 use openmls::prelude::group_info::GroupInfo;
 
 use super::{Error, Result};

@@ -36,7 +36,6 @@ impl MlsGroupState {
         self.sender_nonce
     }
 
-    #[expect(dead_code)]
     pub(in crate::mls::conversation) fn increment_sender_nonce(&mut self) {
         self.sender_nonce.increment();
     }
