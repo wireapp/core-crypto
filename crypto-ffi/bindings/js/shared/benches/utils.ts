@@ -3,7 +3,11 @@ import { CipherSuite } from "#core-crypto";
 import { isNumberObject } from "node:util/types";
 import { mkdir } from "node:fs/promises";
 import { writeFile } from "node:fs/promises";
-import { sharedSetup } from "../shared/utils";
+import { runOnPlatform, sharedSetup } from "../shared/utils";
+import {
+    setup as platformSetup,
+    teardown as platformTeardown,
+} from "#bench-utils";
 
 declare global {
     var tinybench: typeof import("tinybench");
@@ -16,6 +20,18 @@ export { sharedTeardown as teardown } from "../shared/utils";
 
 export function tinybenchSetup(task?: Task, mode?: string) {
     console.log(`Executing ${mode} ${task?.name}`);
+}
+
+export async function runBenchmark(benchmarkSetup: () => Promise<void>) {
+    await platformSetup();
+    await benchmarkSetup();
+    const results = await runOnPlatform(async () => {
+        console.log(`Starting ${bench.name}`);
+        await bench.run();
+        return { name: bench.name, table: bench.table() };
+    });
+    await platformTeardown();
+    await logResults(results.name, results.table);
 }
 
 export async function setup() {

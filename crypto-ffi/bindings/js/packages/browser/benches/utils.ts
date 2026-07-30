@@ -1,19 +1,5 @@
-import {
-    logResults,
-    setup as sharedSetup,
-} from "../../../shared/benches/utils";
+import { setup as sharedSetup } from "../../../shared/benches/utils";
 import { getPage, setupBrowser, teardownBrowser } from "../shared/utils";
-
-export async function runBenchmark(benchmarkSetup: () => Promise<void>) {
-    await setup();
-    await benchmarkSetup();
-    const results = await getPage().evaluate(async () => {
-        await bench.run();
-        return { name: bench.name, table: bench.table() };
-    });
-    await teardown();
-    await logResults(results.name, results.table);
-}
 
 export async function setup() {
     // We increase the browser timeout for benchmarks
