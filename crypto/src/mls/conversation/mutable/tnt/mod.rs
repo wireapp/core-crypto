@@ -1,9 +1,11 @@
+mod encrypt_targeted;
 mod sender_nonce;
 mod targeted;
 
 use openmls::prelude::Signature;
 use tls_codec::{Serialize, TlsDeserialize, TlsSerialize, TlsSize};
 
+pub use self::encrypt_targeted::TargetedMessagePolicy;
 pub(crate) use self::sender_nonce::SenderNonce;
 use self::targeted::{PskId, TargetedMessage, TargetedMessageContext};
 

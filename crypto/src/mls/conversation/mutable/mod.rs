@@ -15,6 +15,7 @@ use core_crypto_keystore::Database;
 use openmls::prelude::group_info::GroupInfo;
 
 pub(crate) use self::tnt::SenderNonce;
+pub use self::tnt::TargetedMessagePolicy;
 use super::{Error, Result};
 use crate::{
     CryptoProvider, GroupInfoBundle, LeafError, MlsTransport, RecursiveError, Session,

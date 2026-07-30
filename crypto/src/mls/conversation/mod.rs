@@ -34,7 +34,7 @@ pub use self::{
     id::{ConversationId, ConversationIdRef},
     immutable::Conversation,
     mutable::{
-        ConversationMut,
+        ConversationMut, TargetedMessagePolicy,
         decrypt::{BufferedCommit, BufferedDecryptedMessage, Commit, DecryptedMessage, Proposal, Text},
     },
     welcome::WelcomeMessage,
