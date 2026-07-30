@@ -22,6 +22,11 @@ impl TransientAndTargetedMessagesProtocolVersion {
     pub const V1: Self = Self(1);
 }
 
+/// A shared nonce type for Transient and Targeted Messages.
+#[derive(TlsSize, TlsSerialize, TlsDeserialize)]
+#[repr(transparent)]
+pub struct TransientAndTargetedMessageNonce(u32);
+
 #[cfg(test)]
 mod tests {
     use crate::{CoreCrypto, test_utils::*, transaction_context::Error as TransactionError};
