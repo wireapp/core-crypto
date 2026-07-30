@@ -118,4 +118,7 @@ pub enum OpenMlsErrorKind {
     /// Keystore Error
     #[error(transparent)]
     KeystoreError(#[from] core_crypto_keystore::CryptoKeystoreError),
+    /// Signature Error
+    #[error(transparent)]
+    SignatureError(#[from] openmls::prelude::SignatureError),
 }
