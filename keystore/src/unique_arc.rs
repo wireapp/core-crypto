@@ -39,7 +39,7 @@ impl<T> From<T> for UniqueArc<T> {
 impl<T> UniqueArc<T> {
     /// Unpack this `UniqueArc`, returning the inner value.
     ///
-    /// This waits for any in-flight [`UniqueWeak::upgrade`] / [`UniqueWeak::upgrade_sync`]
+    /// This waits for any in-flight `UniqueWeak::upgrade` / `UniqueWeak::upgrade_sync`
     /// guard to drop before unpacking, so that the sole remaining strong reference is the one
     /// held by this `UniqueArc`.
     pub async fn into_inner(this: Self) -> T {

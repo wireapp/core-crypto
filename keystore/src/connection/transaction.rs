@@ -77,7 +77,7 @@ impl Database {
     /// Ensure a transaction exists, passing it to the operation.
     ///
     /// Ideally this method wouldn't exist; in most cases, [`Self::transactionally`]
-    /// or [`Self::with_transaction`] are the simpler picks. Every usage of this is a step
+    /// or `Self::with_transaction` (crate-public) are the simpler picks. Every usage of this is a step
     /// away from the long-term goal of separating transactions from the database entirely.
     /// At present, this is designed for the FFI version of `PkiEnvironment`, which cannot
     /// natively know whether a CC transaction is currently in-progress or not.
