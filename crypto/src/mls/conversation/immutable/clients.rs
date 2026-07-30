@@ -1,9 +1,12 @@
-use std::collections::HashSet;
+use std::{borrow::Borrow, collections::HashSet};
 
 use log::trace;
-use openmls::prelude::{LeafNodeIndex, Proposal};
+use openmls::prelude::{LeafNodeIndex, Member, Proposal};
 
-use crate::{ClientId, HISTORY_CLIENT_ID_PREFIX, RecursiveError, mls::conversation::immutable::Result};
+use crate::{
+    ClientId, ClientIdRef, HISTORY_CLIENT_ID_PREFIX, RecursiveError,
+    mls::conversation::{Error, immutable::Result},
+};
 
 impl super::Conversation {
     /// Exports the clients from a conversation
@@ -20,6 +23,14 @@ impl super::Conversation {
                     .map_err(Into::into)
             })
             .collect()
+    }
+
+    pub(crate) async fn client_id_member(&self, client_id: impl Borrow<ClientIdRef>) -> Result<Member> {
+        self.group()
+            .await
+            .members()
+            .find(|member| ClientIdRef::new(member.credential.identity()) == client_id.borrow())
+            .ok_or_else(|| Error::MemberNotFound(client_id.borrow().to_owned()))
     }
 
     /// Exports the history client ids from a conversation
