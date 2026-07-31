@@ -1,4 +1,5 @@
-/// Abstraction over a possibly-virtual filesystem
+//! Abstraction over a possibly-virtual filesystem
+
 use async_trait::async_trait;
 
 use crate::CryptoKeystoreResult;

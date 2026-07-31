@@ -62,7 +62,7 @@ where
 {
     // The old keystore trait used usize as the primary key type, but that would vary
     // in width across various implementations and so is intentionally not a `KeyType`.
-    // So we distinguish betwen `u32` and `u64` according to whether or not we're on wasm.
+    // So we distinguish between `u32` and `u64` according to whether or not we're on wasm.
     #[cfg(target_os = "unknown")]
     type PrimaryKey = u32;
     #[cfg(not(target_os = "unknown"))]
@@ -75,7 +75,7 @@ where
 
 /// A unique entity can appear either 0 or 1 times in the database.
 pub trait UniqueEntity: PrimaryKey {
-    /// The id used as they key when storing this entity in a KV store.
+    /// The id used as the key when storing this entity in a KV store.
     const KEY: Self::PrimaryKey;
 }
 

@@ -6,7 +6,7 @@ use crate::{
     traits::SearchableEntity as _,
 };
 
-// These and all other database impls shold not refer directly to `self.conn` but should go through the `self.conn()`
+// These and all other database impls should not refer directly to `self.conn` but should go through the `self.conn()`
 // wrapper
 impl Database {
     pub async fn child_groups(&self, entity: PersistedMlsGroup) -> CryptoKeystoreResult<Vec<PersistedMlsGroup>> {
