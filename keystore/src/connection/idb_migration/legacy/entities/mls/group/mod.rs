@@ -1,4 +1,5 @@
 mod expanded_derive;
+pub(crate) mod legacy_persisted_mls_group;
 
 use async_trait::async_trait;
 use idb::TransactionMode;
@@ -11,11 +12,12 @@ use crate::{
         connection::storage::WasmStorageWrapper,
         traits::{Decryptable, Decrypting, EntityBase, SearchableEntity},
     },
-    entities::{ParentGroupId, PersistedMlsGroup},
+    entities::ParentGroupId,
+    migrations::LegacyPersistedMlsGroup,
 };
 
 #[async_trait(?Send)]
-impl<'a> SearchableEntity<ParentGroupId<'a>> for PersistedMlsGroup {
+impl<'a> SearchableEntity<ParentGroupId<'a>> for LegacyPersistedMlsGroup {
     async fn find_all_matching(
         conn: &mut Self::ConnectionType,
         parent_id: &ParentGroupId<'a>,
@@ -23,9 +25,9 @@ impl<'a> SearchableEntity<ParentGroupId<'a>> for PersistedMlsGroup {
         let parent_id = *parent_id.as_ref();
         let storage = conn.storage();
 
-        let decrypt_mls_group = |js_value: JsValue| -> CryptoKeystoreResult<PersistedMlsGroup> {
+        let decrypt_mls_group = |js_value: JsValue| -> CryptoKeystoreResult<LegacyPersistedMlsGroup> {
             let encrypted_group =
-                serde_wasm_bindgen::from_value::<<PersistedMlsGroup as Decryptable>::DecryptableFrom>(js_value)?;
+                serde_wasm_bindgen::from_value::<<LegacyPersistedMlsGroup as Decryptable>::DecryptableFrom>(js_value)?;
             let group = encrypted_group.decrypt(&storage.cipher)?;
             Ok(group)
         };

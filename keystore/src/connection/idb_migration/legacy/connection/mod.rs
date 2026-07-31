@@ -13,7 +13,8 @@ pub(crate) use self::platform::*;
 use super::traits::{Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, SearchableEntity};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey, Transaction,
-    entities::{MlsPendingMessage, PersistedMlsGroup},
+    entities::MlsPendingMessage,
+    migrations::LegacyPersistedMlsGroup,
     traits::{BorrowPrimaryKey, FetchFromDatabase, KeyType},
 };
 

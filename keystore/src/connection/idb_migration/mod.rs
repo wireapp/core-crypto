@@ -15,10 +15,11 @@ use crate::{
     CryptoKeystoreResult, DatabaseKey,
     connection::migrations::MigrationTarget,
     entities::{
-        ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup,
-        PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup,
+        StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment, StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
+    migrations::LegacyPersistedMlsGroup,
     traits::EntityDatabaseMutation as _,
 };
 
@@ -82,7 +83,7 @@ pub(super) async fn maybe_migrate(
     new_conn: &mut Connection,
 ) -> CryptoKeystoreResult<()> {
     /// This SQL database version corresponds to the final IDB version,
-    /// so is what we need to perform the migration from IDB
+    /// so is what we need to perform the migration from IDB.
     const SQL_DATABASE_VERSION_AS_OF_FINAL_IDB_VERSION: u16 = 22;
 
     if !legacy_idb_exists(name).await {
@@ -99,7 +100,7 @@ pub(super) async fn maybe_migrate(
     // open the legacy IDB, running all IDB migrations (v0 → v11) in the process.
     let mut legacy_conn = KeystoreDatabaseConnection::open(name, database_key).await?;
 
-    // migrate the new connection to the version corresponding to the final IDB migration version
+    // Migrate the new connection to the version corresponding to the final IDB migration version.
     super::migrations::run_migrations(
         new_conn,
         MigrationTarget::Version(SQL_DATABASE_VERSION_AS_OF_FINAL_IDB_VERSION),
@@ -138,7 +139,7 @@ pub(super) async fn maybe_migrate(
         E2eiCrl,
         E2eiIntermediateCert,
         MlsPendingMessage,
-        PersistedMlsGroup,
+        LegacyPersistedMlsGroup,
         PersistedMlsPendingGroup,
         StoredBufferedCommit,
         StoredCredential,
