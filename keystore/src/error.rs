@@ -30,12 +30,6 @@ pub enum CryptoKeystoreError {
     #[cfg(not(target_os = "unknown"))]
     #[error(transparent)]
     TimeError(#[from] std::time::SystemTimeError),
-    #[cfg(target_os = "unknown")]
-    #[error(transparent)]
-    ChannelError(#[from] std::sync::mpsc::TryRecvError),
-    #[cfg(target_os = "unknown")]
-    #[error("The task has been canceled")]
-    WasmExecutorError,
     #[error("aead::Error: {0}")]
     AesGcmError(&'static str),
     #[cfg(target_os = "unknown")]
@@ -78,9 +72,6 @@ pub enum CryptoKeystoreError {
     #[cfg(target_os = "ios")]
     #[error(transparent)]
     SecurityFrameworkError(#[from] security_framework::base::Error),
-    #[cfg(target_os = "unknown")]
-    #[error("{0}")]
-    JsError(String),
     #[error("Not implemented (and probably never will)")]
     NotImplemented,
     #[error("Failed getting current timestamp")]
@@ -92,9 +83,6 @@ pub enum CryptoKeystoreError {
     #[cfg(target_os = "unknown")]
     #[error(transparent)]
     IdbError(#[from] idb::Error),
-    #[cfg(target_os = "unknown")]
-    #[error(transparent)]
-    IdbErrorCryptoKeystoreV1_0_0(idb::Error),
     #[cfg(target_os = "unknown")]
     #[error("Migration from version {0} is not supported")]
     MigrationNotSupported(u32),
@@ -119,13 +107,6 @@ impl CryptoKeystoreError {
         context: &'static str,
     ) -> impl FnOnce(sqlite_wasm_vfs::relaxed_idb::RelaxedIdbError) -> Self {
         move |error| Self::RelaxedIdbError { context, error }
-    }
-}
-
-#[cfg(target_os = "unknown")]
-impl From<wasm_bindgen::JsValue> for CryptoKeystoreError {
-    fn from(jsv: wasm_bindgen::JsValue) -> Self {
-        Self::JsError(jsv.as_string().unwrap())
     }
 }
 
