@@ -155,9 +155,7 @@ impl proteus_traits::ProteusErrorCode for CryptoKeystoreError {
             CryptoKeystoreError::BlobTooBig => ProteusErrorKind::IoError,
             CryptoKeystoreError::KeyStoreValueTransformError(_) => ProteusErrorKind::DecodeError,
             CryptoKeystoreError::IoError(_) => ProteusErrorKind::IoError,
-            #[cfg(not(target_os = "unknown"))]
             CryptoKeystoreError::DbError(_) => ProteusErrorKind::IoError,
-            #[cfg(not(target_os = "unknown"))]
             CryptoKeystoreError::DbMigrationError(_) => ProteusErrorKind::IoError,
             CryptoKeystoreError::InvalidKeySize { .. } => ProteusErrorKind::InvalidArrayLen,
             CryptoKeystoreError::ParseIntError(_) => ProteusErrorKind::DecodeError,
