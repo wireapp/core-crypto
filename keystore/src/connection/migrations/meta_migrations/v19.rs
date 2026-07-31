@@ -18,8 +18,9 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
         .query_map([], |row| {
             Ok(PersistedMlsGroup {
                 state: row.get("state")?,
-                id: Vec::new(),  // not relevant for this application
-                parent_id: None, // not relevant for this application
+                id: Vec::new(),                   // not relevant for this application
+                parent_id: None,                  // not relevant for this application
+                sender_nonce: Default::default(), // not relevant for this application
             })
         })?
         .filter_map(|row| row.ok()); // rows which can't load at the SQL level are skipped

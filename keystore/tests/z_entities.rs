@@ -387,7 +387,7 @@ pub mod utils {
     impl_entity_random_update_ext!(StoredHpkePrivateKey, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredPskBundle, blob_fields=[psk,psk_id id_like:true,]);
-    impl_entity_random_update_ext!(PersistedMlsGroup, id_field=id, blob_fields=[state,], additional_fields=[(parent_id: None),]);
+    impl_entity_random_update_ext!(PersistedMlsGroup, id_field=id, blob_fields=[state,], additional_fields=[(parent_id: None),(sender_nonce: rand::random()),]);
     impl_entity_random_update_ext!(PersistedMlsPendingGroup, id_field=id, blob_fields=[state,custom_configuration,], additional_fields=[(parent_id: None),]);
     impl_entity_random_update_ext!(MlsPendingMessage, id_field = foreign_id, blob_fields = [message,]);
     impl_entity_random_update_ext!(StoredE2eiEnrollment, id_field = id, blob_fields = [content,]);

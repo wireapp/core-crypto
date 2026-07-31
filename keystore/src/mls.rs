@@ -72,11 +72,13 @@ impl Database {
         &self,
         group_id: impl AsRef<[u8]> + Send,
         state: &[u8],
+        sender_nonce: u32,
         parent_group_id: Option<&[u8]>,
     ) -> CryptoKeystoreResult<()> {
         self.save(PersistedMlsGroup {
             id: group_id.as_ref().to_owned(),
             state: state.into(),
+            sender_nonce,
             parent_id: parent_group_id.map(Into::into),
         })
         .await

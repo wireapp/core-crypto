@@ -36,6 +36,7 @@ mod persisted_mls_groups {
             id: random_bytes(32..=32),
             state: random_bytes(128..256),
             parent_id: Some(random_bytes(32..=32)),
+            sender_nonce: rand::random(),
         }
     }
 

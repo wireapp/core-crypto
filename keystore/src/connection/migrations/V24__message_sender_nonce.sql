@@ -1,0 +1,1 @@
+ALTER TABLE mls_groups ADD COLUMN sender_nonce INTEGER NOT NULL DEFAULT 0;
