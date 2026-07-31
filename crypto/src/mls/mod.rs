@@ -10,6 +10,7 @@ pub(crate) mod session;
 
 pub use core_crypto_message::{
     CoreCryptoMessage, CoreCryptoMessageBody, CoreCryptoMessageTBS, PskId, TargetedMessage, TargetedMessageContext,
+    sender_nonce::SenderNonce,
 };
 pub use error::{Error, Result};
 pub use external_sender::ExternalSender;
