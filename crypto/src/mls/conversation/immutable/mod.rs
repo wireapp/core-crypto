@@ -14,11 +14,42 @@ use crate::{
     CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, ExternalSender, OpenMlsError, Session,
 };
 
+#[derive(Debug, derive_more::Constructor, derive_more::Deref)]
+pub(crate) struct MlsGroupState {
+    #[deref]
+    group: MlsGroup,
+    // Note: this is going to change to a new type SenderNonce(u32) in an upcoming PR
+    sender_nonce: u32,
+}
+
+impl MlsGroupState {
+    pub(in crate::mls::conversation) fn mls_group(&self) -> &MlsGroup {
+        &self.group
+    }
+
+    pub(in crate::mls::conversation) fn mls_group_mut(&mut self) -> &mut MlsGroup {
+        &mut self.group
+    }
+
+    pub(in crate::mls::conversation) fn sender_nonce(&self) -> u32 {
+        self.sender_nonce
+    }
+
+    #[expect(dead_code)]
+    pub(in crate::mls::conversation) fn increment_sender_nonce(&mut self) {
+        self.sender_nonce += 1;
+    }
+
+    pub(in crate::mls::conversation) fn reset_sender_nonce(&mut self) {
+        self.sender_nonce = 0
+    }
+}
+
 /// A Conversation exposes the read-only interface of an MLS conversation.
 #[derive(Debug, derive_more::Constructor)]
 pub struct Conversation {
     pub(in crate::mls::conversation) id: ConversationId,
-    pub(in crate::mls::conversation) group: RwLock<MlsGroup>,
+    pub(in crate::mls::conversation) group: RwLock<MlsGroupState>,
     pub(in crate::mls::conversation) configuration: ConversationConfiguration,
     session: Session,
 }
@@ -30,7 +61,7 @@ impl Conversation {
     }
 
     /// Returns an immutable guard over the underlying MLS group
-    pub async fn group(&self) -> RwLockReadGuard<'_, MlsGroup> {
+    pub(crate) async fn group(&self) -> RwLockReadGuard<'_, MlsGroupState> {
         self.group.read().await
     }
 

@@ -237,7 +237,7 @@ impl PendingConversation {
         // This is the now merged conversation
         let context = &self.context;
         let mut conversation = context
-            .persist_conversation_from_mls_group(mls_group, configuration)
+            .persist_conversation_from_mls_group(mls_group, configuration, Default::default())
             .await
             .map_err(RecursiveError::transaction(
                 "persisting a pending conversation from mls group",

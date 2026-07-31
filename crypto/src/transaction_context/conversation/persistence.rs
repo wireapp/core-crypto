@@ -6,7 +6,7 @@ use openmls::{
 
 use crate::{
     ConversationConfiguration, ConversationId, KeystoreError, LeafError, OpenMlsError, RecursiveError,
-    mls::conversation::{Conversation, ConversationMut, Error as ConversationError},
+    mls::conversation::{Conversation, ConversationMut, Error as ConversationError, MlsGroupState},
     transaction_context::{Result, TransactionContext},
 };
 
@@ -27,6 +27,7 @@ impl TransactionContext {
         &self,
         mut group: MlsGroup,
         configuration: ConversationConfiguration,
+        sender_nonce: u32,
     ) -> Result<ConversationMut> {
         let id = ConversationId::from(group.group_id().as_slice());
         let session = self.session().await.map_err(RecursiveError::transaction(
@@ -42,6 +43,7 @@ impl TransactionContext {
             .save(PersistedMlsGroup {
                 id: id.to_bytes(),
                 state: group_state,
+                sender_nonce,
                 parent_id: None,
             })
             .await
@@ -49,7 +51,12 @@ impl TransactionContext {
         group.set_state(InnerState::Persisted);
 
         // now that we're persisted, construct a conversation
-        let conversation = Conversation::new(id, group.into(), configuration, session);
+        let conversation = Conversation::new(
+            id,
+            MlsGroupState::new(group, sender_nonce).into(),
+            configuration,
+            session,
+        );
         let mut group_store = self.mls_groups().await?;
 
         let inner = group_store.insert(conversation);
@@ -97,6 +104,7 @@ impl TransactionContext {
             return Err(LeafError::ConversationAlreadyExists(id).into());
         }
 
-        self.persist_conversation_from_mls_group(group, configuration).await
+        self.persist_conversation_from_mls_group(group, configuration, Default::default())
+            .await
     }
 }
