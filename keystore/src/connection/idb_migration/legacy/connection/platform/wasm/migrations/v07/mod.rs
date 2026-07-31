@@ -9,15 +9,15 @@ use crate::{
         connection::Database,
         traits::{Entity as _, EntityDatabaseMutation as _},
     },
-    entities::{PersistedMlsGroup, StoredCredential},
-    migrations::{V6Credential, make_ciphersuite_for_signature_scheme},
+    entities::StoredCredential,
+    migrations::{LegacyPersistedMlsGroup, V6Credential, make_ciphersuite_for_signature_scheme},
 };
 
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
     let previous_builder = super::v06::get_builder(name);
     let mut db_during_migration = Database::migration_connection(previous_builder, key).await?;
-    let persisted_mls_groups = PersistedMlsGroup::load_all(&mut db_during_migration).await?;
+    let persisted_mls_groups = LegacyPersistedMlsGroup::load_all(&mut db_during_migration).await?;
     let ciphersuite_for_signature_scheme = make_ciphersuite_for_signature_scheme(persisted_mls_groups)?;
     let v6_credentials = V6Credential::load_all(&mut db_during_migration).await?;
 

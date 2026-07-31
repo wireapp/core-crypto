@@ -6,7 +6,7 @@ use crate::{
         connection::KeystoreDatabaseConnection,
         traits::{DecryptData, Decryptable, Decrypting, Entity, EntityBase},
     },
-    entities::PersistedMlsGroup,
+    migrations::LegacyPersistedMlsGroup,
 };
 
 /// Entity representing a persisted `MlsGroup`
@@ -18,9 +18,9 @@ pub(crate) struct V10PersistedMlsGroup {
     parent_id: Option<Vec<u8>>,
 }
 
-impl From<V10PersistedMlsGroup> for PersistedMlsGroup {
+impl From<V10PersistedMlsGroup> for LegacyPersistedMlsGroup {
     fn from(V10PersistedMlsGroup { id, state, parent_id }: V10PersistedMlsGroup) -> Self {
-        PersistedMlsGroup { id, state, parent_id }
+        LegacyPersistedMlsGroup { id, state, parent_id }
     }
 }
 

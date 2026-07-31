@@ -1,6 +1,6 @@
 //! This migration gets all mls groups from the store, decrypts them, re-encrypts them, and re-inserts them.
 //!
-//! This has the effect of upgrading from a `V10PersistedMlsGroup` to a `PersistedMlsGroup`, which differs
+//! This has the effect of upgrading from a `V10PersistedMlsGroup` to a `LegacyPersistedMlsGroup`, which differs
 //! in that its `parent_id` field is no longer encrypted.
 
 mod v10_persisted_mls_group;
@@ -16,7 +16,7 @@ use crate::{
         connection::{Database, platform::wasm::WasmStorageTransaction},
         traits::{Encrypting as _, Entity as _, EntityBase as _},
     },
-    entities::PersistedMlsGroup,
+    migrations::LegacyPersistedMlsGroup,
     traits::{BorrowPrimaryKey as _, KeyType},
 };
 
@@ -27,13 +27,13 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
     let groups = V10PersistedMlsGroup::load_all(&mut db_during_migration)
         .await?
         .into_iter()
-        .map(PersistedMlsGroup::from);
+        .map(LegacyPersistedMlsGroup::from);
 
     Database::migration_transaction(db_during_migration, async |tx| {
         match tx {
             WasmStorageTransaction::Persistent { tx, cipher } => {
                 let serializer = serde_wasm_bindgen::Serializer::json_compatible();
-                let store = tx.object_store(PersistedMlsGroup::COLLECTION_NAME)?;
+                let store = tx.object_store(LegacyPersistedMlsGroup::COLLECTION_NAME)?;
                 for group in groups {
                     let key = &js_sys::Uint8Array::from(group.borrow_primary_key().bytes().as_ref()).into();
                     let js_value = group.encrypt(cipher)?.serialize(&serializer)?;

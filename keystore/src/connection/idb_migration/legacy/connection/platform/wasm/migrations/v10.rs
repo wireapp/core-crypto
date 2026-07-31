@@ -5,7 +5,7 @@ use idb::builder::{DatabaseBuilder, IndexBuilder};
 use super::DB_VERSION_10;
 use crate::{
     CryptoKeystoreResult, DatabaseKey, connection::idb_migration::legacy::traits::EntityBase as _,
-    entities::PersistedMlsGroup,
+    migrations::LegacyPersistedMlsGroup,
 };
 
 /// Open IDB once with the new builder and close it, this will apply the update.
@@ -21,7 +21,7 @@ pub(super) async fn migrate(name: &str, _key: &DatabaseKey) -> CryptoKeystoreRes
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
     super::v09::get_builder(name)
         .version(DB_VERSION_10)
-        .mutate_object_store(PersistedMlsGroup::COLLECTION_NAME, |builder| {
+        .mutate_object_store(LegacyPersistedMlsGroup::COLLECTION_NAME, |builder| {
             builder.add_index(IndexBuilder::new(
                 "parent_id".into(),
                 idb::KeyPath::Single("parent_id".into()),
