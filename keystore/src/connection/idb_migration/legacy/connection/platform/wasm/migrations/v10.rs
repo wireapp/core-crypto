@@ -21,7 +21,7 @@ pub(super) async fn migrate(name: &str, _key: &DatabaseKey) -> CryptoKeystoreRes
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
     super::v09::get_builder(name)
         .version(DB_VERSION_10)
-        .mutate_object_store(LegacyPersistedMlsGroup::COLLECTION_NAME, |builder| {
+        .mutate_object_store(LegacyPersistedMlsGroup::TABLE_NAME, |builder| {
             builder.add_index(IndexBuilder::new(
                 "parent_id".into(),
                 idb::KeyPath::Single("parent_id".into()),

@@ -17,5 +17,5 @@ pub(super) async fn migrate(name: &str) -> CryptoKeystoreResult<u32> {
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
     super::v04::get_builder(name)
         .version(DB_VERSION_5)
-        .remove_object_store(E2eiRefreshToken::COLLECTION_NAME)
+        .remove_object_store(E2eiRefreshToken::TABLE_NAME)
 }

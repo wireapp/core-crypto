@@ -17,7 +17,7 @@ use zeroize::Zeroize;
     serde::Serialize,
     serde::Deserialize,
 )]
-#[entity(collection_name = "mls_buffered_commits")]
+#[entity(table_name = "mls_buffered_commits")]
 pub struct StoredBufferedCommit {
     #[entity(id)]
     #[sensitive]

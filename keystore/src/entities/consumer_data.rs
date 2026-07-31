@@ -18,7 +18,7 @@ impl From<ConsumerData> for Vec<u8> {
 }
 
 impl crate::traits::UniqueEntityImplementationHelper for ConsumerData {
-    const COLLECTION_NAME: &str = "consumer_data";
+    const TABLE_NAME: &str = "consumer_data";
     fn new(content: Vec<u8>) -> Self {
         Self { content }
     }

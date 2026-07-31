@@ -36,7 +36,7 @@ impl<'a> SearchableEntity<ParentGroupId<'a>> for LegacyPersistedMlsGroup {
             WasmStorageWrapper::InMemory(map) => {
                 // don't bother with fancy indexing for in-memory storage
                 let map = map.borrow();
-                let Some(entities) = map.get(Self::COLLECTION_NAME) else {
+                let Some(entities) = map.get(Self::TABLE_NAME) else {
                     return Ok(Vec::new());
                 };
                 entities
@@ -56,8 +56,8 @@ impl<'a> SearchableEntity<ParentGroupId<'a>> for LegacyPersistedMlsGroup {
             }
             WasmStorageWrapper::Persistent(database) => {
                 // _do_ bother with fancy indexing for real storage
-                let tx = database.transaction(&[Self::COLLECTION_NAME], TransactionMode::ReadOnly)?;
-                let object_store = tx.object_store(Self::COLLECTION_NAME)?;
+                let tx = database.transaction(&[Self::TABLE_NAME], TransactionMode::ReadOnly)?;
+                let object_store = tx.object_store(Self::TABLE_NAME)?;
                 let idx = object_store.index("parent_id")?;
 
                 let parent_id = {

@@ -28,7 +28,7 @@ impl BorrowPrimaryKey for StoredPskBundle {
 }
 
 impl crate::traits::Entity for StoredPskBundle {
-    const COLLECTION_NAME: &'static str = "mls_psk_bundles";
+    const TABLE_NAME: &'static str = "mls_psk_bundles";
 
     fn get(conn: &rusqlite::Connection, key: &Vec<u8>) -> crate::CryptoKeystoreResult<Option<Self>> {
         let hash = crate::Sha256Hash::hash_from(key);

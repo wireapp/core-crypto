@@ -21,7 +21,7 @@ impl BorrowPrimaryKey for DummyStoreValue {
 }
 
 impl Entity for DummyStoreValue {
-    const COLLECTION_NAME: &'static str = "";
+    const TABLE_NAME: &'static str = "";
 
     fn get(_conn: &rusqlite::Connection, _key: &Vec<u8>) -> CryptoKeystoreResult<Option<Self>> {
         Ok(None)

@@ -33,7 +33,7 @@ use crate::{
 /// behaviors will change!
 pub trait UniqueEntityImplementationHelper {
     /// Table name for this entity.
-    const COLLECTION_NAME: &str;
+    const TABLE_NAME: &str;
     fn new(content: Vec<u8>) -> Self;
     fn content(&self) -> &[u8];
 }
@@ -141,12 +141,12 @@ where
     T: PrimaryKey + UniqueEntityImplementationHelper,
     <T as PrimaryKey>::PrimaryKey: ToSql,
 {
-    const COLLECTION_NAME: &'static str = <Self as UniqueEntityImplementationHelper>::COLLECTION_NAME;
+    const TABLE_NAME: &'static str = <Self as UniqueEntityImplementationHelper>::TABLE_NAME;
 
     fn get(conn: &Connection, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
         let mut statement = conn.prepare_cached(&format!(
-            "SELECT content FROM {collection_name} WHERE id = ?",
-            collection_name = <Self as Entity>::COLLECTION_NAME
+            "SELECT content FROM {table_name} WHERE id = ?",
+            table_name = <Self as Entity>::TABLE_NAME
         ))?;
         statement
             .query_row([key], |row| Ok(Self::new(row.get("content")?)))
@@ -174,8 +174,8 @@ where
 
     fn save(&self, tx: &Transaction) -> CryptoKeystoreResult<()> {
         let mut stmt = tx.prepare_cached(&format!(
-            "INSERT OR REPLACE INTO {collection_name} (id, content) VALUES (?, ?)",
-            collection_name = <Self as Entity>::COLLECTION_NAME,
+            "INSERT OR REPLACE INTO {table_name} (id, content) VALUES (?, ?)",
+            table_name = <Self as Entity>::TABLE_NAME,
         ))?;
         stmt.execute(params![Self::KEY, self.content()])?;
         Ok(())

@@ -27,7 +27,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
 
     let mut credential_stmt = tx.prepare(&format!(
         "SELECT ciphersuite, public_key FROM {table}",
-        table = StoredCredential::COLLECTION_NAME,
+        table = StoredCredential::TABLE_NAME,
     ))?;
 
     let credentials = credential_stmt

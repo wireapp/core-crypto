@@ -8,12 +8,12 @@ use syn::{Ident, Type};
 ///
 /// ```rust,ignore
 /// #[derive(Entity)]
-/// #[entity(collection_name = "my_collection")]
+/// #[entity(table_name = "my_table")]
 /// pub struct Entity { ... }
 /// ```
 #[derive(Default, darling::FromMeta)]
 pub(super) struct OuterAttributes {
-    pub(super) collection_name: Option<String>,
+    pub(super) table_name: Option<String>,
     pub(super) no_upsert: Flag,
 }
 

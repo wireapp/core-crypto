@@ -16,7 +16,7 @@ use crate::{
 
 impl EntityBase for ProteusIdentity {
     type ConnectionType = KeystoreDatabaseConnection;
-    const COLLECTION_NAME: &'static str = "proteus_identities";
+    const TABLE_NAME: &'static str = "proteus_identities";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
         crate::transaction::dynamic_dispatch::Entity::ProteusIdentity(self.into())

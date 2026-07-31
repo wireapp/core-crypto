@@ -274,7 +274,7 @@ mod tests {
         let db_name = store_name();
         // this entity type is simple, stable from v0 through v10, and we do not expect
         // it to change in the future
-        const COLLECTION_NAME: &str = ProteusPrekey::COLLECTION_NAME;
+        const TABLE_NAME: &str = ProteusPrekey::TABLE_NAME;
 
         // clear the factory before beginning
         let factory = Factory::new().unwrap();
@@ -288,9 +288,9 @@ mod tests {
             // version 4 is the earliest version that we natively generate anymore
             let database = open_at(&db_name, &TEST_ENCRYPTION_KEY, DB_VERSION_4).await;
             let transaction = database
-                .transaction(&[COLLECTION_NAME], idb::TransactionMode::ReadWrite)
+                .transaction(&[TABLE_NAME], idb::TransactionMode::ReadWrite)
                 .unwrap();
-            let object_store = transaction.object_store(COLLECTION_NAME).unwrap();
+            let object_store = transaction.object_store(TABLE_NAME).unwrap();
 
             let serializer = serde_wasm_bindgen::Serializer::json_compatible();
 
@@ -314,9 +314,9 @@ mod tests {
         {
             let database = open_at(&db_name, &TEST_ENCRYPTION_KEY, TARGET_VERSION).await;
             let transaction = database
-                .transaction(&[COLLECTION_NAME], idb::TransactionMode::ReadOnly)
+                .transaction(&[TABLE_NAME], idb::TransactionMode::ReadOnly)
                 .unwrap();
-            let object_store = transaction.object_store(COLLECTION_NAME).unwrap();
+            let object_store = transaction.object_store(TABLE_NAME).unwrap();
 
             let value = object_store
                 .get(JsValue::from(ENTITY_KEY))

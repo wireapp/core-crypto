@@ -20,10 +20,7 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
     let mut db_during_migration = Database::migration_connection(previous_builder, key).await?;
     let credentials = StoredCredential::load_all(&mut db_during_migration).await?;
 
-    let collection_name = format!(
-        "{collection_name}_new",
-        collection_name = StoredCredential::COLLECTION_NAME
-    );
+    let collection_name = format!("{collection_name}_new", collection_name = StoredCredential::TABLE_NAME);
 
     Database::migration_transaction(db_during_migration, async |tx| {
         match tx {
@@ -53,7 +50,7 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
 
 /// Set up the builder for v9.
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
-    let collection_name = StoredCredential::COLLECTION_NAME;
+    let collection_name = StoredCredential::TABLE_NAME;
     let collection_name_with_prefix = &format!("{collection_name}_new",);
 
     super::v08::get_builder(name)

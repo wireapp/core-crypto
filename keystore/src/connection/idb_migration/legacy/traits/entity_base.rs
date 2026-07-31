@@ -10,7 +10,7 @@ pub(crate) trait EntityBase: 'static + Sized {
 
     /// Beware: if you change the value of this constant on any WASM entity, you'll need to do a data migration
     ///     not only because it is used as reference to the object store names but also for the value of the aad.
-    const COLLECTION_NAME: &'static str;
+    const TABLE_NAME: &'static str;
 
     fn downcast<T: EntityBase>(&self) -> Option<&T> {
         let as_dyn_any: &dyn std::any::Any = self;

@@ -14,7 +14,7 @@ use crate::{
 
 impl EntityBase for E2eiRefreshToken {
     type ConnectionType = KeystoreDatabaseConnection;
-    const COLLECTION_NAME: &'static str = "e2ei_refresh_token";
+    const TABLE_NAME: &'static str = "e2ei_refresh_token";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
         crate::transaction::dynamic_dispatch::Entity::E2eiRefreshToken(self.into())

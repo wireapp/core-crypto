@@ -16,7 +16,7 @@ use crate::{
 
 impl legacy::traits::EntityBase for ProteusSession {
     type ConnectionType = legacy::connection::KeystoreDatabaseConnection;
-    const COLLECTION_NAME: &'static str = "proteus_sessions";
+    const TABLE_NAME: &'static str = "proteus_sessions";
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
         crate::transaction::dynamic_dispatch::Entity::ProteusSession(self.into())
     }

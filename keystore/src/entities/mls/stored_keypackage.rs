@@ -12,7 +12,7 @@ use zeroize::Zeroize;
     serde::Deserialize,
 )]
 #[zeroize(drop)]
-#[entity(collection_name = "mls_keypackages")]
+#[entity(table_name = "mls_keypackages")]
 pub struct StoredKeypackage {
     #[entity(id)]
     pub keypackage_ref: Vec<u8>,

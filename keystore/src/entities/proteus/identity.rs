@@ -31,7 +31,7 @@ impl ProteusIdentity {
 }
 
 impl crate::traits::Entity for ProteusIdentity {
-    const COLLECTION_NAME: &'static str = "proteus_identities";
+    const TABLE_NAME: &'static str = "proteus_identities";
 
     fn get(conn: &rusqlite::Connection, _key: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<Option<Self>> {
         use rusqlite::OptionalExtension as _;

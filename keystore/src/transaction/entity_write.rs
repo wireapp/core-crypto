@@ -22,8 +22,7 @@ impl Transaction {
     {
         let auto_generated_fields = entity.pre_save()?;
 
-        let entity_id =
-            EntityId::from_entity(&entity).ok_or(CryptoKeystoreError::UnknownCollectionName(E::COLLECTION_NAME))?;
+        let entity_id = EntityId::from_entity(&entity).ok_or(CryptoKeystoreError::UnknownTable(E::TABLE_NAME))?;
         {
             let mut cache_guard = self.cache.write().await;
             // We need to ensure that we always move the entity to the end of the insertion order, so that
@@ -64,8 +63,7 @@ impl Transaction {
     where
         E: Entity + EntityDatabaseMutation,
     {
-        let entity_id = EntityId::from_primary_key::<E>(id)
-            .ok_or(CryptoKeystoreError::UnknownCollectionName(E::COLLECTION_NAME))?;
+        let entity_id = EntityId::from_primary_key::<E>(id).ok_or(CryptoKeystoreError::UnknownTable(E::TABLE_NAME))?;
         self.remove_by_entity_id(entity_id).await
     }
 
@@ -77,8 +75,8 @@ impl Transaction {
     where
         E: EntityDeleteBorrowed + BorrowPrimaryKey,
     {
-        let entity_id = EntityId::from_borrowed_primary_key::<E>(id)
-            .ok_or(CryptoKeystoreError::UnknownCollectionName(E::COLLECTION_NAME))?;
+        let entity_id =
+            EntityId::from_borrowed_primary_key::<E>(id).ok_or(CryptoKeystoreError::UnknownTable(E::TABLE_NAME))?;
         self.remove_by_entity_id(entity_id).await
     }
 
@@ -91,8 +89,8 @@ impl Transaction {
     where
         E: EntityDeleteBorrowed + BorrowPrimaryKey,
     {
-        let entity_id = EntityId::from_borrowed_primary_key::<E>(id)
-            .ok_or(CryptoKeystoreError::UnknownCollectionName(E::COLLECTION_NAME))?;
+        let entity_id =
+            EntityId::from_borrowed_primary_key::<E>(id).ok_or(CryptoKeystoreError::UnknownTable(E::TABLE_NAME))?;
         let mut deleted = self.deleted.write().await;
         deleted.remove(&entity_id);
         Ok(())

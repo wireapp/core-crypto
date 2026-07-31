@@ -26,7 +26,7 @@ impl From<V10PersistedMlsGroup> for LegacyPersistedMlsGroup {
 
 impl EntityBase for V10PersistedMlsGroup {
     type ConnectionType = KeystoreDatabaseConnection;
-    const COLLECTION_NAME: &'static str = "mls_groups";
+    const TABLE_NAME: &'static str = "mls_groups";
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
         panic!("this entity should never be part of a transaction")
     }

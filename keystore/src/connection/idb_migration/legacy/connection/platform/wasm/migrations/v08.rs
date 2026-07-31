@@ -69,7 +69,7 @@ pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
     super::v07::get_builder(name).version(DB_VERSION_8).add_object_store(
         ObjectStoreBuilder::new(&format!(
             "{collection_name}_new",
-            collection_name = StoredCredential::COLLECTION_NAME
+            collection_name = StoredCredential::TABLE_NAME
         ))
         .auto_increment(false)
         .add_index(IndexBuilder::new("public_key".into(), KeyPath::new_single("public_key")).unique(true)),

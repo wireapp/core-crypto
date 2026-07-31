@@ -28,7 +28,7 @@ impl BorrowPrimaryKey for StoredHpkePrivateKey {
 }
 
 impl crate::traits::Entity for StoredHpkePrivateKey {
-    const COLLECTION_NAME: &'static str = "mls_hpke_private_keys";
+    const TABLE_NAME: &'static str = "mls_hpke_private_keys";
 
     fn get(conn: &rusqlite::Connection, key: &Vec<u8>) -> crate::CryptoKeystoreResult<Option<Self>> {
         let hash = crate::Sha256Hash::hash_from(key);

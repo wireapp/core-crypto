@@ -12,7 +12,7 @@ use crate::{
 
 impl EntityBase for E2eiAcmeCA {
     type ConnectionType = KeystoreDatabaseConnection;
-    const COLLECTION_NAME: &'static str = "e2ei_acme_ca";
+    const TABLE_NAME: &'static str = "e2ei_acme_ca";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
         crate::transaction::dynamic_dispatch::Entity::E2eiAcmeCA(self.into())

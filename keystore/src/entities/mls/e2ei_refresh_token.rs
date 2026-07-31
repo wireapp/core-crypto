@@ -10,7 +10,7 @@ pub struct E2eiRefreshToken {
 }
 
 impl UniqueEntityImplementationHelper for E2eiRefreshToken {
-    const COLLECTION_NAME: &str = "e2ei_refresh_token";
+    const TABLE_NAME: &str = "e2ei_refresh_token";
 
     fn new(content: Vec<u8>) -> Self {
         Self { content }

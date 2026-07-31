@@ -15,7 +15,7 @@ use crate::{
 
 impl EntityBase for StoredHpkePrivateKey {
     type ConnectionType = KeystoreDatabaseConnection;
-    const COLLECTION_NAME: &'static str = "mls_hpke_private_keys";
+    const TABLE_NAME: &'static str = "mls_hpke_private_keys";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
         crate::transaction::dynamic_dispatch::Entity::HpkePrivateKey(self.into())

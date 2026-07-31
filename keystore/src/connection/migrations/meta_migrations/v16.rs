@@ -21,7 +21,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
             credential_id
          FROM {credential_table}, {keypair_table}
          WHERE {keypair_table}.credential_id = {credential_table}.id",
-        credential_table = StoredCredential::COLLECTION_NAME,
+        credential_table = StoredCredential::TABLE_NAME,
         keypair_table = "mls_signature_keypairs"
     ))?;
 

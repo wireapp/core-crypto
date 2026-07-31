@@ -57,7 +57,7 @@ impl PrimaryKey for StoredCredential {
 }
 
 impl crate::traits::Entity for StoredCredential {
-    const COLLECTION_NAME: &'static str = "mls_credentials";
+    const TABLE_NAME: &'static str = "mls_credentials";
 
     fn get(conn: &rusqlite::Connection, key: &crate::Sha256Hash) -> crate::CryptoKeystoreResult<Option<Self>> {
         use rusqlite::OptionalExtension as _;

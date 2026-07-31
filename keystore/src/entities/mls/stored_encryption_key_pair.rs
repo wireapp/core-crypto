@@ -28,7 +28,7 @@ impl BorrowPrimaryKey for StoredEncryptionKeyPair {
 }
 
 impl crate::traits::Entity for StoredEncryptionKeyPair {
-    const COLLECTION_NAME: &'static str = "mls_encryption_keypairs";
+    const TABLE_NAME: &'static str = "mls_encryption_keypairs";
 
     fn get(conn: &rusqlite::Connection, key: &Vec<u8>) -> crate::CryptoKeystoreResult<Option<Self>> {
         let hash = crate::Sha256Hash::hash_from(key);

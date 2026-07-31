@@ -16,7 +16,7 @@ use crate::{
 
 impl legacy::traits::EntityBase for E2eiCrl {
     type ConnectionType = legacy::connection::KeystoreDatabaseConnection;
-    const COLLECTION_NAME: &'static str = "e2ei_crls";
+    const TABLE_NAME: &'static str = "e2ei_crls";
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
         crate::transaction::dynamic_dispatch::Entity::E2eiCrl(self.into())
     }

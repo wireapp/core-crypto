@@ -235,7 +235,7 @@ where
         let conn = conn.conn().await;
         let mut statement = conn.prepare_cached(&format!(
             "SELECT content FROM {collection_name} WHERE id = ?",
-            collection_name = Self::COLLECTION_NAME
+            collection_name = Self::TABLE_NAME
         ))?;
         statement
             .query_row([key], |row| Ok(Self::new(row.get("content")?)))
@@ -270,7 +270,7 @@ where
     async fn save(&'a self, tx: &Self::Transaction) -> CryptoKeystoreResult<()> {
         let mut stmt = tx.prepare_cached(&format!(
             "INSERT OR REPLACE INTO {collection_name} (id, content) VALUES (?, ?)",
-            collection_name = Self::COLLECTION_NAME,
+            collection_name = Self::TABLE_NAME,
         ))?;
         stmt.execute(params![Self::KEY, self.content()])?;
         Ok(())

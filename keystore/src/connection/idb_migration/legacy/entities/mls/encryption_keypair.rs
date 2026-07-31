@@ -14,7 +14,7 @@ use crate::{
 
 impl EntityBase for StoredEncryptionKeyPair {
     type ConnectionType = KeystoreDatabaseConnection;
-    const COLLECTION_NAME: &'static str = "mls_encryption_keypairs";
+    const TABLE_NAME: &'static str = "mls_encryption_keypairs";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
         crate::transaction::dynamic_dispatch::Entity::EncryptionKeyPair(self.into())

@@ -22,8 +22,8 @@ impl<'a> KeyType for ConversationId<'a> {
 /// [`DeletableBySearchKey`][crate::traits::DeletableBySearchKey] traits.
 ///
 /// However the keystore's support of internal transactions demands a primary key:
-/// ultimately that structure boils down to `Map<CollectionName, Map<PrimaryKey, Entity>>`, so anything other
-/// than a full primary key just breaks things.
+/// that structure buffers pending writes in a `Map<(TableName, PrimaryKey), Entity>`, so anything
+/// other than a full primary key just breaks things.
 ///
 /// We use `xxhash3` as a fast hash implementation, and take 128 bits of hash to ensure
 /// that the chance of a collision is effectively 0.
@@ -68,7 +68,7 @@ impl PrimaryKey for MlsPendingMessage {
 }
 
 impl crate::traits::Entity for MlsPendingMessage {
-    const COLLECTION_NAME: &'static str = "mls_pending_messages";
+    const TABLE_NAME: &'static str = "mls_pending_messages";
 
     fn get(
         _conn: &rusqlite::Connection,

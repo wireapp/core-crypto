@@ -79,8 +79,8 @@ impl WasmEncryptedStorage {
     {
         match &self.storage {
             WasmStorageWrapper::Persistent(idb) => {
-                let transaction = idb.transaction(&[E::COLLECTION_NAME], TransactionMode::ReadOnly)?;
-                let store = transaction.object_store(E::COLLECTION_NAME)?;
+                let transaction = idb.transaction(&[E::TABLE_NAME], TransactionMode::ReadOnly)?;
+                let store = transaction.object_store(E::TABLE_NAME)?;
                 let request = store.count(None)?;
                 let data = request.await?;
 
@@ -88,7 +88,7 @@ impl WasmEncryptedStorage {
             }
             WasmStorageWrapper::InMemory(map) => Ok(map
                 .borrow()
-                .get(E::COLLECTION_NAME)
+                .get(E::TABLE_NAME)
                 .map(|v| v.values().len() as _)
                 .unwrap_or_default()),
         }
@@ -118,8 +118,8 @@ impl WasmEncryptedStorage {
         let key = key.as_ref();
         let js_value = match &self.storage {
             WasmStorageWrapper::Persistent(idb) => {
-                let transaction = idb.transaction(&[E::COLLECTION_NAME], TransactionMode::ReadOnly)?;
-                let store = transaction.object_store(E::COLLECTION_NAME)?;
+                let transaction = idb.transaction(&[E::TABLE_NAME], TransactionMode::ReadOnly)?;
+                let store = transaction.object_store(E::TABLE_NAME)?;
                 let id = Uint8Array::from(key);
                 let Some(js_value) = store.get(JsValue::from(id))?.await? else {
                     return Ok(None);
@@ -128,7 +128,7 @@ impl WasmEncryptedStorage {
             }
             WasmStorageWrapper::InMemory(map) => {
                 let map = map.borrow();
-                let Some(store) = map.get(E::COLLECTION_NAME) else {
+                let Some(store) = map.get(E::TABLE_NAME) else {
                     return Ok(None);
                 };
                 let Some(js_value) = store.get(key).cloned() else {
@@ -164,13 +164,13 @@ impl WasmEncryptedStorage {
     {
         let js_values = match &self.storage {
             WasmStorageWrapper::Persistent(idb) => {
-                let transaction = idb.transaction(&[E::COLLECTION_NAME], TransactionMode::ReadOnly)?;
-                let store = transaction.object_store(E::COLLECTION_NAME)?;
+                let transaction = idb.transaction(&[E::TABLE_NAME], TransactionMode::ReadOnly)?;
+                let store = transaction.object_store(E::TABLE_NAME)?;
                 store.get_all(query, None)?.await?
             }
             WasmStorageWrapper::InMemory(map) => {
                 let map = map.borrow();
-                map.get(E::COLLECTION_NAME)
+                map.get(E::TABLE_NAME)
                     .map(|v| {
                         v.values().cloned()
                         // Annoying that we have to allocate a vector of the collected values instead of just

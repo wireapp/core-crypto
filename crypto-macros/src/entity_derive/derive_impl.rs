@@ -48,7 +48,7 @@ impl Entity {
     fn sql_insert_parts(&self) -> (String, TokenStream, Option<TokenStream>) {
         let Self {
             upsert,
-            collection_name,
+            table_name,
             id_column,
             other_columns,
             ..
@@ -59,16 +59,15 @@ impl Entity {
             .chain(other_columns.iter().map(|column| column.sql_name()))
             .join(", ");
         let sql_field_placeholders = std::iter::repeat_n("?", other_columns.len() + 1).join(", ");
-        let sql_statement = format!(
-            "INSERT {or_replace} INTO {collection_name} ({sql_column_names}) VALUES ({sql_field_placeholders})"
-        );
+        let sql_statement =
+            format!("INSERT {or_replace} INTO {table_name} ({sql_column_names}) VALUES ({sql_field_placeholders})");
         let fields = std::iter::once(id_column.store_expression())
             .chain(other_columns.iter().map(|column| column.store_expression()))
             .map(|tokens| quote!(#tokens,))
             .collect::<TokenStream>();
 
         let sql_map_err = (!upsert).then_some(quote! {
-            .map_err(|_| crate::CryptoKeystoreError::AlreadyExists(Self::COLLECTION_NAME))
+            .map_err(|_| crate::CryptoKeystoreError::AlreadyExists(Self::TABLE_NAME))
         });
 
         (sql_statement, fields, sql_map_err)
@@ -77,7 +76,7 @@ impl Entity {
     /// `impl Entity for MyEntity`
     fn impl_entity(&self) -> TokenStream {
         let Self {
-            collection_name,
+            table_name,
             struct_name,
             id_column,
             other_columns,
@@ -89,7 +88,7 @@ impl Entity {
 
         quote! {
             impl crate::traits::Entity for #struct_name {
-                const COLLECTION_NAME: &'static str = #collection_name;
+                const TABLE_NAME: &'static str = #table_name;
 
                 fn get(conn: &rusqlite::Connection, key: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<Option<Self>> {
                     <Self as crate::traits::EntityGetBorrowed>::get_borrowed(conn, key)

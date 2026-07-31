@@ -68,7 +68,7 @@ impl PrimaryKey for ProteusPrekey {
 }
 
 impl crate::traits::Entity for ProteusPrekey {
-    const COLLECTION_NAME: &'static str = "proteus_prekeys";
+    const TABLE_NAME: &'static str = "proteus_prekeys";
 
     fn get(conn: &rusqlite::Connection, key: &u16) -> crate::CryptoKeystoreResult<Option<Self>> {
         crate::entities::helpers::get_helper(conn, "id", *key, |row| {

@@ -28,7 +28,7 @@ impl<'a> KeyType for ParentGroupId<'a> {
     serde::Deserialize,
 )]
 #[zeroize(drop)]
-#[entity(collection_name = "mls_groups")]
+#[entity(table_name = "mls_groups")]
 #[sensitive]
 pub struct PersistedMlsGroup {
     pub id: Vec<u8>,

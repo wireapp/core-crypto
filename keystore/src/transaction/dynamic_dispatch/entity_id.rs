@@ -36,15 +36,14 @@ impl EntityId {
     where
         E: Entity,
     {
-        E::PrimaryKey::from_bytes(&self.id)
-            .ok_or(CryptoKeystoreError::InvalidPrimaryKeyBytes(self.typ.collection_name()))
+        E::PrimaryKey::from_bytes(&self.id).ok_or(CryptoKeystoreError::InvalidPrimaryKeyBytes(self.typ.table_name()))
     }
 
     pub(crate) fn from_key<E>(primary_key: Cow<'_, [u8]>) -> Option<Self>
     where
         E: Entity,
     {
-        let typ = EntityType::from_collection_name(E::COLLECTION_NAME)?;
+        let typ = EntityType::from_table_name(E::TABLE_NAME)?;
         let id = primary_key.into_owned();
         Some(Self { typ, id })
     }

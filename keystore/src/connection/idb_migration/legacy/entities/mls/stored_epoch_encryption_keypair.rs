@@ -16,7 +16,7 @@ use crate::{
 
 impl legacy::traits::EntityBase for StoredEpochEncryptionKeypair {
     type ConnectionType = legacy::connection::KeystoreDatabaseConnection;
-    const COLLECTION_NAME: &'static str = "mls_epoch_encryption_keypairs";
+    const TABLE_NAME: &'static str = "mls_epoch_encryption_keypairs";
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
         crate::transaction::dynamic_dispatch::Entity::StoredEpochEncryptionKeypair(self.into())
     }

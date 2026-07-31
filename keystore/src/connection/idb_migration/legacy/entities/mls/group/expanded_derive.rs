@@ -16,7 +16,7 @@ use crate::{
 
 impl traits::EntityBase for LegacyPersistedMlsGroup {
     type ConnectionType = connection::KeystoreDatabaseConnection;
-    const COLLECTION_NAME: &'static str = "mls_groups";
+    const TABLE_NAME: &'static str = "mls_groups";
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
         panic!("this migration-only entity should never be part of a transaction")
     }

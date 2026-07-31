@@ -15,7 +15,7 @@ use crate::{
 
 impl EntityBase for StoredSignatureKeypair {
     type ConnectionType = KeystoreDatabaseConnection;
-    const COLLECTION_NAME: &'static str = "mls_signature_keypairs";
+    const TABLE_NAME: &'static str = "mls_signature_keypairs";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
         unimplemented!("Signature key pairs are not going to be used in a transaction anymore.")

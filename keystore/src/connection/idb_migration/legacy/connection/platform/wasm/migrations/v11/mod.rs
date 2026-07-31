@@ -33,7 +33,7 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
         match tx {
             WasmStorageTransaction::Persistent { tx, cipher } => {
                 let serializer = serde_wasm_bindgen::Serializer::json_compatible();
-                let store = tx.object_store(LegacyPersistedMlsGroup::COLLECTION_NAME)?;
+                let store = tx.object_store(LegacyPersistedMlsGroup::TABLE_NAME)?;
                 for group in groups {
                     let key = &js_sys::Uint8Array::from(group.borrow_primary_key().bytes().as_ref()).into();
                     let js_value = group.encrypt(cipher)?.serialize(&serializer)?;

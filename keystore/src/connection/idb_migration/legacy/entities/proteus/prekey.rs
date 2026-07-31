@@ -15,7 +15,7 @@ use crate::{
 
 impl EntityBase for ProteusPrekey {
     type ConnectionType = KeystoreDatabaseConnection;
-    const COLLECTION_NAME: &'static str = "proteus_prekeys";
+    const TABLE_NAME: &'static str = "proteus_prekeys";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
         crate::transaction::dynamic_dispatch::Entity::ProteusPrekey(self.into())

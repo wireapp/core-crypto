@@ -38,58 +38,58 @@ pub(crate) enum EntityType {
 }
 
 impl EntityType {
-    pub(crate) fn from_collection_name(collection_name: &'static str) -> Option<Self> {
-        match collection_name {
-            StoredHpkePrivateKey::COLLECTION_NAME => Some(Self::HpkePrivateKey),
-            StoredKeypackage::COLLECTION_NAME => Some(Self::KeyPackage),
-            StoredPskBundle::COLLECTION_NAME => Some(Self::PskBundle),
-            StoredEncryptionKeyPair::COLLECTION_NAME => Some(Self::EncryptionKeyPair),
-            StoredEpochEncryptionKeypair::COLLECTION_NAME => Some(Self::EpochEncryptionKeyPair),
-            StoredBufferedCommit::COLLECTION_NAME => Some(Self::StoredBufferedCommit),
-            PersistedMlsGroup::COLLECTION_NAME => Some(Self::PersistedMlsGroup),
-            PersistedMlsPendingGroup::COLLECTION_NAME => Some(Self::PersistedMlsPendingGroup),
-            StoredCredential::COLLECTION_NAME => Some(Self::StoredCredential),
-            MlsPendingMessage::COLLECTION_NAME => Some(Self::MlsPendingMessage),
-            E2eiCrl::COLLECTION_NAME => Some(Self::E2eiCrl),
-            E2eiAcmeCA::COLLECTION_NAME => Some(Self::E2eiAcmeCA),
+    pub(crate) fn from_table_name(table_name: &'static str) -> Option<Self> {
+        match table_name {
+            StoredHpkePrivateKey::TABLE_NAME => Some(Self::HpkePrivateKey),
+            StoredKeypackage::TABLE_NAME => Some(Self::KeyPackage),
+            StoredPskBundle::TABLE_NAME => Some(Self::PskBundle),
+            StoredEncryptionKeyPair::TABLE_NAME => Some(Self::EncryptionKeyPair),
+            StoredEpochEncryptionKeypair::TABLE_NAME => Some(Self::EpochEncryptionKeyPair),
+            StoredBufferedCommit::TABLE_NAME => Some(Self::StoredBufferedCommit),
+            PersistedMlsGroup::TABLE_NAME => Some(Self::PersistedMlsGroup),
+            PersistedMlsPendingGroup::TABLE_NAME => Some(Self::PersistedMlsPendingGroup),
+            StoredCredential::TABLE_NAME => Some(Self::StoredCredential),
+            MlsPendingMessage::TABLE_NAME => Some(Self::MlsPendingMessage),
+            E2eiCrl::TABLE_NAME => Some(Self::E2eiCrl),
+            E2eiAcmeCA::TABLE_NAME => Some(Self::E2eiAcmeCA),
             #[cfg(target_os = "unknown")]
-            E2eiRefreshToken::COLLECTION_NAME => Some(Self::E2eiRefreshToken),
-            E2eiIntermediateCert::COLLECTION_NAME => Some(Self::E2eiIntermediateCert),
+            E2eiRefreshToken::TABLE_NAME => Some(Self::E2eiRefreshToken),
+            E2eiIntermediateCert::TABLE_NAME => Some(Self::E2eiIntermediateCert),
             #[cfg(feature = "proteus-keystore")]
-            ProteusIdentity::COLLECTION_NAME => Some(Self::ProteusIdentity),
+            ProteusIdentity::TABLE_NAME => Some(Self::ProteusIdentity),
             #[cfg(feature = "proteus-keystore")]
-            ProteusPrekey::COLLECTION_NAME => Some(Self::ProteusPrekey),
+            ProteusPrekey::TABLE_NAME => Some(Self::ProteusPrekey),
             #[cfg(feature = "proteus-keystore")]
-            ProteusSession::COLLECTION_NAME => Some(Self::ProteusSession),
-            ConsumerData::COLLECTION_NAME => Some(Self::ConsumerData),
+            ProteusSession::TABLE_NAME => Some(Self::ProteusSession),
+            ConsumerData::TABLE_NAME => Some(Self::ConsumerData),
             _ => None,
         }
     }
 
-    pub(crate) fn collection_name(&self) -> &'static str {
+    pub(crate) fn table_name(&self) -> &'static str {
         match self {
-            Self::KeyPackage => StoredKeypackage::COLLECTION_NAME,
-            Self::PskBundle => StoredPskBundle::COLLECTION_NAME,
-            Self::EncryptionKeyPair => StoredEncryptionKeyPair::COLLECTION_NAME,
-            Self::EpochEncryptionKeyPair => StoredEpochEncryptionKeypair::COLLECTION_NAME,
-            Self::StoredCredential => StoredCredential::COLLECTION_NAME,
-            Self::StoredBufferedCommit => StoredBufferedCommit::COLLECTION_NAME,
-            Self::PersistedMlsGroup => PersistedMlsGroup::COLLECTION_NAME,
-            Self::PersistedMlsPendingGroup => PersistedMlsPendingGroup::COLLECTION_NAME,
-            Self::MlsPendingMessage => MlsPendingMessage::COLLECTION_NAME,
+            Self::KeyPackage => StoredKeypackage::TABLE_NAME,
+            Self::PskBundle => StoredPskBundle::TABLE_NAME,
+            Self::EncryptionKeyPair => StoredEncryptionKeyPair::TABLE_NAME,
+            Self::EpochEncryptionKeyPair => StoredEpochEncryptionKeypair::TABLE_NAME,
+            Self::StoredCredential => StoredCredential::TABLE_NAME,
+            Self::StoredBufferedCommit => StoredBufferedCommit::TABLE_NAME,
+            Self::PersistedMlsGroup => PersistedMlsGroup::TABLE_NAME,
+            Self::PersistedMlsPendingGroup => PersistedMlsPendingGroup::TABLE_NAME,
+            Self::MlsPendingMessage => MlsPendingMessage::TABLE_NAME,
             #[cfg(target_os = "unknown")]
-            Self::E2eiRefreshToken => E2eiRefreshToken::COLLECTION_NAME,
-            Self::E2eiAcmeCA => E2eiAcmeCA::COLLECTION_NAME,
-            Self::E2eiIntermediateCert => E2eiIntermediateCert::COLLECTION_NAME,
-            Self::E2eiCrl => E2eiCrl::COLLECTION_NAME,
+            Self::E2eiRefreshToken => E2eiRefreshToken::TABLE_NAME,
+            Self::E2eiAcmeCA => E2eiAcmeCA::TABLE_NAME,
+            Self::E2eiIntermediateCert => E2eiIntermediateCert::TABLE_NAME,
+            Self::E2eiCrl => E2eiCrl::TABLE_NAME,
             #[cfg(feature = "proteus-keystore")]
-            Self::ProteusIdentity => ProteusIdentity::COLLECTION_NAME,
+            Self::ProteusIdentity => ProteusIdentity::TABLE_NAME,
             #[cfg(feature = "proteus-keystore")]
-            Self::ProteusPrekey => ProteusPrekey::COLLECTION_NAME,
+            Self::ProteusPrekey => ProteusPrekey::TABLE_NAME,
             #[cfg(feature = "proteus-keystore")]
-            Self::ProteusSession => ProteusSession::COLLECTION_NAME,
-            Self::HpkePrivateKey => StoredHpkePrivateKey::COLLECTION_NAME,
-            Self::ConsumerData => ConsumerData::COLLECTION_NAME,
+            Self::ProteusSession => ProteusSession::TABLE_NAME,
+            Self::HpkePrivateKey => StoredHpkePrivateKey::TABLE_NAME,
+            Self::ConsumerData => ConsumerData::TABLE_NAME,
         }
     }
 }

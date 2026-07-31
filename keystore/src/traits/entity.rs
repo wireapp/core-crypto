@@ -12,8 +12,8 @@ use crate::{
 ///
 /// It has a primary key, which uniquely identifies it.
 pub trait Entity: PrimaryKey + Sized {
-    /// The table name for this entity
-    const COLLECTION_NAME: &'static str;
+    /// The name of the SQL table for this entity
+    const TABLE_NAME: &'static str;
 
     /// Get an entity by its primary key.
     ///

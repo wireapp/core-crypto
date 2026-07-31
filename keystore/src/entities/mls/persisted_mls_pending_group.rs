@@ -33,7 +33,7 @@ impl BorrowPrimaryKey for PersistedMlsPendingGroup {
 }
 
 impl crate::traits::Entity for PersistedMlsPendingGroup {
-    const COLLECTION_NAME: &'static str = "mls_pending_groups";
+    const TABLE_NAME: &'static str = "mls_pending_groups";
 
     fn get(conn: &Connection, key: &Vec<u8>) -> crate::CryptoKeystoreResult<Option<Self>> {
         crate::entities::helpers::get_helper(conn, "id", key.as_slice(), |row| {

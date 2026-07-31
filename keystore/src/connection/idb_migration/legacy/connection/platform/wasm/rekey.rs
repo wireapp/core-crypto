@@ -18,7 +18,7 @@ where
     for<'a> E: Entity + Decryptable<'static> + Encrypting<'a>,
     <E as Decryptable<'static>>::DecryptableFrom: DeserializeOwned,
 {
-    let store = transaction.object_store(E::COLLECTION_NAME)?;
+    let store = transaction.object_store(E::TABLE_NAME)?;
     for js_value in store.get_all(None, None)?.await? {
         let encrypted_entity = serde_wasm_bindgen::from_value::<E::DecryptableFrom>(js_value)?;
         let entity = encrypted_entity.decrypt(old_cipher)?;

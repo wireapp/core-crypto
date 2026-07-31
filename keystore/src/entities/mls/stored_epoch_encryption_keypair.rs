@@ -12,7 +12,7 @@ use zeroize::Zeroize;
     serde::Deserialize,
 )]
 #[zeroize(drop)]
-#[entity(collection_name = "mls_epoch_encryption_keypairs")]
+#[entity(table_name = "mls_epoch_encryption_keypairs")]
 pub struct StoredEpochEncryptionKeypair {
     pub id: Vec<u8>,
     #[sensitive]

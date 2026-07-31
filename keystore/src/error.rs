@@ -90,8 +90,8 @@ pub enum CryptoKeystoreError {
     MigrationFailed(String),
     #[error("the provided bytes could not be interpreted as the primary key of {0}")]
     InvalidPrimaryKeyBytes(&'static str),
-    #[error("the collection name {0} is unknown and could not be found")]
-    UnknownCollectionName(&'static str),
+    #[error("the table {0} is unknown")]
+    UnknownTable(&'static str),
     #[cfg(target_os = "unknown")]
     #[error("{context}")]
     RelaxedIdbError {

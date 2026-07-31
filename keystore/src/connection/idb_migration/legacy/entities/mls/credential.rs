@@ -16,7 +16,7 @@ use crate::{
 
 impl EntityBase for StoredCredential {
     type ConnectionType = KeystoreDatabaseConnection;
-    const COLLECTION_NAME: &'static str = "mls_credentials";
+    const TABLE_NAME: &'static str = "mls_credentials";
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
         crate::transaction::dynamic_dispatch::Entity::StoredCredential(self.into())

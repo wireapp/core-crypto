@@ -18,7 +18,7 @@ use crate::entity_derive::{
 pub(super) struct Entity {
     upsert: bool,
     struct_name: Ident,
-    collection_name: String,
+    table_name: String,
     id_column: IdColumn,
     other_columns: Vec<Column>,
 }
@@ -35,8 +35,8 @@ impl TryFrom<parse::Entity> for Entity {
 
         let upsert = !outer_attributes.no_upsert.is_present();
 
-        let collection_name = outer_attributes
-            .collection_name
+        let table_name = outer_attributes
+            .table_name
             .unwrap_or_else(|| struct_name.to_string().to_snake_case() + "s");
 
         let (id_column, other_columns) = parse_columns(struct_name.span(), data)?;
@@ -44,7 +44,7 @@ impl TryFrom<parse::Entity> for Entity {
         Ok(Self {
             upsert,
             struct_name,
-            collection_name,
+            table_name,
             id_column,
             other_columns,
         })

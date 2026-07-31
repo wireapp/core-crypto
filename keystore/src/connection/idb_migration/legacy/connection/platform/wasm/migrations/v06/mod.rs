@@ -56,5 +56,5 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
     super::v05::get_builder(name)
         .version(DB_VERSION_6)
-        .remove_object_store(StoredSignatureKeypair::COLLECTION_NAME)
+        .remove_object_store(StoredSignatureKeypair::TABLE_NAME)
 }

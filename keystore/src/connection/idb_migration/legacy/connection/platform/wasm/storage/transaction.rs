@@ -55,14 +55,14 @@ impl WasmStorageTransaction<'_> {
     {
         match self {
             WasmStorageTransaction::Persistent { tx, .. } => {
-                let object_store = tx.object_store(E::COLLECTION_NAME)?;
+                let object_store = tx.object_store(E::TABLE_NAME)?;
                 let count = object_store.count(None)?.await?;
                 Ok(count)
             }
             WasmStorageTransaction::InMemory { db, .. } => {
                 let map = db.borrow();
                 Ok(map
-                    .get(E::COLLECTION_NAME)
+                    .get(E::TABLE_NAME)
                     .map(|collection| collection.len())
                     .unwrap_or_default() as _)
             }
@@ -84,12 +84,12 @@ impl WasmStorageTransaction<'_> {
 
         match self {
             WasmStorageTransaction::Persistent { tx, .. } => {
-                let store = tx.object_store(E::COLLECTION_NAME)?;
+                let store = tx.object_store(E::TABLE_NAME)?;
                 store.put(&js_value, Some(&key))?.await?;
             }
             WasmStorageTransaction::InMemory { db, .. } => {
                 let mut map = db.borrow_mut();
-                let entry = map.entry(E::COLLECTION_NAME.into()).or_default();
+                let entry = map.entry(E::TABLE_NAME.into()).or_default();
                 let id = key
                     .as_string()
                     .map(|s| CryptoKeystoreResult::Ok(s.as_bytes().into()))
@@ -116,7 +116,7 @@ impl WasmStorageTransaction<'_> {
             WasmStorageTransaction::Persistent { tx, .. } => {
                 let query = JsValue::from(Uint8Array::from(key));
 
-                let store = tx.object_store(E::COLLECTION_NAME)?;
+                let store = tx.object_store(E::TABLE_NAME)?;
                 let existed = store.count(Some(query.clone().into()))?.await?;
                 store.delete(query)?.await?;
 
@@ -124,7 +124,7 @@ impl WasmStorageTransaction<'_> {
             }
             WasmStorageTransaction::InMemory { db, .. } => {
                 let mut store = db.borrow_mut();
-                let store = store.entry(E::COLLECTION_NAME.into()).or_default();
+                let store = store.entry(E::TABLE_NAME.into()).or_default();
                 let removed = store.remove(key);
                 Ok(removed.is_some())
             }

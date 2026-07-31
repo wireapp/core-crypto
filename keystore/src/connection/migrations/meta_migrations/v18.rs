@@ -34,7 +34,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
             public_key,
             private_key
          FROM {credential_table}",
-        credential_table = StoredCredential::COLLECTION_NAME,
+        credential_table = StoredCredential::TABLE_NAME,
     ))?;
 
     let mut rows = credential_stmt.query([])?;
