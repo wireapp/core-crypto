@@ -7,11 +7,7 @@ use crate::{
     traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, KeyType, SearchableEntity, UniqueEntityExt},
 };
 
-/// Interface to fetch from the database either from the connection directly or through a
-/// transaction.
-///
-/// Fundamentally these are convenience methods, allowing you to do `let n_foos = database.count::<Foo>()`
-/// instead of `Foo::count(&mut database.conn)`.
+/// Interface to immutably access the database either from the connection directly or through a transaction.
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait)]
 pub trait FetchFromDatabase: Send + Sync {
