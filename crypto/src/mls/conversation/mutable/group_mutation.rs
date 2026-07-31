@@ -4,7 +4,7 @@ use openmls::group::{InnerState, MlsGroup};
 use super::{ConversationMut, Result};
 use crate::{
     KeystoreError, RecursiveError,
-    mls::conversation::{Conversation, ConversationIdRef},
+    mls::conversation::{Conversation, ConversationIdRef, MlsGroupState},
 };
 
 impl ConversationMut {
@@ -26,6 +26,18 @@ impl ConversationMut {
         &mut self,
         operation: impl AsyncFnOnce(&Transaction, &mut MlsGroup, &ConversationIdRef) -> Result<T>,
     ) -> Result<T> {
+        self.mutate_group_and_sender_nonce(async |tx, state, id| {
+            let mls_group = state.mls_group_mut();
+            operation(tx, mls_group, id).await
+        })
+        .await
+    }
+
+    /// Like [Self::mutate_group], but also allows mutating the sender nonce via [MlsGroupState].
+    pub(super) async fn mutate_group_and_sender_nonce<T>(
+        &mut self,
+        operation: impl AsyncFnOnce(&Transaction, &mut MlsGroupState, &ConversationIdRef) -> Result<T>,
+    ) -> Result<T> {
         // we can't get the transaction if the transaction context has been invalidated,
         // and we want to have that error first before evaluating anything in the operation.
         let context_inner = self.tx_context.inner().await.map_err(RecursiveError::transaction(
@@ -36,7 +48,7 @@ impl ConversationMut {
         let Conversation { group, id, .. } = &*self.inner;
         let mut group = group.write().await;
         let epoch_before_operation = group.epoch();
-        let ok_result = operation(tx, &mut *group.mls_group_mut(), id).await?;
+        let ok_result = operation(tx, &mut *group, id).await?;
 
         if group.state_changed() == InnerState::Persisted {
             return Ok(ok_result);
