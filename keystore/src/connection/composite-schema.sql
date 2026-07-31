@@ -4,8 +4,6 @@ CREATE TABLE proteus_identities (sk BLOB, pk BLOB);
 
 CREATE TABLE proteus_sessions (id VARCHAR(255) UNIQUE, SESSION BLOB);
 
-CREATE TABLE e2ei_enrollment (id VARCHAR(255) UNIQUE, content BLOB);
-
 CREATE TABLE mls_pending_messages (
   id BLOB,
   message BLOB,
