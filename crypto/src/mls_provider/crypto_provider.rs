@@ -6,6 +6,7 @@ use aes_gcm::{
 };
 use chacha20poly1305::ChaCha20Poly1305;
 use hkdf::Hkdf;
+use openmls::prelude::HpkeCiphertext;
 use openmls_traits::{
     crypto::OpenMlsCrypto,
     random::OpenMlsRand,
@@ -56,6 +57,51 @@ impl RustCrypto {
         let mut val = self.rng.write().map_err(|_| Error::RngLockPoison)?;
         *val = rand_chacha::ChaCha20Rng::from_seed(seed.unwrap_or_default().0);
         Ok(())
+    }
+
+    #[expect(clippy::too_many_arguments)]
+    pub(crate) fn hpke_seal_psk(
+        &self,
+        config: HpkeConfig,
+        pk_r: &[u8],
+        info: &[u8],
+        aad: &[u8],
+        psk: &[u8],
+        psk_id: &[u8],
+        ptxt: &[u8],
+    ) -> Result<HpkeCiphertext, CryptoError> {
+        let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
+
+        match config {
+            HpkeConfig(HpkeKemType::DhKem25519, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
+                hpke_core::hpke_seal_psk::<hpke::aead::AesGcm128, hpke::kdf::HkdfSha256, hpke::kem::X25519HkdfSha256>(
+                    pk_r, info, aad, psk, psk_id, ptxt, &mut *rng,
+                )
+            }
+            HpkeConfig(HpkeKemType::DhKem25519, HpkeKdfType::HkdfSha256, HpkeAeadType::ChaCha20Poly1305) => {
+                hpke_core::hpke_seal_psk::<
+                    hpke::aead::ChaCha20Poly1305,
+                    hpke::kdf::HkdfSha256,
+                    hpke::kem::X25519HkdfSha256,
+                >(pk_r, info, aad, psk, psk_id, ptxt, &mut *rng)
+            }
+            HpkeConfig(HpkeKemType::DhKemP256, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
+                hpke_core::hpke_seal_psk::<hpke::aead::AesGcm128, hpke::kdf::HkdfSha256, hpke::kem::DhP256HkdfSha256>(
+                    pk_r, info, aad, psk, psk_id, ptxt, &mut *rng,
+                )
+            }
+            HpkeConfig(HpkeKemType::DhKemP384, HpkeKdfType::HkdfSha384, HpkeAeadType::AesGcm256) => {
+                hpke_core::hpke_seal_psk::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha384, hpke::kem::DhP384HkdfSha384>(
+                    pk_r, info, aad, psk, psk_id, ptxt, &mut *rng,
+                )
+            }
+            HpkeConfig(HpkeKemType::DhKemP521, HpkeKdfType::HkdfSha512, HpkeAeadType::AesGcm256) => {
+                hpke_core::hpke_seal_psk::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha512, hpke::kem::DhP521HkdfSha512>(
+                    pk_r, info, aad, psk, psk_id, ptxt, &mut *rng,
+                )
+            }
+            _ => Err(CryptoError::UnsupportedKem),
+        }
     }
 }
 
@@ -538,6 +584,7 @@ impl OpenMlsCrypto for RustCrypto {
 }
 
 mod hpke_core {
+    use hpke::PskBundle;
     use openmls_traits::types::{CryptoError, HpkeCiphertext, HpkeKeyPair};
 
     pub(crate) fn hpke_open<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
@@ -578,6 +625,34 @@ mod hpke_core {
         let (encapped, ciphertext) =
             hpke::single_shot_seal::<Aead, Kdf, Kem, _>(&hpke::OpModeS::Base, &key, info, plaintext, aad, csprng)
                 .map_err(|_| CryptoError::HpkeEncryptionError)?;
+
+        Ok(HpkeCiphertext {
+            kem_output: encapped.to_bytes().to_vec().into(),
+            ciphertext: ciphertext.into(),
+        })
+    }
+
+    pub(crate) fn hpke_seal_psk<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
+        public_key: &[u8],
+        info: &[u8],
+        aad: &[u8],
+        psk: &[u8],
+        psk_id: &[u8],
+        plaintext: &[u8],
+        csprng: &mut impl rand_core::CryptoRngCore,
+    ) -> Result<HpkeCiphertext, CryptoError> {
+        use hpke::{Deserializable as _, Serializable as _};
+        let key = Kem::PublicKey::from_bytes(public_key).map_err(|_| CryptoError::HpkeEncryptionError)?;
+        let psk_bundle = PskBundle { psk, psk_id };
+        let (encapped, ciphertext) = hpke::single_shot_seal::<Aead, Kdf, Kem, _>(
+            &hpke::OpModeS::Psk(psk_bundle),
+            &key,
+            info,
+            plaintext,
+            aad,
+            csprng,
+        )
+        .map_err(|_| CryptoError::HpkeEncryptionError)?;
 
         Ok(HpkeCiphertext {
             kem_output: encapped.to_bytes().to_vec().into(),
