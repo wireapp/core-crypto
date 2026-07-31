@@ -237,7 +237,7 @@
 <a href=#237 id=237 data-nosnippet>237</a>        // This is the now merged conversation
 <a href=#238 id=238 data-nosnippet>238</a>        </span><span class="kw">let </span>context = <span class="kw-2">&amp;</span><span class="self">self</span>.context;
 <a href=#239 id=239 data-nosnippet>239</a>        <span class="kw">let </span><span class="kw-2">mut </span>conversation = context
-<a href=#240 id=240 data-nosnippet>240</a>            .persist_conversation_from_mls_group(mls_group, configuration)
+<a href=#240 id=240 data-nosnippet>240</a>            .persist_conversation_from_mls_group(mls_group, configuration, Default::default())
 <a href=#241 id=241 data-nosnippet>241</a>            .<span class="kw">await
 <a href=#242 id=242 data-nosnippet>242</a>            </span>.map_err(RecursiveError::transaction(
 <a href=#243 id=243 data-nosnippet>243</a>                <span class="string">"persisting a pending conversation from mls group"</span>,
