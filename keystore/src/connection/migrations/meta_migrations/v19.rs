@@ -1,7 +1,7 @@
 use crate::{
     CryptoKeystoreResult,
-    entities::{PersistedMlsGroup, StoredCredential},
-    migrations::{detect_duplicate_credentials, make_least_used_ciphersuite},
+    entities::StoredCredential,
+    migrations::{LegacyPersistedMlsGroup, detect_duplicate_credentials, make_least_used_ciphersuite},
     traits::Entity as _,
 };
 
@@ -12,15 +12,14 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
 
     let mut group_stmt = tx.prepare(&format!(
         "SELECT state FROM {mls_group_table}",
-        mls_group_table = PersistedMlsGroup::COLLECTION_NAME,
+        mls_group_table = "mls_groups",
     ))?;
     let persisted_mls_groups = group_stmt
         .query_map([], |row| {
-            Ok(PersistedMlsGroup {
+            Ok(LegacyPersistedMlsGroup {
                 state: row.get("state")?,
-                id: Vec::new(),                   // not relevant for this application
-                parent_id: None,                  // not relevant for this application
-                sender_nonce: Default::default(), // not relevant for this application
+                id: Vec::new(),  // not relevant for this application
+                parent_id: None, // not relevant for this application
             })
         })?
         .filter_map(|row| row.ok()); // rows which can't load at the SQL level are skipped

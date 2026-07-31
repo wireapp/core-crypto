@@ -7,10 +7,7 @@ use openmls_x509_credential::X509Ext as _;
 use x509_cert::der::Decode as _;
 use zeroize::Zeroize;
 
-use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, deser,
-    entities::{PersistedMlsGroup, StoredCredential},
-};
+use crate::{CryptoKeystoreError, CryptoKeystoreResult, deser, entities::StoredCredential};
 
 /// Entity representing a persisted `Credential` per the schema prior to integrating the signature keypair
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
@@ -55,6 +52,15 @@ pub(crate) struct StoredSignatureKeypair {
     pub keypair: Vec<u8>,
     #[sensitive]
     pub credential_id: Vec<u8>,
+}
+
+/// The MLS group shape shared by the final legacy IDB schema and SQL schema v22.
+#[derive(zeroize::Zeroize)]
+#[zeroize(drop)]
+pub(crate) struct LegacyPersistedMlsGroup {
+    pub(crate) id: Vec<u8>,
+    pub(crate) state: Vec<u8>,
+    pub(crate) parent_id: Option<Vec<u8>>,
 }
 
 /// Try to extract the relevant data from the v5 credential and signature keypair to determine whether they correspond
@@ -147,7 +153,7 @@ impl CiphersuiteOccurences {
 
 /// Count occurences of ciphersuites ambiguous with regard to the signature scheme.
 fn count_ciphersuite_occurences(
-    persisted_mls_groups: impl IntoIterator<Item = PersistedMlsGroup>,
+    persisted_mls_groups: impl IntoIterator<Item = LegacyPersistedMlsGroup>,
 ) -> CryptoKeystoreResult<CiphersuiteOccurences> {
     let mut occurences = CiphersuiteOccurences::default();
 
@@ -183,7 +189,7 @@ fn count_ciphersuite_occurences(
 ///
 /// However, we expect the cases where both A and B have non-zero counts to be very rare.
 pub(crate) fn make_ciphersuite_for_signature_scheme(
-    persisted_mls_groups: impl IntoIterator<Item = PersistedMlsGroup>,
+    persisted_mls_groups: impl IntoIterator<Item = LegacyPersistedMlsGroup>,
 ) -> CryptoKeystoreResult<impl Fn(u16) -> Option<u16>> {
     let occurences = count_ciphersuite_occurences(persisted_mls_groups)?;
 
@@ -228,7 +234,7 @@ pub(crate) fn make_ciphersuite_for_signature_scheme(
 /// * If both ciphersuites have an occurence of 0, `None` is returned.
 /// * If both ciphersuites have equal occurence, the numerically higher ciphersuite is returned.
 pub(crate) fn make_least_used_ciphersuite(
-    persisted_mls_groups: impl IntoIterator<Item = PersistedMlsGroup>,
+    persisted_mls_groups: impl IntoIterator<Item = LegacyPersistedMlsGroup>,
 ) -> CryptoKeystoreResult<impl Fn(u16, u16) -> Option<u16>> {
     let occurences = count_ciphersuite_occurences(persisted_mls_groups)?;
 
