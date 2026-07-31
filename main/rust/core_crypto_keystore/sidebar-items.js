@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["CryptoKeystoreError"],"fn":["deser","ser"],"mod":["connection","entities","traits","transaction"],"struct":["DatabaseKey","Sha256Hash"],"type":["CryptoKeystoreResult"]};
+window.SIDEBAR_ITEMS = {"enum":["CryptoKeystoreError"],"fn":["deser","ser"],"mod":["connection","entities","traits","transaction"],"struct":["DatabaseKey","Sha256Hash","UniqueArc"],"type":["CryptoKeystoreResult"]};

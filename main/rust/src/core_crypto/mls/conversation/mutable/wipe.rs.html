@@ -17,7 +17,7 @@
 <a href=#17 id=17 data-nosnippet>17</a>            .<span class="kw">await
 <a href=#18 id=18 data-nosnippet>18</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls conversation cache"</span>))<span class="question-mark">?</span>;
 <a href=#19 id=19 data-nosnippet>19</a>
-<a href=#20 id=20 data-nosnippet>20</a>        <span class="self">self</span>.mutate_group(<span class="kw">async </span>|database, group, <span class="kw">_</span>| {
+<a href=#20 id=20 data-nosnippet>20</a>        <span class="self">self</span>.mutate_group(<span class="kw">async </span>|transaction, group, <span class="kw">_</span>| {
 <a href=#21 id=21 data-nosnippet>21</a>            <span class="comment">// the own client may or may not have generated an epoch keypair in the previous epoch
 <a href=#22 id=22 data-nosnippet>22</a>            // Since it is a terminal operation, ignoring the error is fine here.
 <a href=#23 id=23 data-nosnippet>23</a>            </span><span class="kw">let _ </span>= group.delete_previous_epoch_keypairs(<span class="kw-2">&amp;</span>provider).<span class="kw">await</span>;
@@ -31,7 +31,7 @@
 <a href=#31 id=31 data-nosnippet>31</a>            <span class="kw">for </span>proposal <span class="kw">in </span>proposals {
 <a href=#32 id=32 data-nosnippet>32</a>                <span class="comment">// Update proposals rekey the own leaf node. Hence the associated encryption keypair has to be cleared
 <a href=#33 id=33 data-nosnippet>33</a>                </span>group
-<a href=#34 id=34 data-nosnippet>34</a>                    .remove_pending_proposal(database, <span class="kw-2">&amp;</span>proposal)
+<a href=#34 id=34 data-nosnippet>34</a>                    .remove_pending_proposal(transaction, <span class="kw-2">&amp;</span>proposal)
 <a href=#35 id=35 data-nosnippet>35</a>                    .<span class="kw">await
 <a href=#36 id=36 data-nosnippet>36</a>                    </span>.map_err(OpenMlsError::wrap(<span class="string">"removing pending proposal"</span>))<span class="question-mark">?</span>;
 <a href=#37 id=37 data-nosnippet>37</a>            }

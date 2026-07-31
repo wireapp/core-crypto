@@ -2,7 +2,7 @@
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a></span><span class="kw">use </span>std::sync::Arc;
 <a href=#4 id=4 data-nosnippet>4</a>
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>core_crypto_keystore::{Database, entities::ProteusSession, traits::FetchFromDatabase <span class="kw">as _</span>};
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>core_crypto_keystore::{entities::ProteusSession, traits::FetchFromDatabase};
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span>proteus_wasm::{keys::IdentityKeyPair, session::Session};
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span>schnellru::{ByLength, LruMap};
 <a href=#8 id=8 data-nosnippet>8</a>
@@ -41,7 +41,7 @@
 <a href=#41 id=41 data-nosnippet>41</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>get_or_fetch(
 <a href=#42 id=42 data-nosnippet>42</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
 <a href=#43 id=43 data-nosnippet>43</a>        id: <span class="kw-2">&amp;</span>str,
-<a href=#44 id=44 data-nosnippet>44</a>        keystore: <span class="kw-2">&amp;</span>Database,
+<a href=#44 id=44 data-nosnippet>44</a>        keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase,
 <a href=#45 id=45 data-nosnippet>45</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>ProteusConversationSession&gt;&gt; {
 <a href=#46 id=46 data-nosnippet>46</a>        <span class="kw">if </span><span class="self">self</span>.entries.peek(id).is_some() {
 <a href=#47 id=47 data-nosnippet>47</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="self">self</span>.entries.get(id));

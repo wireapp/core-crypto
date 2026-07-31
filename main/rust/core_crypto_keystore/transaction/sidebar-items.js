@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["KeystoreTransaction"]};
+window.SIDEBAR_ITEMS = {"mod":["proteus"],"struct":["Transaction"]};
