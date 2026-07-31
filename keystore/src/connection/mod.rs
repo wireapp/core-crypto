@@ -122,13 +122,13 @@ impl Database {
         })
     }
 
-    /// Open an encrypted `Database` at the provided location.
+    /// Open an encrypted Sqlite `Database` at the provided location.
     ///
-    /// When compiled with `target_os = "unknown"`, this opens a database encrypted via
+    /// When compiled with `target_os = "unknown"`, this database is encrypted via
     /// sqlite3-multiple-ciphers using its default encryption mechanism, stored in IndexedDB
     /// via the `relaxed-idb` shim.
     ///
-    /// When compiled normally, this opens a database encrypted via sqlcipher at a path in the
+    /// When compiled normally, this database is encrypted via sqlcipher at a path in the
     /// local filesystem.
     pub async fn open(path: &str, database_key: &DatabaseKey) -> CryptoKeystoreResult<Arc<Self>> {
         let (conn, filesystem) = Self::open_internal(path, database_key).await?;
