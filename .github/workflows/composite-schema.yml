@@ -16,8 +16,9 @@ jobs:
       - name: check composite schema is up to date
         run: |
           generated=$(compile-schema keystore/src/connection/migrations)
-          # -w ignores all whitespace differences; only non-whitespace diffs cause failure
-          if diff -uw \
+          # -wB ignores all whitespace differences (within lines and whole blank lines).
+          # Only non-whitespace diffs cause failure.
+          if diff -uwB \
             --label generated/composite-schema.sql \
             --label checked-in/composite-schema.sql \
             <(echo "$generated") \
