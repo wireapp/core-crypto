@@ -71,7 +71,8 @@ CREATE INDEX idx_mls_keypackages_keypackage_ref ON mls_keypackages(keypackage_re
 CREATE TABLE "mls_groups" (
   id BLOB UNIQUE,
   state BLOB,
-  parent_id BLOB
+  parent_id BLOB,
+  sender_nonce INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX idx_mls_groups_id ON mls_groups(id);

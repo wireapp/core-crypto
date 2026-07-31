@@ -33,6 +33,7 @@ impl<'a> KeyType for ParentGroupId<'a> {
 pub struct PersistedMlsGroup {
     pub id: Vec<u8>,
     pub state: Vec<u8>,
+    pub sender_nonce: u32,
     pub parent_id: Option<Vec<u8>>,
 }
 
@@ -57,13 +58,20 @@ impl<'a> SearchableEntity<ParentGroupId<'a>> for PersistedMlsGroup {
     fn find_all_matching(conn: &Connection, parent_id: &ParentGroupId<'a>) -> CryptoKeystoreResult<Vec<Self>> {
         let parent_id = *parent_id.as_ref();
 
-        let mut stmt = conn.prepare_cached("SELECT id, parent_id, state FROM mls_groups WHERE parent_id = ?")?;
+        let mut stmt =
+            conn.prepare_cached("SELECT id, parent_id, state, sender_nonce FROM mls_groups WHERE parent_id = ?")?;
         stmt.query_and_then([parent_id], |row| {
             let id = row.get("id")?;
-            let parent_id = row.get("parent_id")?;
             let state = row.get("state")?;
+            let sender_nonce = row.get("sender_nonce")?;
+            let parent_id = row.get("parent_id")?;
 
-            Ok(PersistedMlsGroup { id, state, parent_id })
+            Ok(PersistedMlsGroup {
+                id,
+                state,
+                sender_nonce,
+                parent_id,
+            })
         })?
         .collect()
     }
