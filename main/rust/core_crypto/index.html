@@ -78,6 +78,9 @@ make ios-create-xcframework</code></pre></div><h4 id="macos"><a class="doc-ancho
 <p>Install Bun (follow the instructions on <a href="https://bun.sh/">Bun’s website</a>)</p>
 </li>
 <li>
+<p>Install chrome via puppeteer for browser tests and benchmarks:</p>
+<div class="example-wrap"><pre class="language-sh"><code>cd crypto-ffi/bindings/js &amp;&amp; bun x puppeteer browsers install chrome-headless-shell    </code></pre></div></li>
+<li>
 <p>Install <a href="https://github.com/wasm-bindgen/wasm-bindgen">wasm-bindgen-cli</a>:</p>
 <div class="example-wrap"><pre class="language-sh"><code>wasm_bindgen_version=&quot;$(
   cargo metadata --format-version 1 |
@@ -88,7 +91,7 @@ cargo install wasm-bindgen-cli --version $wasm_bindgen_version</code></pre></div
 <code>Cargo.lock</code> (as shown by <code>cargo info wasm-bindgen</code>), because otherwise the wasm tests will not run.</p>
 </li>
 <li>
-<p>Install <a href="https://getwebdriver.com/chromedriver">chromedriver</a></p>
+<p>Install chromedriver</p>
 <div class="example-wrap"><pre class="language-sh"><code>bunx @puppeteer/browsers install --path ~/bin chrome-headless-shell
 bunx @puppeteer/browsers install --path ~/bin chromedriver</code></pre></div></li>
 <li>
