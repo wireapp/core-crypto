@@ -11,6 +11,5 @@ pub(crate) mod proteus_session;
 pub(crate) mod psk_bundle;
 pub(crate) mod refresh_token;
 pub(crate) mod stored_buffered_commit;
-pub(crate) mod stored_e2ei_enrollment;
 pub(crate) mod stored_epoch_encryption_keypair;
 pub(crate) mod stored_keypackage;

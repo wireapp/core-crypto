@@ -5,7 +5,7 @@ use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Database, Sha256Hash,
     entities::{
-        PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredE2eiEnrollment, StoredEncryptionKeyPair,
+        PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredEncryptionKeyPair,
         StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
     traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, FetchFromDatabase as _},
@@ -81,7 +81,8 @@ impl Database {
             sender_nonce,
             parent_id: parent_group_id.map(Into::into),
         })
-        .await
+        .await?;
+        Ok(())
     }
 
     /// Loads `MlsGroups` from the database. It will be returned as a `HashMap` where the key is
@@ -170,32 +171,6 @@ impl Database {
         self.remove_borrowed::<PersistedMlsPendingGroup>(group_id.as_ref())
             .await?;
         Ok(())
-    }
-
-    /// Persists an enrollment instance
-    ///
-    /// # Arguments
-    /// * `id` - hash of the enrollment and unique identifier
-    /// * `content` - serialized enrollment
-    pub async fn save_e2ei_enrollment(&self, id: &[u8], content: &[u8]) -> CryptoKeystoreResult<()> {
-        self.save(StoredE2eiEnrollment {
-            id: id.into(),
-            content: content.into(),
-        })
-        .await
-    }
-
-    /// Fetches and delete the enrollment instance
-    ///
-    /// # Arguments
-    /// * `id` - hash of the enrollment and unique identifier
-    pub async fn pop_e2ei_enrollment(&self, id: &[u8]) -> CryptoKeystoreResult<Option<Vec<u8>>> {
-        // someone who has time could try to optimize this but honestly it's really on the cold path
-        let Some(mut enrollment) = self.get_borrowed::<StoredE2eiEnrollment>(id).await? else {
-            return Ok(None);
-        };
-        self.remove_borrowed::<StoredE2eiEnrollment>(id).await?;
-        Ok(Some(std::mem::take(&mut enrollment.content)))
     }
 }
 

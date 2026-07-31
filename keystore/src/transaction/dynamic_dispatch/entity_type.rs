@@ -5,8 +5,8 @@ use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
 use crate::{
     entities::{
         ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup,
-        PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
     traits::Entity as _,
 };
@@ -23,7 +23,6 @@ pub(crate) enum EntityType {
     PersistedMlsGroup,
     PersistedMlsPendingGroup,
     MlsPendingMessage,
-    StoredE2eiEnrollment,
     #[cfg(target_os = "unknown")]
     E2eiRefreshToken,
     E2eiAcmeCA,
@@ -51,7 +50,6 @@ impl EntityType {
             PersistedMlsPendingGroup::COLLECTION_NAME => Some(Self::PersistedMlsPendingGroup),
             StoredCredential::COLLECTION_NAME => Some(Self::StoredCredential),
             MlsPendingMessage::COLLECTION_NAME => Some(Self::MlsPendingMessage),
-            StoredE2eiEnrollment::COLLECTION_NAME => Some(Self::StoredE2eiEnrollment),
             E2eiCrl::COLLECTION_NAME => Some(Self::E2eiCrl),
             E2eiAcmeCA::COLLECTION_NAME => Some(Self::E2eiAcmeCA),
             #[cfg(target_os = "unknown")]
@@ -79,7 +77,6 @@ impl EntityType {
             Self::PersistedMlsGroup => PersistedMlsGroup::COLLECTION_NAME,
             Self::PersistedMlsPendingGroup => PersistedMlsPendingGroup::COLLECTION_NAME,
             Self::MlsPendingMessage => MlsPendingMessage::COLLECTION_NAME,
-            Self::StoredE2eiEnrollment => StoredE2eiEnrollment::COLLECTION_NAME,
             #[cfg(target_os = "unknown")]
             Self::E2eiRefreshToken => E2eiRefreshToken::COLLECTION_NAME,
             Self::E2eiAcmeCA => E2eiAcmeCA::COLLECTION_NAME,

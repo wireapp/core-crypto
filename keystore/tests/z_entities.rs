@@ -175,13 +175,9 @@ mod tests_impl {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::{CryptoKeystoreError, traits::Entity as _};
     use wasm_bindgen_test::*;
 
-    use crate::{
-        common::*,
-        utils::{EntityRandomExt, EntityRandomUpdateExt},
-    };
+    use crate::common::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -198,7 +194,6 @@ mod tests {
     test_for_entity!(test_mls_hpke_private_key, StoredHpkePrivateKey);
     test_for_entity!(test_e2ei_intermediate_cert, E2eiIntermediateCert);
     test_for_entity!(test_e2ei_crl, E2eiCrl);
-    test_for_entity!(test_e2ei_enrollment, StoredE2eiEnrollment ignore_update:true);
     test_for_entity!(test_e2ei_acme_ca, E2eiAcmeCA ignore_entity_count:true ignore_find_many:true);
 
     #[cfg(feature = "proteus-keystore")]
@@ -207,28 +202,6 @@ mod tests {
     test_for_entity!(test_proteus_prekey, ProteusPrekey);
     #[cfg(feature = "proteus-keystore")]
     test_for_entity!(test_proteus_session, ProteusSession);
-
-    #[apply(all_storage_types)]
-    pub async fn update_e2ei_enrollment_emits_error(context: KeystoreTestContext) {
-        let store = context.store();
-
-        let mut entity = StoredE2eiEnrollment::random();
-        let tx = store.new_transaction().await.unwrap();
-        tx.save(entity.clone()).await.unwrap();
-        tx.commit().await.unwrap();
-
-        // Start a new transaction so that the database constraints will trigger on committing the
-        // transaction
-        let tx = store.new_transaction().await.unwrap();
-        entity.random_update();
-        tx.save(entity).await.unwrap();
-        let error = tx.commit().await.unwrap_err();
-
-        assert!(matches!(
-            error,
-            CryptoKeystoreError::AlreadyExists(StoredE2eiEnrollment::COLLECTION_NAME)
-        ));
-    }
 
     #[apply(all_storage_types)]
     async fn can_save_and_load_consumer_data(context: KeystoreTestContext) {
@@ -273,8 +246,7 @@ mod tests {
 pub mod utils {
     use core_crypto_keystore::entities::{
         E2eiAcmeCA, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusSession, StoredCredential,
-        StoredE2eiEnrollment, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredKeypackage, StoredPskBundle,
+        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     };
     use rand::Rng as _;
 
@@ -390,7 +362,6 @@ pub mod utils {
     impl_entity_random_update_ext!(PersistedMlsGroup, id_field=id, blob_fields=[state,], additional_fields=[(parent_id: None),(sender_nonce: rand::random()),]);
     impl_entity_random_update_ext!(PersistedMlsPendingGroup, id_field=id, blob_fields=[state,custom_configuration,], additional_fields=[(parent_id: None),]);
     impl_entity_random_update_ext!(MlsPendingMessage, id_field = foreign_id, blob_fields = [message,]);
-    impl_entity_random_update_ext!(StoredE2eiEnrollment, id_field = id, blob_fields = [content,]);
     impl_entity_random_update_ext!(StoredEpochEncryptionKeypair, id_field = id, blob_fields = [keypairs,]);
     impl_entity_random_update_ext!(E2eiAcmeCA, blob_fields = [content,]);
 

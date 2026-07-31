@@ -11,8 +11,8 @@ use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
     entities::{
         ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup,
-        PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
     traits::{BorrowPrimaryKey, DeletableBySearchKey as _, Entity, EntityDatabaseMutation, KeyType, OwnedKeyType as _},
     transaction::dynamic_dispatch::EntityType,
@@ -93,9 +93,6 @@ impl EntityId {
             }
             EntityType::MlsPendingMessage => {
                 MlsPendingMessage::delete_all_matching(tx, &self.id.as_slice().into()).map(|_| false)
-            }
-            EntityType::StoredE2eiEnrollment => {
-                StoredE2eiEnrollment::delete(tx, &self.primary_key::<StoredE2eiEnrollment>()?)
             }
             #[cfg(target_os = "unknown")]
             EntityType::E2eiRefreshToken => E2eiRefreshToken::delete(tx, &self.primary_key::<E2eiRefreshToken>()?),

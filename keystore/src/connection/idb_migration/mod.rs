@@ -16,8 +16,8 @@ use crate::{
     connection::migrations::MigrationTarget,
     entities::{
         ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup,
-        StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment, StoredEncryptionKeyPair,
-        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        StoredBufferedCommit, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
+        StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
     migrations::LegacyPersistedMlsGroup,
     traits::EntityDatabaseMutation as _,
@@ -143,7 +143,6 @@ pub(super) async fn maybe_migrate(
         PersistedMlsPendingGroup,
         StoredBufferedCommit,
         StoredCredential,
-        StoredE2eiEnrollment,
         StoredEncryptionKeyPair,
         StoredEpochEncryptionKeypair,
         StoredHpkePrivateKey,

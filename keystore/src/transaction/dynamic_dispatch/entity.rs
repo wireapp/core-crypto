@@ -10,8 +10,8 @@ use crate::{
     CryptoKeystoreResult,
     entities::{
         ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup,
-        PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredE2eiEnrollment,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
     traits::{EntityDatabaseMutation as _, UniqueEntityExt as _},
 };
@@ -29,7 +29,6 @@ pub enum Entity {
     PersistedMlsGroup(Arc<PersistedMlsGroup>),
     PersistedMlsPendingGroup(Arc<PersistedMlsPendingGroup>),
     MlsPendingMessage(Arc<MlsPendingMessage>),
-    StoredE2eiEnrollment(Arc<StoredE2eiEnrollment>),
     #[cfg(target_os = "unknown")]
     E2eiRefreshToken(Arc<E2eiRefreshToken>),
     E2eiAcmeCA(Arc<E2eiAcmeCA>),
@@ -67,7 +66,6 @@ impl_from!(StoredBufferedCommit);
 impl_from!(PersistedMlsGroup);
 impl_from!(PersistedMlsPendingGroup);
 impl_from!(MlsPendingMessage);
-impl_from!(StoredE2eiEnrollment);
 #[cfg(target_os = "unknown")]
 impl_from!(E2eiRefreshToken);
 impl_from!(E2eiAcmeCA);
@@ -111,7 +109,6 @@ impl Entity {
             Entity::PersistedMlsGroup(persisted_mls_group) => downcast(persisted_mls_group),
             Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => downcast(persisted_mls_pending_group),
             Entity::MlsPendingMessage(mls_pending_message) => downcast(mls_pending_message),
-            Entity::StoredE2eiEnrollment(stored_e2ei_enrollment) => downcast(stored_e2ei_enrollment),
             Entity::E2eiAcmeCA(e2ei_acme_ca) => downcast(e2ei_acme_ca),
             Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => downcast(e2ei_intermediate_cert),
             Entity::E2eiCrl(e2ei_crl) => downcast(e2ei_crl),
@@ -141,7 +138,6 @@ impl Entity {
             Entity::PersistedMlsGroup(persisted_mls_group) => persisted_mls_group.save(tx),
             Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => persisted_mls_pending_group.save(tx),
             Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.save(tx),
-            Entity::StoredE2eiEnrollment(e2ei_enrollment) => e2ei_enrollment.save(tx),
             Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.set_and_replace(tx).map(|_| ()),
             Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.save(tx),
             #[cfg(target_os = "unknown")]

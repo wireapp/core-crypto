@@ -8,8 +8,8 @@ use crate::{
     connection::idb_migration::legacy::connection::wasm::rekey::rekey_entities,
     entities::{
         E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, E2eiRefreshToken, MlsPendingMessage, PersistedMlsPendingGroup,
-        ProteusIdentity, ProteusPrekey, ProteusSession, StoredE2eiEnrollment, StoredEncryptionKeyPair,
-        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        ProteusIdentity, ProteusPrekey, ProteusSession, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
+        StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
     migrations::{LegacyPersistedMlsGroup, StoredSignatureKeypair, V5Credential},
 };
@@ -51,7 +51,6 @@ pub(crate) async fn migrate_db_key_type_to_bytes(
             LegacyPersistedMlsGroup,
             PersistedMlsPendingGroup,
             MlsPendingMessage,
-            StoredE2eiEnrollment,
             E2eiRefreshToken,
             E2eiAcmeCA,
             E2eiIntermediateCert,
