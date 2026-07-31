@@ -14,6 +14,7 @@ use std::sync::Arc;
 use core_crypto_keystore::Database;
 use openmls::prelude::group_info::GroupInfo;
 
+pub(crate) use self::tnt::SenderNonce;
 use super::{Error, Result};
 use crate::{
     CryptoProvider, GroupInfoBundle, LeafError, MlsTransport, RecursiveError, Session,

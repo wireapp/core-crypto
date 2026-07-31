@@ -13,6 +13,10 @@ pub enum Error {
     InappropriateMessageBodyType,
     #[error("The current client id isn't authorized to perform this action")]
     Unauthorized,
+    #[error(
+        "The sender nonce has overflowed. You sent 2^32 targeted or transient messages in this epoch. Increment the epoch and try again."
+    )]
+    SenderNonceOverflow,
     /// Message rejected by the delivery service
     #[error("Message rejected by the delivery service. Reason: {reason}")]
     MessageRejected {

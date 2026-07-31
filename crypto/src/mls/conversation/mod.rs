@@ -23,6 +23,7 @@ mod pending;
 mod welcome;
 
 pub(crate) use immutable::MlsGroupState;
+pub(crate) use mutable::SenderNonce;
 pub(crate) use pending::PendingConversation;
 
 pub use self::{
