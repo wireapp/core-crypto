@@ -35,18 +35,25 @@ impl ConversationMut {
 
         let Conversation { group, id, .. } = &*self.inner;
         let mut group = group.write().await;
-        let ok_result = operation(tx, &mut *group, id).await?;
+        let epoch_before_operation = group.epoch();
+        let ok_result = operation(tx, &mut *group.mls_group_mut(), id).await?;
 
         if group.state_changed() == InnerState::Changed {
+            if epoch_before_operation < group.epoch() {
+                group.reset_sender_nonce();
+            }
+
             tx.save(PersistedMlsGroup {
                 id: id.to_bytes(),
-                state: core_crypto_keystore::ser(&*group).map_err(KeystoreError::wrap("serializing group state"))?,
+                state: core_crypto_keystore::ser(group.mls_group())
+                    .map_err(KeystoreError::wrap("serializing group state"))?,
                 parent_id: None,
+                sender_nonce: group.sender_nonce(),
             })
             .await
             .map_err(KeystoreError::wrap("persisting mls group"))?;
 
-            group.set_state(InnerState::Persisted);
+            group.mls_group_mut().set_state(InnerState::Persisted);
         }
         Ok(ok_result)
     }
