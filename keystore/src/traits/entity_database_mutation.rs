@@ -42,8 +42,8 @@ pub trait EntityDatabaseMutation: Entity + Into<dynamic_dispatch::Entity> {
     /// passthrough:
     ///
     /// ```rust,ignore
-    /// fn delete(tx: &Self::Transaction, key: &Self::PrimaryKey) -> CoreCryptoKeystoreResult<bool> {
-    ///     <Self as EntityTransactionDeleteBorrowed<'a>>::delete_borrowed(tx, id).await
+    /// fn delete(tx: &Transaction, id: &Self::PrimaryKey) -> CryptoKeystoreResult<bool> {
+    ///     <Self as EntityDeleteBorrowed>::delete_borrowed(tx, id)
     /// }
     /// ```
     fn delete(tx: &Transaction, id: &Self::PrimaryKey) -> CryptoKeystoreResult<bool>;

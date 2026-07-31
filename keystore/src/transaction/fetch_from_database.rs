@@ -1,8 +1,8 @@
 //! As transactions are now first-class entities which will be floating around in their own right,
-//! we impl `FetchFromDatabase` as a convenience.
+//! we impl [`FetchFromDatabase`] as a convenience.
 //!
-//! It doesn't matter whether someone is holding a `Database` or a `KeystoreTransaction` instance;
-//! the two `FetchFromDatabase` implementations will always agree.
+//! It doesn't matter whether someone is holding a [`Database`][crate::Database] or a
+//! [`Transaction`] instance; every implementation of the trait will always agree.
 
 use std::{borrow::Borrow, sync::Arc};
 

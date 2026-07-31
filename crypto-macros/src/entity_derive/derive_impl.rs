@@ -44,7 +44,7 @@ impl Entity {
         }
     }
 
-    /// Returns `(sql_statement, fields_params, sql_map_err)` shared by both the async and unified save impls.
+    /// Returns `(sql_statement, fields_params, sql_map_err)` for the generated `save` impl.
     fn sql_insert_parts(&self) -> (String, TokenStream, Option<TokenStream>) {
         let Self {
             upsert,

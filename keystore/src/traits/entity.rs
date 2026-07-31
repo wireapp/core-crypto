@@ -21,8 +21,8 @@ pub trait Entity: PrimaryKey + Sized {
     /// passthrough:
     ///
     /// ```rust,ignore
-    /// fn get(conn: &Connection, key: &Self::PrimaryKey) -> CoreCryptoKeystoreResult<Option<Self>> {
-    ///     Self::get_borrowed(conn, key).await
+    /// fn get(conn: &Connection, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
+    ///     <Self as EntityGetBorrowed>::get_borrowed(conn, key)
     /// }
     /// ```
     fn get(conn: &Connection, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>>;

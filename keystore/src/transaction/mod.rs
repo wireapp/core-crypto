@@ -68,12 +68,12 @@ impl Transaction {
     }
 
     /// Build a single list of unique records from two potentially overlapping lists.
-    /// In case of overlap, records in `records_a` are prioritized.
-    /// Identity from the perspective of this function is determined by the output of
-    /// [Entity::merge_key].
     ///
-    /// Further, the output list of records is built with respect to the provided [EntityFindParams]
-    /// and the deleted records cached in this [Self] instance.
+    /// In case of overlap, records in `records_a` are prioritized. Identity from the perspective
+    /// of this function is determined by the byte encoding of
+    /// [`primary_key`][crate::traits::PrimaryKey::primary_key].
+    ///
+    /// Records deleted in this transaction are filtered out of the result.
     async fn merge_records<'a, E>(
         &self,
         records_a: impl IntoIterator<Item = Cow<'a, E>>,

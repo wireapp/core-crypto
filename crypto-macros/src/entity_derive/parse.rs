@@ -24,8 +24,6 @@ pub(super) struct OuterAttributes {
 /// pub struct Entity {
 ///     #[entity(id)]
 ///     my_id: Vec<u8>,
-///     #[entity(hex)]
-///     hex_field: Vec<u8>,
 ///     #[entity(column = "my_column")]
 ///     rename_this_field: Vec<u8>,
 /// }
