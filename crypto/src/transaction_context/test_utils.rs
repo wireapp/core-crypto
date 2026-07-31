@@ -1,7 +1,7 @@
 use core_crypto_keystore::{
     entities::{
-        MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredE2eiEnrollment,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
     },
     traits::FetchFromDatabase as _,
 };
@@ -13,7 +13,6 @@ pub struct EntitiesCount {
     pub credential: u32,
     pub encryption_keypair: u32,
     pub epoch_encryption_keypair: u32,
-    pub enrollment: u32,
     pub group: u32,
     pub hpke_private_key: u32,
     pub key_package: u32,
@@ -29,7 +28,6 @@ impl TransactionContext {
         let credential = inner.transaction.count::<StoredCredential>().await.unwrap();
         let encryption_keypair = inner.transaction.count::<StoredEncryptionKeyPair>().await.unwrap();
         let epoch_encryption_keypair = inner.transaction.count::<StoredEpochEncryptionKeypair>().await.unwrap();
-        let enrollment = inner.transaction.count::<StoredE2eiEnrollment>().await.unwrap();
         let group = inner.transaction.count::<PersistedMlsGroup>().await.unwrap();
         let hpke_private_key = inner.transaction.count::<StoredHpkePrivateKey>().await.unwrap();
         let key_package = inner.transaction.count::<StoredKeypackage>().await.unwrap();
@@ -40,7 +38,6 @@ impl TransactionContext {
             credential,
             encryption_keypair,
             epoch_encryption_keypair,
-            enrollment,
             group,
             hpke_private_key,
             key_package,

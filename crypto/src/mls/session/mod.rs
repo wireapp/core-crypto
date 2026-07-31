@@ -158,7 +158,6 @@ mod tests {
             let credential = keystore.count::<StoredCredential>().await.unwrap();
             let encryption_keypair = keystore.count::<StoredEncryptionKeyPair>().await.unwrap();
             let epoch_encryption_keypair = keystore.count::<StoredEpochEncryptionKeypair>().await.unwrap();
-            let enrollment = keystore.count::<StoredE2eiEnrollment>().await.unwrap();
             let group = keystore.count::<PersistedMlsGroup>().await.unwrap();
             let hpke_private_key = keystore.count::<StoredHpkePrivateKey>().await.unwrap();
             let key_package = keystore.count::<StoredKeypackage>().await.unwrap();
@@ -169,7 +168,6 @@ mod tests {
                 credential,
                 encryption_keypair,
                 epoch_encryption_keypair,
-                enrollment,
                 group,
                 hpke_private_key,
                 key_package,
