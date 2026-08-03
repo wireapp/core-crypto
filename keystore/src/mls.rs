@@ -73,13 +73,11 @@ impl Database {
         group_id: impl AsRef<[u8]> + Send,
         state: &[u8],
         sender_nonce: u32,
-        parent_group_id: Option<&[u8]>,
     ) -> CryptoKeystoreResult<()> {
         self.save(PersistedMlsGroup {
             id: group_id.as_ref().to_owned(),
             state: state.into(),
             sender_nonce,
-            parent_id: parent_group_id.map(Into::into),
         })
         .await?;
         Ok(())
@@ -91,17 +89,14 @@ impl Database {
     /// # Errors
     /// Any common error that can happen during a database connection. IoError being a common error
     /// for example.
-    pub async fn mls_groups_restore(
-        &self,
-    ) -> CryptoKeystoreResult<std::collections::HashMap<Vec<u8>, (Option<Vec<u8>>, Vec<u8>)>> {
+    pub async fn mls_groups_restore(&self) -> CryptoKeystoreResult<std::collections::HashMap<Vec<u8>, Vec<u8>>> {
         let groups = PersistedMlsGroup::load_all(&*self.conn().await)?;
         Ok(groups
             .into_iter()
             .map(|mut group| {
                 let id = std::mem::take(&mut group.id);
-                let parent_id = std::mem::take(&mut group.parent_id);
                 let state = std::mem::take(&mut group.state);
-                (id, (parent_id, state))
+                (id, state)
             })
             .collect())
     }

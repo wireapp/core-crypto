@@ -44,7 +44,6 @@ impl TransactionContext {
                 id: id.to_bytes(),
                 state: group_state,
                 sender_nonce,
-                parent_id: None,
             })
             .await
             .map_err(KeystoreError::wrap("persisting mls group"))?;

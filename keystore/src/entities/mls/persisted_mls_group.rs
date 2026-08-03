@@ -30,5 +30,4 @@ pub struct PersistedMlsGroup {
     pub id: Vec<u8>,
     pub state: Vec<u8>,
     pub sender_nonce: u32,
-    pub parent_id: Option<Vec<u8>>,
 }
