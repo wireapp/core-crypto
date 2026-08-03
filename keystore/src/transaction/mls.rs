@@ -44,7 +44,7 @@ impl OpenMlsKeyStore for Transaction {
             MlsEntityId::KeyPackage => {
                 let kp = StoredKeyPackage {
                     key_package_ref: id.into(),
-                    keypackage: data,
+                    key_package: data,
                 };
                 self.save(kp).await?;
             }
@@ -122,7 +122,7 @@ impl OpenMlsKeyStore for Transaction {
                     .await
                     .ok()
                     .flatten()?;
-                deser(&v.keypackage).ok()
+                deser(&v.key_package).ok()
             }
             MlsEntityId::HpkePrivateKey => {
                 let v = FetchFromDatabase::get_borrowed::<StoredHpkePrivateKey>(self, id)

@@ -42,7 +42,7 @@ impl Database {
         let keypackages = StoredKeyPackage::load_all(&*self.conn().await)?;
         Ok(keypackages
             .into_iter()
-            .filter_map(|kpb| postcard::from_bytes(&kpb.keypackage).ok())
+            .filter_map(|kpb| postcard::from_bytes(&kpb.key_package).ok())
             .take(count as _)
             .collect())
     }
@@ -216,7 +216,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for Database {
             MlsEntityId::KeyPackage => {
                 let kp = StoredKeyPackage {
                     key_package_ref: id.into(),
-                    keypackage: data,
+                    key_package: data,
                 };
                 self.save(kp).await?;
             }
@@ -286,7 +286,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for Database {
             }
             MlsEntityId::KeyPackage => {
                 let v = self.get_borrowed::<StoredKeyPackage>(id).await.ok().flatten()?;
-                deser(&v.keypackage).ok()
+                deser(&v.key_package).ok()
             }
             MlsEntityId::HpkePrivateKey => {
                 let v = self.get_borrowed::<StoredHpkePrivateKey>(id).await.ok().flatten()?;

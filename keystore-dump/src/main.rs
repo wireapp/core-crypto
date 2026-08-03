@@ -94,7 +94,7 @@ async fn main() -> anyhow::Result<()> {
         .load_all::<StoredKeyPackage>()
         .await?
         .into_iter()
-        .map(|kp| postcard::from_bytes::<openmls::prelude::KeyPackage>(&kp.keypackage))
+        .map(|kp| postcard::from_bytes::<openmls::prelude::KeyPackage>(&kp.key_package))
         .collect::<postcard::Result<_>>()?;
     json_map.serialize_entry("mls_keypackages", &keypackages)?;
 

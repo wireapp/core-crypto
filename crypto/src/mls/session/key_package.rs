@@ -4,7 +4,7 @@ use super::Result;
 use crate::{Keypackage, KeypackageRef, KeystoreError, Session, mls::key_package::KeypackageExt};
 
 pub(crate) fn from_stored(stored_keypackage: &StoredKeyPackage) -> Result<Keypackage> {
-    core_crypto_keystore::deser::<Keypackage>(&stored_keypackage.keypackage)
+    core_crypto_keystore::deser::<Keypackage>(&stored_keypackage.key_package)
         .map_err(KeystoreError::wrap("deserializing keypackage"))
         .map_err(Into::into)
 }

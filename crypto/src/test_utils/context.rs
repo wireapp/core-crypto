@@ -61,7 +61,7 @@ impl SessionContext {
             .await
             .unwrap()
             .into_iter()
-            .map(|kp| core_crypto_keystore::deser::<KeyPackage>(&kp.keypackage).unwrap())
+            .map(|kp| core_crypto_keystore::deser::<KeyPackage>(&kp.key_package).unwrap())
             .filter(|kp| kp.ciphersuite() == *cs)
             .filter(|kp| {
                 ct.map(|ct| ct == kp.leaf_node().credential().credential_type())

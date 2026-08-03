@@ -17,5 +17,5 @@ pub struct StoredKeyPackage {
     #[entity(id)]
     pub key_package_ref: Vec<u8>,
     #[sensitive]
-    pub keypackage: Vec<u8>,
+    pub key_package: Vec<u8>,
 }
