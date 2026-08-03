@@ -211,7 +211,7 @@ mod tests {
                 .expect("Alice's messages should have been restored at this point");
 
             for (idx, buffered_message) in restored_messages.into_iter().enumerate() {
-                let text = DecryptedMessage::from(buffered_message).into_text();
+                let text = DecryptedMessage::from(buffered_message).into_application_message();
                 if idx == 0 {
                     // this is the application message
                     assert_eq!(text.unwrap().plaintext, b"Hello Bob !");
@@ -307,7 +307,7 @@ mod tests {
                 .buffered_messages
                 .expect("Alice's messages should have been restored at this point");
             for (idx, buffered_message) in restored_messages.into_iter().enumerate() {
-                let text = DecryptedMessage::from(buffered_message).into_text();
+                let text = DecryptedMessage::from(buffered_message).into_application_message();
                 if idx == 0 {
                     assert_eq!(text.unwrap().plaintext, b"Hello Alice !");
                 } else {

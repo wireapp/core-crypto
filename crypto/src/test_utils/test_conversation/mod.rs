@@ -190,10 +190,12 @@ impl<'a> TestConversation<'a> {
         let decrypted = receiver_guard
             .decrypt_message(encrypted)
             .await
-            .map_err(RecursiveError::context("decrypting message; receiver <- sender"))?;
-        let plaintext = &decrypted.as_text().ok_or(TestError::ImplementationError)?.plaintext;
+            .map_err(RecursiveError::context("decrypting message; receiver <- sender"))?
+            .into_application_message()
+            .map_err(|_| TestError::ImplementationError)?
+            .plaintext;
 
-        assert_eq!(&msg[..], &plaintext[..]);
+        assert_eq!(&msg[..], &decrypted[..]);
         Ok(())
     }
 
