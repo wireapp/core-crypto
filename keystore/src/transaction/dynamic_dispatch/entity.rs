@@ -18,7 +18,7 @@ use crate::{
 pub enum Entity {
     ConsumerData(Arc<ConsumerData>),
     HpkePrivateKey(Arc<StoredHpkePrivateKey>),
-    StoredKeypackage(Arc<StoredKeypackage>),
+    StoredKeyPackage(Arc<StoredKeypackage>),
     PskBundle(Arc<StoredPskBundle>),
     EncryptionKeyPair(Arc<StoredEncryptionKeyPair>),
     StoredEpochEncryptionKeypair(Arc<StoredEpochEncryptionKeypair>),
@@ -53,7 +53,7 @@ macro_rules! impl_from {
 
 impl_from!(ConsumerData);
 impl_from!(HpkePrivateKey => StoredHpkePrivateKey);
-impl_from!(StoredKeypackage);
+impl_from!(StoredKeyPackage);
 impl_from!(PskBundle => StoredPskBundle);
 impl_from!(EncryptionKeyPair => StoredEncryptionKeyPair);
 impl_from!(StoredEpochEncryptionKeypair);
@@ -92,7 +92,7 @@ impl Entity {
         match self {
             Entity::ConsumerData(consumer_data) => downcast(consumer_data),
             Entity::HpkePrivateKey(stored_hpke_private_key) => downcast(stored_hpke_private_key),
-            Entity::StoredKeypackage(stored_keypackage) => downcast(stored_keypackage),
+            Entity::StoredKeyPackage(stored_keypackage) => downcast(stored_keypackage),
             Entity::PskBundle(stored_psk_bundle) => downcast(stored_psk_bundle),
             Entity::EncryptionKeyPair(stored_encryption_key_pair) => downcast(stored_encryption_key_pair),
             Entity::StoredEpochEncryptionKeypair(stored_epoch_encryption_keypair) => {
@@ -119,7 +119,7 @@ impl Entity {
         match self {
             Entity::ConsumerData(consumer_data) => consumer_data.set_and_replace(tx).map(|_| ()),
             Entity::HpkePrivateKey(mls_hpke_private_key) => mls_hpke_private_key.save(tx),
-            Entity::StoredKeypackage(mls_key_package) => mls_key_package.save(tx),
+            Entity::StoredKeyPackage(mls_key_package) => mls_key_package.save(tx),
             Entity::PskBundle(mls_psk_bundle) => mls_psk_bundle.save(tx),
             Entity::EncryptionKeyPair(mls_encryption_key_pair) => mls_encryption_key_pair.save(tx),
             Entity::StoredEpochEncryptionKeypair(mls_epoch_encryption_key_pair) => {

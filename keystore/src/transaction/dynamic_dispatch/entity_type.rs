@@ -37,7 +37,7 @@ impl EntityType {
     pub(crate) fn from_table_name(table_name: &'static str) -> Option<Self> {
         match table_name {
             StoredHpkePrivateKey::TABLE_NAME => Some(Self::HpkePrivateKey),
-            StoredKeypackage::TABLE_NAME => Some(Self::KeyPackage),
+            StoredKeyPackage::TABLE_NAME => Some(Self::KeyPackage),
             StoredPskBundle::TABLE_NAME => Some(Self::PskBundle),
             StoredEncryptionKeyPair::TABLE_NAME => Some(Self::EncryptionKeyPair),
             StoredEpochEncryptionKeypair::TABLE_NAME => Some(Self::EpochEncryptionKeyPair),
