@@ -597,7 +597,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let decrypted = try await bob.transaction { ctx in
             try await ctx.decryptMessage(conversationId: conversationId, payload: ciphertext)
         }
-        guard case .text(let plaintext, _, _) = decrypted else {
+        guard case .applicationMessage(let plaintext, _, _) = decrypted else {
             XCTFail("Expected decrypted text")
             return
         }
