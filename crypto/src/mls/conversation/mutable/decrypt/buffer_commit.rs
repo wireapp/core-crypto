@@ -56,7 +56,7 @@ impl ConversationMut {
         let message = MlsMessageIn::tls_deserialize(&mut commit.as_ref())
             .map_err(TlsCodecError::deserialize("mls message in"))?;
 
-        Box::pin(self.decrypt_message_inner(message, recursion_policy)).await
+        Box::pin(self.decrypt_mls_message(message, recursion_policy)).await
     }
 
     /// Remove the buffered commit for this conversation; it has been applied.

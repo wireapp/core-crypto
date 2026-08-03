@@ -204,8 +204,8 @@ impl ConversationMut {
         Ok(decrypt_message)
     }
 
-    /// We need an inner part, because this may be called recursively.
-    async fn decrypt_message_inner(
+    /// Decrypt a deserialized [MlsMessageIn].
+    async fn decrypt_mls_message(
         &mut self,
         message: MlsMessageIn,
         recursion_policy: RecursionPolicy,
