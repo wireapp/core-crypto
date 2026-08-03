@@ -68,12 +68,12 @@
 <a href=#68 id=68 data-nosnippet>68</a>    }
 <a href=#69 id=69 data-nosnippet>69</a>
 <a href=#70 id=70 data-nosnippet>70</a>    <span class="doccomment">/// Build a single list of unique records from two potentially overlapping lists.
-<a href=#71 id=71 data-nosnippet>71</a>    /// In case of overlap, records in `records_a` are prioritized.
-<a href=#72 id=72 data-nosnippet>72</a>    /// Identity from the perspective of this function is determined by the output of
-<a href=#73 id=73 data-nosnippet>73</a>    /// [Entity::merge_key].
-<a href=#74 id=74 data-nosnippet>74</a>    ///
-<a href=#75 id=75 data-nosnippet>75</a>    /// Further, the output list of records is built with respect to the provided [EntityFindParams]
-<a href=#76 id=76 data-nosnippet>76</a>    /// and the deleted records cached in this [Self] instance.
+<a href=#71 id=71 data-nosnippet>71</a>    ///
+<a href=#72 id=72 data-nosnippet>72</a>    /// In case of overlap, records in `records_a` are prioritized. Identity from the perspective
+<a href=#73 id=73 data-nosnippet>73</a>    /// of this function is determined by the byte encoding of
+<a href=#74 id=74 data-nosnippet>74</a>    /// [`primary_key`][crate::traits::PrimaryKey::primary_key].
+<a href=#75 id=75 data-nosnippet>75</a>    ///
+<a href=#76 id=76 data-nosnippet>76</a>    /// Records deleted in this transaction are filtered out of the result.
 <a href=#77 id=77 data-nosnippet>77</a>    </span><span class="kw">async fn </span>merge_records&lt;<span class="lifetime">'a</span>, E&gt;(
 <a href=#78 id=78 data-nosnippet>78</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#79 id=79 data-nosnippet>79</a>        records_a: <span class="kw">impl </span>IntoIterator&lt;Item = Cow&lt;<span class="lifetime">'a</span>, E&gt;&gt;,

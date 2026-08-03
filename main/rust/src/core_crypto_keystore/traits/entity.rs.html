@@ -12,8 +12,8 @@
 <a href=#12 id=12 data-nosnippet>12</a>///
 <a href=#13 id=13 data-nosnippet>13</a>/// It has a primary key, which uniquely identifies it.
 <a href=#14 id=14 data-nosnippet>14</a></span><span class="kw">pub trait </span>Entity: PrimaryKey + Sized {
-<a href=#15 id=15 data-nosnippet>15</a>    <span class="doccomment">/// The table name for this entity
-<a href=#16 id=16 data-nosnippet>16</a>    </span><span class="kw">const </span>COLLECTION_NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str;
+<a href=#15 id=15 data-nosnippet>15</a>    <span class="doccomment">/// The name of the SQL table for this entity
+<a href=#16 id=16 data-nosnippet>16</a>    </span><span class="kw">const </span>TABLE_NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str;
 <a href=#17 id=17 data-nosnippet>17</a>
 <a href=#18 id=18 data-nosnippet>18</a>    <span class="doccomment">/// Get an entity by its primary key.
 <a href=#19 id=19 data-nosnippet>19</a>    ///
@@ -21,8 +21,8 @@
 <a href=#21 id=21 data-nosnippet>21</a>    /// passthrough:
 <a href=#22 id=22 data-nosnippet>22</a>    ///
 <a href=#23 id=23 data-nosnippet>23</a>    /// ```rust,ignore
-<a href=#24 id=24 data-nosnippet>24</a>    /// fn get(conn: &amp;Connection, key: &amp;Self::PrimaryKey) -&gt; CoreCryptoKeystoreResult&lt;Option&lt;Self&gt;&gt; {
-<a href=#25 id=25 data-nosnippet>25</a>    ///     Self::get_borrowed(conn, key).await
+<a href=#24 id=24 data-nosnippet>24</a>    /// fn get(conn: &amp;Connection, key: &amp;Self::PrimaryKey) -&gt; CryptoKeystoreResult&lt;Option&lt;Self&gt;&gt; {
+<a href=#25 id=25 data-nosnippet>25</a>    ///     &lt;Self as EntityGetBorrowed&gt;::get_borrowed(conn, key)
 <a href=#26 id=26 data-nosnippet>26</a>    /// }
 <a href=#27 id=27 data-nosnippet>27</a>    /// ```
 <a href=#28 id=28 data-nosnippet>28</a>    </span><span class="kw">fn </span>get(conn: <span class="kw-2">&amp;</span>Connection, key: <span class="kw-2">&amp;</span><span class="self">Self</span>::PrimaryKey) -&gt; CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt;;

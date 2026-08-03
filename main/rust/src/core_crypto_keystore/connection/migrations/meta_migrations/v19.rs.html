@@ -27,7 +27,7 @@
 <a href=#27 id=27 data-nosnippet>27</a>
 <a href=#28 id=28 data-nosnippet>28</a>    <span class="kw">let </span><span class="kw-2">mut </span>credential_stmt = tx.prepare(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
 <a href=#29 id=29 data-nosnippet>29</a>        <span class="string">"SELECT ciphersuite, public_key FROM {table}"</span>,
-<a href=#30 id=30 data-nosnippet>30</a>        table = StoredCredential::COLLECTION_NAME,
+<a href=#30 id=30 data-nosnippet>30</a>        table = StoredCredential::TABLE_NAME,
 <a href=#31 id=31 data-nosnippet>31</a>    ))<span class="question-mark">?</span>;
 <a href=#32 id=32 data-nosnippet>32</a>
 <a href=#33 id=33 data-nosnippet>33</a>    <span class="kw">let </span>credentials = credential_stmt

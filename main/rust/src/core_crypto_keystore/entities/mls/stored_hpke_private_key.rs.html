@@ -28,7 +28,7 @@
 <a href=#28 id=28 data-nosnippet>28</a>}
 <a href=#29 id=29 data-nosnippet>29</a>
 <a href=#30 id=30 data-nosnippet>30</a><span class="kw">impl </span><span class="kw">crate</span>::traits::Entity <span class="kw">for </span>StoredHpkePrivateKey {
-<a href=#31 id=31 data-nosnippet>31</a>    <span class="kw">const </span>COLLECTION_NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"mls_hpke_private_keys"</span>;
+<a href=#31 id=31 data-nosnippet>31</a>    <span class="kw">const </span>TABLE_NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"mls_hpke_private_keys"</span>;
 <a href=#32 id=32 data-nosnippet>32</a>
 <a href=#33 id=33 data-nosnippet>33</a>    <span class="kw">fn </span>get(conn: <span class="kw-2">&amp;</span>rusqlite::Connection, key: <span class="kw-2">&amp;</span>Vec&lt;u8&gt;) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
 <a href=#34 id=34 data-nosnippet>34</a>        <span class="kw">let </span>hash = <span class="kw">crate</span>::Sha256Hash::hash_from(key);

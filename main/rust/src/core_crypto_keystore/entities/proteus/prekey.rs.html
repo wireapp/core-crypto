@@ -68,7 +68,7 @@
 <a href=#68 id=68 data-nosnippet>68</a>}
 <a href=#69 id=69 data-nosnippet>69</a>
 <a href=#70 id=70 data-nosnippet>70</a><span class="kw">impl </span><span class="kw">crate</span>::traits::Entity <span class="kw">for </span>ProteusPrekey {
-<a href=#71 id=71 data-nosnippet>71</a>    <span class="kw">const </span>COLLECTION_NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"proteus_prekeys"</span>;
+<a href=#71 id=71 data-nosnippet>71</a>    <span class="kw">const </span>TABLE_NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"proteus_prekeys"</span>;
 <a href=#72 id=72 data-nosnippet>72</a>
 <a href=#73 id=73 data-nosnippet>73</a>    <span class="kw">fn </span>get(conn: <span class="kw-2">&amp;</span>rusqlite::Connection, key: <span class="kw-2">&amp;</span>u16) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
 <a href=#74 id=74 data-nosnippet>74</a>        <span class="kw">crate</span>::entities::helpers::get_helper(conn, <span class="string">"id"</span>, <span class="kw-2">*</span>key, |row| {

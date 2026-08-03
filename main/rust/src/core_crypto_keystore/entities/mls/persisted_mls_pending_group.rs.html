@@ -33,7 +33,7 @@
 <a href=#33 id=33 data-nosnippet>33</a>}
 <a href=#34 id=34 data-nosnippet>34</a>
 <a href=#35 id=35 data-nosnippet>35</a><span class="kw">impl </span><span class="kw">crate</span>::traits::Entity <span class="kw">for </span>PersistedMlsPendingGroup {
-<a href=#36 id=36 data-nosnippet>36</a>    <span class="kw">const </span>COLLECTION_NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"mls_pending_groups"</span>;
+<a href=#36 id=36 data-nosnippet>36</a>    <span class="kw">const </span>TABLE_NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"mls_pending_groups"</span>;
 <a href=#37 id=37 data-nosnippet>37</a>
 <a href=#38 id=38 data-nosnippet>38</a>    <span class="kw">fn </span>get(conn: <span class="kw-2">&amp;</span>Connection, key: <span class="kw-2">&amp;</span>Vec&lt;u8&gt;) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
 <a href=#39 id=39 data-nosnippet>39</a>        <span class="kw">crate</span>::entities::helpers::get_helper(conn, <span class="string">"id"</span>, key.as_slice(), |row| {
