@@ -441,7 +441,6 @@ pub mod utils {
         impl EntityRandomUpdateExt for core_crypto_keystore::entities::ProteusPrekey {
             fn random_update(&mut self) {
                 let mut rng = rand::thread_rng();
-                // self.set_id(rng.gen());
                 self.prekey = vec![0u8; rng.gen_range(MAX_BLOB_SIZE)];
                 rng.fill(&mut self.prekey[..]);
             }

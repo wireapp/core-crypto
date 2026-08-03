@@ -30,10 +30,22 @@ impl fmt::Display for EntityId {
 }
 
 impl EntityId {
-    fn primary_key<E>(&self) -> CryptoKeystoreResult<E::PrimaryKey>
+    pub(crate) fn matches_type<E>(&self) -> bool
     where
         E: Entity,
     {
+        EntityType::from_table_name(E::TABLE_NAME).is_some_and(|e_type| self.typ == e_type)
+    }
+
+    pub(crate) fn primary_key<E>(&self) -> CryptoKeystoreResult<E::PrimaryKey>
+    where
+        E: Entity,
+    {
+        // we'd prefer not to pay the cost for a runtime check, but we want more than 0 checks
+        debug_assert!(
+            self.matches_type::<E>(),
+            "well-constructed code will never call this for a non-matching type"
+        );
         E::PrimaryKey::from_bytes(&self.id).ok_or(CryptoKeystoreError::InvalidPrimaryKeyBytes(self.typ.table_name()))
     }
 

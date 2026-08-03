@@ -3,7 +3,7 @@ use zeroize::Zeroize;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Transaction,
     entities::helpers::{count_helper, count_helper_tx, delete_helper, get_helper, load_all_helper},
-    traits::{Entity, EntityDatabaseMutation, FetchFromDatabase, PrimaryKey},
+    traits::{Entity, EntityDatabaseMutation, PrimaryKey},
 };
 
 #[derive(core_crypto_macros::Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -19,22 +19,48 @@ impl ProteusPrekey {
         Self { id, prekey }
     }
 
-    pub async fn get_free_id(db: &impl FetchFromDatabase) -> crate::CryptoKeystoreResult<u16> {
-        // TODO: now that database unification is accomplished, we can replace this silly loop
-        // with something more efficient which just queries the database directly.
-        let mut id = 1u16;
-        let limit = u16::MAX;
-        while id <= limit {
-            if id == limit {
-                return Err(crate::CryptoKeystoreError::NoFreePrekeyId);
-            }
-            if db.get::<Self>(&id).await?.is_none() {
-                break;
-            }
-            id += 1;
-        }
+    /// Find the lowest free prekey id greater than `greater_than`.
+    ///
+    /// Only ids stored in the database are considered, so an id which an open transaction has
+    /// claimed but not yet flushed is invisible here, and the caller might need to call this more
+    /// than once to determine the true lowest. This is still the right choice given that writing
+    /// this to accept the added and deleted lists makes the SQL substantially more complex.
+    ///
+    /// Returns [`CryptoKeystoreError::NoFreePrekeyId`] if no assignable id is free.
+    pub(crate) fn free_id_greater_than(conn: &rusqlite::Connection, greater_than: u16) -> CryptoKeystoreResult<u16> {
+        /// Highest prekey id assignable to an ordinary prekey.
+        ///
+        /// `u16::MAX` is reserved for the last-resort prekey. This crate depends only on
+        /// `proteus-traits`, so it can't name `proteus_wasm::keys::MAX_PREKEY_ID` directly;
+        /// `ProteusCentral::last_resort_prekey_id` in `core-crypto` is the other half of this
+        /// invariant.
+        const MAX_ASSIGNABLE_ID: u16 = u16::MAX - 1;
 
-        Ok(id)
+        let mut stmt = conn.prepare_cached(
+            "
+            SELECT MIN(c.candidate)
+            FROM (
+                SELECT :greater_than + 1 AS candidate
+                UNION ALL
+                SELECT id + 1 FROM proteus_prekeys WHERE id > :greater_than
+            ) AS c
+            WHERE c.candidate <= :max_assignable
+                AND NOT EXISTS (SELECT 1 FROM proteus_prekeys p WHERE p.id = c.candidate)
+            ",
+        )?;
+        stmt.query_one(
+            rusqlite::named_params! {
+                ":greater_than": greater_than,
+                ":max_assignable": MAX_ASSIGNABLE_ID,
+            },
+            |row| row.get::<_, Option<u16>>(0),
+        )?
+        .ok_or(CryptoKeystoreError::NoFreePrekeyId)
+    }
+
+    pub async fn get_free_id(tx: &Transaction) -> CryptoKeystoreResult<u16> {
+        // have to check the transaction to see what's stored there first
+        tx.free_proteus_prekey_id().await
     }
 }
 

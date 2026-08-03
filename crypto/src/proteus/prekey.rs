@@ -196,4 +196,37 @@ mod tests {
         #[cfg(not(target_os = "unknown"))]
         drop(db_file);
     }
+
+    /// The last resort prekey is stored in the same table as ordinary prekeys, at `u16::MAX`.
+    /// Free-id selection must not treat it as though the id space were exhausted.
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn last_resort_prekey_does_not_exhaust_id_space() {
+        #[cfg(not(target_os = "unknown"))]
+        let (path, db_file) = tmp_db_file();
+        #[cfg(target_os = "unknown")]
+        let (path, _) = tmp_db_file();
+
+        let key = DatabaseKey::generate();
+        let keystore = core_crypto_keystore::Database::open(&path, &key).await.unwrap();
+
+        // in this transaction the last resort prekey is only cached, never persisted
+        let tx = keystore.new_transaction().await.unwrap();
+        let alice = ProteusCentral::try_new(&tx).await.unwrap();
+        alice.last_resort_prekey(&tx).await.unwrap();
+        let (pk_id, _) = alice.new_prekey_auto(&tx).await.unwrap();
+        assert_eq!(
+            pk_id, 1,
+            "an uncommitted last resort prekey must not block auto prekeys"
+        );
+        tx.commit().await.unwrap();
+
+        // now the last resort prekey is persisted, so it's the database query which has to skip it
+        let tx = keystore.new_transaction().await.unwrap();
+        let (pk_id, _) = alice.new_prekey_auto(&tx).await.unwrap();
+        assert_eq!(pk_id, 2, "a persisted last resort prekey must not block auto prekeys");
+        tx.commit().await.unwrap();
+
+        #[cfg(not(target_os = "unknown"))]
+        drop(db_file);
+    }
 }
