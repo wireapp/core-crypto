@@ -5,38 +5,9 @@ use std::{borrow::Cow, sync::Arc};
 use super::dynamic_dispatch::EntityId;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::ProteusPrekey;
-use crate::{
-    CryptoKeystoreResult,
-    entities::{MlsPendingMessage, PersistedMlsGroup},
-    traits::{BorrowPrimaryKey, KeyType as _},
-    transaction::Transaction,
-};
+use crate::{CryptoKeystoreResult, entities::MlsPendingMessage, transaction::Transaction};
 
 impl Transaction {
-    pub(crate) async fn child_groups(
-        &self,
-        entity: PersistedMlsGroup,
-        persisted_records: impl IntoIterator<Item = PersistedMlsGroup>,
-    ) -> CryptoKeystoreResult<Vec<PersistedMlsGroup>> {
-        // First get all raw groups from the cache, then filter by their parent id
-        let cached_records = self.find_all_in_cache::<PersistedMlsGroup>().await;
-        let cached_records = cached_records
-            .iter()
-            .filter(|maybe_child| {
-                maybe_child
-                    .parent_id
-                    .as_deref()
-                    .map(|parent_id| parent_id == entity.borrow_primary_key().bytes().as_ref())
-                    .unwrap_or_default()
-            })
-            .map(Arc::as_ref)
-            .map(Cow::Borrowed);
-
-        let persisted_records = persisted_records.into_iter().map(Cow::Owned);
-
-        Ok(self.merge_records(cached_records, persisted_records).await)
-    }
-
     pub(crate) async fn remove_pending_messages_by_conversation_id(&self, conversation_id: impl AsRef<[u8]> + Send) {
         let conversation_id = conversation_id.as_ref();
 

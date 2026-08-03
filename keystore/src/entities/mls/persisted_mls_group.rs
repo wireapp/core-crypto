@@ -1,10 +1,6 @@
-use rusqlite::Connection;
 use zeroize::Zeroize;
 
-use crate::{
-    CryptoKeystoreResult,
-    traits::{EntityGetBorrowed as _, KeyType, SearchableEntity},
-};
+use crate::traits::KeyType;
 
 /// This type exists so that we can efficiently search for the children of a given group.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::From, derive_more::Into, derive_more::AsRef)]
@@ -35,48 +31,4 @@ pub struct PersistedMlsGroup {
     pub state: Vec<u8>,
     pub sender_nonce: u32,
     pub parent_id: Option<Vec<u8>>,
-}
-
-impl PersistedMlsGroup {
-    /// Get the parent group of this group.
-    pub async fn parent_group(&self, conn: &Connection) -> CryptoKeystoreResult<Option<Self>> {
-        let Some(parent_id) = self.parent_id.as_deref() else {
-            return Ok(None);
-        };
-
-        Self::get_borrowed(conn, parent_id)
-    }
-
-    /// Get all children of this group.
-    pub async fn child_groups(&self, conn: &Connection) -> CryptoKeystoreResult<Vec<Self>> {
-        let parent_id = self.id.as_slice();
-        Self::find_all_matching(conn, &parent_id.into())
-    }
-}
-
-impl<'a> SearchableEntity<ParentGroupId<'a>> for PersistedMlsGroup {
-    fn find_all_matching(conn: &Connection, parent_id: &ParentGroupId<'a>) -> CryptoKeystoreResult<Vec<Self>> {
-        let parent_id = *parent_id.as_ref();
-
-        let mut stmt =
-            conn.prepare_cached("SELECT id, parent_id, state, sender_nonce FROM mls_groups WHERE parent_id = ?")?;
-        stmt.query_and_then([parent_id], |row| {
-            let id = row.get("id")?;
-            let state = row.get("state")?;
-            let sender_nonce = row.get("sender_nonce")?;
-            let parent_id = row.get("parent_id")?;
-
-            Ok(PersistedMlsGroup {
-                id,
-                state,
-                sender_nonce,
-                parent_id,
-            })
-        })?
-        .collect()
-    }
-
-    fn matches(&self, search_key: &ParentGroupId<'a>) -> bool {
-        self.parent_id.as_deref() == Some(*search_key.as_ref())
-    }
 }

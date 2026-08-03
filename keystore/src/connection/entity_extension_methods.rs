@@ -1,23 +1,10 @@
 //! The methods defined in this module are extensions designed to improve entity ergonomics.
 
-use crate::{
-    CryptoKeystoreResult, Database,
-    entities::{MlsPendingMessage, PersistedMlsGroup},
-    traits::SearchableEntity as _,
-};
+use crate::{CryptoKeystoreResult, Database, entities::MlsPendingMessage, traits::SearchableEntity as _};
 
 // These and all other database impls should not refer directly to `self.conn` but should go through the `self.conn()`
 // wrapper
 impl Database {
-    pub async fn child_groups(&self, entity: PersistedMlsGroup) -> CryptoKeystoreResult<Vec<PersistedMlsGroup>> {
-        let conn = self.conn().await;
-        let persisted_records = entity.child_groups(&conn).await?;
-        self.merge_with_transaction(persisted_records, async |transaction, persisted_records| {
-            transaction.child_groups(entity, persisted_records).await
-        })
-        .await
-    }
-
     pub async fn find_pending_messages_by_conversation_id(
         &self,
         conversation_id: &[u8],
