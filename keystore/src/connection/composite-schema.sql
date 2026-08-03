@@ -59,12 +59,12 @@ CREATE TABLE "mls_epoch_encryption_keypairs" (id BLOB UNIQUE, keypairs BLOB);
 
 CREATE INDEX idx_mls_epoch_encryption_keypairs_id ON mls_epoch_encryption_keypairs(id);
 
-CREATE TABLE "mls_keypackages" (
-  keypackage_ref BLOB UNIQUE,
-  keypackage BLOB
+CREATE TABLE "mls_key_packages" (
+  key_package_ref BLOB UNIQUE,
+  key_package BLOB
 );
 
-CREATE INDEX idx_mls_keypackages_keypackage_ref ON mls_keypackages(keypackage_ref);
+CREATE INDEX idx_mls_keypackages_keypackage_ref ON "mls_key_packages"(key_package_ref);
 
 CREATE TABLE "mls_groups" (
   id BLOB UNIQUE,
