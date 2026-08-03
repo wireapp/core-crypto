@@ -91,10 +91,10 @@
 <a href=#91 id=91 data-nosnippet>91</a>    json_map.serialize_entry(<span class="string">"external_psks"</span>, <span class="kw-2">&amp;</span>external_psks)<span class="question-mark">?</span>;
 <a href=#92 id=92 data-nosnippet>92</a>
 <a href=#93 id=93 data-nosnippet>93</a>    <span class="kw">let </span>keypackages: Vec&lt;openmls::prelude::KeyPackage&gt; = keystore
-<a href=#94 id=94 data-nosnippet>94</a>        .load_all::&lt;StoredKeypackage&gt;()
+<a href=#94 id=94 data-nosnippet>94</a>        .load_all::&lt;StoredKeyPackage&gt;()
 <a href=#95 id=95 data-nosnippet>95</a>        .<span class="kw">await</span><span class="question-mark">?
 <a href=#96 id=96 data-nosnippet>96</a>        </span>.into_iter()
-<a href=#97 id=97 data-nosnippet>97</a>        .map(|kp| postcard::from_bytes::&lt;openmls::prelude::KeyPackage&gt;(<span class="kw-2">&amp;</span>kp.keypackage))
+<a href=#97 id=97 data-nosnippet>97</a>        .map(|kp| postcard::from_bytes::&lt;openmls::prelude::KeyPackage&gt;(<span class="kw-2">&amp;</span>kp.key_package))
 <a href=#98 id=98 data-nosnippet>98</a>        .collect::&lt;postcard::Result&lt;<span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
 <a href=#99 id=99 data-nosnippet>99</a>    json_map.serialize_entry(<span class="string">"mls_keypackages"</span>, <span class="kw-2">&amp;</span>keypackages)<span class="question-mark">?</span>;
 <a href=#100 id=100 data-nosnippet>100</a>

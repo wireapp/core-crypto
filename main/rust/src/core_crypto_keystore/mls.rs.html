@@ -6,7 +6,7 @@
 <a href=#6 id=6 data-nosnippet>6</a>    CryptoKeystoreError, CryptoKeystoreResult, Database, Sha256Hash,
 <a href=#7 id=7 data-nosnippet>7</a>    entities::{
 <a href=#8 id=8 data-nosnippet>8</a>        PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredEncryptionKeyPair,
-<a href=#9 id=9 data-nosnippet>9</a>        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+<a href=#9 id=9 data-nosnippet>9</a>        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
 <a href=#10 id=10 data-nosnippet>10</a>    },
 <a href=#11 id=11 data-nosnippet>11</a>    traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, FetchFromDatabase <span class="kw">as _</span>},
 <a href=#12 id=12 data-nosnippet>12</a>};
@@ -39,10 +39,10 @@
 <a href=#39 id=39 data-nosnippet>39</a>    /// Any common error that can happen during a database connection. IoError being a common error
 <a href=#40 id=40 data-nosnippet>40</a>    /// for example.
 <a href=#41 id=41 data-nosnippet>41</a>    </span><span class="kw">pub async fn </span>mls_fetch_key_packages&lt;V: MlsEntity&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, count: u32) -&gt; CryptoKeystoreResult&lt;Vec&lt;V&gt;&gt; {
-<a href=#42 id=42 data-nosnippet>42</a>        <span class="kw">let </span>keypackages = StoredKeypackage::load_all(<span class="kw-2">&amp;*</span><span class="self">self</span>.conn().<span class="kw">await</span>)<span class="question-mark">?</span>;
+<a href=#42 id=42 data-nosnippet>42</a>        <span class="kw">let </span>keypackages = StoredKeyPackage::load_all(<span class="kw-2">&amp;*</span><span class="self">self</span>.conn().<span class="kw">await</span>)<span class="question-mark">?</span>;
 <a href=#43 id=43 data-nosnippet>43</a>        <span class="prelude-val">Ok</span>(keypackages
 <a href=#44 id=44 data-nosnippet>44</a>            .into_iter()
-<a href=#45 id=45 data-nosnippet>45</a>            .filter_map(|kpb| postcard::from_bytes(<span class="kw-2">&amp;</span>kpb.keypackage).ok())
+<a href=#45 id=45 data-nosnippet>45</a>            .filter_map(|kpb| postcard::from_bytes(<span class="kw-2">&amp;</span>kpb.key_package).ok())
 <a href=#46 id=46 data-nosnippet>46</a>            .take(count <span class="kw">as _</span>)
 <a href=#47 id=47 data-nosnippet>47</a>            .collect())
 <a href=#48 id=48 data-nosnippet>48</a>    }
@@ -214,9 +214,9 @@
 <a href=#214 id=214 data-nosnippet>214</a>                ));
 <a href=#215 id=215 data-nosnippet>215</a>            }
 <a href=#216 id=216 data-nosnippet>216</a>            MlsEntityId::KeyPackage =&gt; {
-<a href=#217 id=217 data-nosnippet>217</a>                <span class="kw">let </span>kp = StoredKeypackage {
-<a href=#218 id=218 data-nosnippet>218</a>                    keypackage_ref: id.into(),
-<a href=#219 id=219 data-nosnippet>219</a>                    keypackage: data,
+<a href=#217 id=217 data-nosnippet>217</a>                <span class="kw">let </span>kp = StoredKeyPackage {
+<a href=#218 id=218 data-nosnippet>218</a>                    key_package_ref: id.into(),
+<a href=#219 id=219 data-nosnippet>219</a>                    key_package: data,
 <a href=#220 id=220 data-nosnippet>220</a>                };
 <a href=#221 id=221 data-nosnippet>221</a>                <span class="self">self</span>.save(kp).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#222 id=222 data-nosnippet>222</a>            }
@@ -285,8 +285,8 @@
 <a href=#285 id=285 data-nosnippet>285</a>                deser(<span class="kw-2">&amp;</span>data).ok()
 <a href=#286 id=286 data-nosnippet>286</a>            }
 <a href=#287 id=287 data-nosnippet>287</a>            MlsEntityId::KeyPackage =&gt; {
-<a href=#288 id=288 data-nosnippet>288</a>                <span class="kw">let </span>v = <span class="self">self</span>.get_borrowed::&lt;StoredKeypackage&gt;(id).<span class="kw">await</span>.ok().flatten()<span class="question-mark">?</span>;
-<a href=#289 id=289 data-nosnippet>289</a>                deser(<span class="kw-2">&amp;</span>v.keypackage).ok()
+<a href=#288 id=288 data-nosnippet>288</a>                <span class="kw">let </span>v = <span class="self">self</span>.get_borrowed::&lt;StoredKeyPackage&gt;(id).<span class="kw">await</span>.ok().flatten()<span class="question-mark">?</span>;
+<a href=#289 id=289 data-nosnippet>289</a>                deser(<span class="kw-2">&amp;</span>v.key_package).ok()
 <a href=#290 id=290 data-nosnippet>290</a>            }
 <a href=#291 id=291 data-nosnippet>291</a>            MlsEntityId::HpkePrivateKey =&gt; {
 <a href=#292 id=292 data-nosnippet>292</a>                <span class="kw">let </span>v = <span class="self">self</span>.get_borrowed::&lt;StoredHpkePrivateKey&gt;(id).<span class="kw">await</span>.ok().flatten()<span class="question-mark">?</span>;
@@ -319,7 +319,7 @@
 <a href=#319 id=319 data-nosnippet>319</a>                deleting a credential."
 <a href=#320 id=320 data-nosnippet>320</a>            </span>),
 <a href=#321 id=321 data-nosnippet>321</a>            MlsEntityId::HpkePrivateKey =&gt; <span class="self">self</span>.remove_borrowed::&lt;StoredHpkePrivateKey&gt;(id).<span class="kw">await</span><span class="question-mark">?</span>,
-<a href=#322 id=322 data-nosnippet>322</a>            MlsEntityId::KeyPackage =&gt; <span class="self">self</span>.remove_borrowed::&lt;StoredKeypackage&gt;(id).<span class="kw">await</span><span class="question-mark">?</span>,
+<a href=#322 id=322 data-nosnippet>322</a>            MlsEntityId::KeyPackage =&gt; <span class="self">self</span>.remove_borrowed::&lt;StoredKeyPackage&gt;(id).<span class="kw">await</span><span class="question-mark">?</span>,
 <a href=#323 id=323 data-nosnippet>323</a>            MlsEntityId::PskBundle =&gt; <span class="self">self</span>.remove_borrowed::&lt;StoredPskBundle&gt;(id).<span class="kw">await</span><span class="question-mark">?</span>,
 <a href=#324 id=324 data-nosnippet>324</a>            MlsEntityId::EncryptionKeyPair =&gt; <span class="self">self</span>.remove_borrowed::&lt;StoredEncryptionKeyPair&gt;(id).<span class="kw">await</span><span class="question-mark">?</span>,
 <a href=#325 id=325 data-nosnippet>325</a>            MlsEntityId::EpochEncryptionKeyPair =&gt; <span class="self">self</span>.remove_borrowed::&lt;StoredEpochEncryptionKeypair&gt;(id).<span class="kw">await</span><span class="question-mark">?</span>,

@@ -4,7 +4,7 @@
 <a href=#4 id=4 data-nosnippet>4</a>    entities::{
 <a href=#5 id=5 data-nosnippet>5</a>        ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup,
 <a href=#6 id=6 data-nosnippet>6</a>        PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredEncryptionKeyPair,
-<a href=#7 id=7 data-nosnippet>7</a>        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+<a href=#7 id=7 data-nosnippet>7</a>        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
 <a href=#8 id=8 data-nosnippet>8</a>    },
 <a href=#9 id=9 data-nosnippet>9</a>    traits::Entity <span class="kw">as _</span>,
 <a href=#10 id=10 data-nosnippet>10</a>};
@@ -37,7 +37,7 @@
 <a href=#37 id=37 data-nosnippet>37</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>from_table_name(table_name: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt; {
 <a href=#38 id=38 data-nosnippet>38</a>        <span class="kw">match </span>table_name {
 <a href=#39 id=39 data-nosnippet>39</a>            StoredHpkePrivateKey::TABLE_NAME =&gt; <span class="prelude-val">Some</span>(<span class="self">Self</span>::HpkePrivateKey),
-<a href=#40 id=40 data-nosnippet>40</a>            StoredKeypackage::TABLE_NAME =&gt; <span class="prelude-val">Some</span>(<span class="self">Self</span>::KeyPackage),
+<a href=#40 id=40 data-nosnippet>40</a>            StoredKeyPackage::TABLE_NAME =&gt; <span class="prelude-val">Some</span>(<span class="self">Self</span>::KeyPackage),
 <a href=#41 id=41 data-nosnippet>41</a>            StoredPskBundle::TABLE_NAME =&gt; <span class="prelude-val">Some</span>(<span class="self">Self</span>::PskBundle),
 <a href=#42 id=42 data-nosnippet>42</a>            StoredEncryptionKeyPair::TABLE_NAME =&gt; <span class="prelude-val">Some</span>(<span class="self">Self</span>::EncryptionKeyPair),
 <a href=#43 id=43 data-nosnippet>43</a>            StoredEpochEncryptionKeypair::TABLE_NAME =&gt; <span class="prelude-val">Some</span>(<span class="self">Self</span>::EpochEncryptionKeyPair),
@@ -62,7 +62,7 @@
 <a href=#62 id=62 data-nosnippet>62</a>
 <a href=#63 id=63 data-nosnippet>63</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>table_name(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str {
 <a href=#64 id=64 data-nosnippet>64</a>        <span class="kw">match </span><span class="self">self </span>{
-<a href=#65 id=65 data-nosnippet>65</a>            <span class="self">Self</span>::KeyPackage =&gt; StoredKeypackage::TABLE_NAME,
+<a href=#65 id=65 data-nosnippet>65</a>            <span class="self">Self</span>::KeyPackage =&gt; StoredKeyPackage::TABLE_NAME,
 <a href=#66 id=66 data-nosnippet>66</a>            <span class="self">Self</span>::PskBundle =&gt; StoredPskBundle::TABLE_NAME,
 <a href=#67 id=67 data-nosnippet>67</a>            <span class="self">Self</span>::EncryptionKeyPair =&gt; StoredEncryptionKeyPair::TABLE_NAME,
 <a href=#68 id=68 data-nosnippet>68</a>            <span class="self">Self</span>::EpochEncryptionKeyPair =&gt; StoredEpochEncryptionKeypair::TABLE_NAME,
