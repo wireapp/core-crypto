@@ -101,7 +101,7 @@ impl ConversationMut {
 
             let mut decrypted_messages = Vec::with_capacity(pending_messages.len());
             for (_, m) in pending_messages {
-                let decrypted = self.decrypt_message_inner(m, RecursionPolicy::None).await?;
+                let decrypted = self.decrypt_mls_message(m, RecursionPolicy::None).await?;
                 decrypted_messages.push(decrypted.into());
             }
 
