@@ -70,8 +70,10 @@ mod tests {
                 .await
                 .decrypt_message(encrypted)
                 .await
-                .unwrap();
-            let decrypted = &decrypted.as_text().unwrap().plaintext;
+                .unwrap()
+                .into_application_message()
+                .unwrap()
+                .plaintext;
             assert_eq!(&decrypted[..], &msg[..]);
         })
         .await
@@ -92,8 +94,10 @@ mod tests {
                 .await
                 .decrypt_message(encrypted)
                 .await
-                .unwrap();
-            let decrypted = &decrypted.as_text().unwrap().plaintext;
+                .unwrap()
+                .into_application_message()
+                .unwrap()
+                .plaintext;
             assert_eq!(&decrypted[..], &msg[..]);
 
             let msg = b"Hello bob again";
@@ -104,8 +108,10 @@ mod tests {
                 .await
                 .decrypt_message(encrypted)
                 .await
-                .unwrap();
-            let decrypted = &decrypted.as_text().unwrap().plaintext;
+                .unwrap()
+                .into_application_message()
+                .unwrap()
+                .plaintext;
             assert_eq!(&decrypted[..], &msg[..]);
         })
         .await

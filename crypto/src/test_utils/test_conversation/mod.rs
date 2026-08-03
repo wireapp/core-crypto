@@ -194,10 +194,12 @@ impl<'a> TestConversation<'a> {
             .await
             .map_err(RecursiveError::mls_conversation(
                 "decrypting message; receiver <- sender",
-            ))?;
-        let plaintext = &decrypted.as_text().ok_or(TestError::ImplementationError)?.plaintext;
+            ))?
+            .into_application_message()
+            .map_err(|_| TestError::ImplementationError)?
+            .plaintext;
 
-        assert_eq!(&msg[..], &plaintext[..]);
+        assert_eq!(&msg[..], &decrypted[..]);
         Ok(())
     }
 

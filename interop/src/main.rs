@@ -259,7 +259,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
             .unwrap()
             .decrypt_message(message_to_decrypt)
             .await?
-            .into_text()
+            .into_application_message()
             .map_err(|_| anyhow!("[MLS] No message received on master client"))?
             .plaintext;
 
