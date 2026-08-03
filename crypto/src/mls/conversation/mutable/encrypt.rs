@@ -100,33 +100,7 @@ mod tests {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice, &bob]).await;
-            assert_eq!(conversation.member_count().await, 2);
-
-            let msg = b"Hello bob, this is a post-quantum greeting";
-            let encrypted = conversation.guard().await.encrypt_message(msg).await.unwrap();
-            assert_ne!(&msg[..], &encrypted[..]);
-            let decrypted = conversation
-                .guard_of(&bob)
-                .await
-                .decrypt_message(encrypted)
-                .await
-                .unwrap()
-                .app_msg
-                .unwrap();
-            assert_eq!(&decrypted[..], &msg[..]);
-
-            let reply = b"Hello alice, post-quantum reply received";
-            let encrypted = conversation.guard_of(&bob).await.encrypt_message(reply).await.unwrap();
-            assert_ne!(&reply[..], &encrypted[..]);
-            let decrypted = conversation
-                .guard()
-                .await
-                .decrypt_message(encrypted)
-                .await
-                .unwrap()
-                .app_msg
-                .unwrap();
-            assert_eq!(&decrypted[..], &reply[..]);
+            assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
         })
         .await
     }
