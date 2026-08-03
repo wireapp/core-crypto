@@ -6,38 +6,13 @@ use crate::traits::{FetchFromDatabase, PrimaryKey};
 #[zeroize(drop)]
 pub struct ProteusPrekey {
     pub id: u16,
-    id_bytes: Vec<u8>,
     #[sensitive]
     pub prekey: Vec<u8>,
 }
 
 impl ProteusPrekey {
     pub fn from_raw(id: u16, prekey: Vec<u8>) -> Self {
-        Self {
-            id_bytes: id.to_le_bytes().into(),
-            id,
-            prekey,
-        }
-    }
-
-    pub fn id_bytes(&self) -> &[u8] {
-        &self.id_bytes
-    }
-
-    pub fn id_from_slice(slice: &[u8]) -> u16 {
-        if slice.len() < 2 {
-            panic!("Oops, Proteus Prekey id slice is too small!");
-        }
-
-        let mut id_buf = [0u8; 2];
-        id_buf.copy_from_slice(&slice[..2]);
-        let id: u16 = u16::from_le_bytes(id_buf);
-        id
-    }
-
-    pub fn set_id(&mut self, id: u16) {
-        self.id = id;
-        self.id_bytes = self.id.to_le_bytes().into();
+        Self { id, prekey }
     }
 
     pub async fn get_free_id(db: &impl FetchFromDatabase) -> crate::CryptoKeystoreResult<u16> {
