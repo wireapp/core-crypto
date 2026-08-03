@@ -1,7 +1,6 @@
 mod e2ei_acme_ca;
 mod e2ei_crl;
 mod e2ei_intermediate_cert;
-mod e2ei_refresh_token;
 mod mls_pending_message;
 mod persisted_mls_group;
 mod persisted_mls_pending_group;
@@ -16,7 +15,6 @@ mod stored_psk_bundle;
 pub use e2ei_acme_ca::E2eiAcmeCA;
 pub use e2ei_crl::E2eiCrl;
 pub use e2ei_intermediate_cert::E2eiIntermediateCert;
-pub use e2ei_refresh_token::E2eiRefreshToken;
 pub use mls_pending_message::{ConversationId, MlsPendingMessage, MlsPendingMessagePrimaryKey};
 pub use persisted_mls_group::{ParentGroupId, PersistedMlsGroup};
 pub use persisted_mls_pending_group::PersistedMlsPendingGroup;
