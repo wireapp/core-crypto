@@ -9,9 +9,9 @@ use crate::{
     entities::{
         E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity,
         ProteusPrekey, ProteusSession, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredKeypackage, StoredPskBundle,
+        StoredPskBundle,
     },
-    migrations::{LegacyPersistedMlsGroup, StoredSignatureKeypair, V5Credential},
+    migrations::{LegacyPersistedMlsGroup, LegacyStoredKeypackage, StoredSignatureKeypair, V5Credential},
 };
 
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
@@ -53,7 +53,7 @@ pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
                 .add_index(IndexBuilder::new("psk_id".into(), KeyPath::new_single("psk_id")).unique(true)),
         )
         .add_object_store(
-            ObjectStoreBuilder::new(StoredKeypackage::TABLE_NAME)
+            ObjectStoreBuilder::new(LegacyStoredKeypackage::TABLE_NAME)
                 .auto_increment(false)
                 .add_index(
                     IndexBuilder::new("keypackage_ref".into(), KeyPath::new_single("keypackage_ref")).unique(true),

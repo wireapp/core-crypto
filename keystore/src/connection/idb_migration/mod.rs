@@ -17,9 +17,9 @@ use crate::{
     entities::{
         ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup,
         StoredBufferedCommit, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
-        StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        StoredHpkePrivateKey, StoredPskBundle,
     },
-    migrations::LegacyPersistedMlsGroup,
+    migrations::{LegacyPersistedMlsGroup, LegacyStoredKeypackage},
     traits::EntityDatabaseMutation as _,
 };
 
@@ -145,7 +145,7 @@ pub(super) async fn maybe_migrate(
         StoredEncryptionKeyPair,
         StoredEpochEncryptionKeypair,
         StoredHpkePrivateKey,
-        StoredKeypackage,
+        LegacyStoredKeypackage,
         StoredPskBundle,
         #[cfg(feature = "proteus-keystore")]
         ProteusIdentity,

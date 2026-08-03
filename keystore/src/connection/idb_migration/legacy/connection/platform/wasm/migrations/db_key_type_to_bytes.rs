@@ -9,9 +9,9 @@ use crate::{
     entities::{
         E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity,
         ProteusPrekey, ProteusSession, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredKeypackage, StoredPskBundle,
+        StoredPskBundle,
     },
-    migrations::{LegacyPersistedMlsGroup, StoredSignatureKeypair, V5Credential},
+    migrations::{LegacyPersistedMlsGroup, LegacyStoredKeypackage, StoredSignatureKeypair, V5Credential},
 };
 
 pub(crate) async fn migrate_db_key_type_to_bytes(
@@ -47,7 +47,7 @@ pub(crate) async fn migrate_db_key_type_to_bytes(
             StoredEncryptionKeyPair,
             StoredEpochEncryptionKeypair,
             StoredPskBundle,
-            StoredKeypackage,
+            LegacyStoredKeypackage,
             LegacyPersistedMlsGroup,
             PersistedMlsPendingGroup,
             MlsPendingMessage,
