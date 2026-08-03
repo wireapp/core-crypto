@@ -2,8 +2,6 @@ use std::{any::Any, sync::Arc};
 
 use rusqlite::Transaction;
 
-#[cfg(target_os = "unknown")]
-use crate::entities::E2eiRefreshToken;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
 use crate::{
@@ -29,8 +27,6 @@ pub enum Entity {
     PersistedMlsGroup(Arc<PersistedMlsGroup>),
     PersistedMlsPendingGroup(Arc<PersistedMlsPendingGroup>),
     MlsPendingMessage(Arc<MlsPendingMessage>),
-    #[cfg(target_os = "unknown")]
-    E2eiRefreshToken(Arc<E2eiRefreshToken>),
     E2eiAcmeCA(Arc<E2eiAcmeCA>),
     E2eiIntermediateCert(Arc<E2eiIntermediateCert>),
     E2eiCrl(Arc<E2eiCrl>),
@@ -66,8 +62,6 @@ impl_from!(StoredBufferedCommit);
 impl_from!(PersistedMlsGroup);
 impl_from!(PersistedMlsPendingGroup);
 impl_from!(MlsPendingMessage);
-#[cfg(target_os = "unknown")]
-impl_from!(E2eiRefreshToken);
 impl_from!(E2eiAcmeCA);
 impl_from!(E2eiIntermediateCert);
 impl_from!(E2eiCrl);
@@ -112,8 +106,6 @@ impl Entity {
             Entity::E2eiAcmeCA(e2ei_acme_ca) => downcast(e2ei_acme_ca),
             Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => downcast(e2ei_intermediate_cert),
             Entity::E2eiCrl(e2ei_crl) => downcast(e2ei_crl),
-            #[cfg(target_os = "unknown")]
-            Entity::E2eiRefreshToken(e2ei_refresh_token) => downcast(e2ei_refresh_token),
             #[cfg(feature = "proteus-keystore")]
             Entity::ProteusIdentity(proteus_identity) => downcast(proteus_identity),
             #[cfg(feature = "proteus-keystore")]
@@ -140,8 +132,6 @@ impl Entity {
             Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.save(tx),
             Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.set_and_replace(tx).map(|_| ()),
             Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.save(tx),
-            #[cfg(target_os = "unknown")]
-            Entity::E2eiRefreshToken(e2ei_refresh_token) => e2ei_refresh_token.set_and_replace(tx).map(|_| ()),
             Entity::E2eiCrl(e2ei_crl) => e2ei_crl.save(tx),
             #[cfg(feature = "proteus-keystore")]
             Entity::ProteusSession(record) => record.save(tx),

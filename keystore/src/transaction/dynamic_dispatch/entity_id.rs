@@ -3,8 +3,6 @@ use std::borrow::Cow;
 
 use rusqlite::Transaction;
 
-#[cfg(target_os = "unknown")]
-use crate::entities::E2eiRefreshToken;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
 use crate::{
@@ -93,8 +91,6 @@ impl EntityId {
             EntityType::MlsPendingMessage => {
                 MlsPendingMessage::delete_all_matching(tx, &self.id.as_slice().into()).map(|_| false)
             }
-            #[cfg(target_os = "unknown")]
-            EntityType::E2eiRefreshToken => E2eiRefreshToken::delete(tx, &self.primary_key::<E2eiRefreshToken>()?),
             EntityType::E2eiAcmeCA => E2eiAcmeCA::delete(tx, &self.primary_key::<E2eiAcmeCA>()?),
             EntityType::E2eiIntermediateCert => {
                 E2eiIntermediateCert::delete(tx, &self.primary_key::<E2eiIntermediateCert>()?)

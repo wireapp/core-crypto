@@ -132,7 +132,6 @@ pub(super) async fn maybe_migrate(
         };
     }
 
-    // E2eiRefreshToken is intentionally not migrated: it was dropped in SQL migration V15.
     migrate_entities!(
         ConsumerData,
         E2eiAcmeCA,

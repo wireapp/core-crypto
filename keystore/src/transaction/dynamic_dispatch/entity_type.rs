@@ -1,5 +1,3 @@
-#[cfg(target_os = "unknown")]
-use crate::entities::E2eiRefreshToken;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
 use crate::{
@@ -23,8 +21,6 @@ pub(crate) enum EntityType {
     PersistedMlsGroup,
     PersistedMlsPendingGroup,
     MlsPendingMessage,
-    #[cfg(target_os = "unknown")]
-    E2eiRefreshToken,
     E2eiAcmeCA,
     E2eiIntermediateCert,
     E2eiCrl,
@@ -52,8 +48,6 @@ impl EntityType {
             MlsPendingMessage::TABLE_NAME => Some(Self::MlsPendingMessage),
             E2eiCrl::TABLE_NAME => Some(Self::E2eiCrl),
             E2eiAcmeCA::TABLE_NAME => Some(Self::E2eiAcmeCA),
-            #[cfg(target_os = "unknown")]
-            E2eiRefreshToken::TABLE_NAME => Some(Self::E2eiRefreshToken),
             E2eiIntermediateCert::TABLE_NAME => Some(Self::E2eiIntermediateCert),
             #[cfg(feature = "proteus-keystore")]
             ProteusIdentity::TABLE_NAME => Some(Self::ProteusIdentity),
@@ -77,8 +71,6 @@ impl EntityType {
             Self::PersistedMlsGroup => PersistedMlsGroup::TABLE_NAME,
             Self::PersistedMlsPendingGroup => PersistedMlsPendingGroup::TABLE_NAME,
             Self::MlsPendingMessage => MlsPendingMessage::TABLE_NAME,
-            #[cfg(target_os = "unknown")]
-            Self::E2eiRefreshToken => E2eiRefreshToken::TABLE_NAME,
             Self::E2eiAcmeCA => E2eiAcmeCA::TABLE_NAME,
             Self::E2eiIntermediateCert => E2eiIntermediateCert::TABLE_NAME,
             Self::E2eiCrl => E2eiCrl::TABLE_NAME,

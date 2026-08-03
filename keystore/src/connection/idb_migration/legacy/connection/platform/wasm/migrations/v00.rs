@@ -7,9 +7,9 @@ use super::DB_VERSION_0;
 use crate::{
     connection::idb_migration::legacy::traits::EntityBase as _,
     entities::{
-        E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, E2eiRefreshToken, MlsPendingMessage, PersistedMlsPendingGroup,
-        ProteusIdentity, ProteusPrekey, ProteusSession, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
-        StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity,
+        ProteusPrekey, ProteusSession, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
+        StoredKeypackage, StoredPskBundle,
     },
     migrations::{LegacyPersistedMlsGroup, StoredSignatureKeypair, V5Credential},
 };
@@ -73,11 +73,6 @@ pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
             ObjectStoreBuilder::new(MlsPendingMessage::TABLE_NAME)
                 .auto_increment(false)
                 .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id"))),
-        )
-        .add_object_store(
-            ObjectStoreBuilder::new(E2eiRefreshToken::TABLE_NAME)
-                .auto_increment(false)
-                .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
         )
         .add_object_store(
             ObjectStoreBuilder::new(E2eiAcmeCA::TABLE_NAME)
