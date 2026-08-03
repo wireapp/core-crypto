@@ -4,7 +4,7 @@ use openmls::{
     group::MlsGroup,
     prelude::{Member, Signable as _},
 };
-use tls_codec::Serialize as _;
+use tls_codec::{Serialize as _, VLBytes};
 
 use crate::{
     ClientIdRef, OpenMlsError, RecursiveError,
@@ -118,6 +118,7 @@ impl super::ConversationMut {
             .map_err(OpenMlsError::wrap("exporting targeted message psk"))?;
         let psk_id = PskId::new(mls_group.group_id().clone(), mls_group.epoch());
         let psk_id = psk_id.tls_serialize_detached().map_err(Error::tls_serialize("PskId"))?;
+        let message = tls_serialize_padded(message).map_err(Error::tls_serialize("TargetedMessageContent"))?;
         let payload = crypto_provider
             .hpke_seal_psk(
                 cipher_suite.hpke_config(),
@@ -137,4 +138,11 @@ impl super::ConversationMut {
         let targeted = TargetedMessage::new(nonce, sender, recipient.index, epoch, group_id.clone(), payload);
         Ok(targeted)
     }
+}
+
+fn tls_serialize_padded(message: Vec<u8>) -> Result<Vec<u8>, tls_codec::Error> {
+    // VLBytes includes a length prefix, so whoever decrypts the ciphertext will know the payload length.
+    let mut payload = VLBytes::from(message).tls_serialize_detached()?;
+    payload.resize(payload.len().next_multiple_of(TargetedMessage::PADDING_SIZE), 0);
+    Ok(payload)
 }
