@@ -13,7 +13,7 @@ use zeroize::Zeroize;
 )]
 #[zeroize(drop)]
 #[entity(table_name = "mls_keypackages")]
-pub struct StoredKeypackage {
+pub struct StoredKeyPackage {
     #[entity(id)]
     pub keypackage_ref: Vec<u8>,
     #[sensitive]

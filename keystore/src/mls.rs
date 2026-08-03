@@ -6,7 +6,7 @@ use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Database, Sha256Hash,
     entities::{
         PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredEncryptionKeyPair,
-        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
     },
     traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, FetchFromDatabase as _},
 };
@@ -39,7 +39,7 @@ impl Database {
     /// Any common error that can happen during a database connection. IoError being a common error
     /// for example.
     pub async fn mls_fetch_key_packages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
-        let keypackages = StoredKeypackage::load_all(&*self.conn().await)?;
+        let keypackages = StoredKeyPackage::load_all(&*self.conn().await)?;
         Ok(keypackages
             .into_iter()
             .filter_map(|kpb| postcard::from_bytes(&kpb.keypackage).ok())
@@ -214,7 +214,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for Database {
                 ));
             }
             MlsEntityId::KeyPackage => {
-                let kp = StoredKeypackage {
+                let kp = StoredKeyPackage {
                     keypackage_ref: id.into(),
                     keypackage: data,
                 };
@@ -285,7 +285,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for Database {
                 deser(&data).ok()
             }
             MlsEntityId::KeyPackage => {
-                let v = self.get_borrowed::<StoredKeypackage>(id).await.ok().flatten()?;
+                let v = self.get_borrowed::<StoredKeyPackage>(id).await.ok().flatten()?;
                 deser(&v.keypackage).ok()
             }
             MlsEntityId::HpkePrivateKey => {
@@ -319,7 +319,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for Database {
                 deleting a credential."
             ),
             MlsEntityId::HpkePrivateKey => self.remove_borrowed::<StoredHpkePrivateKey>(id).await?,
-            MlsEntityId::KeyPackage => self.remove_borrowed::<StoredKeypackage>(id).await?,
+            MlsEntityId::KeyPackage => self.remove_borrowed::<StoredKeyPackage>(id).await?,
             MlsEntityId::PskBundle => self.remove_borrowed::<StoredPskBundle>(id).await?,
             MlsEntityId::EncryptionKeyPair => self.remove_borrowed::<StoredEncryptionKeyPair>(id).await?,
             MlsEntityId::EpochEncryptionKeyPair => self.remove_borrowed::<StoredEpochEncryptionKeypair>(id).await?,

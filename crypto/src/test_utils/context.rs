@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use core_crypto_keystore::{
-    entities::{StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
+    entities::{StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeyPackage},
     traits::FetchFromDatabase,
 };
 use openmls::prelude::{Credential as MlsCredential, ExternalSender, HpkePublicKey, KeyPackage, SignaturePublicKey};
@@ -57,7 +57,7 @@ impl SessionContext {
             .database()
             .await
             .unwrap()
-            .load_all::<StoredKeypackage>()
+            .load_all::<StoredKeyPackage>()
             .await
             .unwrap()
             .into_iter()

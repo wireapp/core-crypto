@@ -1,9 +1,9 @@
-use core_crypto_keystore::{entities::StoredKeypackage, traits::FetchFromDatabase};
+use core_crypto_keystore::{entities::StoredKeyPackage, traits::FetchFromDatabase};
 
 use super::Result;
 use crate::{Keypackage, KeypackageRef, KeystoreError, Session, mls::key_package::KeypackageExt};
 
-pub(crate) fn from_stored(stored_keypackage: &StoredKeypackage) -> Result<Keypackage> {
+pub(crate) fn from_stored(stored_keypackage: &StoredKeyPackage) -> Result<Keypackage> {
     core_crypto_keystore::deser::<Keypackage>(&stored_keypackage.keypackage)
         .map_err(KeystoreError::wrap("deserializing keypackage"))
         .map_err(Into::into)
@@ -12,7 +12,7 @@ pub(crate) fn from_stored(stored_keypackage: &StoredKeypackage) -> Result<Keypac
 impl Session {
     /// Get all [`Keypackage`]s in the database.
     pub(crate) async fn get_key_packages(&self) -> Result<Vec<Keypackage>> {
-        let stored_keypackages: Vec<StoredKeypackage> = self
+        let stored_keypackages: Vec<StoredKeyPackage> = self
             .database
             .load_all()
             .await
@@ -41,7 +41,7 @@ impl Session {
     /// Load one [`Keypackage`] from its [`KeypackageRef`]
     pub(crate) async fn load_key_package(&self, kp_ref: &KeypackageRef) -> Result<Option<Keypackage>> {
         self.database
-            .get_borrowed::<StoredKeypackage>(kp_ref.hash_ref())
+            .get_borrowed::<StoredKeyPackage>(kp_ref.hash_ref())
             .await
             .map_err(KeystoreError::wrap("loading keypackage from database"))?
             .map(|stored_keypackage| from_stored(&stored_keypackage))

@@ -6,7 +6,7 @@ use crate::{
     CryptoKeystoreError, Sha256Hash, Transaction, deser,
     entities::{
         PersistedMlsGroup, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
-        StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
     },
     ser,
     traits::FetchFromDatabase,
@@ -42,7 +42,7 @@ impl OpenMlsKeyStore for Transaction {
                 ));
             }
             MlsEntityId::KeyPackage => {
-                let kp = StoredKeypackage {
+                let kp = StoredKeyPackage {
                     keypackage_ref: id.into(),
                     keypackage: data,
                 };
@@ -118,7 +118,7 @@ impl OpenMlsKeyStore for Transaction {
                 deser(&data).ok()
             }
             MlsEntityId::KeyPackage => {
-                let v = FetchFromDatabase::get_borrowed::<StoredKeypackage>(self, id)
+                let v = FetchFromDatabase::get_borrowed::<StoredKeyPackage>(self, id)
                     .await
                     .ok()
                     .flatten()?;
@@ -163,7 +163,7 @@ impl OpenMlsKeyStore for Transaction {
                 deleting a credential."
             ),
             MlsEntityId::HpkePrivateKey => self.remove_borrowed::<StoredHpkePrivateKey>(id).await?,
-            MlsEntityId::KeyPackage => self.remove_borrowed::<StoredKeypackage>(id).await?,
+            MlsEntityId::KeyPackage => self.remove_borrowed::<StoredKeyPackage>(id).await?,
             MlsEntityId::PskBundle => self.remove_borrowed::<StoredPskBundle>(id).await?,
             MlsEntityId::EncryptionKeyPair => self.remove_borrowed::<StoredEncryptionKeyPair>(id).await?,
             MlsEntityId::EpochEncryptionKeyPair => self.remove_borrowed::<StoredEpochEncryptionKeypair>(id).await?,

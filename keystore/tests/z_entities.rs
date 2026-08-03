@@ -187,7 +187,7 @@ mod tests {
     test_for_entity!(test_persisted_mls_pending_group, PersistedMlsPendingGroup);
     test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_entity_count: true ignore_update:true ignore_remove:true ignore_find_many:true);
     test_for_entity!(test_mls_credential, StoredCredential ignore_update:true);
-    test_for_entity!(test_mls_keypackage, StoredKeypackage);
+    test_for_entity!(test_mls_keypackage, StoredKeyPackage);
     test_for_entity!(test_mls_psk_bundle, StoredPskBundle);
     test_for_entity!(test_mls_encryption_keypair, StoredEncryptionKeyPair);
     test_for_entity!(test_mls_epoch_encryption_keypair, StoredEpochEncryptionKeypair);
@@ -246,7 +246,7 @@ mod tests {
 pub mod utils {
     use core_crypto_keystore::entities::{
         E2eiAcmeCA, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusSession, StoredCredential,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
     };
     use rand::Rng as _;
 
@@ -354,7 +354,7 @@ pub mod utils {
                 };
             }
 
-    impl_entity_random_update_ext!(StoredKeypackage, blob_fields=[keypackage,], additional_fields=[(keypackage_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
+    impl_entity_random_update_ext!(StoredKeyPackage, blob_fields=[keypackage,], additional_fields=[(keypackage_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
     impl_entity_random_update_ext!(StoredCredential, blob_fields=[credential,public_key,private_key,], additional_fields=[(session_id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),(ciphersuite: rand::random()),]);
     impl_entity_random_update_ext!(StoredHpkePrivateKey, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);

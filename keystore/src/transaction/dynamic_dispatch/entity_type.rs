@@ -4,7 +4,7 @@ use crate::{
     entities::{
         ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup,
         PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredEncryptionKeyPair,
-        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
     },
     traits::Entity as _,
 };
@@ -62,7 +62,7 @@ impl EntityType {
 
     pub(crate) fn table_name(&self) -> &'static str {
         match self {
-            Self::KeyPackage => StoredKeypackage::TABLE_NAME,
+            Self::KeyPackage => StoredKeyPackage::TABLE_NAME,
             Self::PskBundle => StoredPskBundle::TABLE_NAME,
             Self::EncryptionKeyPair => StoredEncryptionKeyPair::TABLE_NAME,
             Self::EpochEncryptionKeyPair => StoredEpochEncryptionKeypair::TABLE_NAME,

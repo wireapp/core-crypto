@@ -91,7 +91,7 @@ async fn main() -> anyhow::Result<()> {
     json_map.serialize_entry("external_psks", &external_psks)?;
 
     let keypackages: Vec<openmls::prelude::KeyPackage> = keystore
-        .load_all::<StoredKeypackage>()
+        .load_all::<StoredKeyPackage>()
         .await?
         .into_iter()
         .map(|kp| postcard::from_bytes::<openmls::prelude::KeyPackage>(&kp.keypackage))

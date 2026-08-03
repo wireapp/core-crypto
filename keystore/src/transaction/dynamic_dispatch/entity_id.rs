@@ -10,7 +10,7 @@ use crate::{
     entities::{
         ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup,
         PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredEncryptionKeyPair,
-        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
     },
     traits::{BorrowPrimaryKey, DeletableBySearchKey as _, Entity, EntityDatabaseMutation, KeyType, OwnedKeyType as _},
     transaction::dynamic_dispatch::EntityType,
@@ -72,7 +72,7 @@ impl EntityId {
             EntityType::HpkePrivateKey => {
                 StoredHpkePrivateKey::delete(tx, &self.primary_key::<StoredHpkePrivateKey>()?)
             }
-            EntityType::KeyPackage => StoredKeypackage::delete(tx, &self.primary_key::<StoredKeypackage>()?),
+            EntityType::KeyPackage => StoredKeyPackage::delete(tx, &self.primary_key::<StoredKeyPackage>()?),
             EntityType::PskBundle => StoredPskBundle::delete(tx, &self.primary_key::<StoredPskBundle>()?),
             EntityType::EncryptionKeyPair => {
                 StoredEncryptionKeyPair::delete(tx, &self.primary_key::<StoredEncryptionKeyPair>()?)

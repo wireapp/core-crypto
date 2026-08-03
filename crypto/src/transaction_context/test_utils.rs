@@ -1,7 +1,7 @@
 use core_crypto_keystore::{
     entities::{
         MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredEncryptionKeyPair,
-        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
     },
     traits::FetchFromDatabase as _,
 };
@@ -30,7 +30,7 @@ impl TransactionContext {
         let epoch_encryption_keypair = inner.transaction.count::<StoredEpochEncryptionKeypair>().await.unwrap();
         let group = inner.transaction.count::<PersistedMlsGroup>().await.unwrap();
         let hpke_private_key = inner.transaction.count::<StoredHpkePrivateKey>().await.unwrap();
-        let key_package = inner.transaction.count::<StoredKeypackage>().await.unwrap();
+        let key_package = inner.transaction.count::<StoredKeyPackage>().await.unwrap();
         let pending_group = inner.transaction.count::<PersistedMlsPendingGroup>().await.unwrap();
         let pending_messages = inner.transaction.count::<MlsPendingMessage>().await.unwrap();
         let psk_bundle = inner.transaction.count::<StoredPskBundle>().await.unwrap();

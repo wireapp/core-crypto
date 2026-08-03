@@ -3,7 +3,7 @@
 use std::time::Duration;
 
 use core_crypto_keystore::{
-    entities::{StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeypackage},
+    entities::{StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeyPackage},
     traits::FetchFromDatabase as _,
 };
 use openmls::prelude::{CryptoConfig, Lifetime};
@@ -88,7 +88,7 @@ impl TransactionContext {
         let inner = self.inner().await?;
         inner
             .transaction
-            .remove_borrowed::<StoredKeypackage>(kp_ref.hash_ref())
+            .remove_borrowed::<StoredKeyPackage>(kp_ref.hash_ref())
             .await
             .map_err(KeystoreError::wrap("removing key package from keystore"))?;
         inner
@@ -163,7 +163,7 @@ impl TransactionContext {
 
         inner
             .transaction
-            .restore::<StoredKeypackage>(key_package_ref)
+            .restore::<StoredKeyPackage>(key_package_ref)
             .await
             .map_err(KeystoreError::wrap(
                 "restoring key package deleted in current transaction",
@@ -171,7 +171,7 @@ impl TransactionContext {
 
         let Some(key_package) = inner
             .transaction
-            .get_borrowed::<StoredKeypackage>(key_package_ref)
+            .get_borrowed::<StoredKeyPackage>(key_package_ref)
             .await
             .map_err(KeystoreError::wrap("loading keypackage from database"))?
             .map(|stored_keypackage| crate::mls::session::key_package::from_stored(&stored_keypackage))

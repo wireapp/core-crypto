@@ -160,7 +160,7 @@ mod tests {
             let epoch_encryption_keypair = keystore.count::<StoredEpochEncryptionKeypair>().await.unwrap();
             let group = keystore.count::<PersistedMlsGroup>().await.unwrap();
             let hpke_private_key = keystore.count::<StoredHpkePrivateKey>().await.unwrap();
-            let key_package = keystore.count::<StoredKeypackage>().await.unwrap();
+            let key_package = keystore.count::<StoredKeyPackage>().await.unwrap();
             let pending_group = keystore.count::<PersistedMlsPendingGroup>().await.unwrap();
             let pending_messages = keystore.count::<MlsPendingMessage>().await.unwrap();
             let psk_bundle = keystore.count::<StoredPskBundle>().await.unwrap();

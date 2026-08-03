@@ -9,7 +9,7 @@ use crate::{
     entities::{
         ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup,
         PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredEncryptionKeyPair,
-        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeypackage, StoredPskBundle,
+        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
     },
     traits::{EntityDatabaseMutation as _, UniqueEntityExt as _},
 };
@@ -18,7 +18,7 @@ use crate::{
 pub enum Entity {
     ConsumerData(Arc<ConsumerData>),
     HpkePrivateKey(Arc<StoredHpkePrivateKey>),
-    StoredKeyPackage(Arc<StoredKeypackage>),
+    StoredKeyPackage(Arc<StoredKeyPackage>),
     PskBundle(Arc<StoredPskBundle>),
     EncryptionKeyPair(Arc<StoredEncryptionKeyPair>),
     StoredEpochEncryptionKeypair(Arc<StoredEpochEncryptionKeypair>),
