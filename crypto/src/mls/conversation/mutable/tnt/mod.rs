@@ -40,6 +40,18 @@ enum TntMessageBody {
     TransientTargeted(TargetedMessage),
 }
 
+#[derive(TlsSize, TlsDeserialize)]
+pub(crate) struct TntWireFormat(u16);
+
+impl TntWireFormat {
+    pub(crate) const TRANSIENT_MESSAGE: u16 = 0xF000;
+    #[expect(unused)]
+    pub(crate) const TARGETED_MESSAGE: u16 = 0xF001;
+    pub(crate) const TRANSIENT_TARGETED_MESSAGE: u16 = 0xF002;
+
+    pub(crate) const ALL: std::ops::RangeInclusive<u16> = Self::TRANSIENT_MESSAGE..=Self::TRANSIENT_TARGETED_MESSAGE;
+}
+
 /// The to-be-signed [TntMessage].
 #[derive(TlsSize, TlsSerialize, TlsDeserialize)]
 struct TntMessageTBS {
