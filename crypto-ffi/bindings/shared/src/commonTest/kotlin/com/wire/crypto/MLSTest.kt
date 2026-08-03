@@ -222,7 +222,7 @@ class MLSTest {
 
         val plaintextMsg =
             bob.transaction { ctx ->
-                assertIs<DecryptedMessage.Text>(ctx.decryptMessage(groupId, ciphertextMsg)).plaintext
+                assertIs<DecryptedMessage.ApplicationMessage>(ctx.decryptMessage(groupId, ciphertextMsg)).plaintext
             }
         assertThat(plaintextMsg).isNotEmpty().isEqualTo(msg)
 
