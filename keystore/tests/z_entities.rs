@@ -354,7 +354,7 @@ pub mod utils {
                 };
             }
 
-    impl_entity_random_update_ext!(StoredKeyPackage, blob_fields=[keypackage,], additional_fields=[(keypackage_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
+    impl_entity_random_update_ext!(StoredKeyPackage, blob_fields=[keypackage,], additional_fields=[(key_package_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
     impl_entity_random_update_ext!(StoredCredential, blob_fields=[credential,public_key,private_key,], additional_fields=[(session_id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),(ciphersuite: rand::random()),]);
     impl_entity_random_update_ext!(StoredHpkePrivateKey, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);

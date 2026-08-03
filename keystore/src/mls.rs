@@ -215,7 +215,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for Database {
             }
             MlsEntityId::KeyPackage => {
                 let kp = StoredKeyPackage {
-                    keypackage_ref: id.into(),
+                    key_package_ref: id.into(),
                     keypackage: data,
                 };
                 self.save(kp).await?;

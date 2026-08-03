@@ -15,7 +15,7 @@ use zeroize::Zeroize;
 #[entity(table_name = "mls_keypackages")]
 pub struct StoredKeyPackage {
     #[entity(id)]
-    pub keypackage_ref: Vec<u8>,
+    pub key_package_ref: Vec<u8>,
     #[sensitive]
     pub keypackage: Vec<u8>,
 }
