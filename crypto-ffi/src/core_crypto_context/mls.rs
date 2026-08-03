@@ -62,6 +62,24 @@ bytes_wrapper!(
     Welcome fallibly wraps core_crypto::mls::conversation::WelcomeMessage
 );
 
+/// The policy to encrypt the targeted message with.
+#[derive(Debug, Clone, Copy, uniffi::Enum)]
+pub enum TargetedMessagePolicy {
+    /// Won't be persisted and will only visible to currently online members who immediately process it.
+    Transient,
+    /// May be persisted and buffered, will also be delivered and processed by currently offline members.
+    Persisted,
+}
+
+impl From<TargetedMessagePolicy> for core_crypto::mls::conversation::TargetedMessagePolicy {
+    fn from(value: TargetedMessagePolicy) -> Self {
+        match value {
+            TargetedMessagePolicy::Transient => core_crypto::mls::conversation::TargetedMessagePolicy::Transient,
+            TargetedMessagePolicy::Persisted => core_crypto::mls::conversation::TargetedMessagePolicy::Persisted,
+        }
+    }
+}
+
 #[uniffi::export]
 impl Welcome {
     /// TLS-serialize this message
@@ -284,6 +302,24 @@ impl CoreCryptoContext {
     ) -> CoreCryptoResult<Vec<u8>> {
         let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
         conversation.encrypt_message(message).await.map_err(Into::into)
+    }
+
+    /// Encrypts a plaintext message for one member of the given conversation.
+    ///
+    /// Any feature using a targeted, transient or transient targeted message MUST specify why the compared to MLS
+    /// application messages lower guarantees are acceptable and/or how they are mitigated.
+    pub async fn encrypt_targeted_message(
+        &self,
+        conversation_id: &ConversationId,
+        recipient: Arc<ClientId>,
+        policy: TargetedMessagePolicy,
+        message: Vec<u8>,
+    ) -> CoreCryptoResult<Vec<u8>> {
+        let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
+        conversation
+            .encrypt_targeted(recipient.as_ref().as_ref(), policy.into(), message)
+            .await
+            .map_err(Into::into)
     }
 
     /// Joins an existing conversation by constructing an external commit from the given group info.
