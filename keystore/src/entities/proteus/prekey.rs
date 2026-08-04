@@ -2,7 +2,7 @@ use zeroize::Zeroize;
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Transaction,
-    entities::helpers::{count_helper, count_helper_tx, delete_helper, get_helper, load_all_helper},
+    entities::helpers::{count_helper, delete_helper, get_helper, load_all_helper},
     traits::{Entity, EntityDatabaseMutation, PrimaryKey},
 };
 
@@ -97,10 +97,6 @@ impl EntityDatabaseMutation for ProteusPrekey {
         let mut stmt = tx.prepare_cached("INSERT OR REPLACE INTO proteus_prekeys (id, key) VALUES (?, ?)")?;
         stmt.execute(rusqlite::params![self.id, self.prekey])?;
         Ok(())
-    }
-
-    fn count(tx: &rusqlite::Transaction) -> CryptoKeystoreResult<u32> {
-        count_helper_tx::<Self>(tx)
     }
 
     fn delete(tx: &rusqlite::Transaction, id: &u16) -> CryptoKeystoreResult<bool> {

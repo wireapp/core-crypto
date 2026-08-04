@@ -2,7 +2,7 @@ use rusqlite::{Connection, OptionalExtension as _, ToSql, Transaction, params};
 
 use crate::{
     CryptoKeystoreResult,
-    entities::helpers::{count_helper, count_helper_tx, delete_helper, load_all_helper},
+    entities::helpers::{count_helper, delete_helper, load_all_helper},
     traits::{Entity, PrimaryKey, entity_database_mutation::EntityDatabaseMutation},
     transaction::dynamic_dispatch,
 };
@@ -95,8 +95,7 @@ where
     ///
     /// Returns `true` if the entity was saved, or `false` if it aborted due to an already-existing entity.
     fn set_if_absent(&self, tx: &Transaction) -> CryptoKeystoreResult<bool> {
-        let count = <Self as EntityDatabaseMutation>::count(tx)?;
-        if count > 0 {
+        if Self::exists(tx)? {
             return Ok(false);
         }
         self.save(tx)?;
@@ -105,7 +104,7 @@ where
 
     /// Returns whether or not the database contains an instance of this unique entity.
     fn exists(conn: &Connection) -> CryptoKeystoreResult<bool> {
-        <Self as Entity>::count(conn).map(|count| count > 0)
+        Self::count(conn).map(|count| count > 0)
     }
 }
 
@@ -152,10 +151,6 @@ where
         ))?;
         stmt.execute(params![Self::KEY, self.content()])?;
         Ok(())
-    }
-
-    fn count(tx: &Transaction) -> CryptoKeystoreResult<u32> {
-        count_helper_tx::<Self>(tx)
     }
 
     fn delete(tx: &Transaction, id: &Self::PrimaryKey) -> CryptoKeystoreResult<bool> {

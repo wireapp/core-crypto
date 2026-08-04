@@ -69,10 +69,6 @@ impl crate::traits::EntityDatabaseMutation for ProteusIdentity {
         Ok(())
     }
 
-    fn count(tx: &rusqlite::Transaction) -> crate::CryptoKeystoreResult<u32> {
-        crate::entities::helpers::count_helper_tx::<Self>(tx)
-    }
-
     fn delete(tx: &rusqlite::Transaction, _id: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<bool> {
         let mut stmt = tx.prepare_cached("DELETE FROM proteus_identities")?;
         let updated = stmt.execute([])?;

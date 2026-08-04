@@ -141,10 +141,6 @@ impl crate::traits::EntityDatabaseMutation for StoredCredential {
         Ok(())
     }
 
-    fn count(tx: &rusqlite::Transaction) -> crate::CryptoKeystoreResult<u32> {
-        crate::entities::helpers::count_helper_tx::<Self>(tx)
-    }
-
     fn delete(tx: &rusqlite::Transaction, id: &crate::Sha256Hash) -> crate::CryptoKeystoreResult<bool> {
         crate::entities::helpers::delete_helper::<Self>(tx, "public_key_sha256", *id)
     }

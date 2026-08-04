@@ -94,10 +94,6 @@ impl crate::traits::EntityDatabaseMutation for PersistedMlsPendingGroup {
         Ok(())
     }
 
-    fn count(tx: &rusqlite::Transaction) -> crate::CryptoKeystoreResult<u32> {
-        crate::entities::helpers::count_helper_tx::<Self>(tx)
-    }
-
     fn delete(tx: &rusqlite::Transaction, id: &Vec<u8>) -> crate::CryptoKeystoreResult<bool> {
         crate::entities::helpers::delete_helper::<Self>(tx, "id", id.as_slice())
     }

@@ -80,10 +80,6 @@ impl crate::traits::EntityDatabaseMutation for StoredEncryptionKeyPair {
         Ok(())
     }
 
-    fn count(tx: &rusqlite::Transaction) -> crate::CryptoKeystoreResult<u32> {
-        crate::entities::helpers::count_helper_tx::<Self>(tx)
-    }
-
     fn delete(tx: &rusqlite::Transaction, id: &Vec<u8>) -> crate::CryptoKeystoreResult<bool> {
         let hash = crate::Sha256Hash::hash_from(id);
         crate::entities::helpers::delete_helper::<Self>(tx, "pk_sha256", hash)

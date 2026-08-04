@@ -100,10 +100,6 @@ impl crate::traits::EntityDatabaseMutation for MlsPendingMessage {
         Ok(())
     }
 
-    fn count(tx: &rusqlite::Transaction) -> crate::CryptoKeystoreResult<u32> {
-        crate::entities::helpers::count_helper_tx::<Self>(tx)
-    }
-
     fn delete(_tx: &rusqlite::Transaction, _id: &MlsPendingMessagePrimaryKey) -> crate::CryptoKeystoreResult<bool> {
         panic!("cannot delete `MlsPendingMessage` by primary key as it has no distinct primary key")
     }
