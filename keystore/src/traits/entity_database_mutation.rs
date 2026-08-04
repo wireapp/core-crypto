@@ -31,9 +31,6 @@ pub trait EntityDatabaseMutation: Entity + Into<dynamic_dispatch::Entity> {
     /// Use the transaction's interface to save this entity to the database
     fn save(&self, tx: &Transaction) -> CryptoKeystoreResult<()>;
 
-    /// Use the transaction's interface to count the number of entities of this type in the database.
-    fn count(tx: &Transaction) -> CryptoKeystoreResult<u32>;
-
     /// Use the transaction's inteface to delete this entity from the database.
     ///
     /// Returns `true` if at least one entity was deleted, or `false` if the id was not found in the database.
