@@ -80,23 +80,14 @@ impl crate::traits::EntityDatabaseMutation for ProteusIdentity {
     }
 }
 
-#[cfg(not(target_os = "unknown"))]
-type KeyType = ();
-
-#[cfg(target_os = "unknown")]
-type KeyType = [u8; 1];
-
 impl PrimaryKey for ProteusIdentity {
-    type PrimaryKey = KeyType;
+    type PrimaryKey = ();
+
     fn primary_key(&self) -> Self::PrimaryKey {
         Self::KEY
     }
 }
 
 impl UniqueEntity for ProteusIdentity {
-    #[cfg(not(target_os = "unknown"))]
     const KEY: Self::PrimaryKey = ();
-
-    #[cfg(target_os = "unknown")]
-    const KEY: Self::PrimaryKey = [1];
 }

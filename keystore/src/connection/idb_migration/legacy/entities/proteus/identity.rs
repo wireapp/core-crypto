@@ -24,7 +24,7 @@ impl EntityBase for ProteusIdentity {
 }
 
 impl UniqueEntity for ProteusIdentity {
-    const KEY: [u8; 1] = [1];
+    const KEY: () = ();
 }
 
 #[async_trait(?Send)]
