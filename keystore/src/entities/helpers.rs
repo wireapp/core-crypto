@@ -43,17 +43,6 @@ pub(crate) fn count_helper<E: Entity>(conn: &Connection) -> CryptoKeystoreResult
     statement.query_one([], |row| row.get(0)).map_err(Into::into)
 }
 
-/// Helper to perform an SQL query to count these entities in the database.
-///
-/// This function prepares and caches a statement of the form `SELECT count(*) FROM table_name`.
-pub(crate) fn count_helper_tx<E: Entity>(tx: &Transaction<'_>) -> CryptoKeystoreResult<u32> {
-    let mut statement = tx.prepare_cached(&format!(
-        "SELECT count(*) FROM {table_name}",
-        table_name = E::TABLE_NAME
-    ))?;
-    statement.query_one([], |row| row.get(0)).map_err(Into::into)
-}
-
 /// Helper to perform an SQL query to load all entities from the database.
 ///
 /// This function prepares and caches a statement of the form `SELECT * FROM table_name`.
