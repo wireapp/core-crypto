@@ -34,7 +34,7 @@ pub use self::{
     immutable::Conversation,
     mutable::{
         ConversationMut, TargetedMessagePolicy,
-        decrypt::{BufferedCommit, BufferedDecryptedMessage, Commit, DecryptedMessage, Proposal, Text},
+        decrypt::{BufferedCommit, BufferedDecryptedMessage, Commit, DecryptedBytes, DecryptedMessage, Proposal},
     },
     welcome::WelcomeMessage,
 };

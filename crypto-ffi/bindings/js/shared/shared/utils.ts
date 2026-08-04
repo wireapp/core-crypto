@@ -423,10 +423,10 @@ async function setHelpers() {
                 );
 
                 if (
-                    ccModule.DecryptedMessage.Text.instanceOf(
+                    ccModule.DecryptedMessage.ApplicationMessage.instanceOf(
                         decryptedByClient1
                     ) &&
-                    ccModule.DecryptedMessage.Text.instanceOf(
+                    ccModule.DecryptedMessage.ApplicationMessage.instanceOf(
                         decryptedByClient2
                     )
                 ) {

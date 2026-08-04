@@ -359,7 +359,7 @@ mod tests {
             };
 
             for (idx, buffered_message) in restored_messages.into_iter().enumerate() {
-                let text = DecryptedMessage::from(buffered_message).into_text();
+                let text = DecryptedMessage::from(buffered_message).into_application_message();
                 if idx == 0 {
                     // the only application message
                     let msg = text.unwrap().plaintext;
