@@ -93,6 +93,7 @@ jobs:
 
       # See https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md
       - name: disable Ubuntu's AppArmor for puppeteer
+        if: contains(fromJSON(inputs.runs_on), 'ubuntu')
         run: |
           echo disabling AppArmor on ubuntu runner
           echo "See https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md"
