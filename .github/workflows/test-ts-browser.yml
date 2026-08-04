@@ -34,7 +34,7 @@ jobs:
 
       - name: install chrome via puppeteer
         run: |
-          bun x puppeteer browsers install chrome-headless-shell
+          cd crypto-ffi/bindings/js && bun puppeteer browsers install chrome-headless-shell
 
       # See https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md
       - name: disable Ubuntu's AppArmor for puppeteer
