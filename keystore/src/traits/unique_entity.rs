@@ -9,15 +9,11 @@ use crate::{
 
 /// Unique entity implementation/migration helper.
 ///
-/// The old `trait UniqueEntity` required two methods:
-///
-/// - `fn new(content: Vec<u8>) -> Self;`
-/// - `fn content(&self) -> &[u8];`
-///
-/// It then provided a bunch of default methods.
-///
-/// The whole structure of the traits has changed, now.
-/// But we can stil offer that same kind of convenience, and replicate those defaults.
+/// Few unique entities actually care about what key gets used; it's arbitrary, imposed
+/// only by the requirement that an [`Entity`] has a [`PrimaryKey`]. Really they only need
+/// to know what table name to use, and how to serialize/deserialize. For reasons of
+/// historical compatibility we express the serialization requirements in terms of inline
+/// methods here instead of a trait implementation.
 ///
 /// If you implement this trait, you get the following traits auto-implemented:
 ///
@@ -25,12 +21,6 @@ use crate::{
 /// - `UniqueEntity`
 /// - `Entity`
 /// - `EntityDatabaseMutation`
-///
-/// ## Warning
-///
-/// If your old `UniqueEntity` implementation defined anything other than the two required methods,
-/// you mut implement these traits manually to preserve the existing behaviors. Otherwise the
-/// behaviors will change!
 pub trait UniqueEntityImplementationHelper {
     /// Table name for this entity.
     const TABLE_NAME: &str;
@@ -49,9 +39,6 @@ impl<T> PrimaryKey for T
 where
     T: UniqueEntityImplementationHelper,
 {
-    // The old keystore trait used usize as the primary key type, but that would vary
-    // in width across various implementations and so is intentionally not a `KeyType`.
-    // So we distinguish between `u32` and `u64` according to whether or not we're on wasm.
     type PrimaryKey = u32;
 
     fn primary_key(&self) -> Self::PrimaryKey {
