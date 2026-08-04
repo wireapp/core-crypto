@@ -94,21 +94,17 @@
 <a href=#94 id=94 data-nosnippet>94</a>        <span class="prelude-val">Ok</span>(())
 <a href=#95 id=95 data-nosnippet>95</a>    }
 <a href=#96 id=96 data-nosnippet>96</a>
-<a href=#97 id=97 data-nosnippet>97</a>    <span class="kw">fn </span>count(tx: <span class="kw-2">&amp;</span>rusqlite::Transaction) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;u32&gt; {
-<a href=#98 id=98 data-nosnippet>98</a>        <span class="kw">crate</span>::entities::helpers::count_helper_tx::&lt;<span class="self">Self</span>&gt;(tx)
+<a href=#97 id=97 data-nosnippet>97</a>    <span class="kw">fn </span>delete(tx: <span class="kw-2">&amp;</span>rusqlite::Transaction, id: <span class="kw-2">&amp;</span>Vec&lt;u8&gt;) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;bool&gt; {
+<a href=#98 id=98 data-nosnippet>98</a>        <span class="kw">crate</span>::entities::helpers::delete_helper::&lt;<span class="self">Self</span>&gt;(tx, <span class="string">"id"</span>, id.as_slice())
 <a href=#99 id=99 data-nosnippet>99</a>    }
-<a href=#100 id=100 data-nosnippet>100</a>
-<a href=#101 id=101 data-nosnippet>101</a>    <span class="kw">fn </span>delete(tx: <span class="kw-2">&amp;</span>rusqlite::Transaction, id: <span class="kw-2">&amp;</span>Vec&lt;u8&gt;) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;bool&gt; {
-<a href=#102 id=102 data-nosnippet>102</a>        <span class="kw">crate</span>::entities::helpers::delete_helper::&lt;<span class="self">Self</span>&gt;(tx, <span class="string">"id"</span>, id.as_slice())
-<a href=#103 id=103 data-nosnippet>103</a>    }
-<a href=#104 id=104 data-nosnippet>104</a>}
-<a href=#105 id=105 data-nosnippet>105</a>
-<a href=#106 id=106 data-nosnippet>106</a><span class="kw">impl </span><span class="kw">crate</span>::traits::EntityDeleteBorrowed <span class="kw">for </span>PersistedMlsPendingGroup {
-<a href=#107 id=107 data-nosnippet>107</a>    <span class="kw">fn </span>delete_borrowed(tx: <span class="kw-2">&amp;</span>rusqlite::Transaction, id: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;bool&gt;
-<a href=#108 id=108 data-nosnippet>108</a>    <span class="kw">where
-<a href=#109 id=109 data-nosnippet>109</a>        for</span>&lt;<span class="lifetime">'pk</span>&gt; <span class="kw-2">&amp;</span><span class="lifetime">'pk </span>[u8]: <span class="kw">crate</span>::traits::KeyType,
-<a href=#110 id=110 data-nosnippet>110</a>    {
-<a href=#111 id=111 data-nosnippet>111</a>        <span class="kw">crate</span>::entities::helpers::delete_helper::&lt;<span class="self">Self</span>&gt;(tx, <span class="string">"id"</span>, id)
-<a href=#112 id=112 data-nosnippet>112</a>    }
-<a href=#113 id=113 data-nosnippet>113</a>}
+<a href=#100 id=100 data-nosnippet>100</a>}
+<a href=#101 id=101 data-nosnippet>101</a>
+<a href=#102 id=102 data-nosnippet>102</a><span class="kw">impl </span><span class="kw">crate</span>::traits::EntityDeleteBorrowed <span class="kw">for </span>PersistedMlsPendingGroup {
+<a href=#103 id=103 data-nosnippet>103</a>    <span class="kw">fn </span>delete_borrowed(tx: <span class="kw-2">&amp;</span>rusqlite::Transaction, id: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;bool&gt;
+<a href=#104 id=104 data-nosnippet>104</a>    <span class="kw">where
+<a href=#105 id=105 data-nosnippet>105</a>        for</span>&lt;<span class="lifetime">'pk</span>&gt; <span class="kw-2">&amp;</span><span class="lifetime">'pk </span>[u8]: <span class="kw">crate</span>::traits::KeyType,
+<a href=#106 id=106 data-nosnippet>106</a>    {
+<a href=#107 id=107 data-nosnippet>107</a>        <span class="kw">crate</span>::entities::helpers::delete_helper::&lt;<span class="self">Self</span>&gt;(tx, <span class="string">"id"</span>, id)
+<a href=#108 id=108 data-nosnippet>108</a>    }
+<a href=#109 id=109 data-nosnippet>109</a>}
 </code></pre></div></section></main></body></html>

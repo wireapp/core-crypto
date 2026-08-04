@@ -2,7 +2,7 @@
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use crate</span>::{
 <a href=#4 id=4 data-nosnippet>4</a>    CryptoKeystoreError, CryptoKeystoreResult, Transaction,
-<a href=#5 id=5 data-nosnippet>5</a>    entities::helpers::{count_helper, count_helper_tx, delete_helper, get_helper, load_all_helper},
+<a href=#5 id=5 data-nosnippet>5</a>    entities::helpers::{count_helper, delete_helper, get_helper, load_all_helper},
 <a href=#6 id=6 data-nosnippet>6</a>    traits::{Entity, EntityDatabaseMutation, PrimaryKey},
 <a href=#7 id=7 data-nosnippet>7</a>};
 <a href=#8 id=8 data-nosnippet>8</a>
@@ -99,12 +99,8 @@
 <a href=#99 id=99 data-nosnippet>99</a>        <span class="prelude-val">Ok</span>(())
 <a href=#100 id=100 data-nosnippet>100</a>    }
 <a href=#101 id=101 data-nosnippet>101</a>
-<a href=#102 id=102 data-nosnippet>102</a>    <span class="kw">fn </span>count(tx: <span class="kw-2">&amp;</span>rusqlite::Transaction) -&gt; CryptoKeystoreResult&lt;u32&gt; {
-<a href=#103 id=103 data-nosnippet>103</a>        count_helper_tx::&lt;<span class="self">Self</span>&gt;(tx)
+<a href=#102 id=102 data-nosnippet>102</a>    <span class="kw">fn </span>delete(tx: <span class="kw-2">&amp;</span>rusqlite::Transaction, id: <span class="kw-2">&amp;</span>u16) -&gt; CryptoKeystoreResult&lt;bool&gt; {
+<a href=#103 id=103 data-nosnippet>103</a>        delete_helper::&lt;<span class="self">Self</span>&gt;(tx, <span class="string">"id"</span>, <span class="kw-2">*</span>id)
 <a href=#104 id=104 data-nosnippet>104</a>    }
-<a href=#105 id=105 data-nosnippet>105</a>
-<a href=#106 id=106 data-nosnippet>106</a>    <span class="kw">fn </span>delete(tx: <span class="kw-2">&amp;</span>rusqlite::Transaction, id: <span class="kw-2">&amp;</span>u16) -&gt; CryptoKeystoreResult&lt;bool&gt; {
-<a href=#107 id=107 data-nosnippet>107</a>        delete_helper::&lt;<span class="self">Self</span>&gt;(tx, <span class="string">"id"</span>, <span class="kw-2">*</span>id)
-<a href=#108 id=108 data-nosnippet>108</a>    }
-<a href=#109 id=109 data-nosnippet>109</a>}
+<a href=#105 id=105 data-nosnippet>105</a>}
 </code></pre></div></section></main></body></html>

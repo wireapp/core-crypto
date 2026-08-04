@@ -2,7 +2,7 @@
 <a href=#2 id=2 data-nosnippet>2</a>
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use crate</span>::{
 <a href=#4 id=4 data-nosnippet>4</a>    CryptoKeystoreResult,
-<a href=#5 id=5 data-nosnippet>5</a>    entities::helpers::{count_helper, count_helper_tx, delete_helper, load_all_helper},
+<a href=#5 id=5 data-nosnippet>5</a>    entities::helpers::{count_helper, delete_helper, load_all_helper},
 <a href=#6 id=6 data-nosnippet>6</a>    traits::{Entity, PrimaryKey, entity_database_mutation::EntityDatabaseMutation},
 <a href=#7 id=7 data-nosnippet>7</a>    transaction::dynamic_dispatch,
 <a href=#8 id=8 data-nosnippet>8</a>};
@@ -95,71 +95,66 @@
 <a href=#95 id=95 data-nosnippet>95</a>    ///
 <a href=#96 id=96 data-nosnippet>96</a>    /// Returns `true` if the entity was saved, or `false` if it aborted due to an already-existing entity.
 <a href=#97 id=97 data-nosnippet>97</a>    </span><span class="kw">fn </span>set_if_absent(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span>Transaction) -&gt; CryptoKeystoreResult&lt;bool&gt; {
-<a href=#98 id=98 data-nosnippet>98</a>        <span class="kw">let </span>count = &lt;<span class="self">Self </span><span class="kw">as </span>EntityDatabaseMutation&gt;::count(tx)<span class="question-mark">?</span>;
-<a href=#99 id=99 data-nosnippet>99</a>        <span class="kw">if </span>count &gt; <span class="number">0 </span>{
-<a href=#100 id=100 data-nosnippet>100</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
-<a href=#101 id=101 data-nosnippet>101</a>        }
-<a href=#102 id=102 data-nosnippet>102</a>        <span class="self">self</span>.save(tx)<span class="question-mark">?</span>;
-<a href=#103 id=103 data-nosnippet>103</a>        <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
-<a href=#104 id=104 data-nosnippet>104</a>    }
-<a href=#105 id=105 data-nosnippet>105</a>
-<a href=#106 id=106 data-nosnippet>106</a>    <span class="doccomment">/// Returns whether or not the database contains an instance of this unique entity.
-<a href=#107 id=107 data-nosnippet>107</a>    </span><span class="kw">fn </span>exists(conn: <span class="kw-2">&amp;</span>Connection) -&gt; CryptoKeystoreResult&lt;bool&gt; {
-<a href=#108 id=108 data-nosnippet>108</a>        &lt;<span class="self">Self </span><span class="kw">as </span>Entity&gt;::count(conn).map(|count| count &gt; <span class="number">0</span>)
-<a href=#109 id=109 data-nosnippet>109</a>    }
-<a href=#110 id=110 data-nosnippet>110</a>}
-<a href=#111 id=111 data-nosnippet>111</a>
-<a href=#112 id=112 data-nosnippet>112</a><span class="kw">impl</span>&lt;T&gt; Entity <span class="kw">for </span>T
-<a href=#113 id=113 data-nosnippet>113</a><span class="kw">where
-<a href=#114 id=114 data-nosnippet>114</a>    </span>T: PrimaryKey + UniqueEntityImplementationHelper,
-<a href=#115 id=115 data-nosnippet>115</a>    &lt;T <span class="kw">as </span>PrimaryKey&gt;::PrimaryKey: ToSql,
-<a href=#116 id=116 data-nosnippet>116</a>{
-<a href=#117 id=117 data-nosnippet>117</a>    <span class="kw">const </span>TABLE_NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = &lt;<span class="self">Self </span><span class="kw">as </span>UniqueEntityImplementationHelper&gt;::TABLE_NAME;
-<a href=#118 id=118 data-nosnippet>118</a>
-<a href=#119 id=119 data-nosnippet>119</a>    <span class="kw">fn </span>get(conn: <span class="kw-2">&amp;</span>Connection, key: <span class="kw-2">&amp;</span><span class="self">Self</span>::PrimaryKey) -&gt; CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
-<a href=#120 id=120 data-nosnippet>120</a>        <span class="kw">let </span><span class="kw-2">mut </span>statement = conn.prepare_cached(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
-<a href=#121 id=121 data-nosnippet>121</a>            <span class="string">"SELECT content FROM {table_name} WHERE id = ?"</span>,
-<a href=#122 id=122 data-nosnippet>122</a>            table_name = &lt;<span class="self">Self </span><span class="kw">as </span>Entity&gt;::TABLE_NAME
-<a href=#123 id=123 data-nosnippet>123</a>        ))<span class="question-mark">?</span>;
-<a href=#124 id=124 data-nosnippet>124</a>        statement
-<a href=#125 id=125 data-nosnippet>125</a>            .query_row([key], |row| <span class="prelude-val">Ok</span>(<span class="self">Self</span>::new(row.get(<span class="string">"content"</span>)<span class="question-mark">?</span>)))
-<a href=#126 id=126 data-nosnippet>126</a>            .optional()
-<a href=#127 id=127 data-nosnippet>127</a>            .map_err(Into::into)
-<a href=#128 id=128 data-nosnippet>128</a>    }
-<a href=#129 id=129 data-nosnippet>129</a>
-<a href=#130 id=130 data-nosnippet>130</a>    <span class="doccomment">/// Count the number of entities of this type in the database.
-<a href=#131 id=131 data-nosnippet>131</a>    </span><span class="kw">fn </span>count(conn: <span class="kw-2">&amp;</span>Connection) -&gt; CryptoKeystoreResult&lt;u32&gt; {
-<a href=#132 id=132 data-nosnippet>132</a>        count_helper::&lt;<span class="self">Self</span>&gt;(conn)
-<a href=#133 id=133 data-nosnippet>133</a>    }
-<a href=#134 id=134 data-nosnippet>134</a>
-<a href=#135 id=135 data-nosnippet>135</a>    <span class="doccomment">/// Retrieve all entities of this type from the database.
-<a href=#136 id=136 data-nosnippet>136</a>    </span><span class="kw">fn </span>load_all(conn: <span class="kw-2">&amp;</span>Connection) -&gt; CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
-<a href=#137 id=137 data-nosnippet>137</a>        load_all_helper::&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;(conn, |row| <span class="prelude-val">Ok</span>(<span class="self">Self</span>::new(row.get(<span class="string">"content"</span>)<span class="question-mark">?</span>)))
-<a href=#138 id=138 data-nosnippet>138</a>    }
-<a href=#139 id=139 data-nosnippet>139</a>}
-<a href=#140 id=140 data-nosnippet>140</a>
-<a href=#141 id=141 data-nosnippet>141</a><span class="kw">impl</span>&lt;T&gt; EntityDatabaseMutation <span class="kw">for </span>T
-<a href=#142 id=142 data-nosnippet>142</a><span class="kw">where
-<a href=#143 id=143 data-nosnippet>143</a>    </span>T: Entity + UniqueEntityImplementationHelper + Into&lt;dynamic_dispatch::Entity&gt; + UniqueEntity,
-<a href=#144 id=144 data-nosnippet>144</a>    &lt;T <span class="kw">as </span>PrimaryKey&gt;::PrimaryKey: ToSql,
-<a href=#145 id=145 data-nosnippet>145</a>{
-<a href=#146 id=146 data-nosnippet>146</a>    <span class="kw">type </span>AutoGeneratedFields = ();
-<a href=#147 id=147 data-nosnippet>147</a>
-<a href=#148 id=148 data-nosnippet>148</a>    <span class="kw">fn </span>save(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span>Transaction) -&gt; CryptoKeystoreResult&lt;()&gt; {
-<a href=#149 id=149 data-nosnippet>149</a>        <span class="kw">let </span><span class="kw-2">mut </span>stmt = tx.prepare_cached(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
-<a href=#150 id=150 data-nosnippet>150</a>            <span class="string">"INSERT OR REPLACE INTO {table_name} (id, content) VALUES (?, ?)"</span>,
-<a href=#151 id=151 data-nosnippet>151</a>            table_name = &lt;<span class="self">Self </span><span class="kw">as </span>Entity&gt;::TABLE_NAME,
-<a href=#152 id=152 data-nosnippet>152</a>        ))<span class="question-mark">?</span>;
-<a href=#153 id=153 data-nosnippet>153</a>        stmt.execute(<span class="macro">params!</span>[<span class="self">Self</span>::KEY, <span class="self">self</span>.content()])<span class="question-mark">?</span>;
-<a href=#154 id=154 data-nosnippet>154</a>        <span class="prelude-val">Ok</span>(())
-<a href=#155 id=155 data-nosnippet>155</a>    }
-<a href=#156 id=156 data-nosnippet>156</a>
-<a href=#157 id=157 data-nosnippet>157</a>    <span class="kw">fn </span>count(tx: <span class="kw-2">&amp;</span>Transaction) -&gt; CryptoKeystoreResult&lt;u32&gt; {
-<a href=#158 id=158 data-nosnippet>158</a>        count_helper_tx::&lt;<span class="self">Self</span>&gt;(tx)
-<a href=#159 id=159 data-nosnippet>159</a>    }
-<a href=#160 id=160 data-nosnippet>160</a>
-<a href=#161 id=161 data-nosnippet>161</a>    <span class="kw">fn </span>delete(tx: <span class="kw-2">&amp;</span>Transaction, id: <span class="kw-2">&amp;</span><span class="self">Self</span>::PrimaryKey) -&gt; CryptoKeystoreResult&lt;bool&gt; {
-<a href=#162 id=162 data-nosnippet>162</a>        delete_helper::&lt;<span class="self">Self</span>&gt;(tx, <span class="string">"id"</span>, id)
-<a href=#163 id=163 data-nosnippet>163</a>    }
-<a href=#164 id=164 data-nosnippet>164</a>}
+<a href=#98 id=98 data-nosnippet>98</a>        <span class="kw">if </span><span class="self">Self</span>::exists(tx)<span class="question-mark">? </span>{
+<a href=#99 id=99 data-nosnippet>99</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
+<a href=#100 id=100 data-nosnippet>100</a>        }
+<a href=#101 id=101 data-nosnippet>101</a>        <span class="self">self</span>.save(tx)<span class="question-mark">?</span>;
+<a href=#102 id=102 data-nosnippet>102</a>        <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>)
+<a href=#103 id=103 data-nosnippet>103</a>    }
+<a href=#104 id=104 data-nosnippet>104</a>
+<a href=#105 id=105 data-nosnippet>105</a>    <span class="doccomment">/// Returns whether or not the database contains an instance of this unique entity.
+<a href=#106 id=106 data-nosnippet>106</a>    </span><span class="kw">fn </span>exists(conn: <span class="kw-2">&amp;</span>Connection) -&gt; CryptoKeystoreResult&lt;bool&gt; {
+<a href=#107 id=107 data-nosnippet>107</a>        <span class="self">Self</span>::count(conn).map(|count| count &gt; <span class="number">0</span>)
+<a href=#108 id=108 data-nosnippet>108</a>    }
+<a href=#109 id=109 data-nosnippet>109</a>}
+<a href=#110 id=110 data-nosnippet>110</a>
+<a href=#111 id=111 data-nosnippet>111</a><span class="kw">impl</span>&lt;T&gt; Entity <span class="kw">for </span>T
+<a href=#112 id=112 data-nosnippet>112</a><span class="kw">where
+<a href=#113 id=113 data-nosnippet>113</a>    </span>T: PrimaryKey + UniqueEntityImplementationHelper,
+<a href=#114 id=114 data-nosnippet>114</a>    &lt;T <span class="kw">as </span>PrimaryKey&gt;::PrimaryKey: ToSql,
+<a href=#115 id=115 data-nosnippet>115</a>{
+<a href=#116 id=116 data-nosnippet>116</a>    <span class="kw">const </span>TABLE_NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = &lt;<span class="self">Self </span><span class="kw">as </span>UniqueEntityImplementationHelper&gt;::TABLE_NAME;
+<a href=#117 id=117 data-nosnippet>117</a>
+<a href=#118 id=118 data-nosnippet>118</a>    <span class="kw">fn </span>get(conn: <span class="kw-2">&amp;</span>Connection, key: <span class="kw-2">&amp;</span><span class="self">Self</span>::PrimaryKey) -&gt; CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
+<a href=#119 id=119 data-nosnippet>119</a>        <span class="kw">let </span><span class="kw-2">mut </span>statement = conn.prepare_cached(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
+<a href=#120 id=120 data-nosnippet>120</a>            <span class="string">"SELECT content FROM {table_name} WHERE id = ?"</span>,
+<a href=#121 id=121 data-nosnippet>121</a>            table_name = &lt;<span class="self">Self </span><span class="kw">as </span>Entity&gt;::TABLE_NAME
+<a href=#122 id=122 data-nosnippet>122</a>        ))<span class="question-mark">?</span>;
+<a href=#123 id=123 data-nosnippet>123</a>        statement
+<a href=#124 id=124 data-nosnippet>124</a>            .query_row([key], |row| <span class="prelude-val">Ok</span>(<span class="self">Self</span>::new(row.get(<span class="string">"content"</span>)<span class="question-mark">?</span>)))
+<a href=#125 id=125 data-nosnippet>125</a>            .optional()
+<a href=#126 id=126 data-nosnippet>126</a>            .map_err(Into::into)
+<a href=#127 id=127 data-nosnippet>127</a>    }
+<a href=#128 id=128 data-nosnippet>128</a>
+<a href=#129 id=129 data-nosnippet>129</a>    <span class="doccomment">/// Count the number of entities of this type in the database.
+<a href=#130 id=130 data-nosnippet>130</a>    </span><span class="kw">fn </span>count(conn: <span class="kw-2">&amp;</span>Connection) -&gt; CryptoKeystoreResult&lt;u32&gt; {
+<a href=#131 id=131 data-nosnippet>131</a>        count_helper::&lt;<span class="self">Self</span>&gt;(conn)
+<a href=#132 id=132 data-nosnippet>132</a>    }
+<a href=#133 id=133 data-nosnippet>133</a>
+<a href=#134 id=134 data-nosnippet>134</a>    <span class="doccomment">/// Retrieve all entities of this type from the database.
+<a href=#135 id=135 data-nosnippet>135</a>    </span><span class="kw">fn </span>load_all(conn: <span class="kw-2">&amp;</span>Connection) -&gt; CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
+<a href=#136 id=136 data-nosnippet>136</a>        load_all_helper::&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;(conn, |row| <span class="prelude-val">Ok</span>(<span class="self">Self</span>::new(row.get(<span class="string">"content"</span>)<span class="question-mark">?</span>)))
+<a href=#137 id=137 data-nosnippet>137</a>    }
+<a href=#138 id=138 data-nosnippet>138</a>}
+<a href=#139 id=139 data-nosnippet>139</a>
+<a href=#140 id=140 data-nosnippet>140</a><span class="kw">impl</span>&lt;T&gt; EntityDatabaseMutation <span class="kw">for </span>T
+<a href=#141 id=141 data-nosnippet>141</a><span class="kw">where
+<a href=#142 id=142 data-nosnippet>142</a>    </span>T: Entity + UniqueEntityImplementationHelper + Into&lt;dynamic_dispatch::Entity&gt; + UniqueEntity,
+<a href=#143 id=143 data-nosnippet>143</a>    &lt;T <span class="kw">as </span>PrimaryKey&gt;::PrimaryKey: ToSql,
+<a href=#144 id=144 data-nosnippet>144</a>{
+<a href=#145 id=145 data-nosnippet>145</a>    <span class="kw">type </span>AutoGeneratedFields = ();
+<a href=#146 id=146 data-nosnippet>146</a>
+<a href=#147 id=147 data-nosnippet>147</a>    <span class="kw">fn </span>save(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span>Transaction) -&gt; CryptoKeystoreResult&lt;()&gt; {
+<a href=#148 id=148 data-nosnippet>148</a>        <span class="kw">let </span><span class="kw-2">mut </span>stmt = tx.prepare_cached(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
+<a href=#149 id=149 data-nosnippet>149</a>            <span class="string">"INSERT OR REPLACE INTO {table_name} (id, content) VALUES (?, ?)"</span>,
+<a href=#150 id=150 data-nosnippet>150</a>            table_name = &lt;<span class="self">Self </span><span class="kw">as </span>Entity&gt;::TABLE_NAME,
+<a href=#151 id=151 data-nosnippet>151</a>        ))<span class="question-mark">?</span>;
+<a href=#152 id=152 data-nosnippet>152</a>        stmt.execute(<span class="macro">params!</span>[<span class="self">Self</span>::KEY, <span class="self">self</span>.content()])<span class="question-mark">?</span>;
+<a href=#153 id=153 data-nosnippet>153</a>        <span class="prelude-val">Ok</span>(())
+<a href=#154 id=154 data-nosnippet>154</a>    }
+<a href=#155 id=155 data-nosnippet>155</a>
+<a href=#156 id=156 data-nosnippet>156</a>    <span class="kw">fn </span>delete(tx: <span class="kw-2">&amp;</span>Transaction, id: <span class="kw-2">&amp;</span><span class="self">Self</span>::PrimaryKey) -&gt; CryptoKeystoreResult&lt;bool&gt; {
+<a href=#157 id=157 data-nosnippet>157</a>        delete_helper::&lt;<span class="self">Self</span>&gt;(tx, <span class="string">"id"</span>, id)
+<a href=#158 id=158 data-nosnippet>158</a>    }
+<a href=#159 id=159 data-nosnippet>159</a>}
 </code></pre></div></section></main></body></html>
