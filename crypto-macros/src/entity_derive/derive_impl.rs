@@ -162,10 +162,6 @@ impl Entity {
                     Ok(())
                 }
 
-                fn count(tx: &rusqlite::Transaction) -> crate::CryptoKeystoreResult<u32> {
-                    crate::entities::helpers::count_helper_tx::<Self>(tx)
-                }
-
                 fn delete(tx: &rusqlite::Transaction, id: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<bool> {
                     <Self as crate::traits::EntityDeleteBorrowed>::delete_borrowed(tx, id)
                 }
