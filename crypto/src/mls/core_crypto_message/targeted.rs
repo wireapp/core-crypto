@@ -63,7 +63,7 @@ pub struct TargetedMessage {
 
 impl TargetedMessage {
     pub(crate) const PADDING_SIZE: usize = ConversationConfiguration::PADDING_SIZE;
-    pub(super) const SIGN_LABEL_PERISTED: &str = "CoreCryptoMessageTBS-Persisted-Targeted";
+    pub(super) const SIGN_LABEL_PERSISTED: &str = "CoreCryptoMessageTBS-Persisted-Targeted";
     pub(super) const SIGN_LABEL_TRANSIENT: &str = "CoreCryptoMessageTBS-Transient-Targeted";
     pub(crate) const PSK_LABEL: &str = "CoreCrypto TargetedMessage Psk";
 }
