@@ -23,13 +23,13 @@ impl TransientAndTargetedMessagesProtocolVersion {
 #[repr(u16)]
 #[non_exhaustive]
 pub enum CoreCryptoMessageBody {
-    /// Transient message.
+    /// A transient message.
     #[tls_codec(discriminant = 0xF000)]
     Transient(()),
-    /// [TargetedMessage].
+    /// A targeted message.
     #[tls_codec(discriminant = 0xF001)]
     Targeted(TargetedMessage),
-    /// A [TargetedMessage] encrypted with transient policy.
+    /// A transient, targeted message.
     #[tls_codec(discriminant = 0xF002)]
     TransientTargeted(TargetedMessage),
 }
@@ -89,7 +89,7 @@ impl openmls::prelude::Signable for CoreCryptoMessageTBS {
     fn label(&self) -> &str {
         match self.body {
             CoreCryptoMessageBody::Transient(_) => todo!(),
-            CoreCryptoMessageBody::Targeted(_) => TargetedMessage::SIGN_LABEL_PERISTED,
+            CoreCryptoMessageBody::Targeted(_) => TargetedMessage::SIGN_LABEL_PERSISTED,
             CoreCryptoMessageBody::TransientTargeted(_) => TargetedMessage::SIGN_LABEL_TRANSIENT,
         }
     }
