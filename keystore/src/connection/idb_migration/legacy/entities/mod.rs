@@ -1,4 +1,4 @@
 mod consumer_data;
-mod mls;
+pub(in crate::connection::idb_migration) mod mls;
 #[cfg(feature = "proteus-keystore")]
 mod proteus;

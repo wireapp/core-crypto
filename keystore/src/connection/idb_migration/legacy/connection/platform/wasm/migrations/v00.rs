@@ -5,11 +5,10 @@ use idb::{
 
 use super::DB_VERSION_0;
 use crate::{
-    connection::idb_migration::legacy::traits::EntityBase as _,
+    connection::idb_migration::legacy::{entities::mls::e2ei_acme_ca::E2eiAcmeCA, traits::EntityBase as _},
     entities::{
-        E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity,
-        ProteusPrekey, ProteusSession, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredPskBundle,
+        E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey,
+        ProteusSession, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
     },
     migrations::{LegacyPersistedMlsGroup, LegacyStoredKeypackage, StoredSignatureKeypair, V5Credential},
 };

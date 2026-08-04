@@ -55,7 +55,7 @@ pub(crate) struct StoredSignatureKeypair {
 }
 
 /// The MLS group shape shared by the final legacy IDB schema and SQL schema v22.
-#[derive(zeroize::Zeroize)]
+#[derive(Zeroize)]
 #[zeroize(drop)]
 pub(crate) struct LegacyPersistedMlsGroup {
     pub(crate) id: Vec<u8>,
@@ -64,7 +64,7 @@ pub(crate) struct LegacyPersistedMlsGroup {
 }
 
 #[cfg(target_os = "unknown")]
-#[derive(zeroize::Zeroize)]
+#[derive(Zeroize)]
 #[zeroize(drop)]
 pub(crate) struct LegacyStoredKeypackage {
     pub keypackage_ref: Vec<u8>,

@@ -5,11 +5,12 @@ use sha2::Digest as _;
 use super::{DB_VERSION_3, DB_VERSION_4, pre_v04};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
-    connection::idb_migration::legacy::connection::wasm::rekey::rekey_entities,
+    connection::idb_migration::legacy::{
+        connection::wasm::rekey::rekey_entities, entities::mls::e2ei_acme_ca::E2eiAcmeCA,
+    },
     entities::{
-        E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity,
-        ProteusPrekey, ProteusSession, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredPskBundle,
+        E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey,
+        ProteusSession, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
     },
     migrations::{LegacyPersistedMlsGroup, LegacyStoredKeypackage, StoredSignatureKeypair, V5Credential},
 };

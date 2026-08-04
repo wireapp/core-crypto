@@ -3,13 +3,17 @@ use idb::{Factory, TransactionMode};
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
-    connection::idb_migration::legacy::connection::{
-        DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey, platform::wasm::migrations::open_and_migrate,
+    connection::idb_migration::legacy::{
+        connection::{
+            DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey,
+            platform::wasm::migrations::open_and_migrate,
+        },
+        entities::mls::e2ei_acme_ca::E2eiAcmeCA,
     },
     entities::{
-        E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity,
-        ProteusPrekey, ProteusSession, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
-        StoredHpkePrivateKey, StoredPskBundle,
+        E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey,
+        ProteusSession, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
+        StoredPskBundle,
     },
     migrations::{LegacyPersistedMlsGroup, LegacyStoredKeypackage},
 };
