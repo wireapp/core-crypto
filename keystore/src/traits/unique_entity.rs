@@ -38,22 +38,11 @@ pub trait UniqueEntityImplementationHelper {
     fn content(&self) -> &[u8];
 }
 
-// unfortunately we have to implement this trait twice, with nearly-identical but distinct bounds
-
-#[cfg(target_os = "unknown")]
 impl<T> UniqueEntity for T
 where
     T: Entity + UniqueEntityImplementationHelper + PrimaryKey<PrimaryKey = u32>,
 {
     const KEY: u32 = 0;
-}
-
-#[cfg(not(target_os = "unknown"))]
-impl<T> UniqueEntity for T
-where
-    T: Entity + UniqueEntityImplementationHelper + PrimaryKey<PrimaryKey = u64>,
-{
-    const KEY: u64 = 0;
 }
 
 impl<T> PrimaryKey for T
@@ -63,10 +52,7 @@ where
     // The old keystore trait used usize as the primary key type, but that would vary
     // in width across various implementations and so is intentionally not a `KeyType`.
     // So we distinguish between `u32` and `u64` according to whether or not we're on wasm.
-    #[cfg(target_os = "unknown")]
     type PrimaryKey = u32;
-    #[cfg(not(target_os = "unknown"))]
-    type PrimaryKey = u64;
 
     fn primary_key(&self) -> Self::PrimaryKey {
         Self::KEY
