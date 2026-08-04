@@ -130,7 +130,7 @@ impl Entity {
             Entity::PersistedMlsGroup(persisted_mls_group) => persisted_mls_group.save(tx),
             Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => persisted_mls_pending_group.save(tx),
             Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.save(tx),
-            Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.set_and_replace(tx).map(|_| ()),
+            Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.save(tx),
             Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.save(tx),
             Entity::E2eiCrl(e2ei_crl) => e2ei_crl.save(tx),
             #[cfg(feature = "proteus-keystore")]
