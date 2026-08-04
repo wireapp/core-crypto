@@ -71,6 +71,33 @@ pub(crate) struct LegacyStoredKeypackage {
     pub keypackage: Vec<u8>,
 }
 
+#[cfg(target_os = "unknown")]
+#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+#[zeroize(drop)]
+pub struct LegacyE2eiAcmeCA {
+    pub content: Vec<u8>,
+}
+
+#[cfg(target_os = "unknown")]
+impl crate::traits::UniqueEntityImplementationHelper for LegacyE2eiAcmeCA {
+    const TABLE_NAME: &str = "e2ei_acme_ca";
+
+    fn new(content: Vec<u8>) -> Self {
+        Self { content }
+    }
+
+    fn content(&self) -> &[u8] {
+        &self.content
+    }
+}
+
+#[cfg(target_os = "unknown")]
+impl From<LegacyE2eiAcmeCA> for crate::transaction::dynamic_dispatch::Entity {
+    fn from(_value: LegacyE2eiAcmeCA) -> Self {
+        panic!("This entity should never be used in a transaction")
+    }
+}
+
 /// Try to extract the relevant data from the v5 credential and signature keypair to determine whether they correspond
 /// to each other. If succeeding, and they do match, return Ok(Some) with the new credential, return Ok(None) if they
 /// don't, and return an Error if the data extraction fails.

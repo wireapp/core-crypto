@@ -7,11 +7,12 @@ use super::DB_VERSION_0;
 use crate::{
     connection::idb_migration::legacy::traits::EntityBase as _,
     entities::{
-        E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity,
-        ProteusPrekey, ProteusSession, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredPskBundle,
+        E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey,
+        ProteusSession, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
     },
-    migrations::{LegacyPersistedMlsGroup, LegacyStoredKeypackage, StoredSignatureKeypair, V5Credential},
+    migrations::{
+        LegacyE2eiAcmeCA, LegacyPersistedMlsGroup, LegacyStoredKeypackage, StoredSignatureKeypair, V5Credential,
+    },
 };
 
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
@@ -75,7 +76,7 @@ pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
                 .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id"))),
         )
         .add_object_store(
-            ObjectStoreBuilder::new(E2eiAcmeCA::TABLE_NAME)
+            ObjectStoreBuilder::new(LegacyE2eiAcmeCA::TABLE_NAME)
                 .auto_increment(false)
                 .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
         )

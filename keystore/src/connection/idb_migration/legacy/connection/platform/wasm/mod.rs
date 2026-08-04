@@ -7,11 +7,11 @@ use crate::{
         DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey, platform::wasm::migrations::open_and_migrate,
     },
     entities::{
-        E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity,
-        ProteusPrekey, ProteusSession, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
-        StoredHpkePrivateKey, StoredPskBundle,
+        E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey,
+        ProteusSession, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
+        StoredPskBundle,
     },
-    migrations::{LegacyPersistedMlsGroup, LegacyStoredKeypackage},
+    migrations::{LegacyE2eiAcmeCA, LegacyPersistedMlsGroup, LegacyStoredKeypackage},
 };
 
 pub(crate) mod migrations;
@@ -114,7 +114,7 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
                         LegacyPersistedMlsGroup,
                         PersistedMlsPendingGroup,
                         MlsPendingMessage,
-                        E2eiAcmeCA,
+                        LegacyE2eiAcmeCA,
                         E2eiIntermediateCert,
                         E2eiCrl,
                         ProteusPrekey,
