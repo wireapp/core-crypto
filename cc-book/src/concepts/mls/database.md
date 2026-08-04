@@ -16,8 +16,7 @@ The database holds all state that must survive process restarts:
 - **Proteus identity and sessions** — the device's long-lived Proteus identity keypair and the state of every active
   Proteus session
 - **Proteus prekeys** — including the last-resort prekey
-- **E2EI state** — data about the ACME certificate authority, various certificates and CRLs, refresh tokens, and the
-  like
+- **Data needed for X509 credentials** — X509 trust anchors, intermediate and leaf certificates, CRLs and the like
 
 All entries are encrypted at rest using the `DatabaseKey` provided at open time.
 
