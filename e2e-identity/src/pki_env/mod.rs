@@ -204,40 +204,28 @@ impl PkiEnvironment {
         Ok(())
     }
 
-    /// Remove the trust anchor with serial number `serial_number` from the PKI environment.
+    /// Remove the trust anchor from the PKI environment.
     ///
     /// Note that any certificates relying on the removed trust anchor may no longer
     /// validate.
-    pub async fn remove_trust_anchor(&self, tx: &Transaction, serial_number: &[u8]) -> Result<()> {
+    pub async fn remove_trust_anchor(&self, tx: &Transaction, fingerprint: &[u8]) -> Result<()> {
+        tx.remove_borrowed::<X509TrustAnchor>(fingerprint).await?;
+
+        let anchors = tx.load_all::<X509TrustAnchor>().await?;
+
         let mut guard = self.rjt_pki_env.lock().await;
-
-        let certs: Vec<_> = guard
-            .get_trust_anchors()
-            .iter()
-            .filter_map(|choice| match choice.decoded_ta {
-                TrustAnchorChoice::Certificate(ref cert)
-                    if cert.tbs_certificate.serial_number.as_bytes() != serial_number =>
-                {
-                    Some(cert.clone())
-                }
-                _ => None,
-            })
-            .collect();
-
         guard.clear_trust_anchor_sources();
 
-        let mut trust_anchors = TaSource::new();
-        for cert in certs {
-            trust_anchors.push(certval::CertFile {
+        let mut source = TaSource::new();
+        for mut anchor in anchors {
+            source.push(certval::CertFile {
                 filename: "".to_string(),
-                bytes: cert.to_der()?,
+                bytes: std::mem::take(&mut anchor.content),
             });
         }
-        trust_anchors.initialize().map_err(Error::Certval)?;
-        guard.add_trust_anchor_source(Box::new(trust_anchors));
 
-        // TODO: make this work for multiple trust anchors, see WPB-25632
-        tx.remove::<E2eiAcmeCA>(&<E2eiAcmeCA as UniqueEntity>::KEY).await?;
+        source.initialize().map_err(Error::Certval)?;
+        guard.add_trust_anchor_source(Box::new(source));
 
         Ok(())
     }
