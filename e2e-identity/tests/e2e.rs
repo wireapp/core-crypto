@@ -315,7 +315,15 @@ async fn should_fail_without_trust_anchor(test_env: TestEnvironment) {
     assert_eq!(certs.len(), 1);
 
     pki_env
-        .remove_trust_anchor(&tx, certs[0].tbs_certificate.serial_number.as_bytes())
+        .remove_trust_anchor(
+            &tx,
+            &certs[0]
+                .tbs_certificate
+                .subject_public_key_info
+                .fingerprint_bytes()
+                .expect("Getting fingerprint of subject plublic key info")
+                .to_vec(),
+        )
         .await
         .unwrap();
     assert_eq!(pki_env.get_trust_anchors().await.len(), 0);
