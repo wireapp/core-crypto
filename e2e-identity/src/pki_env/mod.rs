@@ -14,8 +14,8 @@ use certval::{
 };
 use core_crypto_keystore::{
     Database, Transaction,
-    entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
-    traits::{FetchFromDatabase, UniqueEntity},
+    entities::{E2eiCrl, E2eiIntermediateCert, X509TrustAnchor},
+    traits::FetchFromDatabase,
 };
 use openmls_traits::authentication_service::{CredentialAuthenticationStatus, CredentialRef};
 use x509_cert::{
@@ -54,6 +54,8 @@ pub enum Error {
     KeystoreError(#[from] core_crypto_keystore::CryptoKeystoreError),
     #[error("certval error: {0}")]
     Certval(certval::Error),
+    #[error("spki error: {0}")]
+    Spki(spki::Error),
 }
 
 /// New Certificate Revocation List distribution points.
@@ -79,7 +81,7 @@ impl IntoIterator for NewCrlDistributionPoints {
 
 async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<RjtPkiEnvironment> {
     let mut trust_roots = vec![];
-    if let Ok(Some(ta_raw)) = data_provider.get_unique::<E2eiAcmeCA>().await {
+    for ta_raw in data_provider.load_all::<X509TrustAnchor>().await? {
         trust_roots.push(
             x509_cert::Certificate::from_der(&ta_raw.content).map(x509_cert::anchor::TrustAnchorChoice::Certificate)?,
         );
@@ -164,18 +166,19 @@ impl PkiEnvironment {
     ///
     /// The certificate is saved to the database, and included in the PKI environment for
     /// future validation.
-    ///
-    /// # Caution
-    ///
-    /// Adding a trust anchor will replace any existing trust anchor. This limitation
-    /// will be relaxed in the future.
     pub async fn add_trust_anchor(&self, tx: &Transaction, cert: Certificate) -> Result<()> {
         // Validate it (expiration & signature only)
         self.rjt_pki_env.lock().await.validate_trust_anchor_cert(&cert)?;
 
-        // Save cert's DER representation to the database
-        // TODO: make this work for multiple trust anchors, see WPB-25632
-        let cert_data = E2eiAcmeCA {
+        let fingerprint = cert
+            .tbs_certificate
+            .subject_public_key_info
+            .fingerprint_bytes()
+            .map_err(Error::Spki)?
+            .to_vec();
+
+        let cert_data = X509TrustAnchor {
+            fingerprint,
             content: cert.to_der()?,
         };
 
