@@ -36,9 +36,11 @@ impl MlsGroupState {
         self.sender_nonce
     }
 
-    pub(in crate::mls::conversation) fn increment_sender_nonce(&mut self) -> Result<()> {
+    /// Get the sender nonce bound to this conversation after incrementing it.
+    pub(in crate::mls::conversation) fn obtain_sender_nonce(&mut self) -> Result<SenderNonce> {
+        self.sender_nonce.increment()?;
         self.group.set_state(openmls::group::InnerState::Changed);
-        self.sender_nonce.increment()
+        Ok(self.sender_nonce)
     }
 
     pub(in crate::mls::conversation) fn reset_sender_nonce(&mut self) {
