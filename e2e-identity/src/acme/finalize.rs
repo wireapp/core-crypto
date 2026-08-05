@@ -1,3 +1,5 @@
+use std::str::FromStr as _;
+
 use base64::Engine;
 use jwt_simple::prelude::*;
 use rusty_jwt_tools::prelude::{JwsAlgorithm, Pem};
@@ -37,9 +39,12 @@ impl RustyAcme {
 
     fn generate_csr(alg: JwsAlgorithm, identifier: CanonicalIdentifier, kp: &Pem) -> RustyAcmeResult<String> {
         let algorithm = Self::csr_alg(alg)?;
+        let subject = format!("O={}, CN={}", identifier.domain, identifier.display_name);
+        let subject = x509_cert::name::Name::from_str(&subject)?;
+
         let cert_info = x509_cert::request::CertReqInfo {
             version: x509_cert::request::Version::V1,
-            subject: Self::csr_subject(&identifier)?,
+            subject,
             public_key: Self::csr_spki(alg, kp)?,
             attributes: Self::csr_attributes(identifier)?,
         };
@@ -63,32 +68,6 @@ impl RustyAcme {
             JwsAlgorithm::P521 => const_oid::db::rfc5912::ECDSA_WITH_SHA_512,
         };
         Self::into_asn1_alg(oid, None)
-    }
-
-    fn csr_subject(identifier: &CanonicalIdentifier) -> RustyAcmeResult<x509_cert::name::DistinguishedName> {
-        let dn_domain_oid = const_oid::db::rfc4519::ORGANIZATION_NAME;
-        let dn_domain_value =
-            x509_cert::attr::AttributeValue::new(x509_cert::der::Tag::Utf8String, identifier.domain.as_bytes())?;
-        let dn_domain = x509_cert::attr::AttributeTypeAndValue {
-            oid: dn_domain_oid,
-            value: dn_domain_value,
-        };
-
-        // TODO: temporarily using a custom OIDC for carrying the display name without having it listed as a DNS SAN.
-        // reusing LDAP's OID for display_name see http://oid-info.com/get/2.16.840.1.113730.3.1.241
-        let dn_display_name_oid = const_oid::ObjectIdentifier::new("2.16.840.1.113730.3.1.241")?;
-        // let dn_display_name_oid = asn1_rs::oid!(2.16.840 .1 .113730 .3 .1 .241).as_bytes().try_into()?;
-        let dn_display_name_value =
-            x509_cert::attr::AttributeValue::new(x509_cert::der::Tag::Utf8String, identifier.display_name.as_bytes())?;
-        let dn_display_name = x509_cert::attr::AttributeTypeAndValue {
-            oid: dn_display_name_oid,
-            value: dn_display_name_value,
-        };
-
-        let domain = x509_cert::name::RelativeDistinguishedName::try_from(vec![dn_domain])?;
-        let display_name = x509_cert::name::RelativeDistinguishedName::try_from(vec![dn_display_name])?;
-        let subject = x509_cert::name::DistinguishedName::from(vec![domain, display_name]);
-        Ok(subject)
     }
 
     fn csr_spki(alg: JwsAlgorithm, kp: &Pem) -> RustyAcmeResult<x509_cert::spki::SubjectPublicKeyInfoOwned> {
