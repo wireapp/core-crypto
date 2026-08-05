@@ -485,7 +485,7 @@ pub mod utils {
     impl_entity_random_update_ext!(PersistedMlsPendingGroup, id_field=id, blob_fields=[state,custom_configuration,], additional_fields=[(parent_id: None),]);
     impl_entity_random_update_ext!(MlsPendingMessage, id_field = foreign_id, blob_fields = [message,]);
     impl_entity_random_update_ext!(StoredEpochEncryptionKeypair, id_field = id, blob_fields = [keypairs,]);
-    impl_entity_random_update_ext!(E2eiAcmeCA, blob_fields = [content,]);
+    impl_entity_random_update_ext!(E2eiAcmeCA, id_field = fingerprint, blob_fields = [content,]);
 
     impl EntityRandomExt for core_crypto_keystore::entities::E2eiIntermediateCert {
         fn random() -> Self {
