@@ -3,7 +3,7 @@ use std::{fmt, sync::Arc};
 #[cfg(feature = "cancellable-transactions")]
 use futures_util::{FutureExt as _, TryFutureExt as _};
 use wire_e2e_identity::pki_env;
-use x509_cert::der::DecodePem as _;
+use x509_cert::der::{DecodePem as _, EncodePem as _};
 
 #[cfg(feature = "cancellable-transactions")]
 use crate::cancellation::CancellationSlot;
@@ -349,15 +349,40 @@ impl PkiEnvironment {
 #[uniffi::export]
 impl PkiEnvironment {
     /// Add a PEM-encoded certificate as a trust anchor.
-    ///
-    /// NOTE: currently we only support storing a single trust anchor, calling this method multiple
-    /// times will overwrite any previously added trust anchor.
     pub async fn add_trust_anchor(&self, cert_pem: &str) -> CoreCryptoResult<()> {
         let cert = x509_cert::Certificate::from_pem(cert_pem).map_err(CoreCryptoError::generic())?;
 
         self.database()
             .ensure_transaction::<_, CoreCryptoError>(
                 async |tx| self.inner.add_trust_anchor(tx, cert).await.map_err(Into::into),
+                |err| CoreCryptoError::generic()(err),
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    /// Get all trust anchors as PEM-encoded certificates.
+    pub async fn get_trust_anchors(&self) -> CoreCryptoResult<Vec<String>> {
+        self.inner
+            .get_trust_anchors()
+            .await
+            .iter()
+            .map(|c| c.to_pem(x509_cert::der::pem::LineEnding::LF))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(CoreCryptoError::generic())
+    }
+
+    /// Remove a trust anchor by providing the certificates Subject Public Key Info (SPKI) fingerprint as bytes.
+    pub async fn remove_trust_anchor(&self, fingerprint: &[u8]) -> CoreCryptoResult<()> {
+        self.database()
+            .ensure_transaction::<_, CoreCryptoError>(
+                async |tx| {
+                    self.inner
+                        .remove_trust_anchor(tx, fingerprint)
+                        .await
+                        .map_err(Into::into)
+                },
                 |err| CoreCryptoError::generic()(err),
             )
             .await?;
