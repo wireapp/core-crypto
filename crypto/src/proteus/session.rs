@@ -123,8 +123,10 @@ impl ProteusCentral {
     }
 
     /// Session exists
-    pub(crate) async fn session_exists(&mut self, session_id: &str, keystore: &impl FetchFromDatabase) -> bool {
-        self.session(session_id, keystore).await.ok().flatten().is_some()
+    pub(crate) async fn session_exists(&mut self, session_id: &str, keystore: &impl FetchFromDatabase) -> Result<bool> {
+        self.session(session_id, keystore)
+            .await
+            .map(|maybe_session| maybe_session.is_some())
     }
 
     /// Proteus Session local hex-encoded fingerprint

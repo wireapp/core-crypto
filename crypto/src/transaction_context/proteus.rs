@@ -96,7 +96,11 @@ impl TransactionContext {
         let inner = self.inner().await?;
         let mut guard = inner.core_crypto.proteus.lock().await;
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        Ok(proteus.session_exists(session_id, &inner.transaction).await)
+        proteus
+            .session_exists(session_id, &inner.transaction)
+            .await
+            .map_err(RecursiveError::root("checking whether proteus session exists"))
+            .map_err(Into::into)
     }
 
     /// Decrypts a proteus message envelope

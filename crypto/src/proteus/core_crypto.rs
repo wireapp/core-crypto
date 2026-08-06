@@ -10,7 +10,7 @@ impl CoreCrypto {
     pub async fn proteus_session_exists(&self, session_id: &str) -> Result<bool> {
         let mut mutex = self.proteus.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        Ok(proteus.session_exists(session_id, &*self.database).await)
+        proteus.session_exists(session_id, &*self.database).await
     }
 
     /// Returns the proteus last resort prekey id (u16::MAX = 65535)
