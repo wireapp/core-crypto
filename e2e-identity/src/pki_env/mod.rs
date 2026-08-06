@@ -38,6 +38,8 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error {
     #[error("The trust anchor certificate couldn't be loaded from the database.")]
     NoTrustAnchor,
+    #[error("The trust anchor certificate already exists in the database.")]
+    TrustAnchorAlreadyExists,
     #[error("Failed to fetch CRL from '{uri}': HTTP {status}")]
     CrlFetchUnsuccessful { uri: String, status: u16 },
     #[error(transparent)]
@@ -176,6 +178,11 @@ impl PkiEnvironment {
             .fingerprint_bytes()
             .map_err(Error::Spki)?
             .to_vec();
+
+        // A trust anchor can only be added once
+        if tx.get::<X509TrustAnchor>(&fingerprint).await?.is_some() {
+            return Err(Error::TrustAnchorAlreadyExists);
+        }
 
         let cert_data = X509TrustAnchor {
             fingerprint,
