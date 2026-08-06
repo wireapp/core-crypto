@@ -365,7 +365,11 @@ LOVS/gxNk618+PKA2bYq67MZQXCYGgk=
         let tx = db.new_transaction().await.unwrap();
         let pki_env = PkiEnvironment::with_dummy_hooks(db).await.unwrap();
         let cert = x509_cert::Certificate::from_pem(EXAMPLE_CERT_PEM).unwrap();
-        assert!(pki_env.add_trust_anchor(&tx, cert).await.is_ok());
+        assert!(pki_env.add_trust_anchor(&tx, cert.clone()).await.is_ok());
+        assert!(matches!(
+            pki_env.add_trust_anchor(&tx, cert).await,
+            Err(Error::TrustAnchorAlreadyExists)
+        ));
     }
 
     #[tokio::test]
