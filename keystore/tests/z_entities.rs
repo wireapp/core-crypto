@@ -14,8 +14,21 @@ macro_rules! pat_to_bool {
     };
 }
 
+/// Emit a borrowed-primary-key round trip for this entity, or nothing if it opted out.
+///
+/// Unlike the `ignore_*` flags, this cannot be a runtime condition: an entity without a borrowed
+/// primary key does not satisfy the round trip's trait bounds, so the call must be absent from the
+/// generated code entirely rather than merely skipped. Opting out is by presence of the flag, so
+/// write `no_borrowed_key:true` and never `no_borrowed_key:false`.
+macro_rules! borrowed_key_round_trip {
+    ($store:expr, $entity:ident,) => {
+        crate::tests_impl::can_round_trip_entity_by_borrowed_key::<$entity>($store).await
+    };
+    ($store:expr, $entity:ident, $opted_out:literal) => {};
+}
+
 macro_rules! test_for_entity {
-    ($test_name:ident, $entity:ident $(ignore_entity_count:$ignore_entity_count:literal)? $(ignore_update:$ignore_update:literal)? $(ignore_remove:$ignore_remove:literal)? $(ignore_find_many:$ignore_find_many:literal)?) => {
+    ($test_name:ident, $entity:ident $(ignore_entity_count:$ignore_entity_count:literal)? $(ignore_update:$ignore_update:literal)? $(ignore_remove:$ignore_remove:literal)? $(ignore_find_many:$ignore_find_many:literal)? $(no_borrowed_key:$no_borrowed_key:literal)?) => {
         #[apply(all_storage_types)]
         async fn $test_name(context: KeystoreTestContext) {
             let store = context.store();
@@ -23,6 +36,8 @@ macro_rules! test_for_entity {
             let mut entity = crate::tests_impl::can_save_entity::<$entity>(&store).await;
 
             crate::tests_impl::can_find_entity::<$entity>(&store, &entity).await;
+
+            borrowed_key_round_trip!(&store, $entity, $($no_borrowed_key)?);
 
             // TODO: entities which do not support update tend not to have a primary key constraint. Tracking issue: WPB-9649
             // This can cause complications with the "default" remove implementation which does not support deleting many entities.
@@ -46,11 +61,14 @@ macro_rules! test_for_entity {
 
 #[cfg(test)]
 mod tests_impl {
-    use std::{any::Any, sync::Arc};
+    use std::{any::Any, borrow::Borrow, sync::Arc};
 
     use core_crypto_keystore::{
         entities::{MlsPendingMessage, PersistedMlsPendingGroup, StoredCredential},
-        traits::{Entity, EntityDatabaseMutation, FetchFromDatabase as _, KeyType as _, PrimaryKey as _},
+        traits::{
+            Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase as _, KeyType,
+            PrimaryKey as _,
+        },
     };
 
     use super::common::*;
@@ -141,6 +159,66 @@ mod tests_impl {
         };
     }
 
+    /// Save, find, and remove an entity through the borrowed form of its primary key.
+    ///
+    /// `Entity::get` and `EntityDatabaseMutation::delete` are generated as thin delegations to their
+    /// borrowed-key counterparts, so every other test in this suite reaches `get_borrowed` and
+    /// `delete_borrowed` only through that delegation. Were it ever to stop delegating, both
+    /// borrowed paths would lose all coverage without a single test failing. Drive them directly.
+    ///
+    /// This uses an entity of its own rather than the one under test, so it neither depends on nor
+    /// disturbs the owned-key tests, and leaves the entity count as it found it.
+    pub(crate) async fn can_round_trip_entity_by_borrowed_key<E>(store: &Arc<CryptoKeystore>)
+    where
+        E: 'static
+            + Clone
+            + std::fmt::Debug
+            + Eq
+            + EntityRandomUpdateExt
+            + EntityGetBorrowed
+            + EntityDeleteBorrowed
+            + Send
+            + Sync,
+        E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
+        for<'pk> &'pk E::BorrowedPrimaryKey: KeyType,
+    {
+        let entity = E::random();
+        let primary_key = entity.primary_key();
+
+        let tx = store.new_transaction().await.unwrap();
+        tx.save(entity.clone()).await.unwrap();
+        tx.commit().await.unwrap();
+
+        assert_no_transaction_in_flight(store).await;
+        let mut found = store
+            .get_borrowed::<E>(primary_key.borrow())
+            .await
+            .unwrap()
+            .expect("an entity which was just saved is findable by its borrowed primary key");
+        found.equalize();
+        assert_eq!(entity, found);
+
+        let tx = store.new_transaction().await.unwrap();
+        tx.remove_borrowed::<E>(primary_key.borrow()).await.unwrap();
+        tx.commit().await.unwrap();
+
+        assert_no_transaction_in_flight(store).await;
+        assert!(
+            store.get_borrowed::<E>(primary_key.borrow()).await.unwrap().is_none(),
+            "the entity is still findable by its borrowed primary key after being removed"
+        );
+
+        // As in `can_remove_entity`, confirm the deletion against the one read which binds no key.
+        let key_bytes = primary_key.bytes().into_owned();
+        let remaining = store.load_all::<E>().await.unwrap();
+        assert!(
+            !remaining
+                .iter()
+                .any(|remaining| remaining.primary_key().bytes().as_ref() == key_bytes.as_slice()),
+            "the entity is still in the database, so the borrowed-key removal deleted no rows"
+        );
+    }
+
     pub(crate) async fn can_update_entity<E>(store: &Arc<CryptoKeystore>, entity: &mut E)
     where
         E: 'static
@@ -229,8 +307,8 @@ mod tests {
 
     test_for_entity!(test_persisted_mls_group, PersistedMlsGroup);
     test_for_entity!(test_persisted_mls_pending_group, PersistedMlsPendingGroup);
-    test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_entity_count: true ignore_update:true ignore_remove:true ignore_find_many:true);
-    test_for_entity!(test_mls_credential, StoredCredential ignore_update:true);
+    test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_entity_count: true ignore_update:true ignore_remove:true ignore_find_many:true no_borrowed_key:true);
+    test_for_entity!(test_mls_credential, StoredCredential ignore_update:true no_borrowed_key:true);
     test_for_entity!(test_mls_keypackage, StoredKeyPackage);
     test_for_entity!(test_mls_psk_bundle, StoredPskBundle);
     test_for_entity!(test_mls_encryption_keypair, StoredEncryptionKeyPair);
@@ -238,12 +316,12 @@ mod tests {
     test_for_entity!(test_mls_hpke_private_key, StoredHpkePrivateKey);
     test_for_entity!(test_e2ei_intermediate_cert, E2eiIntermediateCert);
     test_for_entity!(test_e2ei_crl, E2eiCrl);
-    test_for_entity!(test_e2ei_acme_ca, E2eiAcmeCA ignore_entity_count:true ignore_find_many:true);
+    test_for_entity!(test_e2ei_acme_ca, E2eiAcmeCA ignore_entity_count:true ignore_find_many:true no_borrowed_key:true);
 
     #[cfg(feature = "proteus-keystore")]
-    test_for_entity!(test_proteus_identity, ProteusIdentity ignore_entity_count:true ignore_update:true);
+    test_for_entity!(test_proteus_identity, ProteusIdentity ignore_entity_count:true ignore_update:true no_borrowed_key:true);
     #[cfg(feature = "proteus-keystore")]
-    test_for_entity!(test_proteus_prekey, ProteusPrekey);
+    test_for_entity!(test_proteus_prekey, ProteusPrekey no_borrowed_key:true);
     #[cfg(feature = "proteus-keystore")]
     test_for_entity!(test_proteus_session, ProteusSession);
 
