@@ -59,6 +59,26 @@ mod tests_impl {
         utils::{EntityRandomExt, EntityRandomUpdateExt},
     };
 
+    /// Assert that no keystore transaction is in flight.
+    ///
+    /// While a transaction is in flight, reads are served from its in-memory cache and never reach
+    /// SQL. A test which reads back through an open transaction therefore proves nothing about the
+    /// generated queries: it would pass just as happily against a query which matches zero rows.
+    /// This suite once did exactly that, which is how a primary key binding that compared a `BLOB`
+    /// against `TEXT` values survived three releases.
+    ///
+    /// Call this immediately before any read which is meant to exercise the database.
+    async fn assert_no_transaction_in_flight(store: &Arc<CryptoKeystore>) {
+        // Acquiring an immediate transaction fails if and only if another transaction holds the
+        // transaction semaphore. Dropping the guard right away rolls this one back, leaving the
+        // database as we found it: subsequent reads find a stale weak reference, fail to upgrade
+        // it, and fall through to SQL.
+        assert!(
+            store.try_new_immediate_transaction().await.is_ok(),
+            "a transaction is in flight, so reads are served from its cache instead of the database"
+        );
+    }
+
     pub(crate) async fn can_save_entity<E>(store: &Arc<CryptoKeystore>) -> E
     where
         E: 'static + Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
@@ -94,6 +114,8 @@ mod tests_impl {
             + Send
             + Sync,
     {
+        assert_no_transaction_in_flight(store).await;
+
         let any_e: &dyn Any = entity;
         if let Some(pending_message) = any_e.downcast_ref::<MlsPendingMessage>() {
             let pending_message_from_store = store
@@ -135,6 +157,8 @@ mod tests_impl {
         let tx = store.new_transaction().await.unwrap();
         tx.save(entity.clone()).await.unwrap();
         tx.commit().await.unwrap();
+
+        assert_no_transaction_in_flight(store).await;
         let entity2: E = store.get(&entity.primary_key()).await.unwrap().unwrap();
         assert_eq!(*entity, entity2);
     }
@@ -146,6 +170,8 @@ mod tests_impl {
         let tx = store.new_transaction().await.unwrap();
         tx.remove::<E>(&entity.primary_key()).await.unwrap();
         tx.commit().await.unwrap();
+
+        assert_no_transaction_in_flight(store).await;
         let entity2: Option<E> = store.get(&entity.primary_key()).await.unwrap();
         assert!(entity2.is_none());
     }
@@ -166,6 +192,8 @@ mod tests_impl {
     where
         E: 'static + Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
     {
+        assert_no_transaction_in_flight(store).await;
+
         let entities = store.load_all::<E>().await.unwrap();
         if !ignore_entity_count {
             assert_eq!(entities.len(), ENTITY_COUNT);
