@@ -12,7 +12,7 @@ mod stored_hpke_private_key;
 mod stored_keypackage;
 mod stored_psk_bundle;
 
-pub use e2ei_acme_ca::E2eiAcmeCA;
+pub use e2ei_acme_ca::X509TrustAnchor;
 pub use e2ei_crl::E2eiCrl;
 pub use e2ei_intermediate_cert::E2eiIntermediateCert;
 pub use mls_pending_message::{ConversationId, MlsPendingMessage, MlsPendingMessagePrimaryKey};

@@ -12,7 +12,7 @@ use zeroize::Zeroize;
 )]
 #[zeroize(drop)]
 #[entity(table_name = "x509_trust_anchor")]
-pub struct E2eiAcmeCA {
+pub struct X509TrustAnchor {
     #[entity(id)]
     pub fingerprint: Vec<u8>,
     pub content: Vec<u8>,
