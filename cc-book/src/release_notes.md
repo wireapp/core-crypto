@@ -5,6 +5,27 @@
 - `DecryptedMessage` is now an enum with `Text`, `Commit`, and `Proposal` variants. For migration, see the migration
   guide.
 
+- Fixes a bug which caused stored Proteus sessions to be established afresh rather than loaded, discarding the session
+  state already in the database. Every release from v10.0.0 through v10.2.0 is affected.
+
+  Proteus sessions are keyed by a text identifier, which the generated lookup query bound as binary data. SQLite never
+  considers a binary value equal to a text one, so the query matched no rows, and a stored session appeared not to
+  exist. CoreCrypto holds up to 200 recently used sessions in memory, which hid this until that cache went cold: on a
+  restart, on a new CoreCrypto instance, or once more than 200 sessions had been used. Code which asks
+  `proteusSessionExists` before deciding whether to establish a session — as `proteusDecryptSafe` does — was answered
+  "no" for every stored session, and the replacement session it then established overwrote the state that was in the
+  database all along. The same fault caused `proteusSessionDelete` to delete nothing while reporting success, and
+  affected lookups of CRLs and E2EI intermediate certificates by their string identifiers.
+
+  CoreCrypto cannot repair an affected database. It has no way to distinguish a session which ought to still be there
+  from one whose deletion silently failed, and overwritten session state is not recoverable. Clients which have that
+  context may wish to implement a repair pass of their own.
+
+- `proteusSessionExists` now returns an error, rather than `false`, when a session is stored but cannot be loaded.
+  Treating a failed load as an absent session is what allowed the bug above to overwrite live state, so code which
+  establishes a session in response to `false` no longer does so in that case. `proteusDecryptSafe` likewise returns the
+  error instead of establishing a replacement session.
+
 ## CoreCrypto 10
 
 ### v10.2.0 - 2026-07-28
