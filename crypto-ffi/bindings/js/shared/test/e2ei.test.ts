@@ -3,8 +3,7 @@ import { afterEach, beforeEach, describe } from "mocha";
 import { E2eiConversationState } from "#core-crypto";
 import { expect } from "chai";
 
-const TEST_CA_PEM = `
------BEGIN CERTIFICATE-----
+const TEST_CA_PEM = `-----BEGIN CERTIFICATE-----
 MIIBkzCCAUWgAwIBAgIUHFYIFRkm33GKIOb4xLeNtkjl3TIwBQYDK2VwMDcxFTAT
 BgNVBAMMDFRlc3QgUm9vdCBDQTERMA8GA1UECgwIVGVzdCBPcmcxCzAJBgNVBAYT
 AlVTMB4XDTI2MDUyODE1MzA0NFoXDTM2MDUyNTE1MzA0NFowNzEVMBMGA1UEAwwM
@@ -14,6 +13,19 @@ VR0OBBYEFHA0MmaaNGOTuBvdo3zzQoKFJ3p5MB8GA1UdIwQYMBaAFHA0MmaaNGOT
 uBvdo3zzQoKFJ3p5MA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMAUG
 AytlcANBAJffPzL50OWnmEBo9mGBQfPVzKRIfFc8EaXox1D5VF9cC1r8nRa0hUq+
 LOVS/gxNk618+PKA2bYq67MZQXCYGgk=
+-----END CERTIFICATE-----
+`;
+
+const TEST_CA_PEM_2 = `-----BEGIN CERTIFICATE-----
+MIIBgzCCATWgAwIBAgIUeN2a19U9hEAnnXPaKGG8/IBnN3EwBQYDK2VwMDcxFTAT
+BgNVBAMMDFRlc3QgUm9vdCBDQTERMA8GA1UECgwIVGVzdCBPcmcxCzAJBgNVBAYT
+AlVTMB4XDTI2MDgwNjEyNDI0MFoXDTM2MDgwMzEyNDI0MFowNzEVMBMGA1UEAwwM
+VGVzdCBSb290IENBMREwDwYDVQQKDAhUZXN0IE9yZzELMAkGA1UEBhMCVVMwKjAF
+BgMrZXADIQCcdQkyHFLytpptb0OsLfDq2GhNmIf2EYRih5jeT1SKvaNTMFEwHQYD
+VR0OBBYEFIHxxlwJp4caZR40MyYvQHFuKKdWMB8GA1UdIwQYMBaAFIHxxlwJp4ca
+ZR40MyYvQHFuKKdWMA8GA1UdEwEB/wQFMAMBAf8wBQYDK2VwA0EA5Ssdm0IaTfSc
+lQjd5t/n3C5DLK70tXC7x6Qpdhn57cNqtjxVQnL7R7yr8ZHCps1+XuZgpaEbVx//
+r9IJmL6kDQ==
 -----END CERTIFICATE-----
 `;
 
@@ -78,42 +90,55 @@ describe("PKI environment", () => {
         expect(success).to.equal(true);
     });
 
-    it("should add a trust anchor certificate", async () => {
-        const error = await runOnPlatform(async (certPem) => {
-            const database = await helpers.newDatabase();
-            const pkiEnvironment = await ccModule.PkiEnvironment.create(
-                pkiEnvironmentHooks,
-                database
-            );
-
-            try {
+    it("should add multiple trust anchor certificates", async () => {
+        const pems = await runOnPlatform(
+            async (certPem, certPem2) => {
+                const database = await helpers.newDatabase();
+                const pkiEnvironment = await ccModule.PkiEnvironment.create(
+                    pkiEnvironmentHooks,
+                    database
+                );
                 await pkiEnvironment.addTrustAnchor(certPem);
-                return undefined;
-            } catch (error) {
-                return error instanceof Error ? error.message : String(error);
-            }
-        }, TEST_CA_PEM);
+                await pkiEnvironment.addTrustAnchor(certPem2);
+                return await pkiEnvironment.getTrustAnchors();
+            },
+            TEST_CA_PEM,
+            TEST_CA_PEM_2
+        );
 
-        expect(error).to.equal(undefined);
+        expect(pems.length).to.equal(2);
+        expect(pems[0]).to.equal(TEST_CA_PEM);
+        expect(pems[1]).to.equal(TEST_CA_PEM_2);
     });
 
-    it("should add an intermediate certificate", async () => {
-        const error = await runOnPlatform(async (certPem) => {
-            const database = await helpers.newDatabase();
-            const pkiEnvironment = await ccModule.PkiEnvironment.create(
-                pkiEnvironmentHooks,
-                database
-            );
+    it("should remove a trust anchor certificate", async () => {
+        const pems = await runOnPlatform(
+            async (certPem, certPem2) => {
+                const pem2Fingerprint =
+                    "03a2be6b2d86f5d1582c1ccbe98390030bc637a05a11f97092c0efb1e35142b9";
 
-            try {
-                await pkiEnvironment.addIntermediateCert(certPem);
-                return undefined;
-            } catch (error) {
-                return error instanceof Error ? error.message : String(error);
-            }
-        }, TEST_CA_PEM);
+                const fingerprintBytes = new Uint8Array(
+                    pem2Fingerprint
+                        .match(/.{1,2}/g)!
+                        .map((byte) => parseInt(byte, 16))
+                );
 
-        expect(error).to.equal(undefined);
+                const database = await helpers.newDatabase();
+                const pkiEnvironment = await ccModule.PkiEnvironment.create(
+                    pkiEnvironmentHooks,
+                    database
+                );
+                await pkiEnvironment.addTrustAnchor(certPem);
+                await pkiEnvironment.addTrustAnchor(certPem2);
+                await pkiEnvironment.removeTrustAnchor(fingerprintBytes);
+                return await pkiEnvironment.getTrustAnchors();
+            },
+            TEST_CA_PEM,
+            TEST_CA_PEM_2
+        );
+
+        expect(pems.length).to.equal(1);
+        expect(pems[0]).to.equal(TEST_CA_PEM);
     });
 });
 
