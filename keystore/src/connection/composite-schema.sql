@@ -10,11 +10,6 @@ CREATE TABLE mls_pending_messages (
   FOREIGN KEY (id) REFERENCES mls_pending_groups(id)
 );
 
-CREATE TABLE e2ei_acme_ca (
-  id INTEGER PRIMARY KEY CHECK (id = 0),
-  content BLOB
-);
-
 CREATE TABLE e2ei_intermediate_certs (ski_aki_pair TEXT UNIQUE, content BLOB);
 
 CREATE TABLE e2ei_crls (
@@ -86,4 +81,9 @@ CREATE TABLE "mls_pending_groups" (
   state BLOB,
   cfg BLOB,
   parent_id BLOB
+);
+
+CREATE TABLE x509_trust_anchor (
+  fingerprint TEXT PRIMARY KEY,
+  content BLOB NOT NULL
 );
