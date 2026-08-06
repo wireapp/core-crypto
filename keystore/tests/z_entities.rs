@@ -50,7 +50,7 @@ mod tests_impl {
 
     use core_crypto_keystore::{
         entities::{MlsPendingMessage, PersistedMlsPendingGroup, StoredCredential},
-        traits::{Entity, EntityDatabaseMutation, FetchFromDatabase as _, PrimaryKey as _},
+        traits::{Entity, EntityDatabaseMutation, FetchFromDatabase as _, KeyType as _, PrimaryKey as _},
     };
 
     use super::common::*;
@@ -174,6 +174,22 @@ mod tests_impl {
         assert_no_transaction_in_flight(store).await;
         let entity2: Option<E> = store.get(&entity.primary_key()).await.unwrap();
         assert!(entity2.is_none());
+
+        // The check above binds the primary key into a `WHERE` clause, so it reports "absent" both
+        // when the row is really gone and when the lookup binding matches nothing at all. Confirm
+        // the removal against `load_all`, which binds no key: it is the only read here that cannot
+        // be fooled by the same binding it is being used to validate.
+        //
+        // Not every primary key is `PartialEq`, but every primary key can produce its byte
+        // encoding, which is what the transaction cache already uses for record identity.
+        let removed_key = entity.primary_key().bytes().into_owned();
+        let remaining = store.load_all::<E>().await.unwrap();
+        assert!(
+            !remaining
+                .iter()
+                .any(|remaining| remaining.primary_key().bytes().as_ref() == removed_key.as_slice()),
+            "the entity is still in the database, so the removal deleted no rows"
+        );
     }
 
     pub(super) async fn insert_count_entities<E>(store: &Arc<CryptoKeystore>)
