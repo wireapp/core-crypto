@@ -88,3 +88,79 @@ impl std::fmt::Debug for ProteusSessionCache {
             .finish_non_exhaustive()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use core_crypto_keystore::DatabaseKey;
+
+    use crate::{
+        proteus::ProteusCentral,
+        test_utils::{proteus_utils::*, *},
+    };
+
+    /// A session persisted by one [`ProteusCentral`] must be loaded by the next one over the same
+    /// database, never silently replaced by a freshly established session.
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn persisted_session_is_loaded_rather_than_regenerated() {
+        let (path, _db_file) = tmp_db_file();
+        let key = DatabaseKey::generate();
+        let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
+
+        let mut bob = CryptoboxLike::init();
+
+        // Establish a session, advance it in both directions, and persist it.
+        let (expected_fingerprint, expected_state) = {
+            let keystore = core_crypto_keystore::Database::open(&path, &key).await.unwrap();
+            let tx = keystore.new_transaction().await.unwrap();
+            let mut alice = ProteusCentral::try_new(&tx).await.unwrap();
+
+            let alice_prekey_bundle = alice.new_prekey(1, &tx).await.unwrap();
+            bob.init_session_from_prekey_bundle(&session_id, &alice_prekey_bundle);
+
+            let from_bob = bob.encrypt(&session_id, b"hello alice");
+            let (_, decrypted) = alice.session_from_message(&tx, &session_id, &from_bob).await.unwrap();
+            assert_eq!(b"hello alice", decrypted.as_slice());
+
+            // `encrypt` persists the session, which `session_from_message` on its own does not.
+            let from_alice = alice.encrypt(&tx, &session_id, b"hello bob").await.unwrap();
+            assert_eq!(b"hello bob", bob.decrypt(&session_id, &from_alice).await.as_slice());
+
+            let session = alice.session(&session_id, &tx).await.unwrap().unwrap();
+            tx.commit().await.unwrap();
+
+            (session.fingerprint_remote(), session.session.serialise().unwrap())
+        };
+
+        // A new `ProteusCentral` over the same database starts with an empty cache, so this is the
+        // first lookup which has to come from the keystore.
+        let keystore = core_crypto_keystore::Database::open(&path, &key).await.unwrap();
+        let tx = keystore.new_transaction().await.unwrap();
+        let mut alice = ProteusCentral::try_new(&tx).await.unwrap();
+
+        {
+            let session = alice
+                .proteus_sessions
+                .get_or_fetch(&session_id, &tx)
+                .await
+                .unwrap()
+                .expect("the persisted session should be found in the keystore");
+
+            assert_eq!(
+                expected_fingerprint,
+                session.fingerprint_remote(),
+                "the loaded session should have the same peer as the persisted one"
+            );
+            assert_eq!(
+                expected_state,
+                session.session.serialise().unwrap(),
+                "the loaded session should carry the persisted state, not a fresh handshake"
+            );
+        }
+
+        // The strongest form of the claim: the reloaded session can still decrypt on the ratchet
+        // bob has been advancing all along, which a regenerated session could not do.
+        let from_bob = bob.encrypt(&session_id, b"still talking");
+        let decrypted = alice.decrypt(&tx, &session_id, &from_bob).await.unwrap();
+        assert_eq!(b"still talking", decrypted.as_slice());
+    }
+}
