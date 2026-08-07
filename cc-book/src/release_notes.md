@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `PkiEnvironment` now supports adding multiple trust anchors. Previously, `addTrustAnchor` replaced any existing trust
+  anchor. Get all added trust anchor certificates via `getTrustAnchor`. Remove a trustanchor via `removeTrustAnchor` by
+  providing the Subject Public Key Info (SPKI) fingerprint.
+
 ## CoreCrypto 10
 
 ### v10.3.0 - 2026-08-07
