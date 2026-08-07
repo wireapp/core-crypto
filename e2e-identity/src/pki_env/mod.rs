@@ -208,8 +208,8 @@ impl PkiEnvironment {
     ///
     /// Note that any certificates relying on the removed trust anchor may no longer
     /// validate.
-    pub async fn remove_trust_anchor(&self, tx: &Transaction, fingerprint: &Vec<u8>) -> Result<()> {
-        tx.remove::<X509TrustAnchor>(fingerprint).await?;
+    pub async fn remove_trust_anchor(&self, tx: &Transaction, fingerprint: &[u8]) -> Result<()> {
+        tx.remove_borrowed::<X509TrustAnchor>(fingerprint).await?;
 
         let anchors = tx.load_all::<X509TrustAnchor>().await?;
 
