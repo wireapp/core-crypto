@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## CoreCrypto 10
+
+### v10.3.0 - 2026-08-07
+
 - `DecryptedMessage` is now an enum with `Text`, `Commit`, and `Proposal` variants. For migration, see the migration
   guide.
 
@@ -25,8 +29,6 @@
   Treating a failed load as an absent session is what allowed the bug above to overwrite live state, so code which
   establishes a session in response to `false` no longer does so in that case. `proteusDecryptSafe` likewise returns the
   error instead of establishing a replacement session.
-
-## CoreCrypto 10
 
 ### v10.2.0 - 2026-07-28
 
