@@ -6,7 +6,10 @@ use openmls::{
 
 use crate::{
     ConversationConfiguration, ConversationId, KeystoreError, LeafError, OpenMlsError, RecursiveError,
-    mls::conversation::{Conversation, ConversationMut, Error as ConversationError, MlsGroupState},
+    mls::{
+        SenderNonce,
+        conversation::{Conversation, ConversationMut, Error as ConversationError, MlsGroupState},
+    },
     transaction_context::{Result, TransactionContext},
 };
 
@@ -27,7 +30,7 @@ impl TransactionContext {
         &self,
         mut group: MlsGroup,
         configuration: ConversationConfiguration,
-        sender_nonce: u32,
+        sender_nonce: SenderNonce,
     ) -> Result<ConversationMut> {
         let id = ConversationId::from(group.group_id().as_slice());
         let session = self.session().await.map_err(RecursiveError::transaction(
@@ -43,7 +46,7 @@ impl TransactionContext {
             .save(PersistedMlsGroup {
                 id: id.to_bytes(),
                 state: group_state,
-                sender_nonce,
+                sender_nonce: sender_nonce.into(),
             })
             .await
             .map_err(KeystoreError::wrap("persisting mls group"))?;

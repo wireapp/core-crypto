@@ -153,6 +153,21 @@ impl CryptoProvider {
     pub fn reseed(&self, entropy_seed: Option<EntropySeed>) -> MlsProviderResult<()> {
         self.crypto.reseed(entropy_seed)
     }
+
+    /// Encrypt `ptxt` via HPKE PSK mode.
+    #[expect(clippy::too_many_arguments)]
+    pub fn hpke_seal_psk(
+        &self,
+        config: HpkeConfig,
+        pk_r: &[u8],
+        info: &[u8],
+        aad: &[u8],
+        psk: &[u8],
+        psk_id: &[u8],
+        ptxt: &[u8],
+    ) -> Result<HpkeCiphertext, CryptoError> {
+        self.crypto.hpke_seal_psk(config, pk_r, info, aad, psk, psk_id, ptxt)
+    }
 }
 
 impl openmls_traits::OpenMlsCryptoProvider for CryptoProvider {

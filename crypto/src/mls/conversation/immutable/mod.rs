@@ -12,14 +12,15 @@ use openmls::group::MlsGroup;
 use super::{ConversationIdRef, Error, Result, SecretKey};
 use crate::{
     CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, ExternalSender, OpenMlsError, Session,
+    mls::SenderNonce,
 };
 
-#[derive(Debug, derive_more::Constructor, derive_more::Deref)]
+#[derive(derive_more::Constructor, derive_more::Deref, derive_more::Debug)]
 pub(crate) struct MlsGroupState {
     #[deref]
     group: MlsGroup,
-    // Note: this is going to change to a new type SenderNonce(u32) in an upcoming PR
-    sender_nonce: u32,
+    #[debug(skip)]
+    sender_nonce: SenderNonce,
 }
 
 impl MlsGroupState {
@@ -31,17 +32,19 @@ impl MlsGroupState {
         &mut self.group
     }
 
-    pub(in crate::mls::conversation) fn sender_nonce(&self) -> u32 {
+    pub(in crate::mls::conversation) fn sender_nonce(&self) -> SenderNonce {
         self.sender_nonce
     }
 
-    #[expect(dead_code)]
-    pub(in crate::mls::conversation) fn increment_sender_nonce(&mut self) {
-        self.sender_nonce += 1;
+    /// Get the sender nonce bound to this conversation after incrementing it.
+    pub(in crate::mls::conversation) fn obtain_sender_nonce(&mut self) -> Result<SenderNonce> {
+        self.sender_nonce.increment()?;
+        self.group.set_state(openmls::group::InnerState::Changed);
+        Ok(self.sender_nonce)
     }
 
     pub(in crate::mls::conversation) fn reset_sender_nonce(&mut self) {
-        self.sender_nonce = 0
+        self.sender_nonce = Default::default()
     }
 }
 

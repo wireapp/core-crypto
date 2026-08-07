@@ -23,6 +23,7 @@ mod pending;
 mod welcome;
 
 pub(crate) use immutable::MlsGroupState;
+pub(crate) use mutable::SenderNonce;
 pub(crate) use pending::PendingConversation;
 
 pub use self::{
@@ -33,7 +34,7 @@ pub use self::{
     id::{ConversationId, ConversationIdRef},
     immutable::Conversation,
     mutable::{
-        ConversationMut,
+        ConversationMut, TargetedMessagePolicy,
         decrypt::{BufferedCommit, BufferedDecryptedMessage, Commit, DecryptedMessage, Proposal, Text},
     },
     welcome::WelcomeMessage,
