@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import testutils.*
 import java.util.Base64
+import kotlin.test.*
 import kotlin.test.Test
 import kotlin.test.fail
 
@@ -26,6 +27,22 @@ internal class E2EITest {
             -----END CERTIFICATE-----
 
             """.trimIndent()
+
+        private val testCaPem2: String =
+            """
+            -----BEGIN CERTIFICATE-----
+            MIIBgzCCATWgAwIBAgIUeN2a19U9hEAnnXPaKGG8/IBnN3EwBQYDK2VwMDcxFTAT
+            BgNVBAMMDFRlc3QgUm9vdCBDQTERMA8GA1UECgwIVGVzdCBPcmcxCzAJBgNVBAYT
+            AlVTMB4XDTI2MDgwNjEyNDI0MFoXDTM2MDgwMzEyNDI0MFowNzEVMBMGA1UEAwwM
+            VGVzdCBSb290IENBMREwDwYDVQQKDAhUZXN0IE9yZzELMAkGA1UEBhMCVVMwKjAF
+            BgMrZXADIQCcdQkyHFLytpptb0OsLfDq2GhNmIf2EYRih5jeT1SKvaNTMFEwHQYD
+            VR0OBBYEFIHxxlwJp4caZR40MyYvQHFuKKdWMB8GA1UdIwQYMBaAFIHxxlwJp4ca
+            ZR40MyYvQHFuKKdWMA8GA1UdEwEB/wQFMAMBAf8wBQYDK2VwA0EA5Ssdm0IaTfSc
+            lQjd5t/n3C5DLK70tXC7x6Qpdhn57cNqtjxVQnL7R7yr8ZHCps1+XuZgpaEbVx//
+            r9IJmL6kDQ==
+            -----END CERTIFICATE-----
+
+            """.trimIndent()
     }
 
     @Test
@@ -41,16 +58,34 @@ internal class E2EITest {
     }
 
     @Test
-    fun testAddTrustAnchor() = runTest {
+    fun testAddTrustAnchors() = runTest {
         val hooks = MockPkiEnvironmentHooks()
         val db = newDatabase()
         val pkiEnv = PkiEnvironment.new(hooks, db)
+        pkiEnv.addTrustAnchor(testCaPem)
+        pkiEnv.addTrustAnchor(testCaPem2)
+        val pems = pkiEnv.getTrustAnchors()
+        assertEquals(2, pems.size)
+        assertEquals(testCaPem, pems[0])
+        assertEquals(testCaPem2, pems[1])
+    }
 
-        try {
-            pkiEnv.addTrustAnchor(testCaPem)
-        } catch (exception: Exception) {
-            fail("Expected addTrustAnchor not to throw, but it threw: ${exception.message}")
-        }
+    @Test
+    fun testRemoveTrustAnchor() = runTest {
+        val pem2Fingerprint = "03a2be6b2d86f5d1582c1ccbe98390030bc637a05a11f97092c0efb1e35142b9"
+        val fingerprintBytes = pem2Fingerprint
+            .chunked(2)
+            .map { it.toInt(16).toByte() }
+            .toByteArray()
+        val hooks = MockPkiEnvironmentHooks()
+        val db = newDatabase()
+        val pkiEnv = PkiEnvironment.new(hooks, db)
+        pkiEnv.addTrustAnchor(testCaPem)
+        pkiEnv.addTrustAnchor(testCaPem2)
+        pkiEnv.removeTrustAnchor(fingerprintBytes)
+        val pems = pkiEnv.getTrustAnchors()
+        assertEquals(1, pems.size)
+        assertEquals(testCaPem, pems[0])
     }
 
     @Test
