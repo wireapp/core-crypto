@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-ba3c3b84.js";
+            window.path_to_searchindex_js = "searchindex-06492359.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-6ea44124.js"></script>
@@ -178,8 +178,31 @@
                         <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
 <h2 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h2>
 <ul>
-<li><code>DecryptedMessage</code> is now an enum with <code>Text</code>, <code>Commit</code>, and <code>Proposal</code> variants. For migration, see the migration
-guide.</li>
+<li>
+<p><code>DecryptedMessage</code> is now an enum with <code>Text</code>, <code>Commit</code>, and <code>Proposal</code> variants. For migration, see the migration
+guide.</p>
+</li>
+<li>
+<p>Fixes a bug which caused stored Proteus sessions to be established afresh rather than loaded, discarding the session
+state already in the database. Every release from v10.0.0 through v10.2.0 is affected.</p>
+<p>Proteus sessions are keyed by a text identifier, which the generated lookup query bound as binary data. SQLite never
+considers a binary value equal to a text one, so the query matched no rows, and a stored session appeared not to
+exist. CoreCrypto holds up to 200 recently used sessions in memory, which hid this until that cache went cold: on a
+restart, on a new CoreCrypto instance, or once more than 200 sessions had been used. Code which asks
+<code>proteusSessionExists</code> before deciding whether to establish a session — as <code>proteusDecryptSafe</code> does — was answered
+“no” for every stored session, and the replacement session it then established overwrote the state that was in the
+database all along. The same fault caused <code>proteusSessionDelete</code> to delete nothing while reporting success, and
+affected lookups of CRLs and E2EI intermediate certificates by their string identifiers.</p>
+<p>CoreCrypto cannot repair an affected database. It has no way to distinguish a session which ought to still be there
+from one whose deletion silently failed, and overwritten session state is not recoverable. Clients which have that
+context may wish to implement a repair pass of their own.</p>
+</li>
+<li>
+<p><code>proteusSessionExists</code> now returns an error, rather than <code>false</code>, when a session is stored but cannot be loaded.
+Treating a failed load as an absent session is what allowed the bug above to overwrite live state, so code which
+establishes a session in response to <code>false</code> no longer does so in that case. <code>proteusDecryptSafe</code> likewise returns the
+error instead of establishing a replacement session.</p>
+</li>
 </ul>
 <h2 id="corecrypto-10"><a class="header" href="#corecrypto-10">CoreCrypto 10</a></h2>
 <h3 id="v1020---2026-07-28"><a class="header" href="#v1020---2026-07-28">v10.2.0 - 2026-07-28</a></h3>
