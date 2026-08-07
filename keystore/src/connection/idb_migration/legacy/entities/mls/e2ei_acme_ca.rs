@@ -54,3 +54,20 @@ impl Decrypting<'static> for E2eiAcmeCAEncrypted {
 impl Decryptable<'static> for LegacyE2eiAcmeCA {
     type DecryptableFrom = E2eiAcmeCAEncrypted;
 }
+
+impl crate::traits::UniqueEntityImplementationHelper for LegacyE2eiAcmeCA {
+    const TABLE_NAME: &'static str = "e2ei_acme_ca";
+    fn new(content: Vec<u8>) -> Self {
+        Self { content }
+    }
+
+    fn content(&self) -> &[u8] {
+        &self.content
+    }
+}
+
+impl From<LegacyE2eiAcmeCA> for crate::transaction::dynamic_dispatch::Entity {
+    fn from(_value: LegacyE2eiAcmeCA) -> Self {
+        panic!("This entity should never be used in a transaction")
+    }
+}
