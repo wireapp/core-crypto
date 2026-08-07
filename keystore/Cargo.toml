@@ -57,6 +57,7 @@ twox-hash = { version = "2.1.2", default-features = false, features = [
   "xxhash3_128",
 ] }
 x509-cert = { workspace = true }
+spki.workspace = true
 zeroize = { workspace = true, features = ["zeroize_derive"] }
 
 [target.'cfg(target_os = "ios")'.dependencies]

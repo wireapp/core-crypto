@@ -1233,6 +1233,7 @@ dependencies = [
  "sha2",
  "smol",
  "smol-macros",
+ "spki",
  "sqlite-wasm-rs",
  "sqlite-wasm-vfs",
  "tempfile",
