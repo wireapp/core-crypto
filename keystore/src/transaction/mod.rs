@@ -11,6 +11,7 @@ use std::{borrow::Cow, collections::HashSet, sync::Arc};
 use async_lock::{RwLock, SemaphoreGuardArc};
 use itertools::Itertools;
 use ordermap::OrderMap;
+use rusqlite::TransactionBehavior;
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc,
@@ -121,7 +122,7 @@ impl UniqueArc<Transaction> {
         // Because `rusqlite::Transaction: !Send + !Sync`, it's critical that
         // we don't hold this transaction over any `.await` points.
         let mut conn = database.conn().await;
-        let tx = conn.transaction()?;
+        let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
 
         for entity in cache.values() {
             entity.execute_save(&tx)?;
