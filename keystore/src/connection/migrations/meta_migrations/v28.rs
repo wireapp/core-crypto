@@ -1,3 +1,4 @@
+use rusqlite::OptionalExtension;
 use x509_cert::der::Decode;
 
 use crate::{CryptoKeystoreError, CryptoKeystoreResult};
@@ -6,8 +7,6 @@ pub(crate) const VERSION: i32 = 28;
 
 pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
     let tx = conn.transaction()?;
-
-    use rusqlite::OptionalExtension;
 
     // This used to be a unique entity so we only get the first entry if it exists
     let content: Option<Vec<u8>> = tx
