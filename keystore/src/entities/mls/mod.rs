@@ -1,4 +1,3 @@
-mod e2ei_acme_ca;
 mod e2ei_crl;
 mod e2ei_intermediate_cert;
 mod mls_pending_message;
@@ -11,8 +10,8 @@ mod stored_epoch_encryption_keypair;
 mod stored_hpke_private_key;
 mod stored_keypackage;
 mod stored_psk_bundle;
+mod x509_trust_anchor;
 
-pub use e2ei_acme_ca::E2eiAcmeCA;
 pub use e2ei_crl::E2eiCrl;
 pub use e2ei_intermediate_cert::E2eiIntermediateCert;
 pub use mls_pending_message::{ConversationId, MlsPendingMessage, MlsPendingMessagePrimaryKey};
@@ -25,3 +24,4 @@ pub use stored_epoch_encryption_keypair::StoredEpochEncryptionKeypair;
 pub use stored_hpke_private_key::StoredHpkePrivateKey;
 pub use stored_keypackage::StoredKeyPackage;
 pub use stored_psk_bundle::StoredPskBundle;
+pub use x509_trust_anchor::X509TrustAnchor;

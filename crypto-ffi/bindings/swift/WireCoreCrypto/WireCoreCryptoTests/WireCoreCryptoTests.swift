@@ -19,6 +19,22 @@ final class WireCoreCryptoTests: XCTestCase {
         AytlcANBAJffPzL50OWnmEBo9mGBQfPVzKRIfFc8EaXox1D5VF9cC1r8nRa0hUq+
         LOVS/gxNk618+PKA2bYq67MZQXCYGgk=
         -----END CERTIFICATE-----
+
+        """
+
+    private static let testCaPem2 = """
+        -----BEGIN CERTIFICATE-----
+        MIIBgzCCATWgAwIBAgIUeN2a19U9hEAnnXPaKGG8/IBnN3EwBQYDK2VwMDcxFTAT
+        BgNVBAMMDFRlc3QgUm9vdCBDQTERMA8GA1UECgwIVGVzdCBPcmcxCzAJBgNVBAYT
+        AlVTMB4XDTI2MDgwNjEyNDI0MFoXDTM2MDgwMzEyNDI0MFowNzEVMBMGA1UEAwwM
+        VGVzdCBSb290IENBMREwDwYDVQQKDAhUZXN0IE9yZzELMAkGA1UEBhMCVVMwKjAF
+        BgMrZXADIQCcdQkyHFLytpptb0OsLfDq2GhNmIf2EYRih5jeT1SKvaNTMFEwHQYD
+        VR0OBBYEFIHxxlwJp4caZR40MyYvQHFuKKdWMB8GA1UdIwQYMBaAFIHxxlwJp4ca
+        ZR40MyYvQHFuKKdWMA8GA1UdEwEB/wQFMAMBAf8wBQYDK2VwA0EA5Ssdm0IaTfSc
+        lQjd5t/n3C5DLK70tXC7x6Qpdhn57cNqtjxVQnL7R7yr8ZHCps1+XuZgpaEbVx//
+        r9IJmL6kDQ==
+        -----END CERTIFICATE-----
+
         """
 
     override func setUpWithError() throws {
@@ -772,16 +788,38 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertNil(pkiEnvironment3)
     }
 
-    func testCanAddTrustAnchor() async throws {
+    func testCanAddTrustAnchors() async throws {
         let database = try await newDatabase()
         let pkiEnvironment = try await PkiEnvironment(
             hooks: MockPkiEnvironmentHooks(), database: database)
 
-        do {
-            try await pkiEnvironment.addTrustAnchor(certPem: Self.testCaPem)
-        } catch {
-            XCTFail("Expected addTrustAnchor not to throw, but it threw: \(error)")
-        }
+        try await pkiEnvironment.addTrustAnchor(certPem: Self.testCaPem)
+        try await pkiEnvironment.addTrustAnchor(certPem: Self.testCaPem2)
+        let pems = try await pkiEnvironment.getTrustAnchors()
+
+        XCTAssertEqual(pems.count, 2)
+        XCTAssertEqual(pems[0], Self.testCaPem)
+        XCTAssertEqual(pems[1], Self.testCaPem2)
+    }
+
+    func testCanRemoveTrustAnchor() async throws {
+        let pem2Fingerprint = "03a2be6b2d86f5d1582c1ccbe98390030bc637a05a11f97092c0efb1e35142b9"
+
+        let fingerprintBytes = Data(
+            stride(from: 0, to: pem2Fingerprint.count, by: 2).map { index in
+                UInt8(pem2Fingerprint.dropFirst(index).prefix(2), radix: 16)!
+            })
+        let database = try await newDatabase()
+        let pkiEnvironment = try await PkiEnvironment(
+            hooks: MockPkiEnvironmentHooks(), database: database)
+
+        try await pkiEnvironment.addTrustAnchor(certPem: Self.testCaPem)
+        try await pkiEnvironment.addTrustAnchor(certPem: Self.testCaPem2)
+        try await pkiEnvironment.removeTrustAnchor(fingerprint: fingerprintBytes)
+        let pems = try await pkiEnvironment.getTrustAnchors()
+
+        XCTAssertEqual(pems.count, 1)
+        XCTAssertEqual(pems[0], Self.testCaPem)
     }
 
     func testCanAddIntermediateCert() async throws {

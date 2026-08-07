@@ -70,6 +70,7 @@ sha2 = "0.10"
 smol = "2.0"
 smol-macros = "0.1"
 smol-hyper = "0.1.1"
+spki = { version = "0.7", features = ["pem", "fingerprint"] }
 strum = { version = "0.28", features = ["derive"] }
 thiserror = "2.0"
 tls_codec = "0.4.2"

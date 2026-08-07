@@ -14,8 +14,8 @@ use certval::{
 };
 use core_crypto_keystore::{
     Database, Transaction,
-    entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
-    traits::{FetchFromDatabase, UniqueEntity},
+    entities::{E2eiCrl, E2eiIntermediateCert, X509TrustAnchor},
+    traits::FetchFromDatabase,
 };
 use openmls_traits::authentication_service::{CredentialAuthenticationStatus, CredentialRef};
 use x509_cert::{
@@ -38,6 +38,8 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub enum Error {
     #[error("The trust anchor certificate couldn't be loaded from the database.")]
     NoTrustAnchor,
+    #[error("The trust anchor certificate already exists in the database.")]
+    TrustAnchorAlreadyExists,
     #[error("Failed to fetch CRL from '{uri}': HTTP {status}")]
     CrlFetchUnsuccessful { uri: String, status: u16 },
     #[error(transparent)]
@@ -54,6 +56,8 @@ pub enum Error {
     KeystoreError(#[from] core_crypto_keystore::CryptoKeystoreError),
     #[error("certval error: {0}")]
     Certval(certval::Error),
+    #[error("spki error: {0}")]
+    Spki(spki::Error),
 }
 
 /// New Certificate Revocation List distribution points.
@@ -79,7 +83,7 @@ impl IntoIterator for NewCrlDistributionPoints {
 
 async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<RjtPkiEnvironment> {
     let mut trust_roots = vec![];
-    if let Ok(Some(ta_raw)) = data_provider.get_unique::<E2eiAcmeCA>().await {
+    for ta_raw in data_provider.load_all::<X509TrustAnchor>().await? {
         trust_roots.push(
             x509_cert::Certificate::from_der(&ta_raw.content).map(x509_cert::anchor::TrustAnchorChoice::Certificate)?,
         );
@@ -164,18 +168,24 @@ impl PkiEnvironment {
     ///
     /// The certificate is saved to the database, and included in the PKI environment for
     /// future validation.
-    ///
-    /// # Caution
-    ///
-    /// Adding a trust anchor will replace any existing trust anchor. This limitation
-    /// will be relaxed in the future.
     pub async fn add_trust_anchor(&self, tx: &Transaction, cert: Certificate) -> Result<()> {
         // Validate it (expiration & signature only)
         self.rjt_pki_env.lock().await.validate_trust_anchor_cert(&cert)?;
 
-        // Save cert's DER representation to the database
-        // TODO: make this work for multiple trust anchors, see WPB-25632
-        let cert_data = E2eiAcmeCA {
+        let fingerprint = cert
+            .tbs_certificate
+            .subject_public_key_info
+            .fingerprint_bytes()
+            .map_err(Error::Spki)?
+            .to_vec();
+
+        // A trust anchor can only be added once
+        if tx.get::<X509TrustAnchor>(&fingerprint).await?.is_some() {
+            return Err(Error::TrustAnchorAlreadyExists);
+        }
+
+        let cert_data = X509TrustAnchor {
+            fingerprint,
             content: cert.to_der()?,
         };
 
@@ -194,40 +204,28 @@ impl PkiEnvironment {
         Ok(())
     }
 
-    /// Remove the trust anchor with serial number `serial_number` from the PKI environment.
+    /// Remove the trust anchor from the PKI environment.
     ///
     /// Note that any certificates relying on the removed trust anchor may no longer
     /// validate.
-    pub async fn remove_trust_anchor(&self, tx: &Transaction, serial_number: &[u8]) -> Result<()> {
+    pub async fn remove_trust_anchor(&self, tx: &Transaction, fingerprint: &[u8]) -> Result<()> {
+        tx.remove_borrowed::<X509TrustAnchor>(fingerprint).await?;
+
+        let anchors = tx.load_all::<X509TrustAnchor>().await?;
+
         let mut guard = self.rjt_pki_env.lock().await;
-
-        let certs: Vec<_> = guard
-            .get_trust_anchors()
-            .iter()
-            .filter_map(|choice| match choice.decoded_ta {
-                TrustAnchorChoice::Certificate(ref cert)
-                    if cert.tbs_certificate.serial_number.as_bytes() != serial_number =>
-                {
-                    Some(cert.clone())
-                }
-                _ => None,
-            })
-            .collect();
-
         guard.clear_trust_anchor_sources();
 
-        let mut trust_anchors = TaSource::new();
-        for cert in certs {
-            trust_anchors.push(certval::CertFile {
+        let mut source = TaSource::new();
+        for mut anchor in anchors {
+            source.push(certval::CertFile {
                 filename: "".to_string(),
-                bytes: cert.to_der()?,
+                bytes: std::mem::take(&mut anchor.content),
             });
         }
-        trust_anchors.initialize().map_err(Error::Certval)?;
-        guard.add_trust_anchor_source(Box::new(trust_anchors));
 
-        // TODO: make this work for multiple trust anchors, see WPB-25632
-        tx.remove::<E2eiAcmeCA>(&<E2eiAcmeCA as UniqueEntity>::KEY).await?;
+        source.initialize().map_err(Error::Certval)?;
+        guard.add_trust_anchor_source(Box::new(source));
 
         Ok(())
     }
@@ -355,7 +353,11 @@ LOVS/gxNk618+PKA2bYq67MZQXCYGgk=
         let tx = db.new_transaction().await.unwrap();
         let pki_env = PkiEnvironment::with_dummy_hooks(db).await.unwrap();
         let cert = x509_cert::Certificate::from_pem(EXAMPLE_CERT_PEM).unwrap();
-        assert!(pki_env.add_trust_anchor(&tx, cert).await.is_ok());
+        assert!(pki_env.add_trust_anchor(&tx, cert.clone()).await.is_ok());
+        assert!(matches!(
+            pki_env.add_trust_anchor(&tx, cert).await,
+            Err(Error::TrustAnchorAlreadyExists)
+        ));
     }
 
     #[tokio::test]
@@ -370,7 +372,14 @@ LOVS/gxNk618+PKA2bYq67MZQXCYGgk=
         assert_eq!(certs.len(), 1);
 
         pki_env
-            .remove_trust_anchor(&tx, certs[0].tbs_certificate.serial_number.as_bytes())
+            .remove_trust_anchor(
+                &tx,
+                &certs[0]
+                    .tbs_certificate
+                    .subject_public_key_info
+                    .fingerprint_bytes()
+                    .expect("Getting fingerprint of subject plublic key info"),
+            )
             .await
             .unwrap();
         assert_eq!(pki_env.get_trust_anchors().await.len(), 0);
