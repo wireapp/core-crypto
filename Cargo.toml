@@ -70,6 +70,7 @@ sha2 = "0.10"
 smol = "2.0"
 smol-macros = "0.1"
 smol-hyper = "0.1.1"
+spki = { version = "0.7", features = ["pem", "fingerprint"] }
 strum = { version = "0.28", features = ["derive"] }
 thiserror = "2.0"
 tls_codec = "0.4.2"
@@ -78,7 +79,6 @@ uniffi = "0.29.5"
 url = "2.5"
 uuid = "1.23"
 x509-cert = "0.2"
-spki = { version = "0.7", features = ["pem", "fingerprint"] }
 zeroize = "1.8"
 
 certval = { git = "https://github.com/wireapp/rust-pki.git", branch = "wire/stable", package = "certval", default-features = false, features = [
