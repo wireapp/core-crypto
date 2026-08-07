@@ -127,7 +127,9 @@ pub(crate) mod test {
     use std::io::Write;
 
     use openmls::prelude::Ciphersuite;
+    use spki::der::DecodePem;
     use tempfile::NamedTempFile;
+    use x509_cert::der::Encode;
 
     use crate::{
         connection::{Database, DatabaseKey, migrate_db_key_type_to_bytes, migrations::MigrationTarget},
@@ -258,6 +260,77 @@ pub(crate) mod test {
                 deduplicated_credential.ciphersuite,
                 Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u16
             );
+        });
+    }
+    #[test]
+    fn migrate_to_multiple_trust_anchors() {
+        let test_pem = "-----BEGIN CERTIFICATE-----
+MIIBgzCCATWgAwIBAgIUeN2a19U9hEAnnXPaKGG8/IBnN3EwBQYDK2VwMDcxFTAT
+BgNVBAMMDFRlc3QgUm9vdCBDQTERMA8GA1UECgwIVGVzdCBPcmcxCzAJBgNVBAYT
+AlVTMB4XDTI2MDgwNjEyNDI0MFoXDTM2MDgwMzEyNDI0MFowNzEVMBMGA1UEAwwM
+VGVzdCBSb290IENBMREwDwYDVQQKDAhUZXN0IE9yZzELMAkGA1UEBhMCVVMwKjAF
+BgMrZXADIQCcdQkyHFLytpptb0OsLfDq2GhNmIf2EYRih5jeT1SKvaNTMFEwHQYD
+VR0OBBYEFIHxxlwJp4caZR40MyYvQHFuKKdWMB8GA1UdIwQYMBaAFIHxxlwJp4ca
+ZR40MyYvQHFuKKdWMA8GA1UdEwEB/wQFMAMBAf8wBQYDK2VwA0EA5Ssdm0IaTfSc
+lQjd5t/n3C5DLK70tXC7x6Qpdhn57cNqtjxVQnL7R7yr8ZHCps1+XuZgpaEbVx//
+r9IJmL6kDQ==
+-----END CERTIFICATE-----
+"
+        .to_string();
+
+        let cert = x509_cert::Certificate::from_pem(test_pem).expect("Certificate from pem");
+        let db_file = NamedTempFile::new().unwrap();
+        let path = db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode");
+
+        let new_key = DatabaseKey::generate();
+
+        smol::block_on(async {
+            let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(27))
+                .await
+                .unwrap();
+
+            let conn = db.conn().await;
+            let content = cert.to_der().expect("DER from certificate");
+            conn.execute(
+                "INSERT INTO e2ei_acme_ca (id, content) VALUES (?1, ?2)",
+                rusqlite::params![0, content],
+            )
+            .unwrap();
+
+            let count: i32 = conn
+                .query_row("SELECT COUNT(*) FROM e2ei_acme_ca", [], |row| row.get(0))
+                .unwrap();
+
+            assert_eq!(count, 1);
+
+            drop(conn);
+            drop(db);
+
+            // Open at the new version, triggering v28 -> v29 migration
+            let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(29))
+                .await
+                .unwrap();
+
+            let conn = db.conn().await;
+
+            let (fingerprint, migrated_content): (Vec<u8>, Vec<u8>) = conn
+                .query_row("SELECT fingerprint, content FROM x509_trust_anchor", [], |row| {
+                    Ok((row.get(0)?, row.get(1)?))
+                })
+                .unwrap();
+
+            assert_eq!(migrated_content, content);
+
+            let expected = cert
+                .tbs_certificate
+                .subject_public_key_info
+                .fingerprint_bytes()
+                .unwrap();
+
+            assert_eq!(fingerprint, expected);
         });
     }
 }
