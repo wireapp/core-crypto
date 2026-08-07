@@ -378,8 +378,7 @@ LOVS/gxNk618+PKA2bYq67MZQXCYGgk=
                     .tbs_certificate
                     .subject_public_key_info
                     .fingerprint_bytes()
-                    .expect("Getting fingerprint of subject plublic key info")
-                    .to_vec(),
+                    .expect("Getting fingerprint of subject plublic key info"),
             )
             .await
             .unwrap();
