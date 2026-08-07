@@ -127,9 +127,8 @@ pub(crate) mod test {
     use std::io::Write;
 
     use openmls::prelude::Ciphersuite;
-    use spki::der::DecodePem;
     use tempfile::NamedTempFile;
-    use x509_cert::der::Encode;
+    use x509_cert::der::{DecodePem as _, Encode as _};
 
     use crate::{
         connection::{Database, DatabaseKey, migrate_db_key_type_to_bytes, migrations::MigrationTarget},
@@ -262,6 +261,7 @@ pub(crate) mod test {
             );
         });
     }
+
     #[test]
     fn migrate_to_multiple_trust_anchors() {
         let test_pem = "-----BEGIN CERTIFICATE-----
