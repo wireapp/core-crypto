@@ -78,6 +78,7 @@ uniffi = "0.29.5"
 url = "2.5"
 uuid = "1.23"
 x509-cert = "0.2"
+spki = { version = "0.7", features = ["pem", "fingerprint"] }
 zeroize = "1.8"
 
 certval = { git = "https://github.com/wireapp/rust-pki.git", branch = "wire/stable", package = "certval", default-features = false, features = [
