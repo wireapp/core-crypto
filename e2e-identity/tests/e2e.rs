@@ -321,8 +321,7 @@ async fn should_fail_without_trust_anchor(test_env: TestEnvironment) {
                 .tbs_certificate
                 .subject_public_key_info
                 .fingerprint_bytes()
-                .expect("Getting fingerprint of subject plublic key info")
-                .to_vec(),
+                .expect("Getting fingerprint of subject plublic key info"),
         )
         .await
         .unwrap();
