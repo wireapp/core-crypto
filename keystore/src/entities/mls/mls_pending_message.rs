@@ -124,3 +124,135 @@ impl<'a> crate::traits::DeletableBySearchKey<ConversationId<'a>> for MlsPendingM
         Ok(())
     }
 }
+
+#[cfg(all(test, not(target_os = "unknown")))]
+mod tests {
+    use std::sync::Arc;
+
+    use futures_lite::future;
+
+    use super::*;
+    use crate::{Database, entities::PersistedMlsPendingGroup, traits::FetchFromDatabase as _};
+
+    const CONVERSATION_ID: &[u8] = b"conversation which buffers a message";
+    const MESSAGE: &[u8] = b"a message which arrived before we could decrypt it";
+
+    fn pending_message() -> MlsPendingMessage {
+        MlsPendingMessage {
+            conversation_id: CONVERSATION_ID.to_owned(),
+            message: MESSAGE.to_owned(),
+        }
+    }
+
+    /// An in-memory store containing the pending group which [`CONVERSATION_ID`] refers to.
+    ///
+    /// `mls_pending_messages.conversation_id` has a foreign key onto `mls_pending_groups.id`, so a
+    /// pending message can only be saved once its conversation exists.
+    async fn store_with_pending_group() -> Arc<Database> {
+        let store = Database::open_in_memory().unwrap();
+        let tx = store.new_transaction().await.unwrap();
+        tx.save(PersistedMlsPendingGroup {
+            id: CONVERSATION_ID.to_owned(),
+            state: b"group state".to_vec(),
+            parent_id: None,
+            custom_configuration: b"custom configuration".to_vec(),
+        })
+        .await
+        .unwrap();
+        tx.commit().await.unwrap();
+        store
+    }
+
+    /// A saved pending message can be read back by the primary key derived from its own fields.
+    ///
+    /// This is the property the `hash_sha256` primary key exists to provide: before it, the table
+    /// had no primary key at all and pending messages could only be reached collectively, via
+    /// [`ConversationId`].
+    #[test]
+    fn can_get_a_saved_pending_message_by_primary_key() {
+        future::block_on(async {
+            let store = store_with_pending_group().await;
+            let expected = pending_message();
+            let primary_key = expected.primary_key();
+
+            let tx = store.new_transaction().await.unwrap();
+            tx.save(pending_message()).await.unwrap();
+            tx.commit().await.unwrap();
+
+            let fetched = store
+                .get::<MlsPendingMessage>(&primary_key)
+                .await
+                .unwrap()
+                .expect("the pending message was committed, so it must be gettable by primary key");
+            assert_eq!(fetched, expected);
+        });
+    }
+
+    /// Deleting by primary key removes exactly that pending message and leaves its siblings alone.
+    ///
+    /// The second message shares a conversation id with the first, so a deletion which fell back to
+    /// the [`ConversationId`] search key would take both rows with it.
+    #[test]
+    fn can_delete_a_pending_message_by_primary_key() {
+        future::block_on(async {
+            let store = store_with_pending_group().await;
+            let sibling = MlsPendingMessage {
+                conversation_id: CONVERSATION_ID.to_owned(),
+                message: b"a second buffered message in the same conversation".to_vec(),
+            };
+            let doomed_key = pending_message().primary_key();
+            let sibling_key = sibling.primary_key();
+
+            let tx = store.new_transaction().await.unwrap();
+            tx.save(pending_message()).await.unwrap();
+            tx.save(sibling).await.unwrap();
+            tx.commit().await.unwrap();
+            assert_eq!(store.count::<MlsPendingMessage>().await.unwrap(), 2);
+
+            let tx = store.new_transaction().await.unwrap();
+            tx.remove::<MlsPendingMessage>(&doomed_key).await.unwrap();
+            tx.commit().await.unwrap();
+
+            assert!(
+                store.get::<MlsPendingMessage>(&doomed_key).await.unwrap().is_none(),
+                "the message deleted by primary key must be gone"
+            );
+            assert!(
+                store.get::<MlsPendingMessage>(&sibling_key).await.unwrap().is_some(),
+                "deleting by primary key must not touch other messages in the same conversation"
+            );
+            assert_eq!(store.count::<MlsPendingMessage>().await.unwrap(), 1);
+        });
+    }
+
+    /// Deleting collectively by [`ConversationId`] still takes out every message in the conversation.
+    ///
+    /// Deletion by primary key and deletion by conversation id reach the database by different
+    /// routes, so exercising one says nothing about the other.
+    #[test]
+    fn can_delete_all_pending_messages_of_a_conversation() {
+        future::block_on(async {
+            let store = store_with_pending_group().await;
+
+            let tx = store.new_transaction().await.unwrap();
+            tx.save(pending_message()).await.unwrap();
+            tx.save(MlsPendingMessage {
+                conversation_id: CONVERSATION_ID.to_owned(),
+                message: b"a second buffered message in the same conversation".to_vec(),
+            })
+            .await
+            .unwrap();
+            tx.commit().await.unwrap();
+            assert_eq!(store.count::<MlsPendingMessage>().await.unwrap(), 2);
+
+            let tx = store.new_transaction().await.unwrap();
+            store
+                .remove_pending_messages_by_conversation_id(CONVERSATION_ID)
+                .await
+                .unwrap();
+            tx.commit().await.unwrap();
+
+            assert_eq!(store.count::<MlsPendingMessage>().await.unwrap(), 0);
+        });
+    }
+}
