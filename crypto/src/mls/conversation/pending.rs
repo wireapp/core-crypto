@@ -115,7 +115,7 @@ impl PendingConversation {
         let tx = context_inner.transaction();
 
         let pending_msg = MlsPendingMessage {
-            foreign_id: self.id().as_ref().to_owned(),
+            conversation_id: self.id().as_ref().to_owned(),
             message: message.as_ref().to_vec(),
         };
         tx.save::<MlsPendingMessage>(pending_msg)

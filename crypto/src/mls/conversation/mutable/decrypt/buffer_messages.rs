@@ -25,7 +25,7 @@ pub(crate) enum MessageRestorePolicy {
 impl ConversationMut {
     pub(super) async fn buffer_future_message(&self, message: impl AsRef<[u8]>) -> Result<()> {
         let pending_msg = MlsPendingMessage {
-            foreign_id: self.id().to_bytes(),
+            conversation_id: self.id().to_bytes(),
             message: message.as_ref().to_vec(),
         };
         let context_inner = self.tx_context.inner().await.map_err(RecursiveError::transaction(
