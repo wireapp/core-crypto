@@ -32,7 +32,7 @@ pub struct MlsPendingMessagePrimaryKey(u128);
 impl From<&MlsPendingMessage> for MlsPendingMessagePrimaryKey {
     fn from(value: &MlsPendingMessage) -> Self {
         let mut hasher = twox_hash::xxhash3_128::Hasher::new();
-        hasher.write(&value.foreign_id);
+        hasher.write(&value.conversation_id);
         hasher.write(&value.message);
         Self(hasher.finish_128())
     }
@@ -56,7 +56,7 @@ impl OwnedKeyType for MlsPendingMessagePrimaryKey {
 #[zeroize(drop)]
 pub struct MlsPendingMessage {
     #[sensitive]
-    pub foreign_id: Vec<u8>,
+    pub conversation_id: Vec<u8>,
     pub message: Vec<u8>,
 }
 
@@ -84,7 +84,7 @@ impl crate::traits::Entity for MlsPendingMessage {
     fn load_all(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<Vec<Self>> {
         crate::entities::helpers::load_all_helper(conn, |row| {
             Ok(Self {
-                foreign_id: row.get("id")?,
+                conversation_id: row.get("id")?,
                 message: row.get("message")?,
             })
         })
@@ -96,7 +96,7 @@ impl crate::traits::EntityDatabaseMutation for MlsPendingMessage {
 
     fn save(&self, tx: &rusqlite::Transaction) -> crate::CryptoKeystoreResult<()> {
         let mut stmt = tx.prepare_cached("INSERT INTO mls_pending_messages (id, message) VALUES (?, ?)")?;
-        stmt.execute(rusqlite::params![self.foreign_id, self.message])?;
+        stmt.execute(rusqlite::params![self.conversation_id, self.message])?;
         Ok(())
     }
 
@@ -114,7 +114,7 @@ impl<'a> crate::traits::SearchableEntity<ConversationId<'a>> for MlsPendingMessa
         let mut stmt = conn.prepare_cached("SELECT * FROM mls_pending_messages WHERE id = ?")?;
         stmt.query_map([conversation_id], |row| {
             Ok(Self {
-                foreign_id: row.get("id")?,
+                conversation_id: row.get("id")?,
                 message: row.get("message")?,
             })
         })?
@@ -123,7 +123,7 @@ impl<'a> crate::traits::SearchableEntity<ConversationId<'a>> for MlsPendingMessa
     }
 
     fn matches(&self, conversation_id: &ConversationId<'a>) -> bool {
-        *conversation_id.as_ref() == self.foreign_id.as_slice()
+        *conversation_id.as_ref() == self.conversation_id.as_slice()
     }
 }
 

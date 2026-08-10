@@ -17,7 +17,7 @@ impl Transaction {
                 let Some(pending_message) = entity.downcast::<MlsPendingMessage>() else {
                     return true;
                 };
-                pending_message.foreign_id != conversation_id
+                pending_message.conversation_id != conversation_id
             });
         }
 
@@ -38,7 +38,7 @@ impl Transaction {
         let cached_records = self.find_all_in_cache::<MlsPendingMessage>().await;
         let cached_records = cached_records
             .iter()
-            .filter(|pending_message| pending_message.foreign_id == conversation_id)
+            .filter(|pending_message| pending_message.conversation_id == conversation_id)
             .map(Arc::as_ref)
             .map(Cow::Borrowed);
 

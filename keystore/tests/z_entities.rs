@@ -109,7 +109,7 @@ mod tests_impl {
             let any_e: &mut dyn Any = &mut entity;
             if let Some(pending_message) = any_e.downcast_mut::<MlsPendingMessage>() {
                 let pending_groups = PersistedMlsPendingGroup::random();
-                pending_message.foreign_id = pending_groups.id.clone();
+                pending_message.conversation_id = pending_groups.id.clone();
 
                 tx.save(pending_groups).await.unwrap();
             }
@@ -137,7 +137,7 @@ mod tests_impl {
         let any_e: &dyn Any = entity;
         if let Some(pending_message) = any_e.downcast_ref::<MlsPendingMessage>() {
             let pending_message_from_store = store
-                .find_pending_messages_by_conversation_id(&pending_message.foreign_id)
+                .find_pending_messages_by_conversation_id(&pending_message.conversation_id)
                 .await
                 .unwrap()
                 .pop()
@@ -483,7 +483,7 @@ pub mod utils {
     impl_entity_random_update_ext!(StoredPskBundle, blob_fields=[psk,psk_id id_like:true,]);
     impl_entity_random_update_ext!(PersistedMlsGroup, id_field=id, blob_fields=[state,], additional_fields=[(sender_nonce: rand::random()),]);
     impl_entity_random_update_ext!(PersistedMlsPendingGroup, id_field=id, blob_fields=[state,custom_configuration,], additional_fields=[(parent_id: None),]);
-    impl_entity_random_update_ext!(MlsPendingMessage, id_field = foreign_id, blob_fields = [message,]);
+    impl_entity_random_update_ext!(MlsPendingMessage, id_field = conversation_id, blob_fields = [message,]);
     impl_entity_random_update_ext!(StoredEpochEncryptionKeypair, id_field = id, blob_fields = [keypairs,]);
     impl_entity_random_update_ext!(X509TrustAnchor, id_field = fingerprint, blob_fields = [content,]);
 

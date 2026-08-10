@@ -60,13 +60,13 @@ impl<'a> EntityDatabaseMutation<'a> for MlsPendingMessage {
 
 impl EncryptionKey for MlsPendingMessage {
     fn encryption_key(&self) -> &[u8] {
-        &self.foreign_id
+        &self.conversation_id
     }
 }
 
 #[derive(Serialize)]
 pub(crate) struct MlsPendingMessageEncrypt<'a> {
-    foreign_id: &'a [u8],
+    conversation_id: &'a [u8],
     message: Vec<u8>,
 }
 
@@ -76,7 +76,7 @@ impl<'a> Encrypting<'a> for MlsPendingMessage {
     fn encrypt(&'a self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::EncryptedForm> {
         let message = self.encrypt_data_with_encryption_key(cipher, &self.message)?;
         Ok(MlsPendingMessageEncrypt {
-            foreign_id: &self.foreign_id,
+            conversation_id: &self.conversation_id,
             message,
         })
     }
@@ -84,7 +84,7 @@ impl<'a> Encrypting<'a> for MlsPendingMessage {
 
 #[derive(Deserialize)]
 pub(crate) struct MlsPendingMessageDecrypt {
-    foreign_id: Vec<u8>,
+    conversation_id: Vec<u8>,
     message: Vec<u8>,
 }
 
@@ -92,9 +92,10 @@ impl Decrypting<'static> for MlsPendingMessageDecrypt {
     type DecryptedForm = MlsPendingMessage;
 
     fn decrypt(self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::DecryptedForm> {
-        let message = MlsPendingMessage::decrypt_data_with_encryption_key(cipher, &self.foreign_id, &self.message)?;
+        let message =
+            MlsPendingMessage::decrypt_data_with_encryption_key(cipher, &self.conversation_id, &self.message)?;
         Ok(MlsPendingMessage {
-            foreign_id: self.foreign_id,
+            conversation_id: self.conversation_id,
             message,
         })
     }
@@ -117,7 +118,7 @@ impl<'a> SearchableEntity<ConversationId<'a>> for MlsPendingMessage {
     }
 
     fn matches(&self, conversation_id: &ConversationId<'a>) -> bool {
-        *conversation_id.as_ref() == self.foreign_id.as_slice()
+        *conversation_id.as_ref() == self.conversation_id.as_slice()
     }
 }
 
