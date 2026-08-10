@@ -1097,7 +1097,6 @@ dependencies = [
  "ed25519-dalek",
  "enum-as-inner",
  "env_logger",
- "futures-lite",
  "futures-util",
  "getrandom 0.2.15",
  "hex",
