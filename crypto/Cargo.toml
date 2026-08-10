@@ -84,7 +84,7 @@ serde-wasm-bindgen.workspace = true
 
 [dev-dependencies]
 itertools.workspace = true
-uuid = { workspace = true, features = ["v4", "v5", "js"] }
+uuid = { workspace = true, features = ["v4", "js"] }
 tempfile.workspace = true
 wasm-bindgen.workspace = true
 wasm-bindgen-futures.workspace = true
