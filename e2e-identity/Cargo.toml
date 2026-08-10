@@ -80,7 +80,6 @@ rstest.workspace = true
 
 [target.'cfg(not(target_os = "unknown"))'.dev-dependencies]
 reqwest = { workspace = true, features = ["json", "cookies"] }
-tokio = { workspace = true, features = ["macros"] }
 hyper = { workspace = true, features = ["server"] }
 native-tls = { workspace = true, features = ["vendored"] }
 oauth2 = { workspace = true, features = ["reqwest"] }
