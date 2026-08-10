@@ -55,8 +55,8 @@ impl OwnedKeyType for MlsPendingMessagePrimaryKey {
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct MlsPendingMessage {
-    #[sensitive]
     pub conversation_id: Vec<u8>,
+    #[sensitive]
     pub message: Vec<u8>,
 }
 
