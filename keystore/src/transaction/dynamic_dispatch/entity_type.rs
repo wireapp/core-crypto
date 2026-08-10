@@ -2,9 +2,9 @@
 use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
 use crate::{
     entities::{
-        ConsumerData, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup,
-        StoredBufferedCommit, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
-        StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle, X509TrustAnchor,
+        ConsumerData, E2eiCrl, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit,
+        StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
+        StoredKeyPackage, StoredPskBundle, X509IntermediateCert, X509TrustAnchor,
     },
     traits::Entity as _,
 };
@@ -22,7 +22,7 @@ pub(crate) enum EntityType {
     PersistedMlsPendingGroup,
     MlsPendingMessage,
     X509TrustAnchor,
-    E2eiIntermediateCert,
+    X509IntermediateCert,
     E2eiCrl,
     #[cfg(feature = "proteus-keystore")]
     ProteusIdentity,
@@ -47,7 +47,7 @@ impl EntityType {
             StoredCredential::TABLE_NAME => Some(Self::StoredCredential),
             MlsPendingMessage::TABLE_NAME => Some(Self::MlsPendingMessage),
             E2eiCrl::TABLE_NAME => Some(Self::E2eiCrl),
-            E2eiIntermediateCert::TABLE_NAME => Some(Self::E2eiIntermediateCert),
+            X509IntermediateCert::TABLE_NAME => Some(Self::X509IntermediateCert),
             X509TrustAnchor::TABLE_NAME => Some(Self::X509TrustAnchor),
             #[cfg(feature = "proteus-keystore")]
             ProteusIdentity::TABLE_NAME => Some(Self::ProteusIdentity),
@@ -71,7 +71,7 @@ impl EntityType {
             Self::PersistedMlsGroup => PersistedMlsGroup::TABLE_NAME,
             Self::PersistedMlsPendingGroup => PersistedMlsPendingGroup::TABLE_NAME,
             Self::MlsPendingMessage => MlsPendingMessage::TABLE_NAME,
-            Self::E2eiIntermediateCert => E2eiIntermediateCert::TABLE_NAME,
+            Self::X509IntermediateCert => X509IntermediateCert::TABLE_NAME,
             Self::X509TrustAnchor => X509TrustAnchor::TABLE_NAME,
             Self::E2eiCrl => E2eiCrl::TABLE_NAME,
             #[cfg(feature = "proteus-keystore")]

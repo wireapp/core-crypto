@@ -11,7 +11,7 @@ use zeroize::Zeroize;
     serde::Deserialize,
 )]
 #[zeroize(drop)]
-pub struct E2eiIntermediateCert {
+pub struct X509IntermediateCert {
     // key to identify the CA cert; Using a combination of SKI & AKI extensions concatenated like so is suitable:
     // `SKI[+AKI]`
     #[entity(id)]

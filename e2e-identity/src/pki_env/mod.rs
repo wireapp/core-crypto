@@ -14,7 +14,7 @@ use certval::{
 };
 use core_crypto_keystore::{
     Database, Transaction,
-    entities::{E2eiCrl, E2eiIntermediateCert, X509TrustAnchor},
+    entities::{E2eiCrl, X509IntermediateCert, X509TrustAnchor},
     traits::FetchFromDatabase,
 };
 use openmls_traits::authentication_service::{CredentialAuthenticationStatus, CredentialRef};
@@ -90,7 +90,7 @@ async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<RjtPk
     }
 
     let intermediates = data_provider
-        .load_all::<E2eiIntermediateCert>()
+        .load_all::<X509IntermediateCert>()
         .await?
         .into_iter()
         .map(|inter| x509_cert::Certificate::from_der(&inter.content))
@@ -242,7 +242,7 @@ impl PkiEnvironment {
         let (ski, aki) = RjtPkiEnvironment::extract_ski_aki_from_cert(&cert)?;
         let ski_aki_pair = format!("{ski}:{}", aki.unwrap_or_default());
         let cert_der = RjtPkiEnvironment::encode_cert_to_der(&cert)?;
-        let intermediate_cert = E2eiIntermediateCert {
+        let intermediate_cert = X509IntermediateCert {
             content: cert_der,
             ski_aki_pair,
         };

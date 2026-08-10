@@ -7,9 +7,9 @@ use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
 use crate::{
     CryptoKeystoreResult,
     entities::{
-        ConsumerData, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup,
-        StoredBufferedCommit, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
-        StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle, X509TrustAnchor,
+        ConsumerData, E2eiCrl, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit,
+        StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
+        StoredKeyPackage, StoredPskBundle, X509IntermediateCert, X509TrustAnchor,
     },
     traits::{EntityDatabaseMutation as _, UniqueEntityExt as _},
 };
@@ -28,7 +28,7 @@ pub enum Entity {
     PersistedMlsPendingGroup(Arc<PersistedMlsPendingGroup>),
     MlsPendingMessage(Arc<MlsPendingMessage>),
     X509TrustAnchor(Arc<X509TrustAnchor>),
-    E2eiIntermediateCert(Arc<E2eiIntermediateCert>),
+    X509IntermediateCert(Arc<X509IntermediateCert>),
     E2eiCrl(Arc<E2eiCrl>),
     #[cfg(feature = "proteus-keystore")]
     ProteusIdentity(Arc<ProteusIdentity>),
@@ -63,7 +63,7 @@ impl_from!(PersistedMlsGroup);
 impl_from!(PersistedMlsPendingGroup);
 impl_from!(MlsPendingMessage);
 impl_from!(X509TrustAnchor);
-impl_from!(E2eiIntermediateCert);
+impl_from!(X509IntermediateCert);
 impl_from!(E2eiCrl);
 #[cfg(feature = "proteus-keystore")]
 impl_from!(ProteusIdentity);
@@ -104,7 +104,7 @@ impl Entity {
             Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => downcast(persisted_mls_pending_group),
             Entity::MlsPendingMessage(mls_pending_message) => downcast(mls_pending_message),
             Entity::X509TrustAnchor(e2ei_acme_ca) => downcast(e2ei_acme_ca),
-            Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => downcast(e2ei_intermediate_cert),
+            Entity::X509IntermediateCert(e2ei_intermediate_cert) => downcast(e2ei_intermediate_cert),
             Entity::E2eiCrl(e2ei_crl) => downcast(e2ei_crl),
             #[cfg(feature = "proteus-keystore")]
             Entity::ProteusIdentity(proteus_identity) => downcast(proteus_identity),
@@ -131,7 +131,7 @@ impl Entity {
             Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => persisted_mls_pending_group.save(tx),
             Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.save(tx),
             Entity::X509TrustAnchor(x509_trust_anchor) => x509_trust_anchor.save(tx),
-            Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.save(tx),
+            Entity::X509IntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.save(tx),
             Entity::E2eiCrl(e2ei_crl) => e2ei_crl.save(tx),
             #[cfg(feature = "proteus-keystore")]
             Entity::ProteusSession(record) => record.save(tx),
