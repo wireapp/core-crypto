@@ -87,7 +87,6 @@ oauth2 = { workspace = true, features = ["reqwest"] }
 http.workspace = true
 keycloak.workspace = true
 http-body-util = "0.1"
-hyper-util = { version = "0.1", features = ["full"] }
 testcontainers = { workspace = true, features = ["reusable-containers"] }
 
 [target.'cfg(target_os = "unknown")'.dependencies.uuid]

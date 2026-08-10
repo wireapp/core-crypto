@@ -7204,7 +7204,6 @@ dependencies = [
  "http 1.5.0",
  "http-body-util",
  "hyper",
- "hyper-util",
  "itertools 0.15.0",
  "jwt-simple",
  "keycloak",
