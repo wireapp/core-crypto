@@ -83,14 +83,14 @@ features = ["x25519", "p256", "p384", "p521"]
 futures-lite = { version = "2.6", optional = true }
 
 [target.'cfg(target_os = "unknown")'.dependencies]
-serde-wasm-bindgen = "0.6"
+serde-wasm-bindgen.workspace = true
 
 [dev-dependencies]
 itertools.workspace = true
 uuid = { workspace = true, features = ["v4", "v5", "js"] }
 tempfile = "3.27"
-wasm-bindgen = "0.2"
-wasm-bindgen-futures = "0.4"
+wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
 js-sys = "0.3"
 rstest.workspace = true
 rstest_reuse.workspace = true
