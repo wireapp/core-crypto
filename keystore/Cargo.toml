@@ -52,10 +52,6 @@ serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true
 thiserror.workspace = true
-twox-hash = { version = "2.1.2", default-features = false, features = [
-  "alloc",
-  "xxhash3_128",
-] }
 x509-cert = { workspace = true }
 spki.workspace = true
 zeroize = { workspace = true, features = ["zeroize_derive"] }
