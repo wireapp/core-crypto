@@ -13,12 +13,15 @@ use self::legacy::connection::{DatabaseConnection as _, KeystoreDatabaseConnecti
 use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
 use crate::{
     CryptoKeystoreResult, DatabaseKey,
-    connection::{idb_migration::legacy::entities::mls::e2ei_acme_ca::E2eiAcmeCA, migrations::MigrationTarget},
+    connection::{
+        idb_migration::legacy::entities::mls::{e2ei_acme_ca::E2eiAcmeCA, stored_keypackage::StoredKeypackage},
+        migrations::MigrationTarget,
+    },
     entities::{
         ConsumerData, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, StoredBufferedCommit,
         StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
     },
-    migrations::{LegacyPersistedMlsGroup, LegacyStoredKeypackage},
+    migrations::LegacyPersistedMlsGroup,
     traits::EntityDatabaseMutation as _,
 };
 
@@ -144,7 +147,7 @@ pub(super) async fn maybe_migrate(
         StoredEncryptionKeyPair,
         StoredEpochEncryptionKeypair,
         StoredHpkePrivateKey,
-        LegacyStoredKeypackage,
+        StoredKeypackage,
         StoredPskBundle,
         #[cfg(feature = "proteus-keystore")]
         ProteusIdentity,

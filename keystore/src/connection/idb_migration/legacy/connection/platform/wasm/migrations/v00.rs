@@ -5,12 +5,15 @@ use idb::{
 
 use super::DB_VERSION_0;
 use crate::{
-    connection::idb_migration::legacy::{entities::mls::e2ei_acme_ca::E2eiAcmeCA, traits::EntityBase as _},
+    connection::idb_migration::legacy::{
+        entities::mls::{e2ei_acme_ca::E2eiAcmeCA, stored_keypackage::StoredKeypackage},
+        traits::EntityBase as _,
+    },
     entities::{
         E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey,
         ProteusSession, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
     },
-    migrations::{LegacyPersistedMlsGroup, LegacyStoredKeypackage, StoredSignatureKeypair, V5Credential},
+    migrations::{LegacyPersistedMlsGroup, StoredSignatureKeypair, V5Credential},
 };
 
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
@@ -52,7 +55,7 @@ pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
                 .add_index(IndexBuilder::new("psk_id".into(), KeyPath::new_single("psk_id")).unique(true)),
         )
         .add_object_store(
-            ObjectStoreBuilder::new(LegacyStoredKeypackage::TABLE_NAME)
+            ObjectStoreBuilder::new(StoredKeypackage::TABLE_NAME)
                 .auto_increment(false)
                 .add_index(
                     IndexBuilder::new("keypackage_ref".into(), KeyPath::new_single("keypackage_ref")).unique(true),

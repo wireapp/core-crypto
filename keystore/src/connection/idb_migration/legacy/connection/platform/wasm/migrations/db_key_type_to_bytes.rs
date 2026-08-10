@@ -6,13 +6,14 @@ use super::{DB_VERSION_3, DB_VERSION_4, pre_v04};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
     connection::idb_migration::legacy::{
-        connection::wasm::rekey::rekey_entities, entities::mls::e2ei_acme_ca::E2eiAcmeCA,
+        connection::wasm::rekey::rekey_entities,
+        entities::mls::{e2ei_acme_ca::E2eiAcmeCA, stored_keypackage::StoredKeypackage},
     },
     entities::{
         E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey,
         ProteusSession, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
     },
-    migrations::{LegacyPersistedMlsGroup, LegacyStoredKeypackage, StoredSignatureKeypair, V5Credential},
+    migrations::{LegacyPersistedMlsGroup, StoredSignatureKeypair, V5Credential},
 };
 
 pub(crate) async fn migrate_db_key_type_to_bytes(
@@ -48,7 +49,7 @@ pub(crate) async fn migrate_db_key_type_to_bytes(
             StoredEncryptionKeyPair,
             StoredEpochEncryptionKeypair,
             StoredPskBundle,
-            LegacyStoredKeypackage,
+            StoredKeypackage,
             LegacyPersistedMlsGroup,
             PersistedMlsPendingGroup,
             MlsPendingMessage,
