@@ -61,17 +61,17 @@ aes-gcm = "0.10"
 sha2 = { workspace = true, features = ["oid"] }
 chacha20poly1305 = "0.10"
 hmac = "0.13"
-ed25519-dalek = { version = "2.2", features = ["pkcs8"] }
-signature = "2.2"
-ecdsa = { version = "0.16", features = ["der", "pkcs8"] }
-p256 = { version = "0.13", features = ["pkcs8"] }
-p384 = { version = "0.13", features = ["pkcs8"] }
-p521 = { version = "0.13", features = ["pkcs8"] }
+ed25519-dalek = { workspace = true, features = ["pkcs8"] }
+signature.workspace = true
+ecdsa = { workspace = true, features = ["der", "pkcs8"] }
+p256 = { workspace = true, features = ["pkcs8"] }
+p384 = { workspace = true, features = ["pkcs8"] }
+p521 = { workspace = true, features = ["pkcs8"] }
 hkdf = "0.12"
 x509-cert = { workspace = true, features = ["builder", "hazmat"] }
-web-time = "1.1.0"
+web-time.workspace = true
 rand = { workspace = true, features = ["getrandom"] }
-getrandom = { version = "0.2", features = ["js"] }
+getrandom = { workspace = true, features = ["js"] }
 rand_core = "0.6"
 rand_chacha = "0.3"
 
@@ -93,20 +93,19 @@ tempfile = "3.27"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
-rstest = "0.26"
-rstest_reuse = "0.7"
-env_logger = "0.11"
+rstest.workspace = true
+rstest_reuse.workspace = true
+env_logger.workspace = true
 futures-util = { workspace = true, features = ["std", "alloc"] }
 async-trait.workspace = true
 wire-e2e-identity = { workspace = true, features = ["builder"] }
-web-time.workspace = true
-time = { version = "0.3", features = ["wasm-bindgen"] }
+time = { workspace = true, features = ["wasm-bindgen"] }
 core-crypto-keystore = { workspace = true, features = ["dummy-entity"] }
-rmp-serde = { workspace = true }
+rmp-serde.workspace = true
 smol.workspace = true
 smol-macros.workspace = true
 macro_rules_attribute.workspace = true
-wasm-bindgen-test = { workspace = true }
+wasm-bindgen-test.workspace = true
 openmls.workspace = true
 hex-literal = "1.1"
 
@@ -115,7 +114,7 @@ smol-macros.workspace = true
 macro_rules_attribute.workspace = true
 
 [build-dependencies]
-anyhow = "1.0.102"
+anyhow.workspace = true
 # this is appropriate if we always and only build in environments where `git`
 # is available on the command line. If not, we should replace this with
 # `vergen-gix` or `vergen-git2`.

@@ -24,7 +24,7 @@ async-lock.workspace = true
 async-trait.workspace = true
 core-crypto-macros.workspace = true
 derive_more.workspace = true
-getrandom = { version = "0.2", features = ["js"] }
+getrandom = { workspace = true, features = ["js"] }
 hex.workspace = true
 itertools.workspace = true
 log = { workspace = true }
