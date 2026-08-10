@@ -41,8 +41,18 @@ pub struct Sha256Hash([u8; 32]);
 impl Sha256Hash {
     /// Create an instance by hashing a single input value.
     pub fn hash_from(input: impl AsRef<[u8]>) -> Self {
+        Self::hash_from_many([input])
+    }
+
+    /// Create an instance by hashing several input values.
+    ///
+    /// Note: for Sha256 hashes, hashing multiple inputs `A`, `B`, `C` in sequence will
+    /// always produce the same output as hashing the concatenation `A || B || C``.
+    pub fn hash_from_many(inputs: impl IntoIterator<Item = impl AsRef<[u8]>>) -> Self {
         let mut hasher = Sha256::new();
-        hasher.update(input);
+        for input in inputs {
+            hasher.update(input);
+        }
         Self(hasher.finalize().into())
     }
 
