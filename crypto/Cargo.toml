@@ -80,7 +80,6 @@ version = "0.12"
 features = ["x25519", "p256", "p384", "p521"]
 
 [target.'cfg(not(target_os = "unknown"))'.dependencies]
-async-fs = { version = "2.2", optional = true }
 futures-lite = { version = "2.6", optional = true }
 
 [target.'cfg(target_os = "unknown")'.dependencies]

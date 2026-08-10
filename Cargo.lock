@@ -1085,7 +1085,6 @@ version = "10.3.0"
 dependencies = [
  "aes-gcm",
  "anyhow",
- "async-fs",
  "async-lock",
  "async-recursion",
  "async-trait",
@@ -2885,7 +2884,6 @@ name = "interop"
 version = "10.3.0"
 dependencies = [
  "anyhow",
- "async-fs",
  "async-trait",
  "base64 0.23.0",
  "bitflags",
