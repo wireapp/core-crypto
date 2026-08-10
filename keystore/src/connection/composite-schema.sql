@@ -4,12 +4,6 @@ CREATE TABLE proteus_identities (sk BLOB, pk BLOB);
 
 CREATE TABLE proteus_sessions (id VARCHAR(255) UNIQUE, SESSION BLOB);
 
-CREATE TABLE mls_pending_messages (
-  id BLOB,
-  message BLOB,
-  FOREIGN KEY (id) REFERENCES mls_pending_groups(id)
-);
-
 CREATE TABLE "mls_encryption_keypairs" (
   pk_sha256 TEXT UNIQUE,
   pk BLOB,
@@ -90,3 +84,12 @@ CREATE TABLE x509_crls (
   distribution_point TEXT PRIMARY KEY NOT NULL,
   content BLOB NOT NULL
 );
+
+CREATE TABLE "mls_pending_messages" (
+  hash_sha256 BLOB PRIMARY KEY NOT NULL,  -- hash of the concatenation of (conversation_id, message)
+  conversation_id BLOB NOT NULL,
+  message BLOB NOT NULL,
+  FOREIGN KEY (conversation_id) REFERENCES mls_pending_groups(id)
+);
+
+CREATE INDEX idx_mls_pending_messages_conversation_id ON mls_pending_messages(conversation_id);
