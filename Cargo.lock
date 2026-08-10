@@ -2879,7 +2879,6 @@ dependencies = [
  "async-trait",
  "base64 0.23.0",
  "bitflags",
- "cc",
  "const_format",
  "core-crypto",
  "core-crypto-ffi",
