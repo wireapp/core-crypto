@@ -10,7 +10,7 @@ workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
-anyhow = "1.0"
+anyhow.workspace = true
 
 [target.'cfg(not(target_os = "unknown"))'.dependencies]
 core-crypto-keystore = { workspace = true }
