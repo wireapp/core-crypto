@@ -12,7 +12,7 @@ proteus = ["dep:proteus-wasm", "core-crypto/proteus"]
 workspace = true
 
 [dependencies]
-anyhow = "1.0"
+anyhow.workspace = true
 log.workspace = true
 env_logger.workspace = true
 core-crypto = { path = "../crypto" }
@@ -39,7 +39,7 @@ serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 
 [target.'cfg(not(target_os = "unknown"))'.dependencies]
-tokio = { version = "1.52", features = ["full"] }
+tokio = { workspace = true, features = ["full"] }
 # Http Server
 warp = { version = "0.4", features = ["server"] }
 fantoccini = "0.22"
