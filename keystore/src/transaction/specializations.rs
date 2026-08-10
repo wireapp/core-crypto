@@ -21,11 +21,8 @@ impl Transaction {
             });
         }
 
-        let mut deleted_set = self.deleted.write().await;
-        deleted_set.insert(
-            EntityId::from_key::<MlsPendingMessage>(conversation_id.into())
-                .expect("mls pending messages are proper entities which can be parsed"),
-        );
+        let mut cleared_guard = self.cleared_pending_message_conversations.write().await;
+        cleared_guard.insert(conversation_id.to_owned());
     }
 
     pub(crate) async fn find_pending_messages_by_conversation_id(

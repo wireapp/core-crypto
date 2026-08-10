@@ -15,7 +15,8 @@ use rusqlite::TransactionBehavior;
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc,
-    traits::{Entity, KeyType},
+    entities::MlsPendingMessage,
+    traits::{DeletableBySearchKey as _, Entity, KeyType},
     transaction::dynamic_dispatch::EntityId,
 };
 
@@ -34,6 +35,12 @@ pub(crate) mod dynamic_dispatch;
 pub struct Transaction {
     cache: RwLock<OrderMap<EntityId, dynamic_dispatch::Entity>>,
     deleted: RwLock<HashSet<EntityId>>,
+    /// Conversations whose buffered messages should all be deleted on commit.
+    ///
+    /// [`MlsPendingMessage`] is the one entity we delete by something other than its primary key,
+    /// so this deletion cannot ride along in [`Self::deleted`]: an [`EntityId`] there is always a
+    /// primary key, and mixing a conversation id into that set would make it ambiguous.
+    cleared_pending_message_conversations: RwLock<HashSet<Vec<u8>>>,
     _semaphore_guard: Arc<SemaphoreGuardArc>,
     database: Arc<Database>,
 }
@@ -49,6 +56,7 @@ impl Transaction {
         let transaction = UniqueArc::from(Self {
             cache: Default::default(),
             deleted: Default::default(),
+            cleared_pending_message_conversations: Default::default(),
             _semaphore_guard: Arc::new(semaphore_guard),
             database,
         });
@@ -104,13 +112,15 @@ impl UniqueArc<Transaction> {
         let Transaction {
             cache,
             deleted,
+            cleared_pending_message_conversations,
             database,
             _semaphore_guard,
         } = UniqueArc::into_inner(self).await;
         let cache = cache.into_inner();
         let deleted_ids = deleted.into_inner();
+        let cleared_conversations = cleared_pending_message_conversations.into_inner();
 
-        if cache.is_empty() && deleted_ids.is_empty() {
+        if cache.is_empty() && deleted_ids.is_empty() && cleared_conversations.is_empty() {
             log::debug!("Empty transaction was committed.");
             return Ok(());
         }
@@ -123,6 +133,10 @@ impl UniqueArc<Transaction> {
         // we don't hold this transaction over any `.await` points.
         let mut conn = database.conn().await;
         let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
+
+        for conversation_id in cleared_conversations.iter() {
+            MlsPendingMessage::delete_all_matching(&tx, &conversation_id.as_slice().into())?;
+        }
 
         for entity in cache.values() {
             entity.execute_save(&tx)?;

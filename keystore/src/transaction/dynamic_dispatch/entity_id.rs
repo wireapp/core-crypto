@@ -12,7 +12,7 @@ use crate::{
         StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
         StoredKeyPackage, StoredPskBundle, X509Crl, X509IntermediateCert, X509TrustAnchor,
     },
-    traits::{BorrowPrimaryKey, DeletableBySearchKey as _, Entity, EntityDatabaseMutation, KeyType, OwnedKeyType as _},
+    traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, KeyType, OwnedKeyType as _},
     transaction::dynamic_dispatch::EntityType,
 };
 
@@ -100,9 +100,7 @@ impl EntityId {
             EntityType::PersistedMlsPendingGroup => {
                 PersistedMlsPendingGroup::delete(tx, &self.primary_key::<PersistedMlsPendingGroup>()?)
             }
-            EntityType::MlsPendingMessage => {
-                MlsPendingMessage::delete_all_matching(tx, &self.id.as_slice().into()).map(|_| false)
-            }
+            EntityType::MlsPendingMessage => MlsPendingMessage::delete(tx, &self.primary_key::<MlsPendingMessage>()?),
             EntityType::X509TrustAnchor => X509TrustAnchor::delete(tx, &self.primary_key::<X509TrustAnchor>()?),
             EntityType::X509IntermediateCert => {
                 X509IntermediateCert::delete(tx, &self.primary_key::<X509IntermediateCert>()?)
