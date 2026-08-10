@@ -72,7 +72,7 @@ rusqlite = { version = "0.38", default-features = false, features = [
 
 [target.'cfg(target_os = "unknown")'.dependencies]
 idb.workspace = true
-js-sys = "0.3"
+js-sys.workspace = true
 paste = "1.0.5"
 sqlite-wasm-rs = { version = "0.5.5", features = ["sqlite3mc"] }
 sqlite-wasm-vfs = "0.2.0"

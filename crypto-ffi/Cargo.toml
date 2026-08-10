@@ -63,7 +63,7 @@ sha2 = { version = "0.10", features = ["force-soft"] }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.3", features = ["wasm_js"] }
-js-sys = "0.3"
+js-sys.workspace = true
 web-sys = "0.3"
 console_error_panic_hook.workspace = true
 

@@ -91,7 +91,7 @@ uuid = { workspace = true, features = ["v4", "v5", "js"] }
 tempfile = "3.27"
 wasm-bindgen.workspace = true
 wasm-bindgen-futures.workspace = true
-js-sys = "0.3"
+js-sys.workspace = true
 rstest.workspace = true
 rstest_reuse.workspace = true
 env_logger.workspace = true
