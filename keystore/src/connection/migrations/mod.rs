@@ -131,9 +131,10 @@ pub(crate) mod test {
     use x509_cert::der::{DecodePem as _, Encode as _};
 
     use crate::{
+        Sha256Hash,
         connection::{Database, DatabaseKey, migrate_db_key_type_to_bytes, migrations::MigrationTarget},
-        entities::StoredCredential,
-        traits::Entity,
+        entities::{MlsPendingMessage, StoredCredential},
+        traits::{Entity, PrimaryKey as _},
     };
 
     pub(crate) const DB: &[u8] = include_bytes!(concat!(
@@ -331,6 +332,74 @@ r9IJmL6kDQ==
                 .unwrap();
 
             assert_eq!(fingerprint, expected);
+        });
+    }
+
+    /// A pending message which predates V31 is reachable by primary key once V31 has run.
+    ///
+    /// V31 backfills `hash_sha256` in SQL while [`MlsPendingMessage`] computes it in Rust. Those two
+    /// have to agree on both the hash and its storage encoding, or migrated rows become unreachable
+    /// by every primary-key operation: `get`, `delete`, and the transaction cache alike.
+    #[test]
+    fn v31_backfills_primary_keys_which_the_entity_can_use() {
+        const CONVERSATION_ID: &[u8] = b"a conversation predating the migration";
+        const MESSAGE: &[u8] = b"a message buffered before the migration ran";
+
+        let db_file = NamedTempFile::new().unwrap();
+        let path = db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode");
+        let key = DatabaseKey::generate();
+
+        smol::block_on(async {
+            // write a pending message the way the schema looked before V31
+            {
+                let db = Database::open_at_schema_version(path, &key, MigrationTarget::Version(30))
+                    .await
+                    .unwrap();
+                let conn = db.conn().await;
+                conn.execute(
+                    "INSERT INTO mls_pending_groups (id, state, cfg) VALUES (?, ?, ?)",
+                    (CONVERSATION_ID, b"group state", b"custom configuration"),
+                )
+                .expect("inserting the pending group the message refers to");
+                conn.execute(
+                    "INSERT INTO mls_pending_messages (id, message) VALUES (?, ?)",
+                    (CONVERSATION_ID, MESSAGE),
+                )
+                .expect("inserting a pre-migration pending message");
+            }
+
+            // reopening runs V31, which must backfill a primary key the entity agrees with
+            let db = Database::open(path, &key).await.unwrap();
+            let conn = db.conn().await;
+
+            let migrated = MlsPendingMessage::load_all(&conn).expect("loading migrated pending messages");
+            assert_eq!(migrated.len(), 1, "the migration must not lose the pending message");
+            let migrated = migrated.into_iter().next().unwrap();
+            assert_eq!(migrated.conversation_id, CONVERSATION_ID);
+            assert_eq!(migrated.message, MESSAGE);
+
+            // spelled out rather than taken from `primary_key()`, so that this pins the derivation
+            // for both the entity and the migration rather than just mirroring one of them
+            let expected_key = Sha256Hash::hash_from_many([
+                (CONVERSATION_ID.len() as u64).to_be_bytes().as_slice(),
+                CONVERSATION_ID,
+                MESSAGE,
+            ]);
+            assert_eq!(
+                migrated.primary_key(),
+                expected_key,
+                "the entity must derive its primary key from the same inputs the migration hashed"
+            );
+
+            assert!(
+                MlsPendingMessage::get(&conn, &expected_key)
+                    .expect("getting the migrated pending message by primary key")
+                    .is_some(),
+                "the primary key V31 wrote must be byte-identical to the one the entity binds when querying"
+            );
         });
     }
 }
