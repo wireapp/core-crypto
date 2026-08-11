@@ -255,4 +255,120 @@ mod tests {
             assert_eq!(store.count::<MlsPendingMessage>().await.unwrap(), 0);
         });
     }
+
+    /// A bulk deletion cancels a save which preceded it in the same transaction.
+    ///
+    /// Saves and bulk deletions are buffered in disjoint structures within the transaction, so
+    /// nothing about the buffering enforces their relative order; only their composition does. A
+    /// caller who saves and then clears the conversation has expressed the same intent as one who
+    /// did both against the database directly, and must get the same result: nothing.
+    #[test]
+    fn bulk_deletion_removes_a_pending_message_saved_earlier_in_the_transaction() {
+        future::block_on(async {
+            let store = store_with_pending_group().await;
+            let primary_key = pending_message().primary_key();
+
+            let tx = store.new_transaction().await.unwrap();
+            tx.save(pending_message()).await.unwrap();
+            store
+                .remove_pending_messages_by_conversation_id(CONVERSATION_ID)
+                .await
+                .unwrap();
+            tx.commit().await.unwrap();
+
+            assert!(
+                store.get::<MlsPendingMessage>(&primary_key).await.unwrap().is_none(),
+                "the save was cancelled by the later bulk deletion, so nothing should have been committed"
+            );
+            assert_eq!(store.count::<MlsPendingMessage>().await.unwrap(), 0);
+        });
+    }
+
+    /// A save survives a bulk deletion which preceded it in the same transaction.
+    ///
+    /// This is the mirror image of
+    /// [`bulk_deletion_removes_a_pending_message_saved_earlier_in_the_transaction`]: clearing a
+    /// conversation and then buffering a new message for it is a perfectly ordinary sequence, and
+    /// the new message is not one of the messages the caller asked to clear.
+    #[test]
+    fn a_pending_message_saved_after_a_bulk_deletion_survives_it() {
+        future::block_on(async {
+            let store = store_with_pending_group().await;
+            let stale = pending_message();
+            let stale_key = stale.primary_key();
+            let fresh = MlsPendingMessage {
+                conversation_id: CONVERSATION_ID.to_owned(),
+                message: b"a message buffered after the conversation was cleared".to_vec(),
+            };
+            let fresh_key = fresh.primary_key();
+
+            // persist a message in an earlier transaction, so the bulk deletion has something to do
+            let tx = store.new_transaction().await.unwrap();
+            tx.save(stale).await.unwrap();
+            tx.commit().await.unwrap();
+
+            let tx = store.new_transaction().await.unwrap();
+            store
+                .remove_pending_messages_by_conversation_id(CONVERSATION_ID)
+                .await
+                .unwrap();
+            tx.save(fresh).await.unwrap();
+            tx.commit().await.unwrap();
+
+            assert!(
+                store.get::<MlsPendingMessage>(&fresh_key).await.unwrap().is_some(),
+                "the save came after the bulk deletion, so it must not have been swept up by it"
+            );
+            assert!(
+                store.get::<MlsPendingMessage>(&stale_key).await.unwrap().is_none(),
+                "the message which predated the bulk deletion must still be gone"
+            );
+            assert_eq!(store.count::<MlsPendingMessage>().await.unwrap(), 1);
+        });
+    }
+
+    /// A bulk deletion masks already-persisted messages from reads within the same transaction.
+    ///
+    /// The write side of this composes correctly: a bulk deletion drops matching saves from the
+    /// cache. The read side has to match, or the transaction reports rows it is about to delete.
+    /// Reads consult the set of entities deleted by primary key, which a bulk deletion by
+    /// conversation id never populates, so a persisted message is masked by neither route.
+    #[test]
+    // This needs to wait for probably WPB-27876 or another work ticket which collapses the transaction
+    // operations into a single timeline.
+    #[ignore = "this can only work when we have a consistent view of the order of operations"]
+    fn bulk_deletion_hides_persisted_messages_from_reads_in_the_same_transaction() {
+        future::block_on(async {
+            let store = store_with_pending_group().await;
+            let primary_key = pending_message().primary_key();
+
+            // persist the message in an earlier transaction, so it is on disk rather than cached
+            let tx = store.new_transaction().await.unwrap();
+            tx.save(pending_message()).await.unwrap();
+            tx.commit().await.unwrap();
+
+            let tx = store.new_transaction().await.unwrap();
+            store
+                .remove_pending_messages_by_conversation_id(CONVERSATION_ID)
+                .await
+                .unwrap();
+
+            let found = store
+                .find_pending_messages_by_conversation_id(CONVERSATION_ID)
+                .await
+                .unwrap();
+            assert!(
+                found.is_empty(),
+                "the conversation was cleared in this transaction, so searching it must find nothing"
+            );
+            assert!(
+                store.get::<MlsPendingMessage>(&primary_key).await.unwrap().is_none(),
+                "a message the transaction has cleared must not be gettable by its primary key either"
+            );
+
+            // and the read must have told the truth about what commit does
+            tx.commit().await.unwrap();
+            assert_eq!(store.count::<MlsPendingMessage>().await.unwrap(), 0);
+        });
+    }
 }
