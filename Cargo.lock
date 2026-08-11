@@ -516,9 +516,9 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "base64"
-version = "0.23.0"
+version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b25655df2c3cdd83c5e5b293b88acd880332b2ddadd7c30ac43144fdc0033da9"
+checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
 
 [[package]]
 name = "base64ct"
@@ -1088,7 +1088,7 @@ dependencies = [
  "async-lock",
  "async-recursion",
  "async-trait",
- "base64 0.23.0",
+ "base64 0.23.1",
  "chacha20poly1305",
  "core-crypto-keystore",
  "core-crypto-macros",
@@ -2877,7 +2877,7 @@ version = "10.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "base64 0.23.0",
+ "base64 0.23.1",
  "bitflags",
  "const_format",
  "core-crypto",
@@ -3879,7 +3879,7 @@ version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d354a98a3d1251555de99e8fdd8afda05573c31b82f59063a7b0a29b5527f120"
 dependencies = [
- "base64 0.23.0",
+ "base64 0.23.1",
  "serde_core",
 ]
 
@@ -5580,7 +5580,7 @@ dependencies = [
 name = "test-wire-server"
 version = "0.13.0"
 dependencies = [
- "base64 0.23.0",
+ "base64 0.23.1",
  "http 1.5.0",
  "http-body-util",
  "hyper",
@@ -7175,7 +7175,7 @@ dependencies = [
  "argon2",
  "async-lock",
  "async-trait",
- "base64 0.23.0",
+ "base64 0.23.1",
  "certval",
  "const-oid",
  "core-crypto-keystore",
