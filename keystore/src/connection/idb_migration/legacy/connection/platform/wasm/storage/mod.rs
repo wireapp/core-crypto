@@ -13,7 +13,9 @@ use std::collections::HashMap;
 use wasm_bindgen::JsValue;
 
 pub(crate) use self::{
-    storage::WasmEncryptedStorage, transaction::WasmStorageTransaction, wrapper::WasmStorageWrapper,
+    storage::WasmEncryptedStorage,
+    transaction::WasmStorageTransaction,
+    wrapper::WasmStorageWrapper,
 };
 
 type InMemoryDB = HashMap<String, HashMap<Vec<u8>, JsValue>>;

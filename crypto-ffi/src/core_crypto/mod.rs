@@ -16,9 +16,15 @@ use std::sync::Arc;
 #[cfg(feature = "cancellable-transactions")]
 use async_lock::RwLock;
 
-use crate::{CoreCryptoResult, Database};
+use crate::{
+    CoreCryptoResult,
+    Database,
+};
 #[cfg(feature = "cancellable-transactions")]
-use crate::{PkiEnvironment, cancellation::CancellationSlot};
+use crate::{
+    PkiEnvironment,
+    cancellation::CancellationSlot,
+};
 
 /// CoreCrypto wraps around MLS and Proteus implementations and provides a transactional interface for each.
 #[derive(Debug, uniffi::Object)]

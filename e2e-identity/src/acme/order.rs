@@ -1,9 +1,20 @@
 use std::collections::HashSet;
 
-use rusty_jwt_tools::prelude::{ClientId, Handle, JwsAlgorithm, Pem};
+use rusty_jwt_tools::prelude::{
+    ClientId,
+    Handle,
+    JwsAlgorithm,
+    Pem,
+};
 
 use crate::acme::{
-    AcmeAccount, AcmeDirectory, AcmeIdentifier, AcmeJws, RustyAcme, RustyAcmeError, RustyAcmeResult,
+    AcmeAccount,
+    AcmeDirectory,
+    AcmeIdentifier,
+    AcmeJws,
+    RustyAcme,
+    RustyAcmeError,
+    RustyAcmeResult,
     identifier::CanonicalIdentifier,
 };
 

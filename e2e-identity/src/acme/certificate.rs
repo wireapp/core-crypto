@@ -1,7 +1,21 @@
-use rusty_jwt_tools::prelude::{JwsAlgorithm, Pem};
-use x509_cert::{Certificate, der::Decode as _};
+use rusty_jwt_tools::prelude::{
+    JwsAlgorithm,
+    Pem,
+};
+use x509_cert::{
+    Certificate,
+    der::Decode as _,
+};
 
-use crate::acme::{AcmeAccount, AcmeFinalize, AcmeJws, AcmeOrder, RustyAcme, RustyAcmeError, RustyAcmeResult};
+use crate::acme::{
+    AcmeAccount,
+    AcmeFinalize,
+    AcmeJws,
+    AcmeOrder,
+    RustyAcme,
+    RustyAcmeError,
+    RustyAcmeResult,
+};
 
 impl RustyAcme {
     /// For fetching the generated certificate

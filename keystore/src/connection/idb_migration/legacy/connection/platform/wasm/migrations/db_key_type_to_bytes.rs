@@ -1,22 +1,44 @@
 use aes_gcm::KeyInit as _;
-use idb::{Factory, TransactionMode};
+use idb::{
+    Factory,
+    TransactionMode,
+};
 use sha2::Digest as _;
 
-use super::{DB_VERSION_3, DB_VERSION_4, pre_v04};
+use super::{
+    DB_VERSION_3,
+    DB_VERSION_4,
+    pre_v04,
+};
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
+    CryptoKeystoreError,
+    CryptoKeystoreResult,
+    DatabaseKey,
     connection::idb_migration::legacy::{
         connection::wasm::rekey::rekey_entities,
         entities::mls::{
-            e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
+            e2ei_acme_ca::E2eiAcmeCA,
+            e2ei_crl::E2eiCrl,
+            e2ei_intermediate_cert::E2eiIntermediateCert,
             stored_keypackage::StoredKeypackage,
         },
     },
     entities::{
-        MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
+        MlsPendingMessage,
+        PersistedMlsPendingGroup,
+        ProteusIdentity,
+        ProteusPrekey,
+        ProteusSession,
+        StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair,
+        StoredHpkePrivateKey,
+        StoredPskBundle,
     },
-    migrations::{LegacyPersistedMlsGroup, StoredSignatureKeypair, V5Credential},
+    migrations::{
+        LegacyPersistedMlsGroup,
+        StoredSignatureKeypair,
+        V5Credential,
+    },
 };
 
 pub(crate) async fn migrate_db_key_type_to_bytes(

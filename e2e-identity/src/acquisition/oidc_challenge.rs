@@ -1,11 +1,24 @@
 use obfuscate::Obfuscated;
-use rusty_jwt_tools::{jwk_thumbprint::JwkThumbprint, prelude::Pem};
+use rusty_jwt_tools::{
+    jwk_thumbprint::JwkThumbprint,
+    prelude::Pem,
+};
 use x509_cert::Certificate;
 
-use super::{Result, X509CredentialAcquisition, states};
+use super::{
+    Result,
+    X509CredentialAcquisition,
+    states,
+};
 use crate::{
-    acme::{RustyAcme, RustyAcmeError},
-    pki_env::hooks::{HttpHeader, HttpMethod},
+    acme::{
+        RustyAcme,
+        RustyAcmeError,
+    },
+    pki_env::hooks::{
+        HttpHeader,
+        HttpMethod,
+    },
 };
 
 impl X509CredentialAcquisition<states::DpopChallengeCompleted> {

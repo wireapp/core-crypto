@@ -1,8 +1,16 @@
 use std::sync::Arc;
 
-use core_crypto::{CoreCrypto, HistorySecret as CoreCryptoHistorySecret};
+use core_crypto::{
+    CoreCrypto,
+    HistorySecret as CoreCryptoHistorySecret,
+};
 
-use crate::{ClientId, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult};
+use crate::{
+    ClientId,
+    CoreCryptoError,
+    CoreCryptoFfi,
+    CoreCryptoResult,
+};
 
 /// A `HistorySecret` encodes sufficient client state that it can be used to instantiate an
 /// ephemeral client.

@@ -1,6 +1,10 @@
 use core_crypto_keystore::connection::migrate_db_key_type_to_bytes;
 
-use crate::{CoreCryptoError, CoreCryptoResult, bytes_wrapper::bytes_wrapper};
+use crate::{
+    CoreCryptoError,
+    CoreCryptoResult,
+    bytes_wrapper::bytes_wrapper,
+};
 
 bytes_wrapper!(
     /// A unique identifier for an MLS client.

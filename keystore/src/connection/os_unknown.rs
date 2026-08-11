@@ -5,9 +5,17 @@
 use async_trait::async_trait;
 use rusqlite::Connection;
 use sqlite_wasm_rs::WasmOsCallback;
-use sqlite_wasm_vfs::relaxed_idb::{self, RelaxedIdbCfgBuilder, RelaxedIdbUtil};
+use sqlite_wasm_vfs::relaxed_idb::{
+    self,
+    RelaxedIdbCfgBuilder,
+    RelaxedIdbUtil,
+};
 
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey};
+use crate::{
+    CryptoKeystoreError,
+    CryptoKeystoreResult,
+    DatabaseKey,
+};
 
 // To use sqlite3-multiple-ciphers, you have to prepend the VFS name with `multipleciphers-`.
 // This is true even if you use a non-default VFS name.

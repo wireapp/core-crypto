@@ -1,9 +1,23 @@
-use rusqlite::{Connection, OptionalExtension as _, ToSql, Transaction, params};
+use rusqlite::{
+    Connection,
+    OptionalExtension as _,
+    ToSql,
+    Transaction,
+    params,
+};
 
 use crate::{
     CryptoKeystoreResult,
-    entities::helpers::{count_helper, delete_helper, load_all_helper},
-    traits::{Entity, PrimaryKey, entity_database_mutation::EntityDatabaseMutation},
+    entities::helpers::{
+        count_helper,
+        delete_helper,
+        load_all_helper,
+    },
+    traits::{
+        Entity,
+        PrimaryKey,
+        entity_database_mutation::EntityDatabaseMutation,
+    },
     transaction::dynamic_dispatch,
 };
 

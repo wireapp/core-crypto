@@ -1,6 +1,9 @@
 use std::fmt::Formatter;
 
-use crate::{Obfuscate, compute_hash};
+use crate::{
+    Obfuscate,
+    compute_hash,
+};
 
 impl Obfuscate for u32 {
     fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {

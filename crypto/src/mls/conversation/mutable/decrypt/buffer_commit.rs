@@ -1,10 +1,22 @@
-use core_crypto_keystore::{entities::StoredBufferedCommit, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{
+    entities::StoredBufferedCommit,
+    traits::FetchFromDatabase as _,
+};
 use log::info;
 use openmls::framing::MlsMessageIn;
 use tls_codec::Deserialize as _;
 
-use super::{ConversationMut, RecursionPolicy, Result};
-use crate::{DecryptedMessage, KeystoreError, RecursiveError, mls::conversation::Error};
+use super::{
+    ConversationMut,
+    RecursionPolicy,
+    Result,
+};
+use crate::{
+    DecryptedMessage,
+    KeystoreError,
+    RecursiveError,
+    mls::conversation::Error,
+};
 
 impl ConversationMut {
     /// Cache the bytes of a buffered commit in the backend.

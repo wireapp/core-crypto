@@ -2,16 +2,31 @@
 
 use std::{
     collections::HashMap,
-    net::{Ipv4Addr, SocketAddrV4},
+    net::{
+        Ipv4Addr,
+        SocketAddrV4,
+    },
     str::FromStr as _,
-    sync::{Arc, Mutex},
+    sync::{
+        Arc,
+        Mutex,
+    },
 };
 
 use base64::Engine as _;
-use http_body_util::{BodyExt as _, Full};
+use http_body_util::{
+    BodyExt as _,
+    Full,
+};
 use hyper::{
-    Method, Request, Response, StatusCode,
-    body::{Bytes, Incoming},
+    Method,
+    Request,
+    Response,
+    StatusCode,
+    body::{
+        Bytes,
+        Incoming,
+    },
     server::conn::http1,
 };
 use rusty_jwt_tools::prelude::*;

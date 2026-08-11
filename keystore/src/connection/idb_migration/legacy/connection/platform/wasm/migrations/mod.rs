@@ -16,9 +16,16 @@ mod v11;
 
 pub(crate) use db_key_type_to_bytes::migrate_db_key_type_to_bytes;
 pub(super) use delete_credential_by_session_id::delete_credential_by_session_id;
-use idb::{Database, Factory};
+use idb::{
+    Database,
+    Factory,
+};
 
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey};
+use crate::{
+    CryptoKeystoreError,
+    CryptoKeystoreResult,
+    DatabaseKey,
+};
 
 const fn db_version_number(counter: u32) -> u32 {
     // When the DB version was tied to core crypto, the version counter was the sum of 10_000_000
@@ -122,10 +129,16 @@ async fn do_migration_step(from: u32, name: &str, key: &DatabaseKey) -> CryptoKe
 mod tests {
     use std::sync::LazyLock;
 
-    use idb::builder::{DatabaseBuilder, ObjectStoreBuilder};
+    use idb::builder::{
+        DatabaseBuilder,
+        ObjectStoreBuilder,
+    };
     use rand::{
         Rng as _,
-        distributions::{Alphanumeric, DistString as _},
+        distributions::{
+            Alphanumeric,
+            DistString as _,
+        },
     };
     use serde::Serialize as _;
     use wasm_bindgen::JsValue;
@@ -135,10 +148,21 @@ mod tests {
     use crate::{
         connection::idb_migration::legacy::{
             self,
-            connection::{ConnectionType, Database, storage::WasmStorageWrapper},
-            traits::{Entity, EntityBase as _, EntityDatabaseMutation as _},
+            connection::{
+                ConnectionType,
+                Database,
+                storage::WasmStorageWrapper,
+            },
+            traits::{
+                Entity,
+                EntityBase as _,
+                EntityDatabaseMutation as _,
+            },
         },
-        entities::{ProteusPrekey, StoredCredential},
+        entities::{
+            ProteusPrekey,
+            StoredCredential,
+        },
     };
 
     pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(DatabaseKey::generate);

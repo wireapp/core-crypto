@@ -4,14 +4,26 @@
 //! when joining one by Welcome or external commit
 
 use openmls::prelude::{
-    Capabilities, CredentialType, PURE_CIPHERTEXT_WIRE_FORMAT_POLICY, PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
-    ProtocolVersion, RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy,
+    Capabilities,
+    CredentialType,
+    PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
+    PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
+    ProtocolVersion,
+    RequiredCapabilitiesExtension,
+    SenderRatchetConfiguration,
+    WireFormatPolicy,
 };
 use openmls_traits::types::Ciphersuite as MlsCiphersuite;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 use super::Result;
-use crate::{CipherSuite, ExternalSender};
+use crate::{
+    CipherSuite,
+    ExternalSender,
+};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -160,11 +172,18 @@ mod tests {
     use openmls_traits::{
         OpenMlsCryptoProvider,
         crypto::OpenMlsCrypto,
-        types::{SignatureScheme, VerifiableCiphersuite},
+        types::{
+            SignatureScheme,
+            VerifiableCiphersuite,
+        },
     };
     use wire_e2e_identity::JwsAlgorithm;
 
-    use crate::{ConversationConfiguration, ExternalSender, test_utils::*};
+    use crate::{
+        ConversationConfiguration,
+        ExternalSender,
+        test_utils::*,
+    };
 
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn group_should_have_required_capabilities() {

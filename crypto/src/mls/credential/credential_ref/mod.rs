@@ -7,9 +7,20 @@ mod persistence;
 use core_crypto_keystore::Sha256Hash;
 use openmls::prelude::SignatureScheme;
 
-pub(crate) use self::error::{Error, Result};
-pub use self::find::{FindFilters, FindFiltersBuilder};
-use crate::{CipherSuite, ClientId, ClientIdRef, CredentialType};
+pub(crate) use self::error::{
+    Error,
+    Result,
+};
+pub use self::find::{
+    FindFilters,
+    FindFiltersBuilder,
+};
+use crate::{
+    CipherSuite,
+    ClientId,
+    ClientIdRef,
+    CredentialType,
+};
 
 /// A reference to a credential which has been stored in a session.
 ///

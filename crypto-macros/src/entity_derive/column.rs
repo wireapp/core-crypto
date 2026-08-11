@@ -1,10 +1,16 @@
 use std::borrow::Cow;
 
-use proc_macro2::{Ident, TokenStream};
+use proc_macro2::{
+    Ident,
+    TokenStream,
+};
 use quote::quote;
 use syn::Type;
 
-use super::column_type::{ColumnType, IdColumnType};
+use super::column_type::{
+    ColumnType,
+    IdColumnType,
+};
 use crate::entity_derive::column_type::EmitGetExpression;
 
 pub(super) struct GenericColumn<Type> {

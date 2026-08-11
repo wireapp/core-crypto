@@ -1,10 +1,15 @@
 //! This migration adds an index on the `parent_id` field to the `mls_groups` table.
 
-use idb::builder::{DatabaseBuilder, IndexBuilder};
+use idb::builder::{
+    DatabaseBuilder,
+    IndexBuilder,
+};
 
 use super::DB_VERSION_10;
 use crate::{
-    CryptoKeystoreResult, DatabaseKey, connection::idb_migration::legacy::traits::EntityBase as _,
+    CryptoKeystoreResult,
+    DatabaseKey,
+    connection::idb_migration::legacy::traits::EntityBase as _,
     migrations::LegacyPersistedMlsGroup,
 };
 

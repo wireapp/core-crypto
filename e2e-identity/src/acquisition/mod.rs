@@ -1,14 +1,23 @@
 use std::sync::Arc;
 
 use jwt_simple::prelude::Jwk;
-use rusty_jwt_tools::prelude::{ClientId, HashAlgorithm, JwsAlgorithm, Pem};
+use rusty_jwt_tools::prelude::{
+    ClientId,
+    HashAlgorithm,
+    JwsAlgorithm,
+    Pem,
+};
 use url::Url;
 
 use crate::{
     acme::AcmeJws,
     pki_env::{
         PkiEnvironment,
-        hooks::{HttpHeader, HttpMethod, HttpResponse},
+        hooks::{
+            HttpHeader,
+            HttpMethod,
+            HttpResponse,
+        },
     },
 };
 
@@ -40,7 +49,11 @@ pub struct X509CredentialConfiguration {
 }
 
 pub mod states {
-    use crate::acme::{AcmeAccount, AcmeChallenge, AcmeOrder};
+    use crate::acme::{
+        AcmeAccount,
+        AcmeChallenge,
+        AcmeOrder,
+    };
 
     #[derive(Debug, serde::Serialize, serde::Deserialize)]
     pub struct Initialized;

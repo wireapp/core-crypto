@@ -2,11 +2,21 @@ use web_time::SystemTime;
 use zeroize::ZeroizeOnDrop;
 
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
+    CryptoKeystoreError,
+    CryptoKeystoreResult,
     connection::idb_migration::legacy::{
-        connection::{KeystoreDatabaseConnection, TransactionWrapper},
+        connection::{
+            KeystoreDatabaseConnection,
+            TransactionWrapper,
+        },
         traits::{
-            DecryptData as _, Decryptable, Decrypting, EncryptData as _, Encrypting, Entity, EntityBase,
+            DecryptData as _,
+            Decryptable,
+            Decrypting,
+            EncryptData as _,
+            Encrypting,
+            Entity,
+            EntityBase,
             EntityDatabaseMutation,
         },
     },

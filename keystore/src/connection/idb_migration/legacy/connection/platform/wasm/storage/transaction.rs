@@ -1,13 +1,23 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+};
 
 use js_sys::Uint8Array;
 use serde::Serialize;
 use wasm_bindgen::JsValue;
 
-use super::{super::WasmConnection, InMemoryDB};
+use super::{
+    super::WasmConnection,
+    InMemoryDB,
+};
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
-    connection::idb_migration::legacy::traits::{Encrypting, Entity},
+    CryptoKeystoreError,
+    CryptoKeystoreResult,
+    connection::idb_migration::legacy::traits::{
+        Encrypting,
+        Entity,
+    },
     traits::KeyType,
 };
 

@@ -1,15 +1,29 @@
 use openmls::{
     group::MlsGroup,
     prelude::{
-        ConfirmationTag, ContentType, CredentialWithKey, FramedContentBodyIn, MlsMessageIn, MlsMessageInBody, Sender,
+        ConfirmationTag,
+        ContentType,
+        CredentialWithKey,
+        FramedContentBodyIn,
+        MlsMessageIn,
+        MlsMessageInBody,
+        Sender,
     },
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
 
-use super::{ConversationMut, Error, Result};
+use super::{
+    ConversationMut,
+    Error,
+    Result,
+};
 use crate::{
-    DecryptedMessage, RecursiveError,
-    mls::{conversation::mutable::decrypt::Commit, credential::ext::CredentialExt},
+    DecryptedMessage,
+    RecursiveError,
+    mls::{
+        conversation::mutable::decrypt::Commit,
+        credential::ext::CredentialExt,
+    },
 };
 
 impl ConversationMut {
@@ -110,10 +124,17 @@ impl ConversationMut {
 
 #[cfg(test)]
 mod tests {
-    use openmls::prelude::{ProcessMessageError, ValidationError};
+    use openmls::prelude::{
+        ProcessMessageError,
+        ValidationError,
+    };
 
     use super::super::super::error::Error;
-    use crate::{CredentialRef, OpenMlsError, test_utils::*};
+    use crate::{
+        CredentialRef,
+        OpenMlsError,
+        test_utils::*,
+    };
 
     // If there’s a pending commit & it matches the incoming commit: mark pending commit as accepted
     #[apply(all_cred_cipher)]

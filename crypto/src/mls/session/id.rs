@@ -1,5 +1,8 @@
 use std::{
-    borrow::{Borrow, Cow},
+    borrow::{
+        Borrow,
+        Cow,
+    },
     fmt,
     ops::Deref,
 };
@@ -7,7 +10,10 @@ use std::{
 use uuid::Uuid;
 use wire_e2e_identity::E2eiClientId;
 
-use super::error::{Error, Result};
+use super::error::{
+    Error,
+    Result,
+};
 use crate::HISTORY_CLIENT_ID_PREFIX;
 
 /// A Client identifier

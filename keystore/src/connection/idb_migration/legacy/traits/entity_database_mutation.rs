@@ -4,7 +4,10 @@ use super::Entity;
 use crate::{
     CryptoKeystoreResult,
     connection::idb_migration::legacy::connection::KeystoreDatabaseConnection,
-    traits::{BorrowPrimaryKey, KeyType},
+    traits::{
+        BorrowPrimaryKey,
+        KeyType,
+    },
 };
 
 /// Extend an [`Entity`] with db-mutating operations which can be performed when provided with a transaction.

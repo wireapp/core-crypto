@@ -1,10 +1,20 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    sync::Arc,
+};
 
 use core_crypto::transaction_context::Error as TransactionError;
 
 use crate::{
-    CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, E2eiConversationState, UserIdentities,
-    Uuid, WireIdentity,
+    CipherSuite,
+    ClientId,
+    ConversationId,
+    CoreCryptoContext,
+    CoreCryptoResult,
+    E2eiConversationState,
+    UserIdentities,
+    Uuid,
+    WireIdentity,
 };
 
 #[uniffi::export]

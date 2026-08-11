@@ -6,10 +6,18 @@ use serde::Serialize as _;
 
 use super::DB_VERSION_9;
 use crate::{
-    CryptoKeystoreResult, DatabaseKey,
+    CryptoKeystoreResult,
+    DatabaseKey,
     connection::idb_migration::legacy::{
-        connection::{Database, platform::wasm::WasmStorageTransaction},
-        traits::{Encrypting as _, Entity as _, EntityBase as _},
+        connection::{
+            Database,
+            platform::wasm::WasmStorageTransaction,
+        },
+        traits::{
+            Encrypting as _,
+            Entity as _,
+            EntityBase as _,
+        },
     },
     entities::StoredCredential,
 };

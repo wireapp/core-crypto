@@ -1,8 +1,18 @@
-use std::{net::SocketAddr, path::PathBuf};
+use std::{
+    net::SocketAddr,
+    path::PathBuf,
+};
 
 use anyhow::Result;
-use core_crypto::{CommitBundle as CcCommitBundle, HistorySecret, MlsTransport};
-use core_crypto_ffi::{CommitBundle, HistorySecret as HistorySecretFfi};
+use core_crypto::{
+    CommitBundle as CcCommitBundle,
+    HistorySecret,
+    MlsTransport,
+};
+use core_crypto_ffi::{
+    CommitBundle,
+    HistorySecret as HistorySecretFfi,
+};
 use openmls::prelude::MlsMessageOut;
 use spinoff::Spinner;
 use tokio::sync::RwLock;

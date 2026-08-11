@@ -1,16 +1,31 @@
 use futures_util::TryFutureExt;
 use openmls::{
-    prelude::{Credential, Node, group_info::VerifiableGroupInfo},
+    prelude::{
+        Credential,
+        Node,
+        group_info::VerifiableGroupInfo,
+    },
     treesync::RatchetTree,
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::WireIdentityReader as _;
 
-use super::{Result, Session};
+use super::{
+    Result,
+    Session,
+};
 use crate::{
-    CipherSuite, CredentialFindFilters, CredentialRef, CredentialType, E2eiConversationState, OpenMlsError,
+    CipherSuite,
+    CredentialFindFilters,
+    CredentialRef,
+    CredentialType,
+    E2eiConversationState,
+    OpenMlsError,
     RecursiveError,
-    mls::{credential::ext::CredentialExt as _, session::Error},
+    mls::{
+        credential::ext::CredentialExt as _,
+        session::Error,
+    },
     mls_provider::AuthenticationService,
 };
 

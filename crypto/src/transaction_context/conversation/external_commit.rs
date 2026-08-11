@@ -1,14 +1,29 @@
 //! This module contains the implementation of [TransactionContext::join_by_external_commit].
 
-use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
+use openmls::prelude::{
+    MlsGroup,
+    group_info::VerifiableGroupInfo,
+};
 
-use super::{Error, Result};
+use super::{
+    Error,
+    Result,
+};
 use crate::{
-    CommitBundle, ConversationConfiguration, ConversationId, CredentialRef, GroupInfoBundle, LeafError, OpenMlsError,
+    CommitBundle,
+    ConversationConfiguration,
+    ConversationId,
+    CredentialRef,
+    GroupInfoBundle,
+    LeafError,
+    OpenMlsError,
     RecursiveError,
     mls::{
         self,
-        conversation::{ConversationIdRef, PendingConversation},
+        conversation::{
+            ConversationIdRef,
+            PendingConversation,
+        },
     },
     transaction_context::TransactionContext,
 };
@@ -132,7 +147,11 @@ impl TransactionContext {
 mod tests {
 
     use super::Error;
-    use crate::{ConversationConfiguration, LeafError, test_utils::*};
+    use crate::{
+        ConversationConfiguration,
+        LeafError,
+        test_utils::*,
+    };
 
     #[apply(all_cred_cipher)]
     async fn join_by_external_commit_should_succeed(case: TestContext) {

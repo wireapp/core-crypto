@@ -1,8 +1,15 @@
 use wire_e2e_identity::legacy::device_status::DeviceStatus;
 use x509_cert::der::pem::LineEnding;
 
-use super::{Error, Result};
-use crate::{ClientId, CredentialType, RecursiveError};
+use super::{
+    Error,
+    Result,
+};
+use crate::{
+    ClientId,
+    CredentialType,
+    RecursiveError,
+};
 
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group

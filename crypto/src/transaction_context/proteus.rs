@@ -1,7 +1,14 @@
 //! This module contains all [super::TransactionContext] methods concerning proteus.
 
-use super::{Error, Result, TransactionContext};
-use crate::{RecursiveError, proteus::ProteusCentral};
+use super::{
+    Error,
+    Result,
+    TransactionContext,
+};
+use crate::{
+    RecursiveError,
+    proteus::ProteusCentral,
+};
 
 impl TransactionContext {
     /// Initializes the proteus client

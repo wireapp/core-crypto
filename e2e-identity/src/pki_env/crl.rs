@@ -1,11 +1,24 @@
 use std::collections::HashMap;
 
-use core_crypto_keystore::{Transaction, entities::X509Crl};
+use core_crypto_keystore::{
+    Transaction,
+    entities::X509Crl,
+};
 
-use super::{Error, Result};
+use super::{
+    Error,
+    Result,
+};
 use crate::{
-    pki_env::{PkiEnvironment, hooks::HttpMethod},
-    x509_check::revocation::{CrlStore, PkiEnvironment as RjtPkiEnvironment, now},
+    pki_env::{
+        PkiEnvironment,
+        hooks::HttpMethod,
+    },
+    x509_check::revocation::{
+        CrlStore,
+        PkiEnvironment as RjtPkiEnvironment,
+        now,
+    },
 };
 
 impl PkiEnvironment {

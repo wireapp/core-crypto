@@ -1,10 +1,25 @@
 #[cfg(feature = "proteus-keystore")]
-use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
+use crate::entities::{
+    ProteusIdentity,
+    ProteusPrekey,
+    ProteusSession,
+};
 use crate::{
     entities::{
-        ConsumerData, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit,
-        StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredKeyPackage, StoredPskBundle, X509Crl, X509IntermediateCert, X509TrustAnchor,
+        ConsumerData,
+        MlsPendingMessage,
+        PersistedMlsGroup,
+        PersistedMlsPendingGroup,
+        StoredBufferedCommit,
+        StoredCredential,
+        StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair,
+        StoredHpkePrivateKey,
+        StoredKeyPackage,
+        StoredPskBundle,
+        X509Crl,
+        X509IntermediateCert,
+        X509TrustAnchor,
     },
     traits::Entity as _,
 };

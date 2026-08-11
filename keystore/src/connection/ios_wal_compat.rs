@@ -1,12 +1,23 @@
 use core_foundation::{
     base::TCFType,
     dictionary::CFDictionary,
-    string::{CFString, CFStringRef},
+    string::{
+        CFString,
+        CFStringRef,
+    },
 };
-use security_framework::{base::Error, passwords as ios_keychain};
+use security_framework::{
+    base::Error,
+    passwords as ios_keychain,
+};
 use security_framework_sys::{
     base::errSecSuccess,
-    item::{kSecAttrAccount, kSecAttrService, kSecClass, kSecClassGenericPassword},
+    item::{
+        kSecAttrAccount,
+        kSecAttrService,
+        kSecClass,
+        kSecClassGenericPassword,
+    },
 };
 use sha2::Digest as _;
 

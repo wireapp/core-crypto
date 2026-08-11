@@ -2,7 +2,10 @@
 
 use openmls::prelude::MlsMessageOutBody;
 
-use super::{ConversationMut, Result};
+use super::{
+    ConversationMut,
+    Result,
+};
 use crate::OpenMlsError;
 
 impl ConversationMut {

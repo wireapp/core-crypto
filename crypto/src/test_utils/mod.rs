@@ -24,14 +24,40 @@ use uuid::Uuid;
 use wire_e2e_identity::pki_env::PkiEnvironment;
 
 use self::error::Result;
-pub(crate) use self::{epoch_observer::TestEpochObserver, history_observer::TestHistoryObserver};
-pub use self::{error::Error as TestError, message::*, test_context::*, test_conversation::TestConversation};
+pub(crate) use self::{
+    epoch_observer::TestEpochObserver,
+    history_observer::TestHistoryObserver,
+};
+pub use self::{
+    error::Error as TestError,
+    message::*,
+    test_context::*,
+    test_conversation::TestConversation,
+};
 pub use crate::CredentialType;
 use crate::{
-    CertificateBundle, ClientId, CommitBundle, ConversationId, CoreCrypto, Credential, CredentialRef, Database,
-    DatabaseKey, Error, GroupInfoBundle, MlsTransport, RecursiveError, Session, TransportData,
+    CertificateBundle,
+    ClientId,
+    CommitBundle,
+    ConversationId,
+    CoreCrypto,
+    Credential,
+    CredentialRef,
+    Database,
+    DatabaseKey,
+    Error,
+    GroupInfoBundle,
+    MlsTransport,
+    RecursiveError,
+    Session,
+    TransportData,
     mls::HistoryObserver,
-    test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
+    test_utils::x509::{
+        CertificateParams,
+        X509TestChain,
+        X509TestChainActorArg,
+        X509TestChainArgs,
+    },
     transaction_context::TransactionContext,
 };
 
@@ -84,7 +110,11 @@ macro_rules! innermost_source_matches {
     }};
 }
 
-use crate::{RecursiveError::Test, ephemeral::HistorySecret, test_utils::TestError::ImplementationError};
+use crate::{
+    RecursiveError::Test,
+    ephemeral::HistorySecret,
+    test_utils::TestError::ImplementationError,
+};
 
 #[derive(Debug, Clone)]
 pub struct SessionContext {
@@ -349,7 +379,10 @@ pub fn tmp_db_file() -> (String, tempfile::TempDir) {
 
 #[cfg(target_os = "unknown")]
 pub fn tmp_db_file() -> (String, ()) {
-    use rand::distributions::{Alphanumeric, DistString};
+    use rand::distributions::{
+        Alphanumeric,
+        DistString,
+    };
     let path = format!("{}.idb", Alphanumeric.sample_string(&mut rand::thread_rng(), 16));
     (path, ())
 }
@@ -435,7 +468,11 @@ impl MlsTransportTestExt for CoreCryptoTransportAbortProvider {
 }
 
 use wire_e2e_identity::pki_env::hooks::{
-    HttpHeader, HttpMethod, HttpResponse, PkiEnvironmentHooks, PkiEnvironmentHooksError,
+    HttpHeader,
+    HttpMethod,
+    HttpResponse,
+    PkiEnvironmentHooks,
+    PkiEnvironmentHooksError,
 };
 
 /// Dummy struct for tests

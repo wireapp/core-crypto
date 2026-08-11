@@ -1,9 +1,14 @@
 use idb::builder::DatabaseBuilder;
 
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
+    CryptoKeystoreError,
+    CryptoKeystoreResult,
+    DatabaseKey,
     connection::idb_migration::legacy::connection::{
-        Database, KeystoreDatabaseConnection, TransactionWrapper, platform::wasm::WasmStorageWrapper,
+        Database,
+        KeystoreDatabaseConnection,
+        TransactionWrapper,
+        platform::wasm::WasmStorageWrapper,
         storage::WasmEncryptedStorage,
     },
 };

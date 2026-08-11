@@ -5,7 +5,15 @@ use proc_macro::TokenStream;
 use proc_macro2::Ident;
 use quote::quote;
 use syn::{
-    Attribute, Block, DeriveInput, FnArg, ItemFn, ReturnType, Visibility, parse_macro_input, punctuated::Punctuated,
+    Attribute,
+    Block,
+    DeriveInput,
+    FnArg,
+    ItemFn,
+    ReturnType,
+    Visibility,
+    parse_macro_input,
+    punctuated::Punctuated,
     token::Comma,
 };
 

@@ -9,19 +9,37 @@ pub(crate) mod user_id;
 
 use std::sync::Arc;
 
-use async_lock::{Mutex, RwLock};
+use async_lock::{
+    Mutex,
+    RwLock,
+};
 pub use epoch_observer::EpochObserver;
-pub(crate) use error::{Error, Result};
+pub(crate) use error::{
+    Error,
+    Result,
+};
 pub use history_observer::HistoryObserver;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::{
-    ClientId, HistorySecret, ImmutableDatabase, LeafError, MlsTransport, OpenMlsError, RecursiveError,
+    ClientId,
+    HistorySecret,
+    ImmutableDatabase,
+    LeafError,
+    MlsTransport,
+    OpenMlsError,
+    RecursiveError,
     mls::{
-        conversation::{Conversation, ConversationIdRef},
+        conversation::{
+            Conversation,
+            ConversationIdRef,
+        },
         conversation_cache::ConversationCache,
     },
-    mls_provider::{CryptoProvider, EntropySeed},
+    mls_provider::{
+        CryptoProvider,
+        EntropySeed,
+    },
 };
 
 /// A MLS Session enables a user device to communicate via the MLS protocol.
@@ -134,10 +152,17 @@ impl Session {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::{entities::*, traits::FetchFromDatabase};
+    use core_crypto_keystore::{
+        entities::*,
+        traits::FetchFromDatabase,
+    };
 
     use super::*;
-    use crate::{KeystoreError, mls_provider::CryptoProvider, transaction_context::test_utils::EntitiesCount};
+    use crate::{
+        KeystoreError,
+        mls_provider::CryptoProvider,
+        transaction_context::test_utils::EntitiesCount,
+    };
 
     impl Session {
         // test functions are not held to the same documentation standard as proper functions

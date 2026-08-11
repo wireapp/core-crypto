@@ -4,7 +4,13 @@ use core_crypto_keystore::Database;
 
 use super::{
     PkiEnvironment,
-    hooks::{HttpHeader, HttpMethod, HttpResponse, PkiEnvironmentHooks, PkiEnvironmentHooksError},
+    hooks::{
+        HttpHeader,
+        HttpMethod,
+        HttpResponse,
+        PkiEnvironmentHooks,
+        PkiEnvironmentHooksError,
+    },
 };
 
 #[derive(Debug, Default)]

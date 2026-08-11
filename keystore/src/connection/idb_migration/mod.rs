@@ -6,23 +6,43 @@
 mod legacy;
 
 use idb::Factory;
-use rusqlite::{Connection, OptionalExtension as _};
+use rusqlite::{
+    Connection,
+    OptionalExtension as _,
+};
 
-use self::legacy::connection::{DatabaseConnection as _, KeystoreDatabaseConnection};
+use self::legacy::connection::{
+    DatabaseConnection as _,
+    KeystoreDatabaseConnection,
+};
 #[cfg(feature = "proteus-keystore")]
-use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
+use crate::entities::{
+    ProteusIdentity,
+    ProteusPrekey,
+    ProteusSession,
+};
 use crate::{
-    CryptoKeystoreResult, DatabaseKey,
+    CryptoKeystoreResult,
+    DatabaseKey,
     connection::{
         idb_migration::legacy::entities::mls::{
-            e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
+            e2ei_acme_ca::E2eiAcmeCA,
+            e2ei_crl::E2eiCrl,
+            e2ei_intermediate_cert::E2eiIntermediateCert,
             stored_keypackage::StoredKeypackage,
         },
         migrations::MigrationTarget,
     },
     entities::{
-        ConsumerData, MlsPendingMessage, PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
+        ConsumerData,
+        MlsPendingMessage,
+        PersistedMlsPendingGroup,
+        StoredBufferedCommit,
+        StoredCredential,
+        StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair,
+        StoredHpkePrivateKey,
+        StoredPskBundle,
     },
     migrations::LegacyPersistedMlsGroup,
     traits::EntityDatabaseMutation as _,

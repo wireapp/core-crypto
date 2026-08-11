@@ -1,8 +1,24 @@
-use core_crypto_keystore::{Transaction, entities::ProteusSession, traits::FetchFromDatabase};
-use proteus_wasm::{keys::PreKeyBundle, message::Envelope, session::Session};
+use core_crypto_keystore::{
+    Transaction,
+    entities::ProteusSession,
+    traits::FetchFromDatabase,
+};
+use proteus_wasm::{
+    keys::PreKeyBundle,
+    message::Envelope,
+    session::Session,
+};
 
-use super::{ProteusCentral, ProteusConversationSession};
-use crate::{KeystoreError, LeafError, ProteusError, Result};
+use super::{
+    ProteusCentral,
+    ProteusConversationSession,
+};
+use crate::{
+    KeystoreError,
+    LeafError,
+    ProteusError,
+    Result,
+};
 
 impl ProteusCentral {
     /// Creates a new session from a prekey

@@ -1,6 +1,12 @@
 use core_crypto::RecursiveError;
 
-use crate::{CipherSuite, ConversationId, CoreCryptoFfi, CoreCryptoResult, E2eiConversationState};
+use crate::{
+    CipherSuite,
+    ConversationId,
+    CoreCryptoFfi,
+    CoreCryptoResult,
+    E2eiConversationState,
+};
 
 pub(crate) mod identities;
 

@@ -24,30 +24,48 @@
 #![cfg(not(target_os = "unknown"))]
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{
+        HashMap,
+        HashSet,
+    },
     net::SocketAddr,
     sync::Arc,
 };
 
-use core_crypto_keystore::{Database, Transaction, UniqueArc};
+use core_crypto_keystore::{
+    Database,
+    Transaction,
+    UniqueArc,
+};
 use jwt_simple::prelude::*;
 use rstest::rstest;
 use rusty_jwt_tools::prelude::*;
 use utils::{
-    TestEnvironment, WireServer,
+    TestEnvironment,
+    WireServer,
     ctx::ctx_store_http_client,
     hooks::TestPkiEnvironmentHooks,
-    idp::{IdpServer, OidcProvider, start_idp_server},
-    rand_client_id, rand_str,
+    idp::{
+        IdpServer,
+        OidcProvider,
+        start_idp_server,
+    },
+    rand_client_id,
+    rand_str,
     stepca::CaCfg,
 };
 use wire_e2e_identity::{
-    X509CredentialAcquisition, acquisition::X509CredentialConfiguration, pki_env::PkiEnvironment,
+    X509CredentialAcquisition,
+    acquisition::X509CredentialConfiguration,
+    pki_env::PkiEnvironment,
     x509_check::extract_crl_uris,
 };
 use x509_cert::{
     crl::CertificateList,
-    der::{Decode as _, DecodePem as _},
+    der::{
+        Decode as _,
+        DecodePem as _,
+    },
 };
 
 #[path = "utils/mod.rs"]

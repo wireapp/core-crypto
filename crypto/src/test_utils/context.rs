@@ -1,21 +1,50 @@
 use std::sync::Arc;
 
 use core_crypto_keystore::{
-    entities::{StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeyPackage},
+    entities::{
+        StoredCredential,
+        StoredEncryptionKeyPair,
+        StoredHpkePrivateKey,
+        StoredKeyPackage,
+    },
     traits::FetchFromDatabase,
 };
-use openmls::prelude::{Credential as MlsCredential, ExternalSender, HpkePublicKey, KeyPackage, SignaturePublicKey};
-use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto};
+use openmls::prelude::{
+    Credential as MlsCredential,
+    ExternalSender,
+    HpkePublicKey,
+    KeyPackage,
+    SignaturePublicKey,
+};
+use openmls_traits::{
+    OpenMlsCryptoProvider,
+    crypto::OpenMlsCrypto,
+};
 use tls_codec::Serialize;
 use uuid::Uuid;
-use wire_e2e_identity::{WireIdentityReader, legacy::device_status::DeviceStatus};
+use wire_e2e_identity::{
+    WireIdentityReader,
+    legacy::device_status::DeviceStatus,
+};
 use x509_cert::der::Encode;
 
 use crate::{
-    CertificateBundle, CipherSuite, CredentialFindFilters, CredentialRef, CredentialType, DecryptedMessage,
+    CertificateBundle,
+    CipherSuite,
+    CredentialFindFilters,
+    CredentialRef,
+    CredentialType,
+    DecryptedMessage,
     WireIdentity,
-    mls::credential::{Credential, ext::CredentialExt},
-    test_utils::{SessionContext, TestContext, x509::X509Certificate},
+    mls::credential::{
+        Credential,
+        ext::CredentialExt,
+    },
+    test_utils::{
+        SessionContext,
+        TestContext,
+        x509::X509Certificate,
+    },
 };
 
 #[allow(clippy::redundant_static_lifetimes)]

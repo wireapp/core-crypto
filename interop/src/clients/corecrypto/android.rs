@@ -2,19 +2,39 @@
 use std::cell::Cell;
 use std::{
     cell::RefCell,
-    io::{BufRead as _, BufReader, Read as _},
-    process::{Child, ChildStdout, Command, Stdio},
+    io::{
+        BufRead as _,
+        BufReader,
+        Read as _,
+    },
+    process::{
+        Child,
+        ChildStdout,
+        Command,
+        Stdio,
+    },
     time::Duration,
 };
 
 use anyhow::Result;
-use base64::{Engine as _, engine::general_purpose};
-use core_crypto::{KeyPackageIn, Keypackage};
+use base64::{
+    Engine as _,
+    engine::general_purpose,
+};
+use core_crypto::{
+    KeyPackageIn,
+    Keypackage,
+};
 use tls_codec::Deserialize as _;
 
 use crate::{
     CIPHERSUITE_IN_USE,
-    clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
+    clients::{
+        EmulatedClient,
+        EmulatedClientProtocol,
+        EmulatedClientType,
+        EmulatedMlsClient,
+    },
 };
 
 #[derive(Debug)]

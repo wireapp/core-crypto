@@ -1,5 +1,8 @@
 #[cfg(not(target_os = "unknown"))]
-use anyhow::{anyhow, bail};
+use anyhow::{
+    anyhow,
+    bail,
+};
 
 #[cfg(target_os = "unknown")]
 fn main() -> anyhow::Result<()> {
@@ -22,9 +25,17 @@ async fn main() -> anyhow::Result<()> {
 
     use chrono::TimeZone;
     use clap::Parser as _;
-    use core_crypto_keystore::{Database as Keystore, DatabaseKey, entities::*, traits::FetchFromDatabase};
+    use core_crypto_keystore::{
+        Database as Keystore,
+        DatabaseKey,
+        entities::*,
+        traits::FetchFromDatabase,
+    };
     use openmls::prelude::TlsDeserializeTrait;
-    use serde::ser::{SerializeMap, Serializer};
+    use serde::ser::{
+        SerializeMap,
+        Serializer,
+    };
 
     let args = Args::parse();
 

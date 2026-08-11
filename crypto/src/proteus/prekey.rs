@@ -1,14 +1,25 @@
-use core_crypto_keystore::{Transaction, entities::ProteusPrekey, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{
+    Transaction,
+    entities::ProteusPrekey,
+    traits::FetchFromDatabase as _,
+};
 use proteus_wasm::keys::PreKeyBundle;
 
 use super::ProteusCentral;
-use crate::{KeystoreError, ProteusError, Result};
+use crate::{
+    KeystoreError,
+    ProteusError,
+    Result,
+};
 
 impl ProteusCentral {
     /// Generates a new Proteus PreKey, stores it in the keystore and returns a serialized PreKeyBundle to be consumed
     /// externally
     pub(crate) async fn new_prekey(&self, id: u16, transaction: &Transaction) -> Result<Vec<u8>> {
-        use proteus_wasm::keys::{PreKey, PreKeyId};
+        use proteus_wasm::keys::{
+            PreKey,
+            PreKeyId,
+        };
 
         let prekey_id = PreKeyId::new(id);
         let prekey = PreKey::new(prekey_id);
@@ -89,7 +100,10 @@ mod tests {
     use core_crypto_keystore::DatabaseKey;
 
     use super::*;
-    use crate::test_utils::{proteus_utils::*, *};
+    use crate::test_utils::{
+        proteus_utils::*,
+        *,
+    };
 
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn can_produce_proteus_consumed_prekeys() {

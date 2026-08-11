@@ -1,11 +1,24 @@
-use std::{fmt::Display, time::Duration};
+use std::{
+    fmt::Display,
+    time::Duration,
+};
 
-use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
+use openmls_traits::{
+    crypto::OpenMlsCrypto,
+    random::OpenMlsRand,
+    types::SignatureScheme,
+};
 use x509_cert::der::EncodePem;
 
 use crate::{
-    CertificateBundle, ClientId,
-    mls_provider::{CRYPTO, CertProfile, CertificateGenerationArgs, PkiKeypair},
+    CertificateBundle,
+    ClientId,
+    mls_provider::{
+        CRYPTO,
+        CertProfile,
+        CertificateGenerationArgs,
+        PkiKeypair,
+    },
     transaction_context::TransactionContext,
 };
 

@@ -1,4 +1,7 @@
-use crate::{CoreCryptoError, CoreCryptoResult};
+use crate::{
+    CoreCryptoError,
+    CoreCryptoResult,
+};
 
 #[derive(
     Debug,

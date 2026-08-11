@@ -2,8 +2,14 @@
 
 use super::dynamic_dispatch::EntityId;
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed},
+    CryptoKeystoreError,
+    CryptoKeystoreResult,
+    traits::{
+        BorrowPrimaryKey,
+        Entity,
+        EntityDatabaseMutation,
+        EntityDeleteBorrowed,
+    },
     transaction::Transaction,
 };
 

@@ -1,6 +1,11 @@
 //! The methods defined in this module are extensions designed to improve entity ergonomics.
 
-use crate::{CryptoKeystoreResult, Database, entities::MlsPendingMessage, traits::SearchableEntity as _};
+use crate::{
+    CryptoKeystoreResult,
+    Database,
+    entities::MlsPendingMessage,
+    traits::SearchableEntity as _,
+};
 
 // These and all other database impls should not refer directly to `self.conn` but should go through the `self.conn()`
 // wrapper

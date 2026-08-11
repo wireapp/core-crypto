@@ -1,13 +1,27 @@
-use core_crypto_keystore::{entities::X509Crl, traits::FetchFromDatabase};
+use core_crypto_keystore::{
+    entities::X509Crl,
+    traits::FetchFromDatabase,
+};
 use wire_e2e_identity::x509_check::extract_crl_uris;
 use x509_cert::Certificate;
 
-use super::{Error, Result};
+use super::{
+    Error,
+    Result,
+};
 use crate::{
-    Credential, CredentialRef, CredentialType, KeystoreError, RecursiveError,
+    Credential,
+    CredentialRef,
+    CredentialType,
+    KeystoreError,
+    RecursiveError,
     mls::{
         conversation::Conversation,
-        credential::crl::{CrlUris, extract_crl_uris_from_credentials, extract_crl_uris_from_group},
+        credential::crl::{
+            CrlUris,
+            extract_crl_uris_from_credentials,
+            extract_crl_uris_from_group,
+        },
     },
     transaction_context::TransactionContext,
 };

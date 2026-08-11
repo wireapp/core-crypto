@@ -4,7 +4,10 @@ use crate::{
     CryptoKeystoreResult,
     traits::{
         KeyType,
-        primary_key::{BorrowPrimaryKey, PrimaryKey},
+        primary_key::{
+            BorrowPrimaryKey,
+            PrimaryKey,
+        },
     },
 };
 

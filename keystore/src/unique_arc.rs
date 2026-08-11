@@ -1,16 +1,28 @@
 use std::{
     borrow::Borrow,
     ops::Deref,
-    sync::{Arc, Weak},
+    sync::{
+        Arc,
+        Weak,
+    },
 };
 
-use async_lock::{RwLock, RwLockReadGuardArc};
+use async_lock::{
+    RwLock,
+    RwLockReadGuardArc,
+};
 use async_trait::async_trait;
 
 use crate::{
     CryptoKeystoreResult,
     traits::{
-        BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, KeyType, SearchableEntity, UniqueEntityExt,
+        BorrowPrimaryKey,
+        Entity,
+        EntityGetBorrowed,
+        FetchFromDatabase,
+        KeyType,
+        SearchableEntity,
+        UniqueEntityExt,
     },
 };
 
@@ -198,7 +210,10 @@ where
 
 #[cfg(all(test, not(target_os = "unknown")))]
 mod tests {
-    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::atomic::{
+        AtomicBool,
+        Ordering,
+    };
 
     use async_lock::Semaphore;
     use futures_lite::future;

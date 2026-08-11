@@ -10,12 +10,25 @@ mod jws;
 mod order;
 
 pub use account::AcmeAccount;
-pub use authz::{AcmeAuthz, AcmeAuthzError};
-pub use chall::{AcmeChallError, AcmeChallenge, AcmeChallengeType};
+pub use authz::{
+    AcmeAuthz,
+    AcmeAuthzError,
+};
+pub use chall::{
+    AcmeChallError,
+    AcmeChallenge,
+    AcmeChallengeType,
+};
 pub use directory::AcmeDirectory;
-pub use error::{RustyAcmeError, RustyAcmeResult};
+pub use error::{
+    RustyAcmeError,
+    RustyAcmeResult,
+};
 pub use finalize::AcmeFinalize;
-pub use identifier::{AcmeIdentifier, WireIdentifier};
+pub use identifier::{
+    AcmeIdentifier,
+    WireIdentifier,
+};
 pub use jws::AcmeJws;
 pub use order::AcmeOrder;
 

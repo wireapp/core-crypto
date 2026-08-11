@@ -1,19 +1,36 @@
 use async_trait::async_trait;
 use js_sys::Uint8Array;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use wasm_bindgen::JsValue;
 
 use crate::{
     CryptoKeystoreResult,
     connection::idb_migration::legacy::{
-        connection::{KeystoreDatabaseConnection, TransactionWrapper},
+        connection::{
+            KeystoreDatabaseConnection,
+            TransactionWrapper,
+        },
         traits::{
-            DecryptWithExplicitEncryptionKey as _, Decryptable, Decrypting, DeletableBySearchKey,
-            EncryptWithExplicitEncryptionKey as _, Encrypting, EncryptionKey, Entity, EntityBase,
-            EntityDatabaseMutation, SearchableEntity,
+            DecryptWithExplicitEncryptionKey as _,
+            Decryptable,
+            Decrypting,
+            DeletableBySearchKey,
+            EncryptWithExplicitEncryptionKey as _,
+            Encrypting,
+            EncryptionKey,
+            Entity,
+            EntityBase,
+            EntityDatabaseMutation,
+            SearchableEntity,
         },
     },
-    entities::{ConversationId, MlsPendingMessage},
+    entities::{
+        ConversationId,
+        MlsPendingMessage,
+    },
 };
 
 impl EntityBase for MlsPendingMessage {

@@ -5,7 +5,13 @@ use crate::{
     connection::idb_migration::legacy::{
         connection::KeystoreDatabaseConnection,
         traits::{
-            DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, EntityBase, UniqueEntity as _,
+            DecryptData,
+            Decryptable,
+            Decrypting,
+            EncryptData,
+            Encrypting,
+            EntityBase,
+            UniqueEntity as _,
             UniqueEntityImplementationHelper,
         },
     },

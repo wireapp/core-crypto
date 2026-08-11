@@ -1,9 +1,22 @@
 use std::sync::Arc;
 
-use core_crypto::{KeyPackageIn, RecursiveError, mls::key_package::KeypackageExt};
-use tls_codec::{Deserialize as _, Serialize as _};
+use core_crypto::{
+    KeyPackageIn,
+    RecursiveError,
+    mls::key_package::KeypackageExt,
+};
+use tls_codec::{
+    Deserialize as _,
+    Serialize as _,
+};
 
-use crate::{CipherSuite, CoreCryptoError, CoreCryptoResult, CredentialType, SignatureScheme};
+use crate::{
+    CipherSuite,
+    CoreCryptoError,
+    CoreCryptoResult,
+    CredentialType,
+    SignatureScheme,
+};
 
 /// A lightweight distinct reference to a `KeyPackage`, sufficient to uniquely identify it.
 ///

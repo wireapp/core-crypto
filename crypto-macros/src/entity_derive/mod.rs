@@ -9,7 +9,10 @@ use heck::ToSnakeCase;
 use proc_macro2::Ident;
 
 use crate::entity_derive::{
-    column::{Column, IdColumn},
+    column::{
+        Column,
+        IdColumn,
+    },
     is_id::parse_columns,
 };
 

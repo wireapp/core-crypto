@@ -1,12 +1,20 @@
 //! These methods allow for read-only operations on the entities in the transaction,
 //! without considering the database itself.
 
-use std::{borrow::Cow, sync::Arc};
+use std::{
+    borrow::Cow,
+    sync::Arc,
+};
 
 use super::dynamic_dispatch::EntityId;
 use crate::{
     CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, KeyType, SearchableEntity},
+    traits::{
+        BorrowPrimaryKey,
+        Entity,
+        KeyType,
+        SearchableEntity,
+    },
     transaction::Transaction,
 };
 

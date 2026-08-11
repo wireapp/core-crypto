@@ -1,9 +1,20 @@
-use std::{borrow::Borrow, sync::Arc};
+use std::{
+    borrow::Borrow,
+    sync::Arc,
+};
 
 use async_trait::async_trait;
 use core_crypto_keystore::{
-    CryptoKeystoreResult, Database,
-    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, KeyType, SearchableEntity},
+    CryptoKeystoreResult,
+    Database,
+    traits::{
+        BorrowPrimaryKey,
+        Entity,
+        EntityGetBorrowed,
+        FetchFromDatabase,
+        KeyType,
+        SearchableEntity,
+    },
 };
 
 /// This database only exposes immutable operations.

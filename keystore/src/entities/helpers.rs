@@ -1,6 +1,15 @@
-use rusqlite::{Connection, OptionalExtension, Row, ToSql, Transaction};
+use rusqlite::{
+    Connection,
+    OptionalExtension,
+    Row,
+    ToSql,
+    Transaction,
+};
 
-use crate::{CryptoKeystoreResult, traits::Entity};
+use crate::{
+    CryptoKeystoreResult,
+    traits::Entity,
+};
 
 /// Helper to perform an SQL query to get an entity by its primary key
 ///

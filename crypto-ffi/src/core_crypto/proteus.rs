@@ -1,4 +1,8 @@
-use crate::{CoreCryptoFfi, CoreCryptoResult, proteus_impl};
+use crate::{
+    CoreCryptoFfi,
+    CoreCryptoResult,
+    proteus_impl,
+};
 
 #[uniffi::export]
 impl CoreCryptoFfi {

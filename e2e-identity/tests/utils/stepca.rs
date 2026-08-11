@@ -1,14 +1,28 @@
-use std::{net::SocketAddr, path::Path};
+use std::{
+    net::SocketAddr,
+    path::Path,
+};
 
 use base64::prelude::*;
 use serde_json::json;
 use testcontainers::{
-    ContainerAsync, GenericImage, ImageExt,
-    core::{CmdWaitFor, ContainerPort, ExecCommand, Mount},
+    ContainerAsync,
+    GenericImage,
+    ImageExt,
+    core::{
+        CmdWaitFor,
+        ContainerPort,
+        ExecCommand,
+        Mount,
+    },
     runners::AsyncRunner,
 };
 
-use crate::utils::{NETWORK, SHM, rand_str};
+use crate::utils::{
+    NETWORK,
+    SHM,
+    rand_str,
+};
 
 #[derive(Debug)]
 pub(crate) struct AcmeServer {

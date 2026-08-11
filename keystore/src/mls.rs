@@ -1,14 +1,32 @@
 use openmls::prelude::Ciphersuite;
 use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::key_store::{MlsEntity, MlsEntityId};
+use openmls_traits::key_store::{
+    MlsEntity,
+    MlsEntityId,
+};
 
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, Database, Sha256Hash,
+    CryptoKeystoreError,
+    CryptoKeystoreResult,
+    Database,
+    Sha256Hash,
     entities::{
-        PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredEncryptionKeyPair,
-        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
+        PersistedMlsGroup,
+        PersistedMlsPendingGroup,
+        StoredCredential,
+        StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair,
+        StoredHpkePrivateKey,
+        StoredKeyPackage,
+        StoredPskBundle,
     },
-    traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, FetchFromDatabase as _},
+    traits::{
+        BorrowPrimaryKey,
+        Entity,
+        EntityDatabaseMutation,
+        EntityDeleteBorrowed,
+        FetchFromDatabase as _,
+    },
 };
 
 /// convenience methods to modify the in-flight transaction

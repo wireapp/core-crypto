@@ -1,7 +1,10 @@
 use std::sync::Mutex;
 
 use futures_channel::oneshot;
-use futures_util::{FutureExt as _, future::Shared};
+use futures_util::{
+    FutureExt as _,
+    future::Shared,
+};
 
 /// Use this to cancel a `CoreCrypto` transaction and running foreign callbacks. Should be used in the Swift wrapper
 /// only.

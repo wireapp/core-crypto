@@ -1,4 +1,8 @@
-use crate::{CryptoKeystoreResult, Database, entities::ProteusPrekey};
+use crate::{
+    CryptoKeystoreResult,
+    Database,
+    entities::ProteusPrekey,
+};
 
 impl Database {
     pub async fn proteus_store_prekey(&self, id: u16, prekey: &[u8]) -> CryptoKeystoreResult<()> {

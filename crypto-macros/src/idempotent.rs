@@ -1,6 +1,10 @@
 use proc_macro::TokenStream;
 
-use crate::{compile_error, doc_attributes, items};
+use crate::{
+    compile_error,
+    doc_attributes,
+    items,
+};
 
 const ASYNC_ERROR_MSG: &str = "This requires access to the keystore, it has to be async";
 

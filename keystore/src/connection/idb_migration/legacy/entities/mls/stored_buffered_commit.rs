@@ -11,7 +11,10 @@
 use crate::{
     connection::idb_migration::legacy,
     entities::StoredBufferedCommit,
-    traits::{BorrowPrimaryKey, KeyType},
+    traits::{
+        BorrowPrimaryKey,
+        KeyType,
+    },
 };
 
 impl legacy::traits::EntityBase for StoredBufferedCommit {

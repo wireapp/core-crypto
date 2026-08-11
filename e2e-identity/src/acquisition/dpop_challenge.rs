@@ -1,10 +1,27 @@
 use obfuscate::Obfuscated;
-use rusty_jwt_tools::prelude::{Dpop, Handle, Htm, RustyJwtTools};
+use rusty_jwt_tools::prelude::{
+    Dpop,
+    Handle,
+    Htm,
+    RustyJwtTools,
+};
 use url::Url;
 
-use super::{Result, X509CredentialAcquisition, get_header, states};
+use super::{
+    Result,
+    X509CredentialAcquisition,
+    get_header,
+    states,
+};
 use crate::{
-    acme::{AcmeAccount, AcmeChallenge, AcmeChallengeType, AcmeOrder, RustyAcme, RustyAcmeError},
+    acme::{
+        AcmeAccount,
+        AcmeChallenge,
+        AcmeChallengeType,
+        AcmeOrder,
+        RustyAcme,
+        RustyAcmeError,
+    },
     pki_env::hooks::HttpMethod,
 };
 

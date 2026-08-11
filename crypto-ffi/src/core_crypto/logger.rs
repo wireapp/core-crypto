@@ -1,14 +1,25 @@
 use std::{
     collections::BTreeMap,
     ops::Deref as _,
-    sync::{Arc, LazyLock, Once},
+    sync::{
+        Arc,
+        LazyLock,
+        Once,
+    },
 };
 
 #[cfg(target_os = "unknown")]
 use js_sys::wasm_bindgen::JsValue;
 use log::{
-    Level, LevelFilter, Metadata, Record,
-    kv::{Key, Value, VisitSource},
+    Level,
+    LevelFilter,
+    Metadata,
+    Record,
+    kv::{
+        Key,
+        Value,
+        VisitSource,
+    },
 };
 use log_reload::ReloadLog;
 

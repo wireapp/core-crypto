@@ -16,11 +16,20 @@ pub(crate) use hash::sha256;
 pub use unique_arc::UniqueArc;
 
 #[cfg(feature = "dummy-entity")]
-pub use self::entities::{DummyStoreValue, DummyValue};
+pub use self::entities::{
+    DummyStoreValue,
+    DummyValue,
+};
 pub use self::{
     connection::Database,
     database_key::DatabaseKey,
-    error::{CryptoKeystoreError, CryptoKeystoreResult},
-    mls::{deser, ser},
+    error::{
+        CryptoKeystoreError,
+        CryptoKeystoreResult,
+    },
+    mls::{
+        deser,
+        ser,
+    },
     transaction::Transaction,
 };

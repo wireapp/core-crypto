@@ -27,14 +27,36 @@ pub(crate) use pending::PendingConversation;
 
 pub use self::{
     commit::CommitBundle,
-    config::{ConversationConfiguration, CustomConfiguration, WirePolicy},
-    error::{Error, Result},
-    group_info::{GroupInfoBundle, GroupInfoEncryptionType, GroupInfoPayload, RatchetTreeType},
-    id::{ConversationId, ConversationIdRef},
+    config::{
+        ConversationConfiguration,
+        CustomConfiguration,
+        WirePolicy,
+    },
+    error::{
+        Error,
+        Result,
+    },
+    group_info::{
+        GroupInfoBundle,
+        GroupInfoEncryptionType,
+        GroupInfoPayload,
+        RatchetTreeType,
+    },
+    id::{
+        ConversationId,
+        ConversationIdRef,
+    },
     immutable::Conversation,
     mutable::{
         ConversationMut,
-        decrypt::{BufferedCommit, BufferedDecryptedMessage, Commit, DecryptedMessage, Proposal, Text},
+        decrypt::{
+            BufferedCommit,
+            BufferedDecryptedMessage,
+            Commit,
+            DecryptedMessage,
+            Proposal,
+            Text,
+        },
     },
     welcome::WelcomeMessage,
 };
@@ -98,7 +120,11 @@ mod tests {
 
         use super::Error;
         use crate::{
-            ClientId, CredentialType, DeviceStatus, E2eiConversationState, mls::conversation::Conversation,
+            ClientId,
+            CredentialType,
+            DeviceStatus,
+            E2eiConversationState,
+            mls::conversation::Conversation,
             test_utils::*,
         };
 

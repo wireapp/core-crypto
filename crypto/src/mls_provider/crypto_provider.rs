@@ -1,8 +1,18 @@
-use std::sync::{Arc, LazyLock, RwLock, RwLockWriteGuard};
+use std::sync::{
+    Arc,
+    LazyLock,
+    RwLock,
+    RwLockWriteGuard,
+};
 
 use aes_gcm::{
-    Aes128Gcm, Aes256Gcm, KeyInit,
-    aead::{Aead, Payload},
+    Aes128Gcm,
+    Aes256Gcm,
+    KeyInit,
+    aead::{
+        Aead,
+        Payload,
+    },
 };
 use chacha20poly1305::ChaCha20Poly1305;
 use hkdf::Hkdf;
@@ -10,16 +20,36 @@ use openmls_traits::{
     crypto::OpenMlsCrypto,
     random::OpenMlsRand,
     types::{
-        self, AeadType, Ciphersuite, CryptoError, ExporterSecret, HashType, HpkeAeadType, HpkeConfig, HpkeKdfType,
-        HpkeKemType, SignatureScheme,
+        self,
+        AeadType,
+        Ciphersuite,
+        CryptoError,
+        ExporterSecret,
+        HashType,
+        HpkeAeadType,
+        HpkeConfig,
+        HpkeKdfType,
+        HpkeKemType,
+        SignatureScheme,
     },
 };
-use rand_core::{RngCore, SeedableRng};
-use sha2::{Digest, Sha256, Sha384, Sha512};
+use rand_core::{
+    RngCore,
+    SeedableRng,
+};
+use sha2::{
+    Digest,
+    Sha256,
+    Sha384,
+    Sha512,
+};
 use signature::digest::typenum::Unsigned;
 use tls_codec::SecretVLBytes;
 
-use super::{EntropySeed, Error};
+use super::{
+    EntropySeed,
+    Error,
+};
 
 /// Singleton for `RustCrypto`
 /// Because of the reseed feature we have to use this
@@ -538,7 +568,11 @@ impl OpenMlsCrypto for RustCrypto {
 }
 
 mod hpke_core {
-    use openmls_traits::types::{CryptoError, HpkeCiphertext, HpkeKeyPair};
+    use openmls_traits::types::{
+        CryptoError,
+        HpkeCiphertext,
+        HpkeKeyPair,
+    };
 
     pub(crate) fn hpke_open<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
         private_key: &[u8],
@@ -547,7 +581,10 @@ mod hpke_core {
         aad: &[u8],
         ciphertext: &[u8],
     ) -> Result<Vec<u8>, CryptoError> {
-        use hpke::{Deserializable as _, Serializable as _};
+        use hpke::{
+            Deserializable as _,
+            Serializable as _,
+        };
         let encapped_key = Kem::EncappedKey::from_bytes(kem_output).map_err(|_| CryptoError::HpkeDecryptionError)?;
         // Systematically normalize private keys
         let sk_len = Kem::PrivateKey::size();
@@ -573,7 +610,10 @@ mod hpke_core {
         plaintext: &[u8],
         csprng: &mut impl rand_core::CryptoRngCore,
     ) -> Result<HpkeCiphertext, CryptoError> {
-        use hpke::{Deserializable as _, Serializable as _};
+        use hpke::{
+            Deserializable as _,
+            Serializable as _,
+        };
         let key = Kem::PublicKey::from_bytes(public_key).map_err(|_| CryptoError::HpkeEncryptionError)?;
         let (encapped, ciphertext) =
             hpke::single_shot_seal::<Aead, Kdf, Kem, _>(&hpke::OpModeS::Base, &key, info, plaintext, aad, csprng)
@@ -632,7 +672,10 @@ mod hpke_core {
         export_len: usize,
         csprng: &mut impl rand_core::CryptoRngCore,
     ) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
-        use hpke::{Deserializable as _, Serializable as _};
+        use hpke::{
+            Deserializable as _,
+            Serializable as _,
+        };
         let key = Kem::PublicKey::from_bytes(tx_public_key).map_err(|_| CryptoError::SenderSetupError)?;
         let (kem_output, ctx) = hpke::setup_sender::<Aead, Kdf, Kem, _>(&hpke::OpModeS::Base, &key, info, csprng)
             .map_err(|_| CryptoError::SenderSetupError)?;

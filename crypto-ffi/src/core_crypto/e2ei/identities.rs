@@ -1,8 +1,18 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    sync::Arc,
+};
 
 use core_crypto::RecursiveError;
 
-use crate::{ClientId, ConversationId, CoreCryptoFfi, CoreCryptoResult, Uuid, WireIdentity};
+use crate::{
+    ClientId,
+    ConversationId,
+    CoreCryptoFfi,
+    CoreCryptoResult,
+    Uuid,
+    WireIdentity,
+};
 
 type DeviceIdentities = Vec<WireIdentity>;
 

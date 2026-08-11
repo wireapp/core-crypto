@@ -2,14 +2,20 @@
 
 use std::sync::Arc;
 
-use anyhow::{Result, anyhow};
+use anyhow::{
+    Result,
+    anyhow,
+};
 #[cfg(target_os = "unknown")]
 use core_crypto::DatabaseKey;
 use core_crypto::MlsCiphersuite;
 use tls_codec::Serialize;
 
 #[cfg(not(target_os = "unknown"))]
-use crate::util::{MlsTransportSuccessProvider, MlsTransportTestExt};
+use crate::util::{
+    MlsTransportSuccessProvider,
+    MlsTransportTestExt,
+};
 
 #[cfg(not(target_os = "unknown"))]
 mod clients;
@@ -71,9 +77,15 @@ async fn create_proteus_clients<'a>(
 // it complains over a lacking main function
 #[cfg(not(target_os = "unknown"))]
 fn run_test() -> Result<()> {
-    use std::time::{Duration, Instant};
+    use std::time::{
+        Duration,
+        Instant,
+    };
 
-    use tokio::net::{TcpListener, TcpStream};
+    use tokio::net::{
+        TcpListener,
+        TcpStream,
+    };
 
     env_logger::init();
 

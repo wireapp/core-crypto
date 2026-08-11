@@ -9,7 +9,10 @@
 //! This can be removed once we fully migrate to Kotlin Multiplatform and
 //! stop generating JVM/Android bindings.
 
-use std::time::{Duration, SystemTime};
+use std::time::{
+    Duration,
+    SystemTime,
+};
 
 /// A wrapper around `SystemTime` for FFI bindings with custom type mapping per language.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]

@@ -3,10 +3,21 @@ use async_trait::async_trait;
 use crate::{
     CryptoKeystoreResult,
     connection::idb_migration::legacy::{
-        connection::{KeystoreDatabaseConnection, TransactionWrapper},
+        connection::{
+            KeystoreDatabaseConnection,
+            TransactionWrapper,
+        },
         traits::{
-            DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity, EntityBase, EntityDatabaseMutation,
-            EntityDeleteBorrowed, EntityGetBorrowed,
+            DecryptData,
+            Decryptable,
+            Decrypting,
+            EncryptData,
+            Encrypting,
+            Entity,
+            EntityBase,
+            EntityDatabaseMutation,
+            EntityDeleteBorrowed,
+            EntityGetBorrowed,
         },
     },
     entities::StoredEncryptionKeyPair,

@@ -1,10 +1,16 @@
 use std::fmt;
 
-use sha2::{Digest, Sha256};
+use sha2::{
+    Digest,
+    Sha256,
+};
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{KeyType, OwnedKeyType},
+    traits::{
+        KeyType,
+        OwnedKeyType,
+    },
 };
 
 /// Used to calculate ID hashes for some MlsEntities' SQLite tables.

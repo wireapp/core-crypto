@@ -1,12 +1,21 @@
 use std::collections::HashMap;
 
-use core_crypto_keystore::{entities::PersistedMlsGroup, traits::FetchFromDatabase};
+use core_crypto_keystore::{
+    entities::PersistedMlsGroup,
+    traits::FetchFromDatabase,
+};
 use openmls::group::MlsGroup;
 
 use super::Result;
 use crate::{
-    ConversationConfiguration, ConversationId, KeystoreError, Session,
-    mls::conversation::{Conversation, MlsGroupState},
+    ConversationConfiguration,
+    ConversationId,
+    KeystoreError,
+    Session,
+    mls::conversation::{
+        Conversation,
+        MlsGroupState,
+    },
 };
 
 impl Conversation {

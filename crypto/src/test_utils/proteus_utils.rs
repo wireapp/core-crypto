@@ -1,7 +1,13 @@
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{
+    Mutex,
+    MutexGuard,
+};
 
 use proteus_wasm::{
-    keys::{IdentityKeyPair, PreKey},
+    keys::{
+        IdentityKeyPair,
+        PreKey,
+    },
     session::Session,
 };
 

@@ -4,13 +4,29 @@ pub mod external_commit;
 mod persistence;
 pub mod welcome;
 
-use core_crypto_keystore::{entities::PersistedMlsPendingGroup, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{
+    entities::PersistedMlsPendingGroup,
+    traits::FetchFromDatabase as _,
+};
 use openmls::group::MlsGroup;
 
-use super::{Error, Result, TransactionContext};
+use super::{
+    Error,
+    Result,
+    TransactionContext,
+};
 use crate::{
-    ConversationConfiguration, CredentialRef, KeystoreError, LeafError, OpenMlsError, RecursiveError,
-    mls::conversation::{ConversationIdRef, ConversationMut, PendingConversation},
+    ConversationConfiguration,
+    CredentialRef,
+    KeystoreError,
+    LeafError,
+    OpenMlsError,
+    RecursiveError,
+    mls::conversation::{
+        ConversationIdRef,
+        ConversationMut,
+        PendingConversation,
+    },
 };
 
 impl TransactionContext {

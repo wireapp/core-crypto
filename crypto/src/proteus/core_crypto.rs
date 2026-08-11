@@ -1,5 +1,9 @@
 use super::ProteusCentral;
-use crate::{CoreCrypto, Error, Result};
+use crate::{
+    CoreCrypto,
+    Error,
+    Result,
+};
 
 impl CoreCrypto {
     /// Proteus session exists
@@ -56,10 +60,16 @@ impl CoreCrypto {
 mod tests {
     use std::sync::Arc;
 
-    use core_crypto_keystore::{Database, DatabaseKey};
+    use core_crypto_keystore::{
+        Database,
+        DatabaseKey,
+    };
 
     use super::*;
-    use crate::test_utils::{x509::X509TestChain, *};
+    use crate::test_utils::{
+        x509::X509TestChain,
+        *,
+    };
 
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn cc_can_init() {

@@ -1,8 +1,15 @@
-use rusqlite::{Connection, Transaction};
+use rusqlite::{
+    Connection,
+    Transaction,
+};
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{Entity, EntityDatabaseMutation, KeyType},
+    traits::{
+        Entity,
+        EntityDatabaseMutation,
+        KeyType,
+    },
 };
 
 pub trait SearchableEntity<SearchKey: KeyType>: Entity {

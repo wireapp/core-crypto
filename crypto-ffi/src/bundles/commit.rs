@@ -2,7 +2,11 @@ use std::sync::Arc;
 
 use core_crypto::CommitBundle as CryptoCommitBundle;
 
-use crate::{CoreCryptoError, GroupInfoBundle, core_crypto_context::mls::Welcome};
+use crate::{
+    CoreCryptoError,
+    GroupInfoBundle,
+    core_crypto_context::mls::Welcome,
+};
 
 /// Information returned when a commit is created.
 #[derive(uniffi::Record)]

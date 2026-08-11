@@ -3,11 +3,28 @@
 
 use std::sync::Arc;
 
-use core_crypto_keystore::{Transaction, entities::PersistedMlsGroup, traits::FetchFromDatabase};
-use schnellru::{ByLength, LruMap};
+use core_crypto_keystore::{
+    Transaction,
+    entities::PersistedMlsGroup,
+    traits::FetchFromDatabase,
+};
+use schnellru::{
+    ByLength,
+    LruMap,
+};
 
-use super::conversation::{ConversationId, ConversationIdRef};
-use crate::{ImmutableDatabase, KeystoreError, RecursiveError, Result, Session, mls::conversation::Conversation};
+use super::conversation::{
+    ConversationId,
+    ConversationIdRef,
+};
+use crate::{
+    ImmutableDatabase,
+    KeystoreError,
+    RecursiveError,
+    Result,
+    Session,
+    mls::conversation::Conversation,
+};
 
 /// LRU cache of live [`Conversation`]s, keyed by conversation id.
 ///

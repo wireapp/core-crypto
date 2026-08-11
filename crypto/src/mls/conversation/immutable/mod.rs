@@ -6,12 +6,26 @@ mod e2ei;
 mod history_sharing;
 mod persistence;
 
-use async_lock::{RwLock, RwLockReadGuard};
+use async_lock::{
+    RwLock,
+    RwLockReadGuard,
+};
 use openmls::group::MlsGroup;
 
-use super::{ConversationIdRef, Error, Result, SecretKey};
+use super::{
+    ConversationIdRef,
+    Error,
+    Result,
+    SecretKey,
+};
 use crate::{
-    CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, ExternalSender, OpenMlsError, Session,
+    CipherSuite,
+    ConversationConfiguration,
+    ConversationId,
+    CredentialRef,
+    ExternalSender,
+    OpenMlsError,
+    Session,
 };
 
 #[derive(Debug, derive_more::Constructor, derive_more::Deref)]

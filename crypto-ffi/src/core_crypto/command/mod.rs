@@ -7,8 +7,15 @@ use std::sync::Arc;
 use futures_util::FutureExt;
 
 #[cfg(feature = "cancellable-transactions")]
-use crate::{CoreCryptoCancellationToken, CoreCryptoError};
-use crate::{CoreCryptoContext, CoreCryptoFfi, CoreCryptoResult};
+use crate::{
+    CoreCryptoCancellationToken,
+    CoreCryptoError,
+};
+use crate::{
+    CoreCryptoContext,
+    CoreCryptoFfi,
+    CoreCryptoResult,
+};
 
 /// A `CoreCryptoCommand` has an `execute` method which accepts a `CoreCryptoContext` and returns nothing.
 ///
@@ -167,12 +174,30 @@ mod tests {
     use std::sync::Arc;
 
     use async_lock::Semaphore;
-    use core_crypto::{CipherSuite as CryptoCipherSuite, Credential as CryptoCredential};
+    use core_crypto::{
+        CipherSuite as CryptoCipherSuite,
+        Credential as CryptoCredential,
+    };
 
     use crate::{
-        ClientId, CommitBundle, ConversationId, CoreCryptoCancellationToken, CoreCryptoCommand, CoreCryptoContext,
-        CoreCryptoResult, Credential, Database, DeviceId, EpochObserver, HistorySecret, MlsTransport, MlsTransportData,
-        MlsTransportResult, Uuid, cipher_suite_default, core_crypto::epoch_observer::EpochChangedReportingError,
+        ClientId,
+        CommitBundle,
+        ConversationId,
+        CoreCryptoCancellationToken,
+        CoreCryptoCommand,
+        CoreCryptoContext,
+        CoreCryptoResult,
+        Credential,
+        Database,
+        DeviceId,
+        EpochObserver,
+        HistorySecret,
+        MlsTransport,
+        MlsTransportData,
+        MlsTransportResult,
+        Uuid,
+        cipher_suite_default,
+        core_crypto::epoch_observer::EpochChangedReportingError,
         core_crypto_new,
     };
 

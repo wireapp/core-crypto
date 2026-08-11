@@ -4,7 +4,14 @@ use async_trait::async_trait;
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, KeyType, SearchableEntity, UniqueEntityExt},
+    traits::{
+        BorrowPrimaryKey,
+        Entity,
+        EntityGetBorrowed,
+        KeyType,
+        SearchableEntity,
+        UniqueEntityExt,
+    },
 };
 
 /// Interface to immutably access the database either from the connection directly or through a transaction.

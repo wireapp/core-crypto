@@ -3,15 +3,29 @@
 //! Unfortunately, there is no good way to reuse code between uniffi and wasm for an interface
 //! like this; the fundamental techniques in use are very different. So we just have to feature-gate
 //! everything.
-use std::{fmt, sync::Arc};
+use std::{
+    fmt,
+    sync::Arc,
+};
 
-use core_crypto::{CommitBundle as CryptoCommitBundle, HistorySecret};
+use core_crypto::{
+    CommitBundle as CryptoCommitBundle,
+    HistorySecret,
+};
 #[cfg(feature = "cancellable-transactions")]
-use futures_util::{FutureExt as _, TryFutureExt as _};
+use futures_util::{
+    FutureExt as _,
+    TryFutureExt as _,
+};
 
 #[cfg(feature = "cancellable-transactions")]
 use crate::cancellation::CancellationSlot;
-use crate::{ClientId, CommitBundle, HistorySecret as HistorySecretFfi, error::mls_transport::MlsTransportResult};
+use crate::{
+    ClientId,
+    CommitBundle,
+    HistorySecret as HistorySecretFfi,
+    error::mls_transport::MlsTransportResult,
+};
 
 /// Application data packaged to be encrypted and transmitted in an MLS application message.
 //

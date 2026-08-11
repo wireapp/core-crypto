@@ -36,11 +36,24 @@ mod proteus;
 mod signature_scheme;
 mod timestamp;
 
-pub use bundles::{commit::CommitBundle, group_info::GroupInfoBundle, proteus_auto_prekey::ProteusAutoPrekeyBundle};
+pub use bundles::{
+    commit::CommitBundle,
+    group_info::GroupInfoBundle,
+    proteus_auto_prekey::ProteusAutoPrekeyBundle,
+};
 #[cfg(feature = "cancellable-transactions")]
 pub use cancellation::CoreCryptoCancellationToken;
-pub use cipher_suite::{CipherSuite, cipher_suite_default, cipher_suite_from_u16};
-pub use client_id::{ClientId, DeserializedClientId, DeviceId, Uuid};
+pub use cipher_suite::{
+    CipherSuite,
+    cipher_suite_default,
+    cipher_suite_from_u16,
+};
+pub use client_id::{
+    ClientId,
+    DeserializedClientId,
+    DeviceId,
+    Uuid,
+};
 #[cfg(not(target_os = "unknown"))]
 pub use core_crypto::command::transaction_helper::TransactionHelper;
 pub(crate) use core_crypto::e2ei::identities::UserIdentities;
@@ -50,37 +63,83 @@ pub use core_crypto::{
     conversation::ConversationId,
     core_crypto_new,
     epoch_observer::EpochObserver,
-    logger::{CoreCryptoLogLevel, CoreCryptoLogger, set_logger, set_max_log_level},
-    mls_transport::{MlsTransport, MlsTransportData},
+    logger::{
+        CoreCryptoLogLevel,
+        CoreCryptoLogger,
+        set_logger,
+        set_max_log_level,
+    },
+    mls_transport::{
+        MlsTransport,
+        MlsTransportData,
+    },
 };
 pub use core_crypto_context::CoreCryptoContext;
 pub use credential::Credential;
 pub use credential_ref::CredentialRef;
 pub use credential_type::CredentialType;
-pub use database::{Database, DatabaseKey, migrate_database_key_type_to_bytes};
+pub use database::{
+    Database,
+    DatabaseKey,
+    migrate_database_key_type_to_bytes,
+};
 #[cfg(not(any(feature = "wasm", feature = "napi", target_os = "unknown")))]
-pub use database::{export_database_copy, in_memory_database, open_database};
-pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
+pub use database::{
+    export_database_copy,
+    in_memory_database,
+    open_database,
+};
+pub use decrypted_message::{
+    BufferedDecryptedMessage,
+    DecryptedMessage,
+};
 #[cfg(not(any(feature = "wasm", feature = "napi", target_os = "unknown")))]
 pub use e2ei::x509_credential_acquisition_from_credential_ref::x509_credential_acquisition_new_from_credential_ref;
-pub use e2ei::{E2eiConversationState, X509CredentialAcquisition, X509CredentialAcquisitionConfiguration};
-pub use ephemeral::{HistorySecret, core_crypto_history_client};
+pub use e2ei::{
+    E2eiConversationState,
+    X509CredentialAcquisition,
+    X509CredentialAcquisitionConfiguration,
+};
+pub use ephemeral::{
+    HistorySecret,
+    core_crypto_history_client,
+};
 #[cfg(feature = "proteus")]
 pub use error::proteus::ProteusError;
 pub use error::{
-    CoreCryptoError, CoreCryptoResult,
+    CoreCryptoError,
+    CoreCryptoResult,
     mls::MlsError,
-    mls_transport::{MlsTransportError, MlsTransportResult},
+    mls_transport::{
+        MlsTransportError,
+        MlsTransportResult,
+    },
 };
 pub use external_sender::ExternalSender;
 pub use identity::{
-    wire::{DeviceStatus, WireIdentity},
+    wire::{
+        DeviceStatus,
+        WireIdentity,
+    },
     x509::X509Identity,
 };
-pub use key_package::{KeyPackage, KeyPackageRef};
-pub use metadata::{BuildMetadata, build_metadata, version};
+pub use key_package::{
+    KeyPackage,
+    KeyPackageRef,
+};
+pub use metadata::{
+    BuildMetadata,
+    build_metadata,
+    version,
+};
 #[cfg(not(any(feature = "wasm", feature = "napi", target_os = "unknown")))]
 pub use pki_env::create_pki_environment;
-pub use pki_env::{HttpHeader, HttpMethod, HttpResponse, PkiEnvironment, PkiEnvironmentHooks};
+pub use pki_env::{
+    HttpHeader,
+    HttpMethod,
+    HttpResponse,
+    PkiEnvironment,
+    PkiEnvironmentHooks,
+};
 pub use signature_scheme::SignatureScheme;
 pub use timestamp::Timestamp;

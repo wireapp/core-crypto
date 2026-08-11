@@ -1,8 +1,16 @@
 use openmls::prelude::ExternalProposal;
 
 use super::{
-    super::{SessionContext, TestConversation},
-    operation_guard::{AddGuard, OperationGuard, Proposal, TestOperation},
+    super::{
+        SessionContext,
+        TestConversation,
+    },
+    operation_guard::{
+        AddGuard,
+        OperationGuard,
+        Proposal,
+        TestOperation,
+    },
 };
 
 impl<'a> TestConversation<'a> {

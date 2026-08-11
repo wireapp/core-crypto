@@ -2,13 +2,22 @@ use std::collections::HashMap;
 
 use base64::Engine as _;
 use wire_e2e_identity::pki_env::hooks::{
-    HttpHeader, HttpMethod, HttpResponse, PkiEnvironmentHooks, PkiEnvironmentHooksError,
+    HttpHeader,
+    HttpMethod,
+    HttpResponse,
+    PkiEnvironmentHooks,
+    PkiEnvironmentHooksError,
 };
 
 use crate::utils::{
-    OauthCfg, WireServer,
+    OauthCfg,
+    WireServer,
     ctx::ctx_get_http_client_builder,
-    idp::{IdpServer, OidcProvider, fetch_id_token},
+    idp::{
+        IdpServer,
+        OidcProvider,
+        fetch_id_token,
+    },
     stepca::AcmeServer,
 };
 

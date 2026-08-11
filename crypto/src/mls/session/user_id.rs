@@ -1,4 +1,7 @@
-use super::{Error, Result};
+use super::{
+    Error,
+    Result,
+};
 
 /// Unique identifier of a User (human person holding some devices).
 /// This contradicts the initial design requirements of this project since it was supposed to be

@@ -1,17 +1,38 @@
-use std::{any::Any, sync::Arc};
+use std::{
+    any::Any,
+    sync::Arc,
+};
 
 use rusqlite::Transaction;
 
 #[cfg(feature = "proteus-keystore")]
-use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
+use crate::entities::{
+    ProteusIdentity,
+    ProteusPrekey,
+    ProteusSession,
+};
 use crate::{
     CryptoKeystoreResult,
     entities::{
-        ConsumerData, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit,
-        StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredKeyPackage, StoredPskBundle, X509Crl, X509IntermediateCert, X509TrustAnchor,
+        ConsumerData,
+        MlsPendingMessage,
+        PersistedMlsGroup,
+        PersistedMlsPendingGroup,
+        StoredBufferedCommit,
+        StoredCredential,
+        StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair,
+        StoredHpkePrivateKey,
+        StoredKeyPackage,
+        StoredPskBundle,
+        X509Crl,
+        X509IntermediateCert,
+        X509TrustAnchor,
     },
-    traits::{EntityDatabaseMutation as _, UniqueEntityExt as _},
+    traits::{
+        EntityDatabaseMutation as _,
+        UniqueEntityExt as _,
+    },
 };
 
 #[derive(Debug)]

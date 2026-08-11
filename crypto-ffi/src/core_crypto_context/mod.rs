@@ -2,7 +2,10 @@ mod e2ei;
 pub(crate) mod mls;
 mod proteus;
 
-use std::{ops::Deref, sync::Arc};
+use std::{
+    ops::Deref,
+    sync::Arc,
+};
 
 use core_crypto::transaction_context::TransactionContext;
 

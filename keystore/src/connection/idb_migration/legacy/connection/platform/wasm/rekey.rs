@@ -1,10 +1,18 @@
 use idb::Transaction;
 use js_sys::Uint8Array;
-use serde::{Serialize, de::DeserializeOwned};
+use serde::{
+    Serialize,
+    de::DeserializeOwned,
+};
 
 use crate::{
     CryptoKeystoreResult,
-    connection::idb_migration::legacy::traits::{Decryptable, Decrypting as _, Encrypting, Entity},
+    connection::idb_migration::legacy::traits::{
+        Decryptable,
+        Decrypting as _,
+        Encrypting,
+        Entity,
+    },
     traits::KeyType,
 };
 

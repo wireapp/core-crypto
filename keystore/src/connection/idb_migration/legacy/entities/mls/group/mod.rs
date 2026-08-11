@@ -3,14 +3,22 @@ pub(crate) mod legacy_persisted_mls_group;
 
 use async_trait::async_trait;
 use idb::TransactionMode;
-use js_sys::{Array, Number};
+use js_sys::{
+    Array,
+    Number,
+};
 use wasm_bindgen::JsValue;
 
 use crate::{
     CryptoKeystoreResult,
     connection::idb_migration::legacy::{
         connection::storage::WasmStorageWrapper,
-        traits::{Decryptable, Decrypting, EntityBase, SearchableEntity},
+        traits::{
+            Decryptable,
+            Decrypting,
+            EntityBase,
+            SearchableEntity,
+        },
     },
     entities::ParentGroupId,
     migrations::LegacyPersistedMlsGroup,

@@ -1,27 +1,63 @@
 use std::net::SocketAddr;
 
 use argon2::{
-    Algorithm, Argon2, ParamsBuilder, Version,
-    password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
+    Algorithm,
+    Argon2,
+    ParamsBuilder,
+    Version,
+    password_hash::{
+        PasswordHasher,
+        SaltString,
+        rand_core::OsRng,
+    },
 };
 use http::header;
-use oauth2::{CsrfToken, PkceCodeChallenge, RedirectUrl, Scope};
+use oauth2::{
+    CsrfToken,
+    PkceCodeChallenge,
+    RedirectUrl,
+    Scope,
+};
 use openidconnect::{
-    IssuerUrl, Nonce,
-    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
+    IssuerUrl,
+    Nonce,
+    core::{
+        CoreAuthenticationFlow,
+        CoreClient,
+        CoreProviderMetadata,
+    },
 };
 use serde_json::json;
 use testcontainers::{
-    GenericImage, ImageExt,
-    core::{IntoContainerPort, Mount, ReuseDirective, logs::consumer::logging_consumer::LoggingConsumer},
+    GenericImage,
+    ImageExt,
+    core::{
+        IntoContainerPort,
+        Mount,
+        ReuseDirective,
+        logs::consumer::logging_consumer::LoggingConsumer,
+    },
     runners::AsyncRunner,
 };
 use url::Url;
 
 use crate::utils::{
-    NETWORK, SHM,
-    ctx::{ctx_get_http_client, ctx_get_http_client_builder, custom_oauth_client},
-    idp::{IdpServer, IdpServerConfig, OAUTH_CLIENT_ID, OAUTH_CLIENT_NAME, OauthCfg, OidcProvider, User},
+    NETWORK,
+    SHM,
+    ctx::{
+        ctx_get_http_client,
+        ctx_get_http_client_builder,
+        custom_oauth_client,
+    },
+    idp::{
+        IdpServer,
+        IdpServerConfig,
+        OAUTH_CLIENT_ID,
+        OAUTH_CLIENT_NAME,
+        OauthCfg,
+        OidcProvider,
+        User,
+    },
     rand_str,
 };
 
@@ -144,7 +180,11 @@ pub(super) async fn fetch_id_token(
     let client = ctx_get_http_client_builder().cookie_store(true).build().unwrap();
 
     let cookie = {
-        use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
+        use reqwest::header::{
+            CONTENT_TYPE,
+            HeaderMap,
+            HeaderValue,
+        };
         use serde_json::json;
 
         let host = &idp_server.hostname;

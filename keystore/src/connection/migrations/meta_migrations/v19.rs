@@ -1,7 +1,11 @@
 use crate::{
     CryptoKeystoreResult,
     entities::StoredCredential,
-    migrations::{LegacyPersistedMlsGroup, detect_duplicate_credentials, make_least_used_ciphersuite},
+    migrations::{
+        LegacyPersistedMlsGroup,
+        detect_duplicate_credentials,
+        make_least_used_ciphersuite,
+    },
     traits::Entity as _,
 };
 

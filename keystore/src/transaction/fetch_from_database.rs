@@ -4,13 +4,23 @@
 //! It doesn't matter whether someone is holding a [`Database`][crate::Database] or a
 //! [`Transaction`] instance; every implementation of the trait will always agree.
 
-use std::{borrow::Borrow, sync::Arc};
+use std::{
+    borrow::Borrow,
+    sync::Arc,
+};
 
 use async_trait::async_trait;
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, KeyType, SearchableEntity},
+    traits::{
+        BorrowPrimaryKey,
+        Entity,
+        EntityGetBorrowed,
+        FetchFromDatabase,
+        KeyType,
+        SearchableEntity,
+    },
     transaction::Transaction,
 };
 

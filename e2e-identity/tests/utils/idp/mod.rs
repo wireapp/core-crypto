@@ -1,6 +1,14 @@
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener};
+use std::net::{
+    Ipv4Addr,
+    SocketAddr,
+    SocketAddrV4,
+    TcpListener,
+};
 
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use url::Url;
 
 use super::OauthCfg;

@@ -11,26 +11,53 @@
 mod buffer_commit;
 pub(crate) mod buffer_messages;
 
-use log::{debug, info};
+use log::{
+    debug,
+    info,
+};
 use obfuscate::Obfuscated;
 use openmls::{
     framing::{
-        MlsMessageIn, MlsMessageInBody, ProcessedMessage, ProtocolMessage,
-        errors::{MessageDecryptionError, SecretTreeError},
+        MlsMessageIn,
+        MlsMessageInBody,
+        ProcessedMessage,
+        ProtocolMessage,
+        errors::{
+            MessageDecryptionError,
+            SecretTreeError,
+        },
     },
     group::MlsGroup,
     prelude::{
-        ContentType, CredentialType, LeafNodeIndex, Member, ProcessMessageError, ProcessedMessageContent,
-        StageCommitError, StagedCommit, ValidationError,
+        ContentType,
+        CredentialType,
+        LeafNodeIndex,
+        Member,
+        ProcessMessageError,
+        ProcessedMessageContent,
+        StageCommitError,
+        StagedCommit,
+        ValidationError,
     },
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize as _;
 
-use super::{ConversationMut, Result};
+use super::{
+    ConversationMut,
+    Result,
+};
 use crate::{
-    ClientId, E2eiConversationState, OpenMlsError, RecursiveError, Session, WireIdentity,
-    mls::{conversation::Error, credential::ext::CredentialExt as _},
+    ClientId,
+    E2eiConversationState,
+    OpenMlsError,
+    RecursiveError,
+    Session,
+    WireIdentity,
+    mls::{
+        conversation::Error,
+        credential::ext::CredentialExt as _,
+    },
 };
 
 /// A decrypted MLS application message
@@ -527,7 +554,10 @@ impl ConversationMut {
 #[cfg(test)]
 mod tests {
     use crate::{
-        mls::conversation::{config::MAX_PAST_EPOCHS, error::Error},
+        mls::conversation::{
+            config::MAX_PAST_EPOCHS,
+            error::Error,
+        },
         test_utils::*,
     };
 

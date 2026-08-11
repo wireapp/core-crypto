@@ -1,11 +1,30 @@
-use std::{fmt, sync::Arc, time::Duration};
+use std::{
+    fmt,
+    sync::Arc,
+    time::Duration,
+};
 
-use core_crypto::{ConversationConfiguration, transaction_context::Error as TransactionError};
+use core_crypto::{
+    ConversationConfiguration,
+    transaction_context::Error as TransactionError,
+};
 
 use crate::{
-    CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, Credential,
-    CredentialRef, DecryptedMessage, ExternalSender, KeyPackage, KeyPackageRef, MlsTransport,
-    bytes_wrapper::bytes_wrapper, core_crypto::mls_transport::callback_shim,
+    CipherSuite,
+    ClientId,
+    ConversationId,
+    CoreCryptoContext,
+    CoreCryptoError,
+    CoreCryptoResult,
+    Credential,
+    CredentialRef,
+    DecryptedMessage,
+    ExternalSender,
+    KeyPackage,
+    KeyPackageRef,
+    MlsTransport,
+    bytes_wrapper::bytes_wrapper,
+    core_crypto::mls_transport::callback_shim,
 };
 
 bytes_wrapper!(

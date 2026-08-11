@@ -1,7 +1,11 @@
 use crate::{
     CryptoKeystoreResult,
     entities::StoredCredential,
-    migrations::{StoredSignatureKeypair, V5Credential, migrate_to_new_credential},
+    migrations::{
+        StoredSignatureKeypair,
+        V5Credential,
+        migrate_to_new_credential,
+    },
     traits::Entity as _,
 };
 

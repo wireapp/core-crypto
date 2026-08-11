@@ -1,9 +1,18 @@
 use std::{
     collections::BTreeMap,
-    sync::{Arc, Mutex},
+    sync::{
+        Arc,
+        Mutex,
+    },
 };
 
-use certval::{PDVCertificate, PathValidationStatus, RevocationStatusCache, buffer_to_hex, name_to_string};
+use certval::{
+    PDVCertificate,
+    PathValidationStatus,
+    RevocationStatusCache,
+    buffer_to_hex,
+    name_to_string,
+};
 
 #[derive(Clone, Copy, Debug)]
 struct StatusAndTime {

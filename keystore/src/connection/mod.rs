@@ -13,17 +13,30 @@ mod transaction;
 
 use std::sync::Arc;
 
-use async_lock::{Mutex, MutexGuard, Semaphore};
+use async_lock::{
+    Mutex,
+    MutexGuard,
+    Semaphore,
+};
 use rusqlite::Connection;
 #[cfg(feature = "log-queries")]
-use rusqlite::trace::{TraceEvent, TraceEventCodes};
+use rusqlite::trace::{
+    TraceEvent,
+    TraceEventCodes,
+};
 
 pub(crate) use self::filesystem::Filesystem;
 #[cfg(target_os = "unknown")]
-pub use self::idb_migration::{delete_legacy_idb, legacy_idb_exists};
+pub use self::idb_migration::{
+    delete_legacy_idb,
+    legacy_idb_exists,
+};
 pub use self::migrations::migrate_db_key_type_to_bytes;
 use crate::{
-    CryptoKeystoreResult, DatabaseKey, connection::migrations::MigrationTarget, transaction::Transaction,
+    CryptoKeystoreResult,
+    DatabaseKey,
+    connection::migrations::MigrationTarget,
+    transaction::Transaction,
     unique_arc::UniqueWeak,
 };
 
@@ -238,7 +251,10 @@ impl Database {
 mod export_test {
     use futures_lite::future;
 
-    use crate::connection::{Database, DatabaseKey};
+    use crate::connection::{
+        Database,
+        DatabaseKey,
+    };
 
     #[test]
     fn can_export_database_copy() {

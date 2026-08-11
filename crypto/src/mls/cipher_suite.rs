@@ -1,7 +1,10 @@
 use openmls_traits::types::HashType;
 use wire_e2e_identity::HashAlgorithm;
 
-use super::{Error, Result};
+use super::{
+    Error,
+    Result,
+};
 use crate::MlsCiphersuite;
 
 #[derive(

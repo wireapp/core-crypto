@@ -11,13 +11,24 @@ use serde::Serialize as _;
 use self::v10_persisted_mls_group::V10PersistedMlsGroup;
 use super::DB_VERSION_11;
 use crate::{
-    CryptoKeystoreResult, DatabaseKey,
+    CryptoKeystoreResult,
+    DatabaseKey,
     connection::idb_migration::legacy::{
-        connection::{Database, platform::wasm::WasmStorageTransaction},
-        traits::{Encrypting as _, Entity as _, EntityBase as _},
+        connection::{
+            Database,
+            platform::wasm::WasmStorageTransaction,
+        },
+        traits::{
+            Encrypting as _,
+            Entity as _,
+            EntityBase as _,
+        },
     },
     migrations::LegacyPersistedMlsGroup,
-    traits::{BorrowPrimaryKey as _, KeyType},
+    traits::{
+        BorrowPrimaryKey as _,
+        KeyType,
+    },
 };
 
 /// Open IDB once with the new builder and close it, this will apply the update.

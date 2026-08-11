@@ -39,7 +39,17 @@ mod decrypting;
 mod encrypt_data;
 mod encrypting;
 
-pub(crate) use decrypt_data::{DecryptData, DecryptWithExplicitEncryptionKey};
-pub(crate) use decrypting::{Decryptable, Decrypting};
-pub(crate) use encrypt_data::{EncryptData, EncryptWithExplicitEncryptionKey, EncryptionKey};
+pub(crate) use decrypt_data::{
+    DecryptData,
+    DecryptWithExplicitEncryptionKey,
+};
+pub(crate) use decrypting::{
+    Decryptable,
+    Decrypting,
+};
+pub(crate) use encrypt_data::{
+    EncryptData,
+    EncryptWithExplicitEncryptionKey,
+    EncryptionKey,
+};
 pub(crate) use encrypting::Encrypting;

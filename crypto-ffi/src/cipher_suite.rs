@@ -4,9 +4,15 @@
 //! it doesn't work on newtypes around external enums. We therefore redefine the cipher suites enum
 //! here with appropriate annotations such that it gets exported to all relevant bindings.
 
-use core_crypto::{CipherSuite as CryptoCipherSuite, MlsCiphersuite as MlsCipherSuite};
+use core_crypto::{
+    CipherSuite as CryptoCipherSuite,
+    MlsCiphersuite as MlsCipherSuite,
+};
 
-use crate::{CoreCryptoError, CoreCryptoResult};
+use crate::{
+    CoreCryptoError,
+    CoreCryptoResult,
+};
 
 /// MLS cipher suites
 #[allow(non_camel_case_types)]

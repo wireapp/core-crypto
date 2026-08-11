@@ -1,8 +1,15 @@
-use rusty_jwt_tools::prelude::{ClientId, HashAlgorithm, QualifiedHandle};
+use rusty_jwt_tools::prelude::{
+    ClientId,
+    HashAlgorithm,
+    QualifiedHandle,
+};
 use x509_cert::der::Decode as _;
 
 use crate::{
-    acquisition::{error::CertificateError, thumbprint::try_compute_jwk_canonicalized_thumbprint},
+    acquisition::{
+        error::CertificateError,
+        thumbprint::try_compute_jwk_canonicalized_thumbprint,
+    },
     pki_env::PkiEnvironment,
     x509_check::IdentityStatus,
 };

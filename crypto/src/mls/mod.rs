@@ -7,13 +7,23 @@ mod external_sender;
 pub mod key_package;
 pub(crate) mod session;
 
-pub use error::{Error, Result};
+pub use error::{
+    Error,
+    Result,
+};
 pub use external_sender::ExternalSender;
-pub use session::{EpochObserver, HistoryObserver};
+pub use session::{
+    EpochObserver,
+    HistoryObserver,
+};
 
 #[cfg(test)]
 mod tests {
-    use crate::{CoreCrypto, test_utils::*, transaction_context::Error as TransactionError};
+    use crate::{
+        CoreCrypto,
+        test_utils::*,
+        transaction_context::Error as TransactionError,
+    };
 
     mod conversation_epoch {
         use super::*;

@@ -1,10 +1,24 @@
-use std::{borrow::Borrow, sync::Arc};
+use std::{
+    borrow::Borrow,
+    sync::Arc,
+};
 
-use core_crypto::{RecursiveError, mls::conversation::ConversationIdRef};
+use core_crypto::{
+    RecursiveError,
+    mls::conversation::ConversationIdRef,
+};
 
 use crate::{
-    CipherSuite, ClientId, CoreCryptoFfi, CoreCryptoResult, CredentialRef, ExternalSender,
-    bytes_wrapper::{bytes_wrapper, impl_display_via_hex},
+    CipherSuite,
+    ClientId,
+    CoreCryptoFfi,
+    CoreCryptoResult,
+    CredentialRef,
+    ExternalSender,
+    bytes_wrapper::{
+        bytes_wrapper,
+        impl_display_via_hex,
+    },
     core_crypto_context::mls::SecretKey,
 };
 

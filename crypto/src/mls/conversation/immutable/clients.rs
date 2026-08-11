@@ -1,9 +1,17 @@
 use std::collections::HashSet;
 
 use log::trace;
-use openmls::prelude::{LeafNodeIndex, Proposal};
+use openmls::prelude::{
+    LeafNodeIndex,
+    Proposal,
+};
 
-use crate::{ClientId, HISTORY_CLIENT_ID_PREFIX, RecursiveError, mls::conversation::immutable::Result};
+use crate::{
+    ClientId,
+    HISTORY_CLIENT_ID_PREFIX,
+    RecursiveError,
+    mls::conversation::immutable::Result,
+};
 
 impl super::Conversation {
     /// Exports the clients from a conversation

@@ -1,9 +1,20 @@
 use zeroize::Zeroize;
 
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, Transaction,
-    entities::helpers::{count_helper, delete_helper, get_helper, load_all_helper},
-    traits::{Entity, EntityDatabaseMutation, PrimaryKey},
+    CryptoKeystoreError,
+    CryptoKeystoreResult,
+    Transaction,
+    entities::helpers::{
+        count_helper,
+        delete_helper,
+        get_helper,
+        load_all_helper,
+    },
+    traits::{
+        Entity,
+        EntityDatabaseMutation,
+        PrimaryKey,
+    },
 };
 
 #[derive(core_crypto_macros::Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]

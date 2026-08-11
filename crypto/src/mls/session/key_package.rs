@@ -1,7 +1,16 @@
-use core_crypto_keystore::{entities::StoredKeyPackage, traits::FetchFromDatabase};
+use core_crypto_keystore::{
+    entities::StoredKeyPackage,
+    traits::FetchFromDatabase,
+};
 
 use super::Result;
-use crate::{Keypackage, KeypackageRef, KeystoreError, Session, mls::key_package::KeypackageExt};
+use crate::{
+    Keypackage,
+    KeypackageRef,
+    KeystoreError,
+    Session,
+    mls::key_package::KeypackageExt,
+};
 
 pub(crate) fn from_stored(stored_keypackage: &StoredKeyPackage) -> Result<Keypackage> {
     core_crypto_keystore::deser::<Keypackage>(&stored_keypackage.key_package)
@@ -53,10 +62,17 @@ impl Session {
 mod tests {
     use std::time::Duration;
 
-    use openmls::prelude::{KeyPackageIn, ProtocolVersion};
+    use openmls::prelude::{
+        KeyPackageIn,
+        ProtocolVersion,
+    };
     use openmls_traits::types::VerifiableCiphersuite;
 
-    use crate::{ConversationConfiguration, mls::key_package::KeypackageExt as _, test_utils::*};
+    use crate::{
+        ConversationConfiguration,
+        mls::key_package::KeypackageExt as _,
+        test_utils::*,
+    };
 
     #[apply(all_cred_cipher)]
     async fn can_assess_keypackage_expiration(case: TestContext) {

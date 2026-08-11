@@ -2,8 +2,20 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
-use quote::{ToTokens, quote};
-use syn::{Data, DeriveInput, Fields, FieldsNamed, FieldsUnnamed, Ident, Type, parse_macro_input};
+use quote::{
+    ToTokens,
+    quote,
+};
+use syn::{
+    Data,
+    DeriveInput,
+    Fields,
+    FieldsNamed,
+    FieldsUnnamed,
+    Ident,
+    Type,
+    parse_macro_input,
+};
 
 pub(crate) fn derive_debug(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

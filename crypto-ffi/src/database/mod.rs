@@ -4,9 +4,15 @@ mod key;
 
 use std::sync::Arc;
 
-pub use key::{DatabaseKey, migrate_database_key_type_to_bytes};
+pub use key::{
+    DatabaseKey,
+    migrate_database_key_type_to_bytes,
+};
 
-use crate::{CoreCryptoError, CoreCryptoResult};
+use crate::{
+    CoreCryptoError,
+    CoreCryptoResult,
+};
 
 /// The database acting as a core crypto keystore.
 #[derive(Debug, derive_more::From, derive_more::Into, Clone, derive_more::Deref, uniffi::Object)]

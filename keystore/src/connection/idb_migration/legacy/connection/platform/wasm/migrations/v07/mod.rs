@@ -4,13 +4,21 @@ use idb::builder::DatabaseBuilder;
 
 use super::DB_VERSION_7;
 use crate::{
-    CryptoKeystoreResult, DatabaseKey,
+    CryptoKeystoreResult,
+    DatabaseKey,
     connection::idb_migration::legacy::{
         connection::Database,
-        traits::{Entity as _, EntityDatabaseMutation as _},
+        traits::{
+            Entity as _,
+            EntityDatabaseMutation as _,
+        },
     },
     entities::StoredCredential,
-    migrations::{LegacyPersistedMlsGroup, V6Credential, make_ciphersuite_for_signature_scheme},
+    migrations::{
+        LegacyPersistedMlsGroup,
+        V6Credential,
+        make_ciphersuite_for_signature_scheme,
+    },
 };
 
 /// Open IDB once with the new builder and close it, this will apply the update.

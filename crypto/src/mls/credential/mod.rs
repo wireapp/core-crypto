@@ -12,18 +12,33 @@ mod persistence;
 pub(crate) mod x509;
 
 use core_crypto_keystore::entities::StoredCredential;
-use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, SignatureScheme};
+use openmls::prelude::{
+    Credential as MlsCredential,
+    CredentialWithKey,
+    SignatureScheme,
+};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::crypto::OpenMlsCrypto;
 use tls_codec::Deserialize as _;
 
 pub(crate) use self::error::Result;
 pub use self::{
-    credential_ref::{CredentialRef, FindFilters, FindFiltersBuilder},
+    credential_ref::{
+        CredentialRef,
+        FindFilters,
+        FindFiltersBuilder,
+    },
     credential_type::CredentialType,
     error::Error,
 };
-use crate::{CipherSuite, ClientId, ClientIdRef, OpenMlsError, RecursiveError, mls_provider::CRYPTO};
+use crate::{
+    CipherSuite,
+    ClientId,
+    ClientIdRef,
+    OpenMlsError,
+    RecursiveError,
+    mls_provider::CRYPTO,
+};
 
 /// A cryptographic credential.
 ///
@@ -184,13 +199,20 @@ impl PartialEq for Credential {
 
 #[cfg(test)]
 mod tests {
-    use super::{x509::CertificateBundle, *};
+    use super::{
+        x509::CertificateBundle,
+        *,
+    };
     use crate::{
-        CredentialType, E2eiConversationState,
+        CredentialType,
+        E2eiConversationState,
         mls::credential::x509::CertificatePrivateKey,
         mls_provider::PkiKeypair,
         test_utils::{
-            x509::{CertificateParams, X509TestChain},
+            x509::{
+                CertificateParams,
+                X509TestChain,
+            },
             *,
         },
     };

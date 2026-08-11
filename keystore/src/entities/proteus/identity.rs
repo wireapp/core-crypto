@@ -1,6 +1,9 @@
 use zeroize::Zeroize;
 
-use crate::traits::{PrimaryKey, UniqueEntity};
+use crate::traits::{
+    PrimaryKey,
+    UniqueEntity,
+};
 
 #[derive(core_crypto_macros::Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]

@@ -1,9 +1,15 @@
 use std::sync::Arc;
 
-use async_lock::{Mutex, OnceCell};
+use async_lock::{
+    Mutex,
+    OnceCell,
+};
 
 use super::CoreCryptoCommand;
-use crate::{CoreCryptoContext, CoreCryptoResult};
+use crate::{
+    CoreCryptoContext,
+    CoreCryptoResult,
+};
 
 /// Helper for working with the new transasction interface.
 ///

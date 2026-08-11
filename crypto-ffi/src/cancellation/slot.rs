@@ -1,6 +1,13 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    Arc,
+    Mutex,
+};
 
-use crate::{CoreCryptoCancellationToken, CoreCryptoError, CoreCryptoResult};
+use crate::{
+    CoreCryptoCancellationToken,
+    CoreCryptoError,
+    CoreCryptoResult,
+};
 
 /// Makes the current transaction's cancellation token available to foreign callbacks.
 ///

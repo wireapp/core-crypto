@@ -3,11 +3,19 @@ use openmls::prelude::group_info::VerifiableGroupInfo;
 use super::{
     super::SessionContext,
     TestConversation,
-    operation_guard::{AddGuard, Commit, OperationGuard, TestOperation},
+    operation_guard::{
+        AddGuard,
+        Commit,
+        OperationGuard,
+        TestOperation,
+    },
 };
 use crate::{
     CredentialRef,
-    mls::{conversation::PendingConversation, credential::Credential},
+    mls::{
+        conversation::PendingConversation,
+        credential::Credential,
+    },
 };
 
 impl<'a> TestConversation<'a> {

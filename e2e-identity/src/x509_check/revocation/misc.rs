@@ -1,8 +1,18 @@
-use certval::{ExtensionProcessing, PDVCertificate, PDVExtension};
-use const_oid::db::rfc5912::{ID_CE_CRL_DISTRIBUTION_POINTS, ID_CE_ISSUING_DISTRIBUTION_POINT};
+use certval::{
+    ExtensionProcessing,
+    PDVCertificate,
+    PDVExtension,
+};
+use const_oid::db::rfc5912::{
+    ID_CE_CRL_DISTRIBUTION_POINTS,
+    ID_CE_ISSUING_DISTRIBUTION_POINT,
+};
 use x509_cert::{
     crl::CertificateList,
-    der::{Decode, Encode},
+    der::{
+        Decode,
+        Encode,
+    },
     ext::pkix::IssuingDistributionPoint,
 };
 

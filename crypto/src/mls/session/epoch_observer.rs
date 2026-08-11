@@ -2,7 +2,11 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use super::{Error, Result, Session};
+use super::{
+    Error,
+    Result,
+    Session,
+};
 use crate::ConversationId;
 
 /// An `EpochObserver` is notified whenever a conversation's epoch changes.
@@ -50,7 +54,11 @@ mod tests {
     use rstest::rstest;
     use rstest_reuse::apply;
 
-    use crate::test_utils::{TestContext, TestEpochObserver, all_cred_cipher};
+    use crate::test_utils::{
+        TestContext,
+        TestEpochObserver,
+        all_cred_cipher,
+    };
 
     #[apply(all_cred_cipher)]
     pub async fn observe_local_epoch_change(case: TestContext) {

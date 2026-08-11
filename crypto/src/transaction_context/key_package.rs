@@ -3,14 +3,30 @@
 use std::time::Duration;
 
 use core_crypto_keystore::{
-    entities::{StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeyPackage},
+    entities::{
+        StoredEncryptionKeyPair,
+        StoredHpkePrivateKey,
+        StoredKeyPackage,
+    },
     traits::FetchFromDatabase as _,
 };
-use openmls::prelude::{CryptoConfig, Lifetime};
+use openmls::prelude::{
+    CryptoConfig,
+    Lifetime,
+};
 
-use super::{Error, Result, TransactionContext};
+use super::{
+    Error,
+    Result,
+    TransactionContext,
+};
 use crate::{
-    ConversationConfiguration, CredentialRef, Keypackage, KeypackageRef, KeystoreError, RecursiveError,
+    ConversationConfiguration,
+    CredentialRef,
+    Keypackage,
+    KeypackageRef,
+    KeystoreError,
+    RecursiveError,
     mls::key_package::KeypackageExt as _,
 };
 

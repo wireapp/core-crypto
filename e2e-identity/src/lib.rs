@@ -135,20 +135,40 @@ pub mod pki_env;
 pub mod utils;
 pub mod x509_check;
 
-pub use acme::{AcmeDirectory, RustyAcme, RustyAcmeError};
+pub use acme::{
+    AcmeDirectory,
+    RustyAcme,
+    RustyAcmeError,
+};
 pub use acquisition::{
     X509CredentialAcquisition,
-    identity::{WireIdentity, WireIdentityReader},
+    identity::{
+        WireIdentity,
+        WireIdentityReader,
+    },
     thumbprint::compute_raw_key_thumbprint,
 };
-pub use error::{E2eIdentityError, E2eIdentityResult};
+pub use error::{
+    E2eIdentityError,
+    E2eIdentityResult,
+};
 pub use pki_env::NewCrlDistributionPoints;
 #[cfg(feature = "builder")]
 pub use rusty_jwt_tools::prelude::generate_jwk;
 pub use rusty_jwt_tools::prelude::{
-    ClientId as E2eiClientId, Handle, HashAlgorithm, JwsAlgorithm, RustyJwtError, parse_json_jwk,
+    ClientId as E2eiClientId,
+    Handle,
+    HashAlgorithm,
+    JwsAlgorithm,
+    RustyJwtError,
+    parse_json_jwk,
 };
 pub use types::{
-    E2eiAcmeAccount, E2eiAcmeAuthorization, E2eiAcmeChallenge, E2eiAcmeFinalize, E2eiAcmeOrder, E2eiNewAcmeOrder,
+    E2eiAcmeAccount,
+    E2eiAcmeAuthorization,
+    E2eiAcmeChallenge,
+    E2eiAcmeFinalize,
+    E2eiAcmeOrder,
+    E2eiNewAcmeOrder,
 };
 pub use x509_check::IdentityStatus;

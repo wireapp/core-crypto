@@ -1,13 +1,24 @@
 use openmls::{
     group::MlsGroup,
-    prelude::{Ciphersuite, Credential as MlsCredential, MlsCredentialType, SignatureScheme, TlsDeserializeTrait as _},
+    prelude::{
+        Ciphersuite,
+        Credential as MlsCredential,
+        MlsCredentialType,
+        SignatureScheme,
+        TlsDeserializeTrait as _,
+    },
 };
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_x509_credential::X509Ext as _;
 use x509_cert::der::Decode as _;
 use zeroize::Zeroize;
 
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, deser, entities::StoredCredential};
+use crate::{
+    CryptoKeystoreError,
+    CryptoKeystoreResult,
+    deser,
+    entities::StoredCredential,
+};
 
 /// Entity representing a persisted `Credential` per the schema prior to integrating the signature keypair
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]

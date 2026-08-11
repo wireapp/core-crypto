@@ -1,6 +1,11 @@
 use openmls::{
     framing::MlsMessageInBody,
-    prelude::{GroupEpoch, MlsMessageIn, MlsMessageOut, group_info::VerifiableGroupInfo},
+    prelude::{
+        GroupEpoch,
+        MlsMessageIn,
+        MlsMessageOut,
+        group_info::VerifiableGroupInfo,
+    },
 };
 
 pub trait MessageExt {

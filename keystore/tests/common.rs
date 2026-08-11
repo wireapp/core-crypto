@@ -2,13 +2,26 @@
 
 use std::{
     array,
-    sync::{Arc, LazyLock},
+    sync::{
+        Arc,
+        LazyLock,
+    },
 };
 
-pub(crate) use core_crypto_keystore::{Database as CryptoKeystore, DatabaseKey};
-use core_crypto_keystore::{Database, UniqueArc, transaction::Transaction};
+pub(crate) use core_crypto_keystore::{
+    Database as CryptoKeystore,
+    DatabaseKey,
+};
+use core_crypto_keystore::{
+    Database,
+    UniqueArc,
+    transaction::Transaction,
+};
 pub(crate) use rstest::*;
-pub(crate) use rstest_reuse::{self, *};
+pub(crate) use rstest_reuse::{
+    self,
+    *,
+};
 
 pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(DatabaseKey::generate);
 
@@ -20,7 +33,10 @@ pub fn store_name() -> String {
         if true {
             use rand::{
                 Rng as _,
-                distributions::{Alphanumeric, DistString},
+                distributions::{
+                    Alphanumeric,
+                    DistString,
+                },
             };
             let mut rng = rand::thread_rng();
             let dynamism = Alphanumeric.sample_string(&mut rng, 12);

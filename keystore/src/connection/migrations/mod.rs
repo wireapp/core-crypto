@@ -3,7 +3,10 @@ mod meta_migrations;
 use refinery::Target;
 use rusqlite::functions::FunctionFlags;
 
-use crate::{CryptoKeystoreResult, DatabaseKey};
+use crate::{
+    CryptoKeystoreResult,
+    DatabaseKey,
+};
 
 refinery::embed_migrations!("src/connection/migrations");
 
@@ -128,10 +131,18 @@ pub(crate) mod test {
 
     use openmls::prelude::Ciphersuite;
     use tempfile::NamedTempFile;
-    use x509_cert::der::{DecodePem as _, Encode as _};
+    use x509_cert::der::{
+        DecodePem as _,
+        Encode as _,
+    };
 
     use crate::{
-        connection::{Database, DatabaseKey, migrate_db_key_type_to_bytes, migrations::MigrationTarget},
+        connection::{
+            Database,
+            DatabaseKey,
+            migrate_db_key_type_to_bytes,
+            migrations::MigrationTarget,
+        },
         entities::StoredCredential,
         traits::Entity,
     };

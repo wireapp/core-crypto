@@ -1,9 +1,19 @@
 //! This module contains transactional conversation operations that are related to processing welcome messages.
 
-use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
+use openmls::prelude::{
+    MlsMessageIn,
+    MlsMessageInBody,
+};
 
-use super::{Error, Result, TransactionContext};
-use crate::{ConversationConfiguration, ConversationId};
+use super::{
+    Error,
+    Result,
+    TransactionContext,
+};
+use crate::{
+    ConversationConfiguration,
+    ConversationId,
+};
 
 impl TransactionContext {
     /// Create a conversation from a received MLS Welcome message

@@ -1,11 +1,22 @@
-use std::{borrow::Borrow, collections::HashMap};
+use std::{
+    borrow::Borrow,
+    collections::HashMap,
+};
 
 use openmls_traits::OpenMlsCryptoProvider as _;
 use uuid::Uuid;
 
-use super::{Error, Result};
+use super::{
+    Error,
+    Result,
+};
 use crate::{
-    ClientIdRef, CredentialType, E2eiConversationState, RecursiveError, Session, WireIdentity,
+    ClientIdRef,
+    CredentialType,
+    E2eiConversationState,
+    RecursiveError,
+    Session,
+    WireIdentity,
     mls::credential::ext::CredentialExt as _,
 };
 

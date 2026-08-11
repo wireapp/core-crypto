@@ -1,5 +1,8 @@
 pub use rstest::*;
-pub use rstest_reuse::{self, *};
+pub use rstest_reuse::{
+    self,
+    *,
+};
 
 mod common;
 
@@ -61,12 +64,25 @@ macro_rules! test_for_entity {
 
 #[cfg(test)]
 mod tests_impl {
-    use std::{any::Any, borrow::Borrow, sync::Arc};
+    use std::{
+        any::Any,
+        borrow::Borrow,
+        sync::Arc,
+    };
 
     use core_crypto_keystore::{
-        entities::{MlsPendingMessage, PersistedMlsPendingGroup, StoredCredential},
+        entities::{
+            MlsPendingMessage,
+            PersistedMlsPendingGroup,
+            StoredCredential,
+        },
         traits::{
-            Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase as _, KeyType,
+            Entity,
+            EntityDatabaseMutation,
+            EntityDeleteBorrowed,
+            EntityGetBorrowed,
+            FetchFromDatabase as _,
+            KeyType,
             PrimaryKey as _,
         },
     };
@@ -74,7 +90,10 @@ mod tests_impl {
     use super::common::*;
     use crate::{
         ENTITY_COUNT,
-        utils::{EntityRandomExt, EntityRandomUpdateExt},
+        utils::{
+            EntityRandomExt,
+            EntityRandomUpdateExt,
+        },
     };
 
     /// Assert that no keystore transaction is in flight.
@@ -366,8 +385,16 @@ mod tests {
 #[cfg(test)]
 pub mod utils {
     use core_crypto_keystore::entities::{
-        MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusSession, StoredCredential,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
+        MlsPendingMessage,
+        PersistedMlsGroup,
+        PersistedMlsPendingGroup,
+        ProteusSession,
+        StoredCredential,
+        StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair,
+        StoredHpkePrivateKey,
+        StoredKeyPackage,
+        StoredPskBundle,
         X509TrustAnchor,
     };
     use rand::Rng as _;

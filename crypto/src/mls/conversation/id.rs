@@ -1,5 +1,8 @@
 use std::{
-    borrow::{Borrow, Cow},
+    borrow::{
+        Borrow,
+        Cow,
+    },
     ops::Deref,
 };
 

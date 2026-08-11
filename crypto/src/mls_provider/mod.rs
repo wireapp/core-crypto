@@ -10,18 +10,36 @@ mod error;
 
 pub(crate) use crypto_provider::CRYPTO;
 pub use crypto_provider::RustCrypto;
-pub use error::{Error, MlsProviderResult};
+pub use error::{
+    Error,
+    MlsProviderResult,
+};
 use openmls_traits::{
-    authentication_service::{CredentialAuthenticationStatus, CredentialRef},
+    authentication_service::{
+        CredentialAuthenticationStatus,
+        CredentialRef,
+    },
     crypto::OpenMlsCrypto,
     types::{
-        AeadType, Ciphersuite, CryptoError, ExporterSecret, HashType, HpkeCiphertext, HpkeConfig, HpkeKeyPair,
-        KemOutput, SignatureScheme,
+        AeadType,
+        Ciphersuite,
+        CryptoError,
+        ExporterSecret,
+        HashType,
+        HpkeCiphertext,
+        HpkeConfig,
+        HpkeKeyPair,
+        KemOutput,
+        SignatureScheme,
     },
 };
 // TODO: remove this allow(unused) once the E2EI parts have been coupled.
 #[allow(unused)]
-pub use wire_e2e_identity::pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
+pub use wire_e2e_identity::pki::{
+    CertProfile,
+    CertificateGenerationArgs,
+    PkiKeypair,
+};
 use wire_e2e_identity::pki_env::PkiEnvironment;
 
 /// 32-byte raw entropy seed

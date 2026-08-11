@@ -33,48 +33,115 @@ use std::sync::Arc;
 use async_lock::Mutex;
 use async_lock::RwLock;
 pub(crate) use bytes_wrapper::bytes_wrapper;
-pub use core_crypto_keystore::{Database, DatabaseKey};
+pub use core_crypto_keystore::{
+    Database,
+    DatabaseKey,
+};
 #[cfg(test)]
-pub use core_crypto_macros::{dispotent, durable, idempotent};
+pub use core_crypto_macros::{
+    dispotent,
+    durable,
+    idempotent,
+};
 pub(crate) use immutable_database::ImmutableDatabase;
 pub use openmls::{
-    group::{MlsGroup, MlsGroupConfig},
+    group::{
+        MlsGroup,
+        MlsGroupConfig,
+    },
     prelude::{
-        Ciphersuite as MlsCiphersuite, GroupEpoch, KeyPackageIn, MlsMessageIn, MlsMessageInBody, Node, SignatureScheme,
+        Ciphersuite as MlsCiphersuite,
+        GroupEpoch,
+        KeyPackageIn,
+        MlsMessageIn,
+        MlsMessageInBody,
+        Node,
+        SignatureScheme,
         group_info::VerifiableGroupInfo,
     },
 };
-use wire_e2e_identity::{legacy::device_status::DeviceStatus, pki_env::PkiEnvironment};
+use wire_e2e_identity::{
+    legacy::device_status::DeviceStatus,
+    pki_env::PkiEnvironment,
+};
 
 pub use crate::{
-    build_metadata::{BUILD_METADATA, BuildMetadata},
-    ephemeral::{HISTORY_CLIENT_ID_PREFIX, HistorySecret},
-    error::{
-        Error, InnermostErrorMessage, KeystoreError, LeafError, OpenMlsError, OpenMlsErrorKind, ProteusError,
-        ProteusErrorKind, RecursiveError, Result, ToRecursiveError,
+    build_metadata::{
+        BUILD_METADATA,
+        BuildMetadata,
     },
-    identity::{WireIdentity, X509Identity},
+    ephemeral::{
+        HISTORY_CLIENT_ID_PREFIX,
+        HistorySecret,
+    },
+    error::{
+        Error,
+        InnermostErrorMessage,
+        KeystoreError,
+        LeafError,
+        OpenMlsError,
+        OpenMlsErrorKind,
+        ProteusError,
+        ProteusErrorKind,
+        RecursiveError,
+        Result,
+        ToRecursiveError,
+    },
+    identity::{
+        WireIdentity,
+        X509Identity,
+    },
     mls::{
         ExternalSender,
         cipher_suite::CipherSuite,
         conversation::{
-            BufferedCommit, BufferedDecryptedMessage, Commit, CommitBundle, ConversationConfiguration, ConversationId,
-            CustomConfiguration, DecryptedMessage, GroupInfoBundle, GroupInfoEncryptionType, GroupInfoPayload,
-            Proposal, RatchetTreeType, Text, WirePolicy,
+            BufferedCommit,
+            BufferedDecryptedMessage,
+            Commit,
+            CommitBundle,
+            ConversationConfiguration,
+            ConversationId,
+            CustomConfiguration,
+            DecryptedMessage,
+            GroupInfoBundle,
+            GroupInfoEncryptionType,
+            GroupInfoPayload,
+            Proposal,
+            RatchetTreeType,
+            Text,
+            WirePolicy,
         },
         credential::{
-            Credential, CredentialRef, CredentialType, FindFilters as CredentialFindFilters, x509::CertificateBundle,
+            Credential,
+            CredentialRef,
+            CredentialType,
+            FindFilters as CredentialFindFilters,
+            x509::CertificateBundle,
         },
-        key_package::{Keypackage, KeypackageRef},
+        key_package::{
+            Keypackage,
+            KeypackageRef,
+        },
         session::{
-            EpochObserver, HistoryObserver, Session,
-            id::{ClientId, ClientIdRef},
+            EpochObserver,
+            HistoryObserver,
+            Session,
+            id::{
+                ClientId,
+                ClientIdRef,
+            },
             user_id::UserId,
         },
     },
-    mls_provider::{CryptoProvider, EntropySeed, RawEntropySeed, RustCrypto},
+    mls_provider::{
+        CryptoProvider,
+        EntropySeed,
+        RawEntropySeed,
+        RustCrypto,
+    },
     transaction_context::{
-        e2e_identity::conversation_state::E2eiConversationState, key_package::KEYPACKAGE_DEFAULT_LIFETIME,
+        e2e_identity::conversation_state::E2eiConversationState,
+        key_package::KEYPACKAGE_DEFAULT_LIFETIME,
     },
 };
 

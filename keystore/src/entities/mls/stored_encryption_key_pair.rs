@@ -1,6 +1,9 @@
 use zeroize::Zeroize;
 
-use crate::traits::{BorrowPrimaryKey, PrimaryKey};
+use crate::traits::{
+    BorrowPrimaryKey,
+    PrimaryKey,
+};
 
 /// Entity representing a stored encryption keypair
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]

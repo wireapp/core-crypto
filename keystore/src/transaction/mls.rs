@@ -1,12 +1,24 @@
 use openmls::prelude::Ciphersuite;
 use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::key_store::{MlsEntity, MlsEntityId, OpenMlsKeyStore};
+use openmls_traits::key_store::{
+    MlsEntity,
+    MlsEntityId,
+    OpenMlsKeyStore,
+};
 
 use crate::{
-    CryptoKeystoreError, Sha256Hash, Transaction, deser,
+    CryptoKeystoreError,
+    Sha256Hash,
+    Transaction,
+    deser,
     entities::{
-        PersistedMlsGroup, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
-        StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
+        PersistedMlsGroup,
+        StoredCredential,
+        StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair,
+        StoredHpkePrivateKey,
+        StoredKeyPackage,
+        StoredPskBundle,
     },
     ser,
     traits::FetchFromDatabase,

@@ -1,8 +1,18 @@
 use base64::Engine;
-use rusty_jwt_tools::prelude::{JwsAlgorithm, Pem};
+use rusty_jwt_tools::prelude::{
+    JwsAlgorithm,
+    Pem,
+};
 
 use crate::acme::{
-    AcmeAccount, AcmeChallenge, AcmeChallengeType, AcmeIdentifier, AcmeJws, RustyAcme, RustyAcmeError, RustyAcmeResult,
+    AcmeAccount,
+    AcmeChallenge,
+    AcmeChallengeType,
+    AcmeIdentifier,
+    AcmeJws,
+    RustyAcme,
+    RustyAcmeError,
+    RustyAcmeResult,
 };
 
 impl RustyAcme {

@@ -1,14 +1,26 @@
 use core_crypto_keystore::{
     Sha256Hash,
-    entities::{CredentialFindFilters as KeystoreFindFilters, StoredCredential},
+    entities::{
+        CredentialFindFilters as KeystoreFindFilters,
+        StoredCredential,
+    },
     traits::FetchFromDatabase,
 };
 use openmls::prelude::Credential as MlsCredential;
 use tls_codec::Deserialize as _;
 
-use super::{Error, Result};
+use super::{
+    Error,
+    Result,
+};
 use crate::{
-    CipherSuite, ClientId, CredentialRef, CredentialType, KeystoreError, RecursiveError, mls::session::id::ClientIdRef,
+    CipherSuite,
+    ClientId,
+    CredentialRef,
+    CredentialType,
+    KeystoreError,
+    RecursiveError,
+    mls::session::id::ClientIdRef,
 };
 
 /// Filters to narrow down the set of credentials returned from various credential-finding methods.

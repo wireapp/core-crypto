@@ -2,7 +2,11 @@ use std::sync::Arc;
 
 use wire_e2e_identity::legacy::device_status;
 
-use crate::{ClientId, CredentialType, X509Identity};
+use crate::{
+    ClientId,
+    CredentialType,
+    X509Identity,
+};
 
 /// The identity claims identifying a client.
 ///

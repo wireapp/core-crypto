@@ -3,15 +3,27 @@
 #![allow(unused)]
 use std::sync::Arc;
 
-use async_lock::{RwLock, RwLockReadGuard};
+use async_lock::{
+    RwLock,
+    RwLockReadGuard,
+};
 use openmls_traits::{
-    authentication_service::{CredentialAuthenticationStatus, CredentialRef},
+    authentication_service::{
+        CredentialAuthenticationStatus,
+        CredentialRef,
+    },
     crypto::OpenMlsCrypto,
     types::SignatureScheme,
 };
-use spki::{SignatureAlgorithmIdentifier, der::referenced::RefToOwned};
+use spki::{
+    SignatureAlgorithmIdentifier,
+    der::referenced::RefToOwned,
+};
 
-use crate::error::{E2eIdentityError, E2eIdentityResult};
+use crate::error::{
+    E2eIdentityError,
+    E2eIdentityResult,
+};
 
 pub struct Ed25519PkiSignature(ed25519_dalek::Signature);
 impl spki::SignatureBitStringEncoding for Ed25519PkiSignature {

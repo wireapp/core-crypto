@@ -1,22 +1,39 @@
 use idb::{
     KeyPath,
-    builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder},
+    builder::{
+        DatabaseBuilder,
+        IndexBuilder,
+        ObjectStoreBuilder,
+    },
 };
 
 use super::DB_VERSION_0;
 use crate::{
     connection::idb_migration::legacy::{
         entities::mls::{
-            e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
+            e2ei_acme_ca::E2eiAcmeCA,
+            e2ei_crl::E2eiCrl,
+            e2ei_intermediate_cert::E2eiIntermediateCert,
             stored_keypackage::StoredKeypackage,
         },
         traits::EntityBase as _,
     },
     entities::{
-        MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
+        MlsPendingMessage,
+        PersistedMlsPendingGroup,
+        ProteusIdentity,
+        ProteusPrekey,
+        ProteusSession,
+        StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair,
+        StoredHpkePrivateKey,
+        StoredPskBundle,
     },
-    migrations::{LegacyPersistedMlsGroup, StoredSignatureKeypair, V5Credential},
+    migrations::{
+        LegacyPersistedMlsGroup,
+        StoredSignatureKeypair,
+        V5Credential,
+    },
 };
 
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {

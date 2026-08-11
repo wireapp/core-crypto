@@ -21,15 +21,31 @@
 //! Any attempt to encrypt a message will fail because the client cannot retrieve the signature key from
 //! its keystore.
 
-use std::{borrow::Borrow, sync::Arc};
+use std::{
+    borrow::Borrow,
+    sync::Arc,
+};
 
 use core_crypto_keystore::Database;
-use obfuscate::{Obfuscate, Obfuscated};
+use obfuscate::{
+    Obfuscate,
+    Obfuscated,
+};
 use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
-    CipherSuite, ClientId, ClientIdRef, CoreCrypto, CoreCryptoTransportNotImplementedProvider, Credential, Error,
-    OpenMlsError, RecursiveError, Result, Session, mls_provider::CryptoProvider,
+    CipherSuite,
+    ClientId,
+    ClientIdRef,
+    CoreCrypto,
+    CoreCryptoTransportNotImplementedProvider,
+    Credential,
+    Error,
+    OpenMlsError,
+    RecursiveError,
+    Result,
+    Session,
+    mls_provider::CryptoProvider,
 };
 
 /// We always instantiate history clients with this prefix in their client id, so
@@ -174,7 +190,10 @@ mod tests {
     use rstest::rstest;
     use rstest_reuse::apply;
 
-    use crate::test_utils::{TestContext, all_cred_cipher};
+    use crate::test_utils::{
+        TestContext,
+        all_cred_cipher,
+    };
 
     /// Create a history secret, and restore it into a CoreCrypto instance
     #[apply(all_cred_cipher)]

@@ -1,6 +1,9 @@
 use zeroize::Zeroize as _;
 
-use crate::{CryptoKeystoreResult, DatabaseKey};
+use crate::{
+    CryptoKeystoreResult,
+    DatabaseKey,
+};
 
 /// Format a key pragma according to the raw form supported by sqlcipher and sqlite3mc
 fn set_key_pragma(conn: &mut rusqlite::Connection, key: &DatabaseKey, pragma_name: &str) -> CryptoKeystoreResult<()> {

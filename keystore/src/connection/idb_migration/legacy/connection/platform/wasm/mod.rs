@@ -1,21 +1,37 @@
 use aes_gcm::KeyInit as _;
-use idb::{Factory, TransactionMode};
+use idb::{
+    Factory,
+    TransactionMode,
+};
 
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
+    CryptoKeystoreError,
+    CryptoKeystoreResult,
     connection::idb_migration::legacy::{
         connection::{
-            DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey,
+            DatabaseConnection,
+            DatabaseConnectionRequirements,
+            DatabaseKey,
             platform::wasm::migrations::open_and_migrate,
         },
         entities::mls::{
-            e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
+            e2ei_acme_ca::E2eiAcmeCA,
+            e2ei_crl::E2eiCrl,
+            e2ei_intermediate_cert::E2eiIntermediateCert,
             stored_keypackage::StoredKeypackage,
         },
     },
     entities::{
-        MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession, StoredCredential,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
+        MlsPendingMessage,
+        PersistedMlsPendingGroup,
+        ProteusIdentity,
+        ProteusPrekey,
+        ProteusSession,
+        StoredCredential,
+        StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair,
+        StoredHpkePrivateKey,
+        StoredPskBundle,
     },
     migrations::LegacyPersistedMlsGroup,
 };
@@ -24,7 +40,11 @@ pub(crate) mod migrations;
 mod rekey;
 pub(crate) mod storage;
 
-use self::storage::{WasmEncryptedStorage, WasmStorageTransaction, WasmStorageWrapper};
+use self::storage::{
+    WasmEncryptedStorage,
+    WasmStorageTransaction,
+    WasmStorageWrapper,
+};
 
 #[derive(Debug)]
 pub(crate) struct WasmConnection {

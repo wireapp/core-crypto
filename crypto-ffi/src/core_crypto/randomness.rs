@@ -1,4 +1,8 @@
-use crate::{CoreCryptoError, CoreCryptoFfi, CoreCryptoResult};
+use crate::{
+    CoreCryptoError,
+    CoreCryptoFfi,
+    CoreCryptoResult,
+};
 
 #[uniffi::export]
 impl CoreCryptoFfi {

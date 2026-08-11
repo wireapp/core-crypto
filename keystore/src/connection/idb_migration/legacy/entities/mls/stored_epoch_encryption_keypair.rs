@@ -11,7 +11,10 @@
 use crate::{
     connection::idb_migration::legacy,
     entities::StoredEpochEncryptionKeypair,
-    traits::{BorrowPrimaryKey, KeyType},
+    traits::{
+        BorrowPrimaryKey,
+        KeyType,
+    },
 };
 
 impl legacy::traits::EntityBase for StoredEpochEncryptionKeypair {

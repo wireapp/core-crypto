@@ -1,6 +1,12 @@
 use crate::{
     CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, PrimaryKey, UniqueEntity},
+    traits::{
+        BorrowPrimaryKey,
+        Entity,
+        EntityGetBorrowed,
+        PrimaryKey,
+        UniqueEntity,
+    },
 };
 
 #[derive(Debug, Eq, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

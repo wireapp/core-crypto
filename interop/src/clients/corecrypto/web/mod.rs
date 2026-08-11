@@ -1,17 +1,37 @@
 #[cfg(feature = "proteus")]
 use std::cell::Cell;
-use std::{collections::HashMap, net::SocketAddr, sync::LazyLock};
+use std::{
+    collections::HashMap,
+    net::SocketAddr,
+    sync::LazyLock,
+};
 
 #[cfg(feature = "proteus")]
 use anyhow::anyhow;
-use anyhow::{Context as _, Result};
-use core_crypto::{KeyPackageIn, Keypackage};
+use anyhow::{
+    Context as _,
+    Result,
+};
+use core_crypto::{
+    KeyPackageIn,
+    Keypackage,
+};
 use tls_codec::Deserialize;
-use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator as _};
+use tree_sitter::{
+    Parser,
+    Query,
+    QueryCursor,
+    StreamingIterator as _,
+};
 
 use crate::{
     CIPHERSUITE_IN_USE,
-    clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
+    clients::{
+        EmulatedClient,
+        EmulatedClientProtocol,
+        EmulatedClientType,
+        EmulatedMlsClient,
+    },
 };
 
 /// Parse the source, returning all function bodies by function name

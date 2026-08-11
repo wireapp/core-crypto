@@ -4,24 +4,47 @@
 
 use std::sync::Arc;
 
-use core_crypto_keystore::entities::{MlsPendingMessage, PersistedMlsPendingGroup};
+use core_crypto_keystore::entities::{
+    MlsPendingMessage,
+    PersistedMlsPendingGroup,
+};
 use log::trace;
 use openmls::{
     credentials::CredentialWithKey,
-    prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody},
+    prelude::{
+        MlsGroup,
+        MlsMessageIn,
+        MlsMessageInBody,
+    },
 };
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize as _;
 
-use super::{Error, Result};
+use super::{
+    Error,
+    Result,
+};
 use crate::{
-    BufferedDecryptedMessage, CommitBundle, ConversationConfiguration, CustomConfiguration, DecryptedMessage,
-    KeystoreError, LeafError, OpenMlsError, RecursiveError,
+    BufferedDecryptedMessage,
+    CommitBundle,
+    ConversationConfiguration,
+    CustomConfiguration,
+    DecryptedMessage,
+    KeystoreError,
+    LeafError,
+    OpenMlsError,
+    RecursiveError,
     mls::{
-        conversation::{ConversationIdRef, mutable::decrypt::buffer_messages::MessageRestorePolicy},
+        conversation::{
+            ConversationIdRef,
+            mutable::decrypt::buffer_messages::MessageRestorePolicy,
+        },
         credential::ext::CredentialExt as _,
     },
-    mls_provider::{CryptoProvider, Database},
+    mls_provider::{
+        CryptoProvider,
+        Database,
+    },
     transaction_context::TransactionContext,
 };
 
@@ -281,7 +304,10 @@ impl PendingConversation {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{DecryptedMessage, test_utils::*};
+    use crate::{
+        DecryptedMessage,
+        test_utils::*,
+    };
 
     #[apply(all_cred_cipher)]
     async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestContext) {

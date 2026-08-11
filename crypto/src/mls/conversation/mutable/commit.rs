@@ -1,14 +1,28 @@
 //! The methods in this module all produce or handle commits.
 
-use std::{borrow::Borrow, collections::HashMap};
+use std::{
+    borrow::Borrow,
+    collections::HashMap,
+};
 
 use openmls::prelude::KeyPackageIn;
 
 use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
-    ClientId, ClientIdRef, CredentialRef, GroupInfoBundle, LeafError, OpenMlsError, RecursiveError,
+    ClientId,
+    ClientIdRef,
+    CredentialRef,
+    GroupInfoBundle,
+    LeafError,
+    OpenMlsError,
+    RecursiveError,
     mls::{
-        conversation::{ConversationMut, Error, Result, commit::CommitBundle},
+        conversation::{
+            ConversationMut,
+            Error,
+            Result,
+            commit::CommitBundle,
+        },
         credential::Credential,
     },
 };

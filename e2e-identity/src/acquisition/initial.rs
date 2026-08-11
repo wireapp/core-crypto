@@ -3,11 +3,18 @@ use std::sync::Arc;
 use obfuscate::Obfuscated;
 use rusty_jwt_tools::prelude::Pem;
 
-use super::{X509CredentialAcquisition, X509CredentialConfiguration, states};
+use super::{
+    X509CredentialAcquisition,
+    X509CredentialConfiguration,
+    states,
+};
 use crate::{
     error::E2eIdentityResult,
     pki_env::PkiEnvironment,
-    utils::{generate_key, public_jwk_from_pem_keypair},
+    utils::{
+        generate_key,
+        public_jwk_from_pem_keypair,
+    },
 };
 
 impl X509CredentialAcquisition<states::Initialized> {

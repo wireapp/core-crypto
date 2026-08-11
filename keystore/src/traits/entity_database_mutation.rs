@@ -2,7 +2,11 @@ use rusqlite::Transaction;
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, KeyType},
+    traits::{
+        BorrowPrimaryKey,
+        Entity,
+        KeyType,
+    },
     transaction::dynamic_dispatch,
 };
 

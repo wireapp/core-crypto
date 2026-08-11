@@ -2,14 +2,28 @@ use async_trait::async_trait;
 #[cfg(target_os = "unknown")]
 use serde::de::DeserializeOwned;
 
-use super::{Decryptable, Encrypting, Entity, EntityBase, entity_database_mutation::EntityDatabaseMutation};
+use super::{
+    Decryptable,
+    Encrypting,
+    Entity,
+    EntityBase,
+    entity_database_mutation::EntityDatabaseMutation,
+};
 #[cfg(not(target_os = "unknown"))]
-use crate::entities::{count_helper, count_helper_tx, delete_helper, load_all_helper};
+use crate::entities::{
+    count_helper,
+    count_helper_tx,
+    delete_helper,
+    load_all_helper,
+};
 #[cfg(target_os = "unknown")]
 use crate::traits::KeyType as _;
 use crate::{
     CryptoKeystoreResult,
-    connection::idb_migration::legacy::connection::{KeystoreDatabaseConnection, TransactionWrapper},
+    connection::idb_migration::legacy::connection::{
+        KeystoreDatabaseConnection,
+        TransactionWrapper,
+    },
     traits::PrimaryKey,
 };
 

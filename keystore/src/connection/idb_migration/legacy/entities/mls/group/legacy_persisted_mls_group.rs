@@ -1,7 +1,10 @@
 use crate::{
     CryptoKeystoreResult,
     migrations::LegacyPersistedMlsGroup,
-    traits::{BorrowPrimaryKey, PrimaryKey},
+    traits::{
+        BorrowPrimaryKey,
+        PrimaryKey,
+    },
 };
 
 impl LegacyPersistedMlsGroup {

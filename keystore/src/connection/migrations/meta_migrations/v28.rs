@@ -1,7 +1,10 @@
 use rusqlite::OptionalExtension;
 use x509_cert::der::Decode;
 
-use crate::{CryptoKeystoreError, CryptoKeystoreResult};
+use crate::{
+    CryptoKeystoreError,
+    CryptoKeystoreResult,
+};
 
 pub(crate) const VERSION: i32 = 28;
 

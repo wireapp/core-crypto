@@ -3,12 +3,25 @@ use std::sync::Arc;
 use openmls::prelude::group_info::VerifiableGroupInfo;
 use openmls_traits::OpenMlsCryptoProvider as _;
 
-use super::{CredentialType, MessageExt as _, MlsTransportTestExt, SessionContext, TestContext, TestError};
+use super::{
+    CredentialType,
+    MessageExt as _,
+    MlsTransportTestExt,
+    SessionContext,
+    TestContext,
+    TestError,
+};
 use crate::{
-    ConversationId, CredentialRef, E2eiConversationState, RecursiveError,
+    ConversationId,
+    CredentialRef,
+    E2eiConversationState,
+    RecursiveError,
     mls::{
         conversation::ConversationMut,
-        credential::{Credential, ext::CredentialExt as _},
+        credential::{
+            Credential,
+            ext::CredentialExt as _,
+        },
     },
 };
 

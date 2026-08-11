@@ -80,8 +80,14 @@ impl IdentityStatus {
 pub fn extract_crl_uris(
     cert: &x509_cert::Certificate,
 ) -> RustyX509CheckResult<Option<std::collections::HashSet<String>>> {
-    use certval::validator::{PDVCertificate, PDVExtension};
-    use x509_cert::ext::pkix::name::{DistributionPointName, GeneralName};
+    use certval::validator::{
+        PDVCertificate,
+        PDVExtension,
+    };
+    use x509_cert::ext::pkix::name::{
+        DistributionPointName,
+        GeneralName,
+    };
 
     Ok(PDVCertificate::try_from(cert.clone())?
         .parsed_extensions

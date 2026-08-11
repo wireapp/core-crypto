@@ -1,7 +1,14 @@
 use core_crypto_keystore::{
     entities::{
-        MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredEncryptionKeyPair,
-        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
+        MlsPendingMessage,
+        PersistedMlsGroup,
+        PersistedMlsPendingGroup,
+        StoredCredential,
+        StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair,
+        StoredHpkePrivateKey,
+        StoredKeyPackage,
+        StoredPskBundle,
     },
     traits::FetchFromDatabase as _,
 };

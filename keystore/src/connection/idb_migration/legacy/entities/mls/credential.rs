@@ -2,16 +2,34 @@ use async_trait::async_trait;
 use web_time::SystemTime;
 
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, Sha256Hash,
+    CryptoKeystoreError,
+    CryptoKeystoreResult,
+    Sha256Hash,
     connection::idb_migration::legacy::{
-        connection::{KeystoreDatabaseConnection, TransactionWrapper},
+        connection::{
+            KeystoreDatabaseConnection,
+            TransactionWrapper,
+        },
         traits::{
-            DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity, EntityBase, EntityDatabaseMutation,
+            DecryptData,
+            Decryptable,
+            Decrypting,
+            EncryptData,
+            Encrypting,
+            Entity,
+            EntityBase,
+            EntityDatabaseMutation,
             SearchableEntity,
         },
     },
-    entities::{CredentialFindFilters, StoredCredential},
-    traits::{KeyType as _, PrimaryKey},
+    entities::{
+        CredentialFindFilters,
+        StoredCredential,
+    },
+    traits::{
+        KeyType as _,
+        PrimaryKey,
+    },
 };
 
 impl EntityBase for StoredCredential {

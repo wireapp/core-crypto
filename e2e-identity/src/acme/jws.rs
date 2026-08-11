@@ -1,7 +1,17 @@
-use jwt_simple::prelude::{JWTClaims, JWTHeader};
-use rusty_jwt_tools::prelude::{JwsAlgorithm, Pem, RustyJwtTools};
+use jwt_simple::prelude::{
+    JWTClaims,
+    JWTHeader,
+};
+use rusty_jwt_tools::prelude::{
+    JwsAlgorithm,
+    Pem,
+    RustyJwtTools,
+};
 
-use crate::acme::{RustyAcmeError, RustyAcmeResult};
+use crate::acme::{
+    RustyAcmeError,
+    RustyAcmeResult,
+};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(test, derive(Clone))]

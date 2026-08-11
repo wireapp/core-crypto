@@ -3,17 +3,39 @@ use std::sync::Arc;
 use async_lock::RwLock;
 pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
-pub use rstest_reuse::{self, *};
+pub use rstest_reuse::{
+    self,
+    *,
+};
 
 use super::{
-    CoreCryptoTransportSuccessProvider, MlsTransportTestExt, TestConversation, init_x509_test_chain, tmp_db_file,
-    x509::{CertificateParams, X509TestChain},
+    CoreCryptoTransportSuccessProvider,
+    MlsTransportTestExt,
+    TestConversation,
+    init_x509_test_chain,
+    tmp_db_file,
+    x509::{
+        CertificateParams,
+        X509TestChain,
+    },
 };
 use crate::{
-    CertificateBundle, ClientId, Credential, CredentialRef, Database, DatabaseKey, ExternalSender,
+    CertificateBundle,
+    ClientId,
+    Credential,
+    CredentialRef,
+    Database,
+    DatabaseKey,
+    ExternalSender,
     test_utils::SessionContext,
 };
-pub use crate::{CipherSuite, ConversationConfiguration, CredentialType, CustomConfiguration, WirePolicy};
+pub use crate::{
+    CipherSuite,
+    ConversationConfiguration,
+    CredentialType,
+    CustomConfiguration,
+    WirePolicy,
+};
 
 #[template]
 #[rstest(

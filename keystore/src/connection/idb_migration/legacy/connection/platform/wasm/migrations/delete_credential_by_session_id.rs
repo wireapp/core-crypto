@@ -1,7 +1,8 @@
 use wasm_bindgen::JsValue;
 
 use crate::{
-    CryptoKeystoreResult, connection::idb_migration::legacy::connection::platform::wasm::WasmStorageTransaction,
+    CryptoKeystoreResult,
+    connection::idb_migration::legacy::connection::platform::wasm::WasmStorageTransaction,
 };
 
 pub(crate) async fn delete_credential_by_session_id(

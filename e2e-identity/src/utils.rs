@@ -1,10 +1,23 @@
 use jwt_simple::{
-    algorithms::{ECDSAP256PublicKeyLike as _, ECDSAP384PublicKeyLike as _, ECDSAP521PublicKeyLike as _},
-    prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPair, Jwk},
+    algorithms::{
+        ECDSAP256PublicKeyLike as _,
+        ECDSAP384PublicKeyLike as _,
+        ECDSAP521PublicKeyLike as _,
+    },
+    prelude::{
+        ES256KeyPair,
+        ES384KeyPair,
+        ES512KeyPair,
+        Ed25519KeyPair,
+        Jwk,
+    },
 };
 use rusty_jwt_tools::{
     jwk::TryIntoJwk as _,
-    prelude::{JwsAlgorithm, Pem},
+    prelude::{
+        JwsAlgorithm,
+        Pem,
+    },
 };
 use spki::AlgorithmIdentifierOwned;
 

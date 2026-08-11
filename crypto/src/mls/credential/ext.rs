@@ -1,10 +1,33 @@
-use openmls::prelude::{Credential, CredentialWithKey};
-use openmls_traits::types::{HashType, SignatureScheme};
-use wire_e2e_identity::{HashAlgorithm, JwsAlgorithm, compute_raw_key_thumbprint, pki_env::PkiEnvironment};
-use x509_cert::{Certificate, der::Decode};
+use openmls::prelude::{
+    Credential,
+    CredentialWithKey,
+};
+use openmls_traits::types::{
+    HashType,
+    SignatureScheme,
+};
+use wire_e2e_identity::{
+    HashAlgorithm,
+    JwsAlgorithm,
+    compute_raw_key_thumbprint,
+    pki_env::PkiEnvironment,
+};
+use x509_cert::{
+    Certificate,
+    der::Decode,
+};
 
-use super::{Error, Result};
-use crate::{CipherSuite, ClientId, CredentialType, DeviceStatus, WireIdentity};
+use super::{
+    Error,
+    Result,
+};
+use crate::{
+    CipherSuite,
+    ClientId,
+    CredentialType,
+    DeviceStatus,
+    WireIdentity,
+};
 
 #[allow(dead_code)]
 pub(crate) trait CredentialExt {

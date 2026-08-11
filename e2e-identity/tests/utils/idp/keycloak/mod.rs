@@ -1,28 +1,70 @@
-use std::{borrow::Cow, collections::HashMap, env, net::SocketAddr, process::Command, sync::OnceLock};
+use std::{
+    borrow::Cow,
+    collections::HashMap,
+    env,
+    net::SocketAddr,
+    process::Command,
+    sync::OnceLock,
+};
 
 use http::header;
 use itertools::Itertools as _;
 use keycloak::{
-    KeycloakAdmin, KeycloakAdminToken,
-    types::{ClientRepresentation, CredentialRepresentation, ProtocolMapperRepresentation, UserRepresentation},
+    KeycloakAdmin,
+    KeycloakAdminToken,
+    types::{
+        ClientRepresentation,
+        CredentialRepresentation,
+        ProtocolMapperRepresentation,
+        UserRepresentation,
+    },
 };
-use oauth2::{CsrfToken, PkceCodeChallenge, RedirectUrl, Scope};
+use oauth2::{
+    CsrfToken,
+    PkceCodeChallenge,
+    RedirectUrl,
+    Scope,
+};
 use openidconnect::{
-    IssuerUrl, Nonce,
-    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
+    IssuerUrl,
+    Nonce,
+    core::{
+        CoreAuthenticationFlow,
+        CoreClient,
+        CoreProviderMetadata,
+    },
 };
 use serde_json::json;
 use testcontainers::{
-    Image, ImageExt, ReuseDirective,
-    core::{ContainerPort, IntoContainerPort, Mount, WaitFor},
+    Image,
+    ImageExt,
+    ReuseDirective,
+    core::{
+        ContainerPort,
+        IntoContainerPort,
+        Mount,
+        WaitFor,
+    },
     runners::AsyncRunner,
 };
 use url::Url;
 
 use crate::utils::{
-    NETWORK, SHM,
-    ctx::{ctx_get_http_client, custom_oauth_client},
-    idp::{IdpServer, IdpServerConfig, OAUTH_CLIENT_ID, OAUTH_CLIENT_NAME, OauthCfg, OidcProvider, User},
+    NETWORK,
+    SHM,
+    ctx::{
+        ctx_get_http_client,
+        custom_oauth_client,
+    },
+    idp::{
+        IdpServer,
+        IdpServerConfig,
+        OAUTH_CLIENT_ID,
+        OAUTH_CLIENT_NAME,
+        OauthCfg,
+        OidcProvider,
+        User,
+    },
     scrap_login,
 };
 

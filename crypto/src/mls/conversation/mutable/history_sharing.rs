@@ -1,10 +1,22 @@
 use std::collections::HashSet;
 
-use itertools::{Either, Itertools as _};
+use itertools::{
+    Either,
+    Itertools as _,
+};
 use openmls::prelude::Sender;
 
-use super::{ConversationMut, Error, Result};
-use crate::{ClientIdRef, CommitBundle, HistorySecret, RecursiveError};
+use super::{
+    ConversationMut,
+    Error,
+    Result,
+};
+use crate::{
+    ClientIdRef,
+    CommitBundle,
+    HistorySecret,
+    RecursiveError,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum HistoryClientUpdateOutcome {
@@ -192,7 +204,10 @@ mod tests {
 
     use crate::{
         ephemeral::HISTORY_CLIENT_ID_PREFIX,
-        test_utils::{TestContext, all_cred_cipher},
+        test_utils::{
+            TestContext,
+            all_cred_cipher,
+        },
     };
 
     #[apply(all_cred_cipher)]

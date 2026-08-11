@@ -2,12 +2,28 @@
 
 use std::sync::Arc;
 
-use core_crypto_keystore::{entities::ProteusSession, traits::FetchFromDatabase};
-use proteus_wasm::{keys::IdentityKeyPair, session::Session};
-use schnellru::{ByLength, LruMap};
+use core_crypto_keystore::{
+    entities::ProteusSession,
+    traits::FetchFromDatabase,
+};
+use proteus_wasm::{
+    keys::IdentityKeyPair,
+    session::Session,
+};
+use schnellru::{
+    ByLength,
+    LruMap,
+};
 
-use super::{ProteusConversationSession, SessionIdentifier};
-use crate::{KeystoreError, ProteusError, Result};
+use super::{
+    ProteusConversationSession,
+    SessionIdentifier,
+};
+use crate::{
+    KeystoreError,
+    ProteusError,
+    Result,
+};
 
 /// LRU cache of live [`ProteusConversationSession`]s, keyed by session id.
 ///
@@ -95,7 +111,10 @@ mod tests {
 
     use crate::{
         proteus::ProteusCentral,
-        test_utils::{proteus_utils::*, *},
+        test_utils::{
+            proteus_utils::*,
+            *,
+        },
     };
 
     /// A session persisted by one [`ProteusCentral`] must be loaded by the next one over the same

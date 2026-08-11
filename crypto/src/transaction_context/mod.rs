@@ -3,16 +3,41 @@
 
 use std::sync::Arc;
 
-use async_lock::{Mutex, MutexGuardArc, RwLock};
-use core_crypto_keystore::{CryptoKeystoreError, UniqueArc, entities::ConsumerData, traits::FetchFromDatabase as _};
-pub use error::{Error, Result};
+use async_lock::{
+    Mutex,
+    MutexGuardArc,
+    RwLock,
+};
+use core_crypto_keystore::{
+    CryptoKeystoreError,
+    UniqueArc,
+    entities::ConsumerData,
+    traits::FetchFromDatabase as _,
+};
+pub use error::{
+    Error,
+    Result,
+};
 use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::pki_env::PkiEnvironment;
 
 use crate::{
-    ClientId, ConversationId, CoreCrypto, KeystoreError, MlsTransport, OpenMlsError, RecursiveError, Session,
-    mls::{self, conversation_cache::ConversationCache},
-    mls_provider::{CryptoProvider, Database},
+    ClientId,
+    ConversationId,
+    CoreCrypto,
+    KeystoreError,
+    MlsTransport,
+    OpenMlsError,
+    RecursiveError,
+    Session,
+    mls::{
+        self,
+        conversation_cache::ConversationCache,
+    },
+    mls_provider::{
+        CryptoProvider,
+        Database,
+    },
 };
 pub mod conversation;
 mod credential;

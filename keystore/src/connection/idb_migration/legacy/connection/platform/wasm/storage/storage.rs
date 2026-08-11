@@ -5,10 +5,18 @@ use serde::de::DeserializeOwned;
 use sha2::Digest as _;
 use wasm_bindgen::JsValue;
 
-use super::{super::WasmConnection, WasmStorageWrapper};
+use super::{
+    super::WasmConnection,
+    WasmStorageWrapper,
+};
 use crate::{
-    CryptoKeystoreResult, DatabaseKey,
-    connection::idb_migration::legacy::traits::{Decryptable, Decrypting, Entity},
+    CryptoKeystoreResult,
+    DatabaseKey,
+    connection::idb_migration::legacy::traits::{
+        Decryptable,
+        Decrypting,
+        Entity,
+    },
 };
 
 pub(crate) struct WasmEncryptedStorage {

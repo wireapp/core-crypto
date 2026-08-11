@@ -5,19 +5,30 @@ use openmls::prelude::Credential as MlsCredential;
 use openmls_traits::types::SignatureScheme;
 use openmls_x509_credential::CertificateKeyPair;
 use wire_e2e_identity::{
-    HashAlgorithm, WireIdentityReader, legacy::id::WireQualifiedClientId, pki_env::PkiEnvironment,
+    HashAlgorithm,
+    WireIdentityReader,
+    legacy::id::WireQualifiedClientId,
+    pki_env::PkiEnvironment,
 };
 #[cfg(test)]
 use x509_cert::der::Encode;
 use zeroize::Zeroize;
 
-use super::{Error, Result};
+use super::{
+    Error,
+    Result,
+};
 #[cfg(test)]
 use crate::mls_provider::PkiKeypair;
 #[cfg(test)]
 use crate::test_utils::x509::X509Certificate;
 use crate::{
-    CipherSuite, ClientId, Credential, CredentialType, OpenMlsError, RecursiveError,
+    CipherSuite,
+    ClientId,
+    Credential,
+    CredentialType,
+    OpenMlsError,
+    RecursiveError,
     mls::credential::ext::CredentialExt as _,
 };
 
@@ -165,7 +176,10 @@ impl Credential {
 #[cfg(test)]
 fn new_rand_client(domain: Option<String>) -> (ClientId, String) {
     let rand_str = |n: usize| {
-        use rand::distributions::{Alphanumeric, DistString as _};
+        use rand::distributions::{
+            Alphanumeric,
+            DistString as _,
+        };
         Alphanumeric.sample_string(&mut rand::thread_rng(), n)
     };
     let user_id = uuid::Uuid::new_v4();
@@ -197,7 +211,10 @@ impl CertificateBundle {
         // one.
         // TODO: this should all be reworked by the time WPB-19540 is done.
         let rand_str = |n: usize| {
-            use rand::distributions::{Alphanumeric, DistString as _};
+            use rand::distributions::{
+                Alphanumeric,
+                DistString as _,
+            };
             Alphanumeric.sample_string(&mut rand::thread_rng(), n)
         };
         let name = rand_str(10);

@@ -5,7 +5,10 @@ use std::{
     collections::HashMap,
     net::SocketAddr,
     str::FromStr,
-    sync::{LazyLock, Mutex},
+    sync::{
+        LazyLock,
+        Mutex,
+    },
 };
 
 use base64::Engine;

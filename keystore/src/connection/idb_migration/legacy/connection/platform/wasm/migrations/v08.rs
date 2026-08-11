@@ -2,18 +2,30 @@
 
 use idb::{
     KeyPath,
-    builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder},
+    builder::{
+        DatabaseBuilder,
+        IndexBuilder,
+        ObjectStoreBuilder,
+    },
 };
 
 use super::DB_VERSION_8;
 use crate::{
-    CryptoKeystoreResult, DatabaseKey,
+    CryptoKeystoreResult,
+    DatabaseKey,
     connection::idb_migration::legacy::{
         connection::Database,
-        traits::{Entity as _, EntityBase as _},
+        traits::{
+            Entity as _,
+            EntityBase as _,
+        },
     },
     entities::StoredCredential,
-    migrations::{LegacyPersistedMlsGroup, detect_duplicate_credentials, make_least_used_ciphersuite},
+    migrations::{
+        LegacyPersistedMlsGroup,
+        detect_duplicate_credentials,
+        make_least_used_ciphersuite,
+    },
 };
 
 /// Open IDB once with the new builder and close it, this will apply the update.

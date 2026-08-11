@@ -4,7 +4,13 @@ use crate::{
     CryptoKeystoreResult,
     connection::idb_migration::legacy::{
         connection::KeystoreDatabaseConnection,
-        traits::{DecryptData, Decryptable, Decrypting, Entity, EntityBase},
+        traits::{
+            DecryptData,
+            Decryptable,
+            Decrypting,
+            Entity,
+            EntityBase,
+        },
     },
     migrations::LegacyPersistedMlsGroup,
 };

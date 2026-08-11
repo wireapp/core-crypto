@@ -2,20 +2,40 @@ pub(crate) mod platform;
 
 use std::{
     borrow::Borrow,
-    ops::{Deref, DerefMut},
+    ops::{
+        Deref,
+        DerefMut,
+    },
     sync::Arc,
 };
 
-use async_lock::{Mutex, MutexGuard, Semaphore};
+use async_lock::{
+    Mutex,
+    MutexGuard,
+    Semaphore,
+};
 use async_trait::async_trait;
 
 pub(crate) use self::platform::*;
-use super::traits::{Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, SearchableEntity};
+use super::traits::{
+    Entity,
+    EntityDatabaseMutation,
+    EntityDeleteBorrowed,
+    EntityGetBorrowed,
+    SearchableEntity,
+};
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey, Transaction,
+    CryptoKeystoreError,
+    CryptoKeystoreResult,
+    DatabaseKey,
+    Transaction,
     entities::MlsPendingMessage,
     migrations::LegacyPersistedMlsGroup,
-    traits::{BorrowPrimaryKey, FetchFromDatabase, KeyType},
+    traits::{
+        BorrowPrimaryKey,
+        FetchFromDatabase,
+        KeyType,
+    },
 };
 
 /// Limit on the length of a blob to be stored in the database.
@@ -168,8 +188,14 @@ impl Database {
         version: Option<u32>,
     ) -> CryptoKeystoreResult<Arc<Self>> {
         use crate::connection::idb_migration::legacy::connection::{
-            storage::{WasmEncryptedStorage, WasmStorageWrapper},
-            wasm::migrations::{TARGET_VERSION, open_at},
+            storage::{
+                WasmEncryptedStorage,
+                WasmStorageWrapper,
+            },
+            wasm::migrations::{
+                TARGET_VERSION,
+                open_at,
+            },
         };
 
         let version = version.unwrap_or(TARGET_VERSION);

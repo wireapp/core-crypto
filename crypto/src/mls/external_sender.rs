@@ -1,11 +1,23 @@
 use openmls::{
     extensions::ExternalSender as MlsExternalSender,
-    prelude::{Credential as MlsCredential, OpenMlsCrypto as _, OpenMlsSignaturePublicKey, SignatureScheme},
+    prelude::{
+        Credential as MlsCredential,
+        OpenMlsCrypto as _,
+        OpenMlsSignaturePublicKey,
+        SignatureScheme,
+    },
 };
 use wire_e2e_identity::parse_json_jwk;
 
-use super::{Error, Result};
-use crate::{OpenMlsError, RecursiveError, mls_provider::CRYPTO};
+use super::{
+    Error,
+    Result,
+};
+use crate::{
+    OpenMlsError,
+    RecursiveError,
+    mls_provider::CRYPTO,
+};
 
 const WIRE_SERVER_IDENTITY: &str = "wire-server";
 

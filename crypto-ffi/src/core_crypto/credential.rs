@@ -1,9 +1,21 @@
 use std::sync::Arc;
 
-use core_crypto::{CipherSuite as CryptoCipherSuite, CredentialFindFilters, CredentialRef as CryptoCredentialRef};
+use core_crypto::{
+    CipherSuite as CryptoCipherSuite,
+    CredentialFindFilters,
+    CredentialRef as CryptoCredentialRef,
+};
 use core_crypto_keystore::Sha256Hash;
 
-use crate::{CipherSuite, ClientId, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, CredentialRef, CredentialType};
+use crate::{
+    CipherSuite,
+    ClientId,
+    CoreCryptoError,
+    CoreCryptoFfi,
+    CoreCryptoResult,
+    CredentialRef,
+    CredentialType,
+};
 
 #[uniffi::export]
 impl CoreCryptoFfi {

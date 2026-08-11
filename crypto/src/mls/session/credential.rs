@@ -3,7 +3,11 @@ use std::sync::Arc;
 use openmls::prelude::SignaturePublicKey;
 
 use super::Result;
-use crate::{Credential, RecursiveError, Session};
+use crate::{
+    Credential,
+    RecursiveError,
+    Session,
+};
 
 impl Session {
     /// convenience function deferring to the implementation on the inner type

@@ -7,8 +7,14 @@ use async_lock::Mutex;
 use core_crypto::RecursiveError;
 
 use crate::{
-    CoreCryptoError, CoreCryptoResult, CredentialRef, Database, PkiEnvironment, X509CredentialAcquisition,
-    X509CredentialAcquisitionConfiguration, e2ei::AcquisitionState,
+    CoreCryptoError,
+    CoreCryptoResult,
+    CredentialRef,
+    Database,
+    PkiEnvironment,
+    X509CredentialAcquisition,
+    X509CredentialAcquisitionConfiguration,
+    e2ei::AcquisitionState,
 };
 
 #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::export)]

@@ -6,29 +6,54 @@ pub mod hooks;
 #[cfg(test)]
 mod dummy;
 
-use std::{collections::HashSet, sync::Arc};
+use std::{
+    collections::HashSet,
+    sync::Arc,
+};
 
 use async_lock::Mutex;
 use certval::{
-    CertSource, CertVector as _, CertificationPathSettings, Error as CertvalError, PathValidationStatus, TaSource,
+    CertSource,
+    CertVector as _,
+    CertificationPathSettings,
+    Error as CertvalError,
+    PathValidationStatus,
+    TaSource,
 };
 use core_crypto_keystore::{
-    Database, Transaction,
-    entities::{X509Crl, X509IntermediateCert, X509TrustAnchor},
+    Database,
+    Transaction,
+    entities::{
+        X509Crl,
+        X509IntermediateCert,
+        X509TrustAnchor,
+    },
     traits::FetchFromDatabase,
 };
-use openmls_traits::authentication_service::{CredentialAuthenticationStatus, CredentialRef};
+use openmls_traits::authentication_service::{
+    CredentialAuthenticationStatus,
+    CredentialRef,
+};
 use x509_cert::{
     Certificate,
     anchor::TrustAnchorChoice,
-    der::{Decode as _, Encode as _},
+    der::{
+        Decode as _,
+        Encode as _,
+    },
 };
 
 use crate::{
     pki_env::hooks::PkiEnvironmentHooks,
     x509_check::{
-        RustyX509CheckError, RustyX509CheckResult, extract_crl_uris,
-        revocation::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams, now},
+        RustyX509CheckError,
+        RustyX509CheckResult,
+        extract_crl_uris,
+        revocation::{
+            PkiEnvironment as RjtPkiEnvironment,
+            PkiEnvironmentParams,
+            now,
+        },
     },
 };
 
