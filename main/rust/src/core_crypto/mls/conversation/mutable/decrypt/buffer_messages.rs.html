@@ -25,7 +25,7 @@
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">impl </span>ConversationMut {
 <a href=#26 id=26 data-nosnippet>26</a>    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">async fn </span>buffer_future_message(<span class="kw-2">&amp;</span><span class="self">self</span>, message: <span class="kw">impl </span>AsRef&lt;[u8]&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
 <a href=#27 id=27 data-nosnippet>27</a>        <span class="kw">let </span>pending_msg = MlsPendingMessage {
-<a href=#28 id=28 data-nosnippet>28</a>            foreign_id: <span class="self">self</span>.id().to_bytes(),
+<a href=#28 id=28 data-nosnippet>28</a>            conversation_id: <span class="self">self</span>.id().to_bytes(),
 <a href=#29 id=29 data-nosnippet>29</a>            message: message.as_ref().to_vec(),
 <a href=#30 id=30 data-nosnippet>30</a>        };
 <a href=#31 id=31 data-nosnippet>31</a>        <span class="kw">let </span>context_inner = <span class="self">self</span>.tx_context.inner().<span class="kw">await</span>.map_err(RecursiveError::transaction(
