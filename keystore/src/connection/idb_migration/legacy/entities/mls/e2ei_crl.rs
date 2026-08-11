@@ -8,17 +8,27 @@
 // fixing them here.
 #![allow(unused_braces, renamed_and_removed_lints)]
 
+use zeroize::Zeroize;
+
 use crate::{
-    connection::idb_migration::legacy,
-    entities::E2eiCrl,
-    traits::{BorrowPrimaryKey, KeyType},
+    CryptoKeystoreResult,
+    connection::idb_migration::legacy::{self, entities::mls::e2ei_acme_ca::E2eiAcmeCA},
+    traits::{BorrowPrimaryKey, KeyType, PrimaryKey},
 };
+
+#[derive(Zeroize)]
+#[zeroize(drop)]
+pub struct E2eiCrl {
+    pub distribution_point: String,
+    /// A DER-encoded certificate list
+    pub content: Vec<u8>,
+}
 
 impl legacy::traits::EntityBase for E2eiCrl {
     type ConnectionType = legacy::connection::KeystoreDatabaseConnection;
     const TABLE_NAME: &'static str = "e2ei_crls";
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::E2eiCrl(self.into())
+        panic!("This entity should never be used in a transaction")
     }
 }
 impl legacy::traits::Entity for E2eiCrl {
@@ -546,5 +556,36 @@ impl<'a> legacy::traits::Encrypting<'a> for E2eiCrl {
             distribution_point: &self.distribution_point,
             content: <Self as legacy::traits::EncryptData>::encrypt_data(self, cipher, &self.content)?,
         })
+    }
+}
+
+impl From<E2eiCrl> for crate::transaction::dynamic_dispatch::Entity {
+    fn from(_value: E2eiCrl) -> Self {
+        panic!("This entity should never be used in a transaction")
+    }
+}
+
+impl PrimaryKey for E2eiCrl {
+    type PrimaryKey = String;
+
+    fn primary_key(&self) -> Self::PrimaryKey {
+        self.distribution_point.clone()
+    }
+}
+
+impl BorrowPrimaryKey for E2eiCrl {
+    type BorrowedPrimaryKey = str;
+
+    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+        &self.distribution_point
+    }
+}
+
+impl E2eiCrl {
+    pub(crate) fn save(&self, tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()> {
+        let mut stmt =
+            tx.prepare_cached("INSERT OR REPLACE INTO e2ei_crls (distribution_point, content) VALUES (?, ?, ?)")?;
+        stmt.execute((&self.distribution_point, &self.content))?;
+        Ok(())
     }
 }

@@ -9,12 +9,13 @@ use crate::{
             platform::wasm::migrations::open_and_migrate,
         },
         entities::mls::{
-            e2ei_acme_ca::E2eiAcmeCA, e2ei_intermediate_cert::E2eiIntermediateCert, stored_keypackage::StoredKeypackage,
+            e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
+            stored_keypackage::StoredKeypackage,
         },
     },
     entities::{
-        E2eiCrl, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession,
-        StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
+        MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession, StoredCredential,
+        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
     },
     migrations::LegacyPersistedMlsGroup,
 };

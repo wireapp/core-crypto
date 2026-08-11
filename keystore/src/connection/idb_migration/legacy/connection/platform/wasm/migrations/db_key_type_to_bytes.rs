@@ -8,11 +8,12 @@ use crate::{
     connection::idb_migration::legacy::{
         connection::wasm::rekey::rekey_entities,
         entities::mls::{
-            e2ei_acme_ca::E2eiAcmeCA, e2ei_intermediate_cert::E2eiIntermediateCert, stored_keypackage::StoredKeypackage,
+            e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
+            stored_keypackage::StoredKeypackage,
         },
     },
     entities::{
-        E2eiCrl, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession,
+        MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession,
         StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
     },
     migrations::{LegacyPersistedMlsGroup, StoredSignatureKeypair, V5Credential},
