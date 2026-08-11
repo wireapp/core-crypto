@@ -8,4 +8,5 @@ newline_style = "Unix"
 merge_derives = true
 condense_wildcard_suffixes = true
 imports_granularity = "Crate"
+imports_layout = "Vertical"
 group_imports = "StdExternalCrate"
