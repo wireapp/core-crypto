@@ -14,12 +14,14 @@ use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
 use crate::{
     CryptoKeystoreResult, DatabaseKey,
     connection::{
-        idb_migration::legacy::entities::mls::{e2ei_acme_ca::E2eiAcmeCA, stored_keypackage::StoredKeypackage},
+        idb_migration::legacy::entities::mls::{
+            e2ei_acme_ca::E2eiAcmeCA, e2ei_intermediate_cert::E2eiIntermediateCert, stored_keypackage::StoredKeypackage,
+        },
         migrations::MigrationTarget,
     },
     entities::{
-        ConsumerData, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, StoredBufferedCommit,
-        StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
+        ConsumerData, E2eiCrl, MlsPendingMessage, PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential,
+        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
     },
     migrations::LegacyPersistedMlsGroup,
     traits::EntityDatabaseMutation as _,

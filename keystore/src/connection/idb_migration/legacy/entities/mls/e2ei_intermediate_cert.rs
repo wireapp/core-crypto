@@ -8,17 +8,28 @@
 // fixing them here.
 #![allow(unused_braces, renamed_and_removed_lints)]
 
+use zeroize::Zeroize;
+
 use crate::{
+    CryptoKeystoreResult,
     connection::idb_migration::legacy,
-    entities::E2eiIntermediateCert,
-    traits::{BorrowPrimaryKey, KeyType},
+    traits::{BorrowPrimaryKey, KeyType, PrimaryKey},
 };
+
+#[derive(Zeroize)]
+#[zeroize(drop)]
+pub struct E2eiIntermediateCert {
+    // key to identify the CA cert; Using a combination of SKI & AKI extensions concatenated like so is suitable:
+    // `SKI[+AKI]`
+    pub ski_aki_pair: String,
+    pub content: Vec<u8>,
+}
 
 impl legacy::traits::EntityBase for E2eiIntermediateCert {
     type ConnectionType = legacy::connection::KeystoreDatabaseConnection;
     const TABLE_NAME: &'static str = "e2ei_intermediate_certs";
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::E2eiIntermediateCert(self.into())
+        panic!("this migration-only entity should never be part of a transaction")
     }
 }
 impl legacy::traits::Entity for E2eiIntermediateCert {
@@ -545,5 +556,37 @@ impl<'a> legacy::traits::Encrypting<'a> for E2eiIntermediateCert {
             ski_aki_pair: &self.ski_aki_pair,
             content: <Self as legacy::traits::EncryptData>::encrypt_data(self, cipher, &self.content)?,
         })
+    }
+}
+
+impl PrimaryKey for E2eiIntermediateCert {
+    type PrimaryKey = String;
+
+    fn primary_key(&self) -> Self::PrimaryKey {
+        self.ski_aki_pair.clone()
+    }
+}
+
+impl BorrowPrimaryKey for E2eiIntermediateCert {
+    type BorrowedPrimaryKey = str;
+
+    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+        &self.ski_aki_pair
+    }
+}
+
+impl From<E2eiIntermediateCert> for crate::transaction::dynamic_dispatch::Entity {
+    fn from(_value: E2eiIntermediateCert) -> Self {
+        panic!("This entity should never be used in a transaction")
+    }
+}
+
+impl E2eiIntermediateCert {
+    pub(crate) fn save(&self, tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()> {
+        let mut stmt = tx.prepare_cached(
+            "INSERT OR REPLACE INTO e2ei_intermediate_certs (ski_aki_pair , content) VALUES (?, ?, ?)",
+        )?;
+        stmt.execute((&self.ski_aki_pair, &self.content))?;
+        Ok(())
     }
 }

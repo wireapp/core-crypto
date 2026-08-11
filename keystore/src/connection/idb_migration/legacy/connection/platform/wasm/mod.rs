@@ -8,12 +8,13 @@ use crate::{
             DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey,
             platform::wasm::migrations::open_and_migrate,
         },
-        entities::mls::{e2ei_acme_ca::E2eiAcmeCA, stored_keypackage::StoredKeypackage},
+        entities::mls::{
+            e2ei_acme_ca::E2eiAcmeCA, e2ei_intermediate_cert::E2eiIntermediateCert, stored_keypackage::StoredKeypackage,
+        },
     },
     entities::{
-        E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey,
-        ProteusSession, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredPskBundle,
+        E2eiCrl, MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession,
+        StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
     },
     migrations::LegacyPersistedMlsGroup,
 };
