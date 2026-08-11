@@ -133,8 +133,10 @@ pub(crate) mod test {
     use crate::{
         Sha256Hash,
         connection::{Database, DatabaseKey, migrate_db_key_type_to_bytes, migrations::MigrationTarget},
-        entities::{MlsPendingMessage, StoredCredential},
-        traits::{Entity, PrimaryKey as _},
+        entities::{
+            MlsPendingMessage, StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle,
+        },
+        traits::{Entity, EntityGetBorrowed as _, PrimaryKey as _},
     };
 
     pub(crate) const DB: &[u8] = include_bytes!(concat!(
@@ -142,6 +144,43 @@ pub(crate) mod test {
         "/../crypto-ffi/bindings/jvm/src/test/resources/db-v10002003.sqlite"
     ));
     pub(crate) const OLD_KEY: &str = "secret";
+
+    /// Seed a fresh database at `schema_version`, then reopen it migrated all the way to latest.
+    ///
+    /// The inner database is dropped before reopening, so that the reopen actually runs the
+    /// migrations under test against the seeded rows.
+    async fn seed_then_migrate(
+        path: &str,
+        key: &DatabaseKey,
+        schema_version: u16,
+        seed: impl FnOnce(&rusqlite::Connection),
+    ) -> std::sync::Arc<Database> {
+        {
+            let db = Database::open_at_schema_version(path, key, MigrationTarget::Version(schema_version))
+                .await
+                .expect("opening the database at the pre-migration schema version");
+            let conn = db.conn().await;
+            seed(&conn);
+        }
+        Database::open(path, key).await.expect("reopening fully migrated")
+    }
+
+    /// The storage class and length of a stored key, so that a failure says *why* it failed.
+    ///
+    /// A correctly backfilled key reads as `("blob", 32)`; a hex-encoded one as `("text", 64)`.
+    fn stored_key_encoding(conn: &rusqlite::Connection, table: &str, column: &str) -> (String, i64) {
+        conn.query_row(
+            &format!("SELECT typeof({column}), length({column}) FROM {table}"),
+            [],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .expect("reading back the stored key")
+    }
+
+    /// A temporary database path, kept alive by the returned file handle.
+    fn temp_db() -> (NamedTempFile, DatabaseKey) {
+        (NamedTempFile::new().unwrap(), DatabaseKey::generate())
+    }
 
     // a close replica of the JVM test in `GeneralTest.kt`, but way more debuggable
     #[test]
@@ -399,6 +438,267 @@ r9IJmL6kDQ==
                     .expect("getting the migrated pending message by primary key")
                     .is_some(),
                 "the primary key V31 wrote must be byte-identical to the one the entity binds when querying"
+            );
+        });
+    }
+
+    // The tests below all cover the same defect and its repair, one entity at a time.
+    //
+    // `sha256_blob` is named for its input, not its output: it returns `crate::sha256`, which is a
+    // 64-character hex string. Every migration which backfills a sha256 key column therefore writes
+    // TEXT, while `impl ToSql for Sha256Hash` binds the 32 raw digest bytes. SQLite never compares a
+    // blob equal to text, so a row such a migration wrote cannot be found by the code which owns it:
+    // the data survives `load_all` but is invisible to `get` and `delete`, and so to the transaction
+    // cache as well.
+    //
+    // V31 avoids this in its own backfill by wrapping it in `unhex(...)`. V12 and V20 shipped
+    // without it, so the V31 meta migration rewrites what they left behind.
+
+    /// The V31 meta migration repairs `mls_encryption_keypairs.pk_sha256` keys backfilled by V12.
+    #[test]
+    fn v31_meta_migration_repairs_v12_encryption_keypair_keys() {
+        const PK: &[u8] = b"an encryption public key predating V12";
+        const SK: &[u8] = b"the secret key which belongs with it";
+
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let db = seed_then_migrate(path, &key, 11, |conn| {
+                conn.execute("INSERT INTO mls_encryption_keypairs (pk, sk) VALUES (?, ?)", (PK, SK))
+                    .expect("inserting a pre-V12 encryption keypair");
+            })
+            .await;
+            let conn = db.conn().await;
+
+            assert_eq!(
+                StoredEncryptionKeyPair::count(&conn).unwrap(),
+                1,
+                "the migration must not lose the keypair"
+            );
+
+            let encoding = stored_key_encoding(&conn, "mls_encryption_keypairs", "pk_sha256");
+            assert!(
+                StoredEncryptionKeyPair::get_borrowed(&conn, PK).unwrap().is_some(),
+                "a migrated keypair must be gettable by its public key, but `pk_sha256` is stored as \
+                 {encoding:?} while `Sha256Hash` binds 32 raw bytes"
+            );
+        });
+    }
+
+    /// The V31 meta migration repairs `mls_hpke_private_keys.pk_sha256` keys backfilled by V12.
+    #[test]
+    fn v31_meta_migration_repairs_v12_hpke_private_key_keys() {
+        const PK: &[u8] = b"an HPKE public key predating V12";
+        const SK: &[u8] = b"the secret key which belongs with it";
+
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let db = seed_then_migrate(path, &key, 11, |conn| {
+                conn.execute("INSERT INTO mls_hpke_private_keys (pk, sk) VALUES (?, ?)", (PK, SK))
+                    .expect("inserting a pre-V12 HPKE private key");
+            })
+            .await;
+            let conn = db.conn().await;
+
+            assert_eq!(
+                StoredHpkePrivateKey::count(&conn).unwrap(),
+                1,
+                "the migration must not lose the private key"
+            );
+
+            let encoding = stored_key_encoding(&conn, "mls_hpke_private_keys", "pk_sha256");
+            assert!(
+                StoredHpkePrivateKey::get_borrowed(&conn, PK).unwrap().is_some(),
+                "a migrated HPKE private key must be gettable by its public key, but `pk_sha256` is stored \
+                 as {encoding:?} while `Sha256Hash` binds 32 raw bytes"
+            );
+        });
+    }
+
+    /// The V31 meta migration repairs `mls_psk_bundles.id_sha256` keys backfilled by V12.
+    #[test]
+    fn v31_meta_migration_repairs_v12_psk_bundle_keys() {
+        const PSK_ID: &[u8] = b"a psk id predating V12";
+        const PSK: &[u8] = b"the pre-shared key itself";
+
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let db = seed_then_migrate(path, &key, 11, |conn| {
+                conn.execute("INSERT INTO mls_psk_bundles (psk_id, psk) VALUES (?, ?)", (PSK_ID, PSK))
+                    .expect("inserting a pre-V12 psk bundle");
+            })
+            .await;
+            let conn = db.conn().await;
+
+            assert_eq!(
+                StoredPskBundle::count(&conn).unwrap(),
+                1,
+                "the migration must not lose the psk bundle"
+            );
+
+            let encoding = stored_key_encoding(&conn, "mls_psk_bundles", "id_sha256");
+            assert!(
+                StoredPskBundle::get_borrowed(&conn, PSK_ID).unwrap().is_some(),
+                "a migrated psk bundle must be gettable by its psk id, but `id_sha256` is stored as \
+                 {encoding:?} while `Sha256Hash` binds 32 raw bytes"
+            );
+        });
+    }
+
+    /// The V31 meta migration repairs `mls_credentials.public_key_sha256` keys backfilled by V20.
+    #[test]
+    fn v31_meta_migration_repairs_v20_credential_keys() {
+        const PUBLIC_KEY: &[u8] = b"a credential public key predating V20";
+
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let db = seed_then_migrate(path, &key, 19, |conn| {
+                conn.execute(
+                    "INSERT INTO mls_credentials (session_id, credential, ciphersuite, public_key, private_key) \
+                     VALUES (?, ?, ?, ?, ?)",
+                    (
+                        b"a session id".as_slice(),
+                        b"the credential".as_slice(),
+                        Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u16,
+                        PUBLIC_KEY,
+                        b"the private key".as_slice(),
+                    ),
+                )
+                .expect("inserting a pre-V20 credential");
+            })
+            .await;
+            let conn = db.conn().await;
+
+            assert_eq!(
+                StoredCredential::count(&conn).unwrap(),
+                1,
+                "the migration must not lose the credential"
+            );
+
+            let encoding = stored_key_encoding(&conn, "mls_credentials", "public_key_sha256");
+            assert!(
+                StoredCredential::get(&conn, &Sha256Hash::hash_from(PUBLIC_KEY))
+                    .unwrap()
+                    .is_some(),
+                "a migrated credential must be gettable by the hash of its public key, but \
+                 `public_key_sha256` is stored as {encoding:?} while `Sha256Hash` binds 32 raw bytes"
+            );
+        });
+    }
+
+    /// A hex key which collides with a key already stored as bytes is dropped, not rewritten.
+    ///
+    /// This is the state any long-lived database is actually in: V12 left a hex-keyed row behind,
+    /// and because that row was invisible to `get`, the code went on to save the same key again —
+    /// correctly, as bytes. The byte-keyed row is therefore the live one, and rewriting the hex row
+    /// would both resurrect stale data and violate the column's uniqueness constraint.
+    #[test]
+    fn v31_meta_migration_drops_hex_keys_superseded_by_byte_keys() {
+        const PK: &[u8] = b"a public key saved once before V12 and once after";
+        const STALE_SK: &[u8] = b"the secret key stored alongside the hex-keyed row";
+        const LIVE_SK: &[u8] = b"the secret key stored alongside the byte-keyed row";
+
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let hash = Sha256Hash::hash_from(PK);
+
+            // Seed after V12 has already run, so both encodings can be planted side by side. They
+            // coexist because the uniqueness constraint sees a text and a blob as distinct values.
+            let db = seed_then_migrate(path, &key, 30, |conn| {
+                conn.execute(
+                    "INSERT INTO mls_encryption_keypairs (pk_sha256, pk, sk) VALUES (?, ?, ?)",
+                    (hash.to_string(), PK, STALE_SK),
+                )
+                .expect("inserting the hex-keyed row V12 would have left behind");
+                conn.execute(
+                    "INSERT INTO mls_encryption_keypairs (pk_sha256, pk, sk) VALUES (?, ?, ?)",
+                    (hash, PK, LIVE_SK),
+                )
+                .expect("inserting the byte-keyed row the entity would have written since");
+            })
+            .await;
+            let conn = db.conn().await;
+
+            assert_eq!(
+                StoredEncryptionKeyPair::count(&conn).unwrap(),
+                1,
+                "the superseded hex-keyed row must be dropped rather than rewritten"
+            );
+
+            let survivor = StoredEncryptionKeyPair::get_borrowed(&conn, PK)
+                .unwrap()
+                .expect("the byte-keyed row must survive and stay gettable");
+            assert_eq!(
+                survivor.sk, LIVE_SK,
+                "the surviving row must be the byte-keyed one, not the stale hex-keyed one"
+            );
+        });
+    }
+
+    /// No hex-encoded key survives a full migration of a real legacy database.
+    ///
+    /// The tests above each plant a single row by hand. This one runs the meta migration over the
+    /// bundled v10002003 dump, which carries real keypairs and credentials in the quantities and
+    /// shapes an actual upgrading client would present.
+    #[test]
+    fn v31_meta_migration_leaves_no_hex_keys_in_a_real_legacy_database() {
+        let mut db_file = NamedTempFile::new().unwrap();
+        db_file.write_all(DB).unwrap();
+        let path = db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode");
+
+        let new_key = DatabaseKey::generate();
+        smol::block_on(migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key)).unwrap();
+
+        smol::block_on(async {
+            let db = Database::open(path, &new_key).await.unwrap();
+            let conn = db.conn().await;
+
+            let mut rows_checked = 0;
+            for (table, column) in [
+                ("mls_encryption_keypairs", "pk_sha256"),
+                ("mls_hpke_private_keys", "pk_sha256"),
+                ("mls_psk_bundles", "id_sha256"),
+                ("mls_credentials", "public_key_sha256"),
+            ] {
+                let (total, as_text) = conn
+                    .query_row(
+                        &format!("SELECT count(*), coalesce(sum(typeof({column}) = 'text'), 0) FROM {table}"),
+                        [],
+                        |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)),
+                    )
+                    .expect("counting stored key encodings");
+
+                assert_eq!(
+                    as_text, 0,
+                    "{table}.{column} still stores {as_text} of {total} keys as hex text"
+                );
+                rows_checked += total;
+            }
+
+            assert!(
+                rows_checked > 0,
+                "the bundled database carried no keys at all, so this test proved nothing"
+            );
+
+            // and the repaired keys are not merely blobs, but the exact blobs the entity queries with
+            let public_key: Vec<u8> = conn
+                .query_row("SELECT pk FROM mls_encryption_keypairs LIMIT 1", [], |row| row.get(0))
+                .expect("reading a migrated public key");
+            assert!(
+                StoredEncryptionKeyPair::get(&conn, &public_key).unwrap().is_some(),
+                "a keypair from the real legacy database must be gettable by its public key"
             );
         });
     }
