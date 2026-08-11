@@ -1,4 +1,4 @@
-use core_crypto_keystore::{entities::E2eiCrl, traits::FetchFromDatabase};
+use core_crypto_keystore::{entities::X509Crl, traits::FetchFromDatabase};
 use wire_e2e_identity::x509_check::extract_crl_uris;
 use x509_cert::Certificate;
 
@@ -104,14 +104,14 @@ impl TransactionContext {
         let inner = self.inner().await?;
         for db_crl in inner
             .transaction
-            .load_all::<E2eiCrl>()
+            .load_all::<X509Crl>()
             .await
             .map_err(KeystoreError::wrap("getting all database CRLs"))?
         {
             if !relevant_crl_uris.contains(&db_crl.distribution_point) {
                 inner
                     .transaction
-                    .remove::<E2eiCrl>(&db_crl.distribution_point)
+                    .remove::<X509Crl>(&db_crl.distribution_point)
                     .await
                     .map_err(KeystoreError::wrap("removing irrelevant CRL"))?;
             }

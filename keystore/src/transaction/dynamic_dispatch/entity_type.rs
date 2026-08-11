@@ -2,9 +2,9 @@
 use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
 use crate::{
     entities::{
-        ConsumerData, E2eiCrl, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit,
+        ConsumerData, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit,
         StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredKeyPackage, StoredPskBundle, X509IntermediateCert, X509TrustAnchor,
+        StoredKeyPackage, StoredPskBundle, X509Crl, X509IntermediateCert, X509TrustAnchor,
     },
     traits::Entity as _,
 };
@@ -23,7 +23,7 @@ pub(crate) enum EntityType {
     MlsPendingMessage,
     X509TrustAnchor,
     X509IntermediateCert,
-    E2eiCrl,
+    X509Crl,
     #[cfg(feature = "proteus-keystore")]
     ProteusIdentity,
     #[cfg(feature = "proteus-keystore")]
@@ -46,7 +46,7 @@ impl EntityType {
             PersistedMlsPendingGroup::TABLE_NAME => Some(Self::PersistedMlsPendingGroup),
             StoredCredential::TABLE_NAME => Some(Self::StoredCredential),
             MlsPendingMessage::TABLE_NAME => Some(Self::MlsPendingMessage),
-            E2eiCrl::TABLE_NAME => Some(Self::E2eiCrl),
+            X509Crl::TABLE_NAME => Some(Self::X509Crl),
             X509IntermediateCert::TABLE_NAME => Some(Self::X509IntermediateCert),
             X509TrustAnchor::TABLE_NAME => Some(Self::X509TrustAnchor),
             #[cfg(feature = "proteus-keystore")]
@@ -73,7 +73,7 @@ impl EntityType {
             Self::MlsPendingMessage => MlsPendingMessage::TABLE_NAME,
             Self::X509IntermediateCert => X509IntermediateCert::TABLE_NAME,
             Self::X509TrustAnchor => X509TrustAnchor::TABLE_NAME,
-            Self::E2eiCrl => E2eiCrl::TABLE_NAME,
+            Self::X509Crl => X509Crl::TABLE_NAME,
             #[cfg(feature = "proteus-keystore")]
             Self::ProteusIdentity => ProteusIdentity::TABLE_NAME,
             #[cfg(feature = "proteus-keystore")]

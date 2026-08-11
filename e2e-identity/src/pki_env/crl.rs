@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use core_crypto_keystore::{Transaction, entities::E2eiCrl};
+use core_crypto_keystore::{Transaction, entities::X509Crl};
 
 use super::{Error, Result};
 use crate::{
@@ -44,7 +44,7 @@ impl PkiEnvironment {
 
         guard.add_crl_source(Box::new(crl_source));
 
-        let crl_data = E2eiCrl {
+        let crl_data = X509Crl {
             content: RjtPkiEnvironment::encode_crl_to_der(&crl)?,
             distribution_point: crl_dp.to_owned(),
         };

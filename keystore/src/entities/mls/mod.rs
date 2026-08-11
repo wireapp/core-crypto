@@ -12,7 +12,7 @@ mod stored_psk_bundle;
 mod x509_intermediate_cert;
 mod x509_trust_anchor;
 
-pub use e2ei_crl::E2eiCrl;
+pub use e2ei_crl::X509Crl;
 pub use mls_pending_message::{ConversationId, MlsPendingMessage, MlsPendingMessagePrimaryKey};
 pub use persisted_mls_group::{ParentGroupId, PersistedMlsGroup};
 pub use persisted_mls_pending_group::PersistedMlsPendingGroup;

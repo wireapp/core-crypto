@@ -315,7 +315,7 @@ mod tests {
     test_for_entity!(test_mls_epoch_encryption_keypair, StoredEpochEncryptionKeypair);
     test_for_entity!(test_mls_hpke_private_key, StoredHpkePrivateKey);
     test_for_entity!(test_e2ei_intermediate_cert, X509IntermediateCert);
-    test_for_entity!(test_e2ei_crl, E2eiCrl);
+    test_for_entity!(test_e2ei_crl, X509Crl);
     test_for_entity!(test_e2ei_acme_ca, X509TrustAnchor ignore_entity_count:true ignore_find_many:true no_borrowed_key:true);
     #[cfg(feature = "proteus-keystore")]
     test_for_entity!(test_proteus_identity, ProteusIdentity ignore_entity_count:true ignore_update:true no_borrowed_key:true);
@@ -513,7 +513,7 @@ pub mod utils {
         }
     }
 
-    impl EntityRandomExt for core_crypto_keystore::entities::E2eiCrl {
+    impl EntityRandomExt for core_crypto_keystore::entities::X509Crl {
         fn random() -> Self {
             let mut rng = rand::thread_rng();
 
@@ -535,7 +535,7 @@ pub mod utils {
         }
     }
 
-    impl EntityRandomUpdateExt for core_crypto_keystore::entities::E2eiCrl {
+    impl EntityRandomUpdateExt for core_crypto_keystore::entities::X509Crl {
         fn random_update(&mut self) {
             let mut rng = rand::thread_rng();
             self.content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];

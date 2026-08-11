@@ -14,7 +14,7 @@ use certval::{
 };
 use core_crypto_keystore::{
     Database, Transaction,
-    entities::{E2eiCrl, X509IntermediateCert, X509TrustAnchor},
+    entities::{X509Crl, X509IntermediateCert, X509TrustAnchor},
     traits::FetchFromDatabase,
 };
 use openmls_traits::authentication_service::{CredentialAuthenticationStatus, CredentialRef};
@@ -97,7 +97,7 @@ async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<RjtPk
         .collect::<core::result::Result<Vec<_>, _>>()?;
 
     let crls = data_provider
-        .load_all::<E2eiCrl>()
+        .load_all::<X509Crl>()
         .await?
         .into_iter()
         .map(|crl| x509_cert::crl::CertificateList::from_der(&crl.content))

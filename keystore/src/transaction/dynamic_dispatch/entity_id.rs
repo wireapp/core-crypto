@@ -8,9 +8,9 @@ use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
     entities::{
-        ConsumerData, E2eiCrl, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit,
+        ConsumerData, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit,
         StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredKeyPackage, StoredPskBundle, X509IntermediateCert, X509TrustAnchor,
+        StoredKeyPackage, StoredPskBundle, X509Crl, X509IntermediateCert, X509TrustAnchor,
     },
     traits::{BorrowPrimaryKey, DeletableBySearchKey as _, Entity, EntityDatabaseMutation, KeyType, OwnedKeyType as _},
     transaction::dynamic_dispatch::EntityType,
@@ -107,7 +107,7 @@ impl EntityId {
             EntityType::X509IntermediateCert => {
                 X509IntermediateCert::delete(tx, &self.primary_key::<X509IntermediateCert>()?)
             }
-            EntityType::E2eiCrl => E2eiCrl::delete(tx, &self.primary_key::<E2eiCrl>()?),
+            EntityType::X509Crl => X509Crl::delete(tx, &self.primary_key::<X509Crl>()?),
             #[cfg(feature = "proteus-keystore")]
             EntityType::ProteusSession => ProteusSession::delete(tx, &self.primary_key::<ProteusSession>()?),
             #[cfg(feature = "proteus-keystore")]

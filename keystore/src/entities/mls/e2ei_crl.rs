@@ -11,7 +11,7 @@ use zeroize::Zeroize;
     serde::Deserialize,
 )]
 #[zeroize(drop)]
-pub struct E2eiCrl {
+pub struct X509Crl {
     #[entity(id)]
     pub distribution_point: String,
     /// A DER-encoded certificate list
