@@ -14,7 +14,7 @@
 <a href=#14 id=14 data-nosnippet>14</a>};
 <a href=#15 id=15 data-nosnippet>15</a><span class="kw">use </span>core_crypto_keystore::{
 <a href=#16 id=16 data-nosnippet>16</a>    Database, Transaction,
-<a href=#17 id=17 data-nosnippet>17</a>    entities::{E2eiCrl, E2eiIntermediateCert, X509TrustAnchor},
+<a href=#17 id=17 data-nosnippet>17</a>    entities::{X509Crl, X509IntermediateCert, X509TrustAnchor},
 <a href=#18 id=18 data-nosnippet>18</a>    traits::FetchFromDatabase,
 <a href=#19 id=19 data-nosnippet>19</a>};
 <a href=#20 id=20 data-nosnippet>20</a><span class="kw">use </span>openmls_traits::authentication_service::{CredentialAuthenticationStatus, CredentialRef};
@@ -90,14 +90,14 @@
 <a href=#90 id=90 data-nosnippet>90</a>    }
 <a href=#91 id=91 data-nosnippet>91</a>
 <a href=#92 id=92 data-nosnippet>92</a>    <span class="kw">let </span>intermediates = data_provider
-<a href=#93 id=93 data-nosnippet>93</a>        .load_all::&lt;E2eiIntermediateCert&gt;()
+<a href=#93 id=93 data-nosnippet>93</a>        .load_all::&lt;X509IntermediateCert&gt;()
 <a href=#94 id=94 data-nosnippet>94</a>        .<span class="kw">await</span><span class="question-mark">?
 <a href=#95 id=95 data-nosnippet>95</a>        </span>.into_iter()
 <a href=#96 id=96 data-nosnippet>96</a>        .map(|inter| x509_cert::Certificate::from_der(<span class="kw-2">&amp;</span>inter.content))
 <a href=#97 id=97 data-nosnippet>97</a>        .collect::&lt;core::result::Result&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
 <a href=#98 id=98 data-nosnippet>98</a>
 <a href=#99 id=99 data-nosnippet>99</a>    <span class="kw">let </span>crls = data_provider
-<a href=#100 id=100 data-nosnippet>100</a>        .load_all::&lt;E2eiCrl&gt;()
+<a href=#100 id=100 data-nosnippet>100</a>        .load_all::&lt;X509Crl&gt;()
 <a href=#101 id=101 data-nosnippet>101</a>        .<span class="kw">await</span><span class="question-mark">?
 <a href=#102 id=102 data-nosnippet>102</a>        </span>.into_iter()
 <a href=#103 id=103 data-nosnippet>103</a>        .map(|crl| x509_cert::crl::CertificateList::from_der(<span class="kw-2">&amp;</span>crl.content))
@@ -242,7 +242,7 @@
 <a href=#242 id=242 data-nosnippet>242</a>        </span><span class="kw">let </span>(ski, aki) = RjtPkiEnvironment::extract_ski_aki_from_cert(<span class="kw-2">&amp;</span>cert)<span class="question-mark">?</span>;
 <a href=#243 id=243 data-nosnippet>243</a>        <span class="kw">let </span>ski_aki_pair = <span class="macro">format!</span>(<span class="string">"{ski}:{}"</span>, aki.unwrap_or_default());
 <a href=#244 id=244 data-nosnippet>244</a>        <span class="kw">let </span>cert_der = RjtPkiEnvironment::encode_cert_to_der(<span class="kw-2">&amp;</span>cert)<span class="question-mark">?</span>;
-<a href=#245 id=245 data-nosnippet>245</a>        <span class="kw">let </span>intermediate_cert = E2eiIntermediateCert {
+<a href=#245 id=245 data-nosnippet>245</a>        <span class="kw">let </span>intermediate_cert = X509IntermediateCert {
 <a href=#246 id=246 data-nosnippet>246</a>            content: cert_der,
 <a href=#247 id=247 data-nosnippet>247</a>            ski_aki_pair,
 <a href=#248 id=248 data-nosnippet>248</a>        };

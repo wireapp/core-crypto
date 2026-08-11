@@ -7,9 +7,9 @@
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use crate</span>::{
 <a href=#8 id=8 data-nosnippet>8</a>    CryptoKeystoreResult,
 <a href=#9 id=9 data-nosnippet>9</a>    entities::{
-<a href=#10 id=10 data-nosnippet>10</a>        ConsumerData, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup,
-<a href=#11 id=11 data-nosnippet>11</a>        StoredBufferedCommit, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
-<a href=#12 id=12 data-nosnippet>12</a>        StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle, X509TrustAnchor,
+<a href=#10 id=10 data-nosnippet>10</a>        ConsumerData, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit,
+<a href=#11 id=11 data-nosnippet>11</a>        StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
+<a href=#12 id=12 data-nosnippet>12</a>        StoredKeyPackage, StoredPskBundle, X509Crl, X509IntermediateCert, X509TrustAnchor,
 <a href=#13 id=13 data-nosnippet>13</a>    },
 <a href=#14 id=14 data-nosnippet>14</a>    traits::{EntityDatabaseMutation <span class="kw">as _</span>, UniqueEntityExt <span class="kw">as _</span>},
 <a href=#15 id=15 data-nosnippet>15</a>};
@@ -28,8 +28,8 @@
 <a href=#28 id=28 data-nosnippet>28</a>    PersistedMlsPendingGroup(Arc&lt;PersistedMlsPendingGroup&gt;),
 <a href=#29 id=29 data-nosnippet>29</a>    MlsPendingMessage(Arc&lt;MlsPendingMessage&gt;),
 <a href=#30 id=30 data-nosnippet>30</a>    X509TrustAnchor(Arc&lt;X509TrustAnchor&gt;),
-<a href=#31 id=31 data-nosnippet>31</a>    E2eiIntermediateCert(Arc&lt;E2eiIntermediateCert&gt;),
-<a href=#32 id=32 data-nosnippet>32</a>    E2eiCrl(Arc&lt;E2eiCrl&gt;),
+<a href=#31 id=31 data-nosnippet>31</a>    X509IntermediateCert(Arc&lt;X509IntermediateCert&gt;),
+<a href=#32 id=32 data-nosnippet>32</a>    X509Crl(Arc&lt;X509Crl&gt;),
 <a href=#33 id=33 data-nosnippet>33</a>    <span class="attr">#[cfg(feature = <span class="string">"proteus-keystore"</span>)]
 <a href=#34 id=34 data-nosnippet>34</a>    </span>ProteusIdentity(Arc&lt;ProteusIdentity&gt;),
 <a href=#35 id=35 data-nosnippet>35</a>    <span class="attr">#[cfg(feature = <span class="string">"proteus-keystore"</span>)]
@@ -63,8 +63,8 @@
 <a href=#63 id=63 data-nosnippet>63</a><span class="macro">impl_from!</span>(PersistedMlsPendingGroup);
 <a href=#64 id=64 data-nosnippet>64</a><span class="macro">impl_from!</span>(MlsPendingMessage);
 <a href=#65 id=65 data-nosnippet>65</a><span class="macro">impl_from!</span>(X509TrustAnchor);
-<a href=#66 id=66 data-nosnippet>66</a><span class="macro">impl_from!</span>(E2eiIntermediateCert);
-<a href=#67 id=67 data-nosnippet>67</a><span class="macro">impl_from!</span>(E2eiCrl);
+<a href=#66 id=66 data-nosnippet>66</a><span class="macro">impl_from!</span>(X509IntermediateCert);
+<a href=#67 id=67 data-nosnippet>67</a><span class="macro">impl_from!</span>(X509Crl);
 <a href=#68 id=68 data-nosnippet>68</a><span class="attr">#[cfg(feature = <span class="string">"proteus-keystore"</span>)]
 <a href=#69 id=69 data-nosnippet>69</a></span><span class="macro">impl_from!</span>(ProteusIdentity);
 <a href=#70 id=70 data-nosnippet>70</a><span class="attr">#[cfg(feature = <span class="string">"proteus-keystore"</span>)]
@@ -104,8 +104,8 @@
 <a href=#104 id=104 data-nosnippet>104</a>            Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) =&gt; downcast(persisted_mls_pending_group),
 <a href=#105 id=105 data-nosnippet>105</a>            Entity::MlsPendingMessage(mls_pending_message) =&gt; downcast(mls_pending_message),
 <a href=#106 id=106 data-nosnippet>106</a>            Entity::X509TrustAnchor(e2ei_acme_ca) =&gt; downcast(e2ei_acme_ca),
-<a href=#107 id=107 data-nosnippet>107</a>            Entity::E2eiIntermediateCert(e2ei_intermediate_cert) =&gt; downcast(e2ei_intermediate_cert),
-<a href=#108 id=108 data-nosnippet>108</a>            Entity::E2eiCrl(e2ei_crl) =&gt; downcast(e2ei_crl),
+<a href=#107 id=107 data-nosnippet>107</a>            Entity::X509IntermediateCert(e2ei_intermediate_cert) =&gt; downcast(e2ei_intermediate_cert),
+<a href=#108 id=108 data-nosnippet>108</a>            Entity::X509Crl(e2ei_crl) =&gt; downcast(e2ei_crl),
 <a href=#109 id=109 data-nosnippet>109</a>            <span class="attr">#[cfg(feature = <span class="string">"proteus-keystore"</span>)]
 <a href=#110 id=110 data-nosnippet>110</a>            </span>Entity::ProteusIdentity(proteus_identity) =&gt; downcast(proteus_identity),
 <a href=#111 id=111 data-nosnippet>111</a>            <span class="attr">#[cfg(feature = <span class="string">"proteus-keystore"</span>)]
@@ -131,8 +131,8 @@
 <a href=#131 id=131 data-nosnippet>131</a>            Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) =&gt; persisted_mls_pending_group.save(tx),
 <a href=#132 id=132 data-nosnippet>132</a>            Entity::MlsPendingMessage(mls_pending_message) =&gt; mls_pending_message.save(tx),
 <a href=#133 id=133 data-nosnippet>133</a>            Entity::X509TrustAnchor(x509_trust_anchor) =&gt; x509_trust_anchor.save(tx),
-<a href=#134 id=134 data-nosnippet>134</a>            Entity::E2eiIntermediateCert(e2ei_intermediate_cert) =&gt; e2ei_intermediate_cert.save(tx),
-<a href=#135 id=135 data-nosnippet>135</a>            Entity::E2eiCrl(e2ei_crl) =&gt; e2ei_crl.save(tx),
+<a href=#134 id=134 data-nosnippet>134</a>            Entity::X509IntermediateCert(e2ei_intermediate_cert) =&gt; e2ei_intermediate_cert.save(tx),
+<a href=#135 id=135 data-nosnippet>135</a>            Entity::X509Crl(e2ei_crl) =&gt; e2ei_crl.save(tx),
 <a href=#136 id=136 data-nosnippet>136</a>            <span class="attr">#[cfg(feature = <span class="string">"proteus-keystore"</span>)]
 <a href=#137 id=137 data-nosnippet>137</a>            </span>Entity::ProteusSession(record) =&gt; record.save(tx),
 <a href=#138 id=138 data-nosnippet>138</a>            <span class="attr">#[cfg(feature = <span class="string">"proteus-keystore"</span>)]
