@@ -713,6 +713,8 @@ $dokka.location:com.wire.crypto/PkiEnvironment/addIntermediateCert/#kotlin.Strin
 $dokka.location:com.wire.crypto/PkiEnvironment/addTrustAnchor/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment/add-trust-anchor.html
 $dokka.location:com.wire.crypto/PkiEnvironment/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment/close.html
 $dokka.location:com.wire.crypto/PkiEnvironment/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment/destroy.html
+$dokka.location:com.wire.crypto/PkiEnvironment/getTrustAnchors/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment/get-trust-anchors.html
+$dokka.location:com.wire.crypto/PkiEnvironment/removeTrustAnchor/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment/remove-trust-anchor.html
 $dokka.location:com.wire.crypto/PkiEnvironment/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/PkiEnvironmentHooks.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks/-companion/index.html
 $dokka.location:com.wire.crypto/PkiEnvironmentHooks///PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-hooks/index.html
@@ -742,6 +744,8 @@ $dokka.location:com.wire.crypto/PkiEnvironmentInterface.Companion///PointingToDe
 $dokka.location:com.wire.crypto/PkiEnvironmentInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-interface/index.html
 $dokka.location:com.wire.crypto/PkiEnvironmentInterface/addIntermediateCert/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-interface/add-intermediate-cert.html
 $dokka.location:com.wire.crypto/PkiEnvironmentInterface/addTrustAnchor/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-interface/add-trust-anchor.html
+$dokka.location:com.wire.crypto/PkiEnvironmentInterface/getTrustAnchors/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-interface/get-trust-anchors.html
+$dokka.location:com.wire.crypto/PkiEnvironmentInterface/removeTrustAnchor/#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-pki-environment-interface/remove-trust-anchor.html
 $dokka.location:com.wire.crypto/ProteusAutoPrekeyBundle.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-proteus-auto-prekey-bundle/-companion/index.html
 $dokka.location:com.wire.crypto/ProteusAutoPrekeyBundle///PointingToDeclaration/-core-crypto/com.wire.crypto/-proteus-auto-prekey-bundle/index.html
 $dokka.location:com.wire.crypto/ProteusAutoPrekeyBundle/ProteusAutoPrekeyBundle/#kotlin.UShort#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-proteus-auto-prekey-bundle/-proteus-auto-prekey-bundle.html

@@ -8,9 +8,9 @@
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">use crate</span>::{
 <a href=#9 id=9 data-nosnippet>9</a>    CryptoKeystoreError, CryptoKeystoreResult,
 <a href=#10 id=10 data-nosnippet>10</a>    entities::{
-<a href=#11 id=11 data-nosnippet>11</a>        ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup,
-<a href=#12 id=12 data-nosnippet>12</a>        PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential, StoredEncryptionKeyPair,
-<a href=#13 id=13 data-nosnippet>13</a>        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
+<a href=#11 id=11 data-nosnippet>11</a>        ConsumerData, E2eiCrl, E2eiIntermediateCert, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup,
+<a href=#12 id=12 data-nosnippet>12</a>        StoredBufferedCommit, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
+<a href=#13 id=13 data-nosnippet>13</a>        StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle, X509TrustAnchor,
 <a href=#14 id=14 data-nosnippet>14</a>    },
 <a href=#15 id=15 data-nosnippet>15</a>    traits::{BorrowPrimaryKey, DeletableBySearchKey <span class="kw">as _</span>, Entity, EntityDatabaseMutation, KeyType, OwnedKeyType <span class="kw">as _</span>},
 <a href=#16 id=16 data-nosnippet>16</a>    transaction::dynamic_dispatch::EntityType,
@@ -103,7 +103,7 @@
 <a href=#103 id=103 data-nosnippet>103</a>            EntityType::MlsPendingMessage =&gt; {
 <a href=#104 id=104 data-nosnippet>104</a>                MlsPendingMessage::delete_all_matching(tx, <span class="kw-2">&amp;</span><span class="self">self</span>.id.as_slice().into()).map(|<span class="kw">_</span>| <span class="bool-val">false</span>)
 <a href=#105 id=105 data-nosnippet>105</a>            }
-<a href=#106 id=106 data-nosnippet>106</a>            EntityType::E2eiAcmeCA =&gt; E2eiAcmeCA::delete(tx, <span class="kw-2">&amp;</span><span class="self">self</span>.primary_key::&lt;E2eiAcmeCA&gt;()<span class="question-mark">?</span>),
+<a href=#106 id=106 data-nosnippet>106</a>            EntityType::X509TrustAnchor =&gt; X509TrustAnchor::delete(tx, <span class="kw-2">&amp;</span><span class="self">self</span>.primary_key::&lt;X509TrustAnchor&gt;()<span class="question-mark">?</span>),
 <a href=#107 id=107 data-nosnippet>107</a>            EntityType::E2eiIntermediateCert =&gt; {
 <a href=#108 id=108 data-nosnippet>108</a>                E2eiIntermediateCert::delete(tx, <span class="kw-2">&amp;</span><span class="self">self</span>.primary_key::&lt;E2eiIntermediateCert&gt;()<span class="question-mark">?</span>)
 <a href=#109 id=109 data-nosnippet>109</a>            }
