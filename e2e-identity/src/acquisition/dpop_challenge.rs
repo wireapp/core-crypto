@@ -1,12 +1,21 @@
 use obfuscate::Obfuscated;
-use rusty_jwt_tools::prelude::{Dpop, Handle, Htm, RustyJwtTools};
+use rusty_jwt_tools::prelude::Dpop;
+use rusty_jwt_tools::prelude::Handle;
+use rusty_jwt_tools::prelude::Htm;
+use rusty_jwt_tools::prelude::RustyJwtTools;
 use url::Url;
 
-use super::{Result, X509CredentialAcquisition, get_header, states};
-use crate::{
-    acme::{AcmeAccount, AcmeChallenge, AcmeChallengeType, AcmeOrder, RustyAcme, RustyAcmeError},
-    pki_env::hooks::HttpMethod,
-};
+use super::Result;
+use super::X509CredentialAcquisition;
+use super::get_header;
+use super::states;
+use crate::acme::AcmeAccount;
+use crate::acme::AcmeChallenge;
+use crate::acme::AcmeChallengeType;
+use crate::acme::AcmeOrder;
+use crate::acme::RustyAcme;
+use crate::acme::RustyAcmeError;
+use crate::pki_env::hooks::HttpMethod;
 
 impl X509CredentialAcquisition<states::Initialized> {
     async fn get_challenge(

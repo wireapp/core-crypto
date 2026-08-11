@@ -4,7 +4,9 @@ use async_lock::Mutex;
 use async_trait::async_trait;
 use obfuscate::Obfuscated;
 
-use crate::{ConversationId, HistoryObserver, HistorySecret};
+use crate::ConversationId;
+use crate::HistoryObserver;
+use crate::HistorySecret;
 
 #[derive(Debug)]
 pub(crate) struct TestHistoryObserver(Mutex<HistoryObserverInner>);

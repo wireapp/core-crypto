@@ -1,9 +1,9 @@
-use std::sync::{Mutex, MutexGuard};
+use std::sync::Mutex;
+use std::sync::MutexGuard;
 
-use proteus_wasm::{
-    keys::{IdentityKeyPair, PreKey},
-    session::Session,
-};
+use proteus_wasm::keys::IdentityKeyPair;
+use proteus_wasm::keys::PreKey;
+use proteus_wasm::session::Session;
 
 use crate::test_utils::Result;
 

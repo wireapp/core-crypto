@@ -4,26 +4,33 @@
 
 use std::sync::Arc;
 
-use core_crypto_keystore::entities::{MlsPendingMessage, PersistedMlsPendingGroup};
+use core_crypto_keystore::entities::MlsPendingMessage;
+use core_crypto_keystore::entities::PersistedMlsPendingGroup;
 use log::trace;
-use openmls::{
-    credentials::CredentialWithKey,
-    prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody},
-};
+use openmls::credentials::CredentialWithKey;
+use openmls::prelude::MlsGroup;
+use openmls::prelude::MlsMessageIn;
+use openmls::prelude::MlsMessageInBody;
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize as _;
 
-use super::{Error, Result};
-use crate::{
-    BufferedDecryptedMessage, CommitBundle, ConversationConfiguration, CustomConfiguration, DecryptedMessage,
-    KeystoreError, LeafError, OpenMlsError, RecursiveError,
-    mls::{
-        conversation::{ConversationIdRef, mutable::decrypt::buffer_messages::MessageRestorePolicy},
-        credential::ext::CredentialExt as _,
-    },
-    mls_provider::{CryptoProvider, Database},
-    transaction_context::TransactionContext,
-};
+use super::Error;
+use super::Result;
+use crate::BufferedDecryptedMessage;
+use crate::CommitBundle;
+use crate::ConversationConfiguration;
+use crate::CustomConfiguration;
+use crate::DecryptedMessage;
+use crate::KeystoreError;
+use crate::LeafError;
+use crate::OpenMlsError;
+use crate::RecursiveError;
+use crate::mls::conversation::ConversationIdRef;
+use crate::mls::conversation::mutable::decrypt::buffer_messages::MessageRestorePolicy;
+use crate::mls::credential::ext::CredentialExt as _;
+use crate::mls_provider::CryptoProvider;
+use crate::mls_provider::Database;
+use crate::transaction_context::TransactionContext;
 
 /// A pending conversation is a conversation that has been created via an external join commit
 /// locally, while this commit has not yet been approved by the DS.
@@ -281,7 +288,8 @@ impl PendingConversation {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{DecryptedMessage, test_utils::*};
+    use crate::DecryptedMessage;
+    use crate::test_utils::*;
 
     #[apply(all_cred_cipher)]
     async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestContext) {

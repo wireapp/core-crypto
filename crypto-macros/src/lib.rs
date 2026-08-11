@@ -4,10 +4,16 @@ use darling::FromDeriveInput as _;
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
 use quote::quote;
-use syn::{
-    Attribute, Block, DeriveInput, FnArg, ItemFn, ReturnType, Visibility, parse_macro_input, punctuated::Punctuated,
-    token::Comma,
-};
+use syn::Attribute;
+use syn::Block;
+use syn::DeriveInput;
+use syn::FnArg;
+use syn::ItemFn;
+use syn::ReturnType;
+use syn::Visibility;
+use syn::parse_macro_input;
+use syn::punctuated::Punctuated;
+use syn::token::Comma;
 
 mod debug;
 mod durable;

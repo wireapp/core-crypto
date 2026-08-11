@@ -1,6 +1,8 @@
 use proc_macro2::TokenStream;
-use quote::{ToTokens, quote};
-use syn::{Type, parse_quote};
+use quote::ToTokens;
+use quote::quote;
+use syn::Type;
+use syn::parse_quote;
 
 fn string_types() -> [Type; 3] {
     [

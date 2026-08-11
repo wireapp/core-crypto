@@ -6,10 +6,14 @@ use std::sync::Arc;
 use async_lock::Mutex;
 use core_crypto::RecursiveError;
 
-use crate::{
-    CoreCryptoError, CoreCryptoResult, CredentialRef, Database, PkiEnvironment, X509CredentialAcquisition,
-    X509CredentialAcquisitionConfiguration, e2ei::AcquisitionState,
-};
+use crate::CoreCryptoError;
+use crate::CoreCryptoResult;
+use crate::CredentialRef;
+use crate::Database;
+use crate::PkiEnvironment;
+use crate::X509CredentialAcquisition;
+use crate::X509CredentialAcquisitionConfiguration;
+use crate::e2ei::AcquisitionState;
 
 #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::export)]
 impl X509CredentialAcquisition {

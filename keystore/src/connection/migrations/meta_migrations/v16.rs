@@ -1,9 +1,9 @@
-use crate::{
-    CryptoKeystoreResult,
-    entities::StoredCredential,
-    migrations::{StoredSignatureKeypair, V5Credential, migrate_to_new_credential},
-    traits::Entity as _,
-};
+use crate::CryptoKeystoreResult;
+use crate::entities::StoredCredential;
+use crate::migrations::StoredSignatureKeypair;
+use crate::migrations::V5Credential;
+use crate::migrations::migrate_to_new_credential;
+use crate::traits::Entity as _;
 
 pub(crate) const VERSION: i32 = 16;
 

@@ -11,27 +11,38 @@
 mod buffer_commit;
 pub(crate) mod buffer_messages;
 
-use log::{debug, info};
+use log::debug;
+use log::info;
 use obfuscate::Obfuscated;
-use openmls::{
-    framing::{
-        MlsMessageIn, MlsMessageInBody, ProcessedMessage, ProtocolMessage,
-        errors::{MessageDecryptionError, SecretTreeError},
-    },
-    group::MlsGroup,
-    prelude::{
-        ContentType, CredentialType, LeafNodeIndex, Member, ProcessMessageError, ProcessedMessageContent,
-        StageCommitError, StagedCommit, ValidationError,
-    },
-};
+use openmls::framing::MlsMessageIn;
+use openmls::framing::MlsMessageInBody;
+use openmls::framing::ProcessedMessage;
+use openmls::framing::ProtocolMessage;
+use openmls::framing::errors::MessageDecryptionError;
+use openmls::framing::errors::SecretTreeError;
+use openmls::group::MlsGroup;
+use openmls::prelude::ContentType;
+use openmls::prelude::CredentialType;
+use openmls::prelude::LeafNodeIndex;
+use openmls::prelude::Member;
+use openmls::prelude::ProcessMessageError;
+use openmls::prelude::ProcessedMessageContent;
+use openmls::prelude::StageCommitError;
+use openmls::prelude::StagedCommit;
+use openmls::prelude::ValidationError;
 use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize as _;
 
-use super::{ConversationMut, Result};
-use crate::{
-    ClientId, E2eiConversationState, OpenMlsError, RecursiveError, Session, WireIdentity,
-    mls::{conversation::Error, credential::ext::CredentialExt as _},
-};
+use super::ConversationMut;
+use super::Result;
+use crate::ClientId;
+use crate::E2eiConversationState;
+use crate::OpenMlsError;
+use crate::RecursiveError;
+use crate::Session;
+use crate::WireIdentity;
+use crate::mls::conversation::Error;
+use crate::mls::credential::ext::CredentialExt as _;
 
 /// A decrypted MLS application message
 #[derive(Debug)]
@@ -526,10 +537,9 @@ impl ConversationMut {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        mls::conversation::{config::MAX_PAST_EPOCHS, error::Error},
-        test_utils::*,
-    };
+    use crate::mls::conversation::config::MAX_PAST_EPOCHS;
+    use crate::mls::conversation::error::Error;
+    use crate::test_utils::*;
 
     mod is_active {
         use super::*;

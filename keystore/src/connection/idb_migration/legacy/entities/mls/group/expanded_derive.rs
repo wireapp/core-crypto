@@ -8,11 +8,11 @@
 // fixing them here.
 #![allow(unused_braces)]
 
-use crate::{
-    connection::idb_migration::legacy::{connection, traits},
-    migrations::LegacyPersistedMlsGroup,
-    traits::{BorrowPrimaryKey, KeyType},
-};
+use crate::connection::idb_migration::legacy::connection;
+use crate::connection::idb_migration::legacy::traits;
+use crate::migrations::LegacyPersistedMlsGroup;
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::KeyType;
 
 impl traits::EntityBase for LegacyPersistedMlsGroup {
     type ConnectionType = connection::KeystoreDatabaseConnection;

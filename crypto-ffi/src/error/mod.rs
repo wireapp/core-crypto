@@ -41,9 +41,14 @@ fn log_error(error: &dyn std::error::Error) {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto::{ConversationId, LeafError, ProteusError, RecursiveError};
+    use core_crypto::ConversationId;
+    use core_crypto::LeafError;
+    use core_crypto::ProteusError;
+    use core_crypto::RecursiveError;
 
-    use crate::{CoreCryptoError, MlsError, ProteusError as ProteusErrorFfi};
+    use crate::CoreCryptoError;
+    use crate::MlsError;
+    use crate::ProteusError as ProteusErrorFfi;
 
     #[test]
     fn test_mls_error_mapping() {

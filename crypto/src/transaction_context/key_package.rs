@@ -2,17 +2,23 @@
 
 use std::time::Duration;
 
-use core_crypto_keystore::{
-    entities::{StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeyPackage},
-    traits::FetchFromDatabase as _,
-};
-use openmls::prelude::{CryptoConfig, Lifetime};
+use core_crypto_keystore::entities::StoredEncryptionKeyPair;
+use core_crypto_keystore::entities::StoredHpkePrivateKey;
+use core_crypto_keystore::entities::StoredKeyPackage;
+use core_crypto_keystore::traits::FetchFromDatabase as _;
+use openmls::prelude::CryptoConfig;
+use openmls::prelude::Lifetime;
 
-use super::{Error, Result, TransactionContext};
-use crate::{
-    ConversationConfiguration, CredentialRef, Keypackage, KeypackageRef, KeystoreError, RecursiveError,
-    mls::key_package::KeypackageExt as _,
-};
+use super::Error;
+use super::Result;
+use super::TransactionContext;
+use crate::ConversationConfiguration;
+use crate::CredentialRef;
+use crate::Keypackage;
+use crate::KeypackageRef;
+use crate::KeystoreError;
+use crate::RecursiveError;
+use crate::mls::key_package::KeypackageExt as _;
 
 /// Default lifetime of all generated Keypackages. Matches the limit defined in openmls
 pub const KEYPACKAGE_DEFAULT_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 28 * 3); // ~3 months

@@ -1,23 +1,31 @@
 use aes_gcm::KeyInit as _;
-use idb::{Factory, TransactionMode};
+use idb::Factory;
+use idb::TransactionMode;
 use sha2::Digest as _;
 
-use super::{DB_VERSION_3, DB_VERSION_4, pre_v04};
-use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
-    connection::idb_migration::legacy::{
-        connection::wasm::rekey::rekey_entities,
-        entities::mls::{
-            e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
-            stored_keypackage::StoredKeypackage,
-        },
-    },
-    entities::{
-        MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
-    },
-    migrations::{LegacyPersistedMlsGroup, StoredSignatureKeypair, V5Credential},
-};
+use super::DB_VERSION_3;
+use super::DB_VERSION_4;
+use super::pre_v04;
+use crate::CryptoKeystoreError;
+use crate::CryptoKeystoreResult;
+use crate::DatabaseKey;
+use crate::connection::idb_migration::legacy::connection::wasm::rekey::rekey_entities;
+use crate::connection::idb_migration::legacy::entities::mls::e2ei_acme_ca::E2eiAcmeCA;
+use crate::connection::idb_migration::legacy::entities::mls::e2ei_crl::E2eiCrl;
+use crate::connection::idb_migration::legacy::entities::mls::e2ei_intermediate_cert::E2eiIntermediateCert;
+use crate::connection::idb_migration::legacy::entities::mls::stored_keypackage::StoredKeypackage;
+use crate::entities::MlsPendingMessage;
+use crate::entities::PersistedMlsPendingGroup;
+use crate::entities::ProteusIdentity;
+use crate::entities::ProteusPrekey;
+use crate::entities::ProteusSession;
+use crate::entities::StoredEncryptionKeyPair;
+use crate::entities::StoredEpochEncryptionKeypair;
+use crate::entities::StoredHpkePrivateKey;
+use crate::entities::StoredPskBundle;
+use crate::migrations::LegacyPersistedMlsGroup;
+use crate::migrations::StoredSignatureKeypair;
+use crate::migrations::V5Credential;
 
 pub(crate) async fn migrate_db_key_type_to_bytes(
     name: &str,

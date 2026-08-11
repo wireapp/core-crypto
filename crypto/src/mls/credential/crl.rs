@@ -1,12 +1,12 @@
 use std::collections::HashSet;
 
-use openmls::{
-    group::MlsGroup,
-    prelude::{Certificate, MlsCredentialType},
-};
+use openmls::group::MlsGroup;
+use openmls::prelude::Certificate;
+use openmls::prelude::MlsCredentialType;
 use wire_e2e_identity::x509_check::extract_crl_uris;
 
-use super::{Error, Result};
+use super::Error;
+use super::Result;
 use crate::RecursiveError;
 
 #[derive(

@@ -1,22 +1,30 @@
 pub(crate) mod platform;
 
-use std::{
-    borrow::Borrow,
-    ops::{Deref, DerefMut},
-    sync::Arc,
-};
+use std::borrow::Borrow;
+use std::ops::Deref;
+use std::ops::DerefMut;
+use std::sync::Arc;
 
-use async_lock::{Mutex, MutexGuard, Semaphore};
+use async_lock::Mutex;
+use async_lock::MutexGuard;
+use async_lock::Semaphore;
 use async_trait::async_trait;
 
 pub(crate) use self::platform::*;
-use super::traits::{Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, SearchableEntity};
-use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey, Transaction,
-    entities::MlsPendingMessage,
-    migrations::LegacyPersistedMlsGroup,
-    traits::{BorrowPrimaryKey, FetchFromDatabase, KeyType},
-};
+use super::traits::Entity;
+use super::traits::EntityDatabaseMutation;
+use super::traits::EntityDeleteBorrowed;
+use super::traits::EntityGetBorrowed;
+use super::traits::SearchableEntity;
+use crate::CryptoKeystoreError;
+use crate::CryptoKeystoreResult;
+use crate::DatabaseKey;
+use crate::Transaction;
+use crate::entities::MlsPendingMessage;
+use crate::migrations::LegacyPersistedMlsGroup;
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::FetchFromDatabase;
+use crate::traits::KeyType;
 
 /// Limit on the length of a blob to be stored in the database.
 ///
@@ -167,10 +175,10 @@ impl Database {
         key: &DatabaseKey,
         version: Option<u32>,
     ) -> CryptoKeystoreResult<Arc<Self>> {
-        use crate::connection::idb_migration::legacy::connection::{
-            storage::{WasmEncryptedStorage, WasmStorageWrapper},
-            wasm::migrations::{TARGET_VERSION, open_at},
-        };
+        use crate::connection::idb_migration::legacy::connection::storage::WasmEncryptedStorage;
+        use crate::connection::idb_migration::legacy::connection::storage::WasmStorageWrapper;
+        use crate::connection::idb_migration::legacy::connection::wasm::migrations::TARGET_VERSION;
+        use crate::connection::idb_migration::legacy::connection::wasm::migrations::open_at;
 
         let version = version.unwrap_or(TARGET_VERSION);
         let idb_database = open_at(name, key, version).await;

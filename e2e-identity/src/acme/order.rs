@@ -1,11 +1,18 @@
 use std::collections::HashSet;
 
-use rusty_jwt_tools::prelude::{ClientId, Handle, JwsAlgorithm, Pem};
+use rusty_jwt_tools::prelude::ClientId;
+use rusty_jwt_tools::prelude::Handle;
+use rusty_jwt_tools::prelude::JwsAlgorithm;
+use rusty_jwt_tools::prelude::Pem;
 
-use crate::acme::{
-    AcmeAccount, AcmeDirectory, AcmeIdentifier, AcmeJws, RustyAcme, RustyAcmeError, RustyAcmeResult,
-    identifier::CanonicalIdentifier,
-};
+use crate::acme::AcmeAccount;
+use crate::acme::AcmeDirectory;
+use crate::acme::AcmeIdentifier;
+use crate::acme::AcmeJws;
+use crate::acme::RustyAcme;
+use crate::acme::RustyAcmeError;
+use crate::acme::RustyAcmeResult;
+use crate::acme::identifier::CanonicalIdentifier;
 
 // Order creation
 impl RustyAcme {

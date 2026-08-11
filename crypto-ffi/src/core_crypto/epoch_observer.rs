@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use crate::{ConversationId, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult};
+use crate::ConversationId;
+use crate::CoreCryptoError;
+use crate::CoreCryptoFfi;
+use crate::CoreCryptoResult;
 
 /// An error returned by an `EpochObserver` callback implementation.
 #[derive(Debug, thiserror::Error, uniffi::Error)]

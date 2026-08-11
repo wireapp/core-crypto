@@ -1,17 +1,18 @@
 use zeroize::ZeroizeOnDrop;
 
-use crate::{
-    CryptoKeystoreResult,
-    connection::idb_migration::legacy::{
-        connection::{KeystoreDatabaseConnection, TransactionWrapper},
-        traits::{
-            DecryptData as _, Decryptable, Decrypting, EncryptData as _, Encrypting, Entity, EntityBase,
-            EntityDatabaseMutation,
-        },
-    },
-    migrations::StoredSignatureKeypair,
-    traits::PrimaryKey,
-};
+use crate::CryptoKeystoreResult;
+use crate::connection::idb_migration::legacy::connection::KeystoreDatabaseConnection;
+use crate::connection::idb_migration::legacy::connection::TransactionWrapper;
+use crate::connection::idb_migration::legacy::traits::DecryptData as _;
+use crate::connection::idb_migration::legacy::traits::Decryptable;
+use crate::connection::idb_migration::legacy::traits::Decrypting;
+use crate::connection::idb_migration::legacy::traits::EncryptData as _;
+use crate::connection::idb_migration::legacy::traits::Encrypting;
+use crate::connection::idb_migration::legacy::traits::Entity;
+use crate::connection::idb_migration::legacy::traits::EntityBase;
+use crate::connection::idb_migration::legacy::traits::EntityDatabaseMutation;
+use crate::migrations::StoredSignatureKeypair;
+use crate::traits::PrimaryKey;
 
 impl EntityBase for StoredSignatureKeypair {
     type ConnectionType = KeystoreDatabaseConnection;

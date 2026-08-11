@@ -1,16 +1,20 @@
-use core_crypto_keystore::{entities::X509Crl, traits::FetchFromDatabase};
+use core_crypto_keystore::entities::X509Crl;
+use core_crypto_keystore::traits::FetchFromDatabase;
 use wire_e2e_identity::x509_check::extract_crl_uris;
 use x509_cert::Certificate;
 
-use super::{Error, Result};
-use crate::{
-    Credential, CredentialRef, CredentialType, KeystoreError, RecursiveError,
-    mls::{
-        conversation::Conversation,
-        credential::crl::{CrlUris, extract_crl_uris_from_credentials, extract_crl_uris_from_group},
-    },
-    transaction_context::TransactionContext,
-};
+use super::Error;
+use super::Result;
+use crate::Credential;
+use crate::CredentialRef;
+use crate::CredentialType;
+use crate::KeystoreError;
+use crate::RecursiveError;
+use crate::mls::conversation::Conversation;
+use crate::mls::credential::crl::CrlUris;
+use crate::mls::credential::crl::extract_crl_uris_from_credentials;
+use crate::mls::credential::crl::extract_crl_uris_from_group;
+use crate::transaction_context::TransactionContext;
 
 impl TransactionContext {
     /// Check all X509 credentials for expiration and revocation

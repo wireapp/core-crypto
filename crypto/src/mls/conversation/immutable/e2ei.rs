@@ -1,13 +1,18 @@
-use std::{borrow::Borrow, collections::HashMap};
+use std::borrow::Borrow;
+use std::collections::HashMap;
 
 use openmls_traits::OpenMlsCryptoProvider as _;
 use uuid::Uuid;
 
-use super::{Error, Result};
-use crate::{
-    ClientIdRef, CredentialType, E2eiConversationState, RecursiveError, Session, WireIdentity,
-    mls::credential::ext::CredentialExt as _,
-};
+use super::Error;
+use super::Result;
+use crate::ClientIdRef;
+use crate::CredentialType;
+use crate::E2eiConversationState;
+use crate::RecursiveError;
+use crate::Session;
+use crate::WireIdentity;
+use crate::mls::credential::ext::CredentialExt as _;
 
 impl super::Conversation {
     /// Indicates when to mark a conversation as not verified i.e. when not all its members have a X509

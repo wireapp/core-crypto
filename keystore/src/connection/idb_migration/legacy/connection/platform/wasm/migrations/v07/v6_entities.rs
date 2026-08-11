@@ -2,18 +2,22 @@ use async_trait::async_trait;
 use web_time::SystemTime;
 use zeroize::ZeroizeOnDrop;
 
-use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, Sha256Hash,
-    connection::idb_migration::legacy::{
-        connection::{KeystoreDatabaseConnection, TransactionWrapper},
-        traits::{
-            DecryptData as _, Decryptable, Decrypting, EncryptData as _, Encrypting, Entity, EntityBase,
-            EntityDatabaseMutation,
-        },
-    },
-    migrations::V6Credential,
-    traits::{KeyType as _, PrimaryKey},
-};
+use crate::CryptoKeystoreError;
+use crate::CryptoKeystoreResult;
+use crate::Sha256Hash;
+use crate::connection::idb_migration::legacy::connection::KeystoreDatabaseConnection;
+use crate::connection::idb_migration::legacy::connection::TransactionWrapper;
+use crate::connection::idb_migration::legacy::traits::DecryptData as _;
+use crate::connection::idb_migration::legacy::traits::Decryptable;
+use crate::connection::idb_migration::legacy::traits::Decrypting;
+use crate::connection::idb_migration::legacy::traits::EncryptData as _;
+use crate::connection::idb_migration::legacy::traits::Encrypting;
+use crate::connection::idb_migration::legacy::traits::Entity;
+use crate::connection::idb_migration::legacy::traits::EntityBase;
+use crate::connection::idb_migration::legacy::traits::EntityDatabaseMutation;
+use crate::migrations::V6Credential;
+use crate::traits::KeyType as _;
+use crate::traits::PrimaryKey;
 
 impl EntityBase for V6Credential {
     type ConnectionType = KeystoreDatabaseConnection;

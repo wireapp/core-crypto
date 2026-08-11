@@ -1,12 +1,13 @@
 use idb::builder::DatabaseBuilder;
 
-use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
-    connection::idb_migration::legacy::connection::{
-        Database, KeystoreDatabaseConnection, TransactionWrapper, platform::wasm::WasmStorageWrapper,
-        storage::WasmEncryptedStorage,
-    },
-};
+use crate::CryptoKeystoreError;
+use crate::CryptoKeystoreResult;
+use crate::DatabaseKey;
+use crate::connection::idb_migration::legacy::connection::Database;
+use crate::connection::idb_migration::legacy::connection::KeystoreDatabaseConnection;
+use crate::connection::idb_migration::legacy::connection::TransactionWrapper;
+use crate::connection::idb_migration::legacy::connection::platform::wasm::WasmStorageWrapper;
+use crate::connection::idb_migration::legacy::connection::storage::WasmEncryptedStorage;
 
 impl Database {
     /// Make sure you haven't got another open connection before calling this.

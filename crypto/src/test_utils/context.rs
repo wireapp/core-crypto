@@ -1,22 +1,35 @@
 use std::sync::Arc;
 
-use core_crypto_keystore::{
-    entities::{StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeyPackage},
-    traits::FetchFromDatabase,
-};
-use openmls::prelude::{Credential as MlsCredential, ExternalSender, HpkePublicKey, KeyPackage, SignaturePublicKey};
-use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto};
+use core_crypto_keystore::entities::StoredCredential;
+use core_crypto_keystore::entities::StoredEncryptionKeyPair;
+use core_crypto_keystore::entities::StoredHpkePrivateKey;
+use core_crypto_keystore::entities::StoredKeyPackage;
+use core_crypto_keystore::traits::FetchFromDatabase;
+use openmls::prelude::Credential as MlsCredential;
+use openmls::prelude::ExternalSender;
+use openmls::prelude::HpkePublicKey;
+use openmls::prelude::KeyPackage;
+use openmls::prelude::SignaturePublicKey;
+use openmls_traits::OpenMlsCryptoProvider;
+use openmls_traits::crypto::OpenMlsCrypto;
 use tls_codec::Serialize;
 use uuid::Uuid;
-use wire_e2e_identity::{WireIdentityReader, legacy::device_status::DeviceStatus};
+use wire_e2e_identity::WireIdentityReader;
+use wire_e2e_identity::legacy::device_status::DeviceStatus;
 use x509_cert::der::Encode;
 
-use crate::{
-    CertificateBundle, CipherSuite, CredentialFindFilters, CredentialRef, CredentialType, DecryptedMessage,
-    WireIdentity,
-    mls::credential::{Credential, ext::CredentialExt},
-    test_utils::{SessionContext, TestContext, x509::X509Certificate},
-};
+use crate::CertificateBundle;
+use crate::CipherSuite;
+use crate::CredentialFindFilters;
+use crate::CredentialRef;
+use crate::CredentialType;
+use crate::DecryptedMessage;
+use crate::WireIdentity;
+use crate::mls::credential::Credential;
+use crate::mls::credential::ext::CredentialExt;
+use crate::test_utils::SessionContext;
+use crate::test_utils::TestContext;
+use crate::test_utils::x509::X509Certificate;
 
 #[allow(clippy::redundant_static_lifetimes)]
 pub const TEAM: &'static str = "world";

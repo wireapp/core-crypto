@@ -1,12 +1,13 @@
 //! This migration adds an index on the `parent_id` field to the `mls_groups` table.
 
-use idb::builder::{DatabaseBuilder, IndexBuilder};
+use idb::builder::DatabaseBuilder;
+use idb::builder::IndexBuilder;
 
 use super::DB_VERSION_10;
-use crate::{
-    CryptoKeystoreResult, DatabaseKey, connection::idb_migration::legacy::traits::EntityBase as _,
-    migrations::LegacyPersistedMlsGroup,
-};
+use crate::CryptoKeystoreResult;
+use crate::DatabaseKey;
+use crate::connection::idb_migration::legacy::traits::EntityBase as _;
+use crate::migrations::LegacyPersistedMlsGroup;
 
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str, _key: &DatabaseKey) -> CryptoKeystoreResult<u32> {

@@ -1,12 +1,15 @@
 use std::collections::HashMap;
 
-use core_crypto_keystore::{Transaction, entities::X509Crl};
+use core_crypto_keystore::Transaction;
+use core_crypto_keystore::entities::X509Crl;
 
-use super::{Error, Result};
-use crate::{
-    pki_env::{PkiEnvironment, hooks::HttpMethod},
-    x509_check::revocation::{CrlStore, PkiEnvironment as RjtPkiEnvironment, now},
-};
+use super::Error;
+use super::Result;
+use crate::pki_env::PkiEnvironment;
+use crate::pki_env::hooks::HttpMethod;
+use crate::x509_check::revocation::CrlStore;
+use crate::x509_check::revocation::PkiEnvironment as RjtPkiEnvironment;
+use crate::x509_check::revocation::now;
 
 impl PkiEnvironment {
     /// Fetch certificate revocation lists from the given URIs, return a map from the URLs to a DER-encoded certificate

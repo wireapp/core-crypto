@@ -1,12 +1,12 @@
-use idb::{
-    KeyPath,
-    builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder},
-};
+use idb::KeyPath;
+use idb::builder::DatabaseBuilder;
+use idb::builder::IndexBuilder;
+use idb::builder::ObjectStoreBuilder;
 
 use super::DB_VERSION_3;
-use crate::{
-    CryptoKeystoreResult, connection::idb_migration::legacy::traits::EntityBase as _, entities::StoredBufferedCommit,
-};
+use crate::CryptoKeystoreResult;
+use crate::connection::idb_migration::legacy::traits::EntityBase as _;
+use crate::entities::StoredBufferedCommit;
 
 /// Open IDB once with the new builder and close it, this will add the new object store.
 pub(super) async fn migrate(name: &str) -> CryptoKeystoreResult<u32> {

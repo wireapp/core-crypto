@@ -1,5 +1,6 @@
 pub use rstest::*;
-pub use rstest_reuse::{self, *};
+pub use rstest_reuse::*;
+pub use rstest_reuse::{self};
 
 mod common;
 

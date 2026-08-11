@@ -1,7 +1,8 @@
 use idb::builder::DatabaseBuilder;
 
 use super::DB_VERSION_5;
-use crate::{CryptoKeystoreResult, connection::idb_migration::legacy::traits::EntityBase as _};
+use crate::CryptoKeystoreResult;
+use crate::connection::idb_migration::legacy::traits::EntityBase as _;
 
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str) -> CryptoKeystoreResult<u32> {

@@ -12,18 +12,25 @@ mod persistence;
 pub(crate) mod x509;
 
 use core_crypto_keystore::entities::StoredCredential;
-use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, SignatureScheme};
+use openmls::prelude::Credential as MlsCredential;
+use openmls::prelude::CredentialWithKey;
+use openmls::prelude::SignatureScheme;
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::crypto::OpenMlsCrypto;
 use tls_codec::Deserialize as _;
 
+pub use self::credential_ref::CredentialRef;
+pub use self::credential_ref::FindFilters;
+pub use self::credential_ref::FindFiltersBuilder;
+pub use self::credential_type::CredentialType;
+pub use self::error::Error;
 pub(crate) use self::error::Result;
-pub use self::{
-    credential_ref::{CredentialRef, FindFilters, FindFiltersBuilder},
-    credential_type::CredentialType,
-    error::Error,
-};
-use crate::{CipherSuite, ClientId, ClientIdRef, OpenMlsError, RecursiveError, mls_provider::CRYPTO};
+use crate::CipherSuite;
+use crate::ClientId;
+use crate::ClientIdRef;
+use crate::OpenMlsError;
+use crate::RecursiveError;
+use crate::mls_provider::CRYPTO;
 
 /// A cryptographic credential.
 ///
@@ -184,16 +191,15 @@ impl PartialEq for Credential {
 
 #[cfg(test)]
 mod tests {
-    use super::{x509::CertificateBundle, *};
-    use crate::{
-        CredentialType, E2eiConversationState,
-        mls::credential::x509::CertificatePrivateKey,
-        mls_provider::PkiKeypair,
-        test_utils::{
-            x509::{CertificateParams, X509TestChain},
-            *,
-        },
-    };
+    use super::x509::CertificateBundle;
+    use super::*;
+    use crate::CredentialType;
+    use crate::E2eiConversationState;
+    use crate::mls::credential::x509::CertificatePrivateKey;
+    use crate::mls_provider::PkiKeypair;
+    use crate::test_utils::x509::CertificateParams;
+    use crate::test_utils::x509::X509TestChain;
+    use crate::test_utils::*;
 
     #[apply(all_cred_cipher)]
     async fn basic_clients_can_send_messages(case: TestContext) {

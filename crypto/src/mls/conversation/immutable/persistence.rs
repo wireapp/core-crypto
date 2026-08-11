@@ -1,13 +1,16 @@
 use std::collections::HashMap;
 
-use core_crypto_keystore::{entities::PersistedMlsGroup, traits::FetchFromDatabase};
+use core_crypto_keystore::entities::PersistedMlsGroup;
+use core_crypto_keystore::traits::FetchFromDatabase;
 use openmls::group::MlsGroup;
 
 use super::Result;
-use crate::{
-    ConversationConfiguration, ConversationId, KeystoreError, Session,
-    mls::conversation::{Conversation, MlsGroupState},
-};
+use crate::ConversationConfiguration;
+use crate::ConversationId;
+use crate::KeystoreError;
+use crate::Session;
+use crate::mls::conversation::Conversation;
+use crate::mls::conversation::MlsGroupState;
 
 impl Conversation {
     /// restore the conversation from a persistence-saved serialized Group State.

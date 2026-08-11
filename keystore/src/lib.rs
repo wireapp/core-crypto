@@ -15,12 +15,14 @@ pub use hash::Sha256Hash;
 pub(crate) use hash::sha256;
 pub use unique_arc::UniqueArc;
 
+pub use self::connection::Database;
+pub use self::database_key::DatabaseKey;
 #[cfg(feature = "dummy-entity")]
-pub use self::entities::{DummyStoreValue, DummyValue};
-pub use self::{
-    connection::Database,
-    database_key::DatabaseKey,
-    error::{CryptoKeystoreError, CryptoKeystoreResult},
-    mls::{deser, ser},
-    transaction::Transaction,
-};
+pub use self::entities::DummyStoreValue;
+#[cfg(feature = "dummy-entity")]
+pub use self::entities::DummyValue;
+pub use self::error::CryptoKeystoreError;
+pub use self::error::CryptoKeystoreResult;
+pub use self::mls::deser;
+pub use self::mls::ser;
+pub use self::transaction::Transaction;

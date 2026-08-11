@@ -1,11 +1,12 @@
-use rusty_jwt_tools::prelude::{ClientId, HashAlgorithm, QualifiedHandle};
+use rusty_jwt_tools::prelude::ClientId;
+use rusty_jwt_tools::prelude::HashAlgorithm;
+use rusty_jwt_tools::prelude::QualifiedHandle;
 use x509_cert::der::Decode as _;
 
-use crate::{
-    acquisition::{error::CertificateError, thumbprint::try_compute_jwk_canonicalized_thumbprint},
-    pki_env::PkiEnvironment,
-    x509_check::IdentityStatus,
-};
+use crate::acquisition::error::CertificateError;
+use crate::acquisition::thumbprint::try_compute_jwk_canonicalized_thumbprint;
+use crate::pki_env::PkiEnvironment;
+use crate::x509_check::IdentityStatus;
 
 type Result<T> = std::result::Result<T, CertificateError>;
 

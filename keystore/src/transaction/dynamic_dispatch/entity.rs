@@ -1,18 +1,31 @@
-use std::{any::Any, sync::Arc};
+use std::any::Any;
+use std::sync::Arc;
 
 use rusqlite::Transaction;
 
+use crate::CryptoKeystoreResult;
+use crate::entities::ConsumerData;
+use crate::entities::MlsPendingMessage;
+use crate::entities::PersistedMlsGroup;
+use crate::entities::PersistedMlsPendingGroup;
 #[cfg(feature = "proteus-keystore")]
-use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
-use crate::{
-    CryptoKeystoreResult,
-    entities::{
-        ConsumerData, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit,
-        StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredKeyPackage, StoredPskBundle, X509Crl, X509IntermediateCert, X509TrustAnchor,
-    },
-    traits::{EntityDatabaseMutation as _, UniqueEntityExt as _},
-};
+use crate::entities::ProteusIdentity;
+#[cfg(feature = "proteus-keystore")]
+use crate::entities::ProteusPrekey;
+#[cfg(feature = "proteus-keystore")]
+use crate::entities::ProteusSession;
+use crate::entities::StoredBufferedCommit;
+use crate::entities::StoredCredential;
+use crate::entities::StoredEncryptionKeyPair;
+use crate::entities::StoredEpochEncryptionKeypair;
+use crate::entities::StoredHpkePrivateKey;
+use crate::entities::StoredKeyPackage;
+use crate::entities::StoredPskBundle;
+use crate::entities::X509Crl;
+use crate::entities::X509IntermediateCert;
+use crate::entities::X509TrustAnchor;
+use crate::traits::EntityDatabaseMutation as _;
+use crate::traits::UniqueEntityExt as _;
 
 #[derive(Debug)]
 pub enum Entity {

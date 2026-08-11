@@ -1,11 +1,14 @@
-use jwt_simple::{
-    algorithms::{ECDSAP256PublicKeyLike as _, ECDSAP384PublicKeyLike as _, ECDSAP521PublicKeyLike as _},
-    prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPair, Jwk},
-};
-use rusty_jwt_tools::{
-    jwk::TryIntoJwk as _,
-    prelude::{JwsAlgorithm, Pem},
-};
+use jwt_simple::algorithms::ECDSAP256PublicKeyLike as _;
+use jwt_simple::algorithms::ECDSAP384PublicKeyLike as _;
+use jwt_simple::algorithms::ECDSAP521PublicKeyLike as _;
+use jwt_simple::prelude::ES256KeyPair;
+use jwt_simple::prelude::ES384KeyPair;
+use jwt_simple::prelude::ES512KeyPair;
+use jwt_simple::prelude::Ed25519KeyPair;
+use jwt_simple::prelude::Jwk;
+use rusty_jwt_tools::jwk::TryIntoJwk as _;
+use rusty_jwt_tools::prelude::JwsAlgorithm;
+use rusty_jwt_tools::prelude::Pem;
 use spki::AlgorithmIdentifierOwned;
 
 use crate::error::E2eIdentityResult;

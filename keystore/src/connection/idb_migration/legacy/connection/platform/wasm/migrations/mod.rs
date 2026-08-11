@@ -16,9 +16,12 @@ mod v11;
 
 pub(crate) use db_key_type_to_bytes::migrate_db_key_type_to_bytes;
 pub(super) use delete_credential_by_session_id::delete_credential_by_session_id;
-use idb::{Database, Factory};
+use idb::Database;
+use idb::Factory;
 
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey};
+use crate::CryptoKeystoreError;
+use crate::CryptoKeystoreResult;
+use crate::DatabaseKey;
 
 const fn db_version_number(counter: u32) -> u32 {
     // When the DB version was tied to core crypto, the version counter was the sum of 10_000_000
@@ -122,24 +125,25 @@ async fn do_migration_step(from: u32, name: &str, key: &DatabaseKey) -> CryptoKe
 mod tests {
     use std::sync::LazyLock;
 
-    use idb::builder::{DatabaseBuilder, ObjectStoreBuilder};
-    use rand::{
-        Rng as _,
-        distributions::{Alphanumeric, DistString as _},
-    };
+    use idb::builder::DatabaseBuilder;
+    use idb::builder::ObjectStoreBuilder;
+    use rand::Rng as _;
+    use rand::distributions::Alphanumeric;
+    use rand::distributions::DistString as _;
     use serde::Serialize as _;
     use wasm_bindgen::JsValue;
     use wasm_bindgen_test::wasm_bindgen_test;
 
     use super::*;
-    use crate::{
-        connection::idb_migration::legacy::{
-            self,
-            connection::{ConnectionType, Database, storage::WasmStorageWrapper},
-            traits::{Entity, EntityBase as _, EntityDatabaseMutation as _},
-        },
-        entities::{ProteusPrekey, StoredCredential},
-    };
+    use crate::connection::idb_migration::legacy::connection::ConnectionType;
+    use crate::connection::idb_migration::legacy::connection::Database;
+    use crate::connection::idb_migration::legacy::connection::storage::WasmStorageWrapper;
+    use crate::connection::idb_migration::legacy::traits::Entity;
+    use crate::connection::idb_migration::legacy::traits::EntityBase as _;
+    use crate::connection::idb_migration::legacy::traits::EntityDatabaseMutation as _;
+    use crate::connection::idb_migration::legacy::{self};
+    use crate::entities::ProteusPrekey;
+    use crate::entities::StoredCredential;
 
     pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(DatabaseKey::generate);
 

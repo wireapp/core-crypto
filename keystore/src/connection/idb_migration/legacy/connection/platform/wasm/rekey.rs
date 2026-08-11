@@ -1,12 +1,14 @@
 use idb::Transaction;
 use js_sys::Uint8Array;
-use serde::{Serialize, de::DeserializeOwned};
+use serde::Serialize;
+use serde::de::DeserializeOwned;
 
-use crate::{
-    CryptoKeystoreResult,
-    connection::idb_migration::legacy::traits::{Decryptable, Decrypting as _, Encrypting, Entity},
-    traits::KeyType,
-};
+use crate::CryptoKeystoreResult;
+use crate::connection::idb_migration::legacy::traits::Decryptable;
+use crate::connection::idb_migration::legacy::traits::Decrypting as _;
+use crate::connection::idb_migration::legacy::traits::Encrypting;
+use crate::connection::idb_migration::legacy::traits::Entity;
+use crate::traits::KeyType;
 
 pub(super) async fn rekey_entity<E>(
     transaction: &Transaction,

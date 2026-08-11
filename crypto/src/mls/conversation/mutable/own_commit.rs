@@ -1,16 +1,20 @@
-use openmls::{
-    group::MlsGroup,
-    prelude::{
-        ConfirmationTag, ContentType, CredentialWithKey, FramedContentBodyIn, MlsMessageIn, MlsMessageInBody, Sender,
-    },
-};
+use openmls::group::MlsGroup;
+use openmls::prelude::ConfirmationTag;
+use openmls::prelude::ContentType;
+use openmls::prelude::CredentialWithKey;
+use openmls::prelude::FramedContentBodyIn;
+use openmls::prelude::MlsMessageIn;
+use openmls::prelude::MlsMessageInBody;
+use openmls::prelude::Sender;
 use openmls_traits::OpenMlsCryptoProvider as _;
 
-use super::{ConversationMut, Error, Result};
-use crate::{
-    DecryptedMessage, RecursiveError,
-    mls::{conversation::mutable::decrypt::Commit, credential::ext::CredentialExt},
-};
+use super::ConversationMut;
+use super::Error;
+use super::Result;
+use crate::DecryptedMessage;
+use crate::RecursiveError;
+use crate::mls::conversation::mutable::decrypt::Commit;
+use crate::mls::credential::ext::CredentialExt;
 
 impl ConversationMut {
     /// Returns the confirmation tag from a public message that is an own commit.
@@ -110,10 +114,13 @@ impl ConversationMut {
 
 #[cfg(test)]
 mod tests {
-    use openmls::prelude::{ProcessMessageError, ValidationError};
+    use openmls::prelude::ProcessMessageError;
+    use openmls::prelude::ValidationError;
 
     use super::super::super::error::Error;
-    use crate::{CredentialRef, OpenMlsError, test_utils::*};
+    use crate::CredentialRef;
+    use crate::OpenMlsError;
+    use crate::test_utils::*;
 
     // If there’s a pending commit & it matches the incoming commit: mark pending commit as accepted
     #[apply(all_cred_cipher)]

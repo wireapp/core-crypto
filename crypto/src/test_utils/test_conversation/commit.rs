@@ -1,14 +1,14 @@
 use openmls::prelude::group_info::VerifiableGroupInfo;
 
-use super::{
-    super::SessionContext,
-    TestConversation,
-    operation_guard::{AddGuard, Commit, OperationGuard, TestOperation},
-};
-use crate::{
-    CredentialRef,
-    mls::{conversation::PendingConversation, credential::Credential},
-};
+use super::super::SessionContext;
+use super::TestConversation;
+use super::operation_guard::AddGuard;
+use super::operation_guard::Commit;
+use super::operation_guard::OperationGuard;
+use super::operation_guard::TestOperation;
+use crate::CredentialRef;
+use crate::mls::conversation::PendingConversation;
+use crate::mls::credential::Credential;
 
 impl<'a> TestConversation<'a> {
     /// Invite all sessions into this conversation and notify all members, old and new.

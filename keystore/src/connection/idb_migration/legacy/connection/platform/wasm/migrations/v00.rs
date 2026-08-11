@@ -1,23 +1,26 @@
-use idb::{
-    KeyPath,
-    builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder},
-};
+use idb::KeyPath;
+use idb::builder::DatabaseBuilder;
+use idb::builder::IndexBuilder;
+use idb::builder::ObjectStoreBuilder;
 
 use super::DB_VERSION_0;
-use crate::{
-    connection::idb_migration::legacy::{
-        entities::mls::{
-            e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
-            stored_keypackage::StoredKeypackage,
-        },
-        traits::EntityBase as _,
-    },
-    entities::{
-        MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
-    },
-    migrations::{LegacyPersistedMlsGroup, StoredSignatureKeypair, V5Credential},
-};
+use crate::connection::idb_migration::legacy::entities::mls::e2ei_acme_ca::E2eiAcmeCA;
+use crate::connection::idb_migration::legacy::entities::mls::e2ei_crl::E2eiCrl;
+use crate::connection::idb_migration::legacy::entities::mls::e2ei_intermediate_cert::E2eiIntermediateCert;
+use crate::connection::idb_migration::legacy::entities::mls::stored_keypackage::StoredKeypackage;
+use crate::connection::idb_migration::legacy::traits::EntityBase as _;
+use crate::entities::MlsPendingMessage;
+use crate::entities::PersistedMlsPendingGroup;
+use crate::entities::ProteusIdentity;
+use crate::entities::ProteusPrekey;
+use crate::entities::ProteusSession;
+use crate::entities::StoredEncryptionKeyPair;
+use crate::entities::StoredEpochEncryptionKeypair;
+use crate::entities::StoredHpkePrivateKey;
+use crate::entities::StoredPskBundle;
+use crate::migrations::LegacyPersistedMlsGroup;
+use crate::migrations::StoredSignatureKeypair;
+use crate::migrations::V5Credential;
 
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
     DatabaseBuilder::new(name)

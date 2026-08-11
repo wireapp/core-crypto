@@ -1,11 +1,13 @@
 //! These methods alow mutating the transaction. Mutations will be propagated to the database on commit.
 
 use super::dynamic_dispatch::EntityId;
-use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed},
-    transaction::Transaction,
-};
+use crate::CryptoKeystoreError;
+use crate::CryptoKeystoreResult;
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::Entity;
+use crate::traits::EntityDatabaseMutation;
+use crate::traits::EntityDeleteBorrowed;
+use crate::transaction::Transaction;
 
 impl Transaction {
     /// Save an entity into this transaction.

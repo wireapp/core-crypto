@@ -7,9 +7,12 @@ mod wrapper;
 
 pub use keystore::KeystoreError;
 pub use leaf::LeafError;
-pub use open_mls::{OpenMlsError, OpenMlsErrorKind};
-pub use proteus::{ProteusError, ProteusErrorKind};
-pub use recursive::{RecursiveError, ToRecursiveError};
+pub use open_mls::OpenMlsError;
+pub use open_mls::OpenMlsErrorKind;
+pub use proteus::ProteusError;
+pub use proteus::ProteusErrorKind;
+pub use recursive::RecursiveError;
+pub use recursive::ToRecursiveError;
 
 /// A module-specific [Result][core::result::Result] type with a default error variant.
 pub type Result<T, E = Error> = core::result::Result<T, E>;

@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
-use core_crypto::{BufferedDecryptedMessage as CcBufferedDecryptedMessage, DecryptedMessage as CcDecryptedMessage};
+use core_crypto::BufferedDecryptedMessage as CcBufferedDecryptedMessage;
+use core_crypto::DecryptedMessage as CcDecryptedMessage;
 
-use crate::{ClientId, WireIdentity};
+use crate::ClientId;
+use crate::WireIdentity;
 
 /// Represents the items a consumer might require after decrypting a message.
 #[derive(Debug, uniffi::Enum)]

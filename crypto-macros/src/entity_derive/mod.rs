@@ -8,10 +8,9 @@ use darling::FromDeriveInput;
 use heck::ToSnakeCase;
 use proc_macro2::Ident;
 
-use crate::entity_derive::{
-    column::{Column, IdColumn},
-    is_id::parse_columns,
-};
+use crate::entity_derive::column::Column;
+use crate::entity_derive::column::IdColumn;
+use crate::entity_derive::is_id::parse_columns;
 
 /// Less abstract version of [parse::Entity] that has all the fields flattened
 /// ready for usage in `quote!()`.

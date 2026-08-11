@@ -1,4 +1,7 @@
-use crate::{CryptoKeystoreError, Transaction, entities::ProteusPrekey, traits::FetchFromDatabase};
+use crate::CryptoKeystoreError;
+use crate::Transaction;
+use crate::entities::ProteusPrekey;
+use crate::traits::FetchFromDatabase;
 
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]

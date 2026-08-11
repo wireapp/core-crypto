@@ -1,9 +1,12 @@
 use std::sync::Arc;
 
 use core_crypto_keystore::Transaction;
-use proteus_wasm::{keys::IdentityKeyPair, message::Envelope, session::Session};
+use proteus_wasm::keys::IdentityKeyPair;
+use proteus_wasm::message::Envelope;
+use proteus_wasm::session::Session;
 
-use crate::{ProteusError, Result};
+use crate::ProteusError;
+use crate::Result;
 
 /// Proteus session IDs, it seems it's basically a string
 pub type SessionIdentifier = String;

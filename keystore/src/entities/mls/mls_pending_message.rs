@@ -1,6 +1,8 @@
 use zeroize::Zeroize;
 
-use crate::traits::{KeyType, OwnedKeyType, PrimaryKey};
+use crate::traits::KeyType;
+use crate::traits::OwnedKeyType;
+use crate::traits::PrimaryKey;
 
 /// Typesafe reference to a conversation id.
 ///

@@ -4,10 +4,15 @@
 //! useful to end users. Clients building on the CC API can't do anything useful with a full [`Credential`],
 //! and it's wasteful to transfer one across the FFI boundary.
 
-use core_crypto_keystore::{entities::StoredCredential, traits::FetchFromDatabase};
+use core_crypto_keystore::entities::StoredCredential;
+use core_crypto_keystore::traits::FetchFromDatabase;
 
-use super::{Error, Result};
-use crate::{Credential, CredentialRef, KeystoreError, RecursiveError};
+use super::Error;
+use super::Result;
+use crate::Credential;
+use crate::CredentialRef;
+use crate::KeystoreError;
+use crate::RecursiveError;
 
 impl CredentialRef {
     /// Load the credential which matches this ref from the database.

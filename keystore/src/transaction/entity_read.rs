@@ -1,14 +1,16 @@
 //! These methods allow for read-only operations on the entities in the transaction,
 //! without considering the database itself.
 
-use std::{borrow::Cow, sync::Arc};
+use std::borrow::Cow;
+use std::sync::Arc;
 
 use super::dynamic_dispatch::EntityId;
-use crate::{
-    CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, KeyType, SearchableEntity},
-    transaction::Transaction,
-};
+use crate::CryptoKeystoreResult;
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::Entity;
+use crate::traits::KeyType;
+use crate::traits::SearchableEntity;
+use crate::transaction::Transaction;
 
 impl Transaction {
     async fn find_in_cache<E>(&self, entity_id: &EntityId) -> Option<Arc<E>>

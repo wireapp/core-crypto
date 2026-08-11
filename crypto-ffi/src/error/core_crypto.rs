@@ -1,8 +1,10 @@
-use core_crypto::{InnermostErrorMessage as _, RecursiveError};
+use core_crypto::InnermostErrorMessage as _;
+use core_crypto::RecursiveError;
 
+use crate::MlsError;
 #[cfg(feature = "proteus")]
 use crate::ProteusError;
-use crate::{MlsError, error::log_error};
+use crate::error::log_error;
 
 /// The primary error type returned across the CoreCrypto FFI boundary.
 #[derive(Debug, thiserror::Error, uniffi::Error)]

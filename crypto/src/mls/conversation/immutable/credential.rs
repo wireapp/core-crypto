@@ -1,14 +1,21 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
+use std::sync::Arc;
 
-use openmls::{
-    group::QueuedProposal,
-    prelude::{
-        Credential as MlsCredential, CredentialWithKey, LeafNode, LeafNodeIndex, Proposal, Sender, SignaturePublicKey,
-    },
-};
+use openmls::group::QueuedProposal;
+use openmls::prelude::Credential as MlsCredential;
+use openmls::prelude::CredentialWithKey;
+use openmls::prelude::LeafNode;
+use openmls::prelude::LeafNodeIndex;
+use openmls::prelude::Proposal;
+use openmls::prelude::Sender;
+use openmls::prelude::SignaturePublicKey;
 
-use super::{Error, Result};
-use crate::{ClientId, Credential, LeafError, RecursiveError};
+use super::Error;
+use super::Result;
+use crate::ClientId;
+use crate::Credential;
+use crate::LeafError;
+use crate::RecursiveError;
 
 impl super::Conversation {
     fn extract_own_updated_node_from_proposals<'a>(

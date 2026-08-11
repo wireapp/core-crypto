@@ -3,14 +3,19 @@ use std::sync::Arc;
 use openmls::prelude::group_info::VerifiableGroupInfo;
 use openmls_traits::OpenMlsCryptoProvider as _;
 
-use super::{CredentialType, MessageExt as _, MlsTransportTestExt, SessionContext, TestContext, TestError};
-use crate::{
-    ConversationId, CredentialRef, E2eiConversationState, RecursiveError,
-    mls::{
-        conversation::ConversationMut,
-        credential::{Credential, ext::CredentialExt as _},
-    },
-};
+use super::CredentialType;
+use super::MessageExt as _;
+use super::MlsTransportTestExt;
+use super::SessionContext;
+use super::TestContext;
+use super::TestError;
+use crate::ConversationId;
+use crate::CredentialRef;
+use crate::E2eiConversationState;
+use crate::RecursiveError;
+use crate::mls::conversation::ConversationMut;
+use crate::mls::credential::Credential;
+use crate::mls::credential::ext::CredentialExt as _;
 
 mod commit;
 pub(crate) mod operation_guard;

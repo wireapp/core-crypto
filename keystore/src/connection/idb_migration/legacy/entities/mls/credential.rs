@@ -1,18 +1,24 @@
 use async_trait::async_trait;
 use web_time::SystemTime;
 
-use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, Sha256Hash,
-    connection::idb_migration::legacy::{
-        connection::{KeystoreDatabaseConnection, TransactionWrapper},
-        traits::{
-            DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity, EntityBase, EntityDatabaseMutation,
-            SearchableEntity,
-        },
-    },
-    entities::{CredentialFindFilters, StoredCredential},
-    traits::{KeyType as _, PrimaryKey},
-};
+use crate::CryptoKeystoreError;
+use crate::CryptoKeystoreResult;
+use crate::Sha256Hash;
+use crate::connection::idb_migration::legacy::connection::KeystoreDatabaseConnection;
+use crate::connection::idb_migration::legacy::connection::TransactionWrapper;
+use crate::connection::idb_migration::legacy::traits::DecryptData;
+use crate::connection::idb_migration::legacy::traits::Decryptable;
+use crate::connection::idb_migration::legacy::traits::Decrypting;
+use crate::connection::idb_migration::legacy::traits::EncryptData;
+use crate::connection::idb_migration::legacy::traits::Encrypting;
+use crate::connection::idb_migration::legacy::traits::Entity;
+use crate::connection::idb_migration::legacy::traits::EntityBase;
+use crate::connection::idb_migration::legacy::traits::EntityDatabaseMutation;
+use crate::connection::idb_migration::legacy::traits::SearchableEntity;
+use crate::entities::CredentialFindFilters;
+use crate::entities::StoredCredential;
+use crate::traits::KeyType as _;
+use crate::traits::PrimaryKey;
 
 impl EntityBase for StoredCredential {
     type ConnectionType = KeystoreDatabaseConnection;

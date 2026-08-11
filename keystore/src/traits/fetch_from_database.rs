@@ -2,10 +2,13 @@ use std::borrow::Borrow;
 
 use async_trait::async_trait;
 
-use crate::{
-    CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, KeyType, SearchableEntity, UniqueEntityExt},
-};
+use crate::CryptoKeystoreResult;
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::Entity;
+use crate::traits::EntityGetBorrowed;
+use crate::traits::KeyType;
+use crate::traits::SearchableEntity;
+use crate::traits::UniqueEntityExt;
 
 /// Interface to immutably access the database either from the connection directly or through a transaction.
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]

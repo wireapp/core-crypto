@@ -1,29 +1,45 @@
 use std::net::SocketAddr;
 
-use argon2::{
-    Algorithm, Argon2, ParamsBuilder, Version,
-    password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
-};
+use argon2::Algorithm;
+use argon2::Argon2;
+use argon2::ParamsBuilder;
+use argon2::Version;
+use argon2::password_hash::PasswordHasher;
+use argon2::password_hash::SaltString;
+use argon2::password_hash::rand_core::OsRng;
 use http::header;
-use oauth2::{CsrfToken, PkceCodeChallenge, RedirectUrl, Scope};
-use openidconnect::{
-    IssuerUrl, Nonce,
-    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
-};
+use oauth2::CsrfToken;
+use oauth2::PkceCodeChallenge;
+use oauth2::RedirectUrl;
+use oauth2::Scope;
+use openidconnect::IssuerUrl;
+use openidconnect::Nonce;
+use openidconnect::core::CoreAuthenticationFlow;
+use openidconnect::core::CoreClient;
+use openidconnect::core::CoreProviderMetadata;
 use serde_json::json;
-use testcontainers::{
-    GenericImage, ImageExt,
-    core::{IntoContainerPort, Mount, ReuseDirective, logs::consumer::logging_consumer::LoggingConsumer},
-    runners::AsyncRunner,
-};
+use testcontainers::GenericImage;
+use testcontainers::ImageExt;
+use testcontainers::core::IntoContainerPort;
+use testcontainers::core::Mount;
+use testcontainers::core::ReuseDirective;
+use testcontainers::core::logs::consumer::logging_consumer::LoggingConsumer;
+use testcontainers::runners::AsyncRunner;
 use url::Url;
 
-use crate::utils::{
-    NETWORK, SHM,
-    ctx::{ctx_get_http_client, ctx_get_http_client_builder, custom_oauth_client},
-    idp::{IdpServer, IdpServerConfig, OAUTH_CLIENT_ID, OAUTH_CLIENT_NAME, OauthCfg, OidcProvider, User},
-    rand_str,
-};
+use crate::utils::NETWORK;
+use crate::utils::SHM;
+use crate::utils::ctx::ctx_get_http_client;
+use crate::utils::ctx::ctx_get_http_client_builder;
+use crate::utils::ctx::custom_oauth_client;
+use crate::utils::idp::IdpServer;
+use crate::utils::idp::IdpServerConfig;
+use crate::utils::idp::OAUTH_CLIENT_ID;
+use crate::utils::idp::OAUTH_CLIENT_NAME;
+use crate::utils::idp::OauthCfg;
+use crate::utils::idp::OidcProvider;
+use crate::utils::idp::User;
+use crate::utils::rand_str;
 
 fn compute_password_hash(password: &str) -> String {
     // Use parameters corresponding to the "Low Memory" situation:
@@ -144,7 +160,9 @@ pub(super) async fn fetch_id_token(
     let client = ctx_get_http_client_builder().cookie_store(true).build().unwrap();
 
     let cookie = {
-        use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
+        use reqwest::header::CONTENT_TYPE;
+        use reqwest::header::HeaderMap;
+        use reqwest::header::HeaderValue;
         use serde_json::json;
 
         let host = &idp_server.hostname;

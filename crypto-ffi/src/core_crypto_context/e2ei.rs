@@ -1,11 +1,17 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 use core_crypto::transaction_context::Error as TransactionError;
 
-use crate::{
-    CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, E2eiConversationState, UserIdentities,
-    Uuid, WireIdentity,
-};
+use crate::CipherSuite;
+use crate::ClientId;
+use crate::ConversationId;
+use crate::CoreCryptoContext;
+use crate::CoreCryptoResult;
+use crate::E2eiConversationState;
+use crate::UserIdentities;
+use crate::Uuid;
+use crate::WireIdentity;
 
 #[uniffi::export]
 impl CoreCryptoContext {

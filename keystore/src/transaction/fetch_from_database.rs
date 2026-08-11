@@ -4,15 +4,19 @@
 //! It doesn't matter whether someone is holding a [`Database`][crate::Database] or a
 //! [`Transaction`] instance; every implementation of the trait will always agree.
 
-use std::{borrow::Borrow, sync::Arc};
+use std::borrow::Borrow;
+use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use crate::{
-    CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, KeyType, SearchableEntity},
-    transaction::Transaction,
-};
+use crate::CryptoKeystoreResult;
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::Entity;
+use crate::traits::EntityGetBorrowed;
+use crate::traits::FetchFromDatabase;
+use crate::traits::KeyType;
+use crate::traits::SearchableEntity;
+use crate::transaction::Transaction;
 
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait)]

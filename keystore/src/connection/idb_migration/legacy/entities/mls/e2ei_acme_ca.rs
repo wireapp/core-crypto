@@ -1,15 +1,15 @@
 use zeroize::Zeroize;
 
-use crate::{
-    CryptoKeystoreResult,
-    connection::idb_migration::legacy::{
-        connection::KeystoreDatabaseConnection,
-        traits::{
-            DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, EntityBase, UniqueEntity as _,
-            UniqueEntityImplementationHelper,
-        },
-    },
-};
+use crate::CryptoKeystoreResult;
+use crate::connection::idb_migration::legacy::connection::KeystoreDatabaseConnection;
+use crate::connection::idb_migration::legacy::traits::DecryptData;
+use crate::connection::idb_migration::legacy::traits::Decryptable;
+use crate::connection::idb_migration::legacy::traits::Decrypting;
+use crate::connection::idb_migration::legacy::traits::EncryptData;
+use crate::connection::idb_migration::legacy::traits::Encrypting;
+use crate::connection::idb_migration::legacy::traits::EntityBase;
+use crate::connection::idb_migration::legacy::traits::UniqueEntity as _;
+use crate::connection::idb_migration::legacy::traits::UniqueEntityImplementationHelper;
 
 #[cfg(target_os = "unknown")]
 #[derive(Zeroize)]

@@ -2,8 +2,11 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use super::{Error, Session};
-use crate::{ConversationId, HistorySecret, ToRecursiveError as _};
+use super::Error;
+use super::Session;
+use crate::ConversationId;
+use crate::HistorySecret;
+use crate::ToRecursiveError as _;
 
 /// The `HistoryObserver` will be called when updating the history client in a conversation
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]

@@ -4,15 +4,19 @@
 //! group epoch.
 
 use core_crypto_keystore::entities::MlsPendingMessage;
-use log::{error, info};
-use openmls::framing::{MlsMessageIn, MlsMessageInBody};
+use log::error;
+use log::info;
+use openmls::framing::MlsMessageIn;
+use openmls::framing::MlsMessageInBody;
 use tls_codec::Deserialize;
 
-use super::{RecursionPolicy, Result};
-use crate::{
-    BufferedDecryptedMessage, KeystoreError, RecursiveError,
-    mls::conversation::{ConversationMut, Error},
-};
+use super::RecursionPolicy;
+use super::Result;
+use crate::BufferedDecryptedMessage;
+use crate::KeystoreError;
+use crate::RecursiveError;
+use crate::mls::conversation::ConversationMut;
+use crate::mls::conversation::Error;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum MessageRestorePolicy {
@@ -118,7 +122,8 @@ impl ConversationMut {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{DecryptedMessage, test_utils::*};
+    use crate::DecryptedMessage;
+    use crate::test_utils::*;
 
     #[apply(all_cred_cipher)]
     async fn can_operate_with_pending_commit_wpb_17356(case: TestContext) {

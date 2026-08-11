@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use core_crypto_keystore::Transaction;
 
 use super::ProteusCentral;
-use crate::{LeafError, ProteusError, Result};
+use crate::LeafError;
+use crate::ProteusError;
+use crate::Result;
 
 impl ProteusCentral {
     /// Decrypt a proteus message for an already existing session
@@ -74,7 +76,8 @@ mod tests {
     use core_crypto_keystore::DatabaseKey;
 
     use super::*;
-    use crate::test_utils::{proteus_utils::*, *};
+    use crate::test_utils::proteus_utils::*;
+    use crate::test_utils::*;
 
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn can_talk_with_proteus() {

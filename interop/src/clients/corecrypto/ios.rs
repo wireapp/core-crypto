@@ -1,21 +1,29 @@
-use std::{
-    cell::{Cell, RefCell},
-    fs,
-    io::{BufRead, BufReader, Read},
-    process::{Child, ChildStdout, Command, Output, Stdio},
-    time::Duration,
-};
+use std::cell::Cell;
+use std::cell::RefCell;
+use std::fs;
+use std::io::BufRead;
+use std::io::BufReader;
+use std::io::Read;
+use std::process::Child;
+use std::process::ChildStdout;
+use std::process::Command;
+use std::process::Output;
+use std::process::Stdio;
+use std::time::Duration;
 
 use anyhow::Result;
-use base64::{Engine as _, engine::general_purpose};
-use core_crypto::{KeyPackageIn, Keypackage};
+use base64::Engine as _;
+use base64::engine::general_purpose;
+use core_crypto::KeyPackageIn;
+use core_crypto::Keypackage;
 use thiserror::Error;
 use tls_codec::Deserialize;
 
-use crate::{
-    CIPHERSUITE_IN_USE,
-    clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
-};
+use crate::CIPHERSUITE_IN_USE;
+use crate::clients::EmulatedClient;
+use crate::clients::EmulatedClientProtocol;
+use crate::clients::EmulatedClientType;
+use crate::clients::EmulatedMlsClient;
 
 #[derive(Debug)]
 struct SimulatorDriver {

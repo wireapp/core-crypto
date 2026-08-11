@@ -1,10 +1,10 @@
 use rusqlite::Transaction;
 
-use crate::{
-    CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, KeyType},
-    transaction::dynamic_dispatch,
-};
+use crate::CryptoKeystoreResult;
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::Entity;
+use crate::traits::KeyType;
+use crate::transaction::dynamic_dispatch;
 
 /// Extend an [`Entity`] with db-mutating operations which can be performed when provided with a transaction.
 pub trait EntityDatabaseMutation: Entity + Into<dynamic_dispatch::Entity> {

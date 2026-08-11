@@ -3,15 +3,15 @@ mod v6_entities;
 use idb::builder::DatabaseBuilder;
 
 use super::DB_VERSION_7;
-use crate::{
-    CryptoKeystoreResult, DatabaseKey,
-    connection::idb_migration::legacy::{
-        connection::Database,
-        traits::{Entity as _, EntityDatabaseMutation as _},
-    },
-    entities::StoredCredential,
-    migrations::{LegacyPersistedMlsGroup, V6Credential, make_ciphersuite_for_signature_scheme},
-};
+use crate::CryptoKeystoreResult;
+use crate::DatabaseKey;
+use crate::connection::idb_migration::legacy::connection::Database;
+use crate::connection::idb_migration::legacy::traits::Entity as _;
+use crate::connection::idb_migration::legacy::traits::EntityDatabaseMutation as _;
+use crate::entities::StoredCredential;
+use crate::migrations::LegacyPersistedMlsGroup;
+use crate::migrations::V6Credential;
+use crate::migrations::make_ciphersuite_for_signature_scheme;
 
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {

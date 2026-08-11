@@ -8,11 +8,10 @@
 // fixing them here.
 #![allow(unused_braces, renamed_and_removed_lints)]
 
-use crate::{
-    connection::idb_migration::legacy,
-    entities::StoredEpochEncryptionKeypair,
-    traits::{BorrowPrimaryKey, KeyType},
-};
+use crate::connection::idb_migration::legacy;
+use crate::entities::StoredEpochEncryptionKeypair;
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::KeyType;
 
 impl legacy::traits::EntityBase for StoredEpochEncryptionKeypair {
     type ConnectionType = legacy::connection::KeystoreDatabaseConnection;

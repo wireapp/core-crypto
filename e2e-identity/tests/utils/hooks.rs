@@ -1,16 +1,19 @@
 use std::collections::HashMap;
 
 use base64::Engine as _;
-use wire_e2e_identity::pki_env::hooks::{
-    HttpHeader, HttpMethod, HttpResponse, PkiEnvironmentHooks, PkiEnvironmentHooksError,
-};
+use wire_e2e_identity::pki_env::hooks::HttpHeader;
+use wire_e2e_identity::pki_env::hooks::HttpMethod;
+use wire_e2e_identity::pki_env::hooks::HttpResponse;
+use wire_e2e_identity::pki_env::hooks::PkiEnvironmentHooks;
+use wire_e2e_identity::pki_env::hooks::PkiEnvironmentHooksError;
 
-use crate::utils::{
-    OauthCfg, WireServer,
-    ctx::ctx_get_http_client_builder,
-    idp::{IdpServer, OidcProvider, fetch_id_token},
-    stepca::AcmeServer,
-};
+use crate::utils::OauthCfg;
+use crate::utils::WireServer;
+use crate::utils::ctx::ctx_get_http_client_builder;
+use crate::utils::idp::IdpServer;
+use crate::utils::idp::OidcProvider;
+use crate::utils::idp::fetch_id_token;
+use crate::utils::stepca::AcmeServer;
 
 #[derive(Debug)]
 pub(crate) struct TestPkiEnvironmentHooks {

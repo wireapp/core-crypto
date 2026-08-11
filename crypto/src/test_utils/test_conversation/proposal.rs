@@ -1,9 +1,11 @@
 use openmls::prelude::ExternalProposal;
 
-use super::{
-    super::{SessionContext, TestConversation},
-    operation_guard::{AddGuard, OperationGuard, Proposal, TestOperation},
-};
+use super::super::SessionContext;
+use super::super::TestConversation;
+use super::operation_guard::AddGuard;
+use super::operation_guard::OperationGuard;
+use super::operation_guard::Proposal;
+use super::operation_guard::TestOperation;
 
 impl<'a> TestConversation<'a> {
     /// Propose inviting a member and notify all members.

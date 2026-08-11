@@ -1,14 +1,17 @@
 #![allow(dead_code, unused_macros, unused_imports)]
 
-use std::{
-    array,
-    sync::{Arc, LazyLock},
-};
+use std::array;
+use std::sync::Arc;
+use std::sync::LazyLock;
 
-pub(crate) use core_crypto_keystore::{Database as CryptoKeystore, DatabaseKey};
-use core_crypto_keystore::{Database, UniqueArc, transaction::Transaction};
+pub(crate) use core_crypto_keystore::Database as CryptoKeystore;
+use core_crypto_keystore::Database;
+pub(crate) use core_crypto_keystore::DatabaseKey;
+use core_crypto_keystore::UniqueArc;
+use core_crypto_keystore::transaction::Transaction;
 pub(crate) use rstest::*;
-pub(crate) use rstest_reuse::{self, *};
+pub(crate) use rstest_reuse::*;
+pub(crate) use rstest_reuse::{self};
 
 pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(DatabaseKey::generate);
 
@@ -18,10 +21,9 @@ pub fn store_name() -> String {
     {
         // we may sometimes want to disable this for manual debugging
         if true {
-            use rand::{
-                Rng as _,
-                distributions::{Alphanumeric, DistString},
-            };
+            use rand::Rng as _;
+            use rand::distributions::Alphanumeric;
+            use rand::distributions::DistString;
             let mut rng = rand::thread_rng();
             let dynamism = Alphanumeric.sample_string(&mut rng, 12);
             format!("corecrypto.{dynamism}.test")

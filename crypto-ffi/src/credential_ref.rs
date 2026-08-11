@@ -1,6 +1,9 @@
 use core_crypto::CredentialRef as CryptoCredentialRef;
 
-use crate::{CipherSuite, ClientId, CredentialType, SignatureScheme};
+use crate::CipherSuite;
+use crate::ClientId;
+use crate::CredentialType;
+use crate::SignatureScheme;
 
 /// A compact reference to a credential that has been persisted in CoreCrypto.
 ///

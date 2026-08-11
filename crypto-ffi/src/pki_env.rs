@@ -1,13 +1,20 @@
-use std::{fmt, sync::Arc};
+use std::fmt;
+use std::sync::Arc;
 
 #[cfg(feature = "cancellable-transactions")]
-use futures_util::{FutureExt as _, TryFutureExt as _};
+use futures_util::FutureExt as _;
+#[cfg(feature = "cancellable-transactions")]
+use futures_util::TryFutureExt as _;
 use wire_e2e_identity::pki_env;
-use x509_cert::der::{DecodePem as _, EncodePem as _};
+use x509_cert::der::DecodePem as _;
+use x509_cert::der::EncodePem as _;
 
+use crate::CoreCryptoError;
+use crate::CoreCryptoFfi;
+use crate::CoreCryptoResult;
+use crate::Database;
 #[cfg(feature = "cancellable-transactions")]
 use crate::cancellation::CancellationSlot;
-use crate::{CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, Database};
 
 /// HttpMethod used for PKI hooks.
 #[derive(uniffi::Enum)]

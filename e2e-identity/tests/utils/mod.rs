@@ -22,7 +22,8 @@ pub(crate) const NETWORK: &str = "wire";
 pub(crate) const SHM: u64 = 8 * 1000 * 1000; // 8MB
 
 pub(crate) fn rand_str(size: usize) -> String {
-    use rand::distributions::{Alphanumeric, DistString};
+    use rand::distributions::Alphanumeric;
+    use rand::distributions::DistString;
     Alphanumeric.sample_string(&mut rand::thread_rng(), size)
 }
 

@@ -1,4 +1,5 @@
-use std::{any::Any, sync::Arc};
+use std::any::Any;
+use std::sync::Arc;
 
 use crate::connection::idb_migration::legacy::connection::DatabaseConnection;
 

@@ -1,7 +1,10 @@
-use openmls::prelude::{MlsMessageIn, MlsMessageOut};
-use tls_codec::{Deserialize as _, Serialize as _};
+use openmls::prelude::MlsMessageIn;
+use openmls::prelude::MlsMessageOut;
+use tls_codec::Deserialize as _;
+use tls_codec::Serialize as _;
 
-use super::{Error, Result};
+use super::Error;
+use super::Result;
 
 /// A Welcome Message as defined in RFC 9420.
 ///

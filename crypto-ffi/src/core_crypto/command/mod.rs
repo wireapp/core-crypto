@@ -7,8 +7,12 @@ use std::sync::Arc;
 use futures_util::FutureExt;
 
 #[cfg(feature = "cancellable-transactions")]
-use crate::{CoreCryptoCancellationToken, CoreCryptoError};
-use crate::{CoreCryptoContext, CoreCryptoFfi, CoreCryptoResult};
+use crate::CoreCryptoCancellationToken;
+use crate::CoreCryptoContext;
+#[cfg(feature = "cancellable-transactions")]
+use crate::CoreCryptoError;
+use crate::CoreCryptoFfi;
+use crate::CoreCryptoResult;
 
 /// A `CoreCryptoCommand` has an `execute` method which accepts a `CoreCryptoContext` and returns nothing.
 ///
@@ -167,14 +171,28 @@ mod tests {
     use std::sync::Arc;
 
     use async_lock::Semaphore;
-    use core_crypto::{CipherSuite as CryptoCipherSuite, Credential as CryptoCredential};
+    use core_crypto::CipherSuite as CryptoCipherSuite;
+    use core_crypto::Credential as CryptoCredential;
 
-    use crate::{
-        ClientId, CommitBundle, ConversationId, CoreCryptoCancellationToken, CoreCryptoCommand, CoreCryptoContext,
-        CoreCryptoResult, Credential, Database, DeviceId, EpochObserver, HistorySecret, MlsTransport, MlsTransportData,
-        MlsTransportResult, Uuid, cipher_suite_default, core_crypto::epoch_observer::EpochChangedReportingError,
-        core_crypto_new,
-    };
+    use crate::ClientId;
+    use crate::CommitBundle;
+    use crate::ConversationId;
+    use crate::CoreCryptoCancellationToken;
+    use crate::CoreCryptoCommand;
+    use crate::CoreCryptoContext;
+    use crate::CoreCryptoResult;
+    use crate::Credential;
+    use crate::Database;
+    use crate::DeviceId;
+    use crate::EpochObserver;
+    use crate::HistorySecret;
+    use crate::MlsTransport;
+    use crate::MlsTransportData;
+    use crate::MlsTransportResult;
+    use crate::Uuid;
+    use crate::cipher_suite_default;
+    use crate::core_crypto::epoch_observer::EpochChangedReportingError;
+    use crate::core_crypto_new;
 
     const CLIENT_UUID: &str = "00000000-0000-4000-8000-000000000000";
     const DOMAIN: &str = "example.com";

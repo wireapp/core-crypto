@@ -1,7 +1,6 @@
-use std::{
-    borrow::{Borrow, Cow},
-    ops::Deref,
-};
+use std::borrow::Borrow;
+use std::borrow::Cow;
+use std::ops::Deref;
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
 #[derive(

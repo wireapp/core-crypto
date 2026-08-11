@@ -1,15 +1,18 @@
-use std::{
-    collections::BTreeMap,
-    ops::Deref as _,
-    sync::{Arc, LazyLock, Once},
-};
+use std::collections::BTreeMap;
+use std::ops::Deref as _;
+use std::sync::Arc;
+use std::sync::LazyLock;
+use std::sync::Once;
 
 #[cfg(target_os = "unknown")]
 use js_sys::wasm_bindgen::JsValue;
-use log::{
-    Level, LevelFilter, Metadata, Record,
-    kv::{Key, Value, VisitSource},
-};
+use log::Level;
+use log::LevelFilter;
+use log::Metadata;
+use log::Record;
+use log::kv::Key;
+use log::kv::Value;
+use log::kv::VisitSource;
 use log_reload::ReloadLog;
 
 /// Defines the log level for CoreCrypto.

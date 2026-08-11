@@ -1,11 +1,14 @@
 //! These methods are specialized for performing certain entity-specific queries.
 
-use std::{borrow::Cow, sync::Arc};
+use std::borrow::Cow;
+use std::sync::Arc;
 
 use super::dynamic_dispatch::EntityId;
+use crate::CryptoKeystoreResult;
+use crate::entities::MlsPendingMessage;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::ProteusPrekey;
-use crate::{CryptoKeystoreResult, entities::MlsPendingMessage, transaction::Transaction};
+use crate::transaction::Transaction;
 
 impl Transaction {
     pub(crate) async fn remove_pending_messages_by_conversation_id(&self, conversation_id: impl AsRef<[u8]> + Send) {

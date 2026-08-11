@@ -5,7 +5,8 @@
 #[cfg(test)]
 mod tests {
     use super::super::error::Error;
-    use crate::{mls::key_package::KeypackageExt as _, test_utils::*};
+    use crate::mls::key_package::KeypackageExt as _;
+    use crate::test_utils::*;
 
     #[apply(all_cred_cipher)]
     pub async fn orphan_welcome_should_generate_external_commit(case: TestContext) {

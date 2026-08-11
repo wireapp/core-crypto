@@ -1,12 +1,25 @@
-use std::{fmt, sync::Arc, time::Duration};
+use std::fmt;
+use std::sync::Arc;
+use std::time::Duration;
 
-use core_crypto::{ConversationConfiguration, transaction_context::Error as TransactionError};
+use core_crypto::ConversationConfiguration;
+use core_crypto::transaction_context::Error as TransactionError;
 
-use crate::{
-    CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, Credential,
-    CredentialRef, DecryptedMessage, ExternalSender, KeyPackage, KeyPackageRef, MlsTransport,
-    bytes_wrapper::bytes_wrapper, core_crypto::mls_transport::callback_shim,
-};
+use crate::CipherSuite;
+use crate::ClientId;
+use crate::ConversationId;
+use crate::CoreCryptoContext;
+use crate::CoreCryptoError;
+use crate::CoreCryptoResult;
+use crate::Credential;
+use crate::CredentialRef;
+use crate::DecryptedMessage;
+use crate::ExternalSender;
+use crate::KeyPackage;
+use crate::KeyPackageRef;
+use crate::MlsTransport;
+use crate::bytes_wrapper::bytes_wrapper;
+use crate::core_crypto::mls_transport::callback_shim;
 
 bytes_wrapper!(
     /// A secret key derived from the group secret.

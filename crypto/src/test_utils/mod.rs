@@ -23,17 +23,35 @@ pub use openmls_traits::types::SignatureScheme;
 use uuid::Uuid;
 use wire_e2e_identity::pki_env::PkiEnvironment;
 
+pub(crate) use self::epoch_observer::TestEpochObserver;
+pub use self::error::Error as TestError;
 use self::error::Result;
-pub(crate) use self::{epoch_observer::TestEpochObserver, history_observer::TestHistoryObserver};
-pub use self::{error::Error as TestError, message::*, test_context::*, test_conversation::TestConversation};
+pub(crate) use self::history_observer::TestHistoryObserver;
+pub use self::message::*;
+pub use self::test_context::*;
+pub use self::test_conversation::TestConversation;
+use crate::CertificateBundle;
+use crate::ClientId;
+use crate::CommitBundle;
+use crate::ConversationId;
+use crate::CoreCrypto;
+use crate::Credential;
+use crate::CredentialRef;
 pub use crate::CredentialType;
-use crate::{
-    CertificateBundle, ClientId, CommitBundle, ConversationId, CoreCrypto, Credential, CredentialRef, Database,
-    DatabaseKey, Error, GroupInfoBundle, MlsTransport, RecursiveError, Session, TransportData,
-    mls::HistoryObserver,
-    test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
-    transaction_context::TransactionContext,
-};
+use crate::Database;
+use crate::DatabaseKey;
+use crate::Error;
+use crate::GroupInfoBundle;
+use crate::MlsTransport;
+use crate::RecursiveError;
+use crate::Session;
+use crate::TransportData;
+use crate::mls::HistoryObserver;
+use crate::test_utils::x509::CertificateParams;
+use crate::test_utils::x509::X509TestChain;
+use crate::test_utils::x509::X509TestChainActorArg;
+use crate::test_utils::x509::X509TestChainArgs;
+use crate::transaction_context::TransactionContext;
 
 pub const GROUP_SAMPLE_SIZE: usize = 9;
 
@@ -84,7 +102,9 @@ macro_rules! innermost_source_matches {
     }};
 }
 
-use crate::{RecursiveError::Test, ephemeral::HistorySecret, test_utils::TestError::ImplementationError};
+use crate::RecursiveError::Test;
+use crate::ephemeral::HistorySecret;
+use crate::test_utils::TestError::ImplementationError;
 
 #[derive(Debug, Clone)]
 pub struct SessionContext {
@@ -349,7 +369,8 @@ pub fn tmp_db_file() -> (String, tempfile::TempDir) {
 
 #[cfg(target_os = "unknown")]
 pub fn tmp_db_file() -> (String, ()) {
-    use rand::distributions::{Alphanumeric, DistString};
+    use rand::distributions::Alphanumeric;
+    use rand::distributions::DistString;
     let path = format!("{}.idb", Alphanumeric.sample_string(&mut rand::thread_rng(), 16));
     (path, ())
 }
@@ -434,9 +455,11 @@ impl MlsTransportTestExt for CoreCryptoTransportAbortProvider {
     }
 }
 
-use wire_e2e_identity::pki_env::hooks::{
-    HttpHeader, HttpMethod, HttpResponse, PkiEnvironmentHooks, PkiEnvironmentHooksError,
-};
+use wire_e2e_identity::pki_env::hooks::HttpHeader;
+use wire_e2e_identity::pki_env::hooks::HttpMethod;
+use wire_e2e_identity::pki_env::hooks::HttpResponse;
+use wire_e2e_identity::pki_env::hooks::PkiEnvironmentHooks;
+use wire_e2e_identity::pki_env::hooks::PkiEnvironmentHooksError;
 
 /// Dummy struct for tests
 #[derive(Debug, Default)]

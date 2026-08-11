@@ -1,13 +1,13 @@
-use std::{
-    borrow::{Borrow, Cow},
-    fmt,
-    ops::Deref,
-};
+use std::borrow::Borrow;
+use std::borrow::Cow;
+use std::fmt;
+use std::ops::Deref;
 
 use uuid::Uuid;
 use wire_e2e_identity::E2eiClientId;
 
-use super::error::{Error, Result};
+use super::error::Error;
+use super::error::Result;
 use crate::HISTORY_CLIENT_ID_PREFIX;
 
 /// A Client identifier

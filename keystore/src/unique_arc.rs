@@ -1,18 +1,20 @@
-use std::{
-    borrow::Borrow,
-    ops::Deref,
-    sync::{Arc, Weak},
-};
+use std::borrow::Borrow;
+use std::ops::Deref;
+use std::sync::Arc;
+use std::sync::Weak;
 
-use async_lock::{RwLock, RwLockReadGuardArc};
+use async_lock::RwLock;
+use async_lock::RwLockReadGuardArc;
 use async_trait::async_trait;
 
-use crate::{
-    CryptoKeystoreResult,
-    traits::{
-        BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, KeyType, SearchableEntity, UniqueEntityExt,
-    },
-};
+use crate::CryptoKeystoreResult;
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::Entity;
+use crate::traits::EntityGetBorrowed;
+use crate::traits::FetchFromDatabase;
+use crate::traits::KeyType;
+use crate::traits::SearchableEntity;
+use crate::traits::UniqueEntityExt;
 
 /// A smart pointer which has exactly one strong reference to the inner type,
 /// but may have several weak references.
@@ -198,7 +200,8 @@ where
 
 #[cfg(all(test, not(target_os = "unknown")))]
 mod tests {
-    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::atomic::AtomicBool;
+    use std::sync::atomic::Ordering;
 
     use async_lock::Semaphore;
     use futures_lite::future;

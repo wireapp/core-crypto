@@ -1,20 +1,25 @@
 use async_trait::async_trait;
 use js_sys::Uint8Array;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use wasm_bindgen::JsValue;
 
-use crate::{
-    CryptoKeystoreResult,
-    connection::idb_migration::legacy::{
-        connection::{KeystoreDatabaseConnection, TransactionWrapper},
-        traits::{
-            DecryptWithExplicitEncryptionKey as _, Decryptable, Decrypting, DeletableBySearchKey,
-            EncryptWithExplicitEncryptionKey as _, Encrypting, EncryptionKey, Entity, EntityBase,
-            EntityDatabaseMutation, SearchableEntity,
-        },
-    },
-    entities::{ConversationId, MlsPendingMessage},
-};
+use crate::CryptoKeystoreResult;
+use crate::connection::idb_migration::legacy::connection::KeystoreDatabaseConnection;
+use crate::connection::idb_migration::legacy::connection::TransactionWrapper;
+use crate::connection::idb_migration::legacy::traits::DecryptWithExplicitEncryptionKey as _;
+use crate::connection::idb_migration::legacy::traits::Decryptable;
+use crate::connection::idb_migration::legacy::traits::Decrypting;
+use crate::connection::idb_migration::legacy::traits::DeletableBySearchKey;
+use crate::connection::idb_migration::legacy::traits::EncryptWithExplicitEncryptionKey as _;
+use crate::connection::idb_migration::legacy::traits::Encrypting;
+use crate::connection::idb_migration::legacy::traits::EncryptionKey;
+use crate::connection::idb_migration::legacy::traits::Entity;
+use crate::connection::idb_migration::legacy::traits::EntityBase;
+use crate::connection::idb_migration::legacy::traits::EntityDatabaseMutation;
+use crate::connection::idb_migration::legacy::traits::SearchableEntity;
+use crate::entities::ConversationId;
+use crate::entities::MlsPendingMessage;
 
 impl EntityBase for MlsPendingMessage {
     type ConnectionType = KeystoreDatabaseConnection;

@@ -6,14 +6,15 @@ use std::collections::HashSet;
 use idb::builder::DatabaseBuilder;
 
 use super::DB_VERSION_6;
-use crate::{
-    CryptoKeystoreResult, DatabaseKey,
-    connection::idb_migration::legacy::{
-        connection::Database,
-        traits::{Entity as _, EntityBase as _, EntityDatabaseMutation as _},
-    },
-    migrations::{StoredSignatureKeypair, V5Credential, migrate_to_new_credential},
-};
+use crate::CryptoKeystoreResult;
+use crate::DatabaseKey;
+use crate::connection::idb_migration::legacy::connection::Database;
+use crate::connection::idb_migration::legacy::traits::Entity as _;
+use crate::connection::idb_migration::legacy::traits::EntityBase as _;
+use crate::connection::idb_migration::legacy::traits::EntityDatabaseMutation as _;
+use crate::migrations::StoredSignatureKeypair;
+use crate::migrations::V5Credential;
+use crate::migrations::migrate_to_new_credential;
 
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {

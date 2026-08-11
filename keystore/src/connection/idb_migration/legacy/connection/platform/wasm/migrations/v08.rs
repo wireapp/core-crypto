@@ -1,20 +1,20 @@
 //! This migration deduplicates credentials and creates a new object store, "mls_credentials_new".
 
-use idb::{
-    KeyPath,
-    builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder},
-};
+use idb::KeyPath;
+use idb::builder::DatabaseBuilder;
+use idb::builder::IndexBuilder;
+use idb::builder::ObjectStoreBuilder;
 
 use super::DB_VERSION_8;
-use crate::{
-    CryptoKeystoreResult, DatabaseKey,
-    connection::idb_migration::legacy::{
-        connection::Database,
-        traits::{Entity as _, EntityBase as _},
-    },
-    entities::StoredCredential,
-    migrations::{LegacyPersistedMlsGroup, detect_duplicate_credentials, make_least_used_ciphersuite},
-};
+use crate::CryptoKeystoreResult;
+use crate::DatabaseKey;
+use crate::connection::idb_migration::legacy::connection::Database;
+use crate::connection::idb_migration::legacy::traits::Entity as _;
+use crate::connection::idb_migration::legacy::traits::EntityBase as _;
+use crate::entities::StoredCredential;
+use crate::migrations::LegacyPersistedMlsGroup;
+use crate::migrations::detect_duplicate_credentials;
+use crate::migrations::make_least_used_ciphersuite;
 
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {

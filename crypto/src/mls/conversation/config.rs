@@ -3,15 +3,21 @@
 //! Either use [MlsConversationConfiguration] when creating a conversation or [MlsCustomConfiguration]
 //! when joining one by Welcome or external commit
 
-use openmls::prelude::{
-    Capabilities, CredentialType, PURE_CIPHERTEXT_WIRE_FORMAT_POLICY, PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
-    ProtocolVersion, RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy,
-};
+use openmls::prelude::Capabilities;
+use openmls::prelude::CredentialType;
+use openmls::prelude::PURE_CIPHERTEXT_WIRE_FORMAT_POLICY;
+use openmls::prelude::PURE_PLAINTEXT_WIRE_FORMAT_POLICY;
+use openmls::prelude::ProtocolVersion;
+use openmls::prelude::RequiredCapabilitiesExtension;
+use openmls::prelude::SenderRatchetConfiguration;
+use openmls::prelude::WireFormatPolicy;
 use openmls_traits::types::Ciphersuite as MlsCiphersuite;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 use super::Result;
-use crate::{CipherSuite, ExternalSender};
+use crate::CipherSuite;
+use crate::ExternalSender;
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -157,14 +163,15 @@ impl From<WirePolicy> for WireFormatPolicy {
 #[cfg(test)]
 mod tests {
     use openmls::prelude::ProtocolVersion;
-    use openmls_traits::{
-        OpenMlsCryptoProvider,
-        crypto::OpenMlsCrypto,
-        types::{SignatureScheme, VerifiableCiphersuite},
-    };
+    use openmls_traits::OpenMlsCryptoProvider;
+    use openmls_traits::crypto::OpenMlsCrypto;
+    use openmls_traits::types::SignatureScheme;
+    use openmls_traits::types::VerifiableCiphersuite;
     use wire_e2e_identity::JwsAlgorithm;
 
-    use crate::{ConversationConfiguration, ExternalSender, test_utils::*};
+    use crate::ConversationConfiguration;
+    use crate::ExternalSender;
+    use crate::test_utils::*;
 
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn group_should_have_required_capabilities() {

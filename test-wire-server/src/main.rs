@@ -8,7 +8,8 @@ mod non_wasm;
 
 #[cfg(not(target_os = "unknown"))]
 fn main() {
-    use crate::non_wasm::{bind_socket, run_server};
+    use crate::non_wasm::bind_socket;
+    use crate::non_wasm::run_server;
     // smol single-threaded executor
     smol::block_on(async {
         // bind to a local socket

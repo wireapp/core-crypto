@@ -6,27 +6,35 @@
 mod legacy;
 
 use idb::Factory;
-use rusqlite::{Connection, OptionalExtension as _};
+use rusqlite::Connection;
+use rusqlite::OptionalExtension as _;
 
-use self::legacy::connection::{DatabaseConnection as _, KeystoreDatabaseConnection};
+use self::legacy::connection::DatabaseConnection as _;
+use self::legacy::connection::KeystoreDatabaseConnection;
+use crate::CryptoKeystoreResult;
+use crate::DatabaseKey;
+use crate::connection::idb_migration::legacy::entities::mls::e2ei_acme_ca::E2eiAcmeCA;
+use crate::connection::idb_migration::legacy::entities::mls::e2ei_crl::E2eiCrl;
+use crate::connection::idb_migration::legacy::entities::mls::e2ei_intermediate_cert::E2eiIntermediateCert;
+use crate::connection::idb_migration::legacy::entities::mls::stored_keypackage::StoredKeypackage;
+use crate::connection::migrations::MigrationTarget;
+use crate::entities::ConsumerData;
+use crate::entities::MlsPendingMessage;
+use crate::entities::PersistedMlsPendingGroup;
 #[cfg(feature = "proteus-keystore")]
-use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
-use crate::{
-    CryptoKeystoreResult, DatabaseKey,
-    connection::{
-        idb_migration::legacy::entities::mls::{
-            e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
-            stored_keypackage::StoredKeypackage,
-        },
-        migrations::MigrationTarget,
-    },
-    entities::{
-        ConsumerData, MlsPendingMessage, PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
-    },
-    migrations::LegacyPersistedMlsGroup,
-    traits::EntityDatabaseMutation as _,
-};
+use crate::entities::ProteusIdentity;
+#[cfg(feature = "proteus-keystore")]
+use crate::entities::ProteusPrekey;
+#[cfg(feature = "proteus-keystore")]
+use crate::entities::ProteusSession;
+use crate::entities::StoredBufferedCommit;
+use crate::entities::StoredCredential;
+use crate::entities::StoredEncryptionKeyPair;
+use crate::entities::StoredEpochEncryptionKeypair;
+use crate::entities::StoredHpkePrivateKey;
+use crate::entities::StoredPskBundle;
+use crate::migrations::LegacyPersistedMlsGroup;
+use crate::traits::EntityDatabaseMutation as _;
 
 /// Returns `true` if a legacy IndexedDB database with the given name exists and contains data.
 ///

@@ -1,11 +1,14 @@
-use core_crypto_keystore::{Transaction, entities::PersistedMlsGroup};
-use openmls::group::{InnerState, MlsGroup};
+use core_crypto_keystore::Transaction;
+use core_crypto_keystore::entities::PersistedMlsGroup;
+use openmls::group::InnerState;
+use openmls::group::MlsGroup;
 
-use super::{ConversationMut, Result};
-use crate::{
-    KeystoreError, RecursiveError,
-    mls::conversation::{Conversation, ConversationIdRef},
-};
+use super::ConversationMut;
+use super::Result;
+use crate::KeystoreError;
+use crate::RecursiveError;
+use crate::mls::conversation::Conversation;
+use crate::mls::conversation::ConversationIdRef;
 
 impl ConversationMut {
     /// Perform an operation on a mutable reference to the contained MLS group.

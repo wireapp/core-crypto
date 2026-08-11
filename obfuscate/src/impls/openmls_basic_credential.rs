@@ -3,7 +3,8 @@ use std::fmt::Formatter;
 use hex::ToHex as _;
 use openmls_basic_credential::SignatureKeyPair;
 
-use crate::{Obfuscate, compute_hash};
+use crate::Obfuscate;
+use crate::compute_hash;
 
 impl Obfuscate for SignatureKeyPair {
     fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {

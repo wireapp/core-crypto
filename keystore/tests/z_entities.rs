@@ -1,5 +1,6 @@
 pub use rstest::*;
-pub use rstest_reuse::{self, *};
+pub use rstest_reuse::*;
+pub use rstest_reuse::{self};
 
 mod common;
 
@@ -61,21 +62,25 @@ macro_rules! test_for_entity {
 
 #[cfg(test)]
 mod tests_impl {
-    use std::{any::Any, borrow::Borrow, sync::Arc};
+    use std::any::Any;
+    use std::borrow::Borrow;
+    use std::sync::Arc;
 
-    use core_crypto_keystore::{
-        entities::{MlsPendingMessage, PersistedMlsPendingGroup, StoredCredential},
-        traits::{
-            Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase as _, KeyType,
-            PrimaryKey as _,
-        },
-    };
+    use core_crypto_keystore::entities::MlsPendingMessage;
+    use core_crypto_keystore::entities::PersistedMlsPendingGroup;
+    use core_crypto_keystore::entities::StoredCredential;
+    use core_crypto_keystore::traits::Entity;
+    use core_crypto_keystore::traits::EntityDatabaseMutation;
+    use core_crypto_keystore::traits::EntityDeleteBorrowed;
+    use core_crypto_keystore::traits::EntityGetBorrowed;
+    use core_crypto_keystore::traits::FetchFromDatabase as _;
+    use core_crypto_keystore::traits::KeyType;
+    use core_crypto_keystore::traits::PrimaryKey as _;
 
     use super::common::*;
-    use crate::{
-        ENTITY_COUNT,
-        utils::{EntityRandomExt, EntityRandomUpdateExt},
-    };
+    use crate::ENTITY_COUNT;
+    use crate::utils::EntityRandomExt;
+    use crate::utils::EntityRandomUpdateExt;
 
     /// Assert that no keystore transaction is in flight.
     ///
@@ -365,11 +370,17 @@ mod tests {
 
 #[cfg(test)]
 pub mod utils {
-    use core_crypto_keystore::entities::{
-        MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusSession, StoredCredential,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
-        X509TrustAnchor,
-    };
+    use core_crypto_keystore::entities::MlsPendingMessage;
+    use core_crypto_keystore::entities::PersistedMlsGroup;
+    use core_crypto_keystore::entities::PersistedMlsPendingGroup;
+    use core_crypto_keystore::entities::ProteusSession;
+    use core_crypto_keystore::entities::StoredCredential;
+    use core_crypto_keystore::entities::StoredEncryptionKeyPair;
+    use core_crypto_keystore::entities::StoredEpochEncryptionKeypair;
+    use core_crypto_keystore::entities::StoredHpkePrivateKey;
+    use core_crypto_keystore::entities::StoredKeyPackage;
+    use core_crypto_keystore::entities::StoredPskBundle;
+    use core_crypto_keystore::entities::X509TrustAnchor;
     use rand::Rng as _;
 
     const MAX_BLOB_SIZE: std::ops::Range<usize> = 1024..8192;

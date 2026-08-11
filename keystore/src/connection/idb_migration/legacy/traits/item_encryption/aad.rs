@@ -1,5 +1,6 @@
 use super::super::Entity;
-use crate::{CryptoKeystoreResult, traits::KeyType as _};
+use crate::CryptoKeystoreResult;
+use crate::traits::KeyType as _;
 
 pub(super) const AES_GCM_256_NONCE_SIZE: usize = 12;
 

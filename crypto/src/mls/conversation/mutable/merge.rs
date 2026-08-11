@@ -29,8 +29,10 @@
 
 use core_crypto_keystore::entities::StoredEncryptionKeyPair;
 
-use super::{ConversationMut, Result};
-use crate::{OpenMlsError, mls::conversation::Error};
+use super::ConversationMut;
+use super::Result;
+use crate::OpenMlsError;
+use crate::mls::conversation::Error;
 
 impl ConversationMut {
     /// Apply a pending commit

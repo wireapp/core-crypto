@@ -10,11 +10,11 @@
 
 use zeroize::Zeroize;
 
-use crate::{
-    CryptoKeystoreResult,
-    connection::idb_migration::legacy,
-    traits::{BorrowPrimaryKey, KeyType, PrimaryKey},
-};
+use crate::CryptoKeystoreResult;
+use crate::connection::idb_migration::legacy;
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::KeyType;
+use crate::traits::PrimaryKey;
 
 #[cfg(target_os = "unknown")]
 #[derive(Zeroize)]

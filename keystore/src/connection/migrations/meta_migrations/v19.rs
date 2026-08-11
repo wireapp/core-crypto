@@ -1,9 +1,9 @@
-use crate::{
-    CryptoKeystoreResult,
-    entities::StoredCredential,
-    migrations::{LegacyPersistedMlsGroup, detect_duplicate_credentials, make_least_used_ciphersuite},
-    traits::Entity as _,
-};
+use crate::CryptoKeystoreResult;
+use crate::entities::StoredCredential;
+use crate::migrations::LegacyPersistedMlsGroup;
+use crate::migrations::detect_duplicate_credentials;
+use crate::migrations::make_least_used_ciphersuite;
+use crate::traits::Entity as _;
 
 pub(crate) const VERSION: i32 = 19;
 

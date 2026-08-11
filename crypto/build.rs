@@ -1,4 +1,7 @@
-use vergen_gitcl::{Build, Cargo, Emitter, Gitcl};
+use vergen_gitcl::Build;
+use vergen_gitcl::Cargo;
+use vergen_gitcl::Emitter;
+use vergen_gitcl::Gitcl;
 
 fn main() -> anyhow::Result<()> {
     // Target aliases

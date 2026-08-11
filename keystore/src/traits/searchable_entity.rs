@@ -1,9 +1,10 @@
-use rusqlite::{Connection, Transaction};
+use rusqlite::Connection;
+use rusqlite::Transaction;
 
-use crate::{
-    CryptoKeystoreResult,
-    traits::{Entity, EntityDatabaseMutation, KeyType},
-};
+use crate::CryptoKeystoreResult;
+use crate::traits::Entity;
+use crate::traits::EntityDatabaseMutation;
+use crate::traits::KeyType;
 
 pub trait SearchableEntity<SearchKey: KeyType>: Entity {
     /// Find all entities matching the search key.

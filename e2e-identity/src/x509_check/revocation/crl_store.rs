@@ -1,19 +1,24 @@
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, Mutex, MutexGuard},
-};
+use std::collections::BTreeMap;
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::MutexGuard;
 
-use certval::{CrlScope, CrlSource, ExtensionProcessing, PDVCertificate, PDVExtension, name_to_string};
+use certval::CrlScope;
+use certval::CrlSource;
+use certval::ExtensionProcessing;
+use certval::PDVCertificate;
+use certval::PDVExtension;
+use certval::name_to_string;
 use const_oid::db::rfc5912::ID_CE_AUTHORITY_KEY_IDENTIFIER;
-use x509_cert::{crl::CertificateList, der::Encode};
+use x509_cert::crl::CertificateList;
+use x509_cert::der::Encode;
 
-use crate::x509_check::{
-    RustyX509CheckError, RustyX509CheckResult,
-    revocation::{
-        crl_info::CrlInfo,
-        misc::{check_crl_valid_at_toi, get_dp_from_crl, get_dps_from_cert},
-    },
-};
+use crate::x509_check::RustyX509CheckError;
+use crate::x509_check::RustyX509CheckResult;
+use crate::x509_check::revocation::crl_info::CrlInfo;
+use crate::x509_check::revocation::misc::check_crl_valid_at_toi;
+use crate::x509_check::revocation::misc::get_dp_from_crl;
+use crate::x509_check::revocation::misc::get_dps_from_cert;
 
 type IssuerMap = BTreeMap<String, Vec<usize>>;
 type SkidMap = BTreeMap<Vec<u8>, Vec<usize>>;

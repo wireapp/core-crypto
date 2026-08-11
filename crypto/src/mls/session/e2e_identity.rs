@@ -1,18 +1,23 @@
 use futures_util::TryFutureExt;
-use openmls::{
-    prelude::{Credential, Node, group_info::VerifiableGroupInfo},
-    treesync::RatchetTree,
-};
+use openmls::prelude::Credential;
+use openmls::prelude::Node;
+use openmls::prelude::group_info::VerifiableGroupInfo;
+use openmls::treesync::RatchetTree;
 use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::WireIdentityReader as _;
 
-use super::{Result, Session};
-use crate::{
-    CipherSuite, CredentialFindFilters, CredentialRef, CredentialType, E2eiConversationState, OpenMlsError,
-    RecursiveError,
-    mls::{credential::ext::CredentialExt as _, session::Error},
-    mls_provider::AuthenticationService,
-};
+use super::Result;
+use super::Session;
+use crate::CipherSuite;
+use crate::CredentialFindFilters;
+use crate::CredentialRef;
+use crate::CredentialType;
+use crate::E2eiConversationState;
+use crate::OpenMlsError;
+use crate::RecursiveError;
+use crate::mls::credential::ext::CredentialExt as _;
+use crate::mls::session::Error;
+use crate::mls_provider::AuthenticationService;
 
 impl Session {
     /// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)

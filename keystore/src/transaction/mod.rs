@@ -6,18 +6,23 @@ mod mls;
 pub mod proteus;
 mod specializations;
 
-use std::{borrow::Cow, collections::HashSet, sync::Arc};
+use std::borrow::Cow;
+use std::collections::HashSet;
+use std::sync::Arc;
 
-use async_lock::{RwLock, SemaphoreGuardArc};
+use async_lock::RwLock;
+use async_lock::SemaphoreGuardArc;
 use itertools::Itertools;
 use ordermap::OrderMap;
 use rusqlite::TransactionBehavior;
 
-use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc,
-    traits::{Entity, KeyType},
-    transaction::dynamic_dispatch::EntityId,
-};
+use crate::CryptoKeystoreError;
+use crate::CryptoKeystoreResult;
+use crate::Database;
+use crate::UniqueArc;
+use crate::traits::Entity;
+use crate::traits::KeyType;
+use crate::transaction::dynamic_dispatch::EntityId;
 
 pub(crate) mod dynamic_dispatch;
 

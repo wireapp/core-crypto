@@ -1,30 +1,50 @@
-use std::{borrow::Cow, collections::HashMap, env, net::SocketAddr, process::Command, sync::OnceLock};
+use std::borrow::Cow;
+use std::collections::HashMap;
+use std::env;
+use std::net::SocketAddr;
+use std::process::Command;
+use std::sync::OnceLock;
 
 use http::header;
 use itertools::Itertools as _;
-use keycloak::{
-    KeycloakAdmin, KeycloakAdminToken,
-    types::{ClientRepresentation, CredentialRepresentation, ProtocolMapperRepresentation, UserRepresentation},
-};
-use oauth2::{CsrfToken, PkceCodeChallenge, RedirectUrl, Scope};
-use openidconnect::{
-    IssuerUrl, Nonce,
-    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
-};
+use keycloak::KeycloakAdmin;
+use keycloak::KeycloakAdminToken;
+use keycloak::types::ClientRepresentation;
+use keycloak::types::CredentialRepresentation;
+use keycloak::types::ProtocolMapperRepresentation;
+use keycloak::types::UserRepresentation;
+use oauth2::CsrfToken;
+use oauth2::PkceCodeChallenge;
+use oauth2::RedirectUrl;
+use oauth2::Scope;
+use openidconnect::IssuerUrl;
+use openidconnect::Nonce;
+use openidconnect::core::CoreAuthenticationFlow;
+use openidconnect::core::CoreClient;
+use openidconnect::core::CoreProviderMetadata;
 use serde_json::json;
-use testcontainers::{
-    Image, ImageExt, ReuseDirective,
-    core::{ContainerPort, IntoContainerPort, Mount, WaitFor},
-    runners::AsyncRunner,
-};
+use testcontainers::Image;
+use testcontainers::ImageExt;
+use testcontainers::ReuseDirective;
+use testcontainers::core::ContainerPort;
+use testcontainers::core::IntoContainerPort;
+use testcontainers::core::Mount;
+use testcontainers::core::WaitFor;
+use testcontainers::runners::AsyncRunner;
 use url::Url;
 
-use crate::utils::{
-    NETWORK, SHM,
-    ctx::{ctx_get_http_client, custom_oauth_client},
-    idp::{IdpServer, IdpServerConfig, OAUTH_CLIENT_ID, OAUTH_CLIENT_NAME, OauthCfg, OidcProvider, User},
-    scrap_login,
-};
+use crate::utils::NETWORK;
+use crate::utils::SHM;
+use crate::utils::ctx::ctx_get_http_client;
+use crate::utils::ctx::custom_oauth_client;
+use crate::utils::idp::IdpServer;
+use crate::utils::idp::IdpServerConfig;
+use crate::utils::idp::OAUTH_CLIENT_ID;
+use crate::utils::idp::OAUTH_CLIENT_NAME;
+use crate::utils::idp::OauthCfg;
+use crate::utils::idp::OidcProvider;
+use crate::utils::idp::User;
+use crate::utils::scrap_login;
 
 #[derive(Debug)]
 struct KeycloakImage {

@@ -2,10 +2,13 @@ mod check;
 
 use std::sync::Arc;
 
-use super::{Error, Result};
-use crate::{
-    Credential, CredentialRef, RecursiveError, mls::conversation::Conversation, transaction_context::TransactionContext,
-};
+use super::Error;
+use super::Result;
+use crate::Credential;
+use crate::CredentialRef;
+use crate::RecursiveError;
+use crate::mls::conversation::Conversation;
+use crate::transaction_context::TransactionContext;
 
 impl TransactionContext {
     /// Add a credential to the database of this session without validating that its client ID matches the session

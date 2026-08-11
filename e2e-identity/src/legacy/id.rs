@@ -1,6 +1,7 @@
 use base64::Engine;
 
-use super::{Error, Result};
+use super::Error;
+use super::Result;
 
 #[cfg(test)]
 const DOMAIN: &str = "wire.com";

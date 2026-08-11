@@ -1,11 +1,12 @@
 use jwt_simple::prelude::*;
-use rusty_jwt_tools::{
-    jwk::TryIntoJwk,
-    prelude::{HashAlgorithm, JwkThumbprint, JwsAlgorithm},
-};
+use rusty_jwt_tools::jwk::TryIntoJwk;
+use rusty_jwt_tools::prelude::HashAlgorithm;
+use rusty_jwt_tools::prelude::JwkThumbprint;
+use rusty_jwt_tools::prelude::JwsAlgorithm;
 use x509_cert::spki::SubjectPublicKeyInfoOwned;
 
-use crate::{acme::RustyAcmeResult, acquisition::error::CertificateError};
+use crate::acme::RustyAcmeResult;
+use crate::acquisition::error::CertificateError;
 
 /// Used to compute the MLS thumbprint of a Basic Credential
 pub fn compute_raw_key_thumbprint(
@@ -34,10 +35,12 @@ pub(crate) fn try_compute_jwk_canonicalized_thumbprint(
 }
 
 fn try_into_jwk(spki: &SubjectPublicKeyInfoOwned) -> Result<Jwk, CertificateError> {
-    use const_oid::db::{
-        rfc5912::{ID_EC_PUBLIC_KEY, SECP_256_R_1, SECP_384_R_1, SECP_521_R_1},
-        rfc8410::{ID_ED_448, ID_ED_25519},
-    };
+    use const_oid::db::rfc5912::ID_EC_PUBLIC_KEY;
+    use const_oid::db::rfc5912::SECP_256_R_1;
+    use const_oid::db::rfc5912::SECP_384_R_1;
+    use const_oid::db::rfc5912::SECP_521_R_1;
+    use const_oid::db::rfc8410::ID_ED_448;
+    use const_oid::db::rfc8410::ID_ED_25519;
     let params = spki
         .algorithm
         .parameters

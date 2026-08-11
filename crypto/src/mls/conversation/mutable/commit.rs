@@ -1,17 +1,23 @@
 //! The methods in this module all produce or handle commits.
 
-use std::{borrow::Borrow, collections::HashMap};
+use std::borrow::Borrow;
+use std::collections::HashMap;
 
 use openmls::prelude::KeyPackageIn;
 
 use super::history_sharing::HistoryClientUpdateOutcome;
-use crate::{
-    ClientId, ClientIdRef, CredentialRef, GroupInfoBundle, LeafError, OpenMlsError, RecursiveError,
-    mls::{
-        conversation::{ConversationMut, Error, Result, commit::CommitBundle},
-        credential::Credential,
-    },
-};
+use crate::ClientId;
+use crate::ClientIdRef;
+use crate::CredentialRef;
+use crate::GroupInfoBundle;
+use crate::LeafError;
+use crate::OpenMlsError;
+use crate::RecursiveError;
+use crate::mls::conversation::ConversationMut;
+use crate::mls::conversation::Error;
+use crate::mls::conversation::Result;
+use crate::mls::conversation::commit::CommitBundle;
+use crate::mls::credential::Credential;
 
 impl ConversationMut {
     pub(super) async fn send_and_merge_commit(&mut self, commit: CommitBundle) -> Result<()> {

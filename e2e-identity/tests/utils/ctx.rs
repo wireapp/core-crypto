@@ -1,12 +1,11 @@
 //! Test helper for sharing data between the resource server (wire-server) and the client which
 //! is responsible for displaying them.
 
-use std::{
-    collections::HashMap,
-    net::SocketAddr,
-    str::FromStr,
-    sync::{LazyLock, Mutex},
-};
+use std::collections::HashMap;
+use std::net::SocketAddr;
+use std::str::FromStr;
+use std::sync::LazyLock;
+use std::sync::Mutex;
 
 use base64::Engine;
 use http::Method;

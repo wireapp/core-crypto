@@ -1,11 +1,11 @@
 use std::fmt;
 
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use sha2::Sha256;
 
-use crate::{
-    CryptoKeystoreResult,
-    traits::{KeyType, OwnedKeyType},
-};
+use crate::CryptoKeystoreResult;
+use crate::traits::KeyType;
+use crate::traits::OwnedKeyType;
 
 /// Used to calculate ID hashes for some MlsEntities' SQLite tables.
 pub(crate) fn sha256(data: &[u8]) -> String {

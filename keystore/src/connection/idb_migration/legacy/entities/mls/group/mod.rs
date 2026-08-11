@@ -3,18 +3,18 @@ pub(crate) mod legacy_persisted_mls_group;
 
 use async_trait::async_trait;
 use idb::TransactionMode;
-use js_sys::{Array, Number};
+use js_sys::Array;
+use js_sys::Number;
 use wasm_bindgen::JsValue;
 
-use crate::{
-    CryptoKeystoreResult,
-    connection::idb_migration::legacy::{
-        connection::storage::WasmStorageWrapper,
-        traits::{Decryptable, Decrypting, EntityBase, SearchableEntity},
-    },
-    entities::ParentGroupId,
-    migrations::LegacyPersistedMlsGroup,
-};
+use crate::CryptoKeystoreResult;
+use crate::connection::idb_migration::legacy::connection::storage::WasmStorageWrapper;
+use crate::connection::idb_migration::legacy::traits::Decryptable;
+use crate::connection::idb_migration::legacy::traits::Decrypting;
+use crate::connection::idb_migration::legacy::traits::EntityBase;
+use crate::connection::idb_migration::legacy::traits::SearchableEntity;
+use crate::entities::ParentGroupId;
+use crate::migrations::LegacyPersistedMlsGroup;
 
 #[async_trait(?Send)]
 impl<'a> SearchableEntity<ParentGroupId<'a>> for LegacyPersistedMlsGroup {

@@ -5,9 +5,12 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
-use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn};
+use openmls::binary_tree::LeafNodeIndex;
+use openmls::framing::MlsMessageOut;
+use openmls::key_packages::KeyPackageIn;
 
-use super::{ConversationMut, Result};
+use super::ConversationMut;
+use super::Result;
 use crate::OpenMlsError;
 
 /// Creating proposals
@@ -107,10 +110,12 @@ mod tests {
     }
 
     mod external_propose_remove {
-        use openmls::prelude::{ProcessMessageError, ValidationError};
+        use openmls::prelude::ProcessMessageError;
+        use openmls::prelude::ValidationError;
 
         use super::*;
-        use crate::{OpenMlsError, OpenMlsErrorKind};
+        use crate::OpenMlsError;
+        use crate::OpenMlsErrorKind;
 
         #[apply(all_cred_cipher)]
         async fn ds_should_remove_guest_from_conversation(mut case: TestContext) {

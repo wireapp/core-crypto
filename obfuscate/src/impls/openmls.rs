@@ -1,14 +1,17 @@
 use std::fmt::Formatter;
 
-use openmls::{
-    credentials::Certificate,
-    prelude::{
-        BasicCredential, Credential, KeyPackageSecretEncapsulation, Member, MlsCredentialType, Proposal,
-        QueuedProposal, Sender,
-    },
-};
+use openmls::credentials::Certificate;
+use openmls::prelude::BasicCredential;
+use openmls::prelude::Credential;
+use openmls::prelude::KeyPackageSecretEncapsulation;
+use openmls::prelude::Member;
+use openmls::prelude::MlsCredentialType;
+use openmls::prelude::Proposal;
+use openmls::prelude::QueuedProposal;
+use openmls::prelude::Sender;
 
-use crate::{Obfuscate, compute_hash};
+use crate::Obfuscate;
+use crate::compute_hash;
 
 impl Obfuscate for Proposal {
     fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {

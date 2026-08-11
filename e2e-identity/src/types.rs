@@ -1,7 +1,6 @@
-use crate::{
-    acme::AcmeChallenge,
-    error::{E2eIdentityError, E2eIdentityResult},
-};
+use crate::acme::AcmeChallenge;
+use crate::error::E2eIdentityError;
+use crate::error::E2eIdentityResult;
 
 pub(crate) type Json = serde_json::Value;
 

@@ -1,4 +1,5 @@
-use crate::{CoreCryptoResult, SignatureScheme};
+use crate::CoreCryptoResult;
+use crate::SignatureScheme;
 
 /// A RFC 9420 External Sender
 ///

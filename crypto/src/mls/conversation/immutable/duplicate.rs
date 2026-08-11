@@ -2,9 +2,15 @@
 //! in CoreCrypto so as not to return a decryption error to the client. Remove this when this is used
 //! with a DS guaranteeing exactly once delivery semantics since the following degrades the performances
 
-use openmls::prelude::{ContentType, FramedContentBodyIn, Proposal, PublicMessageIn, Sender};
+use openmls::prelude::ContentType;
+use openmls::prelude::FramedContentBodyIn;
+use openmls::prelude::Proposal;
+use openmls::prelude::PublicMessageIn;
+use openmls::prelude::Sender;
 
-use super::{Conversation, Error, Result};
+use super::Conversation;
+use super::Error;
+use super::Result;
 use crate::OpenMlsError;
 
 impl Conversation {
@@ -50,7 +56,8 @@ impl Conversation {
 
 #[cfg(test)]
 mod tests {
-    use crate::{mls::conversation::Error, test_utils::*};
+    use crate::mls::conversation::Error;
+    use crate::test_utils::*;
 
     #[apply(all_cred_cipher)]
     async fn decrypting_duplicate_member_commit_should_fail(case: TestContext) {

@@ -1,18 +1,22 @@
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
-use crate::{
-    CryptoKeystoreResult,
-    connection::idb_migration::legacy::{
-        connection::{KeystoreDatabaseConnection, TransactionWrapper},
-        traits::{
-            DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity, EntityBase, EntityDatabaseMutation,
-            EntityDeleteBorrowed, EntityGetBorrowed,
-        },
-    },
-    entities::PersistedMlsPendingGroup,
-    traits::KeyType as _,
-};
+use crate::CryptoKeystoreResult;
+use crate::connection::idb_migration::legacy::connection::KeystoreDatabaseConnection;
+use crate::connection::idb_migration::legacy::connection::TransactionWrapper;
+use crate::connection::idb_migration::legacy::traits::DecryptData;
+use crate::connection::idb_migration::legacy::traits::Decryptable;
+use crate::connection::idb_migration::legacy::traits::Decrypting;
+use crate::connection::idb_migration::legacy::traits::EncryptData;
+use crate::connection::idb_migration::legacy::traits::Encrypting;
+use crate::connection::idb_migration::legacy::traits::Entity;
+use crate::connection::idb_migration::legacy::traits::EntityBase;
+use crate::connection::idb_migration::legacy::traits::EntityDatabaseMutation;
+use crate::connection::idb_migration::legacy::traits::EntityDeleteBorrowed;
+use crate::connection::idb_migration::legacy::traits::EntityGetBorrowed;
+use crate::entities::PersistedMlsPendingGroup;
+use crate::traits::KeyType as _;
 
 impl EntityBase for PersistedMlsPendingGroup {
     type ConnectionType = KeystoreDatabaseConnection;

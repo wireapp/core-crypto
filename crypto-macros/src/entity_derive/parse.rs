@@ -1,8 +1,8 @@
-use darling::{
-    ast::Data,
-    util::{Flag, SpannedValue},
-};
-use syn::{Ident, Type};
+use darling::ast::Data;
+use darling::util::Flag;
+use darling::util::SpannedValue;
+use syn::Ident;
+use syn::Type;
 
 /// Parse the outer attributes.
 ///

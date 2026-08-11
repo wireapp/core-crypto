@@ -2,7 +2,11 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use crate::{ConversationId, CoreCryptoError, CoreCryptoFfi, CoreCryptoResult, HistorySecret};
+use crate::ConversationId;
+use crate::CoreCryptoError;
+use crate::CoreCryptoFfi;
+use crate::CoreCryptoResult;
+use crate::HistorySecret;
 
 /// An error returned by a `HistoryObserver` callback implementation.
 #[derive(Debug, thiserror::Error, uniffi::Error)]

@@ -23,32 +23,34 @@
 
 #![cfg(not(target_os = "unknown"))]
 
-use std::{
-    collections::{HashMap, HashSet},
-    net::SocketAddr,
-    sync::Arc,
-};
+use std::collections::HashMap;
+use std::collections::HashSet;
+use std::net::SocketAddr;
+use std::sync::Arc;
 
-use core_crypto_keystore::{Database, Transaction, UniqueArc};
+use core_crypto_keystore::Database;
+use core_crypto_keystore::Transaction;
+use core_crypto_keystore::UniqueArc;
 use jwt_simple::prelude::*;
 use rstest::rstest;
 use rusty_jwt_tools::prelude::*;
-use utils::{
-    TestEnvironment, WireServer,
-    ctx::ctx_store_http_client,
-    hooks::TestPkiEnvironmentHooks,
-    idp::{IdpServer, OidcProvider, start_idp_server},
-    rand_client_id, rand_str,
-    stepca::CaCfg,
-};
-use wire_e2e_identity::{
-    X509CredentialAcquisition, acquisition::X509CredentialConfiguration, pki_env::PkiEnvironment,
-    x509_check::extract_crl_uris,
-};
-use x509_cert::{
-    crl::CertificateList,
-    der::{Decode as _, DecodePem as _},
-};
+use utils::TestEnvironment;
+use utils::WireServer;
+use utils::ctx::ctx_store_http_client;
+use utils::hooks::TestPkiEnvironmentHooks;
+use utils::idp::IdpServer;
+use utils::idp::OidcProvider;
+use utils::idp::start_idp_server;
+use utils::rand_client_id;
+use utils::rand_str;
+use utils::stepca::CaCfg;
+use wire_e2e_identity::X509CredentialAcquisition;
+use wire_e2e_identity::acquisition::X509CredentialConfiguration;
+use wire_e2e_identity::pki_env::PkiEnvironment;
+use wire_e2e_identity::x509_check::extract_crl_uris;
+use x509_cert::crl::CertificateList;
+use x509_cert::der::Decode as _;
+use x509_cert::der::DecodePem as _;
 
 #[path = "utils/mod.rs"]
 mod utils;

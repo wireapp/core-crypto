@@ -3,18 +3,35 @@ use std::borrow::Cow;
 
 use rusqlite::Transaction;
 
+use crate::CryptoKeystoreError;
+use crate::CryptoKeystoreResult;
+use crate::entities::ConsumerData;
+use crate::entities::MlsPendingMessage;
+use crate::entities::PersistedMlsGroup;
+use crate::entities::PersistedMlsPendingGroup;
 #[cfg(feature = "proteus-keystore")]
-use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
-use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
-    entities::{
-        ConsumerData, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit,
-        StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredKeyPackage, StoredPskBundle, X509Crl, X509IntermediateCert, X509TrustAnchor,
-    },
-    traits::{BorrowPrimaryKey, DeletableBySearchKey as _, Entity, EntityDatabaseMutation, KeyType, OwnedKeyType as _},
-    transaction::dynamic_dispatch::EntityType,
-};
+use crate::entities::ProteusIdentity;
+#[cfg(feature = "proteus-keystore")]
+use crate::entities::ProteusPrekey;
+#[cfg(feature = "proteus-keystore")]
+use crate::entities::ProteusSession;
+use crate::entities::StoredBufferedCommit;
+use crate::entities::StoredCredential;
+use crate::entities::StoredEncryptionKeyPair;
+use crate::entities::StoredEpochEncryptionKeypair;
+use crate::entities::StoredHpkePrivateKey;
+use crate::entities::StoredKeyPackage;
+use crate::entities::StoredPskBundle;
+use crate::entities::X509Crl;
+use crate::entities::X509IntermediateCert;
+use crate::entities::X509TrustAnchor;
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::DeletableBySearchKey as _;
+use crate::traits::Entity;
+use crate::traits::EntityDatabaseMutation;
+use crate::traits::KeyType;
+use crate::traits::OwnedKeyType as _;
+use crate::transaction::dynamic_dispatch::EntityType;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct EntityId {

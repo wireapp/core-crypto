@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 
 use super::EntityBase;
-use crate::{
-    CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, KeyType, PrimaryKey},
-};
+use crate::CryptoKeystoreResult;
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::KeyType;
+use crate::traits::PrimaryKey;
 
 /// Something which can be stored in our database.
 ///

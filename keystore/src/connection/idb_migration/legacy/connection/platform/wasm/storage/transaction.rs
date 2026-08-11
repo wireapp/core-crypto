@@ -1,15 +1,17 @@
-use std::{cell::RefCell, rc::Rc};
+use std::cell::RefCell;
+use std::rc::Rc;
 
 use js_sys::Uint8Array;
 use serde::Serialize;
 use wasm_bindgen::JsValue;
 
-use super::{super::WasmConnection, InMemoryDB};
-use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
-    connection::idb_migration::legacy::traits::{Encrypting, Entity},
-    traits::KeyType,
-};
+use super::super::WasmConnection;
+use super::InMemoryDB;
+use crate::CryptoKeystoreError;
+use crate::CryptoKeystoreResult;
+use crate::connection::idb_migration::legacy::traits::Encrypting;
+use crate::connection::idb_migration::legacy::traits::Entity;
+use crate::traits::KeyType;
 
 // The lifetime is to comply with the sqlite implementation.
 pub(crate) enum WasmStorageTransaction<'a> {

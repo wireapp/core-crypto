@@ -1,12 +1,15 @@
-use rusty_jwt_tools::prelude::{ClientId, Handle, Pem};
-use x509_cert::{Certificate, anchor::TrustAnchorChoice};
+use rusty_jwt_tools::prelude::ClientId;
+use rusty_jwt_tools::prelude::Handle;
+use rusty_jwt_tools::prelude::Pem;
+use x509_cert::Certificate;
+use x509_cert::anchor::TrustAnchorChoice;
 
 use super::X509CredentialConfiguration;
-use crate::{
-    acquisition::{error::CertificateError, identity::WireIdentityReader as _},
-    pki_env::PkiEnvironment,
-    x509_check::revocation::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams},
-};
+use crate::acquisition::error::CertificateError;
+use crate::acquisition::identity::WireIdentityReader as _;
+use crate::pki_env::PkiEnvironment;
+use crate::x509_check::revocation::PkiEnvironment as RjtPkiEnvironment;
+use crate::x509_check::revocation::PkiEnvironmentParams;
 
 pub(crate) async fn verify_cert_chain(
     config: &X509CredentialConfiguration,

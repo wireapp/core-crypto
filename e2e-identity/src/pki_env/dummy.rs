@@ -2,10 +2,12 @@ use std::sync::Arc;
 
 use core_crypto_keystore::Database;
 
-use super::{
-    PkiEnvironment,
-    hooks::{HttpHeader, HttpMethod, HttpResponse, PkiEnvironmentHooks, PkiEnvironmentHooksError},
-};
+use super::PkiEnvironment;
+use super::hooks::HttpHeader;
+use super::hooks::HttpMethod;
+use super::hooks::HttpResponse;
+use super::hooks::PkiEnvironmentHooks;
+use super::hooks::PkiEnvironmentHooksError;
 
 #[derive(Debug, Default)]
 struct DummyPkiEnvironmentHooks;

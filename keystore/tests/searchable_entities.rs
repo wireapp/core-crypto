@@ -4,9 +4,12 @@
 //!   - putting `random_entity` and `get_search_key` into a trait
 //!   - writing a macro which generates the inner tests
 
-use rand::{Rng, RngCore, distributions::uniform::SampleRange};
+use rand::Rng;
+use rand::RngCore;
+use rand::distributions::uniform::SampleRange;
 pub use rstest::*;
-pub use rstest_reuse::{self, *};
+pub use rstest_reuse::*;
+pub use rstest_reuse::{self};
 use wasm_bindgen_test::*;
 
 mod common;
@@ -23,14 +26,15 @@ fn random_bytes(len: impl SampleRange<usize>) -> Vec<u8> {
 
 #[cfg(test)]
 mod stored_credential {
-    use core_crypto_keystore::{
-        entities::{CredentialFindFilters, StoredCredential},
-        traits::{FetchFromDatabase as _, PrimaryKey as _},
-    };
+    use core_crypto_keystore::entities::CredentialFindFilters;
+    use core_crypto_keystore::entities::StoredCredential;
+    use core_crypto_keystore::traits::FetchFromDatabase as _;
+    use core_crypto_keystore::traits::PrimaryKey as _;
     use rand::Rng;
     use rstest_reuse::apply;
 
-    use crate::{common::*, random_bytes};
+    use crate::common::*;
+    use crate::random_bytes;
 
     fn random_entity() -> StoredCredential {
         let mut rng = rand::thread_rng();

@@ -1,7 +1,9 @@
 use std::collections::HashSet;
 
-use log::{debug, trace};
-use openmls::{messages::proposals::Proposal, prelude::LeafNodeIndex};
+use log::debug;
+use log::trace;
+use openmls::messages::proposals::Proposal;
+use openmls::prelude::LeafNodeIndex;
 
 use super::Conversation;
 

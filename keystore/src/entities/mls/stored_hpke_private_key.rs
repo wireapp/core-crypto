@@ -1,6 +1,7 @@
 use zeroize::Zeroize;
 
-use crate::traits::{BorrowPrimaryKey, PrimaryKey};
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::PrimaryKey;
 
 /// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]

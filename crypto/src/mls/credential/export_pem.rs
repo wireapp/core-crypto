@@ -7,9 +7,11 @@
 use std::debug_assert_matches;
 
 use openmls::prelude::MlsCredentialType;
-use pem::{self, Pem};
+use pem::Pem;
+use pem::{self};
 
-use crate::{Credential, CredentialType};
+use crate::Credential;
+use crate::CredentialType;
 
 impl Credential {
     /// A basic credential is nothing but a signing key, so wrap that up in PEM format and call it a day.

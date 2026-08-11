@@ -1,12 +1,15 @@
 use obfuscate::Obfuscated;
-use rusty_jwt_tools::{jwk_thumbprint::JwkThumbprint, prelude::Pem};
+use rusty_jwt_tools::jwk_thumbprint::JwkThumbprint;
+use rusty_jwt_tools::prelude::Pem;
 use x509_cert::Certificate;
 
-use super::{Result, X509CredentialAcquisition, states};
-use crate::{
-    acme::{RustyAcme, RustyAcmeError},
-    pki_env::hooks::{HttpHeader, HttpMethod},
-};
+use super::Result;
+use super::X509CredentialAcquisition;
+use super::states;
+use crate::acme::RustyAcme;
+use crate::acme::RustyAcmeError;
+use crate::pki_env::hooks::HttpHeader;
+use crate::pki_env::hooks::HttpMethod;
 
 impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
     /// Complete the OIDC challenge and get the certificate chain.

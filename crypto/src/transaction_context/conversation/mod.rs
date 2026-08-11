@@ -4,14 +4,22 @@ pub mod external_commit;
 mod persistence;
 pub mod welcome;
 
-use core_crypto_keystore::{entities::PersistedMlsPendingGroup, traits::FetchFromDatabase as _};
+use core_crypto_keystore::entities::PersistedMlsPendingGroup;
+use core_crypto_keystore::traits::FetchFromDatabase as _;
 use openmls::group::MlsGroup;
 
-use super::{Error, Result, TransactionContext};
-use crate::{
-    ConversationConfiguration, CredentialRef, KeystoreError, LeafError, OpenMlsError, RecursiveError,
-    mls::conversation::{ConversationIdRef, ConversationMut, PendingConversation},
-};
+use super::Error;
+use super::Result;
+use super::TransactionContext;
+use crate::ConversationConfiguration;
+use crate::CredentialRef;
+use crate::KeystoreError;
+use crate::LeafError;
+use crate::OpenMlsError;
+use crate::RecursiveError;
+use crate::mls::conversation::ConversationIdRef;
+use crate::mls::conversation::ConversationMut;
+use crate::mls::conversation::PendingConversation;
 
 impl TransactionContext {
     /// Checks if a given conversation id exists locally.

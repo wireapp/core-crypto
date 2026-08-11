@@ -6,9 +6,14 @@
 //! On the other hand, the `KeyPackage` API isn't strictly ideal, so we improve on it here.
 
 pub use openmls::prelude::KeyPackage as Keypackage;
-use openmls::prelude::{KeyPackageRef as KpHashRef, Lifetime, SignatureScheme};
+use openmls::prelude::KeyPackageRef as KpHashRef;
+use openmls::prelude::Lifetime;
+use openmls::prelude::SignatureScheme;
 
-use crate::{CipherSuite, CredentialType, OpenMlsError, mls_provider::CRYPTO};
+use crate::CipherSuite;
+use crate::CredentialType;
+use crate::OpenMlsError;
+use crate::mls_provider::CRYPTO;
 
 /// Extensions on the `KeyPackage` type for nicer usage patterns.
 pub trait KeypackageExt {

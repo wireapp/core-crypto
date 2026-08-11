@@ -10,11 +10,12 @@
 
 use zeroize::Zeroize;
 
-use crate::{
-    CryptoKeystoreResult,
-    connection::idb_migration::legacy::{self, entities::mls::e2ei_acme_ca::E2eiAcmeCA},
-    traits::{BorrowPrimaryKey, KeyType, PrimaryKey},
-};
+use crate::CryptoKeystoreResult;
+use crate::connection::idb_migration::legacy::entities::mls::e2ei_acme_ca::E2eiAcmeCA;
+use crate::connection::idb_migration::legacy::{self};
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::KeyType;
+use crate::traits::PrimaryKey;
 
 #[derive(Zeroize)]
 #[zeroize(drop)]

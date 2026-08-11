@@ -1,10 +1,14 @@
 use std::sync::Arc;
 
 use jwt_simple::prelude::Jwk;
-use rusty_jwt_tools::prelude::{ClientId, Pem};
+use rusty_jwt_tools::prelude::ClientId;
+use rusty_jwt_tools::prelude::Pem;
 use uuid::Uuid;
 
-use super::{Result, X509CredentialAcquisition, X509CredentialConfiguration, states};
+use super::Result;
+use super::X509CredentialAcquisition;
+use super::X509CredentialConfiguration;
+use super::states;
 use crate::pki_env::PkiEnvironment;
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -46,13 +50,18 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
 #[cfg(test)]
 mod tests {
     use core_crypto_keystore::Database;
-    use rusty_jwt_tools::prelude::{HashAlgorithm, JwsAlgorithm};
+    use rusty_jwt_tools::prelude::HashAlgorithm;
+    use rusty_jwt_tools::prelude::JwsAlgorithm;
 
     use super::*;
-    use crate::{
-        acme::{AcmeAccount, AcmeChallenge, AcmeOrder},
-        pki_env::hooks::{HttpHeader, HttpMethod, HttpResponse, PkiEnvironmentHooks, PkiEnvironmentHooksError},
-    };
+    use crate::acme::AcmeAccount;
+    use crate::acme::AcmeChallenge;
+    use crate::acme::AcmeOrder;
+    use crate::pki_env::hooks::HttpHeader;
+    use crate::pki_env::hooks::HttpMethod;
+    use crate::pki_env::hooks::HttpResponse;
+    use crate::pki_env::hooks::PkiEnvironmentHooks;
+    use crate::pki_env::hooks::PkiEnvironmentHooksError;
 
     #[derive(Debug)]
     struct UnusedPkiEnvironmentHooks;

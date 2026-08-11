@@ -1,8 +1,7 @@
-use crate::{
-    CryptoKeystoreResult,
-    migrations::LegacyPersistedMlsGroup,
-    traits::{BorrowPrimaryKey, PrimaryKey},
-};
+use crate::CryptoKeystoreResult;
+use crate::migrations::LegacyPersistedMlsGroup;
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::PrimaryKey;
 
 impl LegacyPersistedMlsGroup {
     pub(crate) fn save(&self, tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()> {

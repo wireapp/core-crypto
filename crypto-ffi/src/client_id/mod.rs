@@ -6,7 +6,9 @@ use std::sync::Arc;
 
 use wire_e2e_identity::E2eiClientId;
 
-pub use crate::client_id::{device_id::DeviceId, serialize::DeserializedClientId, user_id::Uuid};
+pub use crate::client_id::device_id::DeviceId;
+pub use crate::client_id::serialize::DeserializedClientId;
+pub use crate::client_id::user_id::Uuid;
 
 /// A unique identifier for an MLS client.
 ///

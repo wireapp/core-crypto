@@ -1,6 +1,11 @@
-use rusty_jwt_tools::prelude::{JwsAlgorithm, Pem};
+use rusty_jwt_tools::prelude::JwsAlgorithm;
+use rusty_jwt_tools::prelude::Pem;
 
-use crate::acme::{AcmeDirectory, AcmeJws, RustyAcme, RustyAcmeError, RustyAcmeResult};
+use crate::acme::AcmeDirectory;
+use crate::acme::AcmeJws;
+use crate::acme::RustyAcme;
+use crate::acme::RustyAcmeError;
+use crate::acme::RustyAcmeResult;
 
 impl RustyAcme {
     /// 5. Create a new acme account see [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3)

@@ -1,7 +1,8 @@
 use rusqlite::Connection;
 use zeroize::Zeroize;
 
-use crate::traits::{BorrowPrimaryKey, PrimaryKey};
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::PrimaryKey;
 
 /// Entity representing a temporarily persisted `MlsGroup`
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]

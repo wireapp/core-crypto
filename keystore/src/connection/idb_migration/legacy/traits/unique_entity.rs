@@ -2,16 +2,25 @@ use async_trait::async_trait;
 #[cfg(target_os = "unknown")]
 use serde::de::DeserializeOwned;
 
-use super::{Decryptable, Encrypting, Entity, EntityBase, entity_database_mutation::EntityDatabaseMutation};
+use super::Decryptable;
+use super::Encrypting;
+use super::Entity;
+use super::EntityBase;
+use super::entity_database_mutation::EntityDatabaseMutation;
+use crate::CryptoKeystoreResult;
+use crate::connection::idb_migration::legacy::connection::KeystoreDatabaseConnection;
+use crate::connection::idb_migration::legacy::connection::TransactionWrapper;
 #[cfg(not(target_os = "unknown"))]
-use crate::entities::{count_helper, count_helper_tx, delete_helper, load_all_helper};
+use crate::entities::count_helper;
+#[cfg(not(target_os = "unknown"))]
+use crate::entities::count_helper_tx;
+#[cfg(not(target_os = "unknown"))]
+use crate::entities::delete_helper;
+#[cfg(not(target_os = "unknown"))]
+use crate::entities::load_all_helper;
 #[cfg(target_os = "unknown")]
 use crate::traits::KeyType as _;
-use crate::{
-    CryptoKeystoreResult,
-    connection::idb_migration::legacy::connection::{KeystoreDatabaseConnection, TransactionWrapper},
-    traits::PrimaryKey,
-};
+use crate::traits::PrimaryKey;
 
 /// A unique entity can appear either 0 or 1 times in the database.
 pub(crate) trait UniqueEntity: EntityBase<ConnectionType = KeystoreDatabaseConnection> + PrimaryKey {

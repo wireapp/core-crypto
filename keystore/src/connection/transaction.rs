@@ -7,10 +7,12 @@
 
 use std::sync::Arc;
 
-use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc, transaction::Transaction,
-    unique_arc::ArcWithReadGuard,
-};
+use crate::CryptoKeystoreError;
+use crate::CryptoKeystoreResult;
+use crate::Database;
+use crate::UniqueArc;
+use crate::transaction::Transaction;
+use crate::unique_arc::ArcWithReadGuard;
 
 /// These impls control the keystore transaction lifecycle.
 impl Database {
@@ -161,12 +163,16 @@ impl Database {
 
 #[cfg(all(test, not(target_os = "unknown")))]
 mod tests {
-    use std::{future::Future, time::Duration};
+    use std::future::Future;
+    use std::time::Duration;
 
     use futures_lite::future;
     use smol::Timer;
 
-    use crate::{CryptoKeystoreError, Database, entities::ConsumerData, traits::FetchFromDatabase as _};
+    use crate::CryptoKeystoreError;
+    use crate::Database;
+    use crate::entities::ConsumerData;
+    use crate::traits::FetchFromDatabase as _;
 
     const OUTER: &[u8] = b"written by the outer operation";
     const NESTED: &[u8] = b"written by the nested operation";

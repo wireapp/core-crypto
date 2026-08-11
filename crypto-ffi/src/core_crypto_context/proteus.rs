@@ -1,4 +1,7 @@
-use crate::{CoreCryptoContext, CoreCryptoResult, ProteusAutoPrekeyBundle, proteus_impl};
+use crate::CoreCryptoContext;
+use crate::CoreCryptoResult;
+use crate::ProteusAutoPrekeyBundle;
+use crate::proteus_impl;
 
 type BatchedEncryptedMessages = std::collections::HashMap<String, Vec<u8>>;
 

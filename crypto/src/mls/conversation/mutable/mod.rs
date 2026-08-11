@@ -13,12 +13,17 @@ use std::sync::Arc;
 use core_crypto_keystore::Database;
 use openmls::prelude::group_info::GroupInfo;
 
-use super::{Error, Result};
-use crate::{
-    CryptoProvider, GroupInfoBundle, LeafError, MlsTransport, RecursiveError, Session,
-    mls::{conversation::Conversation, credential::Credential},
-    transaction_context::TransactionContext,
-};
+use super::Error;
+use super::Result;
+use crate::CryptoProvider;
+use crate::GroupInfoBundle;
+use crate::LeafError;
+use crate::MlsTransport;
+use crate::RecursiveError;
+use crate::Session;
+use crate::mls::conversation::Conversation;
+use crate::mls::credential::Credential;
+use crate::transaction_context::TransactionContext;
 
 /// A mutable view of an MLS conversation.
 ///

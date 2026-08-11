@@ -1,11 +1,10 @@
 use async_trait::async_trait;
 
 use super::Entity;
-use crate::{
-    CryptoKeystoreResult,
-    connection::idb_migration::legacy::connection::KeystoreDatabaseConnection,
-    traits::{BorrowPrimaryKey, KeyType},
-};
+use crate::CryptoKeystoreResult;
+use crate::connection::idb_migration::legacy::connection::KeystoreDatabaseConnection;
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::KeyType;
 
 /// Extend an [`Entity`] with db-mutating operations which can be performed when provided with a transaction.
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]

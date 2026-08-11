@@ -5,14 +5,14 @@ use idb::builder::DatabaseBuilder;
 use serde::Serialize as _;
 
 use super::DB_VERSION_9;
-use crate::{
-    CryptoKeystoreResult, DatabaseKey,
-    connection::idb_migration::legacy::{
-        connection::{Database, platform::wasm::WasmStorageTransaction},
-        traits::{Encrypting as _, Entity as _, EntityBase as _},
-    },
-    entities::StoredCredential,
-};
+use crate::CryptoKeystoreResult;
+use crate::DatabaseKey;
+use crate::connection::idb_migration::legacy::connection::Database;
+use crate::connection::idb_migration::legacy::connection::platform::wasm::WasmStorageTransaction;
+use crate::connection::idb_migration::legacy::traits::Encrypting as _;
+use crate::connection::idb_migration::legacy::traits::Entity as _;
+use crate::connection::idb_migration::legacy::traits::EntityBase as _;
+use crate::entities::StoredCredential;
 
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {

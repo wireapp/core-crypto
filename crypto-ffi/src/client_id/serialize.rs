@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use crate::{ClientId, DeviceId, Uuid};
+use crate::ClientId;
+use crate::DeviceId;
+use crate::Uuid;
 
 /// This directly represents a `ClientId` of the `<userid>:<device-id>@<domain>` format.
 /// Instantiate via [ClientId::deserialize].

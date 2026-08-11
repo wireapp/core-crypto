@@ -1,7 +1,10 @@
 use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::Result;
-use crate::{KeystoreError, OpenMlsError, RecursiveError, mls::conversation::ConversationMut};
+use crate::KeystoreError;
+use crate::OpenMlsError;
+use crate::RecursiveError;
+use crate::mls::conversation::ConversationMut;
 
 impl ConversationMut {
     /// Destroys a group locally

@@ -1,9 +1,9 @@
-use crate::{
-    CryptoKeystoreResult,
-    entities::StoredCredential,
-    migrations::{LegacyPersistedMlsGroup, V6Credential, make_ciphersuite_for_signature_scheme},
-    traits::Entity as _,
-};
+use crate::CryptoKeystoreResult;
+use crate::entities::StoredCredential;
+use crate::migrations::LegacyPersistedMlsGroup;
+use crate::migrations::V6Credential;
+use crate::migrations::make_ciphersuite_for_signature_scheme;
+use crate::traits::Entity as _;
 
 pub(crate) const VERSION: i32 = 18;
 

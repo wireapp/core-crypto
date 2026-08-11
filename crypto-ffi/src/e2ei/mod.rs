@@ -3,11 +3,21 @@ pub(crate) mod x509_credential_acquisition_from_credential_ref;
 use std::sync::Arc;
 
 use async_lock::Mutex;
-use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPair};
-use wire_e2e_identity::{HashAlgorithm, JwsAlgorithm, acquisition::states};
+use jwt_simple::prelude::ES256KeyPair;
+use jwt_simple::prelude::ES384KeyPair;
+use jwt_simple::prelude::ES512KeyPair;
+use jwt_simple::prelude::Ed25519KeyPair;
+use wire_e2e_identity::HashAlgorithm;
+use wire_e2e_identity::JwsAlgorithm;
+use wire_e2e_identity::acquisition::states;
 use x509_cert::der::Encode as _;
 
-use crate::{CipherSuite as FfiCiphersuite, ClientId, CoreCryptoError, CoreCryptoResult, Credential, PkiEnvironment};
+use crate::CipherSuite as FfiCiphersuite;
+use crate::ClientId;
+use crate::CoreCryptoError;
+use crate::CoreCryptoResult;
+use crate::Credential;
+use crate::PkiEnvironment;
 
 /// The end-to-end identity verification state of a conversation.
 ///

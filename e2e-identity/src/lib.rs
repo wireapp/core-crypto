@@ -135,20 +135,28 @@ pub mod pki_env;
 pub mod utils;
 pub mod x509_check;
 
-pub use acme::{AcmeDirectory, RustyAcme, RustyAcmeError};
-pub use acquisition::{
-    X509CredentialAcquisition,
-    identity::{WireIdentity, WireIdentityReader},
-    thumbprint::compute_raw_key_thumbprint,
-};
-pub use error::{E2eIdentityError, E2eIdentityResult};
+pub use acme::AcmeDirectory;
+pub use acme::RustyAcme;
+pub use acme::RustyAcmeError;
+pub use acquisition::X509CredentialAcquisition;
+pub use acquisition::identity::WireIdentity;
+pub use acquisition::identity::WireIdentityReader;
+pub use acquisition::thumbprint::compute_raw_key_thumbprint;
+pub use error::E2eIdentityError;
+pub use error::E2eIdentityResult;
 pub use pki_env::NewCrlDistributionPoints;
+pub use rusty_jwt_tools::prelude::ClientId as E2eiClientId;
+pub use rusty_jwt_tools::prelude::Handle;
+pub use rusty_jwt_tools::prelude::HashAlgorithm;
+pub use rusty_jwt_tools::prelude::JwsAlgorithm;
+pub use rusty_jwt_tools::prelude::RustyJwtError;
 #[cfg(feature = "builder")]
 pub use rusty_jwt_tools::prelude::generate_jwk;
-pub use rusty_jwt_tools::prelude::{
-    ClientId as E2eiClientId, Handle, HashAlgorithm, JwsAlgorithm, RustyJwtError, parse_json_jwk,
-};
-pub use types::{
-    E2eiAcmeAccount, E2eiAcmeAuthorization, E2eiAcmeChallenge, E2eiAcmeFinalize, E2eiAcmeOrder, E2eiNewAcmeOrder,
-};
+pub use rusty_jwt_tools::prelude::parse_json_jwk;
+pub use types::E2eiAcmeAccount;
+pub use types::E2eiAcmeAuthorization;
+pub use types::E2eiAcmeChallenge;
+pub use types::E2eiAcmeFinalize;
+pub use types::E2eiAcmeOrder;
+pub use types::E2eiNewAcmeOrder;
 pub use x509_check::IdentityStatus;

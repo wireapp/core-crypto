@@ -8,11 +8,10 @@
 // fixing them here.
 #![allow(unused_braces, renamed_and_removed_lints)]
 
-use crate::{
-    connection::idb_migration::legacy,
-    entities::ProteusSession,
-    traits::{BorrowPrimaryKey, KeyType},
-};
+use crate::connection::idb_migration::legacy;
+use crate::entities::ProteusSession;
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::KeyType;
 
 impl legacy::traits::EntityBase for ProteusSession {
     type ConnectionType = legacy::connection::KeystoreDatabaseConnection;

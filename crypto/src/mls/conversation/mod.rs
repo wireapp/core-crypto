@@ -25,19 +25,27 @@ mod welcome;
 pub(crate) use immutable::MlsGroupState;
 pub(crate) use pending::PendingConversation;
 
-pub use self::{
-    commit::CommitBundle,
-    config::{ConversationConfiguration, CustomConfiguration, WirePolicy},
-    error::{Error, Result},
-    group_info::{GroupInfoBundle, GroupInfoEncryptionType, GroupInfoPayload, RatchetTreeType},
-    id::{ConversationId, ConversationIdRef},
-    immutable::Conversation,
-    mutable::{
-        ConversationMut,
-        decrypt::{BufferedCommit, BufferedDecryptedMessage, Commit, DecryptedMessage, Proposal, Text},
-    },
-    welcome::WelcomeMessage,
-};
+pub use self::commit::CommitBundle;
+pub use self::config::ConversationConfiguration;
+pub use self::config::CustomConfiguration;
+pub use self::config::WirePolicy;
+pub use self::error::Error;
+pub use self::error::Result;
+pub use self::group_info::GroupInfoBundle;
+pub use self::group_info::GroupInfoEncryptionType;
+pub use self::group_info::GroupInfoPayload;
+pub use self::group_info::RatchetTreeType;
+pub use self::id::ConversationId;
+pub use self::id::ConversationIdRef;
+pub use self::immutable::Conversation;
+pub use self::mutable::ConversationMut;
+pub use self::mutable::decrypt::BufferedCommit;
+pub use self::mutable::decrypt::BufferedDecryptedMessage;
+pub use self::mutable::decrypt::Commit;
+pub use self::mutable::decrypt::DecryptedMessage;
+pub use self::mutable::decrypt::Proposal;
+pub use self::mutable::decrypt::Text;
+pub use self::welcome::WelcomeMessage;
 use crate::bytes_wrapper;
 
 bytes_wrapper!(
@@ -97,10 +105,12 @@ mod tests {
         use uuid::Uuid;
 
         use super::Error;
-        use crate::{
-            ClientId, CredentialType, DeviceStatus, E2eiConversationState, mls::conversation::Conversation,
-            test_utils::*,
-        };
+        use crate::ClientId;
+        use crate::CredentialType;
+        use crate::DeviceStatus;
+        use crate::E2eiConversationState;
+        use crate::mls::conversation::Conversation;
+        use crate::test_utils::*;
 
         async fn all_identities_check<const N: usize>(
             conversation: &Conversation,

@@ -1,7 +1,8 @@
-use openmls::{
-    framing::MlsMessageInBody,
-    prelude::{GroupEpoch, MlsMessageIn, MlsMessageOut, group_info::VerifiableGroupInfo},
-};
+use openmls::framing::MlsMessageInBody;
+use openmls::prelude::GroupEpoch;
+use openmls::prelude::MlsMessageIn;
+use openmls::prelude::MlsMessageOut;
+use openmls::prelude::group_info::VerifiableGroupInfo;
 
 pub trait MessageExt {
     fn epoch(&self) -> Option<GroupEpoch>;

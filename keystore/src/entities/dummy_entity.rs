@@ -1,7 +1,9 @@
-use crate::{
-    CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, PrimaryKey, UniqueEntity},
-};
+use crate::CryptoKeystoreResult;
+use crate::traits::BorrowPrimaryKey;
+use crate::traits::Entity;
+use crate::traits::EntityGetBorrowed;
+use crate::traits::PrimaryKey;
+use crate::traits::UniqueEntity;
 
 #[derive(Debug, Eq, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct DummyStoreValue;

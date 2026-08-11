@@ -1,19 +1,22 @@
 #![cfg(not(target_os = "unknown"))]
 
-use std::{
-    collections::HashMap,
-    net::{Ipv4Addr, SocketAddrV4},
-    str::FromStr as _,
-    sync::{Arc, Mutex},
-};
+use std::collections::HashMap;
+use std::net::Ipv4Addr;
+use std::net::SocketAddrV4;
+use std::str::FromStr as _;
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use base64::Engine as _;
-use http_body_util::{BodyExt as _, Full};
-use hyper::{
-    Method, Request, Response, StatusCode,
-    body::{Bytes, Incoming},
-    server::conn::http1,
-};
+use http_body_util::BodyExt as _;
+use http_body_util::Full;
+use hyper::Method;
+use hyper::Request;
+use hyper::Response;
+use hyper::StatusCode;
+use hyper::body::Bytes;
+use hyper::body::Incoming;
+use hyper::server::conn::http1;
 use rusty_jwt_tools::prelude::*;
 use smol::net::TcpListener;
 use smol_hyper::rt::FuturesIo;

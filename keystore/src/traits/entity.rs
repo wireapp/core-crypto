@@ -1,12 +1,9 @@
 use rusqlite::Connection;
 
-use crate::{
-    CryptoKeystoreResult,
-    traits::{
-        KeyType,
-        primary_key::{BorrowPrimaryKey, PrimaryKey},
-    },
-};
+use crate::CryptoKeystoreResult;
+use crate::traits::KeyType;
+use crate::traits::primary_key::BorrowPrimaryKey;
+use crate::traits::primary_key::PrimaryKey;
 
 /// Something which can be stored in our database.
 ///

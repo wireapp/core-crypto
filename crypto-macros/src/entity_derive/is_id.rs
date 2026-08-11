@@ -2,7 +2,8 @@ use darling::util::SpannedValue;
 use proc_macro2::Span;
 use syn::Error;
 
-use super::column::{Column, IdColumn};
+use super::column::Column;
+use super::column::IdColumn;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum IsId {

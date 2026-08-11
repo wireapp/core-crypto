@@ -1,7 +1,10 @@
-use std::{fmt, ops::Deref};
+use std::fmt;
+use std::ops::Deref;
 
-use sha2::{Digest as _, Sha256};
-use zeroize::{Zeroize, ZeroizeOnDrop};
+use sha2::Digest as _;
+use sha2::Sha256;
+use zeroize::Zeroize;
+use zeroize::ZeroizeOnDrop;
 
 use crate::CryptoKeystoreError;
 

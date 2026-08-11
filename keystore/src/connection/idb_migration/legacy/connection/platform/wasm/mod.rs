@@ -1,30 +1,36 @@
 use aes_gcm::KeyInit as _;
-use idb::{Factory, TransactionMode};
+use idb::Factory;
+use idb::TransactionMode;
 
-use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
-    connection::idb_migration::legacy::{
-        connection::{
-            DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey,
-            platform::wasm::migrations::open_and_migrate,
-        },
-        entities::mls::{
-            e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
-            stored_keypackage::StoredKeypackage,
-        },
-    },
-    entities::{
-        MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession, StoredCredential,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
-    },
-    migrations::LegacyPersistedMlsGroup,
-};
+use crate::CryptoKeystoreError;
+use crate::CryptoKeystoreResult;
+use crate::connection::idb_migration::legacy::connection::DatabaseConnection;
+use crate::connection::idb_migration::legacy::connection::DatabaseConnectionRequirements;
+use crate::connection::idb_migration::legacy::connection::DatabaseKey;
+use crate::connection::idb_migration::legacy::connection::platform::wasm::migrations::open_and_migrate;
+use crate::connection::idb_migration::legacy::entities::mls::e2ei_acme_ca::E2eiAcmeCA;
+use crate::connection::idb_migration::legacy::entities::mls::e2ei_crl::E2eiCrl;
+use crate::connection::idb_migration::legacy::entities::mls::e2ei_intermediate_cert::E2eiIntermediateCert;
+use crate::connection::idb_migration::legacy::entities::mls::stored_keypackage::StoredKeypackage;
+use crate::entities::MlsPendingMessage;
+use crate::entities::PersistedMlsPendingGroup;
+use crate::entities::ProteusIdentity;
+use crate::entities::ProteusPrekey;
+use crate::entities::ProteusSession;
+use crate::entities::StoredCredential;
+use crate::entities::StoredEncryptionKeyPair;
+use crate::entities::StoredEpochEncryptionKeypair;
+use crate::entities::StoredHpkePrivateKey;
+use crate::entities::StoredPskBundle;
+use crate::migrations::LegacyPersistedMlsGroup;
 
 pub(crate) mod migrations;
 mod rekey;
 pub(crate) mod storage;
 
-use self::storage::{WasmEncryptedStorage, WasmStorageTransaction, WasmStorageWrapper};
+use self::storage::WasmEncryptedStorage;
+use self::storage::WasmStorageTransaction;
+use self::storage::WasmStorageWrapper;
 
 #[derive(Debug)]
 pub(crate) struct WasmConnection {

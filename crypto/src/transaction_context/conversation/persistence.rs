@@ -1,14 +1,20 @@
 use core_crypto_keystore::entities::PersistedMlsGroup;
-use openmls::{
-    group::{InnerState, MlsGroup},
-    prelude::Welcome,
-};
+use openmls::group::InnerState;
+use openmls::group::MlsGroup;
+use openmls::prelude::Welcome;
 
-use crate::{
-    ConversationConfiguration, ConversationId, KeystoreError, LeafError, OpenMlsError, RecursiveError,
-    mls::conversation::{Conversation, ConversationMut, Error as ConversationError, MlsGroupState},
-    transaction_context::{Result, TransactionContext},
-};
+use crate::ConversationConfiguration;
+use crate::ConversationId;
+use crate::KeystoreError;
+use crate::LeafError;
+use crate::OpenMlsError;
+use crate::RecursiveError;
+use crate::mls::conversation::Conversation;
+use crate::mls::conversation::ConversationMut;
+use crate::mls::conversation::Error as ConversationError;
+use crate::mls::conversation::MlsGroupState;
+use crate::transaction_context::Result;
+use crate::transaction_context::TransactionContext;
 
 impl TransactionContext {
     /// Create a conversation from an existing MLS group.

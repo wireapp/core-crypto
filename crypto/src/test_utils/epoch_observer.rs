@@ -3,7 +3,8 @@ use std::sync::Arc;
 use async_lock::Mutex;
 use async_trait::async_trait;
 
-use crate::{ConversationId, EpochObserver};
+use crate::ConversationId;
+use crate::EpochObserver;
 
 pub(crate) struct TestEpochObserver(Mutex<EpochObserverInner>);
 

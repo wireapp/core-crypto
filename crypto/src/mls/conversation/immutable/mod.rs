@@ -6,13 +6,21 @@ mod e2ei;
 mod history_sharing;
 mod persistence;
 
-use async_lock::{RwLock, RwLockReadGuard};
+use async_lock::RwLock;
+use async_lock::RwLockReadGuard;
 use openmls::group::MlsGroup;
 
-use super::{ConversationIdRef, Error, Result, SecretKey};
-use crate::{
-    CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, ExternalSender, OpenMlsError, Session,
-};
+use super::ConversationIdRef;
+use super::Error;
+use super::Result;
+use super::SecretKey;
+use crate::CipherSuite;
+use crate::ConversationConfiguration;
+use crate::ConversationId;
+use crate::CredentialRef;
+use crate::ExternalSender;
+use crate::OpenMlsError;
+use crate::Session;
 
 #[derive(Debug, derive_more::Constructor, derive_more::Deref)]
 pub(crate) struct MlsGroupState {
