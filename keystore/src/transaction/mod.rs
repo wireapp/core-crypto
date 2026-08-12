@@ -8,19 +8,16 @@ pub mod proteus;
 mod read_outcome;
 mod specializations;
 
-use std::{borrow::Cow, collections::HashSet, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use async_lock::{RwLock, SemaphoreGuardArc};
-use itertools::Itertools;
-use ordermap::OrderMap;
 use rusqlite::TransactionBehavior;
 
 pub(crate) use self::read_outcome::ReadOutcome;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc,
-    entities::MlsPendingMessage,
-    traits::{DeletableBySearchKey as _, Entity, KeyType},
-    transaction::dynamic_dispatch::EntityId,
+    traits::Entity,
+    transaction::dynamic_dispatch::{EntityId, Operation},
 };
 
 /// This is an in-flight transaction: all operations are buffered in memory, and only
@@ -34,15 +31,8 @@ use crate::{
 /// Alternately, wrap the entire thing in an `Arc<Mutex<Option<UniqueArc<Self>>>>` or similar.
 /// Just be aware that you'll need to take the unique arc out in order to commit.
 pub struct Transaction {
-    cache: RwLock<OrderMap<EntityId, dynamic_dispatch::Entity>>,
-    deleted: RwLock<HashSet<EntityId>>,
-    /// Conversations whose buffered messages should all be deleted on commit.
-    ///
-    /// [`MlsPendingMessage`] is the one entity we delete by something other than its primary key,
-    /// so this deletion cannot ride along in [`Self::deleted`]: an [`EntityId`] there is always a
-    /// primary key, and mixing a conversation id into that set would make it ambiguous.
-    cleared_pending_message_conversations: RwLock<HashSet<Vec<u8>>>,
-    _semaphore_guard: Arc<SemaphoreGuardArc>,
+    operations: RwLock<Vec<Operation>>,
+    _semaphore_guard: SemaphoreGuardArc,
     database: Arc<Database>,
 }
 
@@ -55,10 +45,8 @@ impl Transaction {
         database: Arc<Database>,
     ) -> CryptoKeystoreResult<UniqueArc<Self>> {
         let transaction = UniqueArc::from(Self {
-            cache: Default::default(),
-            deleted: Default::default(),
-            cleared_pending_message_conversations: Default::default(),
-            _semaphore_guard: Arc::new(semaphore_guard),
+            operations: Default::default(),
+            _semaphore_guard: semaphore_guard,
             database,
         });
 
@@ -77,32 +65,45 @@ impl Transaction {
         Ok(transaction)
     }
 
-    /// Build a single list of unique records from two potentially overlapping lists.
+    /// Merge the database's view of entity records with entities from the transaction cache.
     ///
-    /// In case of overlap, records in `records_a` are prioritized. Identity from the perspective
-    /// of this function is determined by the byte encoding of
-    /// [`primary_key`][crate::traits::PrimaryKey::primary_key].
+    /// Entities deleted singly or in bulk from the operations list are excluded, unless later re-added.
     ///
-    /// Records deleted in this transaction are filtered out of the result.
-    async fn merge_records<'a, E>(
+    /// Entities upserted in the tx cache overwrite entities from the database.
+    async fn merge_records<E>(
         &self,
-        records_a: impl IntoIterator<Item = Cow<'a, E>>,
-        records_b: impl IntoIterator<Item = Cow<'a, E>>,
-    ) -> Vec<E>
+        from_tx_cache: impl IntoIterator<Item = E>,
+        from_database: impl IntoIterator<Item = E>,
+    ) -> impl Iterator<Item = E>
     where
-        E: 'static + Clone + Entity,
+        E: 'static + Clone + Entity + Send + Sync,
     {
-        let deleted_records = self.deleted.read().await;
-
-        records_a
+        // construct the cache from the database's items
+        let mut cache = from_database
             .into_iter()
-            .chain(records_b)
-            .unique_by(|e| e.primary_key().bytes().into_owned())
-            .filter_map(|record| {
-                let id = EntityId::from_entity(record.as_ref())?;
-                (!deleted_records.contains(&id)).then_some(record.into_owned())
-            })
-            .collect()
+            .map(|e| (EntityId::from_entity(&e).expect("TODO: make entity ids infallible"), e))
+            .collect::<HashMap<_, _>>();
+
+        // filter out everything in the database which has been deleted
+        {
+            let operations = self.operations.read().await;
+            for operation in operations.iter() {
+                if let Some(entity_id) = operation.as_delete::<E>() {
+                    cache.remove(&entity_id);
+                }
+                if let Some(should_remove) = operation.as_bulk_delete::<E>() {
+                    cache.retain(|_entity_id, entity| !should_remove(entity));
+                }
+            }
+        }
+
+        // update with everything which was inserted by the tx cache
+        for entity in from_tx_cache {
+            let id = EntityId::from_entity(&entity).expect("TODO: make entity ids infallible");
+            cache.insert(id, entity);
+        }
+
+        cache.into_values()
     }
 }
 
@@ -111,17 +112,13 @@ impl UniqueArc<Transaction> {
     /// internally, perform all the buffered operations and commit.
     pub async fn commit(self) -> Result<(), CryptoKeystoreError> {
         let Transaction {
-            cache,
-            deleted,
-            cleared_pending_message_conversations,
+            operations,
             database,
             _semaphore_guard,
         } = UniqueArc::into_inner(self).await;
-        let cache = cache.into_inner();
-        let deleted_ids = deleted.into_inner();
-        let cleared_conversations = cleared_pending_message_conversations.into_inner();
+        let operations = operations.into_inner();
 
-        if cache.is_empty() && deleted_ids.is_empty() && cleared_conversations.is_empty() {
+        if operations.is_empty() {
             log::debug!("Empty transaction was committed.");
             return Ok(());
         }
@@ -135,16 +132,8 @@ impl UniqueArc<Transaction> {
         let mut conn = database.conn().await;
         let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
 
-        for conversation_id in cleared_conversations.iter() {
-            MlsPendingMessage::delete_all_matching(&tx, &conversation_id.as_slice().into())?;
-        }
-
-        for entity in cache.values() {
-            entity.execute_save(&tx)?;
-        }
-
-        for deleted_id in deleted_ids.iter() {
-            deleted_id.execute_delete(&tx)?;
+        for operation in operations {
+            operation.apply(&tx)?;
         }
 
         // and commit everything

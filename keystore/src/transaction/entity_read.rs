@@ -1,47 +1,65 @@
 //! These methods allow for read-only operations on the entities in the transaction,
 //! without considering the database itself.
 
-use std::{borrow::Cow, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use super::dynamic_dispatch::EntityId;
 use crate::{
-    CryptoKeystoreResult,
     traits::{BorrowPrimaryKey, Entity, KeyType, SearchableEntity},
-    transaction::Transaction,
+    transaction::{ReadOutcome, Transaction},
 };
 
 impl Transaction {
-    async fn find_in_cache<E>(&self, entity_id: &EntityId) -> Option<Arc<E>>
+    /// Get an entity by its id.
+    ///
+    /// This produces a [`ReadOutcome`] which has information about whether the tx
+    /// knows about an upsert or delete of that entity, and also a set of filters
+    /// which can be used to exclude matching entities produced by the underlying DB.
+    ///
+    /// ## Caution
+    ///
+    /// This correctly filters out upserted entities which were later bulk-deleted.
+    /// However, it _cannot_ indicate bulk deletions for entities which were not
+    /// previously upserted in this transaction. Other composing methods which have
+    /// context from the database have to perform their own bulk-deletion filtering!
+    async fn get_by_entity_id<E>(&self, entity_id: &EntityId) -> ReadOutcome<E>
     where
         E: 'static + Entity + Send + Sync,
     {
-        let cache_guard = self.cache.read().await;
-        cache_guard.get(entity_id).and_then(|entity| entity.downcast())
-    }
+        let mut outcome = ReadOutcome::default();
 
-    /// The result of this function will have different contents for different scenarios:
-    /// * `Some(Some(E))` - the transaction cache contains the record
-    /// * `Some(None)` - the deletion of the record has been cached
-    /// * `None` - there is no information about the record in the cache
-    async fn get_by_entity_id<E>(&self, entity_id: &EntityId) -> Option<Option<Arc<E>>>
-    where
-        E: 'static + Entity + Send + Sync,
-    {
-        // when applying our transaction to the real database, we delete after inserting,
-        // so here we have to check for deletion before we check for existing values
-        let deleted_list = self.deleted.read().await;
-        if deleted_list.contains(entity_id) {
-            return Some(None);
+        // consider the operations in reverse
+        let operations = self.operations.read().await;
+        for operation in operations.iter().rev() {
+            // take the last mutation for the entity while it's unknown
+            if outcome.entity.is_none() {
+                if let Some(mutation) = operation.is_mutation_for::<E>(entity_id) {
+                    outcome.entity = Some(mutation);
+
+                    // but if we've already seen a relevant bulk deletion, it's actually gone
+                    if let Some(Some(entity)) = &outcome.entity
+                        && outcome.should_omit(entity)
+                    {
+                        outcome.entity = Some(None);
+                    }
+                }
+            }
+
+            // if this operation is a bulk deletion, record that; we'll need it later
+            if let Some(should_omit) = operation.as_bulk_delete() {
+                outcome.filters.push(Box::new(should_omit));
+            }
         }
 
-        self.find_in_cache::<E>(entity_id).await.map(Some)
+        outcome
     }
 
-    /// The result of this function will have different contents for different scenarios:
-    /// * `Some(Some(E))` - the transaction cache contains the record
-    /// * `Some(None)` - the deletion of the record has been cached
-    /// * `None` - there is no information about the record in the cache
-    pub(crate) async fn get<E>(&self, id: &E::PrimaryKey) -> Option<Option<Arc<E>>>
+    /// Get an entity by its primary key.
+    ///
+    /// This produces a [`ReadOutcome`] which has information about whether the tx
+    /// knows about an upsert or delete of that entity, and also a set of filters
+    /// which can be used to exclude matching entities produced by the underlying DB.
+    pub(crate) async fn get<E>(&self, id: &E::PrimaryKey) -> ReadOutcome<E>
     where
         E: 'static + Entity + Send + Sync,
     {
@@ -49,11 +67,12 @@ impl Transaction {
         self.get_by_entity_id(&entity_id).await
     }
 
-    /// The result of this function will have different contents for different scenarios:
-    /// * `Some(Some(E))` - the transaction cache contains the record
-    /// * `Some(None)` - the deletion of the record has been cached
-    /// * `None` - there is no information about the record in the cache
-    pub(crate) async fn get_borrowed<E>(&self, id: &E::BorrowedPrimaryKey) -> Option<Option<Arc<E>>>
+    /// Get an entity by the borrowed form of its primary key.
+    ///
+    /// This produces a [`ReadOutcome`] which has information about whether the tx
+    /// knows about an upsert or delete of that entity, and also a set of filters
+    /// which can be used to exclude matching entities produced by the underlying DB.
+    pub(crate) async fn get_borrowed<E>(&self, id: &E::BorrowedPrimaryKey) -> ReadOutcome<E>
     where
         E: 'static + Entity + BorrowPrimaryKey + Send + Sync,
     {
@@ -61,60 +80,79 @@ impl Transaction {
         self.get_by_entity_id(&entity_id).await
     }
 
-    pub(super) async fn find_all_in_cache<E>(&self) -> Vec<Arc<E>>
+    /// Apply the transaction's operations in order, producing all entities of type `E`.
+    ///
+    /// ## Caution
+    ///
+    /// This correctly filters out upserted entities which were later bulk-deleted.
+    /// However, it _cannot_ filter out bulk deletions for entities which were not
+    /// previously upserted in this transaction. Other composing methods which have
+    /// context from the database have to perform their own bulk-deletion filtering!
+    pub(super) async fn find_all_in_cache<E>(&self) -> impl Iterator<Item = Arc<E>>
     where
         E: 'static + Entity + Send + Sync,
     {
-        let cache_guard = self.cache.read().await;
-        cache_guard
-            .values()
-            .filter_map(|entity| entity.downcast::<E>())
-            .collect()
+        let operations = self.operations.read().await;
+
+        let mut cache = HashMap::new();
+        for operation in operations.iter() {
+            if let Some(entity) = operation.as_upsert::<E>() {
+                let entity_id = EntityId::from_entity(&*entity).expect("TODO: make entity ids infallible");
+                cache.insert(entity_id, entity);
+            }
+            if let Some(entity_id) = operation.as_delete::<E>() {
+                cache.remove(&entity_id);
+            }
+            if let Some(should_delete) = operation.as_bulk_delete::<E>() {
+                cache.retain(|_entity_id, entity| !should_delete(entity));
+            }
+        }
+
+        cache.into_values()
     }
 
-    async fn search_in_cache<E, SearchKey>(&self, search_key: &SearchKey) -> Vec<Arc<E>>
+    /// Apply the transaction's operations in order, producing all entities of type `E`
+    /// which match the provided search key.
+    ///
+    /// ## Caution
+    ///
+    /// This correctly filters out upserted entities which were later bulk-deleted.
+    /// However, it _cannot_ filter out bulk deletions for entities which were not
+    /// previously upserted in this transaction. Other composing methods which have
+    /// context from the database have to perform their own bulk-deletion filtering!
+    async fn search_in_cache<E, SearchKey>(&self, search_key: &SearchKey) -> impl Iterator<Item = Arc<E>>
     where
         E: 'static + Entity + SearchableEntity<SearchKey> + Send + Sync,
         SearchKey: KeyType,
     {
-        let cache_guard = self.cache.read().await;
-        cache_guard
-            .values()
-            .filter_map(|entity| entity.downcast::<E>())
+        self.find_all_in_cache::<E>()
+            .await
             .filter(|entity| entity.matches(search_key))
-            .collect()
     }
 
-    pub(crate) async fn find_all<E>(&self, persisted_records: Vec<E>) -> CryptoKeystoreResult<Vec<E>>
+    /// Find all the entities of type `E` in the database as modified by the operations in this transaction.
+    pub(crate) async fn find_all<E>(&self, persisted_records: impl IntoIterator<Item = E>) -> impl Iterator<Item = E>
     where
         E: 'static + Clone + Entity + Send + Sync,
     {
-        let cached_records = self.find_all_in_cache().await;
-        let merged_records = self
-            .merge_records(
-                cached_records.iter().map(Arc::as_ref).map(Cow::Borrowed),
-                persisted_records.into_iter().map(Cow::Owned),
-            )
-            .await;
-        Ok(merged_records)
+        let cached_records = self.find_all_in_cache::<E>().await;
+        self.merge_records(cached_records.map(Arc::unwrap_or_clone), persisted_records)
+            .await
     }
 
+    /// Find all the entities of type `E` in the database which match `search_key`,
+    /// as modified by the operations in this transaction.
     pub(crate) async fn search<E, SearchKey>(
         &self,
-        persisted_records: Vec<E>,
+        persisted_records: impl IntoIterator<Item = E>,
         search_key: &SearchKey,
-    ) -> CryptoKeystoreResult<Vec<E>>
+    ) -> impl Iterator<Item = E>
     where
         E: 'static + Clone + Entity + SearchableEntity<SearchKey> + Send + Sync,
         SearchKey: KeyType,
     {
         let cached_records = self.search_in_cache(search_key).await;
-        let merged_records = self
-            .merge_records(
-                cached_records.iter().map(Arc::as_ref).map(Cow::Borrowed),
-                persisted_records.into_iter().map(Cow::Owned),
-            )
-            .await;
-        Ok(merged_records)
+        self.merge_records(cached_records.map(Arc::unwrap_or_clone), persisted_records)
+            .await
     }
 }

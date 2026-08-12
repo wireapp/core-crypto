@@ -1,28 +1,19 @@
 //! These methods are specialized for performing certain entity-specific queries.
 
-use std::{borrow::Cow, sync::Arc};
-
 use super::dynamic_dispatch::EntityId;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::ProteusPrekey;
-use crate::{CryptoKeystoreResult, entities::MlsPendingMessage, transaction::Transaction};
+use crate::{
+    CryptoKeystoreResult,
+    entities::{ConversationId, MlsPendingMessage},
+    transaction::Transaction,
+};
 
 impl Transaction {
     pub(crate) async fn remove_pending_messages_by_conversation_id(&self, conversation_id: impl AsRef<[u8]> + Send) {
-        let conversation_id = conversation_id.as_ref();
-
-        {
-            let mut cache_guard = self.cache.write().await;
-            cache_guard.retain(|_entity_id, entity| {
-                let Some(pending_message) = entity.downcast::<MlsPendingMessage>() else {
-                    return true;
-                };
-                pending_message.conversation_id != conversation_id
-            });
-        }
-
-        let mut cleared_guard = self.cleared_pending_message_conversations.write().await;
-        cleared_guard.insert(conversation_id.to_owned());
+        let conversation_id = conversation_id.as_ref().to_vec().into();
+        self.bulk_remove::<MlsPendingMessage, ConversationId>(conversation_id)
+            .await;
     }
 
     pub(crate) async fn find_pending_messages_by_conversation_id(
@@ -30,17 +21,8 @@ impl Transaction {
         conversation_id: &[u8],
         persisted_records: impl IntoIterator<Item = MlsPendingMessage>,
     ) -> CryptoKeystoreResult<Vec<MlsPendingMessage>> {
-        let persisted_records = persisted_records.into_iter().map(Cow::Owned);
-
-        let cached_records = self.find_all_in_cache::<MlsPendingMessage>().await;
-        let cached_records = cached_records
-            .iter()
-            .filter(|pending_message| pending_message.conversation_id == conversation_id)
-            .map(Arc::as_ref)
-            .map(Cow::Borrowed);
-
-        let merged_records = self.merge_records(cached_records, persisted_records).await;
-        Ok(merged_records)
+        let conversation_id = conversation_id.to_vec().into();
+        Ok(self.search(persisted_records, &conversation_id).await.collect())
     }
 
     /// Find a free proteus prekey id.
@@ -58,12 +40,30 @@ impl Transaction {
             })
         }
 
-        // an id can never be in both the cache and the deleted set: `save` un-deletes, `remove`
-        // un-caches. So a deleted id needs no conflict check.
+        // if we can find a deleted id, we don't need to touch the DB at all;
+        // that's worth a scan through the operations
         {
-            let guard = self.deleted.read().await;
-            if let Some(id) = guard.iter().filter_map(as_prekey_id).min() {
-                return Ok(id);
+            let mut candidates = Vec::new();
+
+            let operations = self.operations.read().await;
+            for operation in operations.iter() {
+                if let Some(deleted) = operation.as_delete::<ProteusPrekey>()
+                    && let Some(prekey) = as_prekey_id(&deleted)
+                {
+                    candidates.push(prekey);
+                }
+
+                if let Some(inserted) = operation.as_upsert::<ProteusPrekey>() {
+                    let id = inserted.id;
+                    if let Some(position) = candidates.iter().position(|candidate| *candidate == id) {
+                        // oops, we're reusing that prekey id already
+                        candidates.swap_remove(position);
+                    }
+                }
+            }
+
+            if let Some(id) = candidates.first() {
+                return Ok(*id);
             }
         }
 
@@ -77,10 +77,9 @@ impl Transaction {
         let Some((low, high)) = ({
             use itertools::Itertools as _;
 
-            let guard = self.cache.read().await;
-            guard
-                .keys()
-                .filter_map(as_prekey_id)
+            let operations = self.operations.read().await;
+            operations.iter().filter_map(|operation| operation.as_upsert::<ProteusPrekey>())
+                .map(|prekey| prekey.id)
                 // exclude the last resort prekey, if we happen to be setting that
                 .filter(|id| *id != u16::MAX)
                 .minmax()
