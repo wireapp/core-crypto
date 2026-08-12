@@ -46,6 +46,9 @@ impl ConversationMut {
             group.reset_tnt_message_counter();
         }
 
+        // We must change the mls group persisted state before persisting, otherwise it will never reach the DB.
+        group.mls_group_mut().set_state(InnerState::Persisted);
+
         tx.save(PersistedMlsGroup {
             id: id.to_bytes(),
             state: core_crypto_keystore::ser(group.mls_group())
@@ -54,8 +57,6 @@ impl ConversationMut {
         })
         .await
         .map_err(KeystoreError::wrap("persisting mls group"))?;
-
-        group.mls_group_mut().set_state(InnerState::Persisted);
 
         Ok(ok_result)
     }
