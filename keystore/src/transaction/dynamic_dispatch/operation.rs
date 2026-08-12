@@ -18,7 +18,7 @@ use std::{any::Any, sync::Arc};
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, DeletableBySearchKey, EntityDatabaseMutation, KeyType},
+    traits::{DeletableBySearchKey, Entity, EntityDatabaseMutation, KeyType},
     transaction::dynamic_dispatch::EntityId,
 };
 
@@ -27,7 +27,7 @@ use crate::{
 /// When the transaction is committed, the list of operations
 /// will be performed in sequence. There is always exactly one
 /// order of operations, to ensure that the database always remains consistent.
-#[derive(Default, derive_more::IsVariant)]
+#[derive(Default, derive_more::Debug, derive_more::IsVariant)]
 pub(in crate::transaction) enum Operation {
     /// No operation
     ///
@@ -39,7 +39,10 @@ pub(in crate::transaction) enum Operation {
     ///
     /// This operation updates or inserts an entity into the database.
     Upsert {
+        entity_id: EntityId,
+        #[debug("Arc<dyn Any + Send + Sync>")]
         entity: Arc<dyn Any + Send + Sync>,
+        #[debug(skip)]
         apply: fn(entity: &(dyn Any + Send + Sync), tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()>,
     },
     /// A delete operation.
@@ -47,6 +50,7 @@ pub(in crate::transaction) enum Operation {
     /// This operation removes an entity from the database.
     Delete {
         entity_id: EntityId,
+        #[debug(skip)]
         apply: fn(entity_id: &EntityId, tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()>,
     },
     /// A bulk delete operation.
@@ -54,8 +58,11 @@ pub(in crate::transaction) enum Operation {
     /// This operation removes multiple entites from the database based on a search key.
     /// It corresponds to [crate::traits::DeletableBySearchKey].
     BulkDelete {
+        #[debug("Arc<dyn Any + Send + Sync>")]
         search_key: Arc<dyn Any + Send + Sync>,
+        #[debug(skip)]
         apply: fn(search_key: &(dyn Any + Send + Sync), tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()>,
+        #[debug(skip)]
         matches: fn(entity: &(dyn Any + Send + Sync), search_key: &(dyn Any + Send + Sync)) -> bool,
     },
 }
@@ -65,7 +72,7 @@ impl Operation {
     pub(in crate::transaction) fn apply(self, tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()> {
         match self {
             Operation::Nop => Ok(()),
-            Operation::Upsert { entity, apply } => (apply)(&*entity, tx),
+            Operation::Upsert { entity, apply, .. } => (apply)(&*entity, tx),
             Operation::Delete { entity_id, apply } => (apply)(&entity_id, tx),
             Operation::BulkDelete { search_key, apply, .. } => (apply)(&*search_key, tx),
         }
@@ -76,8 +83,10 @@ impl Operation {
     where
         E: 'static + EntityDatabaseMutation + Send + Sync,
     {
+        let entity_id = EntityId::from_entity(&entity).expect("TODO make entity ids infallible");
         Self::Upsert {
             entity: Arc::new(entity),
+            entity_id,
             apply: |entity, tx| {
                 let entity = entity
                     .downcast_ref::<E>()
@@ -88,26 +97,16 @@ impl Operation {
     }
 
     /// Create a delete operation.
-    pub(in crate::transaction) fn delete<E>(primary_key: &E::PrimaryKey) -> Self
+    pub(in crate::transaction) fn delete<E>(entity_id: EntityId) -> Self
     where
         E: EntityDatabaseMutation,
     {
+        debug_assert!(
+            entity_id.matches_type::<E>(),
+            "correct code will always provide an entity id of the proper type"
+        );
         Self::Delete {
-            entity_id: EntityId::from_primary_key::<E>(primary_key).expect("TODO: make entity ids infallible"),
-            apply: |entity_id, tx| {
-                let id = entity_id.primary_key::<E>()?;
-                E::delete(tx, &id).map(|_| ())
-            },
-        }
-    }
-
-    /// Create a delete operation with a borrowed primary key.
-    pub(in crate::transaction) fn delete_borrowed<E>(primary_key: &E::BorrowedPrimaryKey) -> Self
-    where
-        E: EntityDatabaseMutation + BorrowPrimaryKey,
-    {
-        Self::Delete {
-            entity_id: EntityId::from_borrowed_primary_key::<E>(primary_key).expect("TODO: make entity ids infallible"),
+            entity_id,
             apply: |entity_id, tx| {
                 let id = entity_id.primary_key::<E>()?;
                 E::delete(tx, &id).map(|_| ())
@@ -140,5 +139,77 @@ impl Operation {
                 entity.matches(search_key)
             },
         }
+    }
+
+    /// Views this operation as a single-entity mutation if it matches the provided entity id:
+    ///
+    /// - If this is an upsert, returns `Some(Some(<upserted>))`.
+    /// - If this is a delete, returns `Some(None)`.
+    /// - Otherwise returns `None`.
+    pub(in crate::transaction) fn is_mutation_for<E>(&self, id: &EntityId) -> Option<Option<Arc<E>>>
+    where
+        E: 'static + Entity + Send + Sync,
+    {
+        if !id.matches_type::<E>() {
+            return None;
+        }
+        match self {
+            Operation::Upsert { entity_id, entity, .. } => (id == entity_id).then(|| {
+                Some(
+                    entity
+                        .clone()
+                        .downcast()
+                        .expect("we already checked that the id has the proper type"),
+                )
+            }),
+            Operation::Delete { entity_id, .. } => (id == entity_id).then_some(None),
+            Operation::Nop | Operation::BulkDelete { .. } => None,
+        }
+    }
+
+    /// `Some(e)` when this operation is an upsert for `E`
+    pub(in crate::transaction) fn as_upsert<E>(&self) -> Option<Arc<E>>
+    where
+        E: 'static + Send + Sync,
+    {
+        let Self::Upsert { entity, .. } = self else {
+            return None;
+        };
+        entity.clone().downcast().ok()
+    }
+
+    /// `Some(entity_id)` when this operation is a delete for that id
+    pub(in crate::transaction) fn as_delete<E>(&self) -> Option<EntityId>
+    where
+        E: Entity,
+    {
+        let Self::Delete { entity_id, .. } = self else {
+            return None;
+        };
+        entity_id.matches_type::<E>().then(|| entity_id.clone())
+    }
+
+    /// `Some(should_delete(entity))` when this operation is a bulk deletion
+    ///
+    /// The return type here uses somewhat unusual syntax, but its meaning is simple:
+    /// `use<E>` means the only generic parameter of the returned function is `E`;
+    /// the returned function does _not_ have a lifetime tied to the lifetime of `&self`.
+    pub(in crate::transaction) fn as_bulk_delete<E>(&self) -> Option<impl use<E> + Fn(&E) -> bool + Send + Sync>
+    where
+        E: 'static + Send + Sync,
+    {
+        let Self::BulkDelete {
+            search_key, matches, ..
+        } = self
+        else {
+            return None;
+        };
+
+        // clone the Arc'd search key; cheap
+        let search_key = search_key.clone();
+        // deref the (borrowed) function pointer so the closure can own it; cheap
+        let matches = *matches;
+
+        Some(move |entity: &E| matches(entity, &*search_key))
     }
 }
