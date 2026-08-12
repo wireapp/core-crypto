@@ -83,7 +83,7 @@ impl Operation {
     where
         E: 'static + EntityDatabaseMutation + Send + Sync,
     {
-        let entity_id = EntityId::from_entity(&entity).expect("TODO make entity ids infallible");
+        let entity_id = EntityId::from_entity(&entity);
         Self::Upsert {
             entity: Arc::new(entity),
             entity_id,
