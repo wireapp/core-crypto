@@ -11,14 +11,13 @@ use crate::{
 /// [`MlsPendingMessage`]s are keyed individually by a hash of their contents, but callers almost
 /// always want every buffered message of one conversation at once. This type is the search key
 /// which makes that possible.
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, derive_more::AsRef, derive_more::Deref, derive_more::From,
-)]
-pub struct ConversationId<'a>(&'a [u8]);
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, derive_more::From, derive_more::Into, derive_more::Deref)]
+#[deref(forward)]
+pub struct ConversationId(Vec<u8>);
 
-impl<'a> KeyType for ConversationId<'a> {
+impl KeyType for ConversationId {
     fn bytes(&self) -> std::borrow::Cow<'_, [u8]> {
-        self.0.into()
+        (&self.0).into()
     }
 }
 
@@ -98,29 +97,28 @@ impl crate::traits::EntityDatabaseMutation for MlsPendingMessage {
     }
 }
 
-impl<'a> crate::traits::SearchableEntity<ConversationId<'a>> for MlsPendingMessage {
+impl crate::traits::SearchableEntity<ConversationId> for MlsPendingMessage {
     fn find_all_matching(
         conn: &rusqlite::Connection,
-        conversation_id: &ConversationId<'a>,
+        conversation_id: &ConversationId,
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
-        let conversation_id = *conversation_id.as_ref();
         let mut stmt = conn.prepare_cached("SELECT * FROM mls_pending_messages WHERE conversation_id = ?")?;
-        stmt.query_map([conversation_id], Self::from_row)?
+        stmt.query_map([&**conversation_id], Self::from_row)?
             .collect::<Result<_, _>>()
             .map_err(Into::into)
     }
 
-    fn matches(&self, conversation_id: &ConversationId<'a>) -> bool {
-        *conversation_id.as_ref() == self.conversation_id.as_slice()
+    fn matches(&self, conversation_id: &ConversationId) -> bool {
+        &**conversation_id == self.conversation_id.as_slice()
     }
 }
 
-impl<'a> crate::traits::DeletableBySearchKey<ConversationId<'a>> for MlsPendingMessage {
+impl crate::traits::DeletableBySearchKey<ConversationId> for MlsPendingMessage {
     fn delete_all_matching(
         tx: &rusqlite::Transaction,
-        conversation_id: &ConversationId<'a>,
+        conversation_id: &ConversationId,
     ) -> crate::CryptoKeystoreResult<()> {
-        delete_helper::<Self>(tx, "conversation_id", *conversation_id.as_ref())?;
+        delete_helper::<Self>(tx, "conversation_id", &**conversation_id)?;
         Ok(())
     }
 }
