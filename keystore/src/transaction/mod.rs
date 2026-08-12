@@ -81,7 +81,7 @@ impl Transaction {
         // construct the cache from the database's items
         let mut cache = from_database
             .into_iter()
-            .map(|e| (EntityId::from_entity(&e).expect("TODO: make entity ids infallible"), e))
+            .map(|e| (EntityId::from_entity(&e), e))
             .collect::<HashMap<_, _>>();
 
         // filter out everything in the database which has been deleted
@@ -99,7 +99,7 @@ impl Transaction {
 
         // update with everything which was inserted by the tx cache
         for entity in from_tx_cache {
-            let id = EntityId::from_entity(&entity).expect("TODO: make entity ids infallible");
+            let id = EntityId::from_entity(&entity);
             cache.insert(id, entity);
         }
 

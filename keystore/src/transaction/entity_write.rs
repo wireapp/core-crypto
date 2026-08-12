@@ -2,7 +2,7 @@
 
 use super::dynamic_dispatch::EntityId;
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
+    CryptoKeystoreResult,
     traits::{BorrowPrimaryKey, DeletableBySearchKey, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType},
     transaction::{Operation, Transaction},
 };
@@ -49,7 +49,7 @@ impl Transaction {
     where
         E: EntityDatabaseMutation,
     {
-        let entity_id = EntityId::from_primary_key::<E>(id).ok_or(CryptoKeystoreError::UnknownTable(E::TABLE_NAME))?;
+        let entity_id = EntityId::from_primary_key::<E>(id);
         self.remove_by_entity_id::<E>(entity_id).await
     }
 
@@ -61,8 +61,7 @@ impl Transaction {
     where
         E: EntityDeleteBorrowed + BorrowPrimaryKey,
     {
-        let entity_id =
-            EntityId::from_borrowed_primary_key::<E>(id).ok_or(CryptoKeystoreError::UnknownTable(E::TABLE_NAME))?;
+        let entity_id = EntityId::from_borrowed_primary_key::<E>(id);
         self.remove_by_entity_id::<E>(entity_id).await
     }
 
@@ -79,8 +78,7 @@ impl Transaction {
     where
         E: EntityDeleteBorrowed + BorrowPrimaryKey,
     {
-        let entity_id =
-            EntityId::from_borrowed_primary_key::<E>(id).ok_or(CryptoKeystoreError::UnknownTable(E::TABLE_NAME))?;
+        let entity_id = EntityId::from_borrowed_primary_key::<E>(id);
 
         {
             let mut operations = self.operations.write().await;
