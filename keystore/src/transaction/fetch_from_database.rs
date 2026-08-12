@@ -21,13 +21,15 @@ impl FetchFromDatabase for Transaction {
     where
         E: 'static + Entity + Clone + Send + Sync,
     {
-        if let Some(result) = <Self>::get::<E>(self, id).await {
+        let read_outcome = <Self>::get::<E>(self, id).await;
+        if let Some(result) = read_outcome.entity {
             return Ok(result.map(Arc::unwrap_or_clone));
         };
 
         // Otherwise get it from the database
         let conn = self.database.conn().await;
-        E::get(&conn, id)
+        let db_entity = E::get(&conn, id)?.filter(|entity| !read_outcome.should_omit(entity));
+        Ok(db_entity)
     }
 
     async fn get_borrowed<E>(&self, id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey) -> CryptoKeystoreResult<Option<E>>
@@ -36,12 +38,14 @@ impl FetchFromDatabase for Transaction {
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
         for<'a> &'a E::BorrowedPrimaryKey: KeyType,
     {
-        if let Some(result) = <Self>::get_borrowed::<E>(self, id).await {
+        let read_outcome = <Self>::get_borrowed::<E>(self, id).await;
+        if let Some(result) = read_outcome.entity {
             return Ok(result.map(Arc::unwrap_or_clone));
         }
 
         let conn = self.database.conn().await;
-        E::get_borrowed(&conn, id)
+        let db_entity = E::get_borrowed(&conn, id)?.filter(|entity| !read_outcome.should_omit(entity));
+        Ok(db_entity)
     }
 
     async fn count<E>(&self) -> CryptoKeystoreResult<u32>
@@ -61,7 +65,7 @@ impl FetchFromDatabase for Transaction {
         let conn = self.database.conn().await;
         let persisted_records = E::load_all(&conn)?;
 
-        <Self>::find_all(self, persisted_records).await
+        Ok(<Self>::find_all(self, persisted_records).await.collect())
     }
 
     async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<E>>
@@ -72,6 +76,6 @@ impl FetchFromDatabase for Transaction {
         let conn = self.database.conn().await;
         let persisted_records = E::find_all_matching(&conn, search_key)?;
 
-        <Self>::search(self, persisted_records, search_key).await
+        Ok(<Self>::search(self, persisted_records, search_key).await.collect())
     }
 }

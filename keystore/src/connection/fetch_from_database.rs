@@ -3,9 +3,19 @@ use std::{borrow::Borrow, sync::Arc};
 use async_trait::async_trait;
 
 use crate::{
-    CryptoKeystoreResult, Database,
+    CryptoKeystoreError, CryptoKeystoreResult, Database,
     traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, KeyType, SearchableEntity},
+    transaction::ReadOutcome,
 };
+
+/// It's not an error if there is no transaction when fetching from database,
+/// so map that to an empty read outcome (no found entity, no filters).
+fn no_transaction_to_default_read_outcome<E>(err: CryptoKeystoreError) -> CryptoKeystoreResult<ReadOutcome<E>> {
+    match err {
+        CryptoKeystoreError::MutatingOperationWithoutTransaction => Ok(ReadOutcome::default()),
+        _ => Err(err),
+    }
+}
 
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait)]
@@ -14,16 +24,20 @@ impl FetchFromDatabase for Database {
     where
         E: 'static + Entity + Clone + Send + Sync,
     {
-        if let Ok(Some(cached_record)) = self
+        let read_outcome = self
             .with_transaction(async |transaction| Ok(transaction.get::<E>(id).await))
             .await
-        {
-            return Ok(cached_record.map(Arc::unwrap_or_clone));
-        };
+            .or_else(no_transaction_to_default_read_outcome)?;
+
+        if let Some(record) = read_outcome.entity {
+            return Ok(record.map(Arc::unwrap_or_clone));
+        }
 
         // Otherwise get it from the database
         let conn = self.conn().await;
-        E::get(&conn, id)
+        let db_entity = E::get(&conn, id)?.filter(|entity| !read_outcome.should_omit(entity));
+
+        Ok(db_entity)
     }
 
     async fn get_borrowed<E>(&self, id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey) -> CryptoKeystoreResult<Option<E>>
@@ -32,16 +46,19 @@ impl FetchFromDatabase for Database {
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
         for<'a> &'a E::BorrowedPrimaryKey: KeyType,
     {
-        if let Ok(Some(cached_record)) = self
+        let read_outcome = self
             .with_transaction(async |transaction| Ok(transaction.get_borrowed::<E>(id).await))
             .await
-        {
+            .or_else(no_transaction_to_default_read_outcome)?;
+
+        if let Some(cached_record) = read_outcome.entity {
             return Ok(cached_record.map(Arc::unwrap_or_clone));
         }
 
         // Otherwise get it from the database
         let conn = self.conn().await;
-        E::get_borrowed(&conn, id)
+        let db_entity = E::get_borrowed(&conn, id)?.filter(|entity| !read_outcome.should_omit(entity));
+        Ok(db_entity)
     }
 
     async fn count<E>(&self) -> CryptoKeystoreResult<u32>
