@@ -180,6 +180,9 @@
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Enums/SignatureScheme.html">SignatureScheme</a>
               </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/TargetedMessagePolicy.html">TargetedMessagePolicy</a>
+              </li>
             </ul>
           </li>
           <li class="nav-group-name">
@@ -851,6 +854,39 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">encryptMessage</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">message</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC15ContextProtocolP22encryptTargetedMessage14conversationId9recipient6policy7message10Foundation4DataVAA012ConversationK0C_AA06ClientK0CAA0hI6PolicyOAKtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/encryptTargetedMessage(conversationId:recipient:policy:message:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC15ContextProtocolP22encryptTargetedMessage14conversationId9recipient6policy7message10Foundation4DataVAA012ConversationK0C_AA06ClientK0CAA0hI6PolicyOAKtYaKF">encryptTargetedMessage(conversationId:<wbr>recipient:<wbr>policy:<wbr>message:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Encrypts a plaintext message for one member of the given conversation.</p>
+
+<p>Any feature using a targeted, transient or transient targeted message MUST specify why the lower security
+ guarantees (compared to MLS application messages) are acceptable and/or how they are mitigated.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">encryptTargetedMessage</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">recipient</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></span><span class="p">,</span> <span class="nv">policy</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/TargetedMessagePolicy.html">TargetedMessagePolicy</a></span><span class="p">,</span> <span class="nv">message</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span></code></pre>
 
                         </div>
                       </div>

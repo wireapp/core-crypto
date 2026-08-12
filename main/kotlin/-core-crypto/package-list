@@ -157,6 +157,7 @@ $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiConversationState/#com.wir
 $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiIsEnabled/#com.wire.crypto.CipherSuite/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/e2ei-is-enabled.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/enableHistorySharing/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/enable-history-sharing.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/encryptMessage/#com.wire.crypto.ConversationId#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/encrypt-message.html
+$dokka.location:com.wire.crypto/CoreCryptoContext/encryptTargetedMessage/#com.wire.crypto.ConversationId#com.wire.crypto.ClientId#com.wire.crypto.TargetedMessagePolicy#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/encrypt-targeted-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/exportSecretKey/#com.wire.crypto.ConversationId#kotlin.UInt/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/export-secret-key.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/generateKeyPackage/#com.wire.crypto.CredentialRef#java.time.Duration?/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/generate-key-package.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/getClientIds/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/get-client-ids.html
@@ -211,6 +212,7 @@ $dokka.location:com.wire.crypto/CoreCryptoContextInterface/e2eiConversationState
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/e2eiIsEnabled/#com.wire.crypto.CipherSuite/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/e2ei-is-enabled.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/enableHistorySharing/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/enable-history-sharing.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/encryptMessage/#com.wire.crypto.ConversationId#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/encrypt-message.html
+$dokka.location:com.wire.crypto/CoreCryptoContextInterface/encryptTargetedMessage/#com.wire.crypto.ConversationId#com.wire.crypto.ClientId#com.wire.crypto.TargetedMessagePolicy#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/encrypt-targeted-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/exportSecretKey/#com.wire.crypto.ConversationId#kotlin.UInt/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/export-secret-key.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/generateKeyPackage/#com.wire.crypto.CredentialRef#java.time.Duration?/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/generate-key-package.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/getClientIds/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/get-client-ids.html
@@ -793,6 +795,13 @@ $dokka.location:com.wire.crypto/SignatureScheme/entries/#/PointingToDeclaration/
 $dokka.location:com.wire.crypto/SignatureScheme/value/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-signature-scheme/value.html
 $dokka.location:com.wire.crypto/SignatureScheme/valueOf/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-signature-scheme/value-of.html
 $dokka.location:com.wire.crypto/SignatureScheme/values/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-signature-scheme/values.html
+$dokka.location:com.wire.crypto/TargetedMessagePolicy.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-targeted-message-policy/-companion/index.html
+$dokka.location:com.wire.crypto/TargetedMessagePolicy.PERSISTED///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto/-targeted-message-policy/-p-e-r-s-i-s-t-e-d/index.html
+$dokka.location:com.wire.crypto/TargetedMessagePolicy.TRANSIENT///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto/-targeted-message-policy/-t-r-a-n-s-i-e-n-t/index.html
+$dokka.location:com.wire.crypto/TargetedMessagePolicy///PointingToDeclaration/-core-crypto/com.wire.crypto/-targeted-message-policy/index.html
+$dokka.location:com.wire.crypto/TargetedMessagePolicy/entries/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-targeted-message-policy/entries.html
+$dokka.location:com.wire.crypto/TargetedMessagePolicy/valueOf/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-targeted-message-policy/value-of.html
+$dokka.location:com.wire.crypto/TargetedMessagePolicy/values/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-targeted-message-policy/values.html
 $dokka.location:com.wire.crypto/Timestamp///PointingToDeclaration/-core-crypto/com.wire.crypto/-timestamp/index.html
 $dokka.location:com.wire.crypto/Uuid.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-uuid/-companion/index.html
 $dokka.location:com.wire.crypto/Uuid///PointingToDeclaration/-core-crypto/com.wire.crypto/-uuid/index.html
