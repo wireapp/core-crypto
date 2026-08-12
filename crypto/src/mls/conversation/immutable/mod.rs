@@ -12,14 +12,16 @@ use openmls::group::MlsGroup;
 use super::{ConversationIdRef, Error, Result, SecretKey};
 use crate::{
     CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, ExternalSender, OpenMlsError, Session,
+    mls::TntMessageCounter,
 };
 
-#[derive(Debug, derive_more::Constructor, derive_more::Deref)]
+#[derive(derive_more::Constructor, derive_more::Deref, derive_more::DerefMut, derive_more::Debug)]
 pub(crate) struct MlsGroupState {
     #[deref]
+    #[deref_mut]
     group: MlsGroup,
-    // Note: this is going to change to a new type SenderNonce(u32) in an upcoming PR
-    sender_nonce: u32,
+    #[debug(skip)]
+    tnt_message_counter: TntMessageCounter,
 }
 
 impl MlsGroupState {
@@ -31,17 +33,19 @@ impl MlsGroupState {
         &mut self.group
     }
 
-    pub(in crate::mls::conversation) fn sender_nonce(&self) -> u32 {
-        self.sender_nonce
+    pub(in crate::mls::conversation) fn tnt_message_counter(&self) -> TntMessageCounter {
+        self.tnt_message_counter
     }
 
-    #[expect(dead_code)]
-    pub(in crate::mls::conversation) fn increment_sender_nonce(&mut self) {
-        self.sender_nonce += 1;
+    /// Get the tnt message counter bound to this conversation after incrementing it.
+    pub(in crate::mls::conversation) fn obtain_tnt_message_counter(&mut self) -> Result<TntMessageCounter> {
+        self.tnt_message_counter.increment()?;
+        self.group.set_state(openmls::group::InnerState::Changed);
+        Ok(self.tnt_message_counter)
     }
 
-    pub(in crate::mls::conversation) fn reset_sender_nonce(&mut self) {
-        self.sender_nonce = 0
+    pub(in crate::mls::conversation) fn reset_tnt_message_counter(&mut self) {
+        self.tnt_message_counter = Default::default()
     }
 }
 

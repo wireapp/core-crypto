@@ -6,12 +6,15 @@ use openmls::group::MlsGroup;
 use super::Result;
 use crate::{
     ConversationConfiguration, ConversationId, KeystoreError, Session,
-    mls::conversation::{Conversation, MlsGroupState},
+    mls::{
+        TntMessageCounter,
+        conversation::{Conversation, MlsGroupState},
+    },
 };
 
 impl Conversation {
     /// restore the conversation from a persistence-saved serialized Group State.
-    fn from_serialized_state(session: Session, buf: Vec<u8>, sender_nonce: u32) -> Result<Self> {
+    fn from_serialized_state(session: Session, buf: Vec<u8>, tnt_message_counter: TntMessageCounter) -> Result<Self> {
         let group: MlsGroup =
             core_crypto_keystore::deser(&buf).map_err(KeystoreError::wrap("deserializing group state"))?;
         let id = ConversationId::from(group.group_id().as_slice());
@@ -19,7 +22,7 @@ impl Conversation {
             cipher_suite: group.ciphersuite().into(),
             ..Default::default()
         };
-        let group = MlsGroupState::new(group, sender_nonce).into();
+        let group = MlsGroupState::new(group, tnt_message_counter).into();
 
         Ok(Self {
             id,
@@ -37,7 +40,11 @@ impl Conversation {
             .await
             .map_err(KeystoreError::wrap("finding a persisted mls group"))?;
         let Some(mut group) = group else { return Ok(None) };
-        let conversation = Self::from_serialized_state(session, std::mem::take(&mut group.state), group.sender_nonce)?;
+        let conversation = Self::from_serialized_state(
+            session,
+            std::mem::take(&mut group.state),
+            group.tnt_message_counter.into(),
+        )?;
         Ok(Some(conversation))
     }
 
@@ -54,8 +61,11 @@ impl Conversation {
                 // we can't just destructure the fields straight out of the group, because we derive `Zeroize`, which
                 // zeroizes on drop, which means we are forced to clone all the group's fields, because
                 // otherwise the drop impl couldn't run.
-                let conversation =
-                    Self::from_serialized_state(session.clone(), group.state.clone(), group.sender_nonce)?;
+                let conversation = Self::from_serialized_state(
+                    session.clone(),
+                    group.state.clone(),
+                    group.tnt_message_counter.into(),
+                )?;
                 Ok((group.id.clone().into(), conversation))
             })
             .collect()
