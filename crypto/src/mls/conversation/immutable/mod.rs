@@ -6,13 +6,23 @@ mod e2ei;
 mod history_sharing;
 mod persistence;
 
+use std::collections::{HashMap, hash_map::Entry};
+
 use async_lock::{RwLock, RwLockReadGuard};
-use openmls::group::MlsGroup;
+use core_crypto_keystore::{
+    Transaction,
+    entities::{PersistedMlsGroup, TargetedMessageTxCounter, TargetedMessageTxCounterPk},
+    traits::FetchFromDatabase,
+};
+use openmls::{
+    group::{InnerState, MlsGroup},
+    prelude::LeafNodeIndex,
+};
 
 use super::{ConversationIdRef, Error, Result, SecretKey};
 use crate::{
-    CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, ExternalSender, OpenMlsError, Session,
-    mls::TntMessageCounter,
+    CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, ExternalSender, KeystoreError, OpenMlsError,
+    Session, mls::TntMessageCounter,
 };
 
 #[derive(derive_more::Constructor, derive_more::Deref, derive_more::DerefMut, derive_more::Debug)]
@@ -20,8 +30,15 @@ pub(crate) struct MlsGroupState {
     #[deref]
     #[deref_mut]
     group: MlsGroup,
+    /// The count of targeted messages sent (therefore `tx`) this epoch, keyed by recipients.
+    /// Supposed to be used when encrypting targeted messages only, and to be reset whenever the mls epoch is
+    /// incremented. Do not access this field directly, use [MlsGroupState::obtain_targeted_message_tx_counter] and
+    /// [MlsGroupState::reset_targeted_message_tx_counters] only.
+    ///
+    /// The purpose of these counters is replay protection on the recipient side: we provide the count when sending a
+    /// message to a receiver, and they check if the counter is greater than any they've seen before.
     #[debug(skip)]
-    tnt_message_counter: TntMessageCounter,
+    targeted_message_tx_counters: HashMap<LeafNodeIndex, TntMessageCounter>,
 }
 
 impl MlsGroupState {
@@ -33,19 +50,69 @@ impl MlsGroupState {
         &mut self.group
     }
 
-    pub(in crate::mls::conversation) fn tnt_message_counter(&self) -> TntMessageCounter {
-        self.tnt_message_counter
-    }
+    /// Get the targeted message sender (tx) counter bound to this conversation and the given recipient after
+    /// incrementing it.
+    ///
+    /// If the counter hasn't been used yet for this conversation, it is loaded from the database or initialized
+    /// freshly.
+    pub(in crate::mls::conversation) async fn obtain_targeted_message_tx_counter(
+        &mut self,
+        recipient: LeafNodeIndex,
+        database: &impl FetchFromDatabase,
+    ) -> Result<TntMessageCounter> {
+        let key = TargetedMessageTxCounterPk::new(self.group_id().to_vec(), recipient.u32());
 
-    /// Get the tnt message counter bound to this conversation after incrementing it.
-    pub(in crate::mls::conversation) fn obtain_tnt_message_counter(&mut self) -> Result<TntMessageCounter> {
-        self.tnt_message_counter.increment()?;
+        // `or_insert_with` can't be used because db loading is async.
+        let mut counter = match self.targeted_message_tx_counters.entry(recipient) {
+            Entry::Occupied(entry) => entry,
+            Entry::Vacant(entry) => {
+                let count = database
+                    .get::<TargetedMessageTxCounter>(&key)
+                    .await
+                    .map_err(KeystoreError::wrap("searching for tnt message counters for group"))?
+                    .map(|counter| counter.count)
+                    .unwrap_or_default();
+
+                entry.insert_entry(count.into())
+            }
+        };
+
+        counter.get_mut().increment()?;
         self.group.set_state(openmls::group::InnerState::Changed);
-        Ok(self.tnt_message_counter)
+
+        Ok(*counter.get())
     }
 
-    pub(in crate::mls::conversation) fn reset_tnt_message_counter(&mut self) {
-        self.tnt_message_counter = Default::default()
+    pub(in crate::mls::conversation) async fn reset_targeted_message_tx_counters(&mut self, tx: &Transaction) {
+        self.targeted_message_tx_counters = Default::default();
+        let id = self.group.group_id().to_vec();
+        tx.bulk_remove::<TargetedMessageTxCounter, _>(id.into()).await
+    }
+
+    pub(crate) async fn persist(&mut self, tx: &Transaction) -> Result<()> {
+        // We must change the mls group persisted state before persisting, otherwise it will never reach the DB.
+        self.mls_group_mut().set_state(InnerState::Persisted);
+        let id = self.group.group_id();
+
+        tx.save(PersistedMlsGroup {
+            id: id.to_vec(),
+            state: core_crypto_keystore::ser(self.mls_group())
+                .map_err(KeystoreError::wrap("serializing group state"))?,
+        })
+        .await
+        .map_err(KeystoreError::wrap("persisting mls group"))?;
+
+        for (receiver, counter) in self.targeted_message_tx_counters.iter() {
+            tx.save(TargetedMessageTxCounter {
+                conversation_id: id.to_vec(),
+                receiver: receiver.u32(),
+                count: (*counter).into(),
+            })
+            .await
+            .map_err(KeystoreError::wrap("saving tnt message counter"))?;
+        }
+
+        Ok(())
     }
 }
 

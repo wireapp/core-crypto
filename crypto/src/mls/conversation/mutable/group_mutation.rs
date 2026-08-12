@@ -1,9 +1,9 @@
-use core_crypto_keystore::{Transaction, entities::PersistedMlsGroup};
+use core_crypto_keystore::Transaction;
 use openmls::group::InnerState;
 
 use super::{ConversationMut, Result};
 use crate::{
-    KeystoreError, RecursiveError,
+    RecursiveError,
     mls::conversation::{Conversation, ConversationIdRef, MlsGroupState},
 };
 
@@ -43,20 +43,10 @@ impl ConversationMut {
         }
 
         if epoch_before_operation < group.epoch() {
-            group.reset_tnt_message_counter();
+            group.reset_targeted_message_tx_counters(tx).await;
         }
 
-        // We must change the mls group persisted state before persisting, otherwise it will never reach the DB.
-        group.mls_group_mut().set_state(InnerState::Persisted);
-
-        tx.save(PersistedMlsGroup {
-            id: id.to_bytes(),
-            state: core_crypto_keystore::ser(group.mls_group())
-                .map_err(KeystoreError::wrap("serializing group state"))?,
-            tnt_message_counter: group.tnt_message_counter().into(),
-        })
-        .await
-        .map_err(KeystoreError::wrap("persisting mls group"))?;
+        group.persist(tx).await?;
 
         Ok(ok_result)
     }

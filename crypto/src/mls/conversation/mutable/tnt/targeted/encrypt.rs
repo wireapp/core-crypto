@@ -1,5 +1,6 @@
 use std::borrow::Borrow;
 
+use core_crypto_keystore::Database;
 use openmls::prelude::{Ciphersuite, Member, Signable as _};
 use tls_codec::{Serialize as _, TlsSerialize, TlsSize, VLBytes};
 
@@ -41,6 +42,7 @@ impl ConversationMut {
             .crypto_provider()
             .await
             .map_err(RecursiveError::transaction("obtaining crypto provider"))?;
+        let database = self.database().await?;
 
         let targeted = self
             .mutate_group(async |_, group_state, _| {
@@ -50,6 +52,7 @@ impl ConversationMut {
                     .find(|member| ClientIdRef::new(member.credential.identity()) == recipient.borrow())
                     .ok_or_else(|| Error::MemberNotFound(recipient.borrow().to_owned()))?;
                 Self::create_targeted_message(
+                    &database,
                     policy,
                     group_state,
                     &cipher_suite,
@@ -57,6 +60,7 @@ impl ConversationMut {
                     &recipient,
                     &message,
                 )
+                .await
             })
             .await?;
 
@@ -76,7 +80,8 @@ impl ConversationMut {
             .map_err(Error::tls_serialize("TntMessage: targeted"))
     }
 
-    fn create_targeted_message(
+    async fn create_targeted_message(
+        database: &Database,
         policy: TargetedMessagePolicy,
         group_state: &mut MlsGroupState,
         cipher_suite: &Ciphersuite,
@@ -84,7 +89,9 @@ impl ConversationMut {
         recipient: &Member,
         message: &[u8],
     ) -> Result<TargetedMessage, Error> {
-        let nonce = group_state.obtain_tnt_message_counter()?;
+        let nonce = group_state
+            .obtain_targeted_message_tx_counter(recipient.index, database)
+            .await?;
         let mls_group = group_state.mls_group();
         let aad = nonce
             .tls_serialize_detached()
