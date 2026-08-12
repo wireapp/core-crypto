@@ -63,7 +63,7 @@ impl Transaction {
     where
         E: 'static + Entity + Send + Sync,
     {
-        let entity_id = EntityId::from_primary_key::<E>(id)?;
+        let entity_id = EntityId::from_primary_key::<E>(id);
         self.get_by_entity_id(&entity_id).await
     }
 
@@ -76,7 +76,7 @@ impl Transaction {
     where
         E: 'static + Entity + BorrowPrimaryKey + Send + Sync,
     {
-        let entity_id = EntityId::from_borrowed_primary_key::<E>(id)?;
+        let entity_id = EntityId::from_borrowed_primary_key::<E>(id);
         self.get_by_entity_id(&entity_id).await
     }
 
@@ -97,7 +97,7 @@ impl Transaction {
         let mut cache = HashMap::new();
         for operation in operations.iter() {
             if let Some(entity) = operation.as_upsert::<E>() {
-                let entity_id = EntityId::from_entity(&*entity).expect("TODO: make entity ids infallible");
+                let entity_id = EntityId::from_entity(&*entity);
                 cache.insert(entity_id, entity);
             }
             if let Some(entity_id) = operation.as_delete::<E>() {
