@@ -1,10 +1,10 @@
 use core_crypto_keystore::{Transaction, entities::PersistedMlsGroup};
-use openmls::group::{InnerState, MlsGroup};
+use openmls::group::InnerState;
 
 use super::{ConversationMut, Result};
 use crate::{
     KeystoreError, RecursiveError,
-    mls::conversation::{Conversation, ConversationIdRef},
+    mls::conversation::{Conversation, ConversationIdRef, MlsGroupState},
 };
 
 impl ConversationMut {
@@ -24,7 +24,7 @@ impl ConversationMut {
     /// if any lock already exists on that conversation.
     pub(super) async fn mutate_group<T>(
         &mut self,
-        operation: impl AsyncFnOnce(&Transaction, &mut MlsGroup, &ConversationIdRef) -> Result<T>,
+        operation: impl AsyncFnOnce(&Transaction, &mut MlsGroupState, &ConversationIdRef) -> Result<T>,
     ) -> Result<T> {
         // we can't get the transaction if the transaction context has been invalidated,
         // and we want to have that error first before evaluating anything in the operation.
@@ -36,21 +36,21 @@ impl ConversationMut {
         let Conversation { group, id, .. } = &*self.inner;
         let mut group = group.write().await;
         let epoch_before_operation = group.epoch();
-        let ok_result = operation(tx, &mut *group.mls_group_mut(), id).await?;
+        let ok_result = operation(tx, &mut *group, id).await?;
 
         if group.state_changed() == InnerState::Persisted {
             return Ok(ok_result);
         }
 
         if epoch_before_operation < group.epoch() {
-            group.reset_sender_nonce();
+            group.reset_tnt_message_counter();
         }
 
         tx.save(PersistedMlsGroup {
             id: id.to_bytes(),
             state: core_crypto_keystore::ser(group.mls_group())
                 .map_err(KeystoreError::wrap("serializing group state"))?,
-            sender_nonce: group.sender_nonce(),
+            tnt_message_counter: group.tnt_message_counter().into(),
         })
         .await
         .map_err(KeystoreError::wrap("persisting mls group"))?;
@@ -64,7 +64,7 @@ impl ConversationMut {
     #[cfg(test)]
     pub(crate) async fn mutate_group_test<T>(
         &mut self,
-        operation: impl AsyncFnOnce(&Transaction, &mut MlsGroup, &ConversationIdRef) -> Result<T>,
+        operation: impl AsyncFnOnce(&Transaction, &mut MlsGroupState, &ConversationIdRef) -> Result<T>,
     ) -> Result<T> {
         self.mutate_group(operation).await
     }
