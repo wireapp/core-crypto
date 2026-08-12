@@ -10,10 +10,11 @@ impl Database {
         conversation_id: &[u8],
     ) -> CryptoKeystoreResult<Vec<MlsPendingMessage>> {
         let conn = self.conn().await;
-        let persisted_records = MlsPendingMessage::find_all_matching(&conn, &conversation_id.into())?;
+        let conversation_id = conversation_id.to_vec().into();
+        let persisted_records = MlsPendingMessage::find_all_matching(&conn, &conversation_id)?;
         self.merge_with_transaction(persisted_records, async |transaction, persisted_records| {
             transaction
-                .find_pending_messages_by_conversation_id(conversation_id, persisted_records)
+                .find_pending_messages_by_conversation_id(&conversation_id, persisted_records)
                 .await
         })
         .await
