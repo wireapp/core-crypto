@@ -84,7 +84,7 @@ impl FetchFromDatabase for Database {
         let persisted_records = E::load_all(&conn)?;
 
         self.merge_with_transaction(persisted_records, async |transaction, persisted_records| {
-            transaction.find_all(persisted_records).await
+            Ok(transaction.find_all(persisted_records).await.collect())
         })
         .await
     }
@@ -98,7 +98,7 @@ impl FetchFromDatabase for Database {
         let persisted_records = E::find_all_matching(&conn, search_key)?;
 
         self.merge_with_transaction(persisted_records, async |transaction, persisted_records| {
-            transaction.search(persisted_records, search_key).await
+            Ok(transaction.search(persisted_records, search_key).await.collect())
         })
         .await
     }
