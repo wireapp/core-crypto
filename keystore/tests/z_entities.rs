@@ -272,7 +272,7 @@ mod tests_impl {
 
     pub(super) async fn insert_count_entities<E>(store: &Arc<CryptoKeystore>)
     where
-        E: Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
+        E: 'static + Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
     {
         let tx = store.new_transaction().await.unwrap();
         for _ in 0..ENTITY_COUNT {
