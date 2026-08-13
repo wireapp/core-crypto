@@ -198,12 +198,4 @@ impl Operation {
 
         Some(move |entity: &E| matches(entity, &*search_key))
     }
-
-    /// `Some(table_name)` when this operation is a bulk deletion
-    pub(in crate::transaction) fn as_bulk_delete_table_name(&self) -> Option<&'static str> {
-        match self {
-            Self::BulkDelete { table_name, .. } => Some(table_name),
-            _ => None,
-        }
-    }
 }
