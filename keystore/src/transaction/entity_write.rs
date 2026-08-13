@@ -65,8 +65,11 @@ impl Transaction {
         self.remove_by_entity_id::<E>(entity_id).await
     }
 
-    /// Restore an entity that was deleted in this transaction by removing its delete operations.
-    /// This is idempotent: if the entity was never deleted, this changes nothing.
+    /// Restore an entity that was deleted in this transaction by removing its final delete operations.
+    ///
+    /// This is semi-idempotent: if the entity was never deleted, this changes nothing.
+    /// However, in the event that there are multiple deletions for the same entity in this transaction,
+    /// this will only nopify the final one. In most circumstances this doesn't make a difference.
     ///
     /// NOTE: This will only work if the entity has been added in an earlier transaction, because otherwise,
     /// removing its id from the deleted list wouldn't suffice: we'd need to replay its insertion.
@@ -82,13 +85,13 @@ impl Transaction {
 
         {
             let mut operations = self.operations.write().await;
-            for operation in operations.iter_mut() {
-                if operation
+            let last_delete_idx = operations.iter().rposition(|operation| {
+                operation
                     .as_delete::<E>()
-                    .is_some_and(|operation_entity_id| entity_id == operation_entity_id)
-                {
-                    *operation = Operation::Nop;
-                }
+                    .is_some_and(|operation_entity_id| operation_entity_id == entity_id)
+            });
+            if let Some(idx) = last_delete_idx {
+                operations.make_nop(idx);
             }
         }
 
