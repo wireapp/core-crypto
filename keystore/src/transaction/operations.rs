@@ -20,16 +20,40 @@ pub(super) struct Operations {
     #[deref]
     #[into_iterator(owned, ref)]
     operations: Vec<Operation>,
+    /// indices in the operations list of the most recent upsert operation by entity id
+    last_upserts: HashMap<EntityId, usize>,
+    /// indices in the operations list of the most recent delete operation by entity id
     last_deletes: HashMap<EntityId, usize>,
 }
 
 impl Operations {
+    /// get the tables by entity id and an `is_relevant` selector, and the operations list
+    /// so rustc knows that our borrows are disjoint
+    ///
+    /// This is an intrinsically complex return type but for a tiny local function it should be ok
+    #[expect(clippy::type_complexity)]
+    fn entity_idx_tables(
+        &mut self,
+    ) -> (
+        impl IntoIterator<Item = (&mut HashMap<EntityId, usize>, fn(&Operation) -> bool)>,
+        &[Operation],
+    ) {
+        let tables = [
+            (&mut self.last_upserts, |operation| operation.is_upsert()),
+            (&mut self.last_deletes, |operation| operation.is_delete()),
+        ] as [(_, fn(&Operation) -> bool); _];
+        (tables, &self.operations)
+    }
+
     /// Add an operation to the tail of this list, updating caches appropriately.
     pub(super) fn push(&mut self, operation: Operation) {
-        if let Some(entity_id) = operation.entity_id()
-            && operation.is_delete()
-        {
-            self.last_deletes.insert(entity_id.clone(), self.operations.len());
+        if let Some(entity_id) = operation.entity_id() {
+            let (tables, operations) = self.entity_idx_tables();
+            for (table, is_relevant) in tables {
+                if is_relevant(&operation) {
+                    table.insert(entity_id.clone(), operations.len());
+                }
+            }
         }
         self.operations.push(operation);
     }
@@ -47,27 +71,29 @@ impl Operations {
         // if we just nop'd the last delete
         if let Some(displaced) = displaced.as_ref()
             && let Some(entity_id) = displaced.entity_id()
-            && displaced.is_delete()
-            && idx == self.last_deletes[entity_id]
         {
-            // we have to scan here, but not from the end; only leftwards from the old position
-            let new_final_position = self.operations[..idx].iter().rposition(|operation| {
-                operation.is_delete()
-                    && operation
-                        .entity_id()
-                        .is_some_and(|op_entity_id| op_entity_id == entity_id)
-            });
+            let (tables, operations) = self.entity_idx_tables();
+            for (table, is_relevant) in tables {
+                if is_relevant(displaced) && idx == table[entity_id] {
+                    // we have to scan here, but not from the end; only leftwards from the old position
+                    let new_final_position = operations[..idx].iter().rposition(|operation| {
+                        is_relevant(operation)
+                            && operation
+                                .entity_id()
+                                .is_some_and(|op_entity_id| op_entity_id == entity_id)
+                    });
 
-            match new_final_position {
-                Some(position) => {
-                    let cached_position = self
-                        .last_deletes
-                        .get_mut(entity_id)
-                        .expect("last modification already exists because there exists a displaced operation");
-                    *cached_position = position;
-                }
-                None => {
-                    self.last_deletes.remove(entity_id);
+                    match new_final_position {
+                        Some(position) => {
+                            let cached_position = table
+                                .get_mut(entity_id)
+                                .expect("last modification already exists because there exists a displaced operation");
+                            *cached_position = position;
+                        }
+                        None => {
+                            table.remove(entity_id);
+                        }
+                    }
                 }
             }
         }
@@ -75,9 +101,21 @@ impl Operations {
         displaced
     }
 
+    /// Get the index of the last upsert for the specified entity id
+    pub(super) fn last_upsert_idx_for(&self, entity_id: &EntityId) -> Option<usize> {
+        self.last_upserts.get(entity_id).copied()
+    }
+
     /// Get the index of the last delete for the specified entity id
     pub(super) fn last_delete_idx_for(&self, entity_id: &EntityId) -> Option<usize> {
         self.last_deletes.get(entity_id).copied()
+    }
+
+    /// Get the index of the last mutation for the specified entity id
+    pub(super) fn last_mutation_idx_for(&self, entity_id: &EntityId) -> Option<usize> {
+        let upsert = self.last_upsert_idx_for(entity_id);
+        let delete = self.last_delete_idx_for(entity_id);
+        upsert.max(delete)
     }
 
     pub(super) fn delete_indices_for_type<E>(&self) -> impl '_ + Iterator<Item = usize>
