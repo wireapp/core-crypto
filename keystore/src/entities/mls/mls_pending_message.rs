@@ -332,9 +332,6 @@ mod tests {
     /// Reads consult the set of entities deleted by primary key, which a bulk deletion by
     /// conversation id never populates, so a persisted message is masked by neither route.
     #[test]
-    // This needs to wait for probably WPB-27876 or another work ticket which collapses the transaction
-    // operations into a single timeline.
-    #[ignore = "this can only work when we have a consistent view of the order of operations"]
     fn bulk_deletion_hides_persisted_messages_from_reads_in_the_same_transaction() {
         future::block_on(async {
             let store = store_with_pending_group().await;
