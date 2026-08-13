@@ -88,8 +88,7 @@ CREATE TABLE x509_crls (
 CREATE TABLE "mls_pending_messages" (
   hash_sha256 BLOB PRIMARY KEY NOT NULL,  -- hash of the concatenation of (conversation_id, message)
   conversation_id BLOB NOT NULL,
-  message BLOB NOT NULL,
-  FOREIGN KEY (conversation_id) REFERENCES mls_pending_groups(id)
+  message BLOB NOT NULL
 );
 
 CREATE INDEX idx_mls_pending_messages_conversation_id ON mls_pending_messages(conversation_id);
