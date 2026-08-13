@@ -1,7 +1,7 @@
 //! These methods allow for read-only operations on the entities in the transaction,
 //! without considering the database itself.
 
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use super::dynamic_dispatch::EntityId;
 use crate::{
@@ -87,27 +87,44 @@ impl Transaction {
     /// However, it _cannot_ filter out bulk deletions for entities which were not
     /// previously upserted in this transaction. Other composing methods which have
     /// context from the database have to perform their own bulk-deletion filtering!
-    pub(super) async fn find_all_in_cache<E>(&self) -> impl Iterator<Item = Arc<E>>
+    pub(super) async fn find_all_in_cache<E>(&self) -> Vec<Arc<E>>
     where
         E: 'static + Entity + Send + Sync,
     {
         let operations = self.operations.read().await;
 
-        let mut cache = HashMap::new();
-        for operation in operations.iter() {
-            if let Some(entity) = operation.as_upsert::<E>() {
+        let (filters, filter_indices) = operations.bulk_delete_filters::<E>();
+        operations
+            .upsert_indices_for_type::<E>()
+            .filter_map(|idx| {
+                let entity = operations[idx]
+                    .as_upsert::<E>()
+                    .expect("upsert_indices_for_type contains correct indices");
                 let entity_id = EntityId::from_entity(&*entity);
-                cache.insert(entity_id, entity);
-            }
-            if let Some(entity_id) = operation.as_delete::<E>() {
-                cache.remove(&entity_id);
-            }
-            if let Some(should_delete) = operation.as_bulk_delete_filter::<E>() {
-                cache.retain(|_entity_id, entity| !should_delete(entity));
-            }
-        }
 
-        cache.into_values()
+                if operations
+                    .last_delete_idx_for(&entity_id)
+                    .is_some_and(|delete_idx| delete_idx > idx)
+                {
+                    // entity was deleted individually
+                    return None;
+                }
+
+                for filter in filters
+                    .iter()
+                    .zip(filter_indices)
+                    .skip_while(|(_filter, filter_idx)| **filter_idx < idx)
+                    .map(|(filter, _idx)| filter)
+                {
+                    if filter(&entity) {
+                        // entity was bulk-deleted
+                        return None;
+                    }
+                }
+
+                Some(entity)
+            })
+            .collect::<Vec<_>>()
     }
 
     /// Apply the transaction's operations in order, producing all entities of type `E`
@@ -126,6 +143,7 @@ impl Transaction {
     {
         self.find_all_in_cache::<E>()
             .await
+            .into_iter()
             .filter(|entity| entity.matches(search_key))
     }
 
@@ -135,7 +153,7 @@ impl Transaction {
         E: 'static + Clone + Entity + Send + Sync,
     {
         let cached_records = self.find_all_in_cache::<E>().await;
-        self.merge_records(cached_records.map(Arc::unwrap_or_clone), persisted_records)
+        self.merge_records(cached_records.into_iter().map(Arc::unwrap_or_clone), persisted_records)
             .await
     }
 
