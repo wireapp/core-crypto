@@ -132,13 +132,13 @@ impl UniqueArc<Transaction> {
         } = UniqueArc::into_inner(self).await;
         let operations = operations.into_inner();
 
+        // clear the weak reference to this transaction
+        *database.transaction.lock().await = None;
+
         if operations.is_empty() {
             log::debug!("Empty transaction was committed.");
             return Ok(());
         }
-
-        // clear the weak reference to this transaction
-        *database.transaction.lock().await = None;
 
         // open a database transaction
         // Because `rusqlite::Transaction: !Send + !Sync`, it's critical that
