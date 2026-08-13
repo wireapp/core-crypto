@@ -9,7 +9,10 @@ pub mod proteus;
 mod read_outcome;
 mod specializations;
 
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use async_lock::{RwLock, SemaphoreGuardArc};
 use rusqlite::TransactionBehavior;
@@ -82,24 +85,31 @@ impl Transaction {
     where
         E: 'static + Clone + Entity + Send + Sync,
     {
-        // construct the cache from the database's items
+        let (deleted_ids, filters) = {
+            let operations = self.operations.read().await;
+            let deleted_ids = operations
+                .delete_indices_for_type::<E>()
+                .map(|idx| {
+                    operations[idx]
+                        .as_delete::<E>()
+                        .expect("delete_indices_for_type produces correct indices")
+                })
+                .collect::<HashSet<_>>();
+
+            let (filters, _) = operations.bulk_delete_filters();
+            (deleted_ids, filters)
+        };
+
+        // construct the cache from the database's items,
+        // filtering out those items which have been deleted individually or in bulk
         let mut cache = from_database
             .into_iter()
-            .map(|e| (EntityId::from_entity(&e), e))
+            .filter_map(|e| {
+                let entity_id = EntityId::from_entity(&e);
+                let excluded = deleted_ids.contains(&entity_id) || filters.iter().any(|filter| filter(&e));
+                (!excluded).then_some((entity_id, e))
+            })
             .collect::<HashMap<_, _>>();
-
-        // filter out everything in the database which has been deleted
-        {
-            let operations = self.operations.read().await;
-            for operation in operations.iter() {
-                if let Some(entity_id) = operation.as_delete::<E>() {
-                    cache.remove(&entity_id);
-                }
-                if let Some(should_remove) = operation.as_bulk_delete_filter::<E>() {
-                    cache.retain(|_entity_id, entity| !should_remove(entity));
-                }
-            }
-        }
 
         // update with everything which was inserted by the tx cache
         for entity in from_tx_cache {
