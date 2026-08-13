@@ -26,36 +26,31 @@ impl Transaction {
     where
         E: 'static + Entity + Send + Sync,
     {
-        let mut outcome = ReadOutcome::default();
-
-        // Consider the operations in reverse.
-        // Note that we don't use the last mutation caching mechanism, for two reasons:
-        // 1. we have to iterate over the entire operation set to collect the bulk deletes anyway.
-        // 2. finding the last mutation in the same loop ensures that bulk deletes apply only to entities which were
-        //    upserted before the delete
         let operations = self.operations.read().await;
-        for operation in operations.iter().rev() {
-            // take the last mutation for the entity while it's unknown
-            if outcome.entity.is_none()
-                && let Some(mutation) = operation.is_mutation_for::<E>(entity_id)
-            {
-                outcome.entity = Some(mutation);
 
-                // but if we've already seen a relevant bulk deletion, it's actually gone
-                if let Some(Some(entity)) = &outcome.entity
-                    && outcome.should_omit(entity)
+        let (filters, filter_indices) = operations.bulk_delete_filters::<E>();
+        let entity = operations.last_mutation_idx_for(entity_id).map(|entity_idx| {
+            let mut stored_entity = operations[entity_idx].as_upsert::<E>();
+
+            // run each filter coming after the stored entity against that entity
+            if let Some(entity) = stored_entity.as_ref() {
+                for filter in filters
+                    .iter()
+                    .zip(filter_indices)
+                    .skip_while(|(_filter, filter_idx)| **filter_idx < entity_idx)
+                    .map(|(filter, _idx)| filter)
                 {
-                    outcome.entity = Some(None);
+                    if filter(entity) {
+                        stored_entity.take();
+                        break;
+                    }
                 }
             }
 
-            // if this operation is a bulk deletion, record that; we'll need it later
-            if let Some(should_omit) = operation.as_bulk_delete_filter() {
-                outcome.filters.push(Box::new(should_omit));
-            }
-        }
+            stored_entity
+        });
 
-        outcome
+        ReadOutcome { entity, filters }
     }
 
     /// Get an entity by its primary key.
