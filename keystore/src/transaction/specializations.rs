@@ -1,13 +1,12 @@
 //! These methods are specialized for performing certain entity-specific queries.
 
-use super::dynamic_dispatch::EntityId;
-#[cfg(feature = "proteus-keystore")]
-use crate::entities::ProteusPrekey;
 use crate::{
     CryptoKeystoreResult,
     entities::{ConversationId, MlsPendingMessage},
     transaction::Transaction,
 };
+#[cfg(feature = "proteus-keystore")]
+use crate::{entities::ProteusPrekey, transaction::EntityId};
 
 impl Transaction {
     pub(crate) async fn remove_pending_messages_by_conversation_id(&self, conversation_id: impl AsRef<[u8]> + Send) {
