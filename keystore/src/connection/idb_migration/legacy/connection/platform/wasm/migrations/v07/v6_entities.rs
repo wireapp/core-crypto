@@ -18,10 +18,6 @@ use crate::{
 impl EntityBase for V6Credential {
     type ConnectionType = KeystoreDatabaseConnection;
     const TABLE_NAME: &'static str = "mls_credentials";
-
-    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        unimplemented!("v6 credentials are not to be used as transaction entities")
-    }
 }
 
 impl PrimaryKey for V6Credential {
