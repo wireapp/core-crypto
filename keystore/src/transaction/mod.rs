@@ -1,9 +1,11 @@
+mod dynamic_dispatch;
 mod entity_read;
 mod entity_write;
 mod fetch_from_database;
 mod mls;
 #[cfg(feature = "proteus-keystore")]
 pub mod proteus;
+mod read_outcome;
 mod specializations;
 
 use std::{borrow::Cow, collections::HashSet, sync::Arc};
@@ -13,14 +15,13 @@ use itertools::Itertools;
 use ordermap::OrderMap;
 use rusqlite::TransactionBehavior;
 
+pub(crate) use self::read_outcome::ReadOutcome;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc,
     entities::MlsPendingMessage,
     traits::{DeletableBySearchKey as _, Entity, KeyType},
     transaction::dynamic_dispatch::EntityId,
 };
-
-pub(crate) mod dynamic_dispatch;
 
 /// This is an in-flight transaction: all operations are buffered in memory, and only
 /// applied to the database on [`commit`][UniqueArc<Self>::commit].
