@@ -95,7 +95,7 @@ impl Transaction {
                 if let Some(entity_id) = operation.as_delete::<E>() {
                     cache.remove(&entity_id);
                 }
-                if let Some(should_remove) = operation.as_bulk_delete::<E>() {
+                if let Some(should_remove) = operation.as_bulk_delete_filter::<E>() {
                     cache.retain(|_entity_id, entity| !should_remove(entity));
                 }
             }
