@@ -28,20 +28,24 @@ impl Transaction {
     {
         let mut outcome = ReadOutcome::default();
 
-        // consider the operations in reverse
+        // Consider the operations in reverse.
+        // Note that we don't use the last mutation caching mechanism, for two reasons:
+        // 1. we have to iterate over the entire operation set to collect the bulk deletes anyway.
+        // 2. finding the last mutation in the same loop ensures that bulk deletes apply only to entities which were
+        //    upserted before the delete
         let operations = self.operations.read().await;
         for operation in operations.iter().rev() {
             // take the last mutation for the entity while it's unknown
-            if outcome.entity.is_none() {
-                if let Some(mutation) = operation.is_mutation_for::<E>(entity_id) {
-                    outcome.entity = Some(mutation);
+            if outcome.entity.is_none()
+                && let Some(mutation) = operation.is_mutation_for::<E>(entity_id)
+            {
+                outcome.entity = Some(mutation);
 
-                    // but if we've already seen a relevant bulk deletion, it's actually gone
-                    if let Some(Some(entity)) = &outcome.entity
-                        && outcome.should_omit(entity)
-                    {
-                        outcome.entity = Some(None);
-                    }
+                // but if we've already seen a relevant bulk deletion, it's actually gone
+                if let Some(Some(entity)) = &outcome.entity
+                    && outcome.should_omit(entity)
+                {
+                    outcome.entity = Some(None);
                 }
             }
 
