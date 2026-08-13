@@ -1,11 +1,6 @@
 use std::sync::Arc;
 
-/// A filter function which can be used to omit entities returned from the database from a transaction query.
-///
-/// Each bulk delete excludes certain entities, but due to the types and traits in play,
-/// we can't tell whether it applies to a given entity without having an instance
-/// in hand.
-pub(crate) type BulkDeleteFilter<E> = Box<dyn Fn(&E) -> bool + Send + Sync>;
+use crate::transaction::BulkDeleteFilter;
 
 /// The outcome of a read operation on a transaction
 ///
