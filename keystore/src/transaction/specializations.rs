@@ -46,13 +46,19 @@ impl Transaction {
         // that's worth a scan through the operations
         {
             let operations = self.operations.read().await;
-            if let Some(idx) = operations.delete_indices_for_type::<ProteusPrekey>().next() {
-                let entity_id = operations[idx]
-                    .as_delete::<ProteusPrekey>()
-                    .expect("delete_indices_for_type must return the idx of a delete operation");
-                let id = as_prekey_id(&entity_id)
-                    .expect("delete_indices_for_type must return the idx of an op on the correct type");
-                return Ok(id);
+            if let Some(free) = operations
+                .delete_indices_for_type::<ProteusPrekey>()
+                .find_map(|delete_idx| {
+                    let entity_id = operations[delete_idx]
+                        .as_delete::<ProteusPrekey>()
+                        .expect("delete_indices_for_type has correct indices for delete operations");
+                    operations
+                        .last_upsert_idx_for(&entity_id)
+                        .is_none_or(|upsert_idx| upsert_idx < delete_idx)
+                        .then(|| as_prekey_id(&entity_id))?
+                })
+            {
+                return Ok(free);
             }
         }
 
