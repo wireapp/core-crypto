@@ -30,6 +30,9 @@ impl Transaction {
     /// Prefers an id freed by a deletion in this transaction, which is not necessarily the lowest
     /// free id overall but is quite fast to compute. Otherwise returns the lowest id which is free
     /// in the database and not already claimed by this transaction, or 1 if no prekey exists at all.
+    ///
+    /// NOTE: repeated calls to this method will produce the same value until and unless someone
+    /// adds or deletes another prekey.
     #[cfg(feature = "proteus-keystore")]
     pub(crate) async fn free_proteus_prekey_id(&self) -> CryptoKeystoreResult<u16> {
         fn as_prekey_id(entity_id: &EntityId) -> Option<u16> {
@@ -43,27 +46,14 @@ impl Transaction {
         // if we can find a deleted id, we don't need to touch the DB at all;
         // that's worth a scan through the operations
         {
-            let mut candidates = Vec::new();
-
             let operations = self.operations.read().await;
-            for operation in operations.iter() {
-                if let Some(deleted) = operation.as_delete::<ProteusPrekey>()
-                    && let Some(prekey) = as_prekey_id(&deleted)
-                {
-                    candidates.push(prekey);
-                }
-
-                if let Some(inserted) = operation.as_upsert::<ProteusPrekey>() {
-                    let id = inserted.id;
-                    if let Some(position) = candidates.iter().position(|candidate| *candidate == id) {
-                        // oops, we're reusing that prekey id already
-                        candidates.swap_remove(position);
-                    }
-                }
-            }
-
-            if let Some(id) = candidates.first() {
-                return Ok(*id);
+            if let Some(idx) = operations.delete_indices_for_type::<ProteusPrekey>().next() {
+                let entity_id = operations[idx]
+                    .as_delete::<ProteusPrekey>()
+                    .expect("delete_indices_for_type must return the idx of a delete operation");
+                let id = as_prekey_id(&entity_id)
+                    .expect("delete_indices_for_type must return the idx of an op on the correct type");
+                return Ok(id);
             }
         }
 
@@ -99,5 +89,113 @@ impl Transaction {
         // As we assume that the cached prekeys are contiguous, we just ask the database
         // for the next one.
         ProteusPrekey::free_id_greater_than(&conn, high)
+    }
+}
+
+#[cfg(all(test, feature = "proteus-keystore", not(target_os = "unknown")))]
+mod tests {
+    use crate::{Database, entities::ProteusPrekey};
+
+    fn prekey(id: u16) -> ProteusPrekey {
+        ProteusPrekey::from_raw(id, vec![id as u8; 8])
+    }
+
+    /// A database whose prekey table holds `1..=3`, so its own next free id is 4.
+    async fn store_with_three_prekeys() -> std::sync::Arc<Database> {
+        let store = Database::open_in_memory().unwrap();
+        store
+            .transactionally(async |tx| {
+                for id in 1..=3 {
+                    tx.save(prekey(id)).await?;
+                }
+                Ok(())
+            })
+            .await
+            .unwrap();
+        store
+    }
+
+    /// An id freed by a deletion in this transaction wins over the database's next free id.
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn free_prekey_id_prefers_an_id_deleted_in_this_transaction() {
+        let store = store_with_three_prekeys().await;
+        let tx = store.new_transaction().await.unwrap();
+
+        assert_eq!(
+            tx.free_proteus_prekey_id().await.unwrap(),
+            4,
+            "with no deletions staged, the id has to come from the database"
+        );
+
+        tx.remove::<ProteusPrekey>(&2).await.unwrap();
+
+        assert_eq!(
+            tx.free_proteus_prekey_id().await.unwrap(),
+            2,
+            "the staged deletion frees id 2, which is preferred over the database's id 4"
+        );
+    }
+
+    /// Saving a prekey under an id staged for deletion nops that deletion, so the id stops being
+    /// offered and the next call moves on to the other staged deletion.
+    ///
+    /// The deleted set is unordered, so which of the two ids comes back first is unspecified;
+    /// the property under test is that a claimed id is not handed out twice.
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn claiming_a_freed_prekey_id_uncovers_the_next_one() {
+        let store = store_with_three_prekeys().await;
+        let tx = store.new_transaction().await.unwrap();
+
+        tx.remove::<ProteusPrekey>(&2).await.unwrap();
+        tx.remove::<ProteusPrekey>(&3).await.unwrap();
+
+        let first = tx.free_proteus_prekey_id().await.unwrap();
+        assert!(
+            [2, 3].contains(&first),
+            "one of the two staged deletions must be offered, got {first}"
+        );
+        tx.save(prekey(first)).await.unwrap();
+
+        let second = tx.free_proteus_prekey_id().await.unwrap();
+        assert_ne!(
+            second, first,
+            "claiming {first} must nop its deletion so it is no longer free"
+        );
+        assert!(
+            [2, 3].contains(&second),
+            "the remaining staged deletion must be offered, got {second}"
+        );
+        tx.save(prekey(second)).await.unwrap();
+
+        assert_eq!(
+            tx.free_proteus_prekey_id().await.unwrap(),
+            4,
+            "with both staged deletions claimed, the id has to come from the database again"
+        );
+    }
+
+    /// The same, for a prekey which was saved and then deleted within this one transaction:
+    /// the deletion is still the last operation for that id, so it must still be nop'd on re-save.
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn claiming_a_prekey_id_deleted_after_being_saved_in_the_same_transaction() {
+        let store = Database::open_in_memory().unwrap();
+        let tx = store.new_transaction().await.unwrap();
+
+        tx.save(prekey(1)).await.unwrap();
+        tx.remove::<ProteusPrekey>(&1).await.unwrap();
+
+        assert_eq!(
+            tx.free_proteus_prekey_id().await.unwrap(),
+            1,
+            "the staged deletion frees id 1 again"
+        );
+
+        tx.save(prekey(1)).await.unwrap();
+
+        assert_eq!(
+            tx.free_proteus_prekey_id().await.unwrap(),
+            2,
+            "claiming 1 must nop its deletion, so 1 is no longer free"
+        );
     }
 }
