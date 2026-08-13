@@ -18,6 +18,7 @@ use crate::{
 
 #[derive(Zeroize)]
 #[zeroize(drop)]
+#[expect(unreachable_pub)]
 pub struct E2eiIntermediateCert {
     // key to identify the CA cert; Using a combination of SKI & AKI extensions concatenated like so is suitable:
     // `SKI[+AKI]`
@@ -28,9 +29,6 @@ pub struct E2eiIntermediateCert {
 impl legacy::traits::EntityBase for E2eiIntermediateCert {
     type ConnectionType = legacy::connection::KeystoreDatabaseConnection;
     const TABLE_NAME: &'static str = "e2ei_intermediate_certs";
-    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        panic!("this migration-only entity should never be part of a transaction")
-    }
 }
 impl legacy::traits::Entity for E2eiIntermediateCert {
     #[allow(
@@ -572,12 +570,6 @@ impl BorrowPrimaryKey for E2eiIntermediateCert {
 
     fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
         &self.ski_aki_pair
-    }
-}
-
-impl From<E2eiIntermediateCert> for crate::transaction::dynamic_dispatch::Entity {
-    fn from(_value: E2eiIntermediateCert) -> Self {
-        panic!("This entity should never be used in a transaction")
     }
 }
 

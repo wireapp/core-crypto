@@ -18,6 +18,7 @@ use crate::{
 
 #[derive(Zeroize)]
 #[zeroize(drop)]
+#[expect(unreachable_pub)]
 pub struct E2eiCrl {
     pub distribution_point: String,
     /// A DER-encoded certificate list
@@ -27,9 +28,6 @@ pub struct E2eiCrl {
 impl legacy::traits::EntityBase for E2eiCrl {
     type ConnectionType = legacy::connection::KeystoreDatabaseConnection;
     const TABLE_NAME: &'static str = "e2ei_crls";
-    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        panic!("This entity should never be used in a transaction")
-    }
 }
 impl legacy::traits::Entity for E2eiCrl {
     #[allow(
@@ -556,12 +554,6 @@ impl<'a> legacy::traits::Encrypting<'a> for E2eiCrl {
             distribution_point: &self.distribution_point,
             content: <Self as legacy::traits::EncryptData>::encrypt_data(self, cipher, &self.content)?,
         })
-    }
-}
-
-impl From<E2eiCrl> for crate::transaction::dynamic_dispatch::Entity {
-    fn from(_value: E2eiCrl) -> Self {
-        panic!("This entity should never be used in a transaction")
     }
 }
 

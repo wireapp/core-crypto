@@ -17,11 +17,6 @@ use crate::{
 impl EntityBase for V5Credential {
     type ConnectionType = KeystoreDatabaseConnection;
     const TABLE_NAME: &'static str = "mls_credentials";
-
-    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        // We could just add a variant to the enum, but we're not going to need it.
-        unimplemented!("V5 credential is not used in transactions")
-    }
 }
 
 impl PrimaryKey for V5Credential {
