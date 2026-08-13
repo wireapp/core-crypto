@@ -3,6 +3,7 @@ mod entity_read;
 mod entity_write;
 mod fetch_from_database;
 mod mls;
+mod operations;
 #[cfg(feature = "proteus-keystore")]
 pub mod proteus;
 mod read_outcome;
@@ -17,7 +18,10 @@ pub(crate) use self::read_outcome::ReadOutcome;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc,
     traits::Entity,
-    transaction::dynamic_dispatch::{EntityId, Operation},
+    transaction::{
+        dynamic_dispatch::{EntityId, Operation},
+        operations::Operations,
+    },
 };
 
 /// This is an in-flight transaction: all operations are buffered in memory, and only
@@ -31,7 +35,7 @@ use crate::{
 /// Alternately, wrap the entire thing in an `Arc<Mutex<Option<UniqueArc<Self>>>>` or similar.
 /// Just be aware that you'll need to take the unique arc out in order to commit.
 pub struct Transaction {
-    operations: RwLock<Vec<Operation>>,
+    operations: RwLock<Operations>,
     _semaphore_guard: SemaphoreGuardArc,
     database: Arc<Database>,
 }
