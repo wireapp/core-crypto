@@ -52,7 +52,7 @@ impl Transaction {
             }
 
             // if this operation is a bulk deletion, record that; we'll need it later
-            if let Some(should_omit) = operation.as_bulk_delete() {
+            if let Some(should_omit) = operation.as_bulk_delete_filter() {
                 outcome.filters.push(Box::new(should_omit));
             }
         }
@@ -107,7 +107,7 @@ impl Transaction {
             if let Some(entity_id) = operation.as_delete::<E>() {
                 cache.remove(&entity_id);
             }
-            if let Some(should_delete) = operation.as_bulk_delete::<E>() {
+            if let Some(should_delete) = operation.as_bulk_delete_filter::<E>() {
                 cache.retain(|_entity_id, entity| !should_delete(entity));
             }
         }

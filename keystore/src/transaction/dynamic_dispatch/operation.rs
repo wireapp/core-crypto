@@ -58,6 +58,7 @@ pub(in crate::transaction) enum Operation {
     /// This operation removes multiple entites from the database based on a search key.
     /// It corresponds to [crate::traits::DeletableBySearchKey].
     BulkDelete {
+        table_name: &'static str,
         #[debug("Arc<dyn Any + Send + Sync>")]
         search_key: Arc<dyn Any + Send + Sync>,
         #[debug(skip)]
@@ -121,6 +122,7 @@ impl Operation {
         S: 'static + KeyType,
     {
         Self::BulkDelete {
+            table_name: E::TABLE_NAME,
             search_key: Arc::new(search_key),
             apply: |search_key, tx| {
                 let search_key = search_key
@@ -204,7 +206,7 @@ impl Operation {
     /// The return type here uses somewhat unusual syntax, but its meaning is simple:
     /// `use<E>` means the only generic parameter of the returned function is `E`;
     /// the returned function does _not_ have a lifetime tied to the lifetime of `&self`.
-    pub(in crate::transaction) fn as_bulk_delete<E>(&self) -> Option<impl use<E> + Fn(&E) -> bool + Send + Sync>
+    pub(in crate::transaction) fn as_bulk_delete_filter<E>(&self) -> Option<impl use<E> + Fn(&E) -> bool + Send + Sync>
     where
         E: 'static + Send + Sync,
     {
@@ -221,5 +223,13 @@ impl Operation {
         let matches = *matches;
 
         Some(move |entity: &E| matches(entity, &*search_key))
+    }
+
+    /// `Some(table_name)` when this operation is a bulk deletion
+    pub(in crate::transaction) fn as_bulk_delete_table_name(&self) -> Option<&'static str> {
+        match self {
+            Self::BulkDelete { table_name, .. } => Some(table_name),
+            _ => None,
+        }
     }
 }
