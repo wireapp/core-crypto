@@ -22,6 +22,12 @@ impl KeyType for ConversationId {
 }
 
 /// Entity representing a buffered message
+///
+/// A message is buffered when it cannot be decrypted yet, which happens in two unrelated situations: the
+/// conversation was joined by external commit and that join has not been merged, or the conversation is
+/// fully established but the message belongs to epoch `n + 1` while we are still in epoch `n`. The first
+/// kind of conversation is stored in `mls_pending_groups` and the second in `mls_groups`, so
+/// `conversation_id` carries no foreign key — there is no single parent table for it to reference.
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct MlsPendingMessage {
@@ -125,12 +131,10 @@ impl crate::traits::DeletableBySearchKey<ConversationId> for MlsPendingMessage {
 
 #[cfg(all(test, not(target_os = "unknown")))]
 mod tests {
-    use std::sync::Arc;
-
     use futures_lite::future;
 
     use super::*;
-    use crate::{Database, entities::PersistedMlsPendingGroup, traits::FetchFromDatabase as _};
+    use crate::{Database, traits::FetchFromDatabase as _};
 
     const CONVERSATION_ID: &[u8] = b"conversation which buffers a message";
     const MESSAGE: &[u8] = b"a message which arrived before we could decrypt it";
@@ -142,23 +146,35 @@ mod tests {
         }
     }
 
-    /// An in-memory store containing the pending group which [`CONVERSATION_ID`] refers to.
+    /// A buffered message can be committed for a conversation which is not a pending group.
     ///
-    /// `mls_pending_messages.conversation_id` has a foreign key onto `mls_pending_groups.id`, so a
-    /// pending message can only be saved once its conversation exists.
-    async fn store_with_pending_group() -> Arc<Database> {
-        let store = Database::open_in_memory().unwrap();
-        let tx = store.new_transaction().await.unwrap();
-        tx.save(PersistedMlsPendingGroup {
-            id: CONVERSATION_ID.to_owned(),
-            state: b"group state".to_vec(),
-            parent_id: None,
-            custom_configuration: b"custom configuration".to_vec(),
-        })
-        .await
-        .unwrap();
-        tx.commit().await.unwrap();
-        store
+    /// This table serves two unrelated callers. One is a conversation joined by external commit and not
+    /// yet merged, which lives in `mls_pending_groups`; the other is a fully established conversation
+    /// buffering a message from epoch `n + 1`, which lives in `mls_groups` and has no pending group row at
+    /// all. Up to and including V30 the table carried a foreign key onto `mls_pending_groups`, which the
+    /// second caller could never satisfy, so its saves failed at commit with `FOREIGN KEY constraint
+    /// failed`. V31 drops that constraint, and its comment explains why at length.
+    ///
+    /// Every other test here now exercises the same conversation shape, so this property is covered
+    /// several times over. It gets a test of its own regardless: nothing in the schema records the
+    /// relationship between a buffered message and its conversation any more, so this is the only place
+    /// which states that a conversation absent from `mls_pending_groups` is legitimate.
+    #[test]
+    fn can_save_a_pending_message_for_a_conversation_which_is_not_a_pending_group() {
+        future::block_on(async {
+            let store = Database::open_in_memory().unwrap();
+            let primary_key = pending_message().primary_key();
+
+            let tx = store.new_transaction().await.unwrap();
+            tx.save(pending_message()).await.unwrap();
+            tx.commit().await.unwrap();
+
+            assert_eq!(
+                store.get::<MlsPendingMessage>(&primary_key).await.unwrap().as_ref(),
+                Some(&pending_message()),
+                "a buffered message must survive commit even though its conversation is not a pending group"
+            );
+        });
     }
 
     /// A saved pending message can be read back by the primary key derived from its own fields.
@@ -169,7 +185,7 @@ mod tests {
     #[test]
     fn can_get_a_saved_pending_message_by_primary_key() {
         future::block_on(async {
-            let store = store_with_pending_group().await;
+            let store = Database::open_in_memory().unwrap();
             let expected = pending_message();
             let primary_key = expected.primary_key();
 
@@ -193,7 +209,7 @@ mod tests {
     #[test]
     fn can_delete_a_pending_message_by_primary_key() {
         future::block_on(async {
-            let store = store_with_pending_group().await;
+            let store = Database::open_in_memory().unwrap();
             let sibling = MlsPendingMessage {
                 conversation_id: CONVERSATION_ID.to_owned(),
                 message: b"a second buffered message in the same conversation".to_vec(),
@@ -230,7 +246,7 @@ mod tests {
     #[test]
     fn can_delete_all_pending_messages_of_a_conversation() {
         future::block_on(async {
-            let store = store_with_pending_group().await;
+            let store = Database::open_in_memory().unwrap();
 
             let tx = store.new_transaction().await.unwrap();
             tx.save(pending_message()).await.unwrap();
@@ -263,7 +279,7 @@ mod tests {
     #[test]
     fn bulk_deletion_removes_a_pending_message_saved_earlier_in_the_transaction() {
         future::block_on(async {
-            let store = store_with_pending_group().await;
+            let store = Database::open_in_memory().unwrap();
             let primary_key = pending_message().primary_key();
 
             let tx = store.new_transaction().await.unwrap();
@@ -291,7 +307,7 @@ mod tests {
     #[test]
     fn a_pending_message_saved_after_a_bulk_deletion_survives_it() {
         future::block_on(async {
-            let store = store_with_pending_group().await;
+            let store = Database::open_in_memory().unwrap();
             let stale = pending_message();
             let stale_key = stale.primary_key();
             let fresh = MlsPendingMessage {
@@ -334,7 +350,7 @@ mod tests {
     #[test]
     fn bulk_deletion_hides_persisted_messages_from_reads_in_the_same_transaction() {
         future::block_on(async {
-            let store = store_with_pending_group().await;
+            let store = Database::open_in_memory().unwrap();
             let primary_key = pending_message().primary_key();
 
             // persist the message in an earlier transaction, so it is on disk rather than cached
