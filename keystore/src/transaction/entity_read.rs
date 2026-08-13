@@ -33,10 +33,10 @@ impl Transaction {
             let mut stored_entity = operations[entity_idx].as_upsert::<E>();
 
             // run each filter coming after the stored entity against that entity
-            if let Some(entity) = stored_entity.as_ref() {
-                if bulk_delete_filters.applies_after(entity, entity_idx) {
-                    stored_entity.take();
-                }
+            if let Some(entity) = stored_entity.as_ref()
+                && bulk_delete_filters.applies_after(entity, entity_idx)
+            {
+                stored_entity.take();
             }
 
             stored_entity
@@ -91,7 +91,7 @@ impl Transaction {
             .upsert_indices_for_type::<E>()
             .filter_map(|(entity_id, idx)| {
                 if operations
-                    .last_delete_idx_for(&entity_id)
+                    .last_delete_idx_for(entity_id)
                     .is_some_and(|delete_idx| delete_idx > idx)
                 {
                     // entity was deleted individually
