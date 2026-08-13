@@ -1,14 +1,12 @@
 //! These methods alow mutating the transaction. Mutations will be propagated to the database on commit.
 
-use super::dynamic_dispatch::EntityId;
 use crate::{
     CryptoKeystoreResult,
-    entities::ProteusPrekey,
-    traits::{
-        BorrowPrimaryKey, DeletableBySearchKey, Entity as _, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType,
-    },
-    transaction::{Operation, Transaction},
+    traits::{BorrowPrimaryKey, DeletableBySearchKey, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType},
+    transaction::{EntityId, Operation, Transaction},
 };
+#[cfg(feature = "proteus-keystore")]
+use crate::{entities::ProteusPrekey, traits::Entity as _};
 
 impl Transaction {
     /// Save an entity into this transaction.
@@ -28,21 +26,24 @@ impl Transaction {
         {
             let mut operations = self.operations.write().await;
 
-            // specialization: finding the next available proteus prekey uses an optimization which relies
-            // on the last deleted prekey id being free. We therefore have to nop the last deletion
-            // of the prekey with this id as we add it, to ensure that next time that's called, we get
-            // a value not already claimed.
-            if E::TABLE_NAME == ProteusPrekey::TABLE_NAME {
-                let entity_id = EntityId::from_entity(&entity);
-                if let Some(idx) = operations.last_delete_idx_for(&entity_id) {
-                    let _displaced = operations.make_nop(idx);
+            #[cfg(feature = "proteus-keystore")]
+            {
+                // specialization: finding the next available proteus prekey uses an optimization which relies
+                // on the last deleted prekey id being free. We therefore have to nop the last deletion
+                // of the prekey with this id as we add it, to ensure that next time that's called, we get
+                // a value not already claimed.
+                if E::TABLE_NAME == ProteusPrekey::TABLE_NAME {
+                    let entity_id = EntityId::from_entity(&entity);
+                    if let Some(idx) = operations.last_delete_idx_for(&entity_id) {
+                        let _displaced = operations.make_nop(idx);
 
-                    debug_assert!(_displaced.is_some(), "last_delete_idx_for must produce a valid index");
-                    debug_assert_eq!(
-                        _displaced.unwrap().entity_id().unwrap(),
-                        &entity_id,
-                        "we must have displaced an entity with the same id"
-                    );
+                        debug_assert!(_displaced.is_some(), "last_delete_idx_for must produce a valid index");
+                        debug_assert_eq!(
+                            _displaced.unwrap().entity_id().unwrap(),
+                            &entity_id,
+                            "we must have displaced an entity with the same id"
+                        );
+                    }
                 }
             }
 
