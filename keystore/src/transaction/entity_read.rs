@@ -1,5 +1,10 @@
 //! These methods allow for read-only operations on the entities in the transaction,
 //! without considering the database itself.
+//!
+//! The `*_in_cache` methods and [`Transaction::get_by_entity_id`] answer purely from the buffered
+//! operations. [`Transaction::find_all`] and [`Transaction::search`] compose those answers with
+//! database records the caller has already loaded, which is as close to the database as anything
+//! here gets.
 
 use std::sync::Arc;
 
@@ -72,7 +77,14 @@ impl Transaction {
         self.get_by_entity_id(&entity_id).await
     }
 
-    /// Apply the transaction's operations in order, producing all entities of type `E`.
+    /// Every entity of type `E` which this transaction has upserted and not since removed.
+    ///
+    /// This does not replay the operations in order. It starts from the most recent upsert of each
+    /// entity id and discards the ones buried by a later delete or bulk deletion, which reaches the
+    /// same answer while only visiting operations which could contribute to it.
+    ///
+    /// The order of the returned entities is unspecified, as it follows `HashMap` iteration. A caller
+    /// which needs a particular order has to impose it.
     ///
     /// ## Caution
     ///
@@ -112,8 +124,10 @@ impl Transaction {
             .collect::<Vec<_>>()
     }
 
-    /// Apply the transaction's operations in order, producing all entities of type `E`
-    /// which match the provided search key.
+    /// Every entity of type `E` matching `search_key` which this transaction has upserted and not
+    /// since removed.
+    ///
+    /// As with [`Self::find_all_in_cache`], which this filters, the order is unspecified.
     ///
     /// ## Caution
     ///
