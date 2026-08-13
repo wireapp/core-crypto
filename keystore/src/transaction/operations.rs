@@ -29,42 +29,24 @@ pub(super) struct Operations {
 }
 
 impl Operations {
-    /// get the tables by entity id and an `is_relevant` selector, and the operations list
-    /// so rustc knows that our borrows are disjoint
-    ///
-    /// This is an intrinsically complex return type but for a tiny local function it should be ok
-    #[expect(clippy::type_complexity)]
-    fn entity_idx_tables(
-        &mut self,
-    ) -> (
-        impl IntoIterator<Item = (&mut HashMap<EntityId, usize>, fn(&Operation) -> bool)>,
-        &[Operation],
-    ) {
-        let tables = [
-            (&mut self.last_upserts, |operation| operation.is_upsert()),
-            (&mut self.last_deletes, |operation| operation.is_delete()),
-        ] as [(_, fn(&Operation) -> bool); _];
-        (tables, &self.operations)
-    }
-
     /// Add an operation to the tail of this list, updating caches appropriately.
     pub(super) fn push(&mut self, operation: Operation) {
-        // keep track of mutation operations
-        if let Some(entity_id) = operation.entity_id() {
-            let (tables, operations) = self.entity_idx_tables();
-            for (table, is_relevant) in tables {
-                if is_relevant(&operation) {
-                    table.insert(entity_id.clone(), operations.len());
-                }
+        match &operation {
+            Operation::Nop => {
+                // why bother?
+                return;
             }
-        }
-
-        // keep track of bulk delete operations
-        if let Some(table_name) = operation.as_bulk_delete_table_name() {
-            self.bulk_deletes
+            Operation::Upsert { entity_id, .. } => {
+                self.last_upserts.insert(entity_id.clone(), self.operations.len());
+            }
+            Operation::Delete { entity_id, .. } => {
+                self.last_deletes.insert(entity_id.clone(), self.operations.len());
+            }
+            Operation::BulkDelete { table_name, .. } => self
+                .bulk_deletes
                 .entry(table_name)
                 .or_default()
-                .push(self.operations.len());
+                .push(self.operations.len()),
         }
 
         // store the actual operation
@@ -83,40 +65,49 @@ impl Operations {
         // ensure we update the mutation tables for this entity
         // if we just nop'd the last relevant mutation
         if let Some(displaced) = displaced.as_ref() {
-            // re-scan for the last operation that we just displaced
-            if let Some(entity_id) = displaced.entity_id() {
-                let (tables, operations) = self.entity_idx_tables();
-                for (table, is_relevant) in tables {
-                    if is_relevant(displaced) && idx == table[entity_id] {
-                        // we have to scan here, but not from the end; only leftwards from the old position
-                        let new_final_position = operations[..idx].iter().rposition(|operation| {
-                            is_relevant(operation)
-                                && operation
-                                    .entity_id()
-                                    .is_some_and(|op_entity_id| op_entity_id == entity_id)
-                        });
+            let scan_params = match displaced {
+                Operation::Nop => None,
+                Operation::BulkDelete { table_name, .. } => {
+                    self.bulk_deletes
+                        .get_mut(table_name)
+                        .expect("we displaced a bulk delete so its entry must exist")
+                        .retain(|delete_idx| *delete_idx != idx);
+                    None
+                }
+                Operation::Upsert { entity_id, .. } => (idx == self.last_upserts[entity_id]).then_some((
+                    &mut self.last_upserts,
+                    (|operation: &Operation| operation.is_upsert()) as fn(&Operation) -> bool,
+                    entity_id,
+                )),
+                Operation::Delete { entity_id, .. } => (idx == self.last_deletes[entity_id]).then_some((
+                    &mut self.last_deletes,
+                    (|operation: &Operation| operation.is_delete()) as _,
+                    entity_id,
+                )),
+            };
 
-                        match new_final_position {
-                            Some(position) => {
-                                let cached_position = table.get_mut(entity_id).expect(
-                                    "last modification already exists because there exists a displaced operation",
-                                );
-                                *cached_position = position;
-                            }
-                            None => {
-                                table.remove(entity_id);
-                            }
-                        }
+            // scan_params are set on mutations where we have to scan to find the new relevant parameter, or remove
+            // that entity id from the table entirely if there are no more mutations of that kind.
+            if let Some((table, is_relevant, entity_id)) = scan_params {
+                // we have to scan here, but not from the end; only leftwards from the old position
+                let new_final_position = self.operations[..idx].iter().rposition(|operation| {
+                    is_relevant(operation)
+                        && operation
+                            .entity_id()
+                            .is_some_and(|op_entity_id| op_entity_id == entity_id)
+                });
+
+                match new_final_position {
+                    Some(position) => {
+                        let cached_position = table
+                            .get_mut(entity_id)
+                            .expect("last modification already exists because there exists a displaced operation");
+                        *cached_position = position;
+                    }
+                    None => {
+                        table.remove(entity_id);
                     }
                 }
-            }
-
-            // if this was a bulk delete, we have to remove it from the deletion cache
-            if let Some(table_name) = displaced.as_bulk_delete_table_name() {
-                self.bulk_deletes
-                    .get_mut(table_name)
-                    .expect("we displaced a bulk delete so its entry must exist")
-                    .retain(|delete_idx| *delete_idx != idx);
             }
         }
 
