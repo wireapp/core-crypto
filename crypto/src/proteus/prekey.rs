@@ -126,11 +126,49 @@ mod tests {
         drop(db_file);
     }
 
+    /// Auto prekeys fill the holes left by deleted prekeys before extending the id space.
+    ///
+    /// The order in which the holes get filled is deliberately not asserted: the keystore tracks
+    /// ids freed within a transaction in an unordered map, so all that is promised is that every
+    /// hole is filled exactly once before any fresh id is handed out.
     #[macro_rules_attribute::apply(smol_macros::test)]
-    async fn auto_prekeys_are_sequential() {
+    async fn auto_prekeys_fill_holes() {
         use core_crypto_keystore::entities::ProteusPrekey;
-        const GAP_AMOUNT: u16 = 5;
+        const GAP_AMOUNT: usize = 5;
+        /// How far past the end of the filled id space to keep claiming ids
+        const EXTRA_AMOUNT: u16 = 10;
         const ID_TEST_RANGE: std::ops::RangeInclusive<u16> = 1..=30;
+
+        /// Claim `count` auto prekeys, returning the assigned ids in the order they were handed out.
+        async fn claim(alice: &ProteusCentral, tx: &Transaction, count: usize) -> Vec<u16> {
+            let mut ids = Vec::with_capacity(count);
+            for _ in 0..count {
+                let (pk_id, pkb) = alice.new_prekey_auto(tx).await.unwrap();
+                let prekey = proteus_wasm::keys::PreKeyBundle::deserialise(&pkb).unwrap();
+                assert_eq!(prekey.prekey_id.value(), pk_id, "the bundle must carry the assigned id");
+                ids.push(pk_id);
+            }
+            ids
+        }
+
+        /// Pick `count` distinct ids from `ID_TEST_RANGE`, in ascending order.
+        fn pick_gap_ids(rng: &mut impl rand::Rng, count: usize) -> Vec<u16> {
+            let mut ids = Vec::with_capacity(count);
+            while ids.len() < count {
+                let id = rng.gen_range(ID_TEST_RANGE);
+                if !ids.contains(&id) {
+                    ids.push(id);
+                }
+            }
+            ids.sort();
+            ids
+        }
+
+        fn ascending(ids: &[u16]) -> Vec<u16> {
+            let mut ids = ids.to_owned();
+            ids.sort();
+            ids
+        }
 
         #[cfg(not(target_os = "unknown"))]
         let (path, db_file) = tmp_db_file();
@@ -142,56 +180,44 @@ mod tests {
         let tx = keystore.new_transaction().await.unwrap();
         let alice = ProteusCentral::try_new(&tx).await.unwrap();
 
-        for i in ID_TEST_RANGE {
-            let (pk_id, pkb) = alice.new_prekey_auto(&tx).await.unwrap();
-            assert_eq!(i, pk_id);
-            let prekey = proteus_wasm::keys::PreKeyBundle::deserialise(&pkb).unwrap();
-            assert_eq!(prekey.prekey_id.value(), pk_id);
-        }
+        // with no holes to fill, ids are simply assigned in ascending order from 1
+        let claimed = claim(&alice, &tx, ID_TEST_RANGE.count()).await;
+        assert_eq!(claimed, ID_TEST_RANGE.collect::<Vec<_>>());
 
-        use rand::Rng as _;
         let mut rng = rand::thread_rng();
-        let mut gap_ids: Vec<u16> = (0..GAP_AMOUNT).map(|_| rng.gen_range(ID_TEST_RANGE)).collect();
-        gap_ids.sort();
-        gap_ids.dedup();
-        while gap_ids.len() < GAP_AMOUNT as usize {
-            gap_ids.push(rng.gen_range(ID_TEST_RANGE));
-            gap_ids.sort();
-            gap_ids.dedup();
-        }
-        for gap_id in gap_ids.iter() {
+
+        // punch some holes; the next claims must fill exactly those
+        let gap_ids = pick_gap_ids(&mut rng, GAP_AMOUNT);
+        for gap_id in &gap_ids {
             tx.remove::<ProteusPrekey>(gap_id).await.unwrap();
         }
+        let claimed = claim(&alice, &tx, GAP_AMOUNT).await;
+        assert_eq!(
+            ascending(&claimed),
+            gap_ids,
+            "every deleted id must be reassigned exactly once"
+        );
 
-        gap_ids.sort();
-
-        for gap_id in gap_ids.iter() {
-            let (pk_id, pkb) = alice.new_prekey_auto(&tx).await.unwrap();
-            assert_eq!(pk_id, *gap_id);
-            let prekey = proteus_wasm::keys::PreKeyBundle::deserialise(&pkb).unwrap();
-            assert_eq!(prekey.prekey_id.value(), *gap_id);
-        }
-
-        let mut gap_ids: Vec<u16> = (0..GAP_AMOUNT).map(|_| rng.gen_range(ID_TEST_RANGE)).collect();
-        gap_ids.sort();
-        gap_ids.dedup();
-        while gap_ids.len() < GAP_AMOUNT as usize {
-            gap_ids.push(rng.gen_range(ID_TEST_RANGE));
-            gap_ids.sort();
-            gap_ids.dedup();
-        }
-        for gap_id in gap_ids.iter() {
+        // punch holes again, but this time keep claiming past them, to check both that holes take
+        // priority over fresh ids and that the fresh ids resume above the filled id space
+        let gap_ids = pick_gap_ids(&mut rng, GAP_AMOUNT);
+        for gap_id in &gap_ids {
             tx.remove::<ProteusPrekey>(gap_id).await.unwrap();
         }
+        let claimed = claim(&alice, &tx, GAP_AMOUNT + EXTRA_AMOUNT as usize).await;
+        let (filled, extended) = claimed.split_at(GAP_AMOUNT);
+        assert_eq!(
+            ascending(filled),
+            gap_ids,
+            "holes must all be filled before the id space is extended"
+        );
+        let high_water_mark = *ID_TEST_RANGE.end();
+        assert_eq!(
+            extended,
+            (high_water_mark + 1..=high_water_mark + EXTRA_AMOUNT).collect::<Vec<_>>(),
+            "once no holes remain, ids extend the id space in ascending order"
+        );
 
-        let potential_range = *ID_TEST_RANGE.end()..=(*ID_TEST_RANGE.end() * 2);
-        let potential_range_check = potential_range.clone();
-        for _ in potential_range {
-            let (pk_id, pkb) = alice.new_prekey_auto(&tx).await.unwrap();
-            assert!(gap_ids.contains(&pk_id) || potential_range_check.contains(&pk_id));
-            let prekey = proteus_wasm::keys::PreKeyBundle::deserialise(&pkb).unwrap();
-            assert_eq!(prekey.prekey_id.value(), pk_id);
-        }
         tx.commit().await.unwrap();
         #[cfg(not(target_os = "unknown"))]
         drop(db_file);
