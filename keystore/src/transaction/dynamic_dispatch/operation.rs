@@ -153,32 +153,6 @@ impl Operation {
         }
     }
 
-    /// Views this operation as a single-entity mutation if it matches the provided entity id:
-    ///
-    /// - If this is an upsert, returns `Some(Some(<upserted>))`.
-    /// - If this is a delete, returns `Some(None)`.
-    /// - Otherwise returns `None`.
-    pub(in crate::transaction) fn is_mutation_for<E>(&self, id: &EntityId) -> Option<Option<Arc<E>>>
-    where
-        E: 'static + Entity + Send + Sync,
-    {
-        if !id.matches_type::<E>() {
-            return None;
-        }
-        match self {
-            Operation::Upsert { entity_id, entity, .. } => (id == entity_id).then(|| {
-                Some(
-                    entity
-                        .clone()
-                        .downcast()
-                        .expect("we already checked that the id has the proper type"),
-                )
-            }),
-            Operation::Delete { entity_id, .. } => (id == entity_id).then_some(None),
-            Operation::Nop | Operation::BulkDelete { .. } => None,
-        }
-    }
-
     /// `Some(e)` when this operation is an upsert for `E`
     pub(in crate::transaction) fn as_upsert<E>(&self) -> Option<Arc<E>>
     where
