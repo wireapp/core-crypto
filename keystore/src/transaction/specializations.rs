@@ -68,9 +68,14 @@ impl Transaction {
             use itertools::Itertools as _;
 
             let operations = self.operations.read().await;
-            operations.iter().filter_map(|operation| operation.as_upsert::<ProteusPrekey>())
-                .map(|prekey| prekey.id)
-                // exclude the last resort prekey, if we happen to be setting that
+            operations.upsert_indices_for_type::<ProteusPrekey>().filter_map(|idx| {
+                let entity = operations[idx]
+                    .as_upsert::<ProteusPrekey>()
+                    .expect("upsert_indices_for_type has correct data");
+                let entity_id = EntityId::from_entity(&*entity);
+                operations.last_delete_idx_for(&entity_id).is_none_or(|delete_idx| delete_idx < idx).then_some(entity.id)
+            })
+                // exclude the last resort prekey, if we happen to have set that
                 .filter(|id| *id != u16::MAX)
                 .minmax()
                 .into_option()
