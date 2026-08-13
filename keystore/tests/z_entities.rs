@@ -64,7 +64,9 @@ mod tests_impl {
     use std::{any::Any, borrow::Borrow, sync::Arc};
 
     use core_crypto_keystore::{
-        entities::{MlsPendingMessage, PersistedMlsPendingGroup, StoredCredential},
+        entities::{
+            MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, TargetedMessageTxCounter,
+        },
         traits::{
             BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed,
             FetchFromDatabase as _, PrimaryKey as _,
@@ -104,15 +106,22 @@ mod tests_impl {
     {
         let mut entity = E::random();
         let tx = store.new_transaction().await.unwrap();
-
-        // pending messages have a foreign key constraint which must be satisfied
         {
             let any_e: &mut dyn Any = &mut entity;
+
+            // pending messages have a foreign key constraint which must be satisfied
             if let Some(pending_message) = any_e.downcast_mut::<MlsPendingMessage>() {
                 let pending_groups = PersistedMlsPendingGroup::random();
                 pending_message.conversation_id = pending_groups.id.clone();
 
                 tx.save(pending_groups).await.unwrap();
+
+            // tnt message counters also have a foreign key constraint which must be satisfied
+            } else if let Some(counter) = any_e.downcast_mut::<TargetedMessageTxCounter>() {
+                let group = PersistedMlsGroup::random();
+                counter.conversation_id = group.id.clone();
+
+                tx.save(group).await.unwrap();
             }
         }
 
@@ -283,7 +292,14 @@ mod tests_impl {
     {
         let tx = store.new_transaction().await.unwrap();
         for _ in 0..ENTITY_COUNT {
-            let entity = E::random();
+            // tnt message counters also have a foreign key constraint which must be satisfied
+            let mut entity = E::random();
+            let any_e: &mut dyn Any = &mut entity;
+            if let Some(counter) = any_e.downcast_mut::<TargetedMessageTxCounter>() {
+                let group = PersistedMlsGroup::random();
+                counter.conversation_id = group.id.clone();
+                tx.save(group).await.unwrap();
+            }
             tx.save(entity).await.unwrap();
         }
         tx.commit().await.unwrap();
@@ -313,6 +329,7 @@ mod tests {
     use core_crypto_keystore::entities::*;
 
     test_for_entity!(test_persisted_mls_group, PersistedMlsGroup);
+    test_for_entity!(test_tnt_message_counter, TargetedMessageTxCounter no_borrowed_key:true);
     test_for_entity!(test_persisted_mls_pending_group, PersistedMlsPendingGroup);
     test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_entity_count: true ignore_update:true ignore_remove:true ignore_find_many:true no_borrowed_key:true);
     test_for_entity!(test_mls_credential, StoredCredential ignore_update:true no_borrowed_key:true);
@@ -375,7 +392,7 @@ pub mod utils {
     use core_crypto_keystore::entities::{
         MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusSession, StoredCredential,
         StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
-        X509TrustAnchor,
+        TargetedMessageTxCounter, X509TrustAnchor,
     };
     use rand::Rng as _;
 
@@ -489,6 +506,22 @@ pub mod utils {
     impl_entity_random_update_ext!(StoredEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredPskBundle, blob_fields=[psk,psk_id id_like:true,]);
     impl_entity_random_update_ext!(PersistedMlsGroup, id_field = id, blob_fields = [state,]);
+    impl EntityRandomExt for TargetedMessageTxCounter {
+        fn random() -> Self {
+            Self {
+                conversation_id: b"This cannot be filled meaninfully here; need a real conversation".to_vec(),
+                receiver: rand::random(),
+                count: rand::random(),
+            }
+        }
+    }
+
+    impl EntityRandomUpdateExt for TargetedMessageTxCounter {
+        fn random_update(&mut self) {
+            self.count = rand::random();
+        }
+    }
+
     impl_entity_random_update_ext!(PersistedMlsPendingGroup, id_field=id, blob_fields=[state,custom_configuration,], additional_fields=[(parent_id: None),]);
     impl_entity_random_update_ext!(MlsPendingMessage, id_field = conversation_id, blob_fields = [message,]);
     impl_entity_random_update_ext!(StoredEpochEncryptionKeypair, id_field = id, blob_fields = [keypairs,]);
