@@ -68,16 +68,10 @@ impl Database {
     /// # Errors
     /// Any common error that can happen during a database connection. IoError being a common error
     /// for example.
-    pub async fn mls_group_persist(
-        &self,
-        group_id: impl AsRef<[u8]> + Send,
-        state: &[u8],
-        tnt_message_counter: u32,
-    ) -> CryptoKeystoreResult<()> {
+    pub async fn mls_group_persist(&self, group_id: impl AsRef<[u8]> + Send, state: &[u8]) -> CryptoKeystoreResult<()> {
         self.save(PersistedMlsGroup {
             id: group_id.as_ref().to_owned(),
             state: state.into(),
-            tnt_message_counter,
         })
         .await?;
         Ok(())

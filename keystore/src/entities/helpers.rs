@@ -1,4 +1,4 @@
-use rusqlite::{Connection, OptionalExtension, Row, ToSql, Transaction};
+use rusqlite::{Connection, OptionalExtension, Params, Row, ToSql, Transaction};
 
 use crate::{CryptoKeystoreResult, traits::Entity};
 
@@ -28,6 +28,49 @@ where
     ))?;
     statement
         .query_row([primary_key], from_row)
+        .optional()
+        .map_err(Into::into)
+}
+
+/// Helper to query an entity by its primary key.
+///
+/// This function prepares and caches a statement of the form `SELECT * FROM table_name WHERE key_part_1 = ? AND
+/// key_part_2 = ?`. The primary-key column names and corresponding parameter values must be provided in the same order.
+/// Both simple and composite primary keys are supported.
+///
+/// The row-mapping function receives a [`Row`] containing all fields returned by the database. Fields can be retrieved
+/// by name using `row.get("my_field")?`.
+///
+/// The `from_row` implementation should ideally only map database fields to the corresponding entity. If it must handle
+/// application-specific errors, consider mapping them to [`rusqlite::Error::UserFunctionError`].
+pub(crate) fn get_helper_composite_key<E, FromRow>(
+    conn: &Connection,
+    primary_key_column_names: &[&str],
+    primary_key: impl Params,
+    from_row: FromRow,
+) -> CryptoKeystoreResult<Option<E>>
+where
+    E: Entity,
+    FromRow: FnOnce(&Row<'_>) -> rusqlite::Result<E>,
+{
+    debug_assert!(
+        !primary_key_column_names.is_empty(),
+        "a primary key must contain at least one column"
+    );
+
+    let predicates = primary_key_column_names
+        .iter()
+        .map(|column| format!("{column} = ?"))
+        .collect::<Vec<_>>()
+        .join(" AND ");
+
+    let sql = format!(
+        "SELECT * FROM {table_name} WHERE {predicates}",
+        table_name = E::TABLE_NAME,
+    );
+
+    conn.prepare_cached(&sql)?
+        .query_row(primary_key, from_row)
         .optional()
         .map_err(Into::into)
 }

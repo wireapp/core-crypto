@@ -21,5 +21,4 @@ pub struct ParentGroupId<'a>(&'a [u8]);
 pub struct PersistedMlsGroup {
     pub id: Vec<u8>,
     pub state: Vec<u8>,
-    pub tnt_message_counter: u32,
 }
