@@ -10,10 +10,7 @@ pub mod proteus;
 mod read_outcome;
 mod specializations;
 
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use async_lock::{RwLock, SemaphoreGuardArc};
 use rusqlite::TransactionBehavior;
@@ -86,31 +83,28 @@ impl Transaction {
     where
         E: 'static + Clone + Entity + Send + Sync,
     {
-        let (deleted_ids, filters) = {
+        let mut cache = {
             let operations = self.operations.read().await;
-            let deleted_ids = operations
-                .delete_indices_for_type::<E>()
-                .map(|idx| {
-                    operations[idx]
-                        .as_delete::<E>()
-                        .expect("delete_indices_for_type produces correct indices")
+            let filters = operations.bulk_delete_filters();
+
+            // construct the cache from the database's items,
+            // filtering out those items which have been deleted individually or in bulk
+            from_database
+                .into_iter()
+                .filter_map(|entity| {
+                    let entity_id = EntityId::from_entity(&entity);
+
+                    // the delete may have been overwritten by a later upsert, true,
+                    // but in that case we lose nothing by deleting here, because we
+                    // are still about to upsert a few lines from now
+                    //
+                    // bulk-deletes apply to the database entities regardless of when they happen
+                    let excluded =
+                        operations.last_delete_idx_for(&entity_id).is_some() || filters.applies_after(&entity, 0);
+                    (!excluded).then_some((entity_id, entity))
                 })
-                .collect::<HashSet<_>>();
-
-            let filters = operations.bulk_delete_filters().into_inner();
-            (deleted_ids, filters)
+                .collect::<HashMap<_, _>>()
         };
-
-        // construct the cache from the database's items,
-        // filtering out those items which have been deleted individually or in bulk
-        let mut cache = from_database
-            .into_iter()
-            .filter_map(|entity| {
-                let entity_id = EntityId::from_entity(&entity);
-                let excluded = deleted_ids.contains(&entity_id) || filters.iter().any(|filter| filter(&entity));
-                (!excluded).then_some((entity_id, entity))
-            })
-            .collect::<HashMap<_, _>>();
 
         // update with everything which was inserted by the tx cache
         for entity in from_tx_cache {
