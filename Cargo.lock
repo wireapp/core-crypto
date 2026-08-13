@@ -1216,7 +1216,6 @@ dependencies = [
  "openmls_basic_credential",
  "openmls_traits",
  "openmls_x509_credential",
- "ordermap",
  "paste",
  "postcard",
  "proteus-traits",
@@ -3738,15 +3737,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68f19d67e5a2795c94e73e0bb1cc1a7edeb2e28efd39e2e1c9b7a40c1108b11c"
 dependencies = [
  "num-traits",
-]
-
-[[package]]
-name = "ordermap"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f7476a5b122ff1fce7208e7ee9dccd0a516e835f5b8b19b8f3c98a34cf757c1"
-dependencies = [
- "indexmap 2.14.0",
 ]
 
 [[package]]
