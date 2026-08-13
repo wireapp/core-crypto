@@ -141,6 +141,16 @@ impl Operation {
         }
     }
 
+    /// Gets the entity ID associated with this operation.
+    ///
+    /// This returns an entity ID only if this operation is an insert or delete.
+    pub(in crate::transaction) fn entity_id(&self) -> Option<&EntityId> {
+        match self {
+            Operation::Upsert { entity_id, .. } | Operation::Delete { entity_id, .. } => Some(entity_id),
+            Operation::BulkDelete { .. } | Operation::Nop => None,
+        }
+    }
+
     /// Views this operation as a single-entity mutation if it matches the provided entity id:
     ///
     /// - If this is an upsert, returns `Some(Some(<upserted>))`.
