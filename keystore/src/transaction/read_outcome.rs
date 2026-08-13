@@ -8,7 +8,7 @@ use crate::transaction::BulkDeleteFilter;
 /// bulk deletions. A read outcome therefore includes information not just about the entity requested,
 /// but filters which can be used to exclude other entities produced by the database.
 ///
-/// NOTE: it is possible for this function to have both `entity: Some(Some(e))` and `outcome.should_omit(e)`.
+/// NOTE: it is possible for this outcome to have both `entity: Some(Some(e))` and `outcome.should_omit(e)`.
 /// This just indicates that a bulk deletion covered `e`, but then it was re-upserted afterwards.
 pub(crate) struct ReadOutcome<E> {
     /// The outcome of this read operation as applied to the operations of this transaction:
@@ -21,6 +21,13 @@ pub(crate) struct ReadOutcome<E> {
     ///
     /// If any function in this list returns `true` for an entity instance, then that entity has been
     /// affected by a bulk deletion and should be omitted from result lists.
+    ///
+    /// The position of each bulk deletion within the transaction is deliberately not recorded here.
+    /// These filters exist to be applied to records loaded from the database, and such a record
+    /// predates every operation in the transaction, so every bulk deletion in this list necessarily
+    /// comes after it and all of them apply. Contrast `BulkDeleteFilters::applies_after`, which is
+    /// what the same filters need when the candidate entity came out of the transaction cache and so
+    /// has a position of its own to be compared against.
     pub(crate) filters: Vec<BulkDeleteFilter<E>>,
 }
 
@@ -28,6 +35,9 @@ impl<E> ReadOutcome<E> {
     /// Helper function to apply all the filters to an entity instance.
     ///
     /// If this returns `true` then the entity should be omitted from results.
+    ///
+    /// Applying *all* of them is only correct for an entity which did not come out of this
+    /// transaction; see the note on [`Self::filters`].
     pub(crate) fn should_omit(&self, entity: &E) -> bool {
         self.filters.iter().any(|filter| (filter)(entity))
     }

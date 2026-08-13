@@ -75,6 +75,16 @@ impl Transaction {
     /// Entities deleted singly or in bulk from the operations list are excluded, unless later re-added.
     ///
     /// Entities upserted in the tx cache overwrite entities from the database.
+    ///
+    /// Note that the position of each deletion within the transaction is not consulted here, unlike
+    /// in the cache-only reads. Every record in `from_database` predates the whole transaction, so any
+    /// deletion in it applies; and "unless later re-added" needs no ordering either, because a
+    /// re-added entity arrives through `from_tx_cache`, which is applied afterwards and therefore
+    /// wins. That leaves the two sources responsible for different halves of the answer:
+    /// `from_tx_cache` is expected to have resolved ordering among the operations already, which is
+    /// what [`Self::find_all_in_cache`] does for it.
+    ///
+    /// The returned order is unspecified, as the merge runs through a `HashMap`.
     async fn merge_records<E>(
         &self,
         from_tx_cache: impl IntoIterator<Item = E>,
