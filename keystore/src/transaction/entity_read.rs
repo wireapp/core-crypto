@@ -155,3 +155,143 @@ impl Transaction {
             .await
     }
 }
+
+/// These tests pin down the contract documented on [`Transaction::get_by_entity_id`]: an upsert
+/// covered by a later bulk deletion must read as deleted, and a bulk deletion alone must not.
+///
+/// [`MlsPendingMessage`] is the only entity for now which is bulk-deletable, so it is what these use.
+/// Nothing here ever commits, so the database stays empty throughout and every outcome reflects
+/// only the operations buffered in the transaction.
+#[cfg(all(test, not(target_os = "unknown")))]
+mod tests {
+    use futures_lite::future;
+
+    use super::*;
+    use crate::{
+        Database,
+        entities::{ConversationId, MlsPendingMessage},
+        traits::PrimaryKey as _,
+    };
+
+    const CONVERSATION_ID: &[u8] = b"conversation which buffers a message";
+
+    fn pending_message() -> MlsPendingMessage {
+        MlsPendingMessage {
+            conversation_id: CONVERSATION_ID.to_owned(),
+            message: b"a message which arrived before we could decrypt it".to_vec(),
+        }
+    }
+
+    /// Bulk-delete every pending message of [`CONVERSATION_ID`].
+    async fn clear_conversation(tx: &Transaction) {
+        tx.bulk_remove::<MlsPendingMessage, ConversationId>(CONVERSATION_ID.to_vec().into())
+            .await;
+    }
+
+    /// What `get_by_entity_id` reports for `message`.
+    async fn outcome_for(tx: &Transaction, message: &MlsPendingMessage) -> ReadOutcome<MlsPendingMessage> {
+        let entity_id = EntityId::from_primary_key::<MlsPendingMessage>(&message.primary_key());
+        tx.get_by_entity_id(&entity_id).await
+    }
+
+    /// The documented property: an entity upserted in this transaction and then bulk-deleted
+    /// reads back as deleted, not as present.
+    #[test]
+    fn an_upsert_covered_by_a_later_bulk_deletion_reads_as_deleted() {
+        future::block_on(async {
+            let store = Database::open_in_memory().unwrap();
+            let tx = store.new_transaction().await.unwrap();
+            let message = pending_message();
+
+            tx.save(message.clone()).await.unwrap();
+            clear_conversation(&tx).await;
+
+            let outcome = outcome_for(&tx, &message).await;
+            assert!(
+                matches!(outcome.entity, Some(None)),
+                "the upsert was covered by a later bulk deletion, so it must read as deleted, got {:?}",
+                outcome.entity
+            );
+        });
+    }
+
+    /// The mirror image: only bulk deletions which come *after* the upsert can bury it.
+    ///
+    /// The filter is still reported, because it has to be applied to whatever the database
+    /// produces for other entities; see the note on [`ReadOutcome`].
+    #[test]
+    fn an_upsert_after_a_bulk_deletion_reads_as_present() {
+        future::block_on(async {
+            let store = Database::open_in_memory().unwrap();
+            let tx = store.new_transaction().await.unwrap();
+            let message = pending_message();
+
+            clear_conversation(&tx).await;
+            tx.save(message.clone()).await.unwrap();
+
+            let outcome = outcome_for(&tx, &message).await;
+            let found = outcome
+                .entity
+                .clone()
+                .expect("this transaction upserted the message, so the cache knows about it")
+                .expect("the upsert came after the bulk deletion, so it must not have been filtered out");
+            assert_eq!(*found, message);
+            assert!(
+                outcome.should_omit(&found),
+                "the bulk deletion still has to be reported as a filter over database records"
+            );
+        });
+    }
+
+    /// Bulk deletions on both sides of the upsert: the later one still applies.
+    ///
+    /// Reading the whole filter list without regard to position would pass
+    /// [`an_upsert_covered_by_a_later_bulk_deletion_reads_as_deleted`] and ignoring position
+    /// entirely would pass [`an_upsert_after_a_bulk_deletion_reads_as_present`]; only this case
+    /// distinguishes filtering by position from filtering by presence.
+    #[test]
+    fn an_upsert_straddled_by_bulk_deletions_reads_as_deleted() {
+        future::block_on(async {
+            let store = Database::open_in_memory().unwrap();
+            let tx = store.new_transaction().await.unwrap();
+            let message = pending_message();
+
+            clear_conversation(&tx).await;
+            tx.save(message.clone()).await.unwrap();
+            clear_conversation(&tx).await;
+
+            let outcome = outcome_for(&tx, &message).await;
+            assert!(
+                matches!(outcome.entity, Some(None)),
+                "the second bulk deletion follows the upsert, so the message must read as deleted, got {:?}",
+                outcome.entity
+            );
+        });
+    }
+
+    /// The documented limit of the property: with no upsert to attach it to, a bulk deletion is
+    /// reported only as a filter, and the outcome itself says nothing.
+    ///
+    /// This is why the doc comment tells composing methods with database context to do their own
+    /// bulk-deletion filtering.
+    #[test]
+    fn a_bulk_deletion_alone_yields_no_outcome_but_still_yields_a_filter() {
+        future::block_on(async {
+            let store = Database::open_in_memory().unwrap();
+            let tx = store.new_transaction().await.unwrap();
+            let message = pending_message();
+
+            clear_conversation(&tx).await;
+
+            let outcome = outcome_for(&tx, &message).await;
+            assert!(
+                outcome.entity.is_none(),
+                "nothing in this transaction mutated this message individually, so the cache cannot speak for it"
+            );
+            assert!(
+                outcome.should_omit(&message),
+                "the caller must still be told to omit any instance the database produces"
+            );
+        });
+    }
+}
