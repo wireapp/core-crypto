@@ -3,7 +3,10 @@
 use super::dynamic_dispatch::EntityId;
 use crate::{
     CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, DeletableBySearchKey, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType},
+    entities::ProteusPrekey,
+    traits::{
+        BorrowPrimaryKey, DeletableBySearchKey, Entity as _, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType,
+    },
     transaction::{Operation, Transaction},
 };
 
@@ -24,6 +27,25 @@ impl Transaction {
 
         {
             let mut operations = self.operations.write().await;
+
+            // specialization: finding the next available proteus prekey uses an optimization which relies
+            // on the last deleted prekey id being free. We therefore have to nop the last deletion
+            // of the prekey with this id as we add it, to ensure that next time that's called, we get
+            // a value not already claimed.
+            if E::TABLE_NAME == ProteusPrekey::TABLE_NAME {
+                let entity_id = EntityId::from_entity(&entity);
+                if let Some(idx) = operations.last_delete_idx_for(&entity_id) {
+                    let _displaced = operations.make_nop(idx);
+
+                    debug_assert!(_displaced.is_some(), "last_delete_idx_for must produce a valid index");
+                    debug_assert_eq!(
+                        _displaced.unwrap().entity_id().unwrap(),
+                        &entity_id,
+                        "we must have displaced an entity with the same id"
+                    );
+                }
+            }
+
             operations.push(Operation::upsert(entity));
         }
 
@@ -68,7 +90,8 @@ impl Transaction {
     /// Restore an entity that was deleted in this transaction by removing its final delete operations.
     ///
     /// This is semi-idempotent: if the entity was never deleted, this changes nothing.
-    /// However, in the event that there are multiple deletions for the same entity in this transaction,
+    /// If the entity was upserted after its final delete, this changes nothing.
+    /// In the event that there are multiple deletions for the same entity in this transaction,
     /// this will only nopify the final one. In most circumstances this doesn't make a difference.
     ///
     /// NOTE: This will only work if the entity has been added in an earlier transaction, because otherwise,
@@ -85,11 +108,7 @@ impl Transaction {
 
         {
             let mut operations = self.operations.write().await;
-            let last_delete_idx = operations.iter().rposition(|operation| {
-                operation
-                    .as_delete::<E>()
-                    .is_some_and(|operation_entity_id| operation_entity_id == entity_id)
-            });
+            let last_delete_idx = operations.last_delete_idx_for(&entity_id);
             if let Some(idx) = last_delete_idx {
                 operations.make_nop(idx);
             }
