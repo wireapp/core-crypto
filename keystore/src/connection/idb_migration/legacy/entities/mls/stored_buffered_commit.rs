@@ -17,9 +17,6 @@ use crate::{
 impl legacy::traits::EntityBase for StoredBufferedCommit {
     type ConnectionType = legacy::connection::KeystoreDatabaseConnection;
     const TABLE_NAME: &'static str = "mls_buffered_commits";
-    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::StoredBufferedCommit(self.into())
-    }
 }
 impl legacy::traits::Entity for StoredBufferedCommit {
     #[allow(

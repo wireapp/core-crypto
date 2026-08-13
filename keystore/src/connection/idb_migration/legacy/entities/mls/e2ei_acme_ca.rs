@@ -14,6 +14,7 @@ use crate::{
 #[cfg(target_os = "unknown")]
 #[derive(Zeroize)]
 #[zeroize(drop)]
+#[expect(unreachable_pub)]
 pub struct E2eiAcmeCA {
     pub content: Vec<u8>,
 }
@@ -21,10 +22,6 @@ pub struct E2eiAcmeCA {
 impl EntityBase for E2eiAcmeCA {
     type ConnectionType = KeystoreDatabaseConnection;
     const TABLE_NAME: &'static str = "e2ei_acme_ca";
-
-    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        panic!("this migration-only entity should never be part of a transaction")
-    }
 }
 
 impl UniqueEntityImplementationHelper for E2eiAcmeCA {
@@ -71,11 +68,5 @@ impl crate::traits::UniqueEntityImplementationHelper for E2eiAcmeCA {
 
     fn content(&self) -> &[u8] {
         &self.content
-    }
-}
-
-impl From<E2eiAcmeCA> for crate::transaction::dynamic_dispatch::Entity {
-    fn from(_value: E2eiAcmeCA) -> Self {
-        panic!("This entity should never be used in a transaction")
     }
 }

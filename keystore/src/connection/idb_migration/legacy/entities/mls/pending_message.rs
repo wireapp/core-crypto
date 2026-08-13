@@ -19,10 +19,6 @@ use crate::{
 impl EntityBase for MlsPendingMessage {
     type ConnectionType = KeystoreDatabaseConnection;
     const TABLE_NAME: &'static str = "mls_pending_messages";
-
-    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        crate::transaction::dynamic_dispatch::Entity::MlsPendingMessage(self.into())
-    }
 }
 
 #[async_trait(?Send)]
@@ -106,29 +102,26 @@ impl Decryptable<'static> for MlsPendingMessage {
 }
 
 #[async_trait(?Send)]
-impl<'a> SearchableEntity<ConversationId<'a>> for MlsPendingMessage {
+impl SearchableEntity<ConversationId> for MlsPendingMessage {
     async fn find_all_matching(
         conn: &mut Self::ConnectionType,
-        conversation_id: &ConversationId<'a>,
+        conversation_id: &ConversationId,
     ) -> CryptoKeystoreResult<Vec<Self>> {
-        let conversation_id = *conversation_id.as_ref();
+        let conversation_id = &**conversation_id;
         let storage = conn.storage();
         let id = JsValue::from(Uint8Array::from(conversation_id));
         storage.get_all_with_query(Some(id.into())).await
     }
 
-    fn matches(&self, conversation_id: &ConversationId<'a>) -> bool {
-        *conversation_id.as_ref() == self.conversation_id.as_slice()
+    fn matches(&self, conversation_id: &ConversationId) -> bool {
+        &**conversation_id == self.conversation_id.as_slice()
     }
 }
 
 #[async_trait(?Send)]
-impl<'a> DeletableBySearchKey<'a, ConversationId<'a>> for MlsPendingMessage {
-    async fn delete_all_matching(
-        tx: &Self::Transaction,
-        conversation_id: &ConversationId<'a>,
-    ) -> CryptoKeystoreResult<()> {
-        tx.delete::<Self>(*conversation_id.as_ref()).await?;
+impl<'a> DeletableBySearchKey<'a, ConversationId> for MlsPendingMessage {
+    async fn delete_all_matching(tx: &Self::Transaction, conversation_id: &ConversationId) -> CryptoKeystoreResult<()> {
+        tx.delete::<Self>(&**conversation_id).await?;
         Ok(())
     }
 }

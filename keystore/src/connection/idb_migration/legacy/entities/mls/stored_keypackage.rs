@@ -27,9 +27,6 @@ pub(crate) struct StoredKeypackage {
 impl legacy::traits::EntityBase for StoredKeypackage {
     type ConnectionType = legacy::connection::KeystoreDatabaseConnection;
     const TABLE_NAME: &'static str = "mls_keypackages";
-    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
-        panic!("this migration-only entity should never be part of a transaction")
-    }
 }
 impl legacy::traits::Entity for StoredKeypackage {
     #[allow(
