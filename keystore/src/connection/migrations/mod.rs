@@ -399,6 +399,10 @@ r9IJmL6kDQ==
                     .await
                     .unwrap();
                 let conn = db.conn().await;
+                // The pre-V31 table still carries V7's foreign key onto `mls_pending_groups`, so the
+                // parent row has to exist before the message can be inserted here. V31 drops that
+                // constraint; see `v31_migrates_a_pending_message_whose_conversation_is_not_a_pending_group`
+                // for the case which the constraint used to make impossible.
                 conn.execute(
                     "INSERT INTO mls_pending_groups (id, state, cfg) VALUES (?, ?, ?)",
                     (CONVERSATION_ID, b"group state", b"custom configuration"),
@@ -440,6 +444,50 @@ r9IJmL6kDQ==
                     .is_some(),
                 "the primary key V31 wrote must be byte-identical to the one the entity binds when querying"
             );
+        });
+    }
+
+    /// V31 migrates a pending message whose conversation has no `mls_pending_groups` row.
+    ///
+    /// This is the state V31's backfill would have rejected had it recreated V7's foreign key: an
+    /// `INSERT ... SELECT` into a constrained table fails on the first orphan row, and a migration which
+    /// fails leaves the database unopenable. Such rows are reachable in practice, because
+    /// [`migrate_db_key_type_to_bytes`] runs the early migrations with `foreign_keys` off and the legacy
+    /// IndexedDB import writes buffered messages before the pending groups they refer to.
+    ///
+    /// The seed plants one the same way, by turning foreign keys off for the insert. There is no other way
+    /// to create a row which the pre-V31 schema forbids, which is the point: what the schema forbade is
+    /// exactly what the code above it was trying to store.
+    #[test]
+    fn v31_migrates_a_pending_message_whose_conversation_is_not_a_pending_group() {
+        const CONVERSATION_ID: &[u8] = b"an established conversation, absent from mls_pending_groups";
+        const MESSAGE: &[u8] = b"a message from epoch n + 1, buffered before the migration ran";
+
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let db = seed_then_migrate(path, &key, 30, |conn| {
+                conn.pragma_update(None, "foreign_keys", "OFF")
+                    .expect("disabling foreign keys so that the orphan row can be planted at all");
+                conn.execute(
+                    "INSERT INTO mls_pending_messages (id, message) VALUES (?, ?)",
+                    (CONVERSATION_ID, MESSAGE),
+                )
+                .expect("inserting a pending message whose conversation is not a pending group");
+            })
+            .await;
+            let conn = db.conn().await;
+
+            let migrated = MlsPendingMessage::load_all(&conn).expect("loading migrated pending messages");
+            assert_eq!(
+                migrated.len(),
+                1,
+                "V31 must carry an orphan pending message across, not drop it or fail the migration"
+            );
+            let migrated = migrated.into_iter().next().unwrap();
+            assert_eq!(migrated.conversation_id, CONVERSATION_ID);
+            assert_eq!(migrated.message, MESSAGE);
         });
     }
 
