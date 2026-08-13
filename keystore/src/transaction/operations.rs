@@ -140,6 +140,15 @@ impl Operations {
         upsert.max(delete)
     }
 
+    pub(super) fn upsert_indices_for_type<E>(&self) -> impl '_ + Iterator<Item = usize>
+    where
+        E: Entity,
+    {
+        self.last_upserts
+            .iter()
+            .filter_map(|(entity_id, idx)| entity_id.matches_type::<E>().then_some(*idx))
+    }
+
     pub(super) fn delete_indices_for_type<E>(&self) -> impl '_ + Iterator<Item = usize>
     where
         E: Entity,
