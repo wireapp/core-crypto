@@ -183,4 +183,15 @@ impl Operations {
             })
             .unwrap_or_default()
     }
+
+    /// True if the operations list contains no non-Nop operations.
+    ///
+    /// This intentionally shadows Vec::is_empty
+    pub(super) fn is_empty(&self) -> bool {
+        // https://doc.rust-lang.org/stable/std/iter/trait.Iterator.html#method.all
+        // > An empty iterator returns `true`.
+        self.operations
+            .iter()
+            .all(|operation| matches!(operation, Operation::Nop))
+    }
 }
