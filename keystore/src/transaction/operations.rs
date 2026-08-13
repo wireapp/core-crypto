@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     traits::Entity,
-    transaction::{Operation, dynamic_dispatch::EntityId, read_outcome::BulkDeleteFilter},
+    transaction::{Operation, bulk_delete_filter::BulkDeleteFilters, dynamic_dispatch::EntityId},
 };
 
 /// A list of operations with some caches intended to ease traversal of that list.
@@ -153,7 +153,7 @@ impl Operations {
     ///
     /// Having the operations indices enables us to apply only those filters which happened after an operation
     /// to a candidate entity.
-    pub(super) fn bulk_delete_filters<E>(&self) -> (Vec<BulkDeleteFilter<E>>, &[usize])
+    pub(super) fn bulk_delete_filters<E>(&self) -> BulkDeleteFilters<'_, E>
     where
         E: 'static + Entity + Send + Sync,
     {
@@ -170,7 +170,7 @@ impl Operations {
                         Box::new(filter) as _
                     })
                     .collect();
-                (filters, indices.as_slice())
+                BulkDeleteFilters::new(filters, indices)
             })
             .unwrap_or_default()
     }

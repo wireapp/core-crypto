@@ -1,3 +1,4 @@
+mod bulk_delete_filter;
 mod dynamic_dispatch;
 mod entity_read;
 mod entity_write;
@@ -17,7 +18,7 @@ use std::{
 use async_lock::{RwLock, SemaphoreGuardArc};
 use rusqlite::TransactionBehavior;
 
-pub(crate) use self::read_outcome::ReadOutcome;
+pub(crate) use self::{bulk_delete_filter::BulkDeleteFilter, read_outcome::ReadOutcome};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc,
     traits::Entity,
@@ -96,7 +97,7 @@ impl Transaction {
                 })
                 .collect::<HashSet<_>>();
 
-            let (filters, _) = operations.bulk_delete_filters();
+            let filters = operations.bulk_delete_filters().into_inner();
             (deleted_ids, filters)
         };
 
@@ -104,10 +105,10 @@ impl Transaction {
         // filtering out those items which have been deleted individually or in bulk
         let mut cache = from_database
             .into_iter()
-            .filter_map(|e| {
-                let entity_id = EntityId::from_entity(&e);
-                let excluded = deleted_ids.contains(&entity_id) || filters.iter().any(|filter| filter(&e));
-                (!excluded).then_some((entity_id, e))
+            .filter_map(|entity| {
+                let entity_id = EntityId::from_entity(&entity);
+                let excluded = deleted_ids.contains(&entity_id) || filters.iter().any(|filter| filter(&entity));
+                (!excluded).then_some((entity_id, entity))
             })
             .collect::<HashMap<_, _>>();
 
