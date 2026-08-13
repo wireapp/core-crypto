@@ -28,27 +28,20 @@ impl Transaction {
     {
         let operations = self.operations.read().await;
 
-        let (filters, filter_indices) = operations.bulk_delete_filters::<E>();
+        let bulk_delete_filters = operations.bulk_delete_filters::<E>();
         let entity = operations.last_mutation_idx_for(entity_id).map(|entity_idx| {
             let mut stored_entity = operations[entity_idx].as_upsert::<E>();
 
             // run each filter coming after the stored entity against that entity
             if let Some(entity) = stored_entity.as_ref() {
-                for filter in filters
-                    .iter()
-                    .zip(filter_indices)
-                    .skip_while(|(_filter, filter_idx)| **filter_idx < entity_idx)
-                    .map(|(filter, _idx)| filter)
-                {
-                    if filter(entity) {
-                        stored_entity.take();
-                        break;
-                    }
+                if bulk_delete_filters.applies_after(entity, entity_idx) {
+                    stored_entity.take();
                 }
             }
 
             stored_entity
         });
+        let filters = bulk_delete_filters.into_inner();
 
         ReadOutcome { entity, filters }
     }
@@ -93,7 +86,7 @@ impl Transaction {
     {
         let operations = self.operations.read().await;
 
-        let (filters, filter_indices) = operations.bulk_delete_filters::<E>();
+        let bulk_delete_filters = operations.bulk_delete_filters::<E>();
         operations
             .upsert_indices_for_type::<E>()
             .filter_map(|idx| {
@@ -110,16 +103,9 @@ impl Transaction {
                     return None;
                 }
 
-                for filter in filters
-                    .iter()
-                    .zip(filter_indices)
-                    .skip_while(|(_filter, filter_idx)| **filter_idx < idx)
-                    .map(|(filter, _idx)| filter)
-                {
-                    if filter(&entity) {
-                        // entity was bulk-deleted
-                        return None;
-                    }
+                if bulk_delete_filters.applies_after(&entity, idx) {
+                    // entity was bulk-deleted
+                    return None;
                 }
 
                 Some(entity)
