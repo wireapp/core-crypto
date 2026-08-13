@@ -47,6 +47,7 @@ derive_more = { version = "2.1", features = [
   "deref",
   "deref_mut",
   "into_iterator",
+  "is_variant",
 ] }
 enum-as-inner = "0.7"
 futures-util = "0.3"
