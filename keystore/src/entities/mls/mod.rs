@@ -1,3 +1,4 @@
+mod conversation_id;
 mod e2ei_crl;
 mod mls_pending_message;
 mod persisted_mls_group;
@@ -12,8 +13,9 @@ mod stored_psk_bundle;
 mod x509_intermediate_cert;
 mod x509_trust_anchor;
 
+pub use conversation_id::ConversationId;
 pub use e2ei_crl::X509Crl;
-pub use mls_pending_message::{ConversationId, MlsPendingMessage};
+pub use mls_pending_message::MlsPendingMessage;
 pub use persisted_mls_group::{ParentGroupId, PersistedMlsGroup};
 pub use persisted_mls_pending_group::PersistedMlsPendingGroup;
 pub use stored_buffered_commit::StoredBufferedCommit;
