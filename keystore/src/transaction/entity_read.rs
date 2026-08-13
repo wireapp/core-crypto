@@ -89,12 +89,7 @@ impl Transaction {
         let bulk_delete_filters = operations.bulk_delete_filters::<E>();
         operations
             .upsert_indices_for_type::<E>()
-            .filter_map(|idx| {
-                let entity = operations[idx]
-                    .as_upsert::<E>()
-                    .expect("upsert_indices_for_type contains correct indices");
-                let entity_id = EntityId::from_entity(&*entity);
-
+            .filter_map(|(entity_id, idx)| {
                 if operations
                     .last_delete_idx_for(&entity_id)
                     .is_some_and(|delete_idx| delete_idx > idx)
@@ -102,6 +97,10 @@ impl Transaction {
                     // entity was deleted individually
                     return None;
                 }
+
+                let entity = operations[idx]
+                    .as_upsert::<E>()
+                    .expect("upsert_indices_for_type contains correct indices");
 
                 if bulk_delete_filters.applies_after(&entity, idx) {
                     // entity was bulk-deleted
