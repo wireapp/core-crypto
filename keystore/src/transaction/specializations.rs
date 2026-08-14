@@ -1,5 +1,7 @@
 //! These methods are specialized for performing certain entity-specific queries.
 
+use std::sync::Arc;
+
 use crate::{
     CryptoKeystoreResult,
     entities::{ConversationId, MlsPendingMessage},
@@ -18,8 +20,8 @@ impl Transaction {
     pub(crate) async fn find_pending_messages_by_conversation_id(
         &self,
         conversation_id: &[u8],
-        persisted_records: impl IntoIterator<Item = MlsPendingMessage>,
-    ) -> CryptoKeystoreResult<Vec<MlsPendingMessage>> {
+        persisted_records: impl IntoIterator<Item = Arc<MlsPendingMessage>>,
+    ) -> CryptoKeystoreResult<Vec<Arc<MlsPendingMessage>>> {
         let conversation_id = conversation_id.to_vec().into();
         Ok(self.search(persisted_records, &conversation_id).await.collect())
     }

@@ -8,7 +8,7 @@ impl proteus_traits::PreKeyStore for Transaction {
     async fn prekey(&self, id: proteus_traits::RawPreKeyId) -> Result<Option<proteus_traits::RawPreKey>, Self::Error> {
         FetchFromDatabase::get::<ProteusPrekey>(self, &id)
             .await
-            .map(|maybe_prekey| maybe_prekey.map(|mut db_prekey| std::mem::take(&mut db_prekey.prekey)))
+            .map(|maybe_prekey| maybe_prekey.map(|db_prekey| db_prekey.prekey.clone()))
     }
 
     async fn remove(&self, id: proteus_traits::RawPreKeyId) -> Result<(), Self::Error> {

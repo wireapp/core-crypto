@@ -87,9 +87,9 @@ impl Transaction {
     /// The returned order is unspecified, as the merge runs through a `HashMap`.
     async fn merge_records<E>(
         &self,
-        from_tx_cache: impl IntoIterator<Item = E>,
-        from_database: impl IntoIterator<Item = E>,
-    ) -> impl Iterator<Item = E>
+        from_tx_cache: impl IntoIterator<Item = Arc<E>>,
+        from_database: impl IntoIterator<Item = Arc<E>>,
+    ) -> impl Iterator<Item = Arc<E>>
     where
         E: 'static + Clone + Entity + Send + Sync,
     {
@@ -102,7 +102,7 @@ impl Transaction {
             from_database
                 .into_iter()
                 .filter_map(|entity| {
-                    let entity_id = EntityId::from_entity(&entity);
+                    let entity_id = EntityId::from_entity(&*entity);
 
                     // the delete may have been overwritten by a later upsert, true,
                     // but in that case we lose nothing by deleting here, because we
@@ -110,7 +110,7 @@ impl Transaction {
                     //
                     // bulk-deletes apply to the database entities regardless of when they happen
                     let excluded =
-                        operations.last_delete_idx_for(&entity_id).is_some() || filters.applies_after(&entity, 0);
+                        operations.last_delete_idx_for(&entity_id).is_some() || filters.applies_after(&*entity, 0);
                     (!excluded).then_some((entity_id, entity))
                 })
                 .collect::<HashMap<_, _>>()
@@ -118,7 +118,7 @@ impl Transaction {
 
         // update with everything which was inserted by the tx cache
         for entity in from_tx_cache {
-            let id = EntityId::from_entity(&entity);
+            let id = EntityId::from_entity(&*entity);
             cache.insert(id, entity);
         }
 

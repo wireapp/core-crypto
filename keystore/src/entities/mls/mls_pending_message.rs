@@ -170,7 +170,7 @@ mod tests {
             tx.commit().await.unwrap();
 
             assert_eq!(
-                store.get::<MlsPendingMessage>(&primary_key).await.unwrap().as_ref(),
+                store.get::<MlsPendingMessage>(&primary_key).await.unwrap().as_deref(),
                 Some(&pending_message()),
                 "a buffered message must survive commit even though its conversation is not a pending group"
             );
@@ -198,7 +198,7 @@ mod tests {
                 .await
                 .unwrap()
                 .expect("the pending message was committed, so it must be gettable by primary key");
-            assert_eq!(fetched, expected);
+            assert_eq!(*fetched, expected);
         });
     }
 

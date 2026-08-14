@@ -143,17 +143,20 @@ impl Database {
     /// Merge database records with the active transaction's view of them.
     ///
     /// If no transaction is in progress, the database records are returned unchanged.
-    pub(super) async fn merge_with_transaction<E>(
+    pub(super) async fn merge_with_transaction<E, Persisted>(
         &self,
-        persisted_records: Vec<E>,
-        merge: impl AsyncFnOnce(&Transaction, Vec<E>) -> CryptoKeystoreResult<Vec<E>>,
-    ) -> CryptoKeystoreResult<Vec<E>> {
+        persisted_records: Persisted,
+        merge: impl AsyncFnOnce(&Transaction, Persisted) -> CryptoKeystoreResult<Vec<Arc<E>>>,
+    ) -> CryptoKeystoreResult<Vec<Arc<E>>>
+    where
+        Persisted: IntoIterator<Item = Arc<E>>,
+    {
         let guard = self.transaction.lock().await;
         let Some(weak) = guard.as_ref() else {
-            return Ok(persisted_records);
+            return Ok(persisted_records.into_iter().collect());
         };
         let Some(tx) = weak.upgrade().await else {
-            return Ok(persisted_records);
+            return Ok(persisted_records.into_iter().collect());
         };
         merge(&tx, persisted_records).await
     }
