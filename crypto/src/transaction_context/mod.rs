@@ -279,7 +279,7 @@ impl TransactionContext {
     pub async fn get_data(&self) -> Result<Option<Vec<u8>>> {
         let inner = self.inner().await?;
         match inner.transaction.get_unique::<ConsumerData>().await {
-            Ok(maybe_data) => Ok(maybe_data.map(Into::into)),
+            Ok(maybe_data) => Ok(maybe_data.map(Arc::unwrap_or_clone).map(Into::into)),
             Err(CryptoKeystoreError::NotFound(..)) => Ok(None),
             Err(err) => Err(KeystoreError::wrap("finding unique consumer data")(err).into()),
         }

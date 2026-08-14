@@ -19,7 +19,7 @@ pub struct ImmutableDatabase(Arc<Database>);
 #[cfg_attr(not(target_os = "unknown"), async_trait)]
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]
 impl FetchFromDatabase for ImmutableDatabase {
-    async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<E>>
+    async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<Arc<E>>>
     where
         E: Entity + Clone + Send + Sync + 'static,
     {
@@ -33,14 +33,17 @@ impl FetchFromDatabase for ImmutableDatabase {
         self.0.count::<E>().await
     }
 
-    async fn load_all<E>(&self) -> CryptoKeystoreResult<Vec<E>>
+    async fn load_all<E>(&self) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: Entity + Clone + Send + Sync + 'static,
     {
         self.0.load_all::<E>().await
     }
 
-    async fn get_borrowed<E>(&self, id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey) -> CryptoKeystoreResult<Option<E>>
+    async fn get_borrowed<E>(
+        &self,
+        id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey,
+    ) -> CryptoKeystoreResult<Option<Arc<E>>>
     where
         E: EntityGetBorrowed + Clone + Send + Sync + 'static,
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
@@ -49,7 +52,7 @@ impl FetchFromDatabase for ImmutableDatabase {
         self.0.get_borrowed::<E>(id).await
     }
 
-    async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<E>>
+    async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: Entity + SearchableEntity<SearchKey> + Clone + Send + Sync + 'static,
         SearchKey: KeyType,

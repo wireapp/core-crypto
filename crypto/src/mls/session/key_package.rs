@@ -1,9 +1,11 @@
+use std::sync::Arc;
+
 use core_crypto_keystore::{entities::StoredKeyPackage, traits::FetchFromDatabase};
 
 use super::Result;
 use crate::{Keypackage, KeypackageRef, KeystoreError, Session, mls::key_package::KeypackageExt};
 
-pub(crate) fn from_stored(stored_keypackage: &StoredKeyPackage) -> Result<Keypackage> {
+pub(crate) fn from_stored(stored_keypackage: Arc<StoredKeyPackage>) -> Result<Keypackage> {
     core_crypto_keystore::deser::<Keypackage>(&stored_keypackage.key_package)
         .map_err(KeystoreError::wrap("deserializing keypackage"))
         .map_err(Into::into)
@@ -12,14 +14,14 @@ pub(crate) fn from_stored(stored_keypackage: &StoredKeyPackage) -> Result<Keypac
 impl Session {
     /// Get all [`Keypackage`]s in the database.
     pub(crate) async fn get_key_packages(&self) -> Result<Vec<Keypackage>> {
-        let stored_keypackages: Vec<StoredKeyPackage> = self
+        let stored_keypackages = self
             .database
-            .load_all()
+            .load_all::<StoredKeyPackage>()
             .await
             .map_err(KeystoreError::wrap("finding all keypackages"))?;
 
         let keypackages = stored_keypackages
-            .iter()
+            .iter().cloned()
             .map(from_stored)
             // if any ref from loading all fails to load now, skip it
             // strictly we could panic, but this is safer--maybe someone removed it concurrently
@@ -44,7 +46,7 @@ impl Session {
             .get_borrowed::<StoredKeyPackage>(kp_ref.hash_ref())
             .await
             .map_err(KeystoreError::wrap("loading keypackage from database"))?
-            .map(|stored_keypackage| from_stored(&stored_keypackage))
+            .map(|stored_keypackage| from_stored(stored_keypackage))
             .transpose()
     }
 }
