@@ -6,6 +6,28 @@
   anchor. Get all added trust anchor certificates via `getTrustAnchors`. Remove a trust anchor via `removeTrustAnchor`
   by providing the Subject Public Key Info (SPKI) fingerprint.
 
+- Fixes a bug which caused MLS messages that arrived out of order to be discarded instead of buffered for replay.
+
+  When a message for epoch `n + 1` arrived while the conversation was still in epoch `n`, CoreCrypto buffered it in the
+  database, but a stale foreign key constraint rejected that write for every conversation which had already been
+  established. The message was never replayed once the epoch advanced, producing a keystore error based on Sqlite
+  `ConstraintViolation, 787` instead.
+
+  This bug affected versions 10.0.0-10.3.0; earlier versions had foreign key constraint checks disabled.
+
+- Wiping a conversation, or abandoning an external join which the delivery service rejected, now also discards the
+  messages and commits that conversation had buffered. Previously those rows stayed in the database indefinitely, with
+  nothing able to read or remove them. This does not remove existing stale rows, but prevents new ones from leaking into
+  the database.
+
+- Operations within a CoreCrypto transaction are now applied to the database in the order they were performed, and all
+  reads within a transaction reflect earlier writes in that same order. Previously reads would sometimes but not always
+  reflect writes within the transaction, and operations would be played back into the database in arbitrary order
+  (hashmap).
+
+- `proteusNewPrekeyAuto` still reuses the ids of deleted prekeys before allocating new ones, but no longer ensures that
+  those ids are reused in strictly ascending order.
+
 ## CoreCrypto 10
 
 ### v10.3.0 - 2026-08-07
