@@ -1,5 +1,7 @@
 //! The methods defined in this module are extensions designed to improve entity ergonomics.
 
+use std::sync::Arc;
+
 use crate::{CryptoKeystoreResult, Database, entities::MlsPendingMessage, traits::SearchableEntity as _};
 
 // These and all other database impls should not refer directly to `self.conn` but should go through the `self.conn()`
@@ -8,10 +10,12 @@ impl Database {
     pub async fn find_pending_messages_by_conversation_id(
         &self,
         conversation_id: &[u8],
-    ) -> CryptoKeystoreResult<Vec<MlsPendingMessage>> {
+    ) -> CryptoKeystoreResult<Vec<Arc<MlsPendingMessage>>> {
         let conn = self.conn().await;
         let conversation_id = conversation_id.to_vec().into();
-        let persisted_records = MlsPendingMessage::find_all_matching(&conn, &conversation_id)?;
+        let persisted_records = MlsPendingMessage::find_all_matching(&conn, &conversation_id)?
+            .into_iter()
+            .map(Arc::new);
         self.merge_with_transaction(persisted_records, async |transaction, persisted_records| {
             transaction
                 .find_pending_messages_by_conversation_id(&conversation_id, persisted_records)
