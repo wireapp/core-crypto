@@ -274,6 +274,17 @@ impl PendingConversation {
             .mls_pending_groups_delete(self.id())
             .await
             .map_err(KeystoreError::wrap("deleting pending groups by id"))?;
+
+        // Messages buffered while this join was pending are unreachable once it is abandoned, so
+        // they have to go with it. They survive when this conversation also exists as an
+        // established one, which is the case when the abandoned join was an attempt to rejoin.
+        self.context
+            .clear_orphaned_conversation_buffers(self.id())
+            .await
+            .map_err(RecursiveError::transaction(
+                "clearing buffered messages of an abandoned pending conversation",
+            ))?;
+
         Ok(())
     }
 }

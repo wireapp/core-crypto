@@ -4,7 +4,10 @@ pub mod external_commit;
 mod persistence;
 pub mod welcome;
 
-use core_crypto_keystore::{entities::PersistedMlsPendingGroup, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{
+    entities::{PersistedMlsPendingGroup, StoredBufferedCommit},
+    traits::FetchFromDatabase as _,
+};
 use openmls::group::MlsGroup;
 
 use super::{Error, Result, TransactionContext};
@@ -47,6 +50,58 @@ impl TransactionContext {
         // the same id
         let pending = self.pending_conversation(id).await.map(Error::PendingConversation)?;
         Err(pending)
+    }
+
+    /// Discard everything buffered for a conversation which no longer exists in any form.
+    ///
+    /// Buffered messages and buffered commits are keyed by conversation id, and both are only ever
+    /// read on behalf of a conversation. Once no conversation holds that id, they are unreachable:
+    /// nothing can restore them and nothing else will ever delete them. So whichever operation
+    /// removes the last trace of a conversation has to take its buffers along, and this is that
+    /// step.
+    ///
+    /// The check is not redundant. One conversation id can name a group in `mls_groups` and a
+    /// pending group in `mls_pending_groups` at the same time — that is what rejoining a
+    /// conversation by external commit looks like — so removing one of the two does not on its own
+    /// make the buffers garbage. Clearing unconditionally would discard messages the surviving
+    /// conversation is still going to replay.
+    ///
+    /// Callers must have staged their own deletion before calling this, since that deletion is
+    /// exactly what this reads back. It is also the reason this consults the keystore rather than
+    /// [`Self::conversation_exists`]: the question is which rows will exist once the transaction
+    /// commits, which the in-memory conversation cache does not answer.
+    pub(crate) async fn clear_orphaned_conversation_buffers(&self, id: &ConversationIdRef) -> Result<()> {
+        let database = self.database().await?;
+
+        let conversation_remains = database.mls_group_exists(id).await
+            || database
+                .get_borrowed::<PersistedMlsPendingGroup>(id.as_ref())
+                .await
+                .map_err(KeystoreError::wrap(
+                    "looking for a pending group of a removed conversation",
+                ))?
+                .is_some();
+        if conversation_remains {
+            return Ok(());
+        }
+
+        database
+            .remove_pending_messages_by_conversation_id(id)
+            .await
+            .map_err(KeystoreError::wrap(
+                "clearing buffered messages of a removed conversation",
+            ))?;
+
+        self.inner()
+            .await?
+            .transaction()
+            .remove_borrowed::<StoredBufferedCommit>(id.as_ref())
+            .await
+            .map_err(KeystoreError::wrap(
+                "clearing the buffered commit of a removed conversation",
+            ))?;
+
+        Ok(())
     }
 
     pub(crate) async fn pending_conversation(&self, id: &ConversationIdRef) -> Result<PendingConversation> {
