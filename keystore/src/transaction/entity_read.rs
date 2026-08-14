@@ -15,13 +15,11 @@ use crate::{
 };
 
 impl Transaction {
-    /// Find an entity by its id.
+    /// Get an entity by its id.
     ///
-    /// The result of this function will vary for different scenarios:
-    ///
-    /// * `Some(Some(E))` - the transaction cache contains the record
-    /// * `Some(None)` - the deletion of the record has been cached
-    /// * `None` - there is no information about the record in the cache
+    /// This produces a [`ReadOutcome`] which has information about whether the tx
+    /// knows about an upsert or delete of that entity, and also a set of filters
+    /// which can be used to exclude matching entities produced by the underlying DB.
     ///
     /// ## Caution
     ///
@@ -53,10 +51,11 @@ impl Transaction {
         ReadOutcome { entity, filters }
     }
 
-    /// The result of this function will have different contents for different scenarios:
-    /// * `Some(Some(E))` - the transaction cache contains the record
-    /// * `Some(None)` - the deletion of the record has been cached
-    /// * `None` - there is no information about the record in the cache
+    /// Get an entity by its primary key.
+    ///
+    /// This produces a [`ReadOutcome`] which has information about whether the tx
+    /// knows about an upsert or delete of that entity, and also a set of filters
+    /// which can be used to exclude matching entities produced by the underlying DB.
     pub(crate) async fn get<E>(&self, id: &E::PrimaryKey) -> ReadOutcome<E>
     where
         E: 'static + Entity + Send + Sync,
@@ -65,10 +64,11 @@ impl Transaction {
         self.get_by_entity_id(&entity_id).await
     }
 
-    /// The result of this function will have different contents for different scenarios:
-    /// * `Some(Some(E))` - the transaction cache contains the record
-    /// * `Some(None)` - the deletion of the record has been cached
-    /// * `None` - there is no information about the record in the cache
+    /// Get an entity by the borrowed form of its primary key.
+    ///
+    /// This produces a [`ReadOutcome`] which has information about whether the tx
+    /// knows about an upsert or delete of that entity, and also a set of filters
+    /// which can be used to exclude matching entities produced by the underlying DB.
     pub(crate) async fn get_borrowed<E>(&self, id: &E::BorrowedPrimaryKey) -> ReadOutcome<E>
     where
         E: 'static + Entity + BorrowPrimaryKey + Send + Sync,
