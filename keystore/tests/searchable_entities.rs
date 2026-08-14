@@ -23,6 +23,8 @@ fn random_bytes(len: impl SampleRange<usize>) -> Vec<u8> {
 
 #[cfg(test)]
 mod stored_credential {
+    use std::sync::Arc;
+
     use core_crypto_keystore::{
         entities::{CredentialFindFilters, StoredCredential},
         traits::{FetchFromDatabase as _, PrimaryKey as _},
@@ -87,7 +89,7 @@ mod stored_credential {
             .search::<StoredCredential, CredentialFindFilters>(&search_key)
             .await
             .unwrap();
-        assert_eq!(found, vec![entity]);
+        assert_eq!(found, vec![Arc::new(entity)]);
     }
 
     #[apply(all_storage_types)]
@@ -112,6 +114,8 @@ mod stored_credential {
             .await
             .unwrap();
         found.sort_unstable_by(|e1, e2| e1.public_key.cmp(&e2.public_key));
+
+        let entities = entities.into_iter().map(Arc::new).collect::<Vec<_>>();
 
         assert_eq!(entities, found);
     }
@@ -142,7 +146,7 @@ mod stored_credential {
             .await
             .unwrap();
 
-        assert_eq!(found, vec![relevant_entity]);
+        assert_eq!(found, vec![Arc::new(relevant_entity)]);
     }
 
     #[apply(all_storage_types)]
@@ -159,7 +163,7 @@ mod stored_credential {
             .search::<StoredCredential, CredentialFindFilters>(&search_key)
             .await
             .unwrap();
-        assert_eq!(found, vec![entity]);
+        assert_eq!(found, vec![Arc::new(entity)]);
     }
 
     #[apply(all_storage_types)]
