@@ -1,4 +1,4 @@
-use std::borrow::Borrow;
+use std::{borrow::Borrow, sync::Arc};
 
 use async_trait::async_trait;
 
@@ -12,7 +12,7 @@ use crate::{
 #[cfg_attr(not(target_os = "unknown"), async_trait)]
 pub trait FetchFromDatabase: Send + Sync {
     /// Get an instance of `E` from the database by its primary key.
-    async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<E>>
+    async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<Arc<E>>>
     where
         E: 'static + Entity + Clone + Send + Sync;
 
@@ -22,7 +22,7 @@ pub trait FetchFromDatabase: Send + Sync {
         E: 'static + Entity + Clone + Send + Sync;
 
     /// Load all `E`s from the database.
-    async fn load_all<E>(&self) -> CryptoKeystoreResult<Vec<E>>
+    async fn load_all<E>(&self) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: 'static + Entity + Clone + Send + Sync;
 
@@ -30,14 +30,14 @@ pub trait FetchFromDatabase: Send + Sync {
     async fn get_borrowed<E>(
         &self,
         id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey,
-    ) -> CryptoKeystoreResult<Option<E>>
+    ) -> CryptoKeystoreResult<Option<Arc<E>>>
     where
         E: 'static + EntityGetBorrowed + Clone + Send + Sync,
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
         for<'a> &'a E::BorrowedPrimaryKey: KeyType;
 
     /// Get the requested unique entity from the database.
-    async fn get_unique<'a, U>(&self) -> CryptoKeystoreResult<Option<U>>
+    async fn get_unique<'a, U>(&self) -> CryptoKeystoreResult<Option<Arc<U>>>
     where
         U: 'static + UniqueEntityExt + Entity + Clone + Send + Sync,
     {
@@ -54,7 +54,7 @@ pub trait FetchFromDatabase: Send + Sync {
     }
 
     /// Search for relevant instances of `E` given a search key.
-    async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<E>>
+    async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: 'static + Entity + SearchableEntity<SearchKey> + Clone + Send + Sync,
         SearchKey: KeyType;
