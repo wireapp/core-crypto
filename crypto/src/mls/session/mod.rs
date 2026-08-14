@@ -155,6 +155,7 @@ mod tests {
         /// Count the entities
         pub async fn count_entities(&self) -> EntitiesCount {
             let keystore = &self.database;
+            let buffered_commits = keystore.count::<StoredBufferedCommit>().await.unwrap();
             let credential = keystore.count::<StoredCredential>().await.unwrap();
             let encryption_keypair = keystore.count::<StoredEncryptionKeyPair>().await.unwrap();
             let epoch_encryption_keypair = keystore.count::<StoredEpochEncryptionKeypair>().await.unwrap();
@@ -165,6 +166,7 @@ mod tests {
             let pending_messages = keystore.count::<MlsPendingMessage>().await.unwrap();
             let psk_bundle = keystore.count::<StoredPskBundle>().await.unwrap();
             EntitiesCount {
+                buffered_commits,
                 credential,
                 encryption_keypair,
                 epoch_encryption_keypair,

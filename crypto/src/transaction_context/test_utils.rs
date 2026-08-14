@@ -1,7 +1,7 @@
 use core_crypto_keystore::{
     entities::{
-        MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredEncryptionKeyPair,
-        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
+        MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential,
+        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
     },
     traits::FetchFromDatabase as _,
 };
@@ -10,6 +10,7 @@ use super::TransactionContext;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct EntitiesCount {
+    pub buffered_commits: u32,
     pub credential: u32,
     pub encryption_keypair: u32,
     pub epoch_encryption_keypair: u32,
@@ -25,6 +26,7 @@ impl TransactionContext {
     /// Count the entities
     pub async fn count_entities(&self) -> EntitiesCount {
         let inner = self.inner().await.unwrap();
+        let buffered_commits = inner.transaction.count::<StoredBufferedCommit>().await.unwrap();
         let credential = inner.transaction.count::<StoredCredential>().await.unwrap();
         let encryption_keypair = inner.transaction.count::<StoredEncryptionKeyPair>().await.unwrap();
         let epoch_encryption_keypair = inner.transaction.count::<StoredEpochEncryptionKeypair>().await.unwrap();
@@ -35,6 +37,7 @@ impl TransactionContext {
         let pending_messages = inner.transaction.count::<MlsPendingMessage>().await.unwrap();
         let psk_bundle = inner.transaction.count::<StoredPskBundle>().await.unwrap();
         EntitiesCount {
+            buffered_commits,
             credential,
             encryption_keypair,
             epoch_encryption_keypair,
