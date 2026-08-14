@@ -4,6 +4,8 @@
 //! useful to end users. Clients building on the CC API can't do anything useful with a full [`Credential`],
 //! and it's wasteful to transfer one across the FFI boundary.
 
+use std::sync::Arc;
+
 use core_crypto_keystore::{entities::StoredCredential, traits::FetchFromDatabase};
 
 use super::{Error, Result};
@@ -20,7 +22,7 @@ impl CredentialRef {
             .map_err(KeystoreError::wrap("finding credential"))?
             .ok_or(Error::CredentialNotFound)
             .and_then(|stored_credential| {
-                Credential::try_from(&stored_credential)
+                Credential::try_from(stored_credential)
                     .map_err(RecursiveError::mls_credential(
                         "creating credential from stored credential",
                     ))
@@ -41,7 +43,10 @@ impl CredentialRef {
             .map_err(KeystoreError::wrap("finding credential"))?
             .ok_or(Error::CredentialNotFound)
             .map_err(RecursiveError::mls_credential_ref("retrieving public key"))
-            .map(|mut stored_credential| std::mem::take(&mut stored_credential.public_key))
+            .map(|stored_credential| {
+                let mut stored_credential = Arc::unwrap_or_clone(stored_credential);
+                std::mem::take(&mut stored_credential.public_key)
+            })
             .map_err(Into::into)
     }
 }

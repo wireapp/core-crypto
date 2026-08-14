@@ -11,6 +11,8 @@ pub(crate) mod ext;
 mod persistence;
 pub(crate) mod x509;
 
+use std::sync::Arc;
+
 use core_crypto_keystore::entities::StoredCredential;
 use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, SignatureScheme};
 use openmls_basic_credential::SignatureKeyPair;
@@ -52,10 +54,10 @@ pub struct Credential {
     pub(crate) earliest_validity: u64,
 }
 
-impl TryFrom<&StoredCredential> for Credential {
+impl TryFrom<Arc<StoredCredential>> for Credential {
     type Error = Error;
 
-    fn try_from(stored_credential: &StoredCredential) -> Result<Credential> {
+    fn try_from(stored_credential: Arc<StoredCredential>) -> Result<Credential> {
         let mls_credential = MlsCredential::tls_deserialize(&mut stored_credential.credential.as_slice())
             .map_err(Error::tls_deserialize("mls credential"))?;
         let cipher_suite = CipherSuite::try_from(stored_credential.ciphersuite)

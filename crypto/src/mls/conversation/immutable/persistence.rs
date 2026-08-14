@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use core_crypto_keystore::{entities::PersistedMlsGroup, traits::FetchFromDatabase};
 use openmls::group::MlsGroup;
@@ -39,7 +39,8 @@ impl Conversation {
             .get_borrowed::<PersistedMlsGroup>(id.as_ref())
             .await
             .map_err(KeystoreError::wrap("finding a persisted mls group"))?;
-        let Some(mut group) = group else { return Ok(None) };
+        let Some(group) = group else { return Ok(None) };
+        let mut group = Arc::unwrap_or_clone(group);
         let conversation = Self::from_serialized_state(
             session,
             std::mem::take(&mut group.state),
