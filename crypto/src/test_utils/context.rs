@@ -145,6 +145,7 @@ impl SessionContext {
             .get::<StoredHpkePrivateKey>(&skp.tls_serialize_detached().unwrap())
             .await
             .unwrap()
+            .map(Arc::unwrap_or_clone)
     }
 
     pub async fn find_credential_from_keystore(&self, cb: &Credential) -> Option<StoredCredential> {
@@ -158,6 +159,7 @@ impl SessionContext {
             .unwrap()
             .into_iter()
             .find(|c| c.credential[..] == credential)
+            .map(Arc::unwrap_or_clone)
     }
 
     pub async fn count_hpke_private_key(&self) -> u32 {

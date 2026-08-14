@@ -18,7 +18,7 @@ impl Credential {
             .await
             .map_err(KeystoreError::wrap("getting credential by public key"))?
             .ok_or_else(|| Error::CredentialNotFound(public_key.clone()))?;
-        stored_credential.try_into()
+        stored_credential.clone().try_into()
     }
 
     /// Should only be used when really requiring the credential data itself, e.g., when checking for validity or
@@ -29,6 +29,7 @@ impl Credential {
             .await
             .map_err(KeystoreError::wrap("getting all credentials"))?
             .iter()
+            .cloned()
             .map(TryInto::try_into)
             .collect()
     }

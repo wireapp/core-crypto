@@ -35,7 +35,7 @@ impl ConversationMut {
         database
             .get_borrowed::<StoredBufferedCommit>(self.id().as_ref())
             .await
-            .map(|option| option.map(StoredBufferedCommit::into_commit_data))
+            .map(|option| option.map(|commit| commit.commit_data().to_owned()))
             .map_err(KeystoreError::wrap("attempting to retrieve buffered commit"))
             .map_err(Into::into)
     }

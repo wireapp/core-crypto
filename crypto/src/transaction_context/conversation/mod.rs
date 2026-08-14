@@ -4,6 +4,8 @@ pub mod external_commit;
 mod persistence;
 pub mod welcome;
 
+use std::sync::Arc;
+
 use core_crypto_keystore::{
     entities::{PersistedMlsPendingGroup, StoredBufferedCommit},
     traits::FetchFromDatabase as _,
@@ -114,6 +116,7 @@ impl TransactionContext {
         else {
             return Err(LeafError::ConversationNotFound(id.to_owned()).into());
         };
+        let pending_group = Arc::unwrap_or_clone(pending_group);
         Ok(PendingConversation::new(pending_group, self.clone()))
     }
 
