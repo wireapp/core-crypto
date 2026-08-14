@@ -147,29 +147,30 @@ impl Transaction {
     }
 
     /// Find all the entities of type `E` in the database as modified by the operations in this transaction.
-    pub(crate) async fn find_all<E>(&self, persisted_records: impl IntoIterator<Item = E>) -> impl Iterator<Item = E>
+    pub(crate) async fn find_all<E>(
+        &self,
+        persisted_records: impl IntoIterator<Item = Arc<E>>,
+    ) -> impl Iterator<Item = Arc<E>>
     where
         E: 'static + Clone + Entity + Send + Sync,
     {
         let cached_records = self.find_all_in_cache::<E>().await;
-        self.merge_records(cached_records.into_iter().map(Arc::unwrap_or_clone), persisted_records)
-            .await
+        self.merge_records(cached_records, persisted_records).await
     }
 
     /// Find all the entities of type `E` in the database which match `search_key`,
     /// as modified by the operations in this transaction.
     pub(crate) async fn search<E, SearchKey>(
         &self,
-        persisted_records: impl IntoIterator<Item = E>,
+        persisted_records: impl IntoIterator<Item = Arc<E>>,
         search_key: &SearchKey,
-    ) -> impl Iterator<Item = E>
+    ) -> impl Iterator<Item = Arc<E>>
     where
         E: 'static + Clone + Entity + SearchableEntity<SearchKey> + Send + Sync,
         SearchKey: KeyType,
     {
         let cached_records = self.search_in_cache(search_key).await;
-        self.merge_records(cached_records.map(Arc::unwrap_or_clone), persisted_records)
-            .await
+        self.merge_records(cached_records, persisted_records).await
     }
 }
 
