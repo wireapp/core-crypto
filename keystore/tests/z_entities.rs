@@ -142,18 +142,20 @@ mod tests_impl {
                 .unwrap()
                 .pop()
                 .unwrap();
-            assert_eq!(*pending_message, pending_message_from_store);
+            assert_eq!(*pending_message, *pending_message_from_store);
         } else if let Some(credential) = any_e.downcast_ref::<StoredCredential>() {
-            let mut credential_from_store = store
-                .get::<StoredCredential>(&credential.primary_key())
-                .await
-                .unwrap()
-                .unwrap();
+            let mut credential_from_store = Arc::unwrap_or_clone(
+                store
+                    .get::<StoredCredential>(&credential.primary_key())
+                    .await
+                    .unwrap()
+                    .unwrap(),
+            );
             credential_from_store.equalize();
             assert_eq!(*credential, credential_from_store);
         } else {
             let primary_key = entity.primary_key();
-            let mut entity_from_store = store.get::<E>(&primary_key).await.unwrap().unwrap();
+            let mut entity_from_store = Arc::unwrap_or_clone(store.get::<E>(&primary_key).await.unwrap().unwrap());
             entity_from_store.equalize();
             assert_eq!(*entity, entity_from_store);
         };
@@ -190,11 +192,13 @@ mod tests_impl {
         tx.commit().await.unwrap();
 
         assert_no_transaction_in_flight(store).await;
-        let mut found = store
-            .get_borrowed::<E>(primary_key.borrow())
-            .await
-            .unwrap()
-            .expect("an entity which was just saved is findable by its borrowed primary key");
+        let mut found = Arc::unwrap_or_clone(
+            store
+                .get_borrowed::<E>(primary_key.borrow())
+                .await
+                .unwrap()
+                .expect("an entity which was just saved is findable by its borrowed primary key"),
+        );
         found.equalize();
         assert_eq!(entity, found);
 
@@ -237,8 +241,8 @@ mod tests_impl {
         tx.commit().await.unwrap();
 
         assert_no_transaction_in_flight(store).await;
-        let entity2: E = store.get(&entity.primary_key()).await.unwrap().unwrap();
-        assert_eq!(*entity, entity2);
+        let entity2 = store.get::<E>(&entity.primary_key()).await.unwrap().unwrap();
+        assert_eq!(*entity, *entity2);
     }
 
     pub(crate) async fn can_remove_entity<E>(store: &Arc<CryptoKeystore>, entity: E)
@@ -250,7 +254,7 @@ mod tests_impl {
         tx.commit().await.unwrap();
 
         assert_no_transaction_in_flight(store).await;
-        let entity2: Option<E> = store.get(&entity.primary_key()).await.unwrap();
+        let entity2 = store.get::<E>(&entity.primary_key()).await.unwrap();
         assert!(entity2.is_none());
 
         // The check above binds the primary key into a `WHERE` clause, so it reports "absent" both
