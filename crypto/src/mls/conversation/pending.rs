@@ -283,6 +283,66 @@ mod tests {
     use super::*;
     use crate::{DecryptedMessage, test_utils::*};
 
+    /// Abandoning an external join abandons the messages buffered while it was pending.
+    ///
+    /// [`PendingConversation::clear`] deletes the pending group and nothing else. It is what runs when the
+    /// delivery service rejects our external join commit, and any message buffered while we waited for
+    /// that answer outlives the pending conversation it was buffered for. The row is then unreachable:
+    /// buffered messages are only ever read on behalf of a conversation, and neither a pending nor an
+    /// established one exists under this id.
+    ///
+    /// This is the same defect as `wipe_abandons_buffered_messages`, on the other of the two conversation
+    /// tables. Both are worth pinning, because the two deletion paths share no code.
+    #[apply(all_cred_cipher)]
+    async fn abandoning_an_external_join_abandons_buffered_messages(case: TestContext) {
+        let [alice, mut bob] = case.sessions().await;
+        Box::pin(async move {
+            let conversation = case.create_conversation([&alice]).await;
+
+            // Bob asks to join Alice's group with an external commit, and waits for the DS to accept it.
+            let (commit_guard, _pending_conversation) = conversation.external_join_unmerged(&bob).await;
+            let conversation = commit_guard.finish();
+
+            // While Bob waits, Alice speaks. Bob can process nothing until his own join is merged, so he
+            // buffers her message to replay afterwards.
+            let app_msg = conversation
+                .guard()
+                .await
+                .encrypt_message(b"Hello Bob !")
+                .await
+                .unwrap();
+            let Err(crate::transaction_context::Error::PendingConversation(mut pending_conversation)) =
+                bob.transaction.conversation(conversation.id()).await
+            else {
+                panic!("Bob should not have the conversation yet")
+            };
+            let decrypt = pending_conversation.try_process_own_join_commit(app_msg).await;
+            assert!(matches!(decrypt.unwrap_err(), Error::BufferedForPendingConversation));
+
+            let counts = bob.transaction.count_entities().await;
+            assert_eq!(counts.pending_group, 1, "Bob's join is still pending");
+            assert_eq!(counts.pending_messages, 1, "Alice's message must have been buffered");
+
+            // The DS rejects Bob's commit, so he gives up on the join.
+            pending_conversation.clear().await.unwrap();
+
+            drop(conversation);
+            bob.commit_transaction().await;
+
+            let counts = bob.transaction.count_entities().await;
+            assert_eq!(
+                counts.pending_group, 0,
+                "abandoning the join must have removed the pending group"
+            );
+            assert_eq!(
+                counts.pending_messages, 0,
+                "the buffered message belongs to a pending conversation which was abandoned, so abandoning \
+                 it must have taken the message with it"
+            );
+        })
+        .await
+    }
+
     #[apply(all_cred_cipher)]
     async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestContext) {
         let [alice, bob, charlie, debbie] = case.sessions().await;
