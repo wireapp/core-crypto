@@ -217,7 +217,8 @@ impl PkiEnvironment {
         guard.clear_trust_anchor_sources();
 
         let mut source = TaSource::new();
-        for mut anchor in anchors {
+        for anchor in anchors {
+            let mut anchor = Arc::unwrap_or_clone(anchor);
             source.push(certval::CertFile {
                 filename: "".to_string(),
                 bytes: std::mem::take(&mut anchor.content),
