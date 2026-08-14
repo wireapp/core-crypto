@@ -164,8 +164,7 @@ impl TransactionContext {
         .await
         .map_err(OpenMlsError::wrap("creating group with id"))?;
 
-        self.persist_conversation_from_mls_group(group, configuration, Default::default())
-            .await?;
+        self.persist_conversation_from_mls_group(group, configuration).await?;
 
         Ok(())
     }
