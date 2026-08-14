@@ -17,22 +17,25 @@ use crate::{
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait)]
 impl FetchFromDatabase for Transaction {
-    async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<E>>
+    async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<Arc<E>>>
     where
         E: 'static + Entity + Clone + Send + Sync,
     {
         let read_outcome = <Self>::get::<E>(self, id).await;
         if let Some(result) = read_outcome.entity {
-            return Ok(result.map(Arc::unwrap_or_clone));
+            return Ok(result);
         };
 
         // Otherwise get it from the database
         let conn = self.database.conn().await;
         let db_entity = E::get(&conn, id)?.filter(|entity| !read_outcome.should_omit(entity));
-        Ok(db_entity)
+        Ok(db_entity.map(Arc::new))
     }
 
-    async fn get_borrowed<E>(&self, id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey) -> CryptoKeystoreResult<Option<E>>
+    async fn get_borrowed<E>(
+        &self,
+        id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey,
+    ) -> CryptoKeystoreResult<Option<Arc<E>>>
     where
         E: 'static + EntityGetBorrowed + Clone + Send + Sync,
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
@@ -40,12 +43,12 @@ impl FetchFromDatabase for Transaction {
     {
         let read_outcome = <Self>::get_borrowed::<E>(self, id).await;
         if let Some(result) = read_outcome.entity {
-            return Ok(result.map(Arc::unwrap_or_clone));
+            return Ok(result);
         }
 
         let conn = self.database.conn().await;
         let db_entity = E::get_borrowed(&conn, id)?.filter(|entity| !read_outcome.should_omit(entity));
-        Ok(db_entity)
+        Ok(db_entity.map(Arc::new))
     }
 
     async fn count<E>(&self) -> CryptoKeystoreResult<u32>
@@ -58,23 +61,23 @@ impl FetchFromDatabase for Transaction {
         Ok(count as _)
     }
 
-    async fn load_all<E>(&self) -> CryptoKeystoreResult<Vec<E>>
+    async fn load_all<E>(&self) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: 'static + Entity + Clone + Send + Sync,
     {
         let conn = self.database.conn().await;
-        let persisted_records = E::load_all(&conn)?;
+        let persisted_records = E::load_all(&conn)?.into_iter().map(Arc::new);
 
         Ok(<Self>::find_all(self, persisted_records).await.collect())
     }
 
-    async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<E>>
+    async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: 'static + Entity + SearchableEntity<SearchKey> + Clone + Send + Sync,
         SearchKey: KeyType,
     {
         let conn = self.database.conn().await;
-        let persisted_records = E::find_all_matching(&conn, search_key)?;
+        let persisted_records = E::find_all_matching(&conn, search_key)?.into_iter().map(Arc::new);
 
         Ok(<Self>::search(self, persisted_records, search_key).await.collect())
     }

@@ -137,7 +137,7 @@ where
     T: FetchFromDatabase,
 {
     /// Get an instance of `E` from the database by its primary key.
-    async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<E>>
+    async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<Arc<E>>>
     where
         E: 'static + Entity + Clone + Send + Sync,
     {
@@ -153,7 +153,7 @@ where
     }
 
     /// Load all `E`s from the database.
-    async fn load_all<E>(&self) -> CryptoKeystoreResult<Vec<E>>
+    async fn load_all<E>(&self) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: 'static + Entity + Clone + Send + Sync,
     {
@@ -161,7 +161,10 @@ where
     }
 
     /// Get an instance of `E` from the database by the borrowed form of its primary key.
-    async fn get_borrowed<E>(&self, id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey) -> CryptoKeystoreResult<Option<E>>
+    async fn get_borrowed<E>(
+        &self,
+        id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey,
+    ) -> CryptoKeystoreResult<Option<Arc<E>>>
     where
         E: 'static + EntityGetBorrowed + Clone + Send + Sync,
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
@@ -171,7 +174,7 @@ where
     }
 
     /// Get the requested unique entity from the database.
-    async fn get_unique<'a, U>(&self) -> CryptoKeystoreResult<Option<U>>
+    async fn get_unique<'a, U>(&self) -> CryptoKeystoreResult<Option<Arc<U>>>
     where
         U: 'static + UniqueEntityExt + Entity + Clone + Send + Sync,
     {
@@ -187,7 +190,7 @@ where
     }
 
     /// Search for relevant instances of `E` given a search key.
-    async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<E>>
+    async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: 'static + Entity + SearchableEntity<SearchKey> + Clone + Send + Sync,
         SearchKey: KeyType,

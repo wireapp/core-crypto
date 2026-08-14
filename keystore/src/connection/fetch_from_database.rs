@@ -20,7 +20,7 @@ fn no_transaction_to_default_read_outcome<E>(err: CryptoKeystoreError) -> Crypto
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait)]
 impl FetchFromDatabase for Database {
-    async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<E>>
+    async fn get<E>(&self, id: &E::PrimaryKey) -> CryptoKeystoreResult<Option<Arc<E>>>
     where
         E: 'static + Entity + Clone + Send + Sync,
     {
@@ -30,17 +30,20 @@ impl FetchFromDatabase for Database {
             .or_else(no_transaction_to_default_read_outcome)?;
 
         if let Some(record) = read_outcome.entity {
-            return Ok(record.map(Arc::unwrap_or_clone));
+            return Ok(record);
         }
 
         // Otherwise get it from the database
         let conn = self.conn().await;
         let db_entity = E::get(&conn, id)?.filter(|entity| !read_outcome.should_omit(entity));
 
-        Ok(db_entity)
+        Ok(db_entity.map(Arc::new))
     }
 
-    async fn get_borrowed<E>(&self, id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey) -> CryptoKeystoreResult<Option<E>>
+    async fn get_borrowed<E>(
+        &self,
+        id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey,
+    ) -> CryptoKeystoreResult<Option<Arc<E>>>
     where
         E: 'static + EntityGetBorrowed + Clone + Send + Sync,
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
@@ -52,13 +55,13 @@ impl FetchFromDatabase for Database {
             .or_else(no_transaction_to_default_read_outcome)?;
 
         if let Some(cached_record) = read_outcome.entity {
-            return Ok(cached_record.map(Arc::unwrap_or_clone));
+            return Ok(cached_record);
         }
 
         // Otherwise get it from the database
         let conn = self.conn().await;
         let db_entity = E::get_borrowed(&conn, id)?.filter(|entity| !read_outcome.should_omit(entity));
-        Ok(db_entity)
+        Ok(db_entity.map(Arc::new))
     }
 
     async fn count<E>(&self) -> CryptoKeystoreResult<u32>
@@ -76,12 +79,12 @@ impl FetchFromDatabase for Database {
         }
     }
 
-    async fn load_all<E>(&self) -> CryptoKeystoreResult<Vec<E>>
+    async fn load_all<E>(&self) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: 'static + Entity + Clone + Send + Sync,
     {
         let conn = self.conn().await;
-        let persisted_records = E::load_all(&conn)?;
+        let persisted_records = E::load_all(&conn)?.into_iter().map(Arc::new);
 
         self.merge_with_transaction(persisted_records, async |transaction, persisted_records| {
             Ok(transaction.find_all(persisted_records).await.collect())
@@ -89,13 +92,13 @@ impl FetchFromDatabase for Database {
         .await
     }
 
-    async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<E>>
+    async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: 'static + Entity + SearchableEntity<SearchKey> + Clone + Send + Sync,
         SearchKey: KeyType,
     {
         let conn = self.conn().await;
-        let persisted_records = E::find_all_matching(&conn, search_key)?;
+        let persisted_records = E::find_all_matching(&conn, search_key)?.into_iter().map(Arc::new);
 
         self.merge_with_transaction(persisted_records, async |transaction, persisted_records| {
             Ok(transaction.search(persisted_records, search_key).await.collect())
