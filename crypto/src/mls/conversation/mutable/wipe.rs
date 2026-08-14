@@ -49,6 +49,19 @@ impl ConversationMut {
             .map_err(KeystoreError::wrap("deleting mls group"))?;
         let _ = conversation_cache.remove(id);
 
+        // Release the cache guard before clearing the buffers: that path reaches back into the
+        // transaction context, and holding this guard across it would deadlock.
+        drop(conversation_cache);
+
+        // Any message or commit this conversation had buffered is unreachable now that the
+        // conversation is gone, so it has to go with it.
+        self.tx_context
+            .clear_orphaned_conversation_buffers(id)
+            .await
+            .map_err(RecursiveError::transaction(
+                "clearing buffered messages and commits of a wiped conversation",
+            ))?;
+
         Ok(())
     }
 }
