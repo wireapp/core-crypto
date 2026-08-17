@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-bedc5987.js";
+            window.path_to_searchindex_js = "searchindex-c423c7b9.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-6ea44124.js"></script>
@@ -178,9 +178,35 @@
                         <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
 <h2 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h2>
 <ul>
-<li><code>PkiEnvironment</code> now supports adding multiple trust anchors. Previously, <code>addTrustAnchor</code> replaced any existing trust
+<li>
+<p><code>PkiEnvironment</code> now supports adding multiple trust anchors. Previously, <code>addTrustAnchor</code> replaced any existing trust
 anchor. Get all added trust anchor certificates via <code>getTrustAnchors</code>. Remove a trust anchor via <code>removeTrustAnchor</code>
-by providing the Subject Public Key Info (SPKI) fingerprint.</li>
+by providing the Subject Public Key Info (SPKI) fingerprint.</p>
+</li>
+<li>
+<p>Fixes a bug which caused MLS messages that arrived out of order to be discarded instead of buffered for replay.</p>
+<p>When a message for epoch <code>n + 1</code> arrived while the conversation was still in epoch <code>n</code>, CoreCrypto buffered it in the
+database, but a stale foreign key constraint rejected that write for every conversation which had already been
+established. The message was never replayed once the epoch advanced, producing a keystore error based on Sqlite
+<code>ConstraintViolation, 787</code> instead.</p>
+<p>This bug affected versions 10.0.0-10.3.0; earlier versions had foreign key constraint checks disabled.</p>
+</li>
+<li>
+<p>Wiping a conversation, or abandoning an external join which the delivery service rejected, now also discards the
+messages and commits that conversation had buffered. Previously those rows stayed in the database indefinitely, with
+nothing able to read or remove them. This does not remove existing stale rows, but prevents new ones from leaking into
+the database.</p>
+</li>
+<li>
+<p>Operations within a CoreCrypto transaction are now applied to the database in the order they were performed, and all
+reads within a transaction reflect earlier writes in that same order. Previously reads would sometimes but not always
+reflect writes within the transaction, and operations would be played back into the database in arbitrary order
+(hashmap).</p>
+</li>
+<li>
+<p><code>proteusNewPrekeyAuto</code> still reuses the ids of deleted prekeys before allocating new ones, but no longer ensures that
+those ids are reused in strictly ascending order.</p>
+</li>
 </ul>
 <h2 id="corecrypto-10"><a class="header" href="#corecrypto-10">CoreCrypto 10</a></h2>
 <h3 id="v1030---2026-08-07"><a class="header" href="#v1030---2026-08-07">v10.3.0 - 2026-08-07</a></h3>
