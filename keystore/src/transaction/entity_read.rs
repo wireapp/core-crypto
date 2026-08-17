@@ -60,7 +60,7 @@ impl Transaction {
     where
         E: 'static + Entity + Send + Sync,
     {
-        let entity_id = EntityId::from_primary_key::<E>(id);
+        let entity_id = EntityId::from_primary_key::<E>(id.clone());
         self.get_by_entity_id(&entity_id).await
     }
 
@@ -208,7 +208,7 @@ mod tests {
 
     /// What `get_by_entity_id` reports for `message`.
     async fn outcome_for(tx: &Transaction, message: &MlsPendingMessage) -> ReadOutcome<MlsPendingMessage> {
-        let entity_id = EntityId::from_primary_key::<MlsPendingMessage>(&message.primary_key());
+        let entity_id = EntityId::from_primary_key::<MlsPendingMessage>(message.primary_key());
         tx.get_by_entity_id(&entity_id).await
     }
 

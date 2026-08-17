@@ -109,7 +109,9 @@ impl Operation {
         Self::Delete {
             entity_id,
             apply: |entity_id, tx| {
-                let id = entity_id.primary_key::<E>()?;
+                let id = entity_id.primary_key::<E>().expect(
+                    "the entity id is set when we create a delete operation and must always have the correct type",
+                );
                 E::delete(tx, &id).map(|_| ())
             },
         }
