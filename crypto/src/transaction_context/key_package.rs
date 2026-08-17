@@ -174,7 +174,7 @@ impl TransactionContext {
             .get_borrowed::<StoredKeyPackage>(key_package_ref)
             .await
             .map_err(KeystoreError::wrap("loading keypackage from database"))?
-            .map(|stored_keypackage| crate::mls::session::key_package::from_stored(stored_keypackage))
+            .map(crate::mls::session::key_package::from_stored)
             .transpose()
             .map_err(RecursiveError::mls_client("loading key package"))?
         else {
