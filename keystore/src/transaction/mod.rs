@@ -15,15 +15,10 @@ use std::{collections::HashMap, sync::Arc};
 use async_lock::{RwLock, SemaphoreGuardArc};
 use rusqlite::TransactionBehavior;
 
+pub use self::dynamic_dispatch::EntityId;
 pub(crate) use self::{bulk_delete_filter::BulkDeleteFilter, read_outcome::ReadOutcome};
-use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc,
-    traits::Entity,
-    transaction::{
-        dynamic_dispatch::{EntityId, Operation},
-        operations::Operations,
-    },
-};
+use self::{dynamic_dispatch::Operation, operations::Operations};
+use crate::{CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc, traits::Entity};
 
 /// This is an in-flight transaction: all operations are buffered in memory, and only
 /// applied to the database on [`commit`][UniqueArc<Self>::commit].

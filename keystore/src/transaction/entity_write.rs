@@ -48,7 +48,7 @@ impl Transaction {
     where
         E: EntityDatabaseMutation,
     {
-        let entity_id = EntityId::from_primary_key::<E>(id);
+        let entity_id = EntityId::from_primary_key::<E>(id.clone());
         self.remove_by_entity_id::<E>(entity_id).await
     }
 

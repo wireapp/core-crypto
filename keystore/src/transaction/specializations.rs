@@ -37,11 +37,7 @@ impl Transaction {
     #[cfg(feature = "proteus-keystore")]
     pub(crate) async fn free_proteus_prekey_id(&self) -> CryptoKeystoreResult<u16> {
         fn as_prekey_id(entity_id: &EntityId) -> Option<u16> {
-            entity_id.matches_type::<ProteusPrekey>().then(|| {
-                entity_id
-                    .primary_key::<ProteusPrekey>()
-                    .expect("primary keys in a cache table have valid byte encoding")
-            })
+            entity_id.primary_key::<ProteusPrekey>().map(Arc::unwrap_or_clone)
         }
 
         // if we can find a deleted id, we don't need to touch the DB at all;

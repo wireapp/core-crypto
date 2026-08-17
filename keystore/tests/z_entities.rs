@@ -69,6 +69,7 @@ mod tests_impl {
             Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase as _, KeyType,
             PrimaryKey as _,
         },
+        transaction::EntityId,
     };
 
     use super::common::*;
@@ -213,12 +214,13 @@ mod tests_impl {
         );
 
         // As in `can_remove_entity`, confirm the deletion against the one read which binds no key.
-        let key_bytes = primary_key.bytes().into_owned();
+        let key = EntityId::from_primary_key::<E>(primary_key);
         let remaining = store.load_all::<E>().await.unwrap();
         assert!(
-            !remaining
-                .iter()
-                .any(|remaining| remaining.primary_key().bytes().as_ref() == key_bytes.as_slice()),
+            !remaining.iter().any(|remaining| {
+                let remaining_key = EntityId::from_primary_key::<E>(remaining.primary_key());
+                remaining_key == key
+            }),
             "the entity is still in the database, so the borrowed-key removal deleted no rows"
         );
     }
@@ -264,12 +266,13 @@ mod tests_impl {
         //
         // Not every primary key is `PartialEq`, but every primary key can produce its byte
         // encoding, which is what the transaction cache already uses for record identity.
-        let removed_key = entity.primary_key().bytes().into_owned();
+        let removed_key = EntityId::from_primary_key::<E>(entity.primary_key());
         let remaining = store.load_all::<E>().await.unwrap();
         assert!(
-            !remaining
-                .iter()
-                .any(|remaining| remaining.primary_key().bytes().as_ref() == removed_key.as_slice()),
+            !remaining.iter().any(|remaining| {
+                let remaining_key = EntityId::from_primary_key::<E>(remaining.primary_key());
+                remaining_key == removed_key
+            }),
             "the entity is still in the database, so the removal deleted no rows"
         );
     }
