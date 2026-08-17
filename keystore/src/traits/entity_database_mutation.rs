@@ -2,7 +2,7 @@ use rusqlite::Transaction;
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, KeyType},
+    traits::{BorrowPrimaryKey, Entity},
 };
 
 /// Extend an [`Entity`] with db-mutating operations which can be performed when provided with a transaction.
@@ -48,7 +48,5 @@ pub trait EntityDatabaseMutation: Entity {
 /// Extend an [`Entity`] with db-mutating operations which can be performed when provided with a transaction.
 pub trait EntityDeleteBorrowed: EntityDatabaseMutation + BorrowPrimaryKey {
     /// Delete an entity by a borrowed form of its primary key.
-    fn delete_borrowed(tx: &Transaction, id: &Self::BorrowedPrimaryKey) -> CryptoKeystoreResult<bool>
-    where
-        for<'pk> &'pk Self::BorrowedPrimaryKey: KeyType;
+    fn delete_borrowed(tx: &Transaction, id: &Self::BorrowedPrimaryKey) -> CryptoKeystoreResult<bool>;
 }

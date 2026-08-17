@@ -10,7 +10,7 @@ use std::sync::Arc;
 
 use super::dynamic_dispatch::EntityId;
 use crate::{
-    traits::{BorrowPrimaryKey, Entity, KeyType, SearchableEntity},
+    traits::{BorrowPrimaryKey, Entity, SearchableEntity},
     transaction::{ReadOutcome, Transaction},
 };
 
@@ -138,7 +138,6 @@ impl Transaction {
     async fn search_in_cache<E, SearchKey>(&self, search_key: &SearchKey) -> impl Iterator<Item = Arc<E>>
     where
         E: 'static + Entity + SearchableEntity<SearchKey> + Send + Sync,
-        SearchKey: KeyType,
     {
         self.find_all_in_cache::<E>()
             .await
@@ -167,7 +166,6 @@ impl Transaction {
     ) -> impl Iterator<Item = Arc<E>>
     where
         E: 'static + Clone + Entity + SearchableEntity<SearchKey> + Send + Sync,
-        SearchKey: KeyType,
     {
         let cached_records = self.search_in_cache(search_key).await;
         self.merge_records(cached_records, persisted_records).await

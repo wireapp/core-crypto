@@ -3,7 +3,7 @@ use zeroize::Zeroize;
 use crate::{
     Sha256Hash,
     entities::helpers::{count_helper, delete_helper, get_helper, load_all_helper},
-    traits::{KeyType, PrimaryKey},
+    traits::PrimaryKey,
 };
 
 /// Typesafe reference to a conversation id.
@@ -14,12 +14,6 @@ use crate::{
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, derive_more::From, derive_more::Into, derive_more::Deref)]
 #[deref(forward)]
 pub struct ConversationId(Vec<u8>);
-
-impl KeyType for ConversationId {
-    fn bytes(&self) -> std::borrow::Cow<'_, [u8]> {
-        (&self.0).into()
-    }
-}
 
 /// Entity representing a buffered message
 ///

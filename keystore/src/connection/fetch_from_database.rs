@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Database,
-    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, KeyType, SearchableEntity},
+    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, SearchableEntity},
     transaction::ReadOutcome,
 };
 
@@ -47,7 +47,7 @@ impl FetchFromDatabase for Database {
     where
         E: 'static + EntityGetBorrowed + Clone + Send + Sync,
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
-        for<'a> &'a E::BorrowedPrimaryKey: KeyType,
+        <E as BorrowPrimaryKey>::BorrowedPrimaryKey: Send + Sync,
     {
         let read_outcome = self
             .with_transaction(async |transaction| Ok(transaction.get_borrowed::<E>(id).await))
@@ -95,7 +95,7 @@ impl FetchFromDatabase for Database {
     async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: 'static + Entity + SearchableEntity<SearchKey> + Clone + Send + Sync,
-        SearchKey: KeyType,
+        SearchKey: Send + Sync,
     {
         let conn = self.conn().await;
         let persisted_records = E::find_all_matching(&conn, search_key)?.into_iter().map(Arc::new);

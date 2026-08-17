@@ -63,10 +63,7 @@ impl crate::traits::Entity for PersistedMlsPendingGroup {
 }
 
 impl crate::traits::EntityGetBorrowed for PersistedMlsPendingGroup {
-    fn get_borrowed(conn: &Connection, key: &[u8]) -> crate::CryptoKeystoreResult<Option<Self>>
-    where
-        for<'pk> &'pk [u8]: crate::traits::KeyType,
-    {
+    fn get_borrowed(conn: &Connection, key: &[u8]) -> crate::CryptoKeystoreResult<Option<Self>> {
         crate::entities::helpers::get_helper(conn, "id", key, |row| {
             Ok(Self {
                 id: row.get("id")?,
@@ -100,10 +97,7 @@ impl crate::traits::EntityDatabaseMutation for PersistedMlsPendingGroup {
 }
 
 impl crate::traits::EntityDeleteBorrowed for PersistedMlsPendingGroup {
-    fn delete_borrowed(tx: &rusqlite::Transaction, id: &[u8]) -> crate::CryptoKeystoreResult<bool>
-    where
-        for<'pk> &'pk [u8]: crate::traits::KeyType,
-    {
+    fn delete_borrowed(tx: &rusqlite::Transaction, id: &[u8]) -> crate::CryptoKeystoreResult<bool> {
         crate::entities::helpers::delete_helper::<Self>(tx, "id", id)
     }
 }

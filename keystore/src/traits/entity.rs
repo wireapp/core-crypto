@@ -2,10 +2,7 @@ use rusqlite::Connection;
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{
-        KeyType,
-        primary_key::{BorrowPrimaryKey, PrimaryKey},
-    },
+    traits::primary_key::{BorrowPrimaryKey, PrimaryKey},
 };
 
 /// Something which can be stored in our database.
@@ -36,7 +33,5 @@ pub trait Entity: PrimaryKey + Sized {
 
 pub trait EntityGetBorrowed: Entity + BorrowPrimaryKey {
     /// Get an entity by a borrowed form of its primary key.
-    fn get_borrowed(conn: &Connection, key: &Self::BorrowedPrimaryKey) -> CryptoKeystoreResult<Option<Self>>
-    where
-        for<'pk> &'pk Self::BorrowedPrimaryKey: KeyType;
+    fn get_borrowed(conn: &Connection, key: &Self::BorrowedPrimaryKey) -> CryptoKeystoreResult<Option<Self>>;
 }

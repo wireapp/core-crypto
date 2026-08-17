@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, KeyType, SearchableEntity, UniqueEntityExt},
+    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, SearchableEntity, UniqueEntityExt},
 };
 
 /// Interface to immutably access the database either from the connection directly or through a transaction.
@@ -34,7 +34,7 @@ pub trait FetchFromDatabase: Send + Sync {
     where
         E: 'static + EntityGetBorrowed + Clone + Send + Sync,
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
-        for<'a> &'a E::BorrowedPrimaryKey: KeyType;
+        <E as BorrowPrimaryKey>::BorrowedPrimaryKey: Send + Sync;
 
     /// Get the requested unique entity from the database.
     async fn get_unique<'a, U>(&self) -> CryptoKeystoreResult<Option<Arc<U>>>
@@ -57,5 +57,5 @@ pub trait FetchFromDatabase: Send + Sync {
     async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: 'static + Entity + SearchableEntity<SearchKey> + Clone + Send + Sync,
-        SearchKey: KeyType;
+        SearchKey: Send + Sync;
 }
