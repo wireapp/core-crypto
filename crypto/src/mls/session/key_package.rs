@@ -46,7 +46,7 @@ impl Session {
             .get_borrowed::<StoredKeyPackage>(kp_ref.hash_ref())
             .await
             .map_err(KeystoreError::wrap("loading keypackage from database"))?
-            .map(|stored_keypackage| from_stored(stored_keypackage))
+            .map(from_stored)
             .transpose()
     }
 }
