@@ -35,7 +35,7 @@
 <a href=#35 id=35 data-nosnippet>35</a>        database
 <a href=#36 id=36 data-nosnippet>36</a>            .get_borrowed::&lt;StoredBufferedCommit&gt;(<span class="self">self</span>.id().as_ref())
 <a href=#37 id=37 data-nosnippet>37</a>            .<span class="kw">await
-<a href=#38 id=38 data-nosnippet>38</a>            </span>.map(|option| option.map(StoredBufferedCommit::into_commit_data))
+<a href=#38 id=38 data-nosnippet>38</a>            </span>.map(|option| option.map(|commit| commit.commit_data().to_owned()))
 <a href=#39 id=39 data-nosnippet>39</a>            .map_err(KeystoreError::wrap(<span class="string">"attempting to retrieve buffered commit"</span>))
 <a href=#40 id=40 data-nosnippet>40</a>            .map_err(Into::into)
 <a href=#41 id=41 data-nosnippet>41</a>    }

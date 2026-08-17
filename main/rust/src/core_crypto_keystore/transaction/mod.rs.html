@@ -87,9 +87,9 @@
 <a href=#87 id=87 data-nosnippet>87</a>    /// The returned order is unspecified, as the merge runs through a `HashMap`.
 <a href=#88 id=88 data-nosnippet>88</a>    </span><span class="kw">async fn </span>merge_records&lt;E&gt;(
 <a href=#89 id=89 data-nosnippet>89</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
-<a href=#90 id=90 data-nosnippet>90</a>        from_tx_cache: <span class="kw">impl </span>IntoIterator&lt;Item = E&gt;,
-<a href=#91 id=91 data-nosnippet>91</a>        from_database: <span class="kw">impl </span>IntoIterator&lt;Item = E&gt;,
-<a href=#92 id=92 data-nosnippet>92</a>    ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = E&gt;
+<a href=#90 id=90 data-nosnippet>90</a>        from_tx_cache: <span class="kw">impl </span>IntoIterator&lt;Item = Arc&lt;E&gt;&gt;,
+<a href=#91 id=91 data-nosnippet>91</a>        from_database: <span class="kw">impl </span>IntoIterator&lt;Item = Arc&lt;E&gt;&gt;,
+<a href=#92 id=92 data-nosnippet>92</a>    ) -&gt; <span class="kw">impl </span>Iterator&lt;Item = Arc&lt;E&gt;&gt;
 <a href=#93 id=93 data-nosnippet>93</a>    <span class="kw">where
 <a href=#94 id=94 data-nosnippet>94</a>        </span>E: <span class="lifetime">'static </span>+ Clone + Entity + Send + Sync,
 <a href=#95 id=95 data-nosnippet>95</a>    {
@@ -102,7 +102,7 @@
 <a href=#102 id=102 data-nosnippet>102</a>            </span>from_database
 <a href=#103 id=103 data-nosnippet>103</a>                .into_iter()
 <a href=#104 id=104 data-nosnippet>104</a>                .filter_map(|entity| {
-<a href=#105 id=105 data-nosnippet>105</a>                    <span class="kw">let </span>entity_id = EntityId::from_entity(<span class="kw-2">&amp;</span>entity);
+<a href=#105 id=105 data-nosnippet>105</a>                    <span class="kw">let </span>entity_id = EntityId::from_entity(<span class="kw-2">&amp;*</span>entity);
 <a href=#106 id=106 data-nosnippet>106</a>
 <a href=#107 id=107 data-nosnippet>107</a>                    <span class="comment">// the delete may have been overwritten by a later upsert, true,
 <a href=#108 id=108 data-nosnippet>108</a>                    // but in that case we lose nothing by deleting here, because we
@@ -110,7 +110,7 @@
 <a href=#110 id=110 data-nosnippet>110</a>                    //
 <a href=#111 id=111 data-nosnippet>111</a>                    // bulk-deletes apply to the database entities regardless of when they happen
 <a href=#112 id=112 data-nosnippet>112</a>                    </span><span class="kw">let </span>excluded =
-<a href=#113 id=113 data-nosnippet>113</a>                        operations.last_delete_idx_for(<span class="kw-2">&amp;</span>entity_id).is_some() || filters.applies_after(<span class="kw-2">&amp;</span>entity, <span class="number">0</span>);
+<a href=#113 id=113 data-nosnippet>113</a>                        operations.last_delete_idx_for(<span class="kw-2">&amp;</span>entity_id).is_some() || filters.applies_after(<span class="kw-2">&amp;*</span>entity, <span class="number">0</span>);
 <a href=#114 id=114 data-nosnippet>114</a>                    (!excluded).then_some((entity_id, entity))
 <a href=#115 id=115 data-nosnippet>115</a>                })
 <a href=#116 id=116 data-nosnippet>116</a>                .collect::&lt;HashMap&lt;<span class="kw">_</span>, <span class="kw">_</span>&gt;&gt;()
@@ -118,7 +118,7 @@
 <a href=#118 id=118 data-nosnippet>118</a>
 <a href=#119 id=119 data-nosnippet>119</a>        <span class="comment">// update with everything which was inserted by the tx cache
 <a href=#120 id=120 data-nosnippet>120</a>        </span><span class="kw">for </span>entity <span class="kw">in </span>from_tx_cache {
-<a href=#121 id=121 data-nosnippet>121</a>            <span class="kw">let </span>id = EntityId::from_entity(<span class="kw-2">&amp;</span>entity);
+<a href=#121 id=121 data-nosnippet>121</a>            <span class="kw">let </span>id = EntityId::from_entity(<span class="kw-2">&amp;*</span>entity);
 <a href=#122 id=122 data-nosnippet>122</a>            cache.insert(id, entity);
 <a href=#123 id=123 data-nosnippet>123</a>        }
 <a href=#124 id=124 data-nosnippet>124</a>

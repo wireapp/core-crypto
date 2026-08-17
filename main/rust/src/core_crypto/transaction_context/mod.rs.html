@@ -279,7 +279,7 @@
 <a href=#279 id=279 data-nosnippet>279</a>    </span><span class="kw">pub async fn </span>get_data(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;&gt; {
 <a href=#280 id=280 data-nosnippet>280</a>        <span class="kw">let </span>inner = <span class="self">self</span>.inner().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#281 id=281 data-nosnippet>281</a>        <span class="kw">match </span>inner.transaction.get_unique::&lt;ConsumerData&gt;().<span class="kw">await </span>{
-<a href=#282 id=282 data-nosnippet>282</a>            <span class="prelude-val">Ok</span>(maybe_data) =&gt; <span class="prelude-val">Ok</span>(maybe_data.map(Into::into)),
+<a href=#282 id=282 data-nosnippet>282</a>            <span class="prelude-val">Ok</span>(maybe_data) =&gt; <span class="prelude-val">Ok</span>(maybe_data.map(Arc::unwrap_or_clone).map(Into::into)),
 <a href=#283 id=283 data-nosnippet>283</a>            <span class="prelude-val">Err</span>(CryptoKeystoreError::NotFound(..)) =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>),
 <a href=#284 id=284 data-nosnippet>284</a>            <span class="prelude-val">Err</span>(err) =&gt; <span class="prelude-val">Err</span>(KeystoreError::wrap(<span class="string">"finding unique consumer data"</span>)(err).into()),
 <a href=#285 id=285 data-nosnippet>285</a>        }

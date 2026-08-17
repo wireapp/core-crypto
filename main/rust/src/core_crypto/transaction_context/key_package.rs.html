@@ -174,7 +174,7 @@
 <a href=#174 id=174 data-nosnippet>174</a>            .get_borrowed::&lt;StoredKeyPackage&gt;(key_package_ref)
 <a href=#175 id=175 data-nosnippet>175</a>            .<span class="kw">await
 <a href=#176 id=176 data-nosnippet>176</a>            </span>.map_err(KeystoreError::wrap(<span class="string">"loading keypackage from database"</span>))<span class="question-mark">?
-<a href=#177 id=177 data-nosnippet>177</a>            </span>.map(|stored_keypackage| <span class="kw">crate</span>::mls::session::key_package::from_stored(<span class="kw-2">&amp;</span>stored_keypackage))
+<a href=#177 id=177 data-nosnippet>177</a>            </span>.map(<span class="kw">crate</span>::mls::session::key_package::from_stored)
 <a href=#178 id=178 data-nosnippet>178</a>            .transpose()
 <a href=#179 id=179 data-nosnippet>179</a>            .map_err(RecursiveError::mls_client(<span class="string">"loading key package"</span>))<span class="question-mark">?
 <a href=#180 id=180 data-nosnippet>180</a>        </span><span class="kw">else </span>{

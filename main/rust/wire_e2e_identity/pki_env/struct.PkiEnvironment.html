@@ -11,7 +11,7 @@ list.</p>
     crl_der: &amp;[<a class="primitive" href="https://doc.rust-lang.org/1.97.1/std/primitive.u8.html">u8</a>],
 ) -&gt; <a class="type" href="type.Result.html" title="type wire_e2e_identity::pki_env::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.97.1/std/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Validate the CRL (trust anchors must be configured prior to this) and
 save it to the database.</p>
-</div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-PkiEnvironment-1" class="impl"><a class="src rightside" href="../../src/wire_e2e_identity/pki_env/mod.rs.html#125-328">Source</a><a href="#impl-PkiEnvironment-1" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.PkiEnvironment.html" title="struct wire_e2e_identity::pki_env::PkiEnvironment">PkiEnvironment</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/pki_env/mod.rs.html#127-134">Source</a><h4 class="code-header">pub async fn <a href="#method.new" class="fn">new</a>(
+</div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-PkiEnvironment-1" class="impl"><a class="src rightside" href="../../src/wire_e2e_identity/pki_env/mod.rs.html#125-329">Source</a><a href="#impl-PkiEnvironment-1" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.PkiEnvironment.html" title="struct wire_e2e_identity::pki_env::PkiEnvironment">PkiEnvironment</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.new" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/pki_env/mod.rs.html#127-134">Source</a><h4 class="code-header">pub async fn <a href="#method.new" class="fn">new</a>(
     hooks: <a class="struct" href="https://doc.rust-lang.org/1.97.1/alloc/sync/struct.Arc.html" title="struct alloc::sync::Arc">Arc</a>&lt;dyn <a class="trait" href="hooks/trait.PkiEnvironmentHooks.html" title="trait wire_e2e_identity::pki_env::hooks::PkiEnvironmentHooks">PkiEnvironmentHooks</a>&gt;,
     database: <a class="struct" href="https://doc.rust-lang.org/1.97.1/alloc/sync/struct.Arc.html" title="struct alloc::sync::Arc">Arc</a>&lt;<a class="struct" href="../../core_crypto_keystore/connection/struct.Database.html" title="struct core_crypto_keystore::connection::Database">Database</a>&gt;,
 ) -&gt; <a class="type" href="type.Result.html" title="type wire_e2e_identity::pki_env::Result">Result</a>&lt;<a class="struct" href="struct.PkiEnvironment.html" title="struct wire_e2e_identity::pki_env::PkiEnvironment">PkiEnvironment</a>&gt;</h4></section></summary><div class="docblock"><p>Create a new PKI Environment</p>
@@ -27,14 +27,14 @@ save it to the database.</p>
 ) -&gt; <a class="type" href="type.Result.html" title="type wire_e2e_identity::pki_env::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.97.1/std/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Adds the certificate as a trust anchor to the PKI environment.</p>
 <p>The certificate is saved to the database, and included in the PKI environment for
 future validation.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.remove_trust_anchor" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/pki_env/mod.rs.html#211-231">Source</a><h4 class="code-header">pub async fn <a href="#method.remove_trust_anchor" class="fn">remove_trust_anchor</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.remove_trust_anchor" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/pki_env/mod.rs.html#211-232">Source</a><h4 class="code-header">pub async fn <a href="#method.remove_trust_anchor" class="fn">remove_trust_anchor</a>(
     &amp;self,
     tx: &amp;<a class="struct" href="../../core_crypto_keystore/transaction/struct.Transaction.html" title="struct core_crypto_keystore::transaction::Transaction">Transaction</a>,
     fingerprint: &amp;[<a class="primitive" href="https://doc.rust-lang.org/1.97.1/std/primitive.u8.html">u8</a>],
 ) -&gt; <a class="type" href="type.Result.html" title="type wire_e2e_identity::pki_env::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.97.1/std/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Remove the trust anchor from the PKI environment.</p>
 <p>Note that any certificates relying on the removed trust anchor may no longer
 validate.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.add_intermediate_cert" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/pki_env/mod.rs.html#240-275">Source</a><h4 class="code-header">pub async fn <a href="#method.add_intermediate_cert" class="fn">add_intermediate_cert</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.add_intermediate_cert" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/pki_env/mod.rs.html#241-276">Source</a><h4 class="code-header">pub async fn <a href="#method.add_intermediate_cert" class="fn">add_intermediate_cert</a>(
     &amp;self,
     tx: &amp;<a class="struct" href="../../core_crypto_keystore/transaction/struct.Transaction.html" title="struct core_crypto_keystore::transaction::Transaction">Transaction</a>,
     cert: Certificate,
@@ -43,7 +43,7 @@ validate.</p>
 future validation.</p>
 <p>CRL (Certificate Revocation List) distribution points are extracted from the certificate and
 an attempt is made to fetch a CRL from each one.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.validate_cert" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/pki_env/mod.rs.html#283-285">Source</a><h4 class="code-header">pub async fn <a href="#method.validate_cert" class="fn">validate_cert</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.validate_cert" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/pki_env/mod.rs.html#284-286">Source</a><h4 class="code-header">pub async fn <a href="#method.validate_cert" class="fn">validate_cert</a>(
     &amp;self,
     cert: &amp;Certificate,
 ) -&gt; <a class="type" href="../x509_check/type.RustyX509CheckResult.html" title="type wire_e2e_identity::x509_check::RustyX509CheckResult">RustyX509CheckResult</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.97.1/std/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Validate an end-entity X509 certificate.</p>
@@ -51,7 +51,7 @@ an attempt is made to fetch a CRL from each one.</p>
 defined by the set of trust anchors and intermediate certificates
 contained in this PKI environment. Revocation check is performed
 and time of interest is set to the time of the call.</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.validate_credential" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/pki_env/mod.rs.html#292-327">Source</a><h4 class="code-header">pub async fn <a href="#method.validate_credential" class="fn">validate_credential</a>&lt;'a&gt;(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.validate_credential" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/pki_env/mod.rs.html#293-328">Source</a><h4 class="code-header">pub async fn <a href="#method.validate_credential" class="fn">validate_credential</a>&lt;'a&gt;(
     &amp;'a self,
     credential: CredentialRef&lt;'a&gt;,
 ) -&gt; CredentialAuthenticationStatus</h4></section></summary><div class="docblock"><p>Validate an X509 credential.</p>
