@@ -19,7 +19,7 @@ serde = []
 dummy-entity = []
 
 [dependencies]
-aes-gcm = "0.10"
+aes-gcm = "0.11"
 async-lock.workspace = true
 async-trait.workspace = true
 core-crypto-macros.workspace = true
@@ -51,7 +51,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true
 thiserror.workspace = true
-x509-cert = { workspace = true }
+x509-cert = { workspace = true, features = ["fingerprint"] }
 spki.workspace = true
 zeroize = { workspace = true, features = ["zeroize_derive"] }
 
