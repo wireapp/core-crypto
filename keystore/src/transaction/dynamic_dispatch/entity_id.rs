@@ -1,10 +1,7 @@
 use core::fmt;
-use std::borrow::Cow;
+use std::{any::Any, hash::Hash, sync::Arc};
 
-use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, Entity, KeyType, OwnedKeyType as _},
-};
+use crate::traits::{BorrowPrimaryKey, DynEntityId, Entity};
 
 /// Identifies one database record: which table it lives in, plus its primary key within that table.
 ///
@@ -21,18 +18,33 @@ use crate::{
 /// for only one — turning the `expect`s which pair the two into panics, and making bulk deletions
 /// silently match nothing. Adding an entity therefore means giving it a table name no other entity
 /// uses.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone)]
 pub(crate) struct EntityId {
     /// the table this record lives in, which also identifies its Rust type
     table_name: &'static str,
-    /// the record's primary key, in the byte encoding given by [`KeyType::bytes`]
-    id: Vec<u8>,
+    /// the record's primary key
+    key: Arc<dyn DynEntityId>,
 }
 
 impl fmt::Display for EntityId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let Self { table_name, id } = self;
-        write!(f, "{table_name:?}: {}", hex::encode(id))
+        let Self { table_name, key } = self;
+        write!(f, "{table_name}: {key:?}")
+    }
+}
+
+impl PartialEq for EntityId {
+    fn eq(&self, other: &Self) -> bool {
+        self.table_name == other.table_name && self.key.dyn_eq(&*other.key)
+    }
+}
+
+impl Eq for EntityId {}
+
+impl Hash for EntityId {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.table_name.hash(state);
+        self.key.dyn_hash(state);
     }
 }
 
@@ -50,32 +62,28 @@ impl EntityId {
 
     /// Recover the typed primary key from this id.
     ///
-    /// Errors with [`CryptoKeystoreError::InvalidPrimaryKeyBytes`] if the stored bytes are not a valid
-    /// encoding of `E::PrimaryKey`, which for an id built by one of the constructors below can only
-    /// happen if `E` is the wrong type.
-    pub(crate) fn primary_key<E>(&self) -> CryptoKeystoreResult<E::PrimaryKey>
+    /// Produces `None` if this id is of the wrong type for `E`.
+    pub(crate) fn primary_key<E>(&self) -> Option<Arc<E::PrimaryKey>>
     where
         E: Entity,
     {
-        // we'd prefer not to pay the cost for a runtime check, but we want more than 0 checks
-        debug_assert!(
-            self.matches_type::<E>(),
-            "well-constructed code will never call this for a non-matching type"
-        );
-        E::PrimaryKey::from_bytes(&self.id).ok_or(CryptoKeystoreError::InvalidPrimaryKeyBytes(self.table_name))
+        // multiple entities might have the same primary key type, so downcasting alone
+        // isn't sufficient to ensure that this is actually a key for the requested entity type
+        self.matches_type::<E>()
+            .then(|| (self.key.clone() as Arc<dyn Any + Send + Sync>).downcast().ok())
+            .flatten()
     }
 
-    /// Build an id for a record of type `E` from the byte encoding of its primary key.
+    /// Build the id of the record of type `E` with this primary key.
     ///
-    /// The other constructors all funnel through here; prefer them where one fits, as they derive the
-    /// encoding rather than trusting the caller to have produced it.
-    pub(crate) fn from_key<E>(primary_key: Cow<'_, [u8]>) -> Self
+    /// The other constructors all funnel through here.
+    pub(crate) fn from_primary_key<E>(primary_key: E::PrimaryKey) -> Self
     where
         E: Entity,
     {
         Self {
-            id: primary_key.into_owned(),
             table_name: E::TABLE_NAME,
+            key: Arc::new(primary_key) as _,
         }
     }
 
@@ -88,15 +96,7 @@ impl EntityId {
     where
         E: Entity,
     {
-        Self::from_key::<E>(entity.primary_key().bytes())
-    }
-
-    /// Build the id of the record of type `E` with this primary key.
-    pub(crate) fn from_primary_key<E>(primary_key: &E::PrimaryKey) -> Self
-    where
-        E: Entity,
-    {
-        Self::from_key::<E>(primary_key.bytes())
+        Self::from_primary_key::<E>(entity.primary_key())
     }
 
     /// Build the id of the record of type `E` with this primary key, in its borrowed form.
@@ -107,6 +107,6 @@ impl EntityId {
     where
         E: Entity + BorrowPrimaryKey,
     {
-        Self::from_key::<E>(primary_key.to_owned().bytes())
+        Self::from_primary_key::<E>(primary_key.to_owned())
     }
 }

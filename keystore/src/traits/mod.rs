@@ -9,7 +9,7 @@ mod unique_entity;
 pub use entity::{Entity, EntityGetBorrowed};
 pub use entity_database_mutation::{EntityDatabaseMutation, EntityDeleteBorrowed};
 pub use fetch_from_database::FetchFromDatabase;
-pub use key_type::{KeyType, OwnedKeyType};
+pub use key_type::{DynEntityId, KeyType, OwnedKeyType};
 pub use primary_key::{BorrowPrimaryKey, PrimaryKey};
 pub use searchable_entity::{DeletableBySearchKey, SearchableEntity};
 pub use unique_entity::{UniqueEntity, UniqueEntityExt, UniqueEntityImplementationHelper};
