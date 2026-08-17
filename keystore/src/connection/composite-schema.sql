@@ -48,11 +48,7 @@ CREATE TABLE "mls_key_packages" (
 
 CREATE INDEX idx_mls_keypackages_keypackage_ref ON "mls_key_packages"(key_package_ref);
 
-CREATE TABLE "mls_groups" (
-  id BLOB UNIQUE,
-  state BLOB,
-  tnt_message_counter INTEGER NOT NULL DEFAULT 0
-);
+CREATE TABLE "mls_groups" (id BLOB UNIQUE, state BLOB);
 
 CREATE INDEX idx_mls_groups_id ON mls_groups(id);
 
@@ -92,3 +88,11 @@ CREATE TABLE "mls_pending_messages" (
 );
 
 CREATE INDEX idx_mls_pending_messages_conversation_id ON mls_pending_messages(conversation_id);
+
+CREATE TABLE targeted_message_tx_counters (
+  conversation_id BLOB NOT NULL,
+  receiver INTEGER NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (conversation_id, receiver),
+  FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
+);
