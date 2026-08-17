@@ -231,3 +231,6 @@ cc-book/mermaid.min.js
 cc-book/mermaid-init.js
 cc-book/langtabs.js
 cc-book/langtabs.css
+
+# VS Code repo-specific settings
+.vscode/
