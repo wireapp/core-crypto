@@ -19,7 +19,7 @@ use crate::traits::{BorrowPrimaryKey, DynEntityId, Entity};
 /// silently match nothing. Adding an entity therefore means giving it a table name no other entity
 /// uses.
 #[derive(Debug, Clone)]
-pub(crate) struct EntityId {
+pub struct EntityId {
     /// the table this record lives in, which also identifies its Rust type
     table_name: &'static str,
     /// the record's primary key
@@ -77,7 +77,7 @@ impl EntityId {
     /// Build the id of the record of type `E` with this primary key.
     ///
     /// The other constructors all funnel through here.
-    pub(crate) fn from_primary_key<E>(primary_key: E::PrimaryKey) -> Self
+    pub fn from_primary_key<E>(primary_key: E::PrimaryKey) -> Self
     where
         E: Entity,
     {
@@ -92,7 +92,7 @@ impl EntityId {
     /// Note that this asks the entity for its primary key, which for some entities means hashing
     /// their contents. Where the id is already available — as a cache key, say — reuse it rather than
     /// deriving it again.
-    pub(crate) fn from_entity<E>(entity: &E) -> Self
+    pub fn from_entity<E>(entity: &E) -> Self
     where
         E: Entity,
     {
@@ -103,7 +103,7 @@ impl EntityId {
     ///
     /// Equal to what [`Self::from_primary_key`] produces for the owned form of the same key, so the
     /// two are interchangeable for lookups.
-    pub(crate) fn from_borrowed_primary_key<E>(primary_key: &E::BorrowedPrimaryKey) -> Self
+    pub fn from_borrowed_primary_key<E>(primary_key: &E::BorrowedPrimaryKey) -> Self
     where
         E: Entity + BorrowPrimaryKey,
     {
