@@ -1,11 +1,11 @@
-use crate::traits::OwnedKeyType;
+use crate::traits::DynEntityId;
 
 /// Something which has a distinct primary key which can uniquely identify it.
 pub trait PrimaryKey {
     /// Each distinct `PrimaryKey` uniquely identifies either 0 or 1 instance.
     ///
     /// This constraint should be enforced at the DB level.
-    type PrimaryKey: OwnedKeyType;
+    type PrimaryKey: DynEntityId + Clone;
 
     /// Get this entity's primary key.
     ///
