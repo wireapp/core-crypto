@@ -2,10 +2,7 @@ use std::fmt;
 
 use sha2::{Digest, Sha256};
 
-use crate::{
-    CryptoKeystoreResult,
-    traits::{KeyType, OwnedKeyType},
-};
+use crate::CryptoKeystoreResult;
 
 /// Used to calculate ID hashes for some MlsEntities' SQLite tables.
 pub(crate) fn sha256(data: &[u8]) -> String {
@@ -72,18 +69,6 @@ impl fmt::Display for Sha256Hash {
             .expect("infallible given inputs and outputs of fixed correct length");
         let hex_str = str::from_utf8(&hex_bytes).expect("hex crate always produces valid utf8 data");
         write!(f, "{hex_str}")
-    }
-}
-
-impl KeyType for Sha256Hash {
-    fn bytes(&self) -> std::borrow::Cow<'_, [u8]> {
-        (&self.0).into()
-    }
-}
-
-impl OwnedKeyType for Sha256Hash {
-    fn from_bytes(bytes: &[u8]) -> Option<Self> {
-        bytes.try_into().ok().map(Self)
     }
 }
 

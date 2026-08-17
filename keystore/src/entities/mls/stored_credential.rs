@@ -1,9 +1,6 @@
 use zeroize::Zeroize;
 
-use crate::{
-    Sha256Hash,
-    traits::{KeyType, PrimaryKey},
-};
+use crate::{Sha256Hash, traits::PrimaryKey};
 
 /// This type exists so that we can efficiently search for credentials by a variety of metrics at the database level.
 ///
@@ -21,14 +18,6 @@ pub struct CredentialFindFilters<'a> {
     pub ciphersuite: Option<u16>,
     /// unix timestamp (seconds) of point of earliest validity to search for
     pub earliest_validity: Option<u64>,
-}
-
-impl<'a> KeyType for CredentialFindFilters<'a> {
-    fn bytes(&self) -> std::borrow::Cow<'_, [u8]> {
-        postcard::to_stdvec(self)
-            .expect("serializing these filters cannot fail")
-            .into()
-    }
 }
 
 /// Entity representing a persisted `Credential`

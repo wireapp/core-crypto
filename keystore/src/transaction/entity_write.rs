@@ -2,7 +2,7 @@
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{BorrowPrimaryKey, DeletableBySearchKey, EntityDatabaseMutation, EntityDeleteBorrowed, KeyType},
+    traits::{BorrowPrimaryKey, DeletableBySearchKey, EntityDatabaseMutation, EntityDeleteBorrowed},
     transaction::{EntityId, Operation, Transaction},
 };
 
@@ -98,7 +98,7 @@ impl Transaction {
     pub async fn bulk_remove<E, S>(&self, search_key: S)
     where
         E: 'static + DeletableBySearchKey<S>,
-        S: 'static + KeyType,
+        S: 'static + Send + Sync,
     {
         let mut operations = self.operations.write().await;
         operations.push(Operation::bulk_delete::<E, S>(search_key))

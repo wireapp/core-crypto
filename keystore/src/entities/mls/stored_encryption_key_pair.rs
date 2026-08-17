@@ -55,10 +55,7 @@ impl crate::traits::Entity for StoredEncryptionKeyPair {
 }
 
 impl crate::traits::EntityGetBorrowed for StoredEncryptionKeyPair {
-    fn get_borrowed(conn: &rusqlite::Connection, key: &[u8]) -> crate::CryptoKeystoreResult<Option<Self>>
-    where
-        for<'pk> &'pk [u8]: crate::traits::KeyType,
-    {
+    fn get_borrowed(conn: &rusqlite::Connection, key: &[u8]) -> crate::CryptoKeystoreResult<Option<Self>> {
         let hash = crate::Sha256Hash::hash_from(key);
         crate::entities::helpers::get_helper(conn, "pk_sha256", hash, |row| {
             Ok(Self {
@@ -87,10 +84,7 @@ impl crate::traits::EntityDatabaseMutation for StoredEncryptionKeyPair {
 }
 
 impl crate::traits::EntityDeleteBorrowed for StoredEncryptionKeyPair {
-    fn delete_borrowed(tx: &rusqlite::Transaction, id: &[u8]) -> crate::CryptoKeystoreResult<bool>
-    where
-        for<'pk> &'pk [u8]: crate::traits::KeyType,
-    {
+    fn delete_borrowed(tx: &rusqlite::Transaction, id: &[u8]) -> crate::CryptoKeystoreResult<bool> {
         let hash = crate::Sha256Hash::hash_from(id);
         crate::entities::helpers::delete_helper::<Self>(tx, "pk_sha256", hash)
     }

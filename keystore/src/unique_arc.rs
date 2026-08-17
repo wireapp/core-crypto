@@ -9,9 +9,7 @@ use async_trait::async_trait;
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{
-        BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, KeyType, SearchableEntity, UniqueEntityExt,
-    },
+    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, SearchableEntity, UniqueEntityExt},
 };
 
 /// A smart pointer which has exactly one strong reference to the inner type,
@@ -168,7 +166,7 @@ where
     where
         E: 'static + EntityGetBorrowed + Clone + Send + Sync,
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
-        for<'a> &'a E::BorrowedPrimaryKey: KeyType,
+        <E as BorrowPrimaryKey>::BorrowedPrimaryKey: 'static + Send + Sync,
     {
         <T as FetchFromDatabase>::get_borrowed::<E>(&self.arc, id).await
     }
@@ -193,7 +191,7 @@ where
     async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: 'static + Entity + SearchableEntity<SearchKey> + Clone + Send + Sync,
-        SearchKey: KeyType,
+        SearchKey: Send + Sync,
     {
         <T as FetchFromDatabase>::search::<E, SearchKey>(&self.arc, search_key).await
     }

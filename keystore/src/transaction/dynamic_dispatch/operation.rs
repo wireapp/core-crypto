@@ -18,7 +18,7 @@ use std::{any::Any, sync::Arc};
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{DeletableBySearchKey, Entity, EntityDatabaseMutation, KeyType},
+    traits::{DeletableBySearchKey, Entity, EntityDatabaseMutation},
     transaction::dynamic_dispatch::EntityId,
 };
 
@@ -121,7 +121,7 @@ impl Operation {
     pub(in crate::transaction) fn bulk_delete<E, S>(search_key: S) -> Self
     where
         E: 'static + EntityDatabaseMutation + DeletableBySearchKey<S>,
-        S: 'static + KeyType,
+        S: 'static + Send + Sync,
     {
         Self::BulkDelete {
             table_name: E::TABLE_NAME,

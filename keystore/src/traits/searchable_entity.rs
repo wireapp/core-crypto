@@ -2,10 +2,10 @@ use rusqlite::{Connection, Transaction};
 
 use crate::{
     CryptoKeystoreResult,
-    traits::{Entity, EntityDatabaseMutation, KeyType},
+    traits::{Entity, EntityDatabaseMutation},
 };
 
-pub trait SearchableEntity<SearchKey: KeyType>: Entity {
+pub trait SearchableEntity<SearchKey>: Entity {
     /// Find all entities matching the search key.
     ///
     /// The specific meaning of "matching" the search key will depend on the entity in question,
@@ -30,7 +30,7 @@ pub trait SearchableEntity<SearchKey: KeyType>: Entity {
 ///
 /// While the trait design does not require it, implementations should take advantage of
 /// database features such as indices to ensure that deletion by a search key is efficient.
-pub trait DeletableBySearchKey<SearchKey: KeyType>: SearchableEntity<SearchKey> + EntityDatabaseMutation {
+pub trait DeletableBySearchKey<SearchKey>: SearchableEntity<SearchKey> + EntityDatabaseMutation {
     /// Delete all entities matching the search key.
     ///
     /// The specific meaning of "matching" the search key will depend on the entity

@@ -37,10 +37,7 @@ impl Entity for DummyStoreValue {
 }
 
 impl EntityGetBorrowed for DummyStoreValue {
-    fn get_borrowed(_conn: &rusqlite::Connection, _key: &[u8]) -> CryptoKeystoreResult<Option<Self>>
-    where
-        for<'pk> &'pk [u8]: crate::traits::KeyType,
-    {
+    fn get_borrowed(_conn: &rusqlite::Connection, _key: &[u8]) -> CryptoKeystoreResult<Option<Self>> {
         Ok(None)
     }
 }

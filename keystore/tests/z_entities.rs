@@ -66,8 +66,8 @@ mod tests_impl {
     use core_crypto_keystore::{
         entities::{MlsPendingMessage, PersistedMlsPendingGroup, StoredCredential},
         traits::{
-            Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase as _, KeyType,
-            PrimaryKey as _,
+            BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed,
+            FetchFromDatabase as _, PrimaryKey as _,
         },
         transaction::EntityId,
     };
@@ -183,7 +183,7 @@ mod tests_impl {
             + Send
             + Sync,
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
-        for<'pk> &'pk E::BorrowedPrimaryKey: KeyType,
+        <E as BorrowPrimaryKey>::BorrowedPrimaryKey: Send + Sync,
     {
         let entity = E::random();
         let primary_key = entity.primary_key();
