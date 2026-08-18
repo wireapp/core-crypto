@@ -137,21 +137,9 @@ mod tests {
     use core_crypto_keystore::{entities::*, traits::FetchFromDatabase};
 
     use super::*;
-    use crate::{KeystoreError, mls_provider::CryptoProvider, transaction_context::test_utils::EntitiesCount};
+    use crate::transaction_context::test_utils::EntitiesCount;
 
     impl Session {
-        // test functions are not held to the same documentation standard as proper functions
-        #![allow(missing_docs)]
-
-        pub async fn find_keypackages(&self, backend: &CryptoProvider) -> Result<Vec<openmls::prelude::KeyPackage>> {
-            let kps = backend
-                .key_store()
-                .mls_fetch_key_packages::<openmls::prelude::KeyPackage>(u32::MAX)
-                .await
-                .map_err(KeystoreError::wrap("fetching mls keypackages"))?;
-            Ok(kps)
-        }
-
         /// Count the entities
         pub async fn count_entities(&self) -> EntitiesCount {
             let keystore = &self.database;

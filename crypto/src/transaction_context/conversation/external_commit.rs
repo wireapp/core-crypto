@@ -131,6 +131,8 @@ impl TransactionContext {
 #[cfg(test)]
 mod tests {
 
+    use core_crypto_keystore::{entities::PersistedMlsPendingGroup, traits::FetchFromDatabase as _};
+
     use super::Error;
     use crate::{ConversationConfiguration, LeafError, test_utils::*};
 
@@ -168,7 +170,7 @@ mod tests {
                 .database()
                 .await
                 .unwrap()
-                .mls_pending_groups_load(&id)
+                .get::<PersistedMlsPendingGroup>(&id.to_bytes())
                 .await;
             assert!(matches!(error, Ok(None)));
 

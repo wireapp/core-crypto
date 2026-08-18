@@ -7,7 +7,7 @@ pub mod welcome;
 use std::sync::Arc;
 
 use core_crypto_keystore::{
-    entities::{PersistedMlsPendingGroup, StoredBufferedCommit},
+    entities::{PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit},
     traits::FetchFromDatabase as _,
 };
 use openmls::group::MlsGroup;
@@ -75,7 +75,11 @@ impl TransactionContext {
     pub(crate) async fn clear_orphaned_conversation_buffers(&self, id: &ConversationIdRef) -> Result<()> {
         let database = self.database().await?;
 
-        let conversation_remains = database.mls_group_exists(id).await
+        let conversation_remains = database
+            .get_borrowed::<PersistedMlsGroup>(id.as_ref())
+            .await
+            .map_err(KeystoreError::wrap("looking for a group of a removed conversation"))?
+            .is_some()
             || database
                 .get_borrowed::<PersistedMlsPendingGroup>(id.as_ref())
                 .await
