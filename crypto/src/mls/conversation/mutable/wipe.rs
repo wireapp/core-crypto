@@ -1,4 +1,4 @@
-use openmls_traits::OpenMlsCryptoProvider as _;
+use core_crypto_keystore::entities::PersistedMlsGroup;
 
 use super::Result;
 use crate::{KeystoreError, OpenMlsError, RecursiveError, mls::conversation::ConversationMut};
@@ -41,10 +41,13 @@ impl ConversationMut {
         .await?;
 
         let id = self.id();
-
-        provider
-            .key_store()
-            .mls_group_delete(id)
+        let context = self
+            .tx_context
+            .inner()
+            .await
+            .map_err(RecursiveError::transaction("getting inner context"))?;
+        let tx = context.transaction();
+        tx.remove_borrowed::<PersistedMlsGroup>(id.as_ref())
             .await
             .map_err(KeystoreError::wrap("deleting mls group"))?;
         let _ = conversation_cache.remove(id);
