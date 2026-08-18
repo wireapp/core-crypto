@@ -26,6 +26,10 @@ on:
         required: false
         type: string
         default: '"ubuntu-latest"'
+    secrets:
+      METRICS_WRITER_PASSWORD:
+        description: Password for the metrics writer used to publish to Prometheus
+        required: false
   workflow_dispatch:
     inputs:
       benchmark_message_counts:
@@ -127,3 +131,5 @@ jobs:
     needs:
       - benchmark
     uses: ./.github/workflows/benchmark-jvm-publish.yml
+    secrets:
+      METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}

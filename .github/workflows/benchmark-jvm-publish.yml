@@ -4,6 +4,10 @@ concurrency:
 
 on:
   workflow_call:
+    secrets:
+      METRICS_WRITER_PASSWORD:
+        description: Password for the metrics writer used to publish to Prometheus
+        required: true
 
 permissions:
   deployments: write
@@ -22,7 +26,20 @@ jobs:
           name: benchmark-jvm-results
           path: crypto-ffi/bindings/jvm/build/reports/jmh
 
-      - name: Publish benchmark result
+      - name: Publish benchmark result to Prometheus
+        env:
+          VM_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
+        run: |
+          scripts/benchmarks-to-openmetrics.py --format jmh crypto-ffi/bindings/jvm/build/reports/jmh/results.json > metrics.txt
+          COMMIT_HASH=$(git rev-parse --short HEAD)
+          curl -sS --fail-with-body -u "ci-writer:$VM_PASSWORD" --data-binary @metrics.txt \
+               --url-query extra_label=job=core-crypto-benchmark \
+               --url-query extra_label=repo=$GITHUB_REPOSITORY \
+               --url-query extra_label=commit=$COMMIT_HASH \
+               --url-query extra_label=target=jvm \
+              "https://monitoring.zinfra.io/prometheus/api/v1/import/prometheus?"
+
+      - name: Publish benchmark result to GitHub pages
         uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
         with:
           name: "JVM Benchmarks"

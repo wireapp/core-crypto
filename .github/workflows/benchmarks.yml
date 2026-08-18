@@ -9,13 +9,19 @@ jobs:
     uses: ./.github/workflows/benchmark-jvm.yml
     with:
       runs_on: '["self-hosted", "benchmark"]'
+    secrets:
+      METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
 
   benchmark-ts-browser:
     uses: ./.github/workflows/benchmark-ts-browser.yml
     with:
       runs_on: '["self-hosted", "benchmark"]'
+    secrets:
+      METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
 
   benchmark-ts-native:
     uses: ./.github/workflows/benchmark-ts-native.yml
     with:
       runs_on: '["self-hosted", "benchmark"]'
+    secrets:
+      METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
