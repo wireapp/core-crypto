@@ -168,6 +168,21 @@ impl CryptoProvider {
     ) -> Result<HpkeCiphertext, CryptoError> {
         self.crypto.hpke_seal_psk(config, pk_r, info, aad, psk, psk_id, ptxt)
     }
+
+    /// Decrypt `input` via HPKE PSK mode.
+    #[expect(clippy::too_many_arguments)]
+    pub fn hpke_open_psk(
+        &self,
+        config: HpkeConfig,
+        input: &HpkeCiphertext,
+        sk_r: &[u8],
+        info: &[u8],
+        aad: &[u8],
+        psk: &[u8],
+        psk_id: &[u8],
+    ) -> Result<Vec<u8>, CryptoError> {
+        self.crypto.hpke_open_psk(config, input, sk_r, info, aad, psk, psk_id)
+    }
 }
 
 impl openmls_traits::OpenMlsCryptoProvider for CryptoProvider {

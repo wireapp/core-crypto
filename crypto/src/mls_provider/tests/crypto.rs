@@ -182,6 +182,39 @@ mod tests {
 
         assert_eq!(unsealed_secret_message, message);
 
+        let psk = backend
+            .rand()
+            .random_vec(rand::thread_rng().gen_range(LEN_RANGE))
+            .unwrap();
+        let psk_id = backend
+            .rand()
+            .random_vec(rand::thread_rng().gen_range(LEN_RANGE))
+            .unwrap();
+        let secret_message = crypto
+            .hpke_seal_psk(
+                cipher_suite.hpke_config(),
+                &alice.public,
+                &info,
+                &aad,
+                &psk,
+                &psk_id,
+                &message,
+            )
+            .unwrap();
+        let unsealed_secret_message = crypto
+            .hpke_open_psk(
+                cipher_suite.hpke_config(),
+                &secret_message,
+                &alice.private,
+                &info,
+                &aad,
+                &psk,
+                &psk_id,
+            )
+            .unwrap();
+
+        assert_eq!(unsealed_secret_message, message);
+
         let hpke_info = b"MLS 1.0 external init";
 
         let (kem, secret_tx) = crypto
