@@ -30,7 +30,13 @@ use tls_codec::Deserialize as _;
 use super::{ConversationMut, Result};
 use crate::{
     ClientId, E2eiConversationState, OpenMlsError, RecursiveError, Session, WireIdentity,
-    mls::{conversation::Error, credential::ext::CredentialExt as _},
+    mls::{
+        conversation::{
+            Error,
+            mutable::tnt::{TntMessage, TntWireFormat},
+        },
+        credential::ext::CredentialExt as _,
+    },
 };
 
 /// Decrypted Bytes
@@ -174,12 +180,20 @@ impl ConversationMut {
     /// If a message has been buffered, this will be indicated by an error.
     /// Other errors are originating from OpenMls and the KeyStore
     pub async fn decrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<DecryptedMessage> {
-        let mls_message_in =
-            MlsMessageIn::tls_deserialize(&mut message.as_ref()).map_err(Error::tls_deserialize("mls message in"))?;
+        let message = message.as_ref();
+        // Bytes 0 and 1 are the protocol version, bytes 2 and 3 are the wire format.
+        let wire_format =
+            u16::tls_deserialize_exact(&message[2..4]).map_err(Error::tls_deserialize("u16 (wire format)"))?;
 
-        let decrypt_message_result = self
-            .decrypt_message_inner(mls_message_in, RecursionPolicy::AsNecessary)
-            .await;
+        let decrypt_message_result = if TntWireFormat::all().contains(&wire_format) {
+            let tnt_message = TntMessage::tls_deserialize_exact(message).map_err(Error::tls_serialize("TntMessage"))?;
+            self.decrypt_tnt_message(tnt_message).await
+        } else {
+            let mls_message_in =
+                MlsMessageIn::tls_deserialize_exact(message).map_err(Error::tls_deserialize("mls message in"))?;
+            self.decrypt_mls_message(mls_message_in, RecursionPolicy::AsNecessary)
+                .await
+        };
 
         // In the inner `decrypt_message` above, we raise the `BufferedCommit` or
         // `BufferedFutureMessage` errors, but we only handle them here.
