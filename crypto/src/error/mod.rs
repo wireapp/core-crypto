@@ -17,20 +17,6 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 /// Errors produced by the root module group
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    /// Invalid [crate::transaction_context::TransactionContext]. This context has been finished and can no longer be
-    /// used.
-    #[cfg_attr(
-        target_os = "unknown",
-        error(
-            "This transaction context has already been finished. You most likely used the context outside the callback
-            or you forget to `await` a Promise inside the transaction callback."
-        )
-    )]
-    #[cfg_attr(
-        not(target_os = "unknown"),
-        error("This transaction context has already been finished and can no longer be used.")
-    )]
-    InvalidTransactionContext,
     /// The proteus client has been called but has not been initialized yet
     #[error("Proteus client hasn't been initialized")]
     ProteusNotInitialized,
@@ -92,9 +78,9 @@ mod tests {
 
     #[test]
     fn can_unpack_wrapped_error() {
-        let inner = Error::InvalidTransactionContext;
+        let inner = Error::MlsTransportNotProvided;
         let outer = RecursiveError::root("wrapping the inner for test purposes")(inner);
         let message = outer.innermost_error_message();
-        assert_eq!(message, Error::InvalidTransactionContext.to_string());
+        assert_eq!(message, Error::MlsTransportNotProvided.to_string());
     }
 }

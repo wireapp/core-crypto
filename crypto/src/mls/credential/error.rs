@@ -66,13 +66,3 @@ impl Error {
         move |source| Self::TlsDeserialize { source, item }
     }
 }
-
-#[derive(Debug, thiserror::Error)]
-pub enum CredentialValidationError {
-    #[error("identity or public key did not match")]
-    WrongCredential,
-    #[error("public key not extractable from certificate")]
-    NoPublicKey,
-    #[error(transparent)]
-    Recursive(#[from] crate::RecursiveError),
-}

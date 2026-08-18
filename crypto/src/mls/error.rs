@@ -10,14 +10,8 @@ pub enum Error {
     /// The cipher suite identifier presented does not map to a known ciphersuite.
     #[error("Unknown cipher suite")]
     UnknownCipherSuite,
-    #[error("Malformed or empty identifier found: {0}")]
-    MalformedIdentifier(&'static str),
-    #[error(transparent)]
-    Keystore(#[from] crate::KeystoreError),
     #[error(transparent)]
     OpenMls(#[from] crate::OpenMlsError),
-    #[error("{0}")]
-    Leaf(#[from] crate::LeafError),
     #[error(transparent)]
     Recursive(#[from] crate::RecursiveError),
 }

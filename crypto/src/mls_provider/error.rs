@@ -1,19 +1,13 @@
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error(transparent)]
-    Keystore(#[from] core_crypto_keystore::CryptoKeystoreError),
     #[error("The provided entropy seed has an incorrect length: expected {expected}, found {actual}")]
     EntropySeedLength { actual: usize, expected: usize },
     #[error("CSPRNG lock is poisoned")]
     RngLockPoison,
     #[error("Unable to collect enough randomness.")]
     UnsufficientEntropy,
-    #[error("An error occured while generating a X509 certificate")]
-    CertificateGeneration,
     #[error("This ciphersuite isn't supported as of now")]
     UnsupportedSignatureScheme,
-    #[error(transparent)]
-    Signature(#[from] signature::Error),
     #[error("{0}")]
     Generic(String),
 }
@@ -49,7 +43,6 @@ impl PartialEq for Error {
             (Error::Generic(s), Error::Generic(s2)) => s == s2,
             (Error::RngLockPoison, Error::RngLockPoison) => true,
             (Error::UnsufficientEntropy, Error::UnsufficientEntropy) => true,
-            (Error::CertificateGeneration, Error::CertificateGeneration) => true,
             (Error::UnsupportedSignatureScheme, Error::UnsupportedSignatureScheme) => true,
             _ => false,
         }

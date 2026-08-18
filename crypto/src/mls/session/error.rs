@@ -11,45 +11,14 @@ pub enum Error {
     InvalidQualifiedClientId,
     #[error("Supplied user id was not valid")]
     InvalidUserId,
-    #[error("X509 certificate bundle set was empty")]
-    NoX509CertificateBundle,
-    #[error("credentials must be distinct in signature scheme, credential type, and earliest validity timestamp")]
-    CredentialConflict,
     #[error("A MLS operation was requested but MLS hasn't been initialized on this instance")]
     MlsNotInitialized,
     #[error("No credential of type ({0:?}) was found in this session")]
     NoCredentialWithType(crate::CredentialType),
-    #[error("supplied signature scheme was not valid")]
-    InvalidSignatureScheme,
-    /// The keystore has no knowledge of such client; this shouldn't happen as Client::init is failsafe
-    /// (find-else-create)
-    #[error("The provided client signature has not been found in the keystore")]
-    ClientSignatureNotFound,
-    /// Client was unexpectedly ready.
-    ///
-    /// This indicates an invalid calling pattern.
-    #[error("Client was unexpectedly ready")]
-    UnexpectedlyReady,
-    #[error("The keystore already contains a stored identity. Cannot create a new one!")]
-    IdentityAlreadyPresent,
     #[error("An EpochObserver has already been registered; reregistration is not possible")]
     EpochObserverAlreadyExists,
     #[error("An HistoryHandler has already been registered; reregistration is not possible")]
     HistoryObserverAlreadyExists,
-    #[error("This credential ref matched more than a single credential in the keystore")]
-    AmbiguousCredentialRef,
-    #[error("Serializing {item} for TLS")]
-    TlsSerialize {
-        item: &'static str,
-        #[source]
-        source: tls_codec::Error,
-    },
-    #[error("Deserializing {item} for TLS")]
-    TlsDeserialize {
-        item: &'static str,
-        #[source]
-        source: tls_codec::Error,
-    },
     #[error(transparent)]
     OpenMls(#[from] crate::OpenMlsError),
     #[error(transparent)]
@@ -58,14 +27,4 @@ pub enum Error {
     Leaf(#[from] crate::LeafError),
     #[error(transparent)]
     Recursive(#[from] crate::RecursiveError),
-}
-
-impl Error {
-    pub fn tls_serialize(item: &'static str) -> impl FnOnce(tls_codec::Error) -> Self {
-        move |source| Self::TlsSerialize { item, source }
-    }
-
-    pub fn tls_deserialize(item: &'static str) -> impl FnOnce(tls_codec::Error) -> Self {
-        move |source| Self::TlsDeserialize { item, source }
-    }
 }

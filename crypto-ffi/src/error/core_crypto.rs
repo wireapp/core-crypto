@@ -205,7 +205,6 @@ impl From<core_crypto::Error> for CoreCryptoError {
             core_crypto::Error::OpenMls(mls) => Self::Mls {
                 mls_error: MlsError::from(mls),
             },
-            core_crypto::Error::InvalidTransactionContext => Self::Other { msg: error.to_string() },
             core_crypto::Error::MlsTransportNotProvided => Self::Other { msg: error.to_string() },
             core_crypto::Error::ErrorDuringMlsTransport(error_message) => Self::Other { msg: error_message },
             core_crypto::Error::E2eIdentity(err) => Self::E2ei {

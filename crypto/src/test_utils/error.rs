@@ -8,11 +8,5 @@ pub enum Error {
     #[error("this was not supposed to happen")]
     ImplementationError,
     #[error(transparent)]
-    Mls(#[from] crate::OpenMlsError),
-    #[error(transparent)]
-    Keystore(#[from] crate::KeystoreError),
-    #[error("{0}")]
-    Leaf(#[from] crate::LeafError),
-    #[error(transparent)]
     Recursive(#[from] crate::RecursiveError),
 }
