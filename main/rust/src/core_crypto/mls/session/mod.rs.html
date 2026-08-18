@@ -137,47 +137,35 @@
 <a href=#137 id=137 data-nosnippet>137</a>    <span class="kw">use </span>core_crypto_keystore::{entities::<span class="kw-2">*</span>, traits::FetchFromDatabase};
 <a href=#138 id=138 data-nosnippet>138</a>
 <a href=#139 id=139 data-nosnippet>139</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
-<a href=#140 id=140 data-nosnippet>140</a>    <span class="kw">use crate</span>::{KeystoreError, mls_provider::CryptoProvider, transaction_context::test_utils::EntitiesCount};
+<a href=#140 id=140 data-nosnippet>140</a>    <span class="kw">use </span><span class="kw">crate</span>::transaction_context::test_utils::EntitiesCount;
 <a href=#141 id=141 data-nosnippet>141</a>
 <a href=#142 id=142 data-nosnippet>142</a>    <span class="kw">impl </span>Session {
-<a href=#143 id=143 data-nosnippet>143</a>        <span class="comment">// test functions are not held to the same documentation standard as proper functions
-<a href=#144 id=144 data-nosnippet>144</a>        </span><span class="attr">#![allow(missing_docs)]
-<a href=#145 id=145 data-nosnippet>145</a>
-<a href=#146 id=146 data-nosnippet>146</a>        </span><span class="kw">pub async fn </span>find_keypackages(<span class="kw-2">&amp;</span><span class="self">self</span>, backend: <span class="kw-2">&amp;</span>CryptoProvider) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;openmls::prelude::KeyPackage&gt;&gt; {
-<a href=#147 id=147 data-nosnippet>147</a>            <span class="kw">let </span>kps = backend
-<a href=#148 id=148 data-nosnippet>148</a>                .key_store()
-<a href=#149 id=149 data-nosnippet>149</a>                .mls_fetch_key_packages::&lt;openmls::prelude::KeyPackage&gt;(u32::MAX)
-<a href=#150 id=150 data-nosnippet>150</a>                .<span class="kw">await
-<a href=#151 id=151 data-nosnippet>151</a>                </span>.map_err(KeystoreError::wrap(<span class="string">"fetching mls keypackages"</span>))<span class="question-mark">?</span>;
-<a href=#152 id=152 data-nosnippet>152</a>            <span class="prelude-val">Ok</span>(kps)
-<a href=#153 id=153 data-nosnippet>153</a>        }
-<a href=#154 id=154 data-nosnippet>154</a>
-<a href=#155 id=155 data-nosnippet>155</a>        <span class="doccomment">/// Count the entities
-<a href=#156 id=156 data-nosnippet>156</a>        </span><span class="kw">pub async fn </span>count_entities(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; EntitiesCount {
-<a href=#157 id=157 data-nosnippet>157</a>            <span class="kw">let </span>keystore = <span class="kw-2">&amp;</span><span class="self">self</span>.database;
-<a href=#158 id=158 data-nosnippet>158</a>            <span class="kw">let </span>buffered_commits = keystore.count::&lt;StoredBufferedCommit&gt;().<span class="kw">await</span>.unwrap();
-<a href=#159 id=159 data-nosnippet>159</a>            <span class="kw">let </span>credential = keystore.count::&lt;StoredCredential&gt;().<span class="kw">await</span>.unwrap();
-<a href=#160 id=160 data-nosnippet>160</a>            <span class="kw">let </span>encryption_keypair = keystore.count::&lt;StoredEncryptionKeyPair&gt;().<span class="kw">await</span>.unwrap();
-<a href=#161 id=161 data-nosnippet>161</a>            <span class="kw">let </span>epoch_encryption_keypair = keystore.count::&lt;StoredEpochEncryptionKeypair&gt;().<span class="kw">await</span>.unwrap();
-<a href=#162 id=162 data-nosnippet>162</a>            <span class="kw">let </span>group = keystore.count::&lt;PersistedMlsGroup&gt;().<span class="kw">await</span>.unwrap();
-<a href=#163 id=163 data-nosnippet>163</a>            <span class="kw">let </span>hpke_private_key = keystore.count::&lt;StoredHpkePrivateKey&gt;().<span class="kw">await</span>.unwrap();
-<a href=#164 id=164 data-nosnippet>164</a>            <span class="kw">let </span>key_package = keystore.count::&lt;StoredKeyPackage&gt;().<span class="kw">await</span>.unwrap();
-<a href=#165 id=165 data-nosnippet>165</a>            <span class="kw">let </span>pending_group = keystore.count::&lt;PersistedMlsPendingGroup&gt;().<span class="kw">await</span>.unwrap();
-<a href=#166 id=166 data-nosnippet>166</a>            <span class="kw">let </span>pending_messages = keystore.count::&lt;MlsPendingMessage&gt;().<span class="kw">await</span>.unwrap();
-<a href=#167 id=167 data-nosnippet>167</a>            <span class="kw">let </span>psk_bundle = keystore.count::&lt;StoredPskBundle&gt;().<span class="kw">await</span>.unwrap();
-<a href=#168 id=168 data-nosnippet>168</a>            EntitiesCount {
-<a href=#169 id=169 data-nosnippet>169</a>                buffered_commits,
-<a href=#170 id=170 data-nosnippet>170</a>                credential,
-<a href=#171 id=171 data-nosnippet>171</a>                encryption_keypair,
-<a href=#172 id=172 data-nosnippet>172</a>                epoch_encryption_keypair,
-<a href=#173 id=173 data-nosnippet>173</a>                group,
-<a href=#174 id=174 data-nosnippet>174</a>                hpke_private_key,
-<a href=#175 id=175 data-nosnippet>175</a>                key_package,
-<a href=#176 id=176 data-nosnippet>176</a>                pending_group,
-<a href=#177 id=177 data-nosnippet>177</a>                pending_messages,
-<a href=#178 id=178 data-nosnippet>178</a>                psk_bundle,
-<a href=#179 id=179 data-nosnippet>179</a>            }
-<a href=#180 id=180 data-nosnippet>180</a>        }
-<a href=#181 id=181 data-nosnippet>181</a>    }
-<a href=#182 id=182 data-nosnippet>182</a>}
+<a href=#143 id=143 data-nosnippet>143</a>        <span class="doccomment">/// Count the entities
+<a href=#144 id=144 data-nosnippet>144</a>        </span><span class="kw">pub async fn </span>count_entities(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; EntitiesCount {
+<a href=#145 id=145 data-nosnippet>145</a>            <span class="kw">let </span>keystore = <span class="kw-2">&amp;</span><span class="self">self</span>.database;
+<a href=#146 id=146 data-nosnippet>146</a>            <span class="kw">let </span>buffered_commits = keystore.count::&lt;StoredBufferedCommit&gt;().<span class="kw">await</span>.unwrap();
+<a href=#147 id=147 data-nosnippet>147</a>            <span class="kw">let </span>credential = keystore.count::&lt;StoredCredential&gt;().<span class="kw">await</span>.unwrap();
+<a href=#148 id=148 data-nosnippet>148</a>            <span class="kw">let </span>encryption_keypair = keystore.count::&lt;StoredEncryptionKeyPair&gt;().<span class="kw">await</span>.unwrap();
+<a href=#149 id=149 data-nosnippet>149</a>            <span class="kw">let </span>epoch_encryption_keypair = keystore.count::&lt;StoredEpochEncryptionKeypair&gt;().<span class="kw">await</span>.unwrap();
+<a href=#150 id=150 data-nosnippet>150</a>            <span class="kw">let </span>group = keystore.count::&lt;PersistedMlsGroup&gt;().<span class="kw">await</span>.unwrap();
+<a href=#151 id=151 data-nosnippet>151</a>            <span class="kw">let </span>hpke_private_key = keystore.count::&lt;StoredHpkePrivateKey&gt;().<span class="kw">await</span>.unwrap();
+<a href=#152 id=152 data-nosnippet>152</a>            <span class="kw">let </span>key_package = keystore.count::&lt;StoredKeyPackage&gt;().<span class="kw">await</span>.unwrap();
+<a href=#153 id=153 data-nosnippet>153</a>            <span class="kw">let </span>pending_group = keystore.count::&lt;PersistedMlsPendingGroup&gt;().<span class="kw">await</span>.unwrap();
+<a href=#154 id=154 data-nosnippet>154</a>            <span class="kw">let </span>pending_messages = keystore.count::&lt;MlsPendingMessage&gt;().<span class="kw">await</span>.unwrap();
+<a href=#155 id=155 data-nosnippet>155</a>            <span class="kw">let </span>psk_bundle = keystore.count::&lt;StoredPskBundle&gt;().<span class="kw">await</span>.unwrap();
+<a href=#156 id=156 data-nosnippet>156</a>            EntitiesCount {
+<a href=#157 id=157 data-nosnippet>157</a>                buffered_commits,
+<a href=#158 id=158 data-nosnippet>158</a>                credential,
+<a href=#159 id=159 data-nosnippet>159</a>                encryption_keypair,
+<a href=#160 id=160 data-nosnippet>160</a>                epoch_encryption_keypair,
+<a href=#161 id=161 data-nosnippet>161</a>                group,
+<a href=#162 id=162 data-nosnippet>162</a>                hpke_private_key,
+<a href=#163 id=163 data-nosnippet>163</a>                key_package,
+<a href=#164 id=164 data-nosnippet>164</a>                pending_group,
+<a href=#165 id=165 data-nosnippet>165</a>                pending_messages,
+<a href=#166 id=166 data-nosnippet>166</a>                psk_bundle,
+<a href=#167 id=167 data-nosnippet>167</a>            }
+<a href=#168 id=168 data-nosnippet>168</a>        }
+<a href=#169 id=169 data-nosnippet>169</a>    }
+<a href=#170 id=170 data-nosnippet>170</a>}
 </code></pre></div></section></main></body></html>
