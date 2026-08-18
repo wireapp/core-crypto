@@ -4,7 +4,7 @@ use core_crypto_keystore::Database;
 use openmls::prelude::{Ciphersuite, Member, Signable as _};
 use tls_codec::{Serialize as _, TlsSerialize, TlsSize, VLBytes};
 
-use super::{PskId, TargetedMessage, TargetedMessageContext};
+use super::{TargetedMessage, TargetedMessageContext, extract_hpke_context_data};
 use crate::{
     ClientIdRef, CryptoProvider, OpenMlsError, RecursiveError, TlsCodecError,
     mls::conversation::{
@@ -41,7 +41,7 @@ impl ConversationMut {
             .tx_context
             .crypto_provider()
             .await
-            .map_err(RecursiveError::context("obtaining crypto provider"))?;
+            .map_err(RecursiveError::transaction("obtaining crypto provider"))?;
         let database = self.database().await?;
 
         let targeted = self
@@ -103,32 +103,16 @@ impl ConversationMut {
             mls_group.own_leaf_index(),
             recipient.index,
         );
-        let info = context
-            .tls_serialize_detached()
-            .map_err(TlsCodecError::serialize("TargetedMessageContext"))?;
-
-        // We can use an empty context because we're using a unique label.
-        let psk = mls_group
-            .export_secret(
-                crypto_provider,
-                TargetedMessage::PSK_LABEL,
-                &[],
-                cipher_suite.hash_length(),
-            )
-            .map_err(OpenMlsError::wrap("exporting targeted message psk"))?;
-        let psk_id = PskId::new(mls_group.group_id().clone(), mls_group.epoch());
-        let psk_id = psk_id
-            .tls_serialize_detached()
-            .map_err(TlsCodecError::serialize("PskId"))?;
+        let context_data = extract_hpke_context_data(crypto_provider, cipher_suite, &context, mls_group)?;
         let message = tls_serialize_padded(message).map_err(TlsCodecError::serialize("TargetedMessageContent"))?;
         let payload = crypto_provider
             .hpke_seal_psk(
                 cipher_suite.hpke_config(),
                 &recipient.encryption_key,
-                &info,
+                &context_data.info,
                 &aad,
-                &psk,
-                &psk_id,
+                &context_data.psk,
+                &context_data.psk_id,
                 &message,
             )
             .map_err(OpenMlsError::wrap("encrypting targeted message"))?;
