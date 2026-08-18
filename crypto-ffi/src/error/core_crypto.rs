@@ -185,18 +185,9 @@ impl From<core_crypto::Error> for CoreCryptoError {
                 msg: "proteus not initialized".into(),
             },
             #[cfg(feature = "proteus")]
-            core_crypto::Error::Proteus(proteus) => {
-                let error_code = proteus.source.error_code();
-                if let Some(proteus_error) = ProteusError::from_error_code(error_code) {
-                    Self::Proteus {
-                        exception: proteus_error,
-                    }
-                } else {
-                    Self::Other {
-                        msg: format!("unknown proteus error code: {error_code:?}"),
-                    }
-                }
-            }
+            core_crypto::Error::Proteus(proteus) => Self::Proteus {
+                exception: proteus.into(),
+            },
             #[cfg(not(feature = "proteus"))]
             core_crypto::Error::Proteus(_proteus) => {
                 unreachable!("we don't raise proteus errors when building without proteus")

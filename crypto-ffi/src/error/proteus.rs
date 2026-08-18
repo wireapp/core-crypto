@@ -12,34 +12,6 @@ pub enum ProteusError {
     Other { error_code: u16 },
 }
 
-impl ProteusError {
-    /// Convert a numeric error code into the relevant Proteus error variant.
-    pub fn from_error_code(code: impl Into<Option<u16>>) -> Option<Self> {
-        let code = code.into()?;
-        if code == 0 {
-            return None;
-        }
-
-        match code {
-            102 => Self::SessionNotFound,
-            204 => Self::RemoteIdentityChanged,
-            209 => Self::DuplicateMessage,
-            _ => Self::Other { error_code: code },
-        }
-        .into()
-    }
-
-    /// Convert this Proteus error into the corresponding numeric error code.
-    pub fn error_code(&self) -> u16 {
-        match self {
-            Self::SessionNotFound => 102,
-            Self::RemoteIdentityChanged => 204,
-            Self::DuplicateMessage => 209,
-            Self::Other { error_code: code } => *code,
-        }
-    }
-}
-
 impl From<core_crypto::ProteusError> for ProteusError {
     fn from(value: core_crypto::ProteusError) -> Self {
         (&value.source).into()
