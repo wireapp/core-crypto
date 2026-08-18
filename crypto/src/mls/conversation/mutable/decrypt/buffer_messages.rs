@@ -334,6 +334,84 @@ mod tests {
         .await
     }
 
+    /// A buffered future message must not block us from processing our own removal.
+    ///
+    /// This is ordinary out-of-order delivery, the very thing the buffering machinery exists for:
+    /// the DS hands us an epoch `n + 1` application message before it hands us the epoch `n + 1`
+    /// commit which removed us. Once that commit arrives, the conversation must be wiped, and the
+    /// buffered message must go with it. If instead the buffered message is replayed against the
+    /// new epoch, decryption fails identically on every retry, in every subsequent transaction, so
+    /// the client can never process its own removal and the conversation is stuck forever.
+    #[apply(all_cred_cipher)]
+    async fn buffered_message_must_not_block_own_removal(case: TestContext) {
+        let [mut alice, bob, charlie] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
+        let conversation_id = conversation.id().clone();
+
+        // Bob removes Alice. Charlie hears about it; Alice does not, so she stays at epoch 1.
+        let commit_guard = conversation.acting_as(&bob).await.remove(&alice).await;
+        let removal_commit = commit_guard.message().to_bytes().unwrap();
+        let conversation = commit_guard
+            .notify_member(&charlie)
+            .await
+            .process_member_changes()
+            .await
+            .finish();
+
+        // Bob then speaks in the new epoch.
+        let app_msg = conversation
+            .guard_of(&bob)
+            .await
+            .encrypt_message(b"Hello from epoch 2!")
+            .await
+            .unwrap();
+
+        // Alice is still at epoch 1, so she buffers the message.
+        let decrypt = conversation.guard_of(&alice).await.decrypt_message(app_msg).await;
+        assert!(matches!(
+            decrypt.unwrap_err(),
+            Error::BufferedFutureMessage { message_epoch: 2 }
+        ));
+        assert_eq!(
+            alice.transaction.count_entities().await.pending_messages,
+            1,
+            "the message Alice could not decrypt must have been buffered"
+        );
+
+        // Commit Alice's transaction, so the buffered message is durable, as it would be
+        // between two real client calls.
+        drop(conversation);
+        alice.commit_transaction().await;
+
+        // Only now does Alice receive the commit which removed her.
+        let decrypted = alice
+            .transaction
+            .conversation(&conversation_id)
+            .await
+            .unwrap()
+            .decrypt_message(&removal_commit)
+            .await
+            .expect("Alice must be able to process her own removal")
+            .into_commit()
+            .unwrap();
+        assert!(
+            !decrypted.is_active,
+            "the commit removed Alice, so she is no longer an active member"
+        );
+
+        alice.commit_transaction().await;
+
+        let counts = alice.transaction.count_entities().await;
+        assert_eq!(
+            counts.group, 0,
+            "processing her own removal must have wiped the conversation"
+        );
+        assert_eq!(
+            counts.pending_messages, 0,
+            "the buffered message belongs to a conversation which no longer exists"
+        );
+    }
+
     /// Replicating [WPB-15810]
     ///
     /// [WPB-15810]: https://wearezeta.atlassian.net/browse/WPB-15810
