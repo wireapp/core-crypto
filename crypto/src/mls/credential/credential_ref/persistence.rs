@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use core_crypto_keystore::{entities::StoredCredential, traits::FetchFromDatabase};
 
-use super::{Error, Result};
+use super::super::{Error, Result};
 use crate::{Credential, CredentialRef, KeystoreError, RecursiveError};
 
 impl CredentialRef {
@@ -20,7 +20,7 @@ impl CredentialRef {
             .get::<StoredCredential>(&self.public_key_hash())
             .await
             .map_err(KeystoreError::wrap("finding credential"))?
-            .ok_or(Error::CredentialNotFound)
+            .ok_or_else(|| Error::CredentialRefNotFound(self.public_key_hash()))
             .and_then(|stored_credential| {
                 Credential::try_from(stored_credential)
                     .map_err(RecursiveError::context("creating credential from stored credential"))
@@ -39,7 +39,7 @@ impl CredentialRef {
             .get::<StoredCredential>(&self.public_key_hash())
             .await
             .map_err(KeystoreError::wrap("finding credential"))?
-            .ok_or(Error::CredentialNotFound)
+            .ok_or_else(|| Error::CredentialRefNotFound(self.public_key_hash()))
             .map_err(RecursiveError::context("retrieving public key"))
             .map(|stored_credential| {
                 let mut stored_credential = Arc::unwrap_or_clone(stored_credential);

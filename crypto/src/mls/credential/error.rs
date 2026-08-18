@@ -3,6 +3,7 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
+use core_crypto_keystore::Sha256Hash;
 use openmls::prelude::SignaturePublicKey;
 
 pub(crate) type Result<T, E = Error> = core::result::Result<T, E>;
@@ -13,8 +14,10 @@ pub enum Error {
     DecodeX509(#[source] x509_cert::der::Error),
     #[error("client presented an invalid identity")]
     InvalidIdentity,
-    #[error("No credential for the given public key ({0:?}) was found in this database")]
+    #[error("No credential found for public key {0:?}")]
     CredentialNotFound(SignaturePublicKey),
+    #[error("No credential found matching public key hash {0}")]
+    CredentialRefNotFound(Sha256Hash),
     #[error("missing PKI environment")]
     MissingPKIEnvironment,
     /// Unsupported credential type.

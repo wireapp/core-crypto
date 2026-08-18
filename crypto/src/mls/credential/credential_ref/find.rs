@@ -6,7 +6,7 @@ use core_crypto_keystore::{
 use openmls::prelude::Credential as MlsCredential;
 use tls_codec::Deserialize as _;
 
-use super::{Error, Result};
+use super::super::{Error, Result};
 use crate::{
     CipherSuite, ClientId, CredentialRef, CredentialType, KeystoreError, RecursiveError, TlsCodecError,
     mls::session::id::ClientIdRef,
