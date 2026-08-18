@@ -4,7 +4,7 @@
 <a href=#4 id=4 data-nosnippet>4</a>
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use crate</span>::{
 <a href=#6 id=6 data-nosnippet>6</a>    CryptoKeystoreResult,
-<a href=#7 id=7 data-nosnippet>7</a>    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, KeyType, SearchableEntity, UniqueEntityExt},
+<a href=#7 id=7 data-nosnippet>7</a>    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, SearchableEntity, UniqueEntityExt},
 <a href=#8 id=8 data-nosnippet>8</a>};
 <a href=#9 id=9 data-nosnippet>9</a>
 <a href=#10 id=10 data-nosnippet>10</a><span class="doccomment">/// Interface to immutably access the database either from the connection directly or through a transaction.
@@ -34,7 +34,7 @@
 <a href=#34 id=34 data-nosnippet>34</a>    <span class="kw">where
 <a href=#35 id=35 data-nosnippet>35</a>        </span>E: <span class="lifetime">'static </span>+ EntityGetBorrowed + Clone + Send + Sync,
 <a href=#36 id=36 data-nosnippet>36</a>        E::PrimaryKey: Borrow&lt;E::BorrowedPrimaryKey&gt;,
-<a href=#37 id=37 data-nosnippet>37</a>        <span class="kw">for</span>&lt;<span class="lifetime">'a</span>&gt; <span class="kw-2">&amp;</span><span class="lifetime">'a </span>E::BorrowedPrimaryKey: KeyType;
+<a href=#37 id=37 data-nosnippet>37</a>        &lt;E <span class="kw">as </span>BorrowPrimaryKey&gt;::BorrowedPrimaryKey: Send + Sync;
 <a href=#38 id=38 data-nosnippet>38</a>
 <a href=#39 id=39 data-nosnippet>39</a>    <span class="doccomment">/// Get the requested unique entity from the database.
 <a href=#40 id=40 data-nosnippet>40</a>    </span><span class="kw">async fn </span>get_unique&lt;<span class="lifetime">'a</span>, U&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;Arc&lt;U&gt;&gt;&gt;
@@ -57,6 +57,6 @@
 <a href=#57 id=57 data-nosnippet>57</a>    </span><span class="kw">async fn </span>search&lt;E, SearchKey&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, search_key: <span class="kw-2">&amp;</span>SearchKey) -&gt; CryptoKeystoreResult&lt;Vec&lt;Arc&lt;E&gt;&gt;&gt;
 <a href=#58 id=58 data-nosnippet>58</a>    <span class="kw">where
 <a href=#59 id=59 data-nosnippet>59</a>        </span>E: <span class="lifetime">'static </span>+ Entity + SearchableEntity&lt;SearchKey&gt; + Clone + Send + Sync,
-<a href=#60 id=60 data-nosnippet>60</a>        SearchKey: KeyType;
+<a href=#60 id=60 data-nosnippet>60</a>        SearchKey: Send + Sync;
 <a href=#61 id=61 data-nosnippet>61</a>}
 </code></pre></div></section></main></body></html>

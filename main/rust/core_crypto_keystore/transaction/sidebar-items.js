@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["proteus"],"struct":["Transaction"]};
+window.SIDEBAR_ITEMS = {"mod":["proteus"],"struct":["EntityId","Transaction"]};
