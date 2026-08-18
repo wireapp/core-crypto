@@ -12,7 +12,7 @@ use crate::traits::{BorrowPrimaryKey, DynEntityId, Entity};
 /// ## Invariant
 ///
 /// [`Entity::TABLE_NAME`] has to identify the Rust type uniquely. This type only ever compares table
-/// names ([`Self::matches_type`]), while the operations which act on the entity behind an id recover
+/// names (`Self::matches_type`), while the operations which act on the entity behind an id recover
 /// the type by downcasting, so the two notions of identity have to agree. Were two entity types ever
 /// to share a table name, `matches_type` would answer `true` for both while the downcast succeeded
 /// for only one — turning the `expect`s which pair the two into panics, and making bulk deletions
