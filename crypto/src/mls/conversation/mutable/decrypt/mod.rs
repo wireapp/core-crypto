@@ -29,7 +29,7 @@ use tls_codec::Deserialize as _;
 
 use super::{ConversationMut, Result};
 use crate::{
-    ClientId, E2eiConversationState, OpenMlsError, RecursiveError, Session, WireIdentity,
+    ClientId, E2eiConversationState, OpenMlsError, RecursiveError, Session, TlsCodecError, WireIdentity,
     mls::{conversation::Error, credential::ext::CredentialExt as _},
 };
 
@@ -161,8 +161,8 @@ impl ConversationMut {
     /// If a message has been buffered, this will be indicated by an error.
     /// Other errors are originating from OpenMls and the KeyStore
     pub async fn decrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<DecryptedMessage> {
-        let mls_message_in =
-            MlsMessageIn::tls_deserialize(&mut message.as_ref()).map_err(Error::tls_deserialize("mls message in"))?;
+        let mls_message_in = MlsMessageIn::tls_deserialize(&mut message.as_ref())
+            .map_err(TlsCodecError::deserialize("mls message in"))?;
 
         let decrypt_message_result = self
             .decrypt_message_inner(mls_message_in, RecursionPolicy::AsNecessary)

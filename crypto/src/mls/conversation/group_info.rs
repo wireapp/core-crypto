@@ -1,7 +1,8 @@
 use openmls::prelude::{MlsMessageOut, group_info::GroupInfo};
 use serde::{Deserialize, Serialize};
 
-use super::{Error, Result};
+use super::Result;
+use crate::TlsCodecError;
 
 /// A [GroupInfo] with metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -22,7 +23,7 @@ impl GroupInfoBundle {
         let payload = MlsMessageOut::from(gi);
         let payload = payload
             .tls_serialize_detached()
-            .map_err(Error::tls_serialize("unencrypted mls message"))?;
+            .map_err(TlsCodecError::serialize("unencrypted mls message"))?;
         Ok(Self {
             encryption_type: GroupInfoEncryptionType::Plaintext,
             ratchet_tree_type: RatchetTreeType::Full,

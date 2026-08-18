@@ -11,16 +11,6 @@ pub enum Error {
     Keystore(#[from] crate::KeystoreError),
     #[error(transparent)]
     Recursive(#[from] crate::RecursiveError),
-    #[error("TLS deserializing {item}")]
-    TlsDeserialize {
-        #[source]
-        source: tls_codec::Error,
-        item: &'static str,
-    },
-}
-
-impl Error {
-    pub fn tls_deserialize(item: &'static str) -> impl FnOnce(tls_codec::Error) -> Self {
-        move |source| Self::TlsDeserialize { source, item }
-    }
+    #[error(transparent)]
+    Tls(#[from] crate::TlsCodecError),
 }

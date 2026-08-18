@@ -7,8 +7,8 @@
 
 use openmls::prelude::MlsMessageOut;
 
-use super::{Error, Result};
-use crate::{GroupInfoBundle, mls::conversation::WelcomeMessage};
+use super::Result;
+use crate::{GroupInfoBundle, TlsCodecError, mls::conversation::WelcomeMessage};
 
 /// Returned when a commit is created
 #[derive(Debug, Clone)]
@@ -36,15 +36,15 @@ impl CommitBundle {
         let commit = self
             .commit
             .tls_serialize_detached()
-            .map_err(Error::tls_serialize("serialize commit"))?;
+            .map_err(TlsCodecError::serialize("serialize commit"))?;
         Ok((welcome, commit, self.group_info))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Error, *};
-    use crate::{test_utils::*, transaction_context::Error as TransactionError};
+    use super::*;
+    use crate::{mls::conversation::Error, test_utils::*, transaction_context::Error as TransactionError};
 
     mod add_members {
         use std::sync::Arc;

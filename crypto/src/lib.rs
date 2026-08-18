@@ -51,7 +51,7 @@ pub use crate::{
     ephemeral::{HISTORY_CLIENT_ID_PREFIX, HistorySecret},
     error::{
         Error, InnermostErrorMessage, KeystoreError, OpenMlsError, OpenMlsErrorKind, ProteusError, ProteusErrorKind,
-        RecursiveError, Result, ToRecursiveError,
+        RecursiveError, Result, TlsCodecError, ToRecursiveError,
     },
     identity::{WireIdentity, X509Identity},
     mls::{

@@ -4,7 +4,7 @@ use openmls::framing::MlsMessageIn;
 use tls_codec::Deserialize as _;
 
 use super::{ConversationMut, RecursionPolicy, Result};
-use crate::{DecryptedMessage, KeystoreError, RecursiveError, mls::conversation::Error};
+use crate::{DecryptedMessage, KeystoreError, RecursiveError, TlsCodecError};
 
 impl ConversationMut {
     /// Cache the bytes of a buffered commit in the backend.
@@ -53,8 +53,8 @@ impl ConversationMut {
     ) -> Result<DecryptedMessage> {
         info!(group_id = self.id().to_owned(); "attempting to process buffered commit");
 
-        let message =
-            MlsMessageIn::tls_deserialize(&mut commit.as_ref()).map_err(Error::tls_deserialize("mls message in"))?;
+        let message = MlsMessageIn::tls_deserialize(&mut commit.as_ref())
+            .map_err(TlsCodecError::deserialize("mls message in"))?;
 
         Box::pin(self.decrypt_message_inner(message, recursion_policy)).await
     }

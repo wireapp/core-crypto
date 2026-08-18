@@ -10,7 +10,7 @@ use tls_codec::Deserialize;
 
 use super::{RecursionPolicy, Result};
 use crate::{
-    BufferedDecryptedMessage, KeystoreError, RecursiveError,
+    BufferedDecryptedMessage, KeystoreError, RecursiveError, TlsCodecError,
     mls::conversation::{ConversationMut, Error},
 };
 
@@ -83,7 +83,7 @@ impl ConversationMut {
                 .into_iter()
                 .map(|m| -> Result<_> {
                     let message = MlsMessageIn::tls_deserialize(&mut m.message.as_slice())
-                        .map_err(Error::tls_deserialize("mls message in"))?;
+                        .map_err(TlsCodecError::deserialize("mls message in"))?;
                     let content_type = match message.body_as_ref() {
                         MlsMessageInBody::PublicMessage(m) => m.content_type(),
                         MlsMessageInBody::PrivateMessage(m) => m.content_type(),

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use core_crypto::{KeyPackageIn, RecursiveError, mls::key_package::KeypackageExt};
+use core_crypto::{KeyPackageIn, RecursiveError, TlsCodecError, mls::key_package::KeypackageExt};
 use tls_codec::{Deserialize as _, Serialize as _};
 
 use crate::{CipherSuite, CoreCryptoError, CoreCryptoResult, CredentialType, SignatureScheme};
@@ -88,7 +88,8 @@ impl KeyPackage {
     pub fn new(bytes: &[u8]) -> CoreCryptoResult<Self> {
         KeyPackageIn::tls_deserialize_exact(bytes)
             .map(|kp_in| Self(Inner::In(kp_in)))
-            .map_err(core_crypto::mls::conversation::Error::tls_deserialize("keypackagein"))
+            .map_err(TlsCodecError::deserialize("keypackagein"))
+            .map_err(RecursiveError::mls_conversation("deserializing keypackage"))
             .map_err(Into::into)
     }
 
@@ -97,12 +98,12 @@ impl KeyPackage {
         match &self.0 {
             Inner::Out(key_package) => key_package
                 .tls_serialize_detached()
-                .map_err(core_crypto::mls::conversation::Error::tls_serialize("keypackage"))
+                .map_err(TlsCodecError::serialize("keypackage"))
                 .map_err(RecursiveError::mls_conversation("serializing keypackage"))
                 .map_err(Into::into),
             Inner::In(key_package_in) => key_package_in
                 .tls_serialize_detached()
-                .map_err(core_crypto::mls::conversation::Error::tls_serialize("keypackage"))
+                .map_err(TlsCodecError::serialize("keypackage"))
                 .map_err(RecursiveError::mls_conversation("serializing keypackagein"))
                 .map_err(Into::into),
         }

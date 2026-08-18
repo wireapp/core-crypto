@@ -25,7 +25,7 @@ pub use self::{
     credential_type::CredentialType,
     error::Error,
 };
-use crate::{CipherSuite, ClientId, ClientIdRef, OpenMlsError, RecursiveError, mls_provider::CRYPTO};
+use crate::{CipherSuite, ClientId, ClientIdRef, OpenMlsError, RecursiveError, TlsCodecError, mls_provider::CRYPTO};
 
 /// A cryptographic credential.
 ///
@@ -59,7 +59,7 @@ impl TryFrom<Arc<StoredCredential>> for Credential {
 
     fn try_from(stored_credential: Arc<StoredCredential>) -> Result<Credential> {
         let mls_credential = MlsCredential::tls_deserialize(&mut stored_credential.credential.as_slice())
-            .map_err(Error::tls_deserialize("mls credential"))?;
+            .map_err(TlsCodecError::deserialize("mls credential"))?;
         let cipher_suite = CipherSuite::try_from(stored_credential.ciphersuite)?;
         let signature_key_pair = openmls_basic_credential::SignatureKeyPair::from_raw(
             cipher_suite.signature_algorithm(),

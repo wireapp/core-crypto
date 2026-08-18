@@ -2,6 +2,7 @@ use openmls::prelude::{MlsMessageIn, MlsMessageOut};
 use tls_codec::{Deserialize as _, Serialize as _};
 
 use super::{Error, Result};
+use crate::TlsCodecError;
 
 /// A Welcome Message as defined in RFC 9420.
 ///
@@ -15,7 +16,8 @@ impl TryFrom<&[u8]> for WelcomeMessage {
     fn try_from(bytes: &[u8]) -> Result<Self> {
         MlsMessageIn::tls_deserialize_exact(bytes)
             .map(Self)
-            .map_err(Error::tls_deserialize("deserializing welcome message as MlsMessageIn"))
+            .map_err(TlsCodecError::deserialize("welcome message as MlsMessageIn"))
+            .map_err(Into::into)
     }
 }
 
@@ -38,6 +40,7 @@ impl WelcomeMessage {
     pub fn serialize(&self) -> Result<Vec<u8>> {
         MlsMessageOut::from(self.0.clone())
             .tls_serialize_detached()
-            .map_err(Error::tls_serialize("serializing welcome message as MlsMessageOut"))
+            .map_err(TlsCodecError::serialize("welcome message as MlsMessageOut"))
+            .map_err(Into::into)
     }
 }

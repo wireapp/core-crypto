@@ -6,7 +6,7 @@ use tls_codec::{Serialize as _, TlsSerialize, TlsSize, VLBytes};
 
 use super::{PskId, TargetedMessage, TargetedMessageContext};
 use crate::{
-    ClientIdRef, CryptoProvider, OpenMlsError, RecursiveError,
+    ClientIdRef, CryptoProvider, OpenMlsError, RecursiveError, TlsCodecError,
     mls::conversation::{
         ConversationMut, Error, MlsGroupState, Result,
         mutable::tnt::{TntMessage, TntMessageTBS},
@@ -77,7 +77,8 @@ impl ConversationMut {
 
         signed_message
             .tls_serialize_detached()
-            .map_err(Error::tls_serialize("TntMessage: targeted"))
+            .map_err(TlsCodecError::serialize("TntMessage: targeted"))
+            .map_err(Into::into)
     }
 
     async fn create_targeted_message(
@@ -95,7 +96,7 @@ impl ConversationMut {
         let mls_group = group_state.mls_group();
         let aad = nonce
             .tls_serialize_detached()
-            .map_err(Error::tls_serialize("TntMessageCounter"))?;
+            .map_err(TlsCodecError::serialize("TntMessageCounter"))?;
         let context = TargetedMessageContext::new(
             policy,
             mls_group.export_group_context(),
@@ -104,7 +105,7 @@ impl ConversationMut {
         );
         let info = context
             .tls_serialize_detached()
-            .map_err(Error::tls_serialize("TargetedMessageContext"))?;
+            .map_err(TlsCodecError::serialize("TargetedMessageContext"))?;
 
         // We can use an empty context because we're using a unique label.
         let psk = mls_group
@@ -116,8 +117,10 @@ impl ConversationMut {
             )
             .map_err(OpenMlsError::wrap("exporting targeted message psk"))?;
         let psk_id = PskId::new(mls_group.group_id().clone(), mls_group.epoch());
-        let psk_id = psk_id.tls_serialize_detached().map_err(Error::tls_serialize("PskId"))?;
-        let message = tls_serialize_padded(message).map_err(Error::tls_serialize("TargetedMessageContent"))?;
+        let psk_id = psk_id
+            .tls_serialize_detached()
+            .map_err(TlsCodecError::serialize("PskId"))?;
+        let message = tls_serialize_padded(message).map_err(TlsCodecError::serialize("TargetedMessageContent"))?;
         let payload = crypto_provider
             .hpke_seal_psk(
                 cipher_suite.hpke_config(),

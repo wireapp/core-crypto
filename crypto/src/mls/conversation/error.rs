@@ -85,32 +85,12 @@ pub enum Error {
     DuplicateSignature {
         affected_clients: Vec<(crate::ClientId, crate::ClientId)>,
     },
-    #[error("Serializing {item} for TLS")]
-    TlsSerialize {
-        item: &'static str,
-        #[source]
-        source: tls_codec::Error,
-    },
-    #[error("Deserializing {item} for TLS")]
-    TlsDeserialize {
-        item: &'static str,
-        #[source]
-        source: tls_codec::Error,
-    },
+    #[error(transparent)]
+    Tls(#[from] crate::TlsCodecError),
     #[error(transparent)]
     OpenMls(#[from] crate::OpenMlsError),
     #[error(transparent)]
     Keystore(#[from] crate::KeystoreError),
     #[error(transparent)]
     Recursive(#[from] crate::RecursiveError),
-}
-
-impl Error {
-    pub fn tls_serialize(item: &'static str) -> impl FnOnce(tls_codec::Error) -> Self {
-        move |source| Self::TlsSerialize { item, source }
-    }
-
-    pub fn tls_deserialize(item: &'static str) -> impl FnOnce(tls_codec::Error) -> Self {
-        move |source| Self::TlsDeserialize { item, source }
-    }
 }

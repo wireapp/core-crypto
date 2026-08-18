@@ -3,7 +3,7 @@ use openmls::prelude::SignaturePublicKey;
 use tls_codec::Serialize as _;
 
 use super::{Error, Result};
-use crate::{Credential, CredentialRef, KeystoreError};
+use crate::{Credential, CredentialRef, KeystoreError, TlsCodecError};
 
 impl Credential {
     /// Loads a credential with the given public key from the database.
@@ -44,7 +44,7 @@ impl Credential {
         let credential_data = self
             .mls_credential
             .tls_serialize_detached()
-            .map_err(Error::tls_serialize("credential"))?;
+            .map_err(TlsCodecError::serialize("credential"))?;
 
         self.earliest_validity = tx
             .save(StoredCredential {

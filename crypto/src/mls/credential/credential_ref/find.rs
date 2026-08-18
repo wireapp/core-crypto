@@ -8,7 +8,8 @@ use tls_codec::Deserialize as _;
 
 use super::{Error, Result};
 use crate::{
-    CipherSuite, ClientId, CredentialRef, CredentialType, KeystoreError, RecursiveError, mls::session::id::ClientIdRef,
+    CipherSuite, ClientId, CredentialRef, CredentialType, KeystoreError, RecursiveError, TlsCodecError,
+    mls::session::id::ClientIdRef,
 };
 
 /// Filters to narrow down the set of credentials returned from various credential-finding methods.
@@ -81,7 +82,8 @@ impl CredentialRef {
             .into_iter()
             .map(|stored| {
                 MlsCredential::tls_deserialize_exact(&stored.credential)
-                    .map_err(Error::tls_deserialize("Credential"))
+                    .map_err(TlsCodecError::deserialize("Credential"))
+                    .map_err(Error::from)
                     .map(|mls_credential| (mls_credential, stored))
             })
             .filter(|maybe_credential| {
