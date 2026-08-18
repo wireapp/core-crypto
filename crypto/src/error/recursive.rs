@@ -18,10 +18,6 @@ pub enum RecursiveError {
         context: &'static str,
         source: Box<wire_e2e_identity::E2eIdentityError>,
     },
-    Mls {
-        context: &'static str,
-        source: Box<crate::mls::Error>,
-    },
     MlsClient {
         context: &'static str,
         source: Box<crate::mls::session::Error>,
@@ -64,13 +60,6 @@ impl RecursiveError {
         }
     }
 
-    pub fn mls<E: Into<crate::mls::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
-        move |into_source| Self::Mls {
-            context,
-            source: Box::new(into_source.into()),
-        }
-    }
-
     pub fn mls_client<E: Into<crate::mls::session::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::MlsClient {
             context,
@@ -107,7 +96,6 @@ impl std::fmt::Display for RecursiveError {
         let context = match self {
             RecursiveError::Root { context, .. } => context,
             RecursiveError::E2e { context, .. } => context,
-            RecursiveError::Mls { context, .. } => context,
             RecursiveError::MlsClient { context, .. } => context,
             RecursiveError::MlsConversation { context, .. } => context,
             RecursiveError::MlsCredential { context, .. } => context,
@@ -125,7 +113,6 @@ impl std::error::Error for RecursiveError {
         match self {
             RecursiveError::Root { source, .. } => Some(source.as_ref()),
             RecursiveError::E2e { source, .. } => Some(source.as_ref()),
-            RecursiveError::Mls { source, .. } => Some(source.as_ref()),
             RecursiveError::MlsClient { source, .. } => Some(source.as_ref()),
             RecursiveError::MlsConversation { source, .. } => Some(source.as_ref()),
             RecursiveError::MlsCredential { source, .. } => Some(source.as_ref()),
@@ -165,7 +152,6 @@ macro_rules! impl_to_recursive_error_for {
 impl_to_recursive_error_for!(
     crate::Error => Root,
     wire_e2e_identity::E2eIdentityError => E2e,
-    crate::mls::Error => Mls,
     crate::mls::session::Error => MlsClient,
     crate::mls::conversation::Error => MlsConversation,
     crate::mls::credential::Error => MlsCredential,

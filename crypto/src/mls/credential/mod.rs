@@ -60,8 +60,7 @@ impl TryFrom<Arc<StoredCredential>> for Credential {
     fn try_from(stored_credential: Arc<StoredCredential>) -> Result<Credential> {
         let mls_credential = MlsCredential::tls_deserialize(&mut stored_credential.credential.as_slice())
             .map_err(Error::tls_deserialize("mls credential"))?;
-        let cipher_suite = CipherSuite::try_from(stored_credential.ciphersuite)
-            .map_err(RecursiveError::mls("loading cipher suite from db"))?;
+        let cipher_suite = CipherSuite::try_from(stored_credential.ciphersuite)?;
         let signature_key_pair = openmls_basic_credential::SignatureKeyPair::from_raw(
             cipher_suite.signature_algorithm(),
             stored_credential.private_key.to_owned(),

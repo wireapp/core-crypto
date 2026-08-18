@@ -2,13 +2,12 @@ pub(crate) mod cipher_suite;
 pub mod conversation;
 pub(crate) mod conversation_cache;
 pub mod credential;
-mod error;
 mod external_sender;
 pub mod key_package;
 pub(crate) mod session;
 
+pub use cipher_suite::UnknownCipherSuite;
 pub(crate) use conversation::TntMessageCounter;
-pub use error::{Error, Result};
 pub use external_sender::ExternalSender;
 pub use session::{EpochObserver, HistoryObserver};
 

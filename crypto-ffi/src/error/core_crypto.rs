@@ -243,7 +243,6 @@ macro_rules! impl_from_via_recursive_error {
 }
 
 impl_from_via_recursive_error!(
-    core_crypto::mls::Error,
     core_crypto::mls::conversation::Error,
     core_crypto::mls::credential::Error,
     wire_e2e_identity::E2eIdentityError,

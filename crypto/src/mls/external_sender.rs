@@ -4,8 +4,7 @@ use openmls::{
 };
 use wire_e2e_identity::parse_json_jwk;
 
-use super::{Error, Result};
-use crate::{OpenMlsError, RecursiveError, mls_provider::CRYPTO};
+use crate::{Error, OpenMlsError, RecursiveError, Result, mls_provider::CRYPTO};
 
 const WIRE_SERVER_IDENTITY: &str = "wire-server";
 

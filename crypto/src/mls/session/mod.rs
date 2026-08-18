@@ -91,7 +91,7 @@ impl Session {
     }
 
     /// Generates a random byte array of the specified size
-    pub fn random_bytes(&self, len: usize) -> crate::mls::Result<Vec<u8>> {
+    pub fn random_bytes(&self, len: usize) -> crate::Result<Vec<u8>> {
         use openmls_traits::random::OpenMlsRand as _;
         self.crypto_provider
             .rand()
@@ -106,7 +106,7 @@ impl Session {
     }
 
     /// see [crate::mls_provider::CryptoProvider::reseed]
-    pub async fn reseed(&self, seed: Option<EntropySeed>) -> crate::mls::Result<()> {
+    pub async fn reseed(&self, seed: Option<EntropySeed>) -> crate::Result<()> {
         self.crypto_provider
             .reseed(seed)
             .map_err(OpenMlsError::wrap("reseeding mls backend"))

@@ -1,8 +1,12 @@
 use openmls_traits::types::HashType;
 use wire_e2e_identity::HashAlgorithm;
 
-use super::{Error, Result};
 use crate::MlsCiphersuite;
+
+/// The cipher suite identifier presented does not map to a known ciphersuite.
+#[derive(Debug, thiserror::Error)]
+#[error("Unknown cipher suite")]
+pub struct UnknownCipherSuite;
 
 #[derive(
     Debug, Copy, Clone, Eq, PartialEq, PartialOrd, Ord, Hash, derive_more::Deref, serde::Serialize, serde::Deserialize,
@@ -47,12 +51,10 @@ impl From<CipherSuite> for u16 {
 }
 
 impl TryFrom<u16> for CipherSuite {
-    type Error = Error;
+    type Error = UnknownCipherSuite;
 
-    fn try_from(c: u16) -> Result<Self> {
-        Ok(MlsCiphersuite::try_from(c)
-            .map_err(|_| Error::UnknownCipherSuite)?
-            .into())
+    fn try_from(c: u16) -> Result<Self, UnknownCipherSuite> {
+        Ok(MlsCiphersuite::try_from(c).map_err(|_| UnknownCipherSuite)?.into())
     }
 }
 

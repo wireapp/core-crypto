@@ -38,6 +38,8 @@ pub enum Error {
     #[error("unsupported algorithm")]
     UnsupportedAlgorithm,
     #[error(transparent)]
+    UnknownCipherSuite(#[from] crate::mls::UnknownCipherSuite),
+    #[error(transparent)]
     Keystore(#[from] crate::KeystoreError),
     #[error(transparent)]
     OpenMls(#[from] crate::OpenMlsError),
