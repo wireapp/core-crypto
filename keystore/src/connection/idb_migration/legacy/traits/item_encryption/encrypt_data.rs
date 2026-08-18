@@ -1,8 +1,8 @@
 use super::{
-    super::Entity,
+    super::{Entity, KeyType},
     aad::{AES_GCM_256_NONCE_SIZE, Aad},
 };
-use crate::{CryptoKeystoreError, CryptoKeystoreResult};
+use crate::{CryptoKeystoreError, CryptoKeystoreResult, traits::PrimaryKey};
 
 // About WASM Encryption:
 // The store key (i.e. passphrase) is hashed using SHA256 to obtain 32 bytes
@@ -42,7 +42,11 @@ pub(crate) trait EncryptData {
     fn encrypt_data(&self, cipher: &aes_gcm::Aes256Gcm, data: &[u8]) -> CryptoKeystoreResult<Vec<u8>>;
 }
 
-impl<E: Entity> EncryptData for E {
+impl<E> EncryptData for E
+where
+    E: Entity,
+    <E as PrimaryKey>::PrimaryKey: KeyType,
+{
     fn encrypt_data(&self, cipher: &aes_gcm::Aes256Gcm, data: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
         let aad = Aad::from(self).serialize()?;
         let nonce_bytes: [u8; AES_GCM_256_NONCE_SIZE] = rand::random();

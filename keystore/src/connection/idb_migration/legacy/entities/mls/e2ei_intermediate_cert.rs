@@ -12,8 +12,8 @@ use zeroize::Zeroize;
 
 use crate::{
     CryptoKeystoreResult,
-    connection::idb_migration::legacy,
-    traits::{BorrowPrimaryKey, KeyType, PrimaryKey},
+    connection::idb_migration::legacy::{self, traits::KeyType},
+    traits::{BorrowPrimaryKey, PrimaryKey},
 };
 
 #[derive(Zeroize)]

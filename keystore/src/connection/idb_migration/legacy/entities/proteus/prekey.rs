@@ -7,10 +7,10 @@ use crate::{
         connection::{KeystoreDatabaseConnection, TransactionWrapper},
         traits::{
             DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity, EntityBase, EntityDatabaseMutation,
+            KeyType as _,
         },
     },
     entities::ProteusPrekey,
-    traits::KeyType,
 };
 
 impl EntityBase for ProteusPrekey {

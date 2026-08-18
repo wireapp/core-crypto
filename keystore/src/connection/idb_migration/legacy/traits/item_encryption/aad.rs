@@ -1,5 +1,5 @@
-use super::super::Entity;
-use crate::{CryptoKeystoreResult, traits::KeyType as _};
+use super::super::{Entity, KeyType};
+use crate::{CryptoKeystoreResult, traits::PrimaryKey};
 
 pub(super) const AES_GCM_256_NONCE_SIZE: usize = 12;
 
@@ -12,6 +12,7 @@ pub(super) struct Aad {
 impl<E> From<&'_ E> for Aad
 where
     E: Entity,
+    <E as PrimaryKey>::PrimaryKey: KeyType,
 {
     fn from(value: &E) -> Self {
         let type_name = E::TABLE_NAME.as_bytes().to_vec();
@@ -25,7 +26,11 @@ impl Aad {
         serde_json::to_vec(self).map_err(Into::into)
     }
 
-    pub(super) fn from_primary_key<E: Entity>(primary_key: &E::PrimaryKey) -> Self {
+    pub(super) fn from_primary_key<E>(primary_key: &E::PrimaryKey) -> Self
+    where
+        E: Entity,
+        <E as PrimaryKey>::PrimaryKey: KeyType,
+    {
         let type_name = E::TABLE_NAME.as_bytes().to_vec();
         let id = primary_key.bytes().into_owned();
         Self { type_name, id }

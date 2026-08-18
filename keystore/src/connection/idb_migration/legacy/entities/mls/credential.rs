@@ -7,11 +7,11 @@ use crate::{
         connection::{KeystoreDatabaseConnection, TransactionWrapper},
         traits::{
             DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity, EntityBase, EntityDatabaseMutation,
-            SearchableEntity,
+            KeyType, SearchableEntity,
         },
     },
     entities::{CredentialFindFilters, StoredCredential},
-    traits::{KeyType as _, PrimaryKey},
+    traits::PrimaryKey,
 };
 
 impl EntityBase for StoredCredential {
@@ -136,6 +136,14 @@ impl Decrypting<'static> for StoredCredentialDecrypt {
 
 impl Decryptable<'static> for StoredCredential {
     type DecryptableFrom = StoredCredentialDecrypt;
+}
+
+impl<'a> KeyType for CredentialFindFilters<'a> {
+    fn bytes(&self) -> std::borrow::Cow<'_, [u8]> {
+        postcard::to_stdvec(self)
+            .expect("serializing these filters cannot fail")
+            .into()
+    }
 }
 
 #[async_trait(?Send)]

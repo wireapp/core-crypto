@@ -10,12 +10,14 @@ use async_lock::{Mutex, MutexGuard, Semaphore};
 use async_trait::async_trait;
 
 pub(crate) use self::platform::*;
-use super::traits::{Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, SearchableEntity};
+use super::traits::{
+    Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, KeyType, SearchableEntity,
+};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey, Transaction,
     entities::MlsPendingMessage,
     migrations::LegacyPersistedMlsGroup,
-    traits::{BorrowPrimaryKey, FetchFromDatabase, KeyType},
+    traits::{BorrowPrimaryKey, FetchFromDatabase},
 };
 
 /// Limit on the length of a blob to be stored in the database.

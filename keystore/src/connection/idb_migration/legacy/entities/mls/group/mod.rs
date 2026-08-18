@@ -10,11 +10,17 @@ use crate::{
     CryptoKeystoreResult,
     connection::idb_migration::legacy::{
         connection::storage::WasmStorageWrapper,
-        traits::{Decryptable, Decrypting, EntityBase, SearchableEntity},
+        traits::{Decryptable, Decrypting, EntityBase, KeyType, SearchableEntity},
     },
     entities::ParentGroupId,
     migrations::LegacyPersistedMlsGroup,
 };
+
+impl<'a> KeyType for ParentGroupId<'a> {
+    fn bytes(&self) -> std::borrow::Cow<'_, [u8]> {
+        (*self.as_ref()).into()
+    }
+}
 
 #[async_trait(?Send)]
 impl<'a> SearchableEntity<ParentGroupId<'a>> for LegacyPersistedMlsGroup {
