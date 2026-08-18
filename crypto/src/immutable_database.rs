@@ -3,7 +3,7 @@ use std::{borrow::Borrow, sync::Arc};
 use async_trait::async_trait;
 use core_crypto_keystore::{
     CryptoKeystoreResult, Database,
-    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, KeyType, SearchableEntity},
+    traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, SearchableEntity},
 };
 
 /// This database only exposes immutable operations.
@@ -47,7 +47,7 @@ impl FetchFromDatabase for ImmutableDatabase {
     where
         E: EntityGetBorrowed + Clone + Send + Sync + 'static,
         E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
-        for<'a> &'a E::BorrowedPrimaryKey: KeyType,
+        <E as BorrowPrimaryKey>::BorrowedPrimaryKey: Send + Sync,
     {
         self.0.get_borrowed::<E>(id).await
     }
@@ -55,7 +55,7 @@ impl FetchFromDatabase for ImmutableDatabase {
     async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: Entity + SearchableEntity<SearchKey> + Clone + Send + Sync + 'static,
-        SearchKey: KeyType,
+        SearchKey: Send + Sync,
     {
         self.0.search::<E, SearchKey>(search_key).await
     }
