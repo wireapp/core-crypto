@@ -334,172 +334,250 @@
 <a href=#334 id=334 data-nosnippet>334</a>        .<span class="kw">await
 <a href=#335 id=335 data-nosnippet>335</a>    </span>}
 <a href=#336 id=336 data-nosnippet>336</a>
-<a href=#337 id=337 data-nosnippet>337</a>    <span class="doccomment">/// Replicating [WPB-15810]
+<a href=#337 id=337 data-nosnippet>337</a>    <span class="doccomment">/// A buffered future message must not block us from processing our own removal.
 <a href=#338 id=338 data-nosnippet>338</a>    ///
-<a href=#339 id=339 data-nosnippet>339</a>    /// [WPB-15810]: https://wearezeta.atlassian.net/browse/WPB-15810
-<a href=#340 id=340 data-nosnippet>340</a>    </span><span class="attr">#[apply(all_cred_cipher)]
-<a href=#341 id=341 data-nosnippet>341</a>    </span><span class="kw">async fn </span>wpb_15810(<span class="kw-2">mut </span>case: TestContext) {
-<a href=#342 id=342 data-nosnippet>342</a>        <span class="kw">if </span>case.is_pure_ciphertext() {
-<a href=#343 id=343 data-nosnippet>343</a>            <span class="comment">// The use case tested here requires inspecting your own commit.
-<a href=#344 id=344 data-nosnippet>344</a>            // Openmls does not support this currently when protocol messages are encrypted.
-<a href=#345 id=345 data-nosnippet>345</a>            </span><span class="kw">return</span>;
-<a href=#346 id=346 data-nosnippet>346</a>        }
-<a href=#347 id=347 data-nosnippet>347</a>
-<a href=#348 id=348 data-nosnippet>348</a>        <span class="kw">let </span>[external_0, new_member, member_27, observer, member_114, member_115] = case.sessions().<span class="kw">await</span>;
-<a href=#349 id=349 data-nosnippet>349</a>        Box::pin(<span class="kw">async move </span>{
-<a href=#350 id=350 data-nosnippet>350</a>            <span class="comment">// set up external_0 as the backend / delivery service
-<a href=#351 id=351 data-nosnippet>351</a>            // scenario start: everyone except "new_member" is in the conversation
-<a href=#352 id=352 data-nosnippet>352</a>            </span><span class="kw">let </span>conversation = case
-<a href=#353 id=353 data-nosnippet>353</a>                .create_conversation_with_external_sender(
-<a href=#354 id=354 data-nosnippet>354</a>                    <span class="kw-2">&amp;</span>external_0,
-<a href=#355 id=355 data-nosnippet>355</a>                    [<span class="kw-2">&amp;</span>observer, <span class="kw-2">&amp;</span>member_114, <span class="kw-2">&amp;</span>member_115, <span class="kw-2">&amp;</span>member_27],
-<a href=#356 id=356 data-nosnippet>356</a>                )
-<a href=#357 id=357 data-nosnippet>357</a>                .<span class="kw">await</span>;
-<a href=#358 id=358 data-nosnippet>358</a>
-<a href=#359 id=359 data-nosnippet>359</a>            <span class="comment">// Everyone should agree on the overall state here, to wit: the group consists of everyone
-<a href=#360 id=360 data-nosnippet>360</a>            // except "new_member", and "external_0", and no messages have been sent.
-<a href=#361 id=361 data-nosnippet>361</a>            // At this point only the observer is going to receive messages, because that shouldn't impact group state.
-<a href=#362 id=362 data-nosnippet>362</a>
-<a href=#363 id=363 data-nosnippet>363</a>            // external 0 sends a proposal to remove 114
-<a href=#364 id=364 data-nosnippet>364</a>            </span><span class="kw">let </span>proposal_guard = conversation.external_remove_proposal(<span class="kw-2">&amp;</span>external_0, <span class="kw-2">&amp;</span>member_114).<span class="kw">await</span>;
-<a href=#365 id=365 data-nosnippet>365</a>            <span class="kw">let </span>proposal_remove_114_1 = proposal_guard.message();
-<a href=#366 id=366 data-nosnippet>366</a>            <span class="kw">let </span>conversation = proposal_guard.finish();
-<a href=#367 id=367 data-nosnippet>367</a>
-<a href=#368 id=368 data-nosnippet>368</a>            <span class="comment">// now bump the epoch in external_0: the new member has joined
-<a href=#369 id=369 data-nosnippet>369</a>            </span><span class="kw">let </span>(commit_guard, <span class="kw-2">mut </span>pending_conversation) = conversation.external_join_unmerged(<span class="kw-2">&amp;</span>new_member).<span class="kw">await</span>;
-<a href=#370 id=370 data-nosnippet>370</a>
-<a href=#371 id=371 data-nosnippet>371</a>            <span class="kw">let </span>new_member_join_commit = commit_guard.message();
-<a href=#372 id=372 data-nosnippet>372</a>
-<a href=#373 id=373 data-nosnippet>373</a>            pending_conversation.merge().<span class="kw">await</span>.unwrap();
-<a href=#374 id=374 data-nosnippet>374</a>            <span class="kw">let </span>conversation = commit_guard.process_member_changes().<span class="kw">await</span>.finish();
-<a href=#375 id=375 data-nosnippet>375</a>
-<a href=#376 id=376 data-nosnippet>376</a>            <span class="comment">// also create the same proposal with the epoch increased by 1
-<a href=#377 id=377 data-nosnippet>377</a>            </span><span class="kw">let </span>proposal_guard = conversation
-<a href=#378 id=378 data-nosnippet>378</a>                .acting_as(<span class="kw-2">&amp;</span>new_member)
-<a href=#379 id=379 data-nosnippet>379</a>                .<span class="kw">await
-<a href=#380 id=380 data-nosnippet>380</a>                </span>.external_remove_proposal(<span class="kw-2">&amp;</span>external_0, <span class="kw-2">&amp;</span>member_114)
-<a href=#381 id=381 data-nosnippet>381</a>                .<span class="kw">await</span>;
-<a href=#382 id=382 data-nosnippet>382</a>            <span class="kw">let </span>proposal_remove_114_2 = proposal_guard.message();
-<a href=#383 id=383 data-nosnippet>383</a>            <span class="kw">let </span>conversation = proposal_guard.finish();
-<a href=#384 id=384 data-nosnippet>384</a>
-<a href=#385 id=385 data-nosnippet>385</a>            <span class="comment">// now our observer receives these messages out of order
-<a href=#386 id=386 data-nosnippet>386</a>            </span><span class="macro">println!</span>(<span class="string">"observer executing first proposal"</span>);
-<a href=#387 id=387 data-nosnippet>387</a>            conversation
-<a href=#388 id=388 data-nosnippet>388</a>                .guard()
-<a href=#389 id=389 data-nosnippet>389</a>                .<span class="kw">await
-<a href=#390 id=390 data-nosnippet>390</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_114_1.to_bytes().unwrap())
-<a href=#391 id=391 data-nosnippet>391</a>                .<span class="kw">await
-<a href=#392 id=392 data-nosnippet>392</a>                </span>.unwrap();
-<a href=#393 id=393 data-nosnippet>393</a>            <span class="macro">println!</span>(<span class="string">"observer executing second proposal"</span>);
-<a href=#394 id=394 data-nosnippet>394</a>            <span class="kw">let </span>result = conversation
-<a href=#395 id=395 data-nosnippet>395</a>                .guard()
-<a href=#396 id=396 data-nosnippet>396</a>                .<span class="kw">await
-<a href=#397 id=397 data-nosnippet>397</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_114_2.to_bytes().unwrap())
-<a href=#398 id=398 data-nosnippet>398</a>                .<span class="kw">await</span>;
-<a href=#399 id=399 data-nosnippet>399</a>            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-<a href=#400 id=400 data-nosnippet>400</a>                result.unwrap_err(),
-<a href=#401 id=401 data-nosnippet>401</a>                Error::BufferedFutureMessage { message_epoch: <span class="number">2 </span>}
-<a href=#402 id=402 data-nosnippet>402</a>            ));
-<a href=#403 id=403 data-nosnippet>403</a>            <span class="macro">println!</span>(<span class="string">"executing commit adding new user"</span>);
-<a href=#404 id=404 data-nosnippet>404</a>            conversation
-<a href=#405 id=405 data-nosnippet>405</a>                .guard()
-<a href=#406 id=406 data-nosnippet>406</a>                .<span class="kw">await
-<a href=#407 id=407 data-nosnippet>407</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>new_member_join_commit.to_bytes().unwrap())
-<a href=#408 id=408 data-nosnippet>408</a>                .<span class="kw">await
-<a href=#409 id=409 data-nosnippet>409</a>                </span>.unwrap();
-<a href=#410 id=410 data-nosnippet>410</a>
-<a href=#411 id=411 data-nosnippet>411</a>            <span class="comment">// now the new member receives the messages in order
-<a href=#412 id=412 data-nosnippet>412</a>            </span><span class="macro">println!</span>(<span class="string">"new_member executing first proposal"</span>);
-<a href=#413 id=413 data-nosnippet>413</a>            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-<a href=#414 id=414 data-nosnippet>414</a>                conversation
-<a href=#415 id=415 data-nosnippet>415</a>                    .guard_of(<span class="kw-2">&amp;</span>new_member)
-<a href=#416 id=416 data-nosnippet>416</a>                    .<span class="kw">await
-<a href=#417 id=417 data-nosnippet>417</a>                    </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_114_1.to_bytes().unwrap())
-<a href=#418 id=418 data-nosnippet>418</a>                    .<span class="kw">await
-<a href=#419 id=419 data-nosnippet>419</a>                    </span>.unwrap_err(),
-<a href=#420 id=420 data-nosnippet>420</a>                <span class="kw">crate</span>::mls::conversation::Error::StaleProposal,
-<a href=#421 id=421 data-nosnippet>421</a>            ));
-<a href=#422 id=422 data-nosnippet>422</a>            <span class="macro">println!</span>(<span class="string">"new_member executing second proposal"</span>);
-<a href=#423 id=423 data-nosnippet>423</a>            conversation
-<a href=#424 id=424 data-nosnippet>424</a>                .guard_of(<span class="kw-2">&amp;</span>new_member)
-<a href=#425 id=425 data-nosnippet>425</a>                .<span class="kw">await
-<a href=#426 id=426 data-nosnippet>426</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_114_2.to_bytes().unwrap())
-<a href=#427 id=427 data-nosnippet>427</a>                .<span class="kw">await
-<a href=#428 id=428 data-nosnippet>428</a>                </span>.unwrap();
-<a href=#429 id=429 data-nosnippet>429</a>
-<a href=#430 id=430 data-nosnippet>430</a>            <span class="comment">// now let's switch to the perspective of member 27
-<a href=#431 id=431 data-nosnippet>431</a>            // they have observed exactly one of the "remove 114" proposals,
-<a href=#432 id=432 data-nosnippet>432</a>            // plus a "remove 115" proposal. We can assume that they observe the 2nd
-<a href=#433 id=433 data-nosnippet>433</a>            // "remove 114" proposal because they advanced the epoch correctly when
-<a href=#434 id=434 data-nosnippet>434</a>            // the new member was added.
-<a href=#435 id=435 data-nosnippet>435</a>            </span><span class="kw">let </span>proposal_guard = conversation.external_remove_proposal(<span class="kw-2">&amp;</span>external_0, <span class="kw-2">&amp;</span>member_115).<span class="kw">await</span>;
-<a href=#436 id=436 data-nosnippet>436</a>            <span class="kw">let </span>proposal_remove_115 = proposal_guard.message();
-<a href=#437 id=437 data-nosnippet>437</a>            <span class="kw">let </span>conversation = proposal_guard.finish();
-<a href=#438 id=438 data-nosnippet>438</a>
-<a href=#439 id=439 data-nosnippet>439</a>            conversation
-<a href=#440 id=440 data-nosnippet>440</a>                .guard_of(<span class="kw-2">&amp;</span>member_27)
-<a href=#441 id=441 data-nosnippet>441</a>                .<span class="kw">await
-<a href=#442 id=442 data-nosnippet>442</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_114_1.to_bytes().unwrap())
-<a href=#443 id=443 data-nosnippet>443</a>                .<span class="kw">await
-<a href=#444 id=444 data-nosnippet>444</a>                </span>.unwrap();
-<a href=#445 id=445 data-nosnippet>445</a>            <span class="kw">let </span>result = conversation
-<a href=#446 id=446 data-nosnippet>446</a>                .guard_of(<span class="kw-2">&amp;</span>member_27)
-<a href=#447 id=447 data-nosnippet>447</a>                .<span class="kw">await
-<a href=#448 id=448 data-nosnippet>448</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_114_2.to_bytes().unwrap())
-<a href=#449 id=449 data-nosnippet>449</a>                .<span class="kw">await</span>;
-<a href=#450 id=450 data-nosnippet>450</a>            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-<a href=#451 id=451 data-nosnippet>451</a>                result.unwrap_err(),
-<a href=#452 id=452 data-nosnippet>452</a>                Error::BufferedFutureMessage { message_epoch: <span class="number">2 </span>}
-<a href=#453 id=453 data-nosnippet>453</a>            ));
-<a href=#454 id=454 data-nosnippet>454</a>            conversation
-<a href=#455 id=455 data-nosnippet>455</a>                .guard_of(<span class="kw-2">&amp;</span>member_27)
-<a href=#456 id=456 data-nosnippet>456</a>                .<span class="kw">await
-<a href=#457 id=457 data-nosnippet>457</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>new_member_join_commit.to_bytes().unwrap())
-<a href=#458 id=458 data-nosnippet>458</a>                .<span class="kw">await
-<a href=#459 id=459 data-nosnippet>459</a>                </span>.unwrap();
-<a href=#460 id=460 data-nosnippet>460</a>            conversation
-<a href=#461 id=461 data-nosnippet>461</a>                .guard_of(<span class="kw-2">&amp;</span>member_27)
-<a href=#462 id=462 data-nosnippet>462</a>                .<span class="kw">await
-<a href=#463 id=463 data-nosnippet>463</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_115.to_bytes().unwrap())
-<a href=#464 id=464 data-nosnippet>464</a>                .<span class="kw">await
-<a href=#465 id=465 data-nosnippet>465</a>                </span>.unwrap();
-<a href=#466 id=466 data-nosnippet>466</a>
-<a href=#467 id=467 data-nosnippet>467</a>            <span class="comment">// In this case, note that observer receives the proposal before the commit.
-<a href=#468 id=468 data-nosnippet>468</a>            // This is the straightforward ordering and easy to deal with.
-<a href=#469 id=469 data-nosnippet>469</a>            </span>conversation
-<a href=#470 id=470 data-nosnippet>470</a>                .guard()
-<a href=#471 id=471 data-nosnippet>471</a>                .<span class="kw">await
-<a href=#472 id=472 data-nosnippet>472</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_115.to_bytes().unwrap())
-<a href=#473 id=473 data-nosnippet>473</a>                .<span class="kw">await
-<a href=#474 id=474 data-nosnippet>474</a>                </span>.unwrap();
-<a href=#475 id=475 data-nosnippet>475</a>
-<a href=#476 id=476 data-nosnippet>476</a>            <span class="kw">let </span>commit_guard = conversation
-<a href=#477 id=477 data-nosnippet>477</a>                .acting_as(<span class="kw-2">&amp;</span>member_27)
-<a href=#478 id=478 data-nosnippet>478</a>                .<span class="kw">await
-<a href=#479 id=479 data-nosnippet>479</a>                </span>.commit_pending_proposals()
-<a href=#480 id=480 data-nosnippet>480</a>                .<span class="kw">await
-<a href=#481 id=481 data-nosnippet>481</a>                </span>.notify_member(<span class="kw-2">&amp;</span>observer)
-<a href=#482 id=482 data-nosnippet>482</a>                .<span class="kw">await</span>;
-<a href=#483 id=483 data-nosnippet>483</a>
-<a href=#484 id=484 data-nosnippet>484</a>            <span class="comment">// In this case, new_member receives the commit before the proposal. This means that
-<a href=#485 id=485 data-nosnippet>485</a>            // the commit has to be buffered until the proposal it references is received.
-<a href=#486 id=486 data-nosnippet>486</a>            </span><span class="kw">let </span>(commit_guard, result) = commit_guard.notify_member_fallible(<span class="kw-2">&amp;</span>new_member).<span class="kw">await</span>;
-<a href=#487 id=487 data-nosnippet>487</a>            <span class="macro">assert!</span>(<span class="macro">matches!</span>(result.unwrap_err(), Error::BufferedCommit));
-<a href=#488 id=488 data-nosnippet>488</a>            <span class="kw">let </span>conversation = commit_guard.process_member_changes().<span class="kw">await</span>.finish();
-<a href=#489 id=489 data-nosnippet>489</a>            conversation
-<a href=#490 id=490 data-nosnippet>490</a>                .guard_of(<span class="kw-2">&amp;</span>new_member)
-<a href=#491 id=491 data-nosnippet>491</a>                .<span class="kw">await
-<a href=#492 id=492 data-nosnippet>492</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_115.to_bytes().unwrap())
-<a href=#493 id=493 data-nosnippet>493</a>                .<span class="kw">await
-<a href=#494 id=494 data-nosnippet>494</a>                </span>.unwrap();
-<a href=#495 id=495 data-nosnippet>495</a>
-<a href=#496 id=496 data-nosnippet>496</a>            <span class="macro">assert!</span>(
-<a href=#497 id=497 data-nosnippet>497</a>                conversation
-<a href=#498 id=498 data-nosnippet>498</a>                    .is_functional_and_contains([<span class="kw-2">&amp;</span>observer, <span class="kw-2">&amp;</span>new_member, <span class="kw-2">&amp;</span>member_27])
-<a href=#499 id=499 data-nosnippet>499</a>                    .<span class="kw">await
-<a href=#500 id=500 data-nosnippet>500</a>            </span>)
-<a href=#501 id=501 data-nosnippet>501</a>        })
-<a href=#502 id=502 data-nosnippet>502</a>        .<span class="kw">await
-<a href=#503 id=503 data-nosnippet>503</a>    </span>}
-<a href=#504 id=504 data-nosnippet>504</a>}
+<a href=#339 id=339 data-nosnippet>339</a>    /// This is ordinary out-of-order delivery, the very thing the buffering machinery exists for:
+<a href=#340 id=340 data-nosnippet>340</a>    /// the DS hands us an epoch `n + 1` application message before it hands us the epoch `n + 1`
+<a href=#341 id=341 data-nosnippet>341</a>    /// commit which removed us. Once that commit arrives, the conversation must be wiped, and the
+<a href=#342 id=342 data-nosnippet>342</a>    /// buffered message must go with it. If instead the buffered message is replayed against the
+<a href=#343 id=343 data-nosnippet>343</a>    /// new epoch, decryption fails identically on every retry, in every subsequent transaction, so
+<a href=#344 id=344 data-nosnippet>344</a>    /// the client can never process its own removal and the conversation is stuck forever.
+<a href=#345 id=345 data-nosnippet>345</a>    </span><span class="attr">#[apply(all_cred_cipher)]
+<a href=#346 id=346 data-nosnippet>346</a>    </span><span class="kw">async fn </span>buffered_message_must_not_block_own_removal(case: TestContext) {
+<a href=#347 id=347 data-nosnippet>347</a>        <span class="kw">let </span>[<span class="kw-2">mut </span>alice, bob, charlie] = case.sessions().<span class="kw">await</span>;
+<a href=#348 id=348 data-nosnippet>348</a>        <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>bob, <span class="kw-2">&amp;</span>charlie]).<span class="kw">await</span>;
+<a href=#349 id=349 data-nosnippet>349</a>        <span class="kw">let </span>conversation_id = conversation.id().clone();
+<a href=#350 id=350 data-nosnippet>350</a>
+<a href=#351 id=351 data-nosnippet>351</a>        <span class="comment">// Bob removes Alice. Charlie hears about it; Alice does not, so she stays at epoch 1.
+<a href=#352 id=352 data-nosnippet>352</a>        </span><span class="kw">let </span>commit_guard = conversation.acting_as(<span class="kw-2">&amp;</span>bob).<span class="kw">await</span>.remove(<span class="kw-2">&amp;</span>alice).<span class="kw">await</span>;
+<a href=#353 id=353 data-nosnippet>353</a>        <span class="kw">let </span>removal_commit = commit_guard.message().to_bytes().unwrap();
+<a href=#354 id=354 data-nosnippet>354</a>        <span class="kw">let </span>conversation = commit_guard
+<a href=#355 id=355 data-nosnippet>355</a>            .notify_member(<span class="kw-2">&amp;</span>charlie)
+<a href=#356 id=356 data-nosnippet>356</a>            .<span class="kw">await
+<a href=#357 id=357 data-nosnippet>357</a>            </span>.process_member_changes()
+<a href=#358 id=358 data-nosnippet>358</a>            .<span class="kw">await
+<a href=#359 id=359 data-nosnippet>359</a>            </span>.finish();
+<a href=#360 id=360 data-nosnippet>360</a>
+<a href=#361 id=361 data-nosnippet>361</a>        <span class="comment">// Bob then speaks in the new epoch.
+<a href=#362 id=362 data-nosnippet>362</a>        </span><span class="kw">let </span>app_msg = conversation
+<a href=#363 id=363 data-nosnippet>363</a>            .guard_of(<span class="kw-2">&amp;</span>bob)
+<a href=#364 id=364 data-nosnippet>364</a>            .<span class="kw">await
+<a href=#365 id=365 data-nosnippet>365</a>            </span>.encrypt_message(<span class="string">b"Hello from epoch 2!"</span>)
+<a href=#366 id=366 data-nosnippet>366</a>            .<span class="kw">await
+<a href=#367 id=367 data-nosnippet>367</a>            </span>.unwrap();
+<a href=#368 id=368 data-nosnippet>368</a>
+<a href=#369 id=369 data-nosnippet>369</a>        <span class="comment">// Alice is still at epoch 1, so she buffers the message.
+<a href=#370 id=370 data-nosnippet>370</a>        </span><span class="kw">let </span>decrypt = conversation.guard_of(<span class="kw-2">&amp;</span>alice).<span class="kw">await</span>.decrypt_message(app_msg).<span class="kw">await</span>;
+<a href=#371 id=371 data-nosnippet>371</a>        <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+<a href=#372 id=372 data-nosnippet>372</a>            decrypt.unwrap_err(),
+<a href=#373 id=373 data-nosnippet>373</a>            Error::BufferedFutureMessage { message_epoch: <span class="number">2 </span>}
+<a href=#374 id=374 data-nosnippet>374</a>        ));
+<a href=#375 id=375 data-nosnippet>375</a>        <span class="macro">assert_eq!</span>(
+<a href=#376 id=376 data-nosnippet>376</a>            alice.transaction.count_entities().<span class="kw">await</span>.pending_messages,
+<a href=#377 id=377 data-nosnippet>377</a>            <span class="number">1</span>,
+<a href=#378 id=378 data-nosnippet>378</a>            <span class="string">"the message Alice could not decrypt must have been buffered"
+<a href=#379 id=379 data-nosnippet>379</a>        </span>);
+<a href=#380 id=380 data-nosnippet>380</a>
+<a href=#381 id=381 data-nosnippet>381</a>        <span class="comment">// Commit Alice's transaction, so the buffered message is durable, as it would be
+<a href=#382 id=382 data-nosnippet>382</a>        // between two real client calls.
+<a href=#383 id=383 data-nosnippet>383</a>        </span>drop(conversation);
+<a href=#384 id=384 data-nosnippet>384</a>        alice.commit_transaction().<span class="kw">await</span>;
+<a href=#385 id=385 data-nosnippet>385</a>
+<a href=#386 id=386 data-nosnippet>386</a>        <span class="comment">// Only now does Alice receive the commit which removed her.
+<a href=#387 id=387 data-nosnippet>387</a>        </span><span class="kw">let </span>decrypted = alice
+<a href=#388 id=388 data-nosnippet>388</a>            .transaction
+<a href=#389 id=389 data-nosnippet>389</a>            .conversation(<span class="kw-2">&amp;</span>conversation_id)
+<a href=#390 id=390 data-nosnippet>390</a>            .<span class="kw">await
+<a href=#391 id=391 data-nosnippet>391</a>            </span>.unwrap()
+<a href=#392 id=392 data-nosnippet>392</a>            .decrypt_message(<span class="kw-2">&amp;</span>removal_commit)
+<a href=#393 id=393 data-nosnippet>393</a>            .<span class="kw">await
+<a href=#394 id=394 data-nosnippet>394</a>            </span>.expect(<span class="string">"Alice must be able to process her own removal"</span>)
+<a href=#395 id=395 data-nosnippet>395</a>            .into_commit()
+<a href=#396 id=396 data-nosnippet>396</a>            .unwrap();
+<a href=#397 id=397 data-nosnippet>397</a>        <span class="macro">assert!</span>(
+<a href=#398 id=398 data-nosnippet>398</a>            !decrypted.is_active,
+<a href=#399 id=399 data-nosnippet>399</a>            <span class="string">"the commit removed Alice, so she is no longer an active member"
+<a href=#400 id=400 data-nosnippet>400</a>        </span>);
+<a href=#401 id=401 data-nosnippet>401</a>
+<a href=#402 id=402 data-nosnippet>402</a>        alice.commit_transaction().<span class="kw">await</span>;
+<a href=#403 id=403 data-nosnippet>403</a>
+<a href=#404 id=404 data-nosnippet>404</a>        <span class="kw">let </span>counts = alice.transaction.count_entities().<span class="kw">await</span>;
+<a href=#405 id=405 data-nosnippet>405</a>        <span class="macro">assert_eq!</span>(
+<a href=#406 id=406 data-nosnippet>406</a>            counts.group, <span class="number">0</span>,
+<a href=#407 id=407 data-nosnippet>407</a>            <span class="string">"processing her own removal must have wiped the conversation"
+<a href=#408 id=408 data-nosnippet>408</a>        </span>);
+<a href=#409 id=409 data-nosnippet>409</a>        <span class="macro">assert_eq!</span>(
+<a href=#410 id=410 data-nosnippet>410</a>            counts.pending_messages, <span class="number">0</span>,
+<a href=#411 id=411 data-nosnippet>411</a>            <span class="string">"the buffered message belongs to a conversation which no longer exists"
+<a href=#412 id=412 data-nosnippet>412</a>        </span>);
+<a href=#413 id=413 data-nosnippet>413</a>    }
+<a href=#414 id=414 data-nosnippet>414</a>
+<a href=#415 id=415 data-nosnippet>415</a>    <span class="doccomment">/// Replicating [WPB-15810]
+<a href=#416 id=416 data-nosnippet>416</a>    ///
+<a href=#417 id=417 data-nosnippet>417</a>    /// [WPB-15810]: https://wearezeta.atlassian.net/browse/WPB-15810
+<a href=#418 id=418 data-nosnippet>418</a>    </span><span class="attr">#[apply(all_cred_cipher)]
+<a href=#419 id=419 data-nosnippet>419</a>    </span><span class="kw">async fn </span>wpb_15810(<span class="kw-2">mut </span>case: TestContext) {
+<a href=#420 id=420 data-nosnippet>420</a>        <span class="kw">if </span>case.is_pure_ciphertext() {
+<a href=#421 id=421 data-nosnippet>421</a>            <span class="comment">// The use case tested here requires inspecting your own commit.
+<a href=#422 id=422 data-nosnippet>422</a>            // Openmls does not support this currently when protocol messages are encrypted.
+<a href=#423 id=423 data-nosnippet>423</a>            </span><span class="kw">return</span>;
+<a href=#424 id=424 data-nosnippet>424</a>        }
+<a href=#425 id=425 data-nosnippet>425</a>
+<a href=#426 id=426 data-nosnippet>426</a>        <span class="kw">let </span>[external_0, new_member, member_27, observer, member_114, member_115] = case.sessions().<span class="kw">await</span>;
+<a href=#427 id=427 data-nosnippet>427</a>        Box::pin(<span class="kw">async move </span>{
+<a href=#428 id=428 data-nosnippet>428</a>            <span class="comment">// set up external_0 as the backend / delivery service
+<a href=#429 id=429 data-nosnippet>429</a>            // scenario start: everyone except "new_member" is in the conversation
+<a href=#430 id=430 data-nosnippet>430</a>            </span><span class="kw">let </span>conversation = case
+<a href=#431 id=431 data-nosnippet>431</a>                .create_conversation_with_external_sender(
+<a href=#432 id=432 data-nosnippet>432</a>                    <span class="kw-2">&amp;</span>external_0,
+<a href=#433 id=433 data-nosnippet>433</a>                    [<span class="kw-2">&amp;</span>observer, <span class="kw-2">&amp;</span>member_114, <span class="kw-2">&amp;</span>member_115, <span class="kw-2">&amp;</span>member_27],
+<a href=#434 id=434 data-nosnippet>434</a>                )
+<a href=#435 id=435 data-nosnippet>435</a>                .<span class="kw">await</span>;
+<a href=#436 id=436 data-nosnippet>436</a>
+<a href=#437 id=437 data-nosnippet>437</a>            <span class="comment">// Everyone should agree on the overall state here, to wit: the group consists of everyone
+<a href=#438 id=438 data-nosnippet>438</a>            // except "new_member", and "external_0", and no messages have been sent.
+<a href=#439 id=439 data-nosnippet>439</a>            // At this point only the observer is going to receive messages, because that shouldn't impact group state.
+<a href=#440 id=440 data-nosnippet>440</a>
+<a href=#441 id=441 data-nosnippet>441</a>            // external 0 sends a proposal to remove 114
+<a href=#442 id=442 data-nosnippet>442</a>            </span><span class="kw">let </span>proposal_guard = conversation.external_remove_proposal(<span class="kw-2">&amp;</span>external_0, <span class="kw-2">&amp;</span>member_114).<span class="kw">await</span>;
+<a href=#443 id=443 data-nosnippet>443</a>            <span class="kw">let </span>proposal_remove_114_1 = proposal_guard.message();
+<a href=#444 id=444 data-nosnippet>444</a>            <span class="kw">let </span>conversation = proposal_guard.finish();
+<a href=#445 id=445 data-nosnippet>445</a>
+<a href=#446 id=446 data-nosnippet>446</a>            <span class="comment">// now bump the epoch in external_0: the new member has joined
+<a href=#447 id=447 data-nosnippet>447</a>            </span><span class="kw">let </span>(commit_guard, <span class="kw-2">mut </span>pending_conversation) = conversation.external_join_unmerged(<span class="kw-2">&amp;</span>new_member).<span class="kw">await</span>;
+<a href=#448 id=448 data-nosnippet>448</a>
+<a href=#449 id=449 data-nosnippet>449</a>            <span class="kw">let </span>new_member_join_commit = commit_guard.message();
+<a href=#450 id=450 data-nosnippet>450</a>
+<a href=#451 id=451 data-nosnippet>451</a>            pending_conversation.merge().<span class="kw">await</span>.unwrap();
+<a href=#452 id=452 data-nosnippet>452</a>            <span class="kw">let </span>conversation = commit_guard.process_member_changes().<span class="kw">await</span>.finish();
+<a href=#453 id=453 data-nosnippet>453</a>
+<a href=#454 id=454 data-nosnippet>454</a>            <span class="comment">// also create the same proposal with the epoch increased by 1
+<a href=#455 id=455 data-nosnippet>455</a>            </span><span class="kw">let </span>proposal_guard = conversation
+<a href=#456 id=456 data-nosnippet>456</a>                .acting_as(<span class="kw-2">&amp;</span>new_member)
+<a href=#457 id=457 data-nosnippet>457</a>                .<span class="kw">await
+<a href=#458 id=458 data-nosnippet>458</a>                </span>.external_remove_proposal(<span class="kw-2">&amp;</span>external_0, <span class="kw-2">&amp;</span>member_114)
+<a href=#459 id=459 data-nosnippet>459</a>                .<span class="kw">await</span>;
+<a href=#460 id=460 data-nosnippet>460</a>            <span class="kw">let </span>proposal_remove_114_2 = proposal_guard.message();
+<a href=#461 id=461 data-nosnippet>461</a>            <span class="kw">let </span>conversation = proposal_guard.finish();
+<a href=#462 id=462 data-nosnippet>462</a>
+<a href=#463 id=463 data-nosnippet>463</a>            <span class="comment">// now our observer receives these messages out of order
+<a href=#464 id=464 data-nosnippet>464</a>            </span><span class="macro">println!</span>(<span class="string">"observer executing first proposal"</span>);
+<a href=#465 id=465 data-nosnippet>465</a>            conversation
+<a href=#466 id=466 data-nosnippet>466</a>                .guard()
+<a href=#467 id=467 data-nosnippet>467</a>                .<span class="kw">await
+<a href=#468 id=468 data-nosnippet>468</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_114_1.to_bytes().unwrap())
+<a href=#469 id=469 data-nosnippet>469</a>                .<span class="kw">await
+<a href=#470 id=470 data-nosnippet>470</a>                </span>.unwrap();
+<a href=#471 id=471 data-nosnippet>471</a>            <span class="macro">println!</span>(<span class="string">"observer executing second proposal"</span>);
+<a href=#472 id=472 data-nosnippet>472</a>            <span class="kw">let </span>result = conversation
+<a href=#473 id=473 data-nosnippet>473</a>                .guard()
+<a href=#474 id=474 data-nosnippet>474</a>                .<span class="kw">await
+<a href=#475 id=475 data-nosnippet>475</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_114_2.to_bytes().unwrap())
+<a href=#476 id=476 data-nosnippet>476</a>                .<span class="kw">await</span>;
+<a href=#477 id=477 data-nosnippet>477</a>            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+<a href=#478 id=478 data-nosnippet>478</a>                result.unwrap_err(),
+<a href=#479 id=479 data-nosnippet>479</a>                Error::BufferedFutureMessage { message_epoch: <span class="number">2 </span>}
+<a href=#480 id=480 data-nosnippet>480</a>            ));
+<a href=#481 id=481 data-nosnippet>481</a>            <span class="macro">println!</span>(<span class="string">"executing commit adding new user"</span>);
+<a href=#482 id=482 data-nosnippet>482</a>            conversation
+<a href=#483 id=483 data-nosnippet>483</a>                .guard()
+<a href=#484 id=484 data-nosnippet>484</a>                .<span class="kw">await
+<a href=#485 id=485 data-nosnippet>485</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>new_member_join_commit.to_bytes().unwrap())
+<a href=#486 id=486 data-nosnippet>486</a>                .<span class="kw">await
+<a href=#487 id=487 data-nosnippet>487</a>                </span>.unwrap();
+<a href=#488 id=488 data-nosnippet>488</a>
+<a href=#489 id=489 data-nosnippet>489</a>            <span class="comment">// now the new member receives the messages in order
+<a href=#490 id=490 data-nosnippet>490</a>            </span><span class="macro">println!</span>(<span class="string">"new_member executing first proposal"</span>);
+<a href=#491 id=491 data-nosnippet>491</a>            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+<a href=#492 id=492 data-nosnippet>492</a>                conversation
+<a href=#493 id=493 data-nosnippet>493</a>                    .guard_of(<span class="kw-2">&amp;</span>new_member)
+<a href=#494 id=494 data-nosnippet>494</a>                    .<span class="kw">await
+<a href=#495 id=495 data-nosnippet>495</a>                    </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_114_1.to_bytes().unwrap())
+<a href=#496 id=496 data-nosnippet>496</a>                    .<span class="kw">await
+<a href=#497 id=497 data-nosnippet>497</a>                    </span>.unwrap_err(),
+<a href=#498 id=498 data-nosnippet>498</a>                <span class="kw">crate</span>::mls::conversation::Error::StaleProposal,
+<a href=#499 id=499 data-nosnippet>499</a>            ));
+<a href=#500 id=500 data-nosnippet>500</a>            <span class="macro">println!</span>(<span class="string">"new_member executing second proposal"</span>);
+<a href=#501 id=501 data-nosnippet>501</a>            conversation
+<a href=#502 id=502 data-nosnippet>502</a>                .guard_of(<span class="kw-2">&amp;</span>new_member)
+<a href=#503 id=503 data-nosnippet>503</a>                .<span class="kw">await
+<a href=#504 id=504 data-nosnippet>504</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_114_2.to_bytes().unwrap())
+<a href=#505 id=505 data-nosnippet>505</a>                .<span class="kw">await
+<a href=#506 id=506 data-nosnippet>506</a>                </span>.unwrap();
+<a href=#507 id=507 data-nosnippet>507</a>
+<a href=#508 id=508 data-nosnippet>508</a>            <span class="comment">// now let's switch to the perspective of member 27
+<a href=#509 id=509 data-nosnippet>509</a>            // they have observed exactly one of the "remove 114" proposals,
+<a href=#510 id=510 data-nosnippet>510</a>            // plus a "remove 115" proposal. We can assume that they observe the 2nd
+<a href=#511 id=511 data-nosnippet>511</a>            // "remove 114" proposal because they advanced the epoch correctly when
+<a href=#512 id=512 data-nosnippet>512</a>            // the new member was added.
+<a href=#513 id=513 data-nosnippet>513</a>            </span><span class="kw">let </span>proposal_guard = conversation.external_remove_proposal(<span class="kw-2">&amp;</span>external_0, <span class="kw-2">&amp;</span>member_115).<span class="kw">await</span>;
+<a href=#514 id=514 data-nosnippet>514</a>            <span class="kw">let </span>proposal_remove_115 = proposal_guard.message();
+<a href=#515 id=515 data-nosnippet>515</a>            <span class="kw">let </span>conversation = proposal_guard.finish();
+<a href=#516 id=516 data-nosnippet>516</a>
+<a href=#517 id=517 data-nosnippet>517</a>            conversation
+<a href=#518 id=518 data-nosnippet>518</a>                .guard_of(<span class="kw-2">&amp;</span>member_27)
+<a href=#519 id=519 data-nosnippet>519</a>                .<span class="kw">await
+<a href=#520 id=520 data-nosnippet>520</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_114_1.to_bytes().unwrap())
+<a href=#521 id=521 data-nosnippet>521</a>                .<span class="kw">await
+<a href=#522 id=522 data-nosnippet>522</a>                </span>.unwrap();
+<a href=#523 id=523 data-nosnippet>523</a>            <span class="kw">let </span>result = conversation
+<a href=#524 id=524 data-nosnippet>524</a>                .guard_of(<span class="kw-2">&amp;</span>member_27)
+<a href=#525 id=525 data-nosnippet>525</a>                .<span class="kw">await
+<a href=#526 id=526 data-nosnippet>526</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_114_2.to_bytes().unwrap())
+<a href=#527 id=527 data-nosnippet>527</a>                .<span class="kw">await</span>;
+<a href=#528 id=528 data-nosnippet>528</a>            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+<a href=#529 id=529 data-nosnippet>529</a>                result.unwrap_err(),
+<a href=#530 id=530 data-nosnippet>530</a>                Error::BufferedFutureMessage { message_epoch: <span class="number">2 </span>}
+<a href=#531 id=531 data-nosnippet>531</a>            ));
+<a href=#532 id=532 data-nosnippet>532</a>            conversation
+<a href=#533 id=533 data-nosnippet>533</a>                .guard_of(<span class="kw-2">&amp;</span>member_27)
+<a href=#534 id=534 data-nosnippet>534</a>                .<span class="kw">await
+<a href=#535 id=535 data-nosnippet>535</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>new_member_join_commit.to_bytes().unwrap())
+<a href=#536 id=536 data-nosnippet>536</a>                .<span class="kw">await
+<a href=#537 id=537 data-nosnippet>537</a>                </span>.unwrap();
+<a href=#538 id=538 data-nosnippet>538</a>            conversation
+<a href=#539 id=539 data-nosnippet>539</a>                .guard_of(<span class="kw-2">&amp;</span>member_27)
+<a href=#540 id=540 data-nosnippet>540</a>                .<span class="kw">await
+<a href=#541 id=541 data-nosnippet>541</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_115.to_bytes().unwrap())
+<a href=#542 id=542 data-nosnippet>542</a>                .<span class="kw">await
+<a href=#543 id=543 data-nosnippet>543</a>                </span>.unwrap();
+<a href=#544 id=544 data-nosnippet>544</a>
+<a href=#545 id=545 data-nosnippet>545</a>            <span class="comment">// In this case, note that observer receives the proposal before the commit.
+<a href=#546 id=546 data-nosnippet>546</a>            // This is the straightforward ordering and easy to deal with.
+<a href=#547 id=547 data-nosnippet>547</a>            </span>conversation
+<a href=#548 id=548 data-nosnippet>548</a>                .guard()
+<a href=#549 id=549 data-nosnippet>549</a>                .<span class="kw">await
+<a href=#550 id=550 data-nosnippet>550</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_115.to_bytes().unwrap())
+<a href=#551 id=551 data-nosnippet>551</a>                .<span class="kw">await
+<a href=#552 id=552 data-nosnippet>552</a>                </span>.unwrap();
+<a href=#553 id=553 data-nosnippet>553</a>
+<a href=#554 id=554 data-nosnippet>554</a>            <span class="kw">let </span>commit_guard = conversation
+<a href=#555 id=555 data-nosnippet>555</a>                .acting_as(<span class="kw-2">&amp;</span>member_27)
+<a href=#556 id=556 data-nosnippet>556</a>                .<span class="kw">await
+<a href=#557 id=557 data-nosnippet>557</a>                </span>.commit_pending_proposals()
+<a href=#558 id=558 data-nosnippet>558</a>                .<span class="kw">await
+<a href=#559 id=559 data-nosnippet>559</a>                </span>.notify_member(<span class="kw-2">&amp;</span>observer)
+<a href=#560 id=560 data-nosnippet>560</a>                .<span class="kw">await</span>;
+<a href=#561 id=561 data-nosnippet>561</a>
+<a href=#562 id=562 data-nosnippet>562</a>            <span class="comment">// In this case, new_member receives the commit before the proposal. This means that
+<a href=#563 id=563 data-nosnippet>563</a>            // the commit has to be buffered until the proposal it references is received.
+<a href=#564 id=564 data-nosnippet>564</a>            </span><span class="kw">let </span>(commit_guard, result) = commit_guard.notify_member_fallible(<span class="kw-2">&amp;</span>new_member).<span class="kw">await</span>;
+<a href=#565 id=565 data-nosnippet>565</a>            <span class="macro">assert!</span>(<span class="macro">matches!</span>(result.unwrap_err(), Error::BufferedCommit));
+<a href=#566 id=566 data-nosnippet>566</a>            <span class="kw">let </span>conversation = commit_guard.process_member_changes().<span class="kw">await</span>.finish();
+<a href=#567 id=567 data-nosnippet>567</a>            conversation
+<a href=#568 id=568 data-nosnippet>568</a>                .guard_of(<span class="kw-2">&amp;</span>new_member)
+<a href=#569 id=569 data-nosnippet>569</a>                .<span class="kw">await
+<a href=#570 id=570 data-nosnippet>570</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>proposal_remove_115.to_bytes().unwrap())
+<a href=#571 id=571 data-nosnippet>571</a>                .<span class="kw">await
+<a href=#572 id=572 data-nosnippet>572</a>                </span>.unwrap();
+<a href=#573 id=573 data-nosnippet>573</a>
+<a href=#574 id=574 data-nosnippet>574</a>            <span class="macro">assert!</span>(
+<a href=#575 id=575 data-nosnippet>575</a>                conversation
+<a href=#576 id=576 data-nosnippet>576</a>                    .is_functional_and_contains([<span class="kw-2">&amp;</span>observer, <span class="kw-2">&amp;</span>new_member, <span class="kw-2">&amp;</span>member_27])
+<a href=#577 id=577 data-nosnippet>577</a>                    .<span class="kw">await
+<a href=#578 id=578 data-nosnippet>578</a>            </span>)
+<a href=#579 id=579 data-nosnippet>579</a>        })
+<a href=#580 id=580 data-nosnippet>580</a>        .<span class="kw">await
+<a href=#581 id=581 data-nosnippet>581</a>    </span>}
+<a href=#582 id=582 data-nosnippet>582</a>}
 </code></pre></div></section></main></body></html>
