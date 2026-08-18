@@ -1,4 +1,4 @@
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, thiserror::Error, Clone, PartialEq)]
 pub enum Error {
     #[error("The provided entropy seed has an incorrect length: expected {expected}, found {actual}")]
     EntropySeedLength { actual: usize, expected: usize },
@@ -16,36 +16,6 @@ pub enum Error {
 impl Into<String> for Error {
     fn into(self) -> String {
         self.to_string()
-    }
-}
-
-/// Note: You *will* be losing context when cloning the error, because errors should never be `Clone`able,
-/// but OpenMLS traits require it, so...let's do something that makes no sense.
-impl Clone for Error {
-    fn clone(&self) -> Self {
-        Self::Generic(self.to_string())
-    }
-}
-
-/// Note: You should never test errors for equality because stacktraces can be different, yet we're
-/// constrained by OpenMLS to do this kind of things. So once again...
-impl PartialEq for Error {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            // (MlsProviderError::KeystoreError(kse), MlsProviderError::KeystoreError(kse2)) => kse == kse2,
-            (
-                Error::EntropySeedLength { expected, actual },
-                Error::EntropySeedLength {
-                    expected: expected2,
-                    actual: actual2,
-                },
-            ) => expected == expected2 && actual == actual2,
-            (Error::Generic(s), Error::Generic(s2)) => s == s2,
-            (Error::RngLockPoison, Error::RngLockPoison) => true,
-            (Error::UnsufficientEntropy, Error::UnsufficientEntropy) => true,
-            (Error::UnsupportedSignatureScheme, Error::UnsupportedSignatureScheme) => true,
-            _ => false,
-        }
     }
 }
 
