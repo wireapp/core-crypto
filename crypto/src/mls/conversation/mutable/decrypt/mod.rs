@@ -83,13 +83,19 @@ pub enum DecryptedMessage {
     Commit(Commit),
     /// The decrypted message is a proposal.
     Proposal(Proposal),
+    /// The decrypted message is a transient targeted message.
+    TransientTargeted(DecryptedBytes),
+    /// The decrypted message is a persisted targeted message.
+    PersistedTargeted(DecryptedBytes),
 }
 
 impl DecryptedMessage {
     /// Identity claims present in the sender credential
     pub fn identity(&self) -> &WireIdentity {
         match self {
-            DecryptedMessage::ApplicationMessage(application_message) => &application_message.identity,
+            DecryptedMessage::ApplicationMessage(decrypted_bytes)
+            | DecryptedMessage::TransientTargeted(decrypted_bytes)
+            | DecryptedMessage::PersistedTargeted(decrypted_bytes) => &decrypted_bytes.identity,
             DecryptedMessage::Commit(commit) => &commit.identity,
             DecryptedMessage::Proposal(proposal) => &proposal.identity,
         }
@@ -106,6 +112,10 @@ pub enum BufferedDecryptedMessage {
     Commit(BufferedCommit),
     /// The decrypted message is a proposal.
     Proposal(Proposal),
+    /// The decrypted message is a transient targeted message.
+    TransientTargeted(DecryptedBytes),
+    /// The decrypted message is a persisted targeted message.
+    PersistedTargeted(DecryptedBytes),
 }
 
 impl From<DecryptedMessage> for BufferedDecryptedMessage {
@@ -119,6 +129,8 @@ impl From<DecryptedMessage> for BufferedDecryptedMessage {
                 }
             }),
             DecryptedMessage::Proposal(proposal) => Self::Proposal(proposal),
+            DecryptedMessage::TransientTargeted(decrypted_bytes) => Self::TransientTargeted(decrypted_bytes),
+            DecryptedMessage::PersistedTargeted(decrypted_bytes) => Self::PersistedTargeted(decrypted_bytes),
         }
     }
 }
@@ -133,6 +145,8 @@ impl From<BufferedDecryptedMessage> for DecryptedMessage {
                 identity: buffered_commit.identity,
             }),
             BufferedDecryptedMessage::Proposal(proposal) => Self::Proposal(proposal),
+            BufferedDecryptedMessage::TransientTargeted(decrypted_bytes) => Self::TransientTargeted(decrypted_bytes),
+            BufferedDecryptedMessage::PersistedTargeted(decrypted_bytes) => Self::PersistedTargeted(decrypted_bytes),
         }
     }
 }
