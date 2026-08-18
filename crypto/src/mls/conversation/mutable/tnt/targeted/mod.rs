@@ -1,3 +1,4 @@
+mod decrypt;
 pub(super) mod encrypt;
 
 use const_format::concatcp;
@@ -77,6 +78,10 @@ impl TargetedMessage {
     pub(super) const SIGN_LABEL_TRANSIENT: &str =
         concatcp!("TntMessageTBS-Transient-Targeted v", ProtocolVersion::V1.as_u16());
     pub(super) const PSK_LABEL: &str = concatcp!("Tnt TargetedMessage Psk v", ProtocolVersion::V1.as_u16());
+
+    pub(super) fn sender(&self) -> LeafNodeIndex {
+        self.sender
+    }
 }
 
 /// The data that is extracted from the MLS group when encrypting or decrypting a targeted message.
@@ -96,17 +101,28 @@ fn extract_hpke_context_data(
         .tls_serialize_detached()
         .map_err(TlsCodecError::serialize("TargetedMessageContext"))?;
 
+    let psk = derive_targeted_message_psk(crypto_provider, cipher_suite, mls_group)?;
+    let psk_id = PskId::new(mls_group.group_id().clone(), mls_group.epoch());
+    let psk_id = psk_id
+        .tls_serialize_detached()
+        .map_err(TlsCodecError::serialize("PskId"))?;
+
+    Ok(HpkeContextData { info, psk_id, psk })
+}
+
+fn derive_targeted_message_psk(
+    crypto_provider: &impl OpenMlsCryptoProvider,
+    cipher_suite: &Ciphersuite,
+    mls_group: &MlsGroup,
+) -> Result<Vec<u8>> {
     // We can use an empty context because we're using a unique label.
-    let psk = mls_group
+    mls_group
         .export_secret(
             crypto_provider,
             TargetedMessage::PSK_LABEL,
             &[],
             cipher_suite.hash_length(),
         )
-        .map_err(OpenMlsError::wrap("exporting targeted message psk"))?;
-    let psk_id = PskId::new(mls_group.group_id().clone(), mls_group.epoch());
-    let psk_id = psk_id.tls_serialize_detached().map_err(TlsCodecError::serialize("PskId"))?;
-
-    Ok(HpkeContextData { info, psk_id, psk })
+        .map_err(OpenMlsError::wrap("exporting targeted message psk"))
+        .map_err(Into::into)
 }
