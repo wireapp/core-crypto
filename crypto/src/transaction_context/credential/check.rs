@@ -22,15 +22,13 @@ impl TransactionContext {
 
         let credentials = Credential::get_all(&inner.transaction)
             .await
-            .map_err(RecursiveError::mls_credential("getting all credentials"))?;
+            .map_err(RecursiveError::context("getting all credentials"))?;
         let trust_anchors = env.get_trust_anchors().await;
 
         let session = self.session().await?;
-        let conversations = Conversation::load_all(session)
-            .await
-            .map_err(RecursiveError::mls_conversation(
-                "loading all conversations to check if the credential to be removed is present",
-            ))?;
+        let conversations = Conversation::load_all(session).await.map_err(RecursiveError::context(
+            "loading all conversations to check if the credential to be removed is present",
+        ))?;
         let relevant_crl_uris =
             Self::get_crl_uris(trust_anchors.iter(), credentials.iter(), conversations.values()).await?;
 
@@ -79,9 +77,8 @@ impl TransactionContext {
             .filter(|credential| credential.credential_type == CredentialType::X509)
             .map(|credential| credential.mls_credential().mls_credential());
 
-        let mut crl_uris = extract_crl_uris_from_credentials(mls_credentials).map_err(
-            RecursiveError::mls_credential("extracting CRL URLs from stored credentials"),
-        )?;
+        let mut crl_uris = extract_crl_uris_from_credentials(mls_credentials)
+            .map_err(RecursiveError::context("extracting CRL URLs from stored credentials"))?;
 
         for trust_anchor in trust_anchors {
             crl_uris.extend(
@@ -93,7 +90,7 @@ impl TransactionContext {
 
         for conversation in conversations {
             let uris_from_group = extract_crl_uris_from_group(&*conversation.group().await)
-                .map_err(RecursiveError::mls_credential("extracting CRL URLs from MLS groups"))?;
+                .map_err(RecursiveError::context("extracting CRL URLs from MLS groups"))?;
             crl_uris.extend(uris_from_group);
         }
 

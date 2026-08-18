@@ -16,7 +16,7 @@ impl ConversationMut {
 
         let buffered_commit = StoredBufferedCommit::new(self.id().to_bytes(), commit.as_ref().to_owned());
 
-        let context_inner = self.tx_context.inner().await.map_err(RecursiveError::transaction(
+        let context_inner = self.tx_context.inner().await.map_err(RecursiveError::context(
             "getting context inner for transaction for buffering commit",
         ))?;
         context_inner
@@ -62,7 +62,7 @@ impl ConversationMut {
     /// Remove the buffered commit for this conversation; it has been applied.
     pub(super) async fn clear_buffered_commit(&self) -> Result<()> {
         info!(group_id = self.id().to_owned(); "attempting to delete buffered commit");
-        let context_inner = self.tx_context.inner().await.map_err(RecursiveError::transaction(
+        let context_inner = self.tx_context.inner().await.map_err(RecursiveError::context(
             "getting context inner for transaction for clearing buffered commit",
         ))?;
         context_inner

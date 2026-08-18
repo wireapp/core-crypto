@@ -74,31 +74,29 @@ pub(crate) async fn generate_history_secret(cipher_suite: CipherSuite) -> Result
     let tx = cc
         .new_transaction()
         .await
-        .map_err(RecursiveError::transaction("creating new transaction"))?;
+        .map_err(RecursiveError::context("creating new transaction"))?;
 
     let transport = Arc::new(CoreCryptoTransportNotImplementedProvider::default());
     tx.mls_init(session_id.clone(), transport)
         .await
-        .map_err(RecursiveError::transaction("initializing ephemeral cc"))?;
+        .map_err(RecursiveError::context("initializing ephemeral cc"))?;
     let session = tx
         .session()
         .await
-        .map_err(RecursiveError::transaction("Getting mls session"))?;
-    let credential = Credential::basic(cipher_suite, session_id.clone()).map_err(RecursiveError::mls_credential(
+        .map_err(RecursiveError::context("Getting mls session"))?;
+    let credential = Credential::basic(cipher_suite, session_id.clone()).map_err(RecursiveError::context(
         "generating basic credential for ephemeral client",
     ))?;
     let credential_ref = tx
         .add_credential(credential)
         .await
-        .map_err(RecursiveError::transaction(
-            "adding basic credential to ephemeral client",
-        ))?;
+        .map_err(RecursiveError::context("adding basic credential to ephemeral client"))?;
 
     // we can generate a key package from the ephemeral cc and ciphersutite
     let key_package = tx
         .generate_key_package(&credential_ref, None)
         .await
-        .map_err(RecursiveError::transaction("generating keypackage"))?;
+        .map_err(RecursiveError::context("generating keypackage"))?;
     let key_package = KeyPackageSecretEncapsulation::load(&session.crypto_provider, key_package)
         .await
         .map_err(OpenMlsError::wrap("encapsulating key package"))?;
@@ -138,7 +136,7 @@ impl CoreCrypto {
         let tx = cc
             .new_transaction()
             .await
-            .map_err(RecursiveError::transaction("creating new transaction"))?;
+            .map_err(RecursiveError::context("creating new transaction"))?;
 
         // store the client id (with some other stuff)
         let mls_backend = CryptoProvider::new(database.clone());
@@ -153,17 +151,17 @@ impl CoreCrypto {
         session
             .restore_from_history_secret(history_secret)
             .await
-            .map_err(RecursiveError::mls_client(
+            .map_err(RecursiveError::context(
                 "restoring ephemeral session from history secret",
             ))?;
 
         tx.set_mls_session(session)
             .await
-            .map_err(RecursiveError::transaction("Setting mls session"))?;
+            .map_err(RecursiveError::context("Setting mls session"))?;
 
         tx.finish()
             .await
-            .map_err(RecursiveError::transaction("finishing transaction"))?;
+            .map_err(RecursiveError::context("finishing transaction"))?;
 
         Ok(cc)
     }

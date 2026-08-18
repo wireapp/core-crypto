@@ -42,7 +42,7 @@ impl CoreCryptoFfi {
             .await?
             .get_raw_conversation(conversation_id.as_ref())
             .await
-            .map_err(RecursiveError::mls_client(
+            .map_err(RecursiveError::context(
                 "conversation_epoch: getting raw conversation by id",
             ))?;
         Ok(conversation.epoch().await)
@@ -56,7 +56,7 @@ impl CoreCryptoFfi {
             .await?
             .get_raw_conversation(conversation_id.as_ref())
             .await
-            .map_err(RecursiveError::mls_client(
+            .map_err(RecursiveError::context(
                 "conversation_cipher_suite: getting raw conversation by id",
             ))?
             .cipher_suite();
@@ -70,7 +70,7 @@ impl CoreCryptoFfi {
             .await?
             .get_raw_conversation(conversation_id.as_ref())
             .await
-            .map_err(RecursiveError::mls_client(
+            .map_err(RecursiveError::context(
                 "conversation_credential: getting raw conversation by id",
             ))?
             .credential_ref()
@@ -86,7 +86,7 @@ impl CoreCryptoFfi {
             .await?
             .conversation_exists(conversation_id.as_ref())
             .await
-            .map_err(RecursiveError::mls_client("getting conversation existence by id"))
+            .map_err(RecursiveError::context("getting conversation existence by id"))
             .map_err(Into::into)
     }
 
@@ -98,7 +98,7 @@ impl CoreCryptoFfi {
             .await?
             .get_raw_conversation(conversation_id.as_ref())
             .await
-            .map_err(RecursiveError::mls_client("get_client_ids: getting raw conversation"))?;
+            .map_err(RecursiveError::context("get_client_ids: getting raw conversation"))?;
         Ok(conversation
             .get_client_ids()
             .await?
@@ -116,9 +116,7 @@ impl CoreCryptoFfi {
             .await?
             .get_raw_conversation(conversation_id.as_ref())
             .await
-            .map_err(RecursiveError::mls_client(
-                "get_external_sender: getting raw conversation",
-            ))?;
+            .map_err(RecursiveError::context("get_external_sender: getting raw conversation"))?;
         conversation
             .get_external_sender()
             .await
@@ -141,9 +139,7 @@ impl CoreCryptoFfi {
             .await?
             .get_raw_conversation(conversation_id.as_ref())
             .await
-            .map_err(RecursiveError::mls_client(
-                "export_secret_key: getting raw conversation",
-            ))?
+            .map_err(RecursiveError::context("export_secret_key: getting raw conversation"))?
             .export_secret_key(key_length as usize)
             .await
             .map(Into::into)
@@ -158,7 +154,7 @@ impl CoreCryptoFfi {
             .await?
             .get_raw_conversation(conversation_id.as_ref())
             .await
-            .map_err(RecursiveError::mls_client(
+            .map_err(RecursiveError::context(
                 "is_history_sharing_enabled: getting raw conversation",
             ))?;
         Ok(conversation.is_history_sharing_enabled().await)

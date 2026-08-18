@@ -55,7 +55,7 @@ impl<'a> TryFrom<(wire_e2e_identity::WireIdentity, &'a [u8])> for WireIdentity {
 
         let client_id = ClientId::try_from_str_with_base64_user_id(&e2ei_wire_identity.client_id)
             .map(Some)
-            .map_err(RecursiveError::mls_client("client id from qualified string"))?;
+            .map_err(RecursiveError::context("client id from qualified string"))?;
 
         Ok(Self {
             client_id,

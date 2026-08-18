@@ -79,7 +79,7 @@ mod tests {
     #[test]
     fn can_unpack_wrapped_error() {
         let inner = Error::MlsTransportNotProvided;
-        let outer = RecursiveError::root("wrapping the inner for test purposes")(inner);
+        let outer = RecursiveError::context("wrapping the inner for test purposes")(inner);
         let message = outer.innermost_error_message();
         assert_eq!(message, Error::MlsTransportNotProvided.to_string());
     }

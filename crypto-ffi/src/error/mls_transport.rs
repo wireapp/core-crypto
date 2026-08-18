@@ -16,7 +16,7 @@ impl From<MlsTransportError> for core_crypto::Error {
     fn from(error: MlsTransportError) -> Self {
         match error {
             MlsTransportError::MessageRejected { reason } => {
-                core_crypto::RecursiveError::mls_conversation("converting ffi transport error")(
+                core_crypto::RecursiveError::context("converting ffi transport error")(
                     core_crypto::mls::conversation::Error::MessageRejected { reason },
                 )
                 .into()

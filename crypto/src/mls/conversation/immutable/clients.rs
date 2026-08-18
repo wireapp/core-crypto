@@ -16,7 +16,7 @@ impl super::Conversation {
             .filter(|member| !member.credential.identity().starts_with(prefix))
             .map(|kp| {
                 ClientId::new_from_bytes(kp.credential.identity().to_owned())
-                    .map_err(RecursiveError::mls_client("new client id from bytes"))
+                    .map_err(RecursiveError::context("new client id from bytes"))
                     .map_err(Into::into)
             })
             .collect()
@@ -58,7 +58,7 @@ impl super::Conversation {
             .filter_map(|member| {
                 if !pending_removals.contains(&member.index) {
                     let client_id_result = ClientId::new_from_bytes(member.credential.identity().to_owned())
-                        .map_err(RecursiveError::mls_client("new client id from bytes"))
+                        .map_err(RecursiveError::context("new client id from bytes"))
                         .map_err(Into::into);
                     Some(client_id_result)
                 } else {

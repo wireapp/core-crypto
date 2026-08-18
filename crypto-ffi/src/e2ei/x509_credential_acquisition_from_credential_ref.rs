@@ -41,7 +41,7 @@ impl X509CredentialAcquisition {
             .0
             .load(&*database)
             .await
-            .map_err(RecursiveError::mls_credential_ref("loading credential from ref"))?;
+            .map_err(RecursiveError::context("loading credential from ref"))?;
 
         let key_bytes = credential.signature_key_bytes();
         let algorithm = cipher_suite.try_into()?;

@@ -9,13 +9,13 @@ impl TransactionContext {
         let inner = self.inner().await?;
         let proteus_client = ProteusCentral::try_new(&inner.transaction)
             .await
-            .map_err(RecursiveError::root("creating new proteus client"))?;
+            .map_err(RecursiveError::context("creating new proteus client"))?;
 
         // ? Make sure the last resort prekey exists
         let _ = proteus_client
             .last_resort_prekey(&inner.transaction)
             .await
-            .map_err(RecursiveError::root("getting last resort prekey"))?;
+            .map_err(RecursiveError::context("getting last resort prekey"))?;
 
         let mut guard = inner.core_crypto.proteus.lock().await;
         *guard = Some(proteus_client);
@@ -33,10 +33,10 @@ impl TransactionContext {
         let session = proteus
             .session_from_prekey(session_id, prekey)
             .await
-            .map_err(RecursiveError::root("creating proteus session from prekey"))?;
+            .map_err(RecursiveError::context("creating proteus session from prekey"))?;
         ProteusCentral::session_save_by_ref(&inner.transaction, session)
             .await
-            .map_err(RecursiveError::root("saving proteus session by ref"))?;
+            .map_err(RecursiveError::context("saving proteus session by ref"))?;
         Ok(())
     }
 
@@ -51,10 +51,10 @@ impl TransactionContext {
         let (session, message) = proteus
             .session_from_message(&inner.transaction, session_id, envelope)
             .await
-            .map_err(RecursiveError::root("creating proteus sesseion from message"))?;
+            .map_err(RecursiveError::context("creating proteus sesseion from message"))?;
         ProteusCentral::session_save_by_ref(&inner.transaction, session)
             .await
-            .map_err(RecursiveError::root("saving proteus session by ref"))?;
+            .map_err(RecursiveError::context("saving proteus session by ref"))?;
         Ok(message)
     }
 
@@ -69,7 +69,7 @@ impl TransactionContext {
         proteus
             .session_save(&inner.transaction, session_id)
             .await
-            .map_err(RecursiveError::root("saving proteus session"))
+            .map_err(RecursiveError::context("saving proteus session"))
             .map_err(Into::into)
     }
 
@@ -84,7 +84,7 @@ impl TransactionContext {
         proteus
             .session_delete(&inner.transaction, session_id)
             .await
-            .map_err(RecursiveError::root("deleting proteus session"))
+            .map_err(RecursiveError::context("deleting proteus session"))
             .map_err(Into::into)
     }
 
@@ -99,7 +99,7 @@ impl TransactionContext {
         proteus
             .session_exists(session_id, &inner.transaction)
             .await
-            .map_err(RecursiveError::root("checking whether proteus session exists"))
+            .map_err(RecursiveError::context("checking whether proteus session exists"))
             .map_err(Into::into)
     }
 
@@ -114,7 +114,7 @@ impl TransactionContext {
         proteus
             .decrypt(&inner.transaction, session_id, ciphertext)
             .await
-            .map_err(RecursiveError::root("decrypting proteus message"))
+            .map_err(RecursiveError::context("decrypting proteus message"))
             .map_err(Into::into)
     }
 
@@ -129,7 +129,7 @@ impl TransactionContext {
         proteus
             .encrypt(&inner.transaction, session_id, plaintext)
             .await
-            .map_err(RecursiveError::root("encrypting proteus message"))
+            .map_err(RecursiveError::context("encrypting proteus message"))
             .map_err(Into::into)
     }
 
@@ -149,7 +149,7 @@ impl TransactionContext {
         proteus
             .encrypt_batched(&inner.transaction, sessions, plaintext)
             .await
-            .map_err(RecursiveError::root("batch encrypting proteus message"))
+            .map_err(RecursiveError::context("batch encrypting proteus message"))
             .map_err(Into::into)
     }
 
@@ -164,7 +164,7 @@ impl TransactionContext {
         proteus
             .new_prekey(prekey_id, &inner.transaction)
             .await
-            .map_err(RecursiveError::root("new proteus prekey"))
+            .map_err(RecursiveError::context("new proteus prekey"))
             .map_err(Into::into)
     }
 
@@ -180,7 +180,7 @@ impl TransactionContext {
         proteus
             .new_prekey_auto(&inner.transaction)
             .await
-            .map_err(RecursiveError::root("proteus new prekey auto"))
+            .map_err(RecursiveError::context("proteus new prekey auto"))
             .map_err(Into::into)
     }
 
@@ -193,7 +193,7 @@ impl TransactionContext {
         proteus
             .last_resort_prekey(&inner.transaction)
             .await
-            .map_err(RecursiveError::root("getting proteus last resort prekey"))
+            .map_err(RecursiveError::context("getting proteus last resort prekey"))
             .map_err(Into::into)
     }
 
@@ -224,7 +224,7 @@ impl TransactionContext {
         proteus
             .fingerprint_local(session_id, &inner.transaction)
             .await
-            .map_err(RecursiveError::root("getting proteus fingerprint local"))
+            .map_err(RecursiveError::context("getting proteus fingerprint local"))
             .map_err(Into::into)
     }
 
@@ -239,7 +239,7 @@ impl TransactionContext {
         proteus
             .fingerprint_remote(session_id, &inner.transaction)
             .await
-            .map_err(RecursiveError::root("geeting proteus fingerprint remote"))
+            .map_err(RecursiveError::context("geeting proteus fingerprint remote"))
             .map_err(Into::into)
     }
 }

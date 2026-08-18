@@ -45,15 +45,15 @@ impl TransactionContext {
             pending_conversation
                 .clear()
                 .await
-                .map_err(RecursiveError::mls_conversation("clearing external commit"))?;
-            return Err(RecursiveError::mls_conversation("sending commit")(err).into());
+                .map_err(RecursiveError::context("clearing external commit"))?;
+            return Err(RecursiveError::context("sending commit")(err).into());
         }
-        commit_result.map_err(RecursiveError::mls_conversation("sending commit"))?;
+        commit_result.map_err(RecursiveError::context("sending commit"))?;
 
         pending_conversation
             .merge()
             .await
-            .map_err(RecursiveError::mls_conversation("merging from external commit"))?;
+            .map_err(RecursiveError::context("merging from external commit"))?;
 
         Ok(id)
     }
@@ -69,7 +69,7 @@ impl TransactionContext {
         let credential = credential_ref
             .load(&inner.transaction)
             .await
-            .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
+            .map_err(RecursiveError::context("loading credential"))?;
 
         let configuration = ConversationConfiguration {
             cipher_suite,
@@ -83,7 +83,7 @@ impl TransactionContext {
             group_info,
             &configuration
                 .as_openmls_default_configuration()
-                .map_err(RecursiveError::mls_conversation(
+                .map_err(RecursiveError::context(
                     "using configuration as openmls default configuration",
                 ))?,
             &[],
@@ -95,19 +95,18 @@ impl TransactionContext {
         // We should always have ratchet tree extension turned on hence GroupInfo should always be present
         let group_info = group_info
             .ok_or(mls::conversation::Error::MissingGroupInfo)
-            .map_err(RecursiveError::mls_conversation("retrieving group info"))?;
-        let group_info = GroupInfoBundle::try_new_full_plaintext(group_info).map_err(
-            RecursiveError::mls_conversation("trying new full plaintext group info bundle"),
-        )?;
+            .map_err(RecursiveError::context("retrieving group info"))?;
+        let group_info = GroupInfoBundle::try_new_full_plaintext(group_info)
+            .map_err(RecursiveError::context("trying new full plaintext group info bundle"))?;
 
         let new_group_id = group.group_id().to_vec();
 
         let pending_conversation = PendingConversation::from_mls_group(group, self.clone())
-            .map_err(RecursiveError::mls_conversation("creating pending conversation"))?;
+            .map_err(RecursiveError::context("creating pending conversation"))?;
         pending_conversation
             .save()
             .await
-            .map_err(RecursiveError::mls_conversation("saving pending conversation"))?;
+            .map_err(RecursiveError::context("saving pending conversation"))?;
 
         let commit_bundle = CommitBundle {
             welcome: None,

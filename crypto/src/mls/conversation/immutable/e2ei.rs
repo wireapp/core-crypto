@@ -49,7 +49,7 @@ impl super::Conversation {
                     credential
                         .extract_identity(self.cipher_suite(), pki_env.as_deref())
                         .await
-                        .map_err(RecursiveError::mls_credential("extracting identity"))?,
+                        .map_err(RecursiveError::context("extracting identity"))?,
                 );
             }
         }
@@ -84,7 +84,7 @@ impl super::Conversation {
             let identity = credential
                 .extract_identity(self.cipher_suite(), pki_env.as_deref())
                 .await
-                .map_err(RecursiveError::mls_credential("extracting identity"))?;
+                .map_err(RecursiveError::context("extracting identity"))?;
             let value = identities.entry(*user_id).or_insert_with(Vec::new);
             value.push(identity);
         }

@@ -28,7 +28,7 @@ impl ConversationMut {
             conversation_id: self.id().to_bytes(),
             message: message.as_ref().to_vec(),
         };
-        let context_inner = self.tx_context.inner().await.map_err(RecursiveError::transaction(
+        let context_inner = self.tx_context.inner().await.map_err(RecursiveError::context(
             "getting transaction inner to buffer future message",
         ))?;
         context_inner

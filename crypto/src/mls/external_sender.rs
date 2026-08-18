@@ -30,7 +30,7 @@ impl ExternalSender {
     pub fn parse_jwk(jwk: &[u8]) -> Result<ExternalSender> {
         let pk = parse_json_jwk(jwk)
             .map_err(wire_e2e_identity::E2eIdentityError::from)
-            .map_err(RecursiveError::e2e_identity("parsing jwk"))?;
+            .map_err(RecursiveError::context("parsing jwk"))?;
         Ok(MlsExternalSender::new(pk.into(), MlsCredential::new_basic(WIRE_SERVER_IDENTITY.into())).into())
     }
 

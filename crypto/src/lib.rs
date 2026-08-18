@@ -164,7 +164,7 @@ impl CoreCrypto {
             return Ok(session.clone());
         }
         let err = Err(mls::session::Error::MlsNotInitialized);
-        err.map_err(RecursiveError::mls_client("Getting mls session"))?
+        err.map_err(RecursiveError::context("Getting mls session"))?
     }
 
     /// Get the database

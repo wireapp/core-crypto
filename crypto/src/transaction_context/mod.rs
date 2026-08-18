@@ -76,7 +76,7 @@ impl TransactionContext {
     pub(crate) async fn session(&self) -> Result<Session> {
         let inner = self.inner().await?;
         inner.core_crypto.mls.read().await.as_ref().cloned().ok_or(
-            RecursiveError::mls_client("Getting mls session from transaction context")(
+            RecursiveError::context("Getting mls session from transaction context")(
                 mls::session::Error::MlsNotInitialized,
             )
             .into(),
@@ -104,7 +104,7 @@ impl TransactionContext {
             .as_ref()
             .map(|s| s.transport.clone())
             .ok_or(
-                RecursiveError::mls_client("Getting mls session from transaction context")(
+                RecursiveError::context("Getting mls session from transaction context")(
                     mls::session::Error::MlsNotInitialized,
                 )
                 .into(),
@@ -122,7 +122,7 @@ impl TransactionContext {
             .as_ref()
             .map(|s| s.crypto_provider.clone())
             .ok_or(
-                RecursiveError::mls_client("Getting mls session from transaction context")(
+                RecursiveError::context("Getting mls session from transaction context")(
                     mls::session::Error::MlsNotInitialized,
                 )
                 .into(),
@@ -156,7 +156,7 @@ impl TransactionContext {
             .as_ref()
             .map(|session| session.conversation_cache.clone())
             .ok_or_else(|| {
-                RecursiveError::mls_client("getting mls session from transaction context")(
+                RecursiveError::context("getting mls session from transaction context")(
                     mls::session::Error::MlsNotInitialized,
                 )
             })?;

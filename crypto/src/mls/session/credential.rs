@@ -13,7 +13,7 @@ impl Session {
     ) -> Result<Arc<Credential>> {
         let credential = Credential::find_by_public_key(&self.database, public_key)
             .await
-            .map_err(RecursiveError::mls_credential("getting credential by public key"))?;
+            .map_err(RecursiveError::context("getting credential by public key"))?;
         Ok(Arc::new(credential))
     }
 }

@@ -28,9 +28,11 @@ impl ConversationMut {
     ) -> Result<T> {
         // we can't get the transaction if the transaction context has been invalidated,
         // and we want to have that error first before evaluating anything in the operation.
-        let context_inner = self.tx_context.inner().await.map_err(RecursiveError::transaction(
-            "getting inner from context to mutate group",
-        ))?;
+        let context_inner = self
+            .tx_context
+            .inner()
+            .await
+            .map_err(RecursiveError::context("getting inner from context to mutate group"))?;
         let tx = context_inner.transaction();
 
         let Conversation { group, id, .. } = &*self.inner;

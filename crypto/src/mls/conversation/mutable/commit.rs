@@ -37,7 +37,7 @@ impl ConversationMut {
         self.tx_context
             .queue_epoch_changed(conversation_id, epoch)
             .await
-            .map_err(RecursiveError::transaction("queueing epoch changed notification"))?;
+            .map_err(RecursiveError::context("queueing epoch changed notification"))?;
 
         Ok(())
     }
@@ -49,7 +49,7 @@ impl ConversationMut {
         transport
             .send_commit_bundle(commit)
             .await
-            .map_err(RecursiveError::root("sending commit bundle"))
+            .map_err(RecursiveError::context("sending commit bundle"))
             .map_err(Into::into)
     }
 
@@ -116,7 +116,7 @@ impl ConversationMut {
                 .credential()
                 .identity()
                 .try_into()
-                .map_err(RecursiveError::mls_client("client id from bytes"))?;
+                .map_err(RecursiveError::context("client id from bytes"))?;
 
             if let Some(previous_client_id) = seen_signature_keys.insert(signature_key, client_id.clone()) {
                 duplicate_pairs.push((previous_client_id, client_id));
@@ -187,7 +187,7 @@ impl ConversationMut {
         let credential = credential_ref
             .load(&*database)
             .await
-            .map_err(RecursiveError::mls_credential_ref("loading credential from ref"))?;
+            .map_err(RecursiveError::context("loading credential from ref"))?;
         let commit = self.set_credential_inner(&credential).await?;
 
         self.send_and_merge_commit(commit).await

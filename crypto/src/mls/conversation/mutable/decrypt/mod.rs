@@ -248,7 +248,7 @@ impl ConversationMut {
         let identity = credential
             .extract_identity(self.cipher_suite(), pki_env.as_deref())
             .await
-            .map_err(RecursiveError::mls_credential("extracting identity"))?;
+            .map_err(RecursiveError::context("extracting identity"))?;
 
         // We only need this in the ProcessedMessageContent::ApplicationMessage match arm below, however, at that point
         // we cannot borrow from `message` anymore, because it is moved by `message.into_content()`.
@@ -256,7 +256,7 @@ impl ConversationMut {
             .credential
             .identity()
             .try_into()
-            .map_err(RecursiveError::mls_client("client id from credential"));
+            .map_err(RecursiveError::context("client id from credential"));
 
         let decrypted = match message.into_content() {
             ProcessedMessageContent::ApplicationMessage(app_msg) => {
@@ -288,21 +288,15 @@ impl ConversationMut {
                 })
                 .await?;
 
-                if let Some(commit) =
-                    self.retrieve_buffered_commit()
-                        .await
-                        .map_err(RecursiveError::mls_conversation(
-                            "retrieving buffered commit while handling proposal",
-                        ))?
-                {
+                if let Some(commit) = self.retrieve_buffered_commit().await.map_err(RecursiveError::context(
+                    "retrieving buffered commit while handling proposal",
+                ))? {
                     let process_result = self.try_process_buffered_commit(commit, recursion_policy).await;
 
                     if process_result.is_ok() {
-                        self.clear_buffered_commit()
-                            .await
-                            .map_err(RecursiveError::mls_conversation(
-                                "clearing buffered commit after successful application",
-                            ))?;
+                        self.clear_buffered_commit().await.map_err(RecursiveError::context(
+                            "clearing buffered commit after successful application",
+                        ))?;
                     }
                     // If we got back a buffered commit error, then we still don't have enough proposals.
                     // In that case, we want to just proceed as normal for this proposal.
@@ -313,7 +307,7 @@ impl ConversationMut {
                         // should override the return value from the proposal, or it raised some kind
                         // of error, in which case the caller needs to know about that.
                         return process_result
-                            .map_err(RecursiveError::mls_conversation("processing buffered commit"))
+                            .map_err(RecursiveError::context("processing buffered commit"))
                             .map_err(Into::into);
                     }
                 }
@@ -374,7 +368,7 @@ impl ConversationMut {
                 self.tx_context
                     .queue_epoch_changed(group_id, epoch)
                     .await
-                    .map_err(RecursiveError::transaction("queueing epoch changed notification"))?;
+                    .map_err(RecursiveError::context("queueing epoch changed notification"))?;
 
                 DecryptedMessage::Commit(Commit {
                     is_active,

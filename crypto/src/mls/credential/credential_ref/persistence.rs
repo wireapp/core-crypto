@@ -23,9 +23,7 @@ impl CredentialRef {
             .ok_or(Error::CredentialNotFound)
             .and_then(|stored_credential| {
                 Credential::try_from(stored_credential)
-                    .map_err(RecursiveError::mls_credential(
-                        "creating credential from stored credential",
-                    ))
+                    .map_err(RecursiveError::context("creating credential from stored credential"))
                     .map_err(Into::into)
             })
     }
@@ -42,7 +40,7 @@ impl CredentialRef {
             .await
             .map_err(KeystoreError::wrap("finding credential"))?
             .ok_or(Error::CredentialNotFound)
-            .map_err(RecursiveError::mls_credential_ref("retrieving public key"))
+            .map_err(RecursiveError::context("retrieving public key"))
             .map(|stored_credential| {
                 let mut stored_credential = Arc::unwrap_or_clone(stored_credential);
                 std::mem::take(&mut stored_credential.public_key)

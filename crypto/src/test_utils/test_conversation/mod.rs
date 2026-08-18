@@ -176,25 +176,21 @@ impl<'a> TestConversation<'a> {
             .transaction
             .conversation(&self.id)
             .await
-            .map_err(RecursiveError::transaction("getting conversation by id"))?;
+            .map_err(RecursiveError::context("getting conversation by id"))?;
         let mut receiver_guard = receiver
             .transaction
             .conversation(&self.id)
             .await
-            .map_err(RecursiveError::transaction("getting conversation by id"))?;
+            .map_err(RecursiveError::context("getting conversation by id"))?;
         let msg = b"Hello other";
         let encrypted = sender_guard
             .encrypt_message(msg)
             .await
-            .map_err(RecursiveError::mls_conversation(
-                "encrypting message; sender -> receiver",
-            ))?;
+            .map_err(RecursiveError::context("encrypting message; sender -> receiver"))?;
         let decrypted = receiver_guard
             .decrypt_message(encrypted)
             .await
-            .map_err(RecursiveError::mls_conversation(
-                "decrypting message; receiver <- sender",
-            ))?;
+            .map_err(RecursiveError::context("decrypting message; receiver <- sender"))?;
         let plaintext = &decrypted.as_text().ok_or(TestError::ImplementationError)?.plaintext;
 
         assert_eq!(&msg[..], &plaintext[..]);

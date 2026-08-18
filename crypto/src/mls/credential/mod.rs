@@ -69,7 +69,7 @@ impl TryFrom<Arc<StoredCredential>> for Credential {
         let credential_type = mls_credential
             .credential_type()
             .try_into()
-            .map_err(RecursiveError::mls_credential("loading credential from db"))?;
+            .map_err(RecursiveError::context("loading credential from db"))?;
         let earliest_validity = stored_credential.created_at;
         Ok(Credential {
             cipher_suite,

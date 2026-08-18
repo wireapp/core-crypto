@@ -77,7 +77,7 @@ impl Session {
     pub async fn get_raw_conversation(&self, id: &ConversationIdRef) -> Result<Conversation> {
         Conversation::load(self.clone(), id)
             .await
-            .map_err(RecursiveError::mls_conversation("getting raw conversation by id"))?
+            .map_err(RecursiveError::context("getting raw conversation by id"))?
             .ok_or_else(|| Error::ConversationNotFound(id.to_owned()))
     }
 

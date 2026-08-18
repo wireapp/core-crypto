@@ -60,7 +60,7 @@ impl PendingConversation {
         self.context
             .crypto_provider()
             .await
-            .map_err(RecursiveError::transaction("getting mls provider"))
+            .map_err(RecursiveError::context("getting mls provider"))
             .map_err(Into::into)
     }
 
@@ -68,7 +68,7 @@ impl PendingConversation {
         self.context
             .database()
             .await
-            .map_err(RecursiveError::transaction("getting database from transaction context"))
+            .map_err(RecursiveError::context("getting database from transaction context"))
             .map_err(Into::into)
     }
 
@@ -84,7 +84,7 @@ impl PendingConversation {
             .context
             .inner()
             .await
-            .map_err(RecursiveError::transaction("getting inner context"))?;
+            .map_err(RecursiveError::context("getting inner context"))?;
         let tx = context.transaction();
         tx.save(PersistedMlsPendingGroup {
             id: group_id.as_ref().to_owned(),
@@ -103,12 +103,12 @@ impl PendingConversation {
             .context
             .mls_transport()
             .await
-            .map_err(RecursiveError::transaction("getting mls transport"))?;
+            .map_err(RecursiveError::context("getting mls transport"))?;
 
         transport
             .send_commit_bundle(commit)
             .await
-            .map_err(RecursiveError::root("sending commit bundle"))
+            .map_err(RecursiveError::context("sending commit bundle"))
             .map_err(Into::into)
     }
 
@@ -123,9 +123,11 @@ impl PendingConversation {
             return self.merge_and_restore_messages().await;
         }
 
-        let context_inner = self.context.inner().await.map_err(RecursiveError::transaction(
-            "acquiring transaction to process join commit",
-        ))?;
+        let context_inner = self
+            .context
+            .inner()
+            .await
+            .map_err(RecursiveError::context("acquiring transaction to process join commit"))?;
         let tx = context_inner.transaction();
 
         let pending_msg = MlsPendingMessage {
@@ -183,7 +185,7 @@ impl PendingConversation {
         let conversation = context
             .conversation(id)
             .await
-            .map_err(RecursiveError::transaction("getting conversation by id"))?;
+            .map_err(RecursiveError::context("getting conversation by id"))?;
         let group = conversation.group().await;
         let own_leaf = group
             .own_leaf()
@@ -199,7 +201,7 @@ impl PendingConversation {
         let identity = own_leaf_credential_with_key
             .extract_identity(conversation.cipher_suite(), pki_env.as_deref())
             .await
-            .map_err(RecursiveError::mls_credential("extracting identity"))?;
+            .map_err(RecursiveError::context("extracting identity"))?;
 
         Ok(DecryptedMessage::Commit(super::mutable::decrypt::Commit {
             is_active: conversation.group().await.is_active(),
@@ -262,14 +264,14 @@ impl PendingConversation {
         let mut conversation = context
             .persist_conversation_from_mls_group(mls_group, configuration)
             .await
-            .map_err(RecursiveError::transaction(
+            .map_err(RecursiveError::context(
                 "persisting a pending conversation from mls group",
             ))?;
 
         let pending_messages = conversation
             .restore_pending_messages(restore_policy)
             .await
-            .map_err(RecursiveError::mls_conversation("restoring pending messages"))?;
+            .map_err(RecursiveError::context("restoring pending messages"))?;
 
         if pending_messages.is_some() {
             self.keystore()
@@ -296,7 +298,7 @@ impl PendingConversation {
             .context
             .inner()
             .await
-            .map_err(RecursiveError::transaction("getting inner context"))?;
+            .map_err(RecursiveError::context("getting inner context"))?;
         let tx = context.transaction();
         let group_id = self.id();
         tx.remove_borrowed::<PersistedMlsPendingGroup>(group_id.as_ref())
@@ -309,7 +311,7 @@ impl PendingConversation {
         self.context
             .clear_orphaned_conversation_buffers(self.id())
             .await
-            .map_err(RecursiveError::transaction(
+            .map_err(RecursiveError::context(
                 "clearing buffered messages of an abandoned pending conversation",
             ))?;
 

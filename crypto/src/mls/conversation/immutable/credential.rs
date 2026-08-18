@@ -42,7 +42,7 @@ impl super::Conversation {
             .session
             .find_credential_by_public_key(own_leaf.signature_key())
             .await
-            .map_err(RecursiveError::mls_client("finding current credential"))?;
+            .map_err(RecursiveError::context("finding current credential"))?;
         Ok(credential)
     }
 
@@ -69,7 +69,7 @@ impl super::Conversation {
                 let id: ClientId = credential
                     .identity()
                     .try_into()
-                    .map_err(RecursiveError::mls_client("client id from bytes"))?;
+                    .map_err(RecursiveError::context("client id from bytes"))?;
 
                 let credential = CredentialWithKey {
                     credential,

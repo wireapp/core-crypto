@@ -52,9 +52,7 @@ impl ConversationCache {
 
         let Some(conversation) = Conversation::load(session, id)
             .await
-            .map_err(RecursiveError::mls_conversation(
-                "fetching persisted mls group from keystore",
-            ))?
+            .map_err(RecursiveError::context("fetching persisted mls group from keystore"))?
         else {
             return Ok(None);
         };

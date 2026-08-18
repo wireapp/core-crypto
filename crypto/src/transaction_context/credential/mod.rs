@@ -22,7 +22,7 @@ impl TransactionContext {
         let _credential_ref = credential
             .save(&inner.transaction)
             .await
-            .map_err(RecursiveError::mls_credential("saving credential"))?;
+            .map_err(RecursiveError::context("saving credential"))?;
 
         Ok(Arc::new(credential))
     }
@@ -60,7 +60,7 @@ impl TransactionContext {
         let credential = credential_ref
             .load(&inner.transaction)
             .await
-            .map_err(RecursiveError::mls_credential_ref(
+            .map_err(RecursiveError::context(
                 "loading all credentials from ref to remove from session identities",
             ))?;
 
@@ -70,17 +70,13 @@ impl TransactionContext {
 
         // ensure this credential is not in use by any conversation
         let session = self.session().await?;
-        for (conversation_id, conversation) in
-            Conversation::load_all(session)
-                .await
-                .map_err(RecursiveError::mls_conversation(
-                    "loading all conversations to check if the credential to be removed is present",
-                ))?
-        {
+        for (conversation_id, conversation) in Conversation::load_all(session).await.map_err(
+            RecursiveError::context("loading all conversations to check if the credential to be removed is present"),
+        )? {
             let converation_credential = conversation
                 .own_mls_credential()
                 .await
-                .map_err(RecursiveError::mls_conversation("geting conversation credential"))?;
+                .map_err(RecursiveError::context("geting conversation credential"))?;
             if credential.mls_credential() == &converation_credential {
                 return Err(Error::CredentialStillInUse(conversation_id));
             }
@@ -93,7 +89,7 @@ impl TransactionContext {
         credential
             .delete(&inner.transaction)
             .await
-            .map_err(RecursiveError::mls_credential("deleting credential from keystore"))
+            .map_err(RecursiveError::context("deleting credential from keystore"))
             .map_err(Into::into)
     }
 }

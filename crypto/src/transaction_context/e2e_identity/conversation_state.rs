@@ -28,7 +28,7 @@ impl TransactionContext {
         let mls_provider = self
             .crypto_provider()
             .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
+            .map_err(RecursiveError::context("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();
         let cs = group_info.ciphersuite().into();
 
@@ -38,7 +38,7 @@ impl TransactionContext {
                 &self
                     .crypto_provider()
                     .await
-                    .map_err(RecursiveError::transaction("getting mls provider"))?,
+                    .map_err(RecursiveError::context("getting mls provider"))?,
                 is_sender,
             )
             .await
@@ -70,7 +70,7 @@ impl TransactionContext {
                 &self
                     .crypto_provider()
                     .await
-                    .map_err(RecursiveError::transaction("getting mls provider"))?,
+                    .map_err(RecursiveError::context("getting mls provider"))?,
                 false,
             )
             .await
@@ -78,11 +78,11 @@ impl TransactionContext {
         let mls_provider = self
             .crypto_provider()
             .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
+            .map_err(RecursiveError::context("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();
         Session::get_credential_in_use_in_ratchet_tree(cs, rt, credential_type, auth_service)
             .await
-            .map_err(RecursiveError::mls_client("getting credentials in use"))
+            .map_err(RecursiveError::context("getting credentials in use"))
             .map_err(Into::into)
     }
 }

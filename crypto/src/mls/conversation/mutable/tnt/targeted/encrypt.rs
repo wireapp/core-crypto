@@ -41,7 +41,7 @@ impl ConversationMut {
             .tx_context
             .crypto_provider()
             .await
-            .map_err(RecursiveError::transaction("obtaining crypto provider"))?;
+            .map_err(RecursiveError::context("obtaining crypto provider"))?;
         let database = self.database().await?;
 
         let targeted = self

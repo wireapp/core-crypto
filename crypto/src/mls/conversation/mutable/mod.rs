@@ -44,7 +44,7 @@ impl ConversationMut {
         self.tx_context
             .mls_transport()
             .await
-            .map_err(RecursiveError::transaction("getting transport for conversation guard"))
+            .map_err(RecursiveError::context("getting transport for conversation guard"))
             .map_err(Into::into)
     }
 
@@ -52,7 +52,7 @@ impl ConversationMut {
         self.tx_context
             .database()
             .await
-            .map_err(RecursiveError::transaction("getting database from context"))
+            .map_err(RecursiveError::context("getting database from context"))
             .map_err(Into::into)
     }
 
@@ -60,7 +60,7 @@ impl ConversationMut {
         self.tx_context
             .crypto_provider()
             .await
-            .map_err(RecursiveError::transaction(
+            .map_err(RecursiveError::context(
                 "acquiring crypto provider for conversation guard from tx context",
             ))
             .map_err(Into::into)
@@ -77,7 +77,7 @@ impl ConversationMut {
         self.tx_context
             .session()
             .await
-            .map_err(RecursiveError::transaction("getting session from transaction context"))
+            .map_err(RecursiveError::context("getting session from transaction context"))
             .map_err(Into::into)
     }
 

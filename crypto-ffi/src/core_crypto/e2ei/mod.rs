@@ -19,7 +19,7 @@ impl CoreCryptoFfi {
             .await?
             .e2ei_is_enabled(cipher_suite.into())
             .await
-            .map_err(RecursiveError::mls_client("checking if e2ei is enabled"))
+            .map_err(RecursiveError::context("checking if e2ei is enabled"))
             .map_err(Into::into)
     }
 
@@ -33,7 +33,7 @@ impl CoreCryptoFfi {
             .await?
             .get_raw_conversation(conversation_id.as_ref())
             .await
-            .map_err(RecursiveError::mls_client("getting conversation by id"))?
+            .map_err(RecursiveError::context("getting conversation by id"))?
             .e2ei_conversation_state()
             .await
             .map(Into::into)

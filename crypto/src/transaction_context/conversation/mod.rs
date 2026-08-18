@@ -28,7 +28,7 @@ impl TransactionContext {
             .await?
             .exists(id, &database)
             .await
-            .map_err(RecursiveError::root("checking for conversation existence"))
+            .map_err(RecursiveError::context("checking for conversation existence"))
             .map_err(Into::into)
     }
 
@@ -43,7 +43,7 @@ impl TransactionContext {
             .await?
             .get_or_fetch(id, &inner.transaction, session)
             .await
-            .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?;
+            .map_err(RecursiveError::context("fetching conversation from mls groups by id"))?;
 
         if let Some(conversation) = conversation {
             return Ok(ConversationMut::new(conversation, self.clone()));
@@ -147,16 +147,13 @@ impl TransactionContext {
             return Err(Error::ConversationAlreadyExists(id.to_owned()));
         }
 
-        let credential = credential_ref
-            .load(&*database)
-            .await
-            .map_err(RecursiveError::mls_credential_ref(
-                "loading credential from database to create new conversation",
-            ))?;
+        let credential = credential_ref.load(&*database).await.map_err(RecursiveError::context(
+            "loading credential from database to create new conversation",
+        ))?;
 
         let config = configuration
             .as_openmls_default_configuration()
-            .map_err(RecursiveError::mls_conversation("converting config to openmls default"))?;
+            .map_err(RecursiveError::context("converting config to openmls default"))?;
 
         let group = MlsGroup::new_with_group_id(
             &provider,

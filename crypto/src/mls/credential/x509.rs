@@ -103,8 +103,7 @@ impl CertificateBundle {
             .map_err(RecursiveError::e2e_identity("parsing wire qualified client id"))?
             .into();
         let client_id: Vec<u8> = client_id.into();
-        let client_id =
-            ClientId::new_from_bytes(client_id).map_err(RecursiveError::mls_client("client id from bytes"))?;
+        let client_id = ClientId::new_from_bytes(client_id).map_err(RecursiveError::context("client id from bytes"))?;
         Ok(client_id)
     }
 
@@ -118,7 +117,7 @@ impl CertificateBundle {
 impl Credential {
     /// Create a new x509 credential from a certificate bundle.
     pub fn x509(cipher_suite: CipherSuite, cert: CertificateBundle) -> Result<Self> {
-        let earliest_validity = cert.get_created_at().map_err(RecursiveError::mls_credential(
+        let earliest_validity = cert.get_created_at().map_err(RecursiveError::context(
             "getting credential 'not before' claim from leaf cert in Credential::x509",
         ))?;
         let sk = cert.private_key.into_inner();
@@ -149,7 +148,7 @@ impl Credential {
             let cert = self
                 .mls_credential()
                 .parse_leaf_cert()
-                .map_err(RecursiveError::mls_credential("parsing leaf certificate"))?
+                .map_err(RecursiveError::context("parsing leaf certificate"))?
                 // This can actually never happen and points to a type issue with credentials
                 .expect("parse_leaf_cert to return a Certificate");
 

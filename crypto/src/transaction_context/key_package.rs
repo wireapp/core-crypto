@@ -37,7 +37,7 @@ impl TransactionContext {
         let credential = credential_ref
             .load(&inner.transaction)
             .await
-            .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
+            .map_err(RecursiveError::context("loading credential"))?;
         let config = CryptoConfig {
             ciphersuite: credential.cipher_suite.into(),
             version: openmls::versions::ProtocolVersion::default(),
@@ -62,9 +62,7 @@ impl TransactionContext {
         session
             .get_keypackage_refs()
             .await
-            .map_err(RecursiveError::mls_client(
-                "getting all key package refs for transaction",
-            ))
+            .map_err(RecursiveError::context("getting all key package refs for transaction"))
             .map_err(Into::into)
     }
 
@@ -80,7 +78,7 @@ impl TransactionContext {
             .await?
             .load_key_package(kp_ref)
             .await
-            .map_err(RecursiveError::mls_client("loading key packages on session"))?
+            .map_err(RecursiveError::context("loading key packages on session"))?
         else {
             return Ok(());
         };
@@ -117,7 +115,7 @@ impl TransactionContext {
         let credential = credential_ref
             .load(&inner.transaction)
             .await
-            .map_err(RecursiveError::mls_credential_ref("loading credential"))?;
+            .map_err(RecursiveError::context("loading credential"))?;
         let signature_public_key = credential.signature_key_pair.public();
 
         let mut first_err = None;
@@ -139,7 +137,7 @@ impl TransactionContext {
         for keypackage in session
             .get_key_packages()
             .await
-            .map_err(RecursiveError::mls_client("loading key packages"))?
+            .map_err(RecursiveError::context("loading key packages"))?
             .into_iter()
             .filter(|keypackage| keypackage.leaf_node().signature_key().as_slice() == signature_public_key)
         {
@@ -176,7 +174,7 @@ impl TransactionContext {
             .map_err(KeystoreError::wrap("loading keypackage from database"))?
             .map(crate::mls::session::key_package::from_stored)
             .transpose()
-            .map_err(RecursiveError::mls_client("loading key package"))?
+            .map_err(RecursiveError::context("loading key package"))?
         else {
             return Ok(());
         };

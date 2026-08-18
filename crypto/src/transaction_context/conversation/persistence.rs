@@ -31,12 +31,13 @@ impl TransactionContext {
         group_state
             .persist(&context_inner.transaction)
             .await
-            .map_err(RecursiveError::mls_conversation("persisting group state for new group"))?;
+            .map_err(RecursiveError::context("persisting group state for new group"))?;
 
         // now that we're persisted, construct a conversation
-        let session = self.session().await.map_err(RecursiveError::transaction(
-            "getting session from tx context to persist",
-        ))?;
+        let session = self
+            .session()
+            .await
+            .map_err(RecursiveError::context("getting session from tx context to persist"))?;
         let conversation = Conversation::new(id, group_state.into(), configuration, session);
         let mut group_store = self.mls_groups().await?;
 
@@ -53,12 +54,9 @@ impl TransactionContext {
         welcome: Welcome,
         configuration: ConversationConfiguration,
     ) -> Result<ConversationMut> {
-        let mls_group_config =
-            configuration
-                .as_openmls_default_configuration()
-                .map_err(RecursiveError::mls_conversation(
-                    "converting configuration to openmls default",
-                ))?;
+        let mls_group_config = configuration
+            .as_openmls_default_configuration()
+            .map_err(RecursiveError::context("converting configuration to openmls default"))?;
 
         let crypto_provider = self.crypto_provider().await?;
 
@@ -75,9 +73,7 @@ impl TransactionContext {
                     OpenMlsError::wrap("group could not be created from welcome")(err).into()
                 }
             })
-            .map_err(RecursiveError::mls_conversation(
-                "creating mls group from welcome message",
-            ))?;
+            .map_err(RecursiveError::context("creating mls group from welcome message"))?;
 
         let id = ConversationId::from(group.group_id().as_slice());
 

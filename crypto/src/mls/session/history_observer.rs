@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 
 use super::{Error, Session};
-use crate::{ConversationId, HistorySecret, ToRecursiveError as _};
+use crate::{ConversationId, HistorySecret, RecursiveError};
 
 /// The `HistoryObserver` will be called when updating the history client in a conversation
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]
@@ -25,9 +25,10 @@ impl Session {
     pub async fn register_history_observer(&self, history_observer: Arc<dyn HistoryObserver>) -> crate::Result<()> {
         let mut history_guard = self.history_observer.write().await;
         if history_guard.is_some() {
-            return Err(Error::HistoryObserverAlreadyExists
-                .construct_recursive("cannot register a new history observer")
-                .into());
+            return Err(RecursiveError::context("cannot register a new history observer")(
+                Error::HistoryObserverAlreadyExists,
+            )
+            .into());
         }
         history_guard.replace(history_observer);
         Ok(())

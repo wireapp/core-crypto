@@ -31,7 +31,7 @@ impl Session {
             &self.database,
             CredentialFindFilters::builder().cipher_suite(cipher_suite).build(),
         )
-        .map_err(RecursiveError::mls_credential_ref("finding credentials with filters"))
+        .map_err(RecursiveError::context("finding credentials with filters"))
         .await?;
 
         let x509_credential_exists = credentials

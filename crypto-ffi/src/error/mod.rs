@@ -47,7 +47,7 @@ mod tests {
 
     #[test]
     fn test_mls_error_mapping() {
-        let duplicate_message_error = RecursiveError::mls_conversation("test duplicate message error")(
+        let duplicate_message_error = RecursiveError::context("test duplicate message error")(
             core_crypto::mls::conversation::Error::DuplicateMessage,
         );
         let mapped_error = CoreCryptoError::from(duplicate_message_error);
@@ -58,7 +58,7 @@ mod tests {
             }
         ));
 
-        let conversation_exists_error = RecursiveError::transaction("test conversation exists error")(
+        let conversation_exists_error = RecursiveError::context("test conversation exists error")(
             core_crypto::transaction_context::Error::ConversationAlreadyExists(ConversationId::from(
                 "test conversation id".as_bytes(),
             )),
@@ -79,7 +79,7 @@ mod tests {
 
         use crate::ProteusError as ProteusErrorFfi;
 
-        let session_not_found_eror = RecursiveError::root("recursive error wrapping core crypto error")(
+        let session_not_found_eror = RecursiveError::context("recursive error wrapping core crypto error")(
             core_crypto::Error::Proteus(ProteusError::wrap("recursive error wrapping session error")(
                 ProteusErrorKind::SessionNotFound("test_session_id".to_owned()),
             )),
@@ -98,7 +98,7 @@ mod tests {
     #[test]
     fn test_recursive_error_is_logged_when_converted() {
         testing_logger::setup();
-        let duplicate_message_error = RecursiveError::mls_conversation("test duplicate message error")(
+        let duplicate_message_error = RecursiveError::context("test duplicate message error")(
             core_crypto::mls::conversation::Error::DuplicateMessage,
         );
 

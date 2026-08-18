@@ -15,7 +15,7 @@ impl ConversationMut {
             .tx_context
             .mls_groups()
             .await
-            .map_err(RecursiveError::transaction("getting mls conversation cache"))?;
+            .map_err(RecursiveError::context("getting mls conversation cache"))?;
 
         self.mutate_group(async |transaction, group, _| {
             // the own client may or may not have generated an epoch keypair in the previous epoch
@@ -45,7 +45,7 @@ impl ConversationMut {
             .tx_context
             .inner()
             .await
-            .map_err(RecursiveError::transaction("getting inner context"))?;
+            .map_err(RecursiveError::context("getting inner context"))?;
         let tx = context.transaction();
         tx.remove_borrowed::<PersistedMlsGroup>(id.as_ref())
             .await
@@ -61,7 +61,7 @@ impl ConversationMut {
         self.tx_context
             .clear_orphaned_conversation_buffers(id)
             .await
-            .map_err(RecursiveError::transaction(
+            .map_err(RecursiveError::context(
                 "clearing buffered messages and commits of a wiped conversation",
             ))?;
 

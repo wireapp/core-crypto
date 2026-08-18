@@ -96,7 +96,7 @@ impl ConversationMut {
         let identity = own_leaf_credential_with_key
             .extract_identity(self.cipher_suite(), pki_env.as_deref())
             .await
-            .map_err(RecursiveError::mls_credential("extracting identity"))?;
+            .map_err(RecursiveError::context("extracting identity"))?;
 
         let decrypted_message = DecryptedMessage::Commit(Commit {
             is_active: self.group().await.is_active(),

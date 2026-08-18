@@ -29,7 +29,7 @@ pub use self::{error::Error as TestError, message::*, test_context::*, test_conv
 pub use crate::CredentialType;
 use crate::{
     CertificateBundle, ClientId, CommitBundle, ConversationId, CoreCrypto, Credential, CredentialRef, Database,
-    DatabaseKey, Error, GroupInfoBundle, MlsTransport, RecursiveError, Session, TransportData,
+    DatabaseKey, GroupInfoBundle, MlsTransport, RecursiveError, Session, TransportData,
     mls::HistoryObserver,
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     transaction_context::TransactionContext,
@@ -84,7 +84,7 @@ macro_rules! innermost_source_matches {
     }};
 }
 
-use crate::{RecursiveError::Test, ephemeral::HistorySecret, test_utils::TestError::ImplementationError};
+use crate::{ephemeral::HistorySecret, test_utils::TestError::ImplementationError};
 
 #[derive(Debug, Clone)]
 pub struct SessionContext {
@@ -127,7 +127,7 @@ impl SessionContext {
         transaction
             .mls_init(session_id, context.transport.clone())
             .await
-            .map_err(RecursiveError::transaction("mls init"))?;
+            .map_err(RecursiveError::context("mls init"))?;
 
         let session = transaction.session().await.unwrap();
 
@@ -276,9 +276,7 @@ impl SessionContext {
                     .authentication_service()
                     .pki_env()
                     .await
-                    .ok_or_else(|| {
-                        RecursiveError::mls_credential("")(crate::mls::credential::Error::MissingPKIEnvironment)
-                    })?;
+                    .ok_or_else(|| RecursiveError::context("")(crate::mls::credential::Error::MissingPKIEnvironment))?;
                 let session_id = cert
                     .get_client_id(&pki_env)
                     .await
@@ -413,16 +411,16 @@ pub struct CoreCryptoTransportAbortProvider;
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl MlsTransport for CoreCryptoTransportAbortProvider {
     async fn send_commit_bundle(&self, _commit_bundle: CommitBundle) -> crate::Result<()> {
-        Err(crate::RecursiveError::mls_conversation("send commit bundle")(
-            crate::mls::conversation::Error::MessageRejected {
+        Err(
+            crate::RecursiveError::context("send commit bundle")(crate::mls::conversation::Error::MessageRejected {
                 reason: "abort provider always aborts".into(),
-            },
+            })
+            .into(),
         )
-        .into())
     }
 
     async fn prepare_for_transport(&self, _secret: &HistorySecret) -> crate::Result<TransportData> {
-        Err(Error::Recursive(Test(ImplementationError.into())))
+        Err(RecursiveError::context("preparing history secret for transport")(ImplementationError).into())
     }
 }
 

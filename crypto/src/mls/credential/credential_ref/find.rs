@@ -101,7 +101,7 @@ impl CredentialRef {
             {
                 out.push(Self {
                     client_id: ClientId::new_from_bytes(stored_credential.session_id.clone())
-                        .map_err(RecursiveError::mls_client("new client id from bytes"))?,
+                        .map_err(RecursiveError::context("new client id from bytes"))?,
                     r#type,
                     cipher_suite,
                     earliest_validity: stored_credential.created_at,

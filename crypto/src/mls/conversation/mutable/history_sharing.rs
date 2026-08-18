@@ -46,7 +46,7 @@ impl ConversationMut {
             .await?
             .prepare_for_transport(&history_secret)
             .await
-            .map_err(RecursiveError::root("preparing for transport"))?;
+            .map_err(RecursiveError::context("preparing for transport"))?;
         let encrypted_secret = self.encrypt_message(transportable_history_secret.as_slice()).await?;
 
         // Attach the encrypted history secret to the commit being sent

@@ -11,11 +11,11 @@ impl TransactionContext {
         let client = self
             .session()
             .await
-            .map_err(RecursiveError::transaction("getting mls client"))?;
+            .map_err(RecursiveError::context("getting mls client"))?;
         client
             .e2ei_is_enabled(cipher_suite)
             .await
-            .map_err(RecursiveError::mls_client("is e2ei enabled for client?"))
+            .map_err(RecursiveError::context("is e2ei enabled for client?"))
             .map_err(Into::into)
     }
 }

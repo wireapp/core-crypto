@@ -10,7 +10,7 @@ impl super::Conversation {
     pub async fn generate_history_secret(&self) -> Result<crate::HistorySecret> {
         crate::ephemeral::generate_history_secret(self.configuration.cipher_suite)
             .await
-            .map_err(RecursiveError::root("generating history secret"))
+            .map_err(RecursiveError::context("generating history secret"))
             .map_err(Into::into)
     }
 
