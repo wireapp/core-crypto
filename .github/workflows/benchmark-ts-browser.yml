@@ -118,3 +118,4 @@ jobs:
     needs:
       - benchmark
     uses: ./.github/workflows/benchmark-ts-browser-publish.yml
+    secrets: inherit

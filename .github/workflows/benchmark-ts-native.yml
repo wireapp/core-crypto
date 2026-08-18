@@ -106,3 +106,4 @@ jobs:
     needs:
       - benchmark
     uses: ./.github/workflows/benchmark-ts-native-publish.yml
+    secrets: inherit
