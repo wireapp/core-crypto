@@ -2,7 +2,7 @@
 pub type ProteusError = super::wrapper::WrappedContextualError<ProteusErrorKind>;
 
 /// Proteus produces these kinds of error
-#[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
+#[derive(Debug, thiserror::Error)]
 pub enum ProteusErrorKind {
     #[cfg(feature = "proteus")]
     #[error(transparent)]
