@@ -2,6 +2,7 @@ mod entity;
 mod entity_base;
 mod entity_database_mutation;
 mod item_encryption;
+mod key_type;
 mod searchable_entity;
 mod unique_entity;
 
@@ -12,5 +13,6 @@ pub(crate) use item_encryption::{
     DecryptData, DecryptWithExplicitEncryptionKey, Decryptable, Decrypting, EncryptData,
     EncryptWithExplicitEncryptionKey, Encrypting, EncryptionKey,
 };
+pub(in crate::connection::idb_migration) use key_type::KeyType;
 pub(crate) use searchable_entity::{DeletableBySearchKey, SearchableEntity};
 pub(crate) use unique_entity::{UniqueEntity, UniqueEntityImplementationHelper};

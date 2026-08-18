@@ -7,8 +7,8 @@ use wasm_bindgen::JsValue;
 use super::{super::WasmConnection, InMemoryDB};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
-    connection::idb_migration::legacy::traits::{Encrypting, Entity},
-    traits::KeyType,
+    connection::idb_migration::legacy::traits::{Encrypting, Entity, KeyType},
+    traits::PrimaryKey,
 };
 
 // The lifetime is to comply with the sqlite implementation.
@@ -73,6 +73,7 @@ impl WasmStorageTransaction<'_> {
     pub(crate) async fn save<'a, E>(&self, entity: &'a E) -> CryptoKeystoreResult<()>
     where
         E: Entity<ConnectionType = WasmConnection> + Encrypting<'a>,
+        <E as PrimaryKey>::PrimaryKey: KeyType,
     {
         let serializer = serde_wasm_bindgen::Serializer::json_compatible()
             .serialize_missing_as_null(true)

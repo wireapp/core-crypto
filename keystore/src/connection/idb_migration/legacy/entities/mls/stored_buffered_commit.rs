@@ -9,9 +9,9 @@
 #![allow(unused_braces, renamed_and_removed_lints)]
 
 use crate::{
-    connection::idb_migration::legacy,
+    connection::idb_migration::legacy::{self, traits::KeyType},
     entities::StoredBufferedCommit,
-    traits::{BorrowPrimaryKey, KeyType},
+    traits::BorrowPrimaryKey,
 };
 
 impl legacy::traits::EntityBase for StoredBufferedCommit {

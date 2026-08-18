@@ -1,8 +1,8 @@
 use super::{
-    super::{EncryptionKey, Entity},
+    super::{EncryptionKey, Entity, KeyType},
     aad::{AES_GCM_256_NONCE_SIZE, Aad},
 };
-use crate::{CryptoKeystoreError, CryptoKeystoreResult};
+use crate::{CryptoKeystoreError, CryptoKeystoreResult, traits::PrimaryKey};
 
 fn decrypt_with_nonce_and_aad(
     cipher: &aes_gcm::Aes256Gcm,
@@ -34,7 +34,11 @@ pub(crate) trait DecryptData: Entity {
     ) -> CryptoKeystoreResult<Vec<u8>>;
 }
 
-impl<E: Entity> DecryptData for E {
+impl<E: Entity> DecryptData for E
+where
+    E: Entity,
+    <E as PrimaryKey>::PrimaryKey: KeyType,
+{
     fn decrypt_data(
         cipher: &aes_gcm::Aes256Gcm,
         primary_key: &E::PrimaryKey,

@@ -8,11 +8,11 @@ use crate::{
         connection::{KeystoreDatabaseConnection, TransactionWrapper},
         traits::{
             DecryptData as _, Decryptable, Decrypting, EncryptData as _, Encrypting, Entity, EntityBase,
-            EntityDatabaseMutation,
+            EntityDatabaseMutation, KeyType as _,
         },
     },
     migrations::V6Credential,
-    traits::{KeyType as _, PrimaryKey},
+    traits::PrimaryKey,
 };
 
 impl EntityBase for V6Credential {

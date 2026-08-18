@@ -4,8 +4,8 @@ use serde::{Serialize, de::DeserializeOwned};
 
 use crate::{
     CryptoKeystoreResult,
-    connection::idb_migration::legacy::traits::{Decryptable, Decrypting as _, Encrypting, Entity},
-    traits::KeyType,
+    connection::idb_migration::legacy::traits::{Decryptable, Decrypting as _, Encrypting, Entity, KeyType},
+    traits::PrimaryKey,
 };
 
 pub(super) async fn rekey_entity<E>(
@@ -17,6 +17,7 @@ pub(super) async fn rekey_entity<E>(
 where
     for<'a> E: Entity + Decryptable<'static> + Encrypting<'a>,
     <E as Decryptable<'static>>::DecryptableFrom: DeserializeOwned,
+    <E as PrimaryKey>::PrimaryKey: KeyType,
 {
     let store = transaction.object_store(E::TABLE_NAME)?;
     for js_value in store.get_all(None, None)?.await? {

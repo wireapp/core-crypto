@@ -7,11 +7,10 @@ use crate::{
         connection::{KeystoreDatabaseConnection, TransactionWrapper},
         traits::{
             DecryptData, Decryptable, Decrypting, EncryptData, Encrypting, Entity, EntityBase, EntityDatabaseMutation,
-            EntityDeleteBorrowed, EntityGetBorrowed,
+            EntityDeleteBorrowed, EntityGetBorrowed, KeyType as _,
         },
     },
     entities::PersistedMlsPendingGroup,
-    traits::KeyType as _,
 };
 
 impl EntityBase for PersistedMlsPendingGroup {

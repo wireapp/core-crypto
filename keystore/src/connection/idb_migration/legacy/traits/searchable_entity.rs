@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
-use super::{Entity, EntityDatabaseMutation};
-use crate::{CryptoKeystoreResult, traits::KeyType};
+use super::{Entity, EntityDatabaseMutation, KeyType};
+use crate::CryptoKeystoreResult;
 
 /// Entities implementing `SearchableEntity` have a distinct search key which
 /// can produce multiple items.

@@ -14,10 +14,10 @@ use crate::{
     CryptoKeystoreResult, DatabaseKey,
     connection::idb_migration::legacy::{
         connection::{Database, platform::wasm::WasmStorageTransaction},
-        traits::{Encrypting as _, Entity as _, EntityBase as _},
+        traits::{Encrypting as _, Entity as _, EntityBase as _, KeyType},
     },
     migrations::LegacyPersistedMlsGroup,
-    traits::{BorrowPrimaryKey as _, KeyType},
+    traits::BorrowPrimaryKey as _,
 };
 
 /// Open IDB once with the new builder and close it, this will apply the update.

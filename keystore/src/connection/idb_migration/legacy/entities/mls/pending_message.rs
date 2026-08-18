@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use async_trait::async_trait;
 use js_sys::Uint8Array;
 use serde::{Deserialize, Serialize};
@@ -10,7 +12,7 @@ use crate::{
         traits::{
             DecryptWithExplicitEncryptionKey as _, Decryptable, Decrypting, DeletableBySearchKey,
             EncryptWithExplicitEncryptionKey as _, Encrypting, EncryptionKey, Entity, EntityBase,
-            EntityDatabaseMutation, SearchableEntity,
+            EntityDatabaseMutation, KeyType, SearchableEntity,
         },
     },
     entities::{ConversationId, MlsPendingMessage},
@@ -99,6 +101,12 @@ impl Decrypting<'static> for MlsPendingMessageDecrypt {
 
 impl Decryptable<'static> for MlsPendingMessage {
     type DecryptableFrom = MlsPendingMessageDecrypt;
+}
+
+impl KeyType for ConversationId {
+    fn bytes(&self) -> std::borrow::Cow<'_, [u8]> {
+        self.deref().into()
+    }
 }
 
 #[async_trait(?Send)]

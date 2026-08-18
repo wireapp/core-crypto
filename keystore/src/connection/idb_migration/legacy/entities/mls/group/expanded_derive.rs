@@ -9,9 +9,12 @@
 #![allow(unused_braces)]
 
 use crate::{
-    connection::idb_migration::legacy::{connection, traits},
+    connection::idb_migration::legacy::{
+        connection,
+        traits::{self, KeyType},
+    },
     migrations::LegacyPersistedMlsGroup,
-    traits::{BorrowPrimaryKey, KeyType},
+    traits::BorrowPrimaryKey,
 };
 
 impl traits::EntityBase for LegacyPersistedMlsGroup {
