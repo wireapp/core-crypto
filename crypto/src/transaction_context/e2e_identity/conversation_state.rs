@@ -1,8 +1,10 @@
 use openmls::{messages::group_info::VerifiableGroupInfo, prelude::Node};
 use openmls_traits::OpenMlsCryptoProvider;
 
-use super::Result;
-use crate::{CredentialType, OpenMlsError, RecursiveError, Session, transaction_context::TransactionContext};
+use crate::{
+    CredentialType, OpenMlsError, RecursiveError, Session,
+    transaction_context::{Result, TransactionContext},
+};
 
 /// Indicates the state of a Conversation regarding end-to-end identity.
 ///

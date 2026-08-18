@@ -2,6 +2,3 @@
 
 pub(crate) mod conversation_state;
 pub mod enabled;
-mod error;
-
-pub use error::{Error, Result};

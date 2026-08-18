@@ -143,12 +143,7 @@ impl TransactionContext {
             .await
             .as_ref()
             .map(Clone::clone)
-            .ok_or(
-                RecursiveError::transaction("getting PKI environment from transaction context")(
-                    e2e_identity::Error::PkiEnvironmentUnset,
-                )
-                .into(),
-            )
+            .ok_or(Error::PkiEnvironmentUnset)
     }
 
     pub(crate) async fn mls_groups(&self) -> Result<MutexGuardArc<ConversationCache>> {

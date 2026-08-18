@@ -1,7 +1,9 @@
 //! Whether e2ei is enabled
 
-use super::Result;
-use crate::{CipherSuite, RecursiveError, transaction_context::TransactionContext};
+use crate::{
+    CipherSuite, RecursiveError,
+    transaction_context::{Result, TransactionContext},
+};
 
 impl TransactionContext {
     /// See [crate::mls::session::Session::e2ei_is_enabled]
@@ -22,8 +24,7 @@ impl TransactionContext {
 mod tests {
     use openmls::prelude::Ciphersuite;
 
-    use super::super::Error;
-    use crate::{CredentialType, RecursiveError, mls, test_utils::*};
+    use crate::{CredentialType, RecursiveError, mls, test_utils::*, transaction_context::Error};
 
     #[apply(all_cred_cipher)]
     async fn should_be_false_when_basic_and_true_when_x509(case: TestContext) {

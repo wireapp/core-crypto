@@ -1,7 +1,5 @@
 use std::{collections::HashMap, sync::Arc};
 
-use core_crypto::transaction_context::Error as TransactionError;
-
 use crate::{
     CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, E2eiConversationState, UserIdentities,
     Uuid, WireIdentity,
@@ -27,7 +25,6 @@ impl CoreCryptoContext {
         self.inner
             .e2ei_is_enabled(cipher_suite.into())
             .await
-            .map_err(Into::<TransactionError>::into)
             .map_err(Into::into)
     }
 

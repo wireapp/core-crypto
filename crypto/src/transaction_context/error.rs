@@ -1,7 +1,6 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
-use super::e2e_identity;
 use crate::{ConversationId, CredentialRef, mls::conversation::PendingConversation};
 
 /// A module-specific [Result][core::result::Result] type with a default error variant.
@@ -24,8 +23,8 @@ pub enum Error {
     PendingConversation(PendingConversation),
     #[error("Proteus client hasn't been initialized")]
     ProteusNotInitialized,
-    #[error(transparent)]
-    E2EIdentity(#[from] e2e_identity::Error),
+    #[error("PKI Environment must be set before calling this function")]
+    PkiEnvironmentUnset,
     #[error(transparent)]
     Keystore(#[from] crate::KeystoreError),
     #[error(transparent)]
