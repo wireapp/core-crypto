@@ -1,27 +1,28 @@
 /// A Proteus operation failed, but we captured some context about how it did so
 pub type ProteusError = super::wrapper::WrappedContextualError<ProteusErrorKind>;
 
+/// This error can never be constructed when compiled without proteus.
+#[cfg(not(feature = "proteus"))]
+#[derive(Debug, thiserror::Error)]
+pub enum ProteusErrorKind {}
+
 /// Proteus produces these kinds of error
+#[cfg(feature = "proteus")]
 #[derive(Debug, thiserror::Error)]
 pub enum ProteusErrorKind {
-    #[cfg(feature = "proteus")]
-    #[error(transparent)]
     /// Error when decoding CBOR and/or decrypting Proteus messages
+    #[error(transparent)]
     ProteusDecodeError(#[from] proteus_wasm::DecodeError),
-    #[cfg(feature = "proteus")]
-    #[error(transparent)]
     /// Error when encoding CBOR and/or decrypting Proteus messages
+    #[error(transparent)]
     ProteusEncodeError(#[from] proteus_wasm::EncodeError),
-    #[cfg(feature = "proteus")]
-    #[error(transparent)]
     /// Various internal Proteus errors
-    ProteusInternalError(#[from] proteus_wasm::error::ProteusError),
-    #[cfg(feature = "proteus")]
     #[error(transparent)]
+    ProteusInternalError(#[from] proteus_wasm::error::ProteusError),
     /// Error when there's a critical error within a proteus Session
+    #[error(transparent)]
     ProteusSessionError(#[from] proteus_wasm::session::Error<core_crypto_keystore::CryptoKeystoreError>),
     /// Common errors we generate
-    #[cfg(feature = "proteus")]
     #[error("{0}")]
     Leaf(#[from] crate::LeafError),
 }
