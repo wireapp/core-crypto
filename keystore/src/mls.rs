@@ -5,8 +5,8 @@ use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Database, Sha256Hash,
     entities::{
-        PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredEncryptionKeyPair,
-        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
+        PersistedMlsGroup, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
+        StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
     },
     traits::{Entity, EntityDatabaseMutation, EntityDeleteBorrowed, FetchFromDatabase as _},
 };
@@ -26,140 +26,6 @@ impl Database {
     {
         self.with_transaction(async |tx| tx.remove_borrowed::<E>(id).await)
             .await
-    }
-}
-
-impl Database {
-    /// Fetches Keypackages
-    ///
-    /// # Arguments
-    /// * `count` - amount of entries to be returned
-    ///
-    /// # Errors
-    /// Any common error that can happen during a database connection. IoError being a common error
-    /// for example.
-    pub async fn mls_fetch_key_packages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
-        let keypackages = StoredKeyPackage::load_all(&*self.conn().await)?;
-        Ok(keypackages
-            .into_iter()
-            .filter_map(|kpb| postcard::from_bytes(&kpb.key_package).ok())
-            .take(count as _)
-            .collect())
-    }
-
-    /// Checks if the given MLS group id exists in the keystore
-    /// Note: in case of any error, this will return false
-    ///
-    /// # Arguments
-    /// * `group_id` - group/conversation id
-    pub async fn mls_group_exists(&self, group_id: impl AsRef<[u8]> + Send) -> bool {
-        matches!(
-            self.get_borrowed::<PersistedMlsGroup>(group_id.as_ref()).await,
-            Ok(Some(_))
-        )
-    }
-
-    /// Persists a `MlsGroup`
-    ///
-    /// # Arguments
-    /// * `group_id` - group/conversation id
-    /// * `state` - the group state
-    ///
-    /// # Errors
-    /// Any common error that can happen during a database connection. IoError being a common error
-    /// for example.
-    pub async fn mls_group_persist(&self, group_id: impl AsRef<[u8]> + Send, state: &[u8]) -> CryptoKeystoreResult<()> {
-        self.save(PersistedMlsGroup {
-            id: group_id.as_ref().to_owned(),
-            state: state.into(),
-        })
-        .await?;
-        Ok(())
-    }
-
-    /// Loads `MlsGroups` from the database. It will be returned as a `HashMap` where the key is
-    /// the group/conversation id and the value the group state
-    ///
-    /// # Errors
-    /// Any common error that can happen during a database connection. IoError being a common error
-    /// for example.
-    pub async fn mls_groups_restore(&self) -> CryptoKeystoreResult<std::collections::HashMap<Vec<u8>, Vec<u8>>> {
-        let groups = PersistedMlsGroup::load_all(&*self.conn().await)?;
-        Ok(groups
-            .into_iter()
-            .map(|mut group| {
-                let id = std::mem::take(&mut group.id);
-                let state = std::mem::take(&mut group.state);
-                (id, state)
-            })
-            .collect())
-    }
-
-    /// Deletes `MlsGroups` from the database.
-    /// # Errors
-    /// Any common error that can happen during a database connection. IoError being a common error
-    /// for example.
-    pub async fn mls_group_delete(&self, group_id: impl AsRef<[u8]> + Send) -> CryptoKeystoreResult<()> {
-        self.remove_borrowed::<PersistedMlsGroup>(group_id.as_ref()).await?;
-        Ok(())
-    }
-
-    /// Saves a `MlsGroup` in a temporary table (typically used in scenarios where the group cannot
-    /// be committed until the backend acknowledges it, like external commits)
-    ///
-    /// # Arguments
-    /// * `group_id` - group/conversation id
-    /// * `mls_group` - the group/conversation state
-    /// * `custom_configuration` - local group configuration
-    ///
-    /// # Errors
-    /// Any common error that can happen during a database connection. IoError being a common error
-    /// for example.
-    pub async fn mls_pending_groups_save(
-        &self,
-        group_id: impl AsRef<[u8]> + Send,
-        mls_group: &[u8],
-        custom_configuration: &[u8],
-        parent_group_id: Option<&[u8]>,
-    ) -> CryptoKeystoreResult<()> {
-        self.save(PersistedMlsPendingGroup {
-            id: group_id.as_ref().to_owned(),
-            state: mls_group.into(),
-            custom_configuration: custom_configuration.into(),
-            parent_id: parent_group_id.map(Into::into),
-        })
-        .await?;
-        Ok(())
-    }
-
-    /// Loads a temporary `MlsGroup` and its configuration from the database
-    ///
-    /// # Arguments
-    /// * `id` - group/conversation id
-    ///
-    /// # Errors
-    /// Any common error that can happen during a database connection. IoError being a common error
-    /// for example.
-    pub async fn mls_pending_groups_load(
-        &self,
-        group_id: impl AsRef<[u8]> + Send,
-    ) -> CryptoKeystoreResult<Option<(Vec<u8>, Vec<u8>)>> {
-        let optional = self.get_borrowed::<PersistedMlsPendingGroup>(group_id.as_ref()).await?;
-        Ok(optional.map(|pending_group| (pending_group.state.clone(), pending_group.custom_configuration.clone())))
-    }
-
-    /// Deletes a temporary `MlsGroup` from the database
-    ///
-    /// # Arguments
-    /// * `id` - group/conversation id
-    ///
-    /// # Errors
-    /// Any common error that can happen during a database connection. IoError being a common error
-    /// for example.
-    pub async fn mls_pending_groups_delete(&self, group_id: impl AsRef<[u8]> + Send) -> CryptoKeystoreResult<()> {
-        self.remove_borrowed::<PersistedMlsPendingGroup>(group_id.as_ref())
-            .await?;
-        Ok(())
     }
 }
 
