@@ -358,7 +358,7 @@ impl ConversationMut {
 
                 // can't use `.then` because async
                 let mut buffered_messages = None;
-                if recursion_policy == RecursionPolicy::AsNecessary {
+                if is_active && recursion_policy == RecursionPolicy::AsNecessary {
                     buffered_messages = self.restore_and_clear_pending_messages().await?;
                 }
 
