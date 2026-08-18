@@ -3,14 +3,15 @@ pub(super) mod encrypt;
 use const_format::concatcp;
 use derive_more::Constructor;
 use openmls::{
-    group::{GroupEpoch, GroupId, group_context::GroupContext},
-    prelude::{HpkeCiphertext, LeafNodeIndex},
+    group::{GroupEpoch, GroupId, MlsGroup, group_context::GroupContext},
+    prelude::{Ciphersuite, HpkeCiphertext, LeafNodeIndex},
 };
-use tls_codec::{TlsDeserialize, TlsSerialize, TlsSize};
+use openmls_traits::OpenMlsCryptoProvider;
+use tls_codec::{Serialize as _, TlsDeserialize, TlsSerialize, TlsSize};
 
 use self::encrypt::TargetedMessagePolicy;
-use super::{ProtocolVersion, tnt_message_counter::TntMessageCounter};
-use crate::ConversationConfiguration;
+use super::{Error, ProtocolVersion, Result, tnt_message_counter::TntMessageCounter};
+use crate::{ConversationConfiguration, OpenMlsError};
 
 /// Used to parameterize HPKE Seal/Open.
 /// Not carried with the payload, constructed freshly when decrypting.
@@ -76,4 +77,36 @@ impl TargetedMessage {
     pub(super) const SIGN_LABEL_TRANSIENT: &str =
         concatcp!("TntMessageTBS-Transient-Targeted v", ProtocolVersion::V1.as_u16());
     pub(super) const PSK_LABEL: &str = concatcp!("Tnt TargetedMessage Psk v", ProtocolVersion::V1.as_u16());
+}
+
+/// The data that is extracted from the MLS group when encrypting or decrypting a targeted message.
+struct HpkeContextData {
+    info: Vec<u8>,
+    psk_id: Vec<u8>,
+    psk: Vec<u8>,
+}
+
+fn extract_hpke_context_data(
+    crypto_provider: &impl OpenMlsCryptoProvider,
+    cipher_suite: &Ciphersuite,
+    context: &TargetedMessageContext,
+    mls_group: &MlsGroup,
+) -> Result<HpkeContextData> {
+    let info = context
+        .tls_serialize_detached()
+        .map_err(Error::tls_serialize("TargetedMessageContext"))?;
+
+    // We can use an empty context because we're using a unique label.
+    let psk = mls_group
+        .export_secret(
+            crypto_provider,
+            TargetedMessage::PSK_LABEL,
+            &[],
+            cipher_suite.hash_length(),
+        )
+        .map_err(OpenMlsError::wrap("exporting targeted message psk"))?;
+    let psk_id = PskId::new(mls_group.group_id().clone(), mls_group.epoch());
+    let psk_id = psk_id.tls_serialize_detached().map_err(Error::tls_serialize("PskId"))?;
+
+    Ok(HpkeContextData { info, psk_id, psk })
 }
