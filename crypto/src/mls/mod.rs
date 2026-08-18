@@ -40,35 +40,36 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         async fn conversation_not_found(case: TestContext) {
-            use crate::LeafError;
             let [session] = case.sessions().await;
             let id = conversation_id();
             let err = session.transaction.conversation(&id).await.unwrap_err();
             assert!(matches!(
                 err,
-                TransactionError::Leaf(LeafError::ConversationNotFound(i)) if i == id
+                TransactionError::ConversationNotFound(i) if i == id
             ));
         }
     }
 
     #[apply(all_cred_cipher)]
     async fn create_conversation_should_fail_when_already_exists(case: TestContext) {
-        use crate::LeafError;
-
         let [alice] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice]).await;
             let id = conversation.id().clone();
-            let credentials = alice.find_credentials(Default::default()).await.expect("finding credentials");
+            let credentials = alice
+                .find_credentials(Default::default())
+                .await
+                .expect("finding credentials");
             let credential = credentials.first().expect("first credential");
 
-                // creating a conversation should first verify that the conversation does not already exist ; only then create it
-                let repeat_create = alice
-                    .transaction
-                    .new_conversation(&id, credential, case.cfg.clone())
-                    .await;
-                assert!(matches!(repeat_create.unwrap_err(), TransactionError::Leaf(LeafError::ConversationAlreadyExists(i)) if i == id));
-            })
+            // creating a conversation should first verify that the conversation does not already exist ; only then
+            // create it
+            let repeat_create = alice
+                .transaction
+                .new_conversation(&id, credential, case.cfg.clone())
+                .await;
+            assert!(matches!(repeat_create.unwrap_err(), TransactionError::ConversationAlreadyExists(i) if i == id));
+        })
         .await;
     }
 

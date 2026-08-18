@@ -4,7 +4,7 @@ use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
 use super::{Error, Result};
 use crate::{
-    CommitBundle, ConversationConfiguration, ConversationId, CredentialRef, GroupInfoBundle, LeafError, OpenMlsError,
+    CommitBundle, ConversationConfiguration, ConversationId, CredentialRef, GroupInfoBundle, OpenMlsError,
     RecursiveError,
     mls::{
         self,
@@ -93,7 +93,9 @@ impl TransactionContext {
         .map_err(OpenMlsError::wrap("joining mls group by external commit"))?;
 
         // We should always have ratchet tree extension turned on hence GroupInfo should always be present
-        let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
+        let group_info = group_info
+            .ok_or(mls::conversation::Error::MissingGroupInfo)
+            .map_err(RecursiveError::mls_conversation("retrieving group info"))?;
         let group_info = GroupInfoBundle::try_new_full_plaintext(group_info).map_err(
             RecursiveError::mls_conversation("trying new full plaintext group info bundle"),
         )?;
@@ -122,7 +124,7 @@ impl TransactionContext {
     pub(crate) async fn pending_conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
         match self.pending_conversation(id).await {
             Ok(_) => Ok(true),
-            Err(Error::Leaf(LeafError::ConversationNotFound(_))) => Ok(false),
+            Err(Error::ConversationNotFound(_)) => Ok(false),
             Err(e) => Err(e),
         }
     }
@@ -134,7 +136,7 @@ mod tests {
     use core_crypto_keystore::{entities::PersistedMlsPendingGroup, traits::FetchFromDatabase as _};
 
     use super::Error;
-    use crate::{ConversationConfiguration, LeafError, test_utils::*};
+    use crate::{ConversationConfiguration, test_utils::*};
 
     #[apply(all_cred_cipher)]
     async fn join_by_external_commit_should_succeed(case: TestContext) {
@@ -258,7 +260,7 @@ mod tests {
             .unwrap_err();
 
         assert!(matches!(
-           err, Error::Leaf(LeafError::ConversationNotFound(id)) if non_existent_id == id
+           err, Error::ConversationNotFound(id) if non_existent_id == id
         ));
     }
 
@@ -324,7 +326,7 @@ mod tests {
             assert!(matches!(
                 conflict_join.unwrap_err(),
 
-                Error::Leaf(LeafError::ConversationAlreadyExists(i))
+                Error::ConversationAlreadyExists(i)
                 if i == id
             ));
         })
@@ -352,7 +354,7 @@ mod tests {
                     .process_welcome_message(welcome)
                     .await;
 
-                assert!(innermost_source_matches!(conflict_welcome.unwrap_err(), LeafError::ConversationAlreadyExists(i) if i == &id));
+                assert!(innermost_source_matches!(conflict_welcome.unwrap_err(), Error::ConversationAlreadyExists(i) if i == &id));
             })
         .await
     }

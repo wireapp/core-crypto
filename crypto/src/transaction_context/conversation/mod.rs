@@ -14,7 +14,7 @@ use openmls::group::MlsGroup;
 
 use super::{Error, Result, TransactionContext};
 use crate::{
-    ConversationConfiguration, CredentialRef, KeystoreError, LeafError, OpenMlsError, RecursiveError,
+    ConversationConfiguration, CredentialRef, KeystoreError, OpenMlsError, RecursiveError,
     mls::conversation::{ConversationIdRef, ConversationMut, PendingConversation},
 };
 
@@ -118,7 +118,7 @@ impl TransactionContext {
             .await
             .map_err(KeystoreError::wrap("finding persisted mls pending group"))?
         else {
-            return Err(LeafError::ConversationNotFound(id.to_owned()).into());
+            return Err(Error::ConversationNotFound(id.to_owned()));
         };
         let pending_group = Arc::unwrap_or_clone(pending_group);
         Ok(PendingConversation::new(pending_group, self.clone()))
@@ -144,7 +144,7 @@ impl TransactionContext {
         let database = self.database().await?;
         let provider = self.crypto_provider().await?;
         if self.conversation_exists(id).await? || self.pending_conversation_exists(id).await? {
-            return Err(LeafError::ConversationAlreadyExists(id.to_owned()).into());
+            return Err(Error::ConversationAlreadyExists(id.to_owned()));
         }
 
         let credential = credential_ref

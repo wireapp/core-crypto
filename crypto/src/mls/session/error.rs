@@ -13,6 +13,9 @@ pub enum Error {
     InvalidUserId,
     #[error("A MLS operation was requested but MLS hasn't been initialized on this instance")]
     MlsNotInitialized,
+    /// This error is emitted when the requested conversation couldn't be found in our store
+    #[error("Couldn't find conversation")]
+    ConversationNotFound(crate::ConversationId),
     #[error("No credential of type ({0:?}) was found in this session")]
     NoCredentialWithType(crate::CredentialType),
     #[error("An EpochObserver has already been registered; reregistration is not possible")]
@@ -23,8 +26,6 @@ pub enum Error {
     OpenMls(#[from] crate::OpenMlsError),
     #[error(transparent)]
     Keystore(#[from] crate::KeystoreError),
-    #[error("{0}")]
-    Leaf(#[from] crate::LeafError),
     #[error(transparent)]
     Recursive(#[from] crate::RecursiveError),
 }

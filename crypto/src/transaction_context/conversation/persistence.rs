@@ -1,9 +1,9 @@
 use openmls::{group::MlsGroup, prelude::Welcome};
 
 use crate::{
-    ConversationConfiguration, ConversationId, LeafError, OpenMlsError, RecursiveError,
+    ConversationConfiguration, ConversationId, OpenMlsError, RecursiveError,
     mls::conversation::{Conversation, ConversationMut, Error as ConversationError, MlsGroupState},
-    transaction_context::{Result, TransactionContext},
+    transaction_context::{Error, Result, TransactionContext},
 };
 
 impl TransactionContext {
@@ -47,7 +47,7 @@ impl TransactionContext {
     /// Create a MLS conversation from an MLS Welcome message
     ///
     /// Unlike [`Self::persist_conversation_from_mls_group`], this _does_ check whether the conversation
-    /// already exists or is pending. If it does, returns [`LeafError::ConversationAlreadyExists`].
+    /// already exists or is pending. If it does, returns [`Error::ConversationAlreadyExists`].
     pub(crate) async fn persist_conversation_from_welcome_message(
         &self,
         welcome: Welcome,
@@ -82,7 +82,7 @@ impl TransactionContext {
         let id = ConversationId::from(group.group_id().as_slice());
 
         if self.conversation_exists(&id).await? || self.pending_conversation_exists(&id).await? {
-            return Err(LeafError::ConversationAlreadyExists(id).into());
+            return Err(Error::ConversationAlreadyExists(id));
         }
 
         self.persist_conversation_from_mls_group(group, configuration).await

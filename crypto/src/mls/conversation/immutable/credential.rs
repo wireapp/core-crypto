@@ -8,7 +8,7 @@ use openmls::{
 };
 
 use super::{Error, Result};
-use crate::{ClientId, Credential, LeafError, RecursiveError};
+use crate::{ClientId, Credential, RecursiveError};
 
 impl super::Conversation {
     fn extract_own_updated_node_from_proposals<'a>(
@@ -37,7 +37,7 @@ impl super::Conversation {
         let own_leaf =
             Self::extract_own_updated_node_from_proposals(&group.own_leaf_index(), group.pending_proposals())
                 .or_else(|| group.own_leaf())
-                .ok_or(LeafError::InternalMlsError)?;
+                .ok_or(Error::MlsGroupInvalidState("own leaf node not found"))?;
         let credential = self
             .session
             .find_credential_by_public_key(own_leaf.signature_key())

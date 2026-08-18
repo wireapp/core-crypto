@@ -57,6 +57,8 @@ pub enum Error {
     MlsMessageInvalidState(&'static str),
     #[error("The group lacks an ExternalSender extension whereas it should have at least one")]
     MissingExternalSenderExtension,
+    #[error("unexpectedly failed to retrieve group info")]
+    MissingGroupInfo,
     #[error("Couldn't find pending commit")]
     PendingCommitNotFound,
     #[error("Couldn't find pending conversation")]
@@ -99,8 +101,6 @@ pub enum Error {
     OpenMls(#[from] crate::OpenMlsError),
     #[error(transparent)]
     Keystore(#[from] crate::KeystoreError),
-    #[error("{0}")]
-    Leaf(#[from] crate::LeafError),
     #[error(transparent)]
     Recursive(#[from] crate::RecursiveError),
 }

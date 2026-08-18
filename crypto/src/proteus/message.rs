@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use core_crypto_keystore::Transaction;
 
 use super::ProteusCentral;
-use crate::{LeafError, ProteusError, Result};
+use crate::{ProteusError, ProteusErrorKind, Result};
 
 impl ProteusCentral {
     /// Decrypt a proteus message for an already existing session
@@ -18,7 +18,7 @@ impl ProteusCentral {
             .proteus_sessions
             .get_or_fetch(session_id, transaction)
             .await?
-            .ok_or(LeafError::ConversationNotFound(session_id.as_bytes().into()))
+            .ok_or_else(|| ProteusErrorKind::SessionNotFound(session_id.to_owned()))
             .map_err(ProteusError::wrap("getting session"))?;
 
         let plaintext = session.decrypt(transaction, ciphertext).await?;
@@ -37,7 +37,7 @@ impl ProteusCentral {
         let session = self
             .session(session_id, transaction)
             .await?
-            .ok_or(LeafError::ConversationNotFound(session_id.as_bytes().into()))
+            .ok_or_else(|| ProteusErrorKind::SessionNotFound(session_id.to_owned()))
             .map_err(ProteusError::wrap("getting session"))?;
 
         let ciphertext = session.encrypt(plaintext)?;

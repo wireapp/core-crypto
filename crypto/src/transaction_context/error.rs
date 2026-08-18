@@ -14,6 +14,12 @@ pub enum Error {
     CallerError(&'static str),
     #[error("This transaction context has already been finished and can no longer be used.")]
     InvalidTransactionContext,
+    /// This error is emitted when the requested conversation already exists with the given id
+    #[error("Conversation already exists")]
+    ConversationAlreadyExists(ConversationId),
+    /// This error is emitted when the requested conversation couldn't be found in our store
+    #[error("Couldn't find conversation")]
+    ConversationNotFound(ConversationId),
     #[error("The conversation with the specified id is pending")]
     PendingConversation(PendingConversation),
     #[error("Proteus client hasn't been initialized")]
@@ -35,8 +41,6 @@ pub enum Error {
     InvalidCredentials(Vec<CredentialRef>),
     #[error("something went wrong when generating and storing a new keypackage: {0}")]
     KeypackageNew(String),
-    #[error("{0}")]
-    Leaf(#[from] crate::LeafError),
     #[error(transparent)]
     Recursive(#[from] crate::RecursiveError),
 }

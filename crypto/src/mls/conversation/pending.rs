@@ -18,7 +18,7 @@ use tls_codec::Deserialize as _;
 use super::{Error, Result};
 use crate::{
     BufferedDecryptedMessage, CommitBundle, ConversationConfiguration, CustomConfiguration, DecryptedMessage,
-    KeystoreError, LeafError, OpenMlsError, RecursiveError,
+    KeystoreError, OpenMlsError, RecursiveError,
     mls::{
         conversation::{ConversationIdRef, mutable::decrypt::buffer_messages::MessageRestorePolicy},
         credential::ext::CredentialExt as _,
@@ -185,7 +185,9 @@ impl PendingConversation {
             .await
             .map_err(RecursiveError::transaction("getting conversation by id"))?;
         let group = conversation.group().await;
-        let own_leaf = group.own_leaf().ok_or(LeafError::InternalMlsError)?;
+        let own_leaf = group
+            .own_leaf()
+            .ok_or(Error::MlsGroupInvalidState("own leaf node not found"))?;
 
         // We return self identity here, probably not necessary to check revocation
         let own_leaf_credential_with_key = CredentialWithKey {

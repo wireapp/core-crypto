@@ -180,7 +180,7 @@ mod tests {
                 // But has been removed from the conversation
                 assert!(matches!(
                 bob.transaction.conversation(&id).await.unwrap_err(),
-                TransactionError::Leaf(crate::LeafError::ConversationNotFound(ref i))
+                TransactionError::ConversationNotFound(ref i)
                     if i == &id
                 ));
                 assert!(!conversation.can_talk(&alice, &bob).await);

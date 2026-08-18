@@ -22,9 +22,9 @@ pub enum ProteusErrorKind {
     /// Error when there's a critical error within a proteus Session
     #[error(transparent)]
     ProteusSessionError(#[from] proteus_wasm::session::Error<core_crypto_keystore::CryptoKeystoreError>),
-    /// Common errors we generate
-    #[error("{0}")]
-    Leaf(#[from] crate::LeafError),
+    /// No session exists for the given session id
+    #[error("Couldn't find session {0}")]
+    SessionNotFound(String),
 }
 
 impl ProteusErrorKind {
@@ -36,10 +36,7 @@ impl ProteusErrorKind {
             ProteusErrorKind::ProteusEncodeError(encode_error) => Some(encode_error.code()),
             ProteusErrorKind::ProteusInternalError(proteus_error) => Some(proteus_error.code()),
             ProteusErrorKind::ProteusSessionError(session_error) => Some(session_error.code()),
-            ProteusErrorKind::Leaf(crate::LeafError::ConversationNotFound(_)) => {
-                Some(proteus_traits::ProteusErrorKind::SessionStateNotFoundForTag)
-            }
-            ProteusErrorKind::Leaf(_) => None,
+            ProteusErrorKind::SessionNotFound(_) => Some(proteus_traits::ProteusErrorKind::SessionStateNotFoundForTag),
         };
         if out == Some(proteus_traits::ProteusErrorKind::None) {
             out = None;

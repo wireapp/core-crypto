@@ -18,7 +18,7 @@ pub use self::tnt::TargetedMessagePolicy;
 pub(crate) use self::tnt::TntMessageCounter;
 use super::{Error, Result};
 use crate::{
-    CryptoProvider, GroupInfoBundle, LeafError, MlsTransport, RecursiveError, Session,
+    CryptoProvider, GroupInfoBundle, MlsTransport, RecursiveError, Session,
     mls::{conversation::Conversation, credential::Credential},
     transaction_context::TransactionContext,
 };
@@ -82,7 +82,7 @@ impl ConversationMut {
     }
 
     fn group_info(group_info: Option<GroupInfo>) -> Result<GroupInfoBundle> {
-        let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
+        let group_info = group_info.ok_or(Error::MissingGroupInfo)?;
         GroupInfoBundle::try_new_full_plaintext(group_info)
     }
 }

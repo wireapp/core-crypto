@@ -1,5 +1,3 @@
-use core_crypto::LeafError;
-
 /// Errors produced by the Proteus layer.
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 #[allow(missing_docs)] // error variants are self-describing
@@ -55,7 +53,7 @@ impl From<&core_crypto::ProteusErrorKind> for ProteusError {
             core_crypto::ProteusErrorKind::ProteusSessionError(SessionError::InternalError(
                 proteus_wasm::internal::types::InternalError::NoSessionForTag,
             )) => Self::SessionNotFound,
-            core_crypto::ProteusErrorKind::Leaf(LeafError::ConversationNotFound(_)) => Self::SessionNotFound,
+            core_crypto::ProteusErrorKind::SessionNotFound(_) => Self::SessionNotFound,
             core_crypto::ProteusErrorKind::ProteusSessionError(SessionError::DuplicateMessage) => {
                 Self::DuplicateMessage
             }

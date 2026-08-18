@@ -50,8 +50,8 @@ pub use crate::{
     build_metadata::{BUILD_METADATA, BuildMetadata},
     ephemeral::{HISTORY_CLIENT_ID_PREFIX, HistorySecret},
     error::{
-        Error, InnermostErrorMessage, KeystoreError, LeafError, OpenMlsError, OpenMlsErrorKind, ProteusError,
-        ProteusErrorKind, RecursiveError, Result, ToRecursiveError,
+        Error, InnermostErrorMessage, KeystoreError, OpenMlsError, OpenMlsErrorKind, ProteusError, ProteusErrorKind,
+        RecursiveError, Result, ToRecursiveError,
     },
     identity::{WireIdentity, X509Identity},
     mls::{

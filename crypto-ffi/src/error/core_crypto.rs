@@ -59,12 +59,11 @@ impl From<RecursiveError> for CoreCryptoError {
             let mut err: &dyn std::error::Error = &error;
             while let Some(inner) = err.source() {
                 #[cfg(feature = "proteus")]
-                // We cannot determine in all cases whether a recursive error is a proteus
-                // error by just looking at the innermost type. That's because if a session
-                // is not found, we're using `ConversationNotFoundError`, wrapped in a
-                // `LeafError`, which is not proteus-specific. To avoid having to do
-                // this check inside the loop, we'd have to introduce a proteus-specific
-                // variant of `ConversationNotFound`.
+                // We have to look for a proteus error at every link of the chain, not just at the
+                // innermost one. Every `ProteusErrorKind` variant is `#[error(transparent)]`, which
+                // means its `source()` delegates past itself to the wrapped error's own source. So
+                // whenever that wrapped error has a source of its own, `ProteusErrorKind` is not the
+                // innermost link, and checking only the innermost would misclassify it as an MLS error.
                 if let Some(inner) = inner.downcast_ref::<core_crypto::ProteusErrorKind>() {
                     return ProteusError::from(inner).into();
                 }
@@ -149,7 +148,7 @@ impl From<RecursiveError> for CoreCryptoError {
         }
 
         match_heterogenous!(innermost => {
-            core_crypto::LeafError::ConversationAlreadyExists(id) => MlsError::ConversationAlreadyExists { conversation_id: id.clone().into() }.into(),
+            core_crypto::transaction_context::Error::ConversationAlreadyExists(id) => MlsError::ConversationAlreadyExists { conversation_id: id.clone().into() }.into(),
             core_crypto::mls::conversation::Error::BufferedFutureMessage{..} => MlsError::BufferedFutureMessage.into(),
             core_crypto::mls::conversation::Error::DuplicateMessage => MlsError::DuplicateMessage.into(),
             core_crypto::mls::conversation::Error::MessageEpochTooOld => MlsError::MessageEpochTooOld.into(),

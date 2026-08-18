@@ -81,8 +81,6 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn process_welcome_should_fail_when_already_exists(case: TestContext) {
-        use crate::LeafError;
-
         let [alice, mut bob] = case.sessions().await;
         Box::pin(async move {
             let credential_ref = &bob.initial_credential;
@@ -116,7 +114,7 @@ mod tests {
 
                 assert!(!key_package_refs_before.is_empty());
                 assert_eq!(key_package_refs_before, key_package_refs_after);
-                assert!(innermost_source_matches!(join_welcome.unwrap_err(), LeafError::ConversationAlreadyExists(i) if i == &id));
+                assert!(innermost_source_matches!(join_welcome.unwrap_err(), super::Error::ConversationAlreadyExists(i) if i == &id));
             })
         .await;
     }

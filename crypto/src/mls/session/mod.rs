@@ -16,7 +16,7 @@ pub use history_observer::HistoryObserver;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::{
-    ClientId, HistorySecret, ImmutableDatabase, LeafError, MlsTransport, OpenMlsError, RecursiveError,
+    ClientId, HistorySecret, ImmutableDatabase, MlsTransport, OpenMlsError, RecursiveError,
     mls::{
         conversation::{Conversation, ConversationIdRef},
         conversation_cache::ConversationCache,
@@ -78,15 +78,14 @@ impl Session {
         Conversation::load(self.clone(), id)
             .await
             .map_err(RecursiveError::mls_conversation("getting raw conversation by id"))?
-            .ok_or_else(|| LeafError::ConversationNotFound(id.to_owned()))
-            .map_err(Into::into)
+            .ok_or_else(|| Error::ConversationNotFound(id.to_owned()))
     }
 
     /// Checks if a given conversation id exists locally
     pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
         match self.get_raw_conversation(id).await {
             Ok(_) => Ok(true),
-            Err(Error::Leaf(LeafError::ConversationNotFound(_))) => Ok(false),
+            Err(Error::ConversationNotFound(_)) => Ok(false),
             Err(e) => Err(e),
         }
     }

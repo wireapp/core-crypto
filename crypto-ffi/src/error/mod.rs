@@ -41,9 +41,9 @@ fn log_error(error: &dyn std::error::Error) {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto::{ConversationId, LeafError, ProteusError, RecursiveError};
+    use core_crypto::{ConversationId, RecursiveError};
 
-    use crate::{CoreCryptoError, MlsError, ProteusError as ProteusErrorFfi};
+    use crate::{CoreCryptoError, MlsError};
 
     #[test]
     fn test_mls_error_mapping() {
@@ -58,10 +58,10 @@ mod tests {
             }
         ));
 
-        let conversation_exists_error = RecursiveError::mls_conversation("test conversation exists error")(
-            core_crypto::mls::conversation::Error::Leaf(LeafError::ConversationAlreadyExists(ConversationId::from(
+        let conversation_exists_error = RecursiveError::transaction("test conversation exists error")(
+            core_crypto::transaction_context::Error::ConversationAlreadyExists(ConversationId::from(
                 "test conversation id".as_bytes(),
-            ))),
+            )),
         );
         let mapped_error = CoreCryptoError::from(conversation_exists_error);
         assert!(matches!(
@@ -72,11 +72,16 @@ mod tests {
         ));
     }
 
+    #[cfg(feature = "proteus")]
     #[test]
     fn test_proteus_error_mapping() {
+        use core_crypto::{ProteusError, ProteusErrorKind};
+
+        use crate::ProteusError as ProteusErrorFfi;
+
         let session_not_found_eror = RecursiveError::root("recursive error wrapping core crypto error")(
-            core_crypto::Error::Proteus(ProteusError::wrap("recursive error wrapping leaf error")(
-                LeafError::ConversationNotFound(ConversationId::from("test_session_id".as_bytes())),
+            core_crypto::Error::Proteus(ProteusError::wrap("recursive error wrapping session error")(
+                ProteusErrorKind::SessionNotFound("test_session_id".to_owned()),
             )),
         );
 

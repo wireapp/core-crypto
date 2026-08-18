@@ -6,7 +6,7 @@ use openmls::prelude::KeyPackageIn;
 
 use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
-    ClientId, ClientIdRef, CredentialRef, GroupInfoBundle, LeafError, OpenMlsError, RecursiveError,
+    ClientId, ClientIdRef, CredentialRef, GroupInfoBundle, OpenMlsError, RecursiveError,
     mls::{
         conversation::{ConversationMut, Error, Result, commit::CommitBundle},
         credential::Credential,
@@ -205,7 +205,9 @@ impl ConversationMut {
             // openmls, if we just passed an unchanged leaf node, no update commit would be created.
             // Also, we can avoid cloning in the case we don't need to create a new leaf node.
             let updated_leaf_node = {
-                let leaf_node = group.own_leaf().ok_or(LeafError::InternalMlsError)?;
+                let leaf_node = group
+                    .own_leaf()
+                    .ok_or(Error::MlsGroupInvalidState("own leaf node not found"))?;
                 if leaf_node.credential() == &credential.mls_credential {
                     None
                 } else {
@@ -221,7 +223,7 @@ impl ConversationMut {
                 .map_err(OpenMlsError::wrap("group self update"))?;
 
             // We should always have ratchet tree extension turned on hence GroupInfo should always be present
-            let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
+            let group_info = group_info.ok_or(Error::MissingGroupInfo)?;
             let group_info = GroupInfoBundle::try_new_full_plaintext(group_info)?;
 
             Ok(CommitBundle {

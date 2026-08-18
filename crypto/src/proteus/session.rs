@@ -2,7 +2,7 @@ use core_crypto_keystore::{Transaction, entities::ProteusSession, traits::FetchF
 use proteus_wasm::{keys::PreKeyBundle, message::Envelope, session::Session};
 
 use super::{ProteusCentral, ProteusConversationSession};
-use crate::{KeystoreError, LeafError, ProteusError, Result};
+use crate::{KeystoreError, ProteusError, ProteusErrorKind, Result};
 
 impl ProteusCentral {
     /// Creates a new session from a prekey
@@ -141,7 +141,7 @@ impl ProteusCentral {
         let session = self
             .session(session_id, keystore)
             .await?
-            .ok_or(LeafError::ConversationNotFound(session_id.as_bytes().into()))
+            .ok_or_else(|| ProteusErrorKind::SessionNotFound(session_id.to_owned()))
             .map_err(ProteusError::wrap("getting session"))?;
         Ok(session.fingerprint_local())
     }
@@ -158,7 +158,7 @@ impl ProteusCentral {
         let session = self
             .session(session_id, keystore)
             .await?
-            .ok_or(LeafError::ConversationNotFound(session_id.as_bytes().into()))
+            .ok_or_else(|| ProteusErrorKind::SessionNotFound(session_id.to_owned()))
             .map_err(ProteusError::wrap("getting session"))?;
         Ok(session.fingerprint_remote())
     }
