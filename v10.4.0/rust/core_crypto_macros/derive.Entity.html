@@ -1,0 +1,67 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Implements the `Entity` trait and related traits for the given struct."><title>Entity in core_crypto_macros - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-17e0aaed.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="core_crypto_macros" data-themes="" data-resource-suffix="" data-rustdoc-version="1.97.1 (8bab26f4f 2026-07-14)" data-channel="1.97.1" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../static.files/storage-41dd4d93.js"></script><script defer src="sidebar-items.js"></script><script defer src="../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc derive"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Entity</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../core_crypto_macros/index.html">core_<wbr>crypto_<wbr>macros</a><span class="version">10.4.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Entity</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#attributes" title="Attributes">Attributes</a><ul><li><a href="#entitytable_name--my_table" title="`#[entity(table_name = &#34;my_table&#34;)]`"><code>#[entity(table_name = "my_table")]</code></a></li><li><a href="#entityid" title="`#[entity(id)]`"><code>#[entity(id)]</code></a></li><li><a href="#entitycolumn--my_column" title="`#[entity(column = &#34;my_column&#34;)]`"><code>#[entity(column = "my_column")]</code></a></li></ul></li><li><a href="#trait-implementations-1" title="Trait Implementations">Trait Implementations</a><ul><li><a href="#implements" title="Implements">Implements</a></li><li><a href="#primarykey-and-borrowprimarykey" title="`PrimaryKey` and `BorrowPrimaryKey`"><code>PrimaryKey</code> and <code>BorrowPrimaryKey</code></a></li><li><a href="#entity" title="`Entity`"><code>Entity</code></a></li><li><a href="#entitydatabasemutation-and-entitydeleteborrowed" title="`EntityDatabaseMutation` and `EntityDeleteBorrowed`"><code>EntityDatabaseMutation</code> and <code>EntityDeleteBorrowed</code></a></li></ul></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="index.html">In crate core_<wbr>crypto_<wbr>macros</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="index.html">core_crypto_macros</a></div><h1>Derive Macro <span class="derive">Entity</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/core_crypto_macros/lib.rs.html#108-115">Source</a> </span></div><pre class="rust item-decl"><code>#[derive(Entity)]
+{
+    <span class="comment">// Attributes available to this derive:</span>
+    #[entity]
+}
+</code></pre><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Implements the <code>Entity</code> trait and related traits for the given struct.</p>
+<p>Intended to be used only within <code>core-crypto-keystore</code>.</p>
+<p>All fields in an entity using this derive macro must have one of four types:</p>
+<ul>
+<li><code>Vec&lt;u8&gt;</code></li>
+<li><code>String</code></li>
+<li><code>Option&lt;Vec&lt;u8&gt;&gt;</code></li>
+<li><code>u32</code></li>
+</ul>
+<p>There is one exception: the identity field can only be a <code>Vec&lt;u8&gt;</code> or <code>String</code>; the optional
+variant is forbidden in that context.</p>
+<p>This is intentionally restrictive. If your entity has other field types, implement these traits manually.</p>
+<h3 id="attributes"><a class="doc-anchor" href="#attributes">§</a>Attributes</h3>
+<p>Attributes modify the code generated by this proc macro by adding annotations to the whole struct
+or to distinct fields. All attributes accepted by this proc macro are keyed with <code>#[entity]</code>.
+The attribute itself appears in the following parenthesis.</p>
+<p>It is acceptable to combine multiple entity attributes together, simply by combining them
+within the parenthesis, separated by commas: <code>#[entity(id, column_name="column")]</code>, for example.</p>
+<h4 id="entitytable_name--my_table"><a class="doc-anchor" href="#entitytable_name--my_table">§</a><code>#[entity(table_name = "my_table")]</code></h4>
+<p>This is an <strong>outer attribute</strong> which modifies the entire item. Its parameters:</p>
+<ul>
+<li><code>table_name</code>: Optional. When set, this specifies the SQL table name which will be used. Otherwise, one will be
+generated by transforming the item name to snake case and adding an <code>s</code>.</li>
+<li><code>no_upsert</code>: Optional flag. By default the generated <code>save</code> emits <code>INSERT OR REPLACE</code>. When this flag is present
+it emits a plain <code>INSERT</code> instead, and a uniqueness violation is mapped to <code>CryptoKeystoreError::AlreadyExists</code>.</li>
+</ul>
+<h4 id="entityid"><a class="doc-anchor" href="#entityid">§</a><code>#[entity(id)]</code></h4>
+<p>This is a <strong>field attribute</strong> which can be applied to at most 1 field in the item.</p>
+<p>The field to which this attribute is applied must have type <code>Vec&lt;u8&gt;</code> or <code>String</code>.
+Otherwise, you must implement all relevant entity traits manually instead of relying on this macro.</p>
+<p>If this attribute does not appear, the macro will search for a field whose name is <code>id</code> and assume
+that is an implicit id.</p>
+<p>This attribute does not accept a value.</p>
+<h4 id="entitycolumn--my_column"><a class="doc-anchor" href="#entitycolumn--my_column">§</a><code>#[entity(column = "my_column")]</code></h4>
+<p>This is a <strong>field attribute</strong> which can be applied to any number of fields in the struct.</p>
+<p>The <code>column</code> value will be used as the SQL column name for this field. If this is unset, the field’s name
+will be used as the sql column name.</p>
+<h3 id="trait-implementations-1"><a class="doc-anchor" href="#trait-implementations-1">§</a>Trait Implementations</h3><h4 id="implements"><a class="doc-anchor" href="#implements">§</a>Implements</h4>
+<ul>
+<li><code>PrimaryKey</code></li>
+<li><code>BorrowPrimaryKey</code></li>
+<li><code>Entity</code></li>
+<li><code>EntityGetBorrowed</code></li>
+<li><code>EntityDatabaseMutation</code></li>
+<li><code>EntityDeleteBorrowed</code></li>
+</ul>
+<h4 id="primarykey-and-borrowprimarykey"><a class="doc-anchor" href="#primarykey-and-borrowprimarykey">§</a><code>PrimaryKey</code> and <code>BorrowPrimaryKey</code></h4>
+<p>The primary key is the type of the id field: <code>Vec&lt;u8&gt;</code> or <code>String</code>, borrowed as <code>[u8]</code> or <code>str</code>
+respectively. For a primary key which is not simply one of the entity’s own fields, implement these
+traits manually.</p>
+<h4 id="entity"><a class="doc-anchor" href="#entity">§</a><code>Entity</code></h4>
+<p><code>TABLE_NAME</code> comes from the <code>table_name</code> attribute, or from the item name if that attribute is absent.
+<code>get</code> delegates to <code>EntityGetBorrowed::get_borrowed</code>; <code>count</code> and <code>load_all</code> defer to the helper
+functions in <code>core_crypto_keystore::entities::helpers</code>.</p>
+<p>No fields are autogenerated: <code>AutoGeneratedFields</code> is <code>()</code>. If any fields should be autogenerated,
+implement <code>EntityDatabaseMutation</code> manually.</p>
+<h4 id="entitydatabasemutation-and-entitydeleteborrowed"><a class="doc-anchor" href="#entitydatabasemutation-and-entitydeleteborrowed">§</a><code>EntityDatabaseMutation</code> and <code>EntityDeleteBorrowed</code></h4>
+<p>The derived <code>save</code> method generates sql like:</p>
+<div class="example-wrap"><pre class="language-sql"><code>INSERT OR REPLACE INTO entities (id, foo, bar) VALUES (?, ?, ?)</code></pre></div>
+<p>The <code>OR REPLACE</code> is omitted when the <code>no_upsert</code> flag is set; see the attribute documentation above.</p>
+<p><code>delete</code> delegates to <code>EntityDeleteBorrowed::delete_borrowed</code>, which deletes by the id column.</p>
+</div></details></section></div></main></body></html>

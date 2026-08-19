@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"trait":["BorrowPrimaryKey","DeletableBySearchKey","Entity","EntityDatabaseMutation","EntityDeleteBorrowed","EntityGetBorrowed","FetchFromDatabase","KeyType","OwnedKeyType","PrimaryKey","SearchableEntity","UniqueEntity","UniqueEntityExt","UniqueEntityImplementationHelper"]};
