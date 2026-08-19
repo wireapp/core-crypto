@@ -612,6 +612,61 @@ final class WireCoreCryptoTests: XCTestCase {
         }
     }
 
+    func testTargetedMessagesCanBeDecryptedByReceiver() async throws {
+        let alice = try await ccInit()
+        let bobId = genClientId()
+        let bob = try await ccInit(options: CcInitOptions(clientId: bobId))
+
+        let conversationId = try await createConversation(coreCrypto: alice)
+        _ = try await invite(cc1: alice, cc2: bob, conversationId: conversationId)
+
+        let persistedMessage = Data("This persisted message targets Bob".utf8)
+        let persistedCiphertext = try await alice.transaction { ctx in
+            try await ctx.encryptTargetedMessage(
+                conversationId: conversationId,
+                recipient: bobId,
+                policy: .persisted,
+                message: persistedMessage
+            )
+        }
+        XCTAssertNotEqual(persistedCiphertext, persistedMessage)
+
+        let persistedDecrypted = try await bob.transaction { ctx in
+            try await ctx.decryptMessage(
+                conversationId: conversationId,
+                payload: persistedCiphertext
+            )
+        }
+        guard case .persistedTargeted(let plaintext, _, _) = persistedDecrypted else {
+            XCTFail("Expected a decrypted persisted targeted message")
+            return
+        }
+        XCTAssertEqual(plaintext, persistedMessage)
+
+        let transientMessage = Data("This transient message targets Bob".utf8)
+        let transientCiphertext = try await alice.transaction { ctx in
+            try await ctx.encryptTargetedMessage(
+                conversationId: conversationId,
+                recipient: bobId,
+                policy: .transient,
+                message: transientMessage
+            )
+        }
+        XCTAssertNotEqual(transientCiphertext, transientMessage)
+
+        let transientDecrypted = try await bob.transaction { ctx in
+            try await ctx.decryptMessage(
+                conversationId: conversationId,
+                payload: transientCiphertext
+            )
+        }
+        guard case .transientTargeted(let plaintext, _, _) = transientDecrypted else {
+            XCTFail("Expected a decrypted transient targeted message")
+            return
+        }
+        XCTAssertEqual(plaintext, transientMessage)
+    }
+
     func testRegisterEpochObserverShouldNotifyObserverOnNewEpoch() async throws {
         struct Epoch: Equatable {
             let conversationId: ConversationId
