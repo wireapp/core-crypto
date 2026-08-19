@@ -77,16 +77,16 @@ impl EntityDatabaseMutation for TntSecret {
         let mut stmt = tx.prepare_cached(&format!(
             "INSERT OR REPLACE INTO {}
                 (conversation_id, epoch, hpke_private_key, group_context, targeted_message_psk)
-             VALUES (?, ?, ?, ?, ?)",
+             VALUES (:conversation_id, :epoch, :hpke_private_key, :group_context, :targeted_message_psk)",
             Self::TABLE_NAME
         ))?;
-        stmt.execute(rusqlite::params![
-            self.conversation_id,
-            self.epoch,
-            self.hpke_private_key,
-            self.group_context,
-            self.targeted_message_psk,
-        ])?;
+        stmt.execute(rusqlite::named_params! {
+            ":conversation_id": self.conversation_id,
+            ":epoch": self.epoch,
+            ":hpke_private_key": self.hpke_private_key,
+            ":group_context": self.group_context,
+            ":targeted_message_psk": self.targeted_message_psk,
+        })?;
         Ok(())
     }
 
