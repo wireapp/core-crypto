@@ -26,6 +26,11 @@ pub struct TntSecretPk {
     epoch: u64,
 }
 
+pub struct TntSecretPkRef<'a> {
+    conversation_id: &'a [u8],
+    epoch: u64,
+}
+
 impl TntSecret {
     const TABLE_NAME: &str = "tnt_secrets";
     const PRIMARY_KEY_COLUMN_NAMES: [&str; 2] = ["conversation_id", "epoch"];
