@@ -50,7 +50,6 @@ impl ConversationMut {
             id: id.to_bytes(),
             state: core_crypto_keystore::ser(group.mls_group())
                 .map_err(KeystoreError::wrap("serializing group state"))?,
-            tnt_message_counter: group.tnt_message_counter().into(),
         })
         .await
         .map_err(KeystoreError::wrap("persisting mls group"))?;

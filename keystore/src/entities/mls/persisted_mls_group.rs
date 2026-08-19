@@ -29,5 +29,4 @@ impl<'a> KeyType for ParentGroupId<'a> {
 pub struct PersistedMlsGroup {
     pub id: Vec<u8>,
     pub state: Vec<u8>,
-    pub tnt_message_counter: u32,
 }

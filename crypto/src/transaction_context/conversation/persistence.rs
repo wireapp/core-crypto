@@ -46,7 +46,6 @@ impl TransactionContext {
             .save(PersistedMlsGroup {
                 id: id.to_bytes(),
                 state: group_state,
-                tnt_message_counter: tnt_message_counter.into(),
             })
             .await
             .map_err(KeystoreError::wrap("persisting mls group"))?;

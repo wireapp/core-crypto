@@ -41,11 +41,7 @@ impl Conversation {
             .map_err(KeystoreError::wrap("finding a persisted mls group"))?;
         let Some(group) = group else { return Ok(None) };
         let mut group = Arc::unwrap_or_clone(group);
-        let conversation = Self::from_serialized_state(
-            session,
-            std::mem::take(&mut group.state),
-            group.tnt_message_counter.into(),
-        )?;
+        let conversation = Self::from_serialized_state(session, std::mem::take(&mut group.state), 0.into())?;
         Ok(Some(conversation))
     }
 
@@ -62,11 +58,7 @@ impl Conversation {
                 // we can't just destructure the fields straight out of the group, because we derive `Zeroize`, which
                 // zeroizes on drop, which means we are forced to clone all the group's fields, because
                 // otherwise the drop impl couldn't run.
-                let conversation = Self::from_serialized_state(
-                    session.clone(),
-                    group.state.clone(),
-                    group.tnt_message_counter.into(),
-                )?;
+                let conversation = Self::from_serialized_state(session.clone(), group.state.clone(), 0.into())?;
                 Ok((group.id.clone().into(), conversation))
             })
             .collect()

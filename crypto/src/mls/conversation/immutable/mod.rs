@@ -33,6 +33,7 @@ impl MlsGroupState {
         &mut self.group
     }
 
+    #[expect(unused)]
     pub(in crate::mls::conversation) fn tnt_message_counter(&self) -> TntMessageCounter {
         self.tnt_message_counter
     }

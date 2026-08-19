@@ -72,12 +72,11 @@ impl Database {
         &self,
         group_id: impl AsRef<[u8]> + Send,
         state: &[u8],
-        tnt_message_counter: u32,
+        _tnt_message_counter: u32,
     ) -> CryptoKeystoreResult<()> {
         self.save(PersistedMlsGroup {
             id: group_id.as_ref().to_owned(),
             state: state.into(),
-            tnt_message_counter,
         })
         .await?;
         Ok(())
