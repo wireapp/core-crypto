@@ -18,7 +18,7 @@ else
   RELEASE_MODE := release
 endif
 
-SWIFT_CARGO_BUILD_ARGS := $(CARGO_BUILD_ARGS) --features cancellable-transactions
+SWIFT_CARGO_BUILD_ARGS := $(CARGO_BUILD_ARGS) --features cancellable-transactions,cross-process-lock
 
 TARGET_DIR := target/$(RELEASE_MODE)
 
