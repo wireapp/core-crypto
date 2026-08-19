@@ -8,14 +8,25 @@ use core_crypto_keystore::{
     traits::FetchFromDatabase,
 };
 use log::{error, info};
-use openmls::framing::{MlsMessageIn, MlsMessageInBody};
+use openmls::{
+    framing::{MlsMessageIn, MlsMessageInBody},
+    prelude::ContentType,
+};
 use tls_codec::Deserialize;
 
 use super::{RecursionPolicy, Result};
 use crate::{
     BufferedDecryptedMessage, KeystoreError, RecursiveError, TlsCodecError,
-    mls::conversation::{ConversationMut, Error},
+    mls::conversation::{
+        ConversationMut, Error,
+        mutable::tnt::{TntMessage, TntWireFormat},
+    },
 };
+
+enum PendingMessage {
+    Mls(Box<MlsMessageIn>),
+    Tnt(Box<TntMessage>),
+}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum MessageRestorePolicy {
@@ -87,6 +98,17 @@ impl ConversationMut {
                 .map_err(KeystoreError::wrap("finding all mls pending messages"))?
                 .into_iter()
                 .map(|m| -> Result<_> {
+                    let wire_format = u16::tls_deserialize_exact(&m.message[2..4])
+                        .map_err(TlsCodecError::deserialize("u16 (wire format)"))?;
+                    if TntWireFormat::ALL.contains(&wire_format) {
+                    let message = TntMessage::tls_deserialize(&mut m.message.as_slice())
+                        .map_err(TlsCodecError::deserialize("TntMessage"))?;
+                        // We want to restore tnt messages with the same priority as application messages, i.e.,
+                        // before proposals or commits, which is why we're using the value equal to that content type
+                        // here.
+                        return Ok((ContentType::Application as u8, PendingMessage::Tnt(Box::new(message))));
+                    }
+
                     let message = MlsMessageIn::tls_deserialize(&mut m.message.as_slice())
                         .map_err(TlsCodecError::deserialize("mls message in"))?;
                     let content_type = match message.body_as_ref() {
@@ -94,7 +116,7 @@ impl ConversationMut {
                         MlsMessageInBody::PrivateMessage(m) => m.content_type(),
                         _ => return Err(Error::InappropriateMessageBodyType),
                     };
-                    Ok((content_type as u8, message))
+                    Ok((content_type as u8, PendingMessage::Mls(Box::new(message))))
                 })
                 .collect::<Result<Vec<_>>>()?;
 
@@ -105,8 +127,11 @@ impl ConversationMut {
             info!(group_id = conversation_id.to_owned(); "Attempting to restore {} buffered messages", pending_messages.len());
 
             let mut decrypted_messages = Vec::with_capacity(pending_messages.len());
-            for (_, m) in pending_messages {
-                let decrypted = self.decrypt_mls_message(m, RecursionPolicy::None).await?;
+            for (_, pending_message) in pending_messages {
+                let decrypted = match pending_message {
+                    PendingMessage::Mls(mls_message) => self.decrypt_mls_message(*mls_message, RecursionPolicy::None).await?,
+                    PendingMessage::Tnt(tnt_message) => self.decrypt_tnt_message(*tnt_message).await?,
+                };
                 decrypted_messages.push(decrypted.into());
             }
 
