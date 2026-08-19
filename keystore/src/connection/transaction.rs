@@ -15,20 +15,25 @@ use crate::{
 /// These impls control the keystore transaction lifecycle.
 impl Database {
     /// Waits for the current transaction to be committed or rolled back, then starts a new one.
+    ///
+    /// With the `cross-process-lock` feature enabled, this also waits on transactions running
+    /// against the same database in other processes.
     pub async fn new_transaction(self: &Arc<Self>) -> CryptoKeystoreResult<UniqueArc<Transaction>> {
-        let semaphore = self.transaction_semaphore.acquire_arc().await;
-        Transaction::new(semaphore, self.clone()).await
+        let lock_guard = self.transaction_lock.acquire().await?;
+        Transaction::new(lock_guard, self.clone()).await
     }
 
     /// Start a new transaction if no other transaction is currently in progress.
     ///
     /// If a transaction is currently in progress, this will produce a `TransactionInProgress` error.
+    /// With the `cross-process-lock` feature enabled, a transaction in progress in another process
+    /// counts too.
     pub async fn try_new_immediate_transaction(self: &Arc<Self>) -> CryptoKeystoreResult<UniqueArc<Transaction>> {
-        let semaphore = self
-            .transaction_semaphore
-            .try_acquire_arc()
+        let lock_guard = self
+            .transaction_lock
+            .try_acquire()?
             .ok_or(CryptoKeystoreError::TransactionInProgress)?;
-        Transaction::new(semaphore, self.clone()).await
+        Transaction::new(lock_guard, self.clone()).await
     }
 
     /// Do an operation on a new keystore transaction on this database.
@@ -43,8 +48,8 @@ impl Database {
         self: &Arc<Self>,
         operation: impl AsyncFnOnce(&Transaction) -> CryptoKeystoreResult<R>,
     ) -> CryptoKeystoreResult<R> {
-        let semaphore = self.transaction_semaphore.acquire_arc().await;
-        let transaction = Transaction::new(semaphore, self.clone()).await?;
+        let lock_guard = self.transaction_lock.acquire().await?;
+        let transaction = Transaction::new(lock_guard, self.clone()).await?;
 
         let result = operation(&transaction).await;
         if result.is_ok() {
@@ -102,7 +107,7 @@ impl Database {
     /// NOTE: Because of TOCTOU, there is an interval between when we check if an existing
     /// transaction exists, and when we create our own. If a separate process creates a transaction
     /// during that interval, then this function must wait for that external transaction to
-    /// complete before it can acquire the semaphore. This might be surprising, but isn't
+    /// complete before it can acquire the transaction lock. This might be surprising, but isn't
     /// worth putting in the effort to change; it's not strictly a bug.
     pub async fn ensure_transaction<T, E>(
         self: &Arc<Self>,

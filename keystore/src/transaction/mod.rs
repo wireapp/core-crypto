@@ -12,13 +12,15 @@ mod specializations;
 
 use std::{collections::HashMap, sync::Arc};
 
-use async_lock::{RwLock, SemaphoreGuardArc};
+use async_lock::RwLock;
 use rusqlite::TransactionBehavior;
 
 pub use self::dynamic_dispatch::EntityId;
 pub(crate) use self::{bulk_delete_filter::BulkDeleteFilter, read_outcome::ReadOutcome};
 use self::{dynamic_dispatch::Operation, operations::Operations};
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc, traits::Entity};
+use crate::{
+    CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc, connection::TransactionGuard, traits::Entity,
+};
 
 /// This is an in-flight transaction: all operations are buffered in memory, and only
 /// applied to the database on [`commit`][UniqueArc<Self>::commit].
@@ -32,21 +34,21 @@ use crate::{CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc, trai
 /// Just be aware that you'll need to take the unique arc out in order to commit.
 pub struct Transaction {
     operations: RwLock<Operations>,
-    _semaphore_guard: SemaphoreGuardArc,
+    _lock_guard: TransactionGuard,
     database: Arc<Database>,
 }
 
 impl Transaction {
     /// Instantiate a new transaction.
     ///
-    /// Requires a semaphore guard to ensure that only one exists at a time.
+    /// Requires a transaction lock guard to ensure that only one exists at a time.
     pub(crate) async fn new(
-        semaphore_guard: SemaphoreGuardArc,
+        lock_guard: TransactionGuard,
         database: Arc<Database>,
     ) -> CryptoKeystoreResult<UniqueArc<Self>> {
         let transaction = UniqueArc::from(Self {
             operations: Default::default(),
-            _semaphore_guard: semaphore_guard,
+            _lock_guard: lock_guard,
             database,
         });
 
@@ -128,7 +130,7 @@ impl UniqueArc<Transaction> {
         let Transaction {
             operations,
             database,
-            _semaphore_guard,
+            _lock_guard,
         } = UniqueArc::into_inner(self).await;
         let operations = operations.into_inner();
 

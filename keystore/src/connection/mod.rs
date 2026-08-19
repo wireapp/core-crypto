@@ -1,6 +1,8 @@
 mod encryption;
 mod entity_extension_methods;
 mod fetch_from_database;
+#[cfg(feature = "cross-process-lock")]
+mod file_lock;
 mod filesystem;
 #[cfg(target_os = "unknown")]
 mod idb_migration;
@@ -10,18 +12,20 @@ mod migrations;
 #[cfg(target_os = "unknown")]
 mod os_unknown;
 mod transaction;
+mod transaction_lock;
 
 use std::sync::Arc;
 
-use async_lock::{Mutex, MutexGuard, Semaphore};
+use async_lock::{Mutex, MutexGuard};
 use rusqlite::Connection;
 #[cfg(feature = "log-queries")]
 use rusqlite::trace::{TraceEvent, TraceEventCodes};
 
-pub(crate) use self::filesystem::Filesystem;
 #[cfg(target_os = "unknown")]
 pub use self::idb_migration::{delete_legacy_idb, legacy_idb_exists};
 pub use self::migrations::migrate_db_key_type_to_bytes;
+use self::transaction_lock::TransactionLock;
+pub(crate) use self::{filesystem::Filesystem, transaction_lock::TransactionGuard};
 use crate::{
     CryptoKeystoreResult, DatabaseKey, connection::migrations::MigrationTarget, transaction::Transaction,
     unique_arc::UniqueWeak,
@@ -46,9 +50,8 @@ pub struct Database {
     pub(crate) filesystem: Mutex<Box<dyn Filesystem>>,
     #[debug(skip)]
     pub(crate) transaction: Mutex<Option<UniqueWeak<Transaction>>>,
-    // we need this `Arc` so we can create an owned guard, so that
-    // `self.transaction` doesn't need a self-referential lifetime.
-    transaction_semaphore: Arc<Semaphore>,
+    // ensures at most one transaction is in flight against this database at a time
+    transaction_lock: TransactionLock,
 }
 
 impl Database {
@@ -98,8 +101,6 @@ impl Database {
         filesystem: Box<dyn Filesystem>,
         migration_target: MigrationTarget,
     ) -> CryptoKeystoreResult<Self> {
-        const ALLOWED_CONCURRENT_TRANSACTIONS_COUNT: usize = 1;
-
         #[cfg(feature = "log-queries")]
         conn.trace_v2(TraceEventCodes::SQLITE_TRACE_STMT, Some(log_query));
 
@@ -112,13 +113,15 @@ impl Database {
         }
 
         migrations::run_migrations(&mut conn, migration_target)?;
+
+        let transaction_lock = TransactionLock::new(conn.path().unwrap_or_default())?;
         let conn = conn.into();
 
         Ok(Self {
             conn,
             filesystem: filesystem.into(),
             transaction: Default::default(),
-            transaction_semaphore: Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT)),
+            transaction_lock,
         })
     }
 
@@ -168,14 +171,17 @@ impl Database {
 
     /// Wait for any running transaction to finish, then take the connection out of this database,
     /// preventing this from being used again.
-    async fn take(self) -> CryptoKeystoreResult<(Connection, Box<dyn Filesystem>)> {
-        let _semaphore = self.transaction_semaphore.acquire().await;
-        Ok((self.conn.into_inner(), self.filesystem.into_inner()))
+    ///
+    /// The returned guard keeps other processes out for as long as the caller holds it, so that
+    /// teardown is not interleaved with somebody else's transaction.
+    async fn take(self) -> CryptoKeystoreResult<(Connection, Box<dyn Filesystem>, TransactionGuard)> {
+        let guard = self.transaction_lock.acquire().await?;
+        Ok((self.conn.into_inner(), self.filesystem.into_inner(), guard))
     }
 
     // Close this database connection
     pub async fn close(self) -> CryptoKeystoreResult<()> {
-        let (conn, _fs) = self.take().await?;
+        let (conn, _fs, _guard) = self.take().await?;
         conn.close().map_err(|(_conn, err)| err)?;
         Ok(())
     }
@@ -186,7 +192,7 @@ impl Database {
     /// Future opens will always succeed with any arbitrary encryption key; they will
     /// simply open an empty database.
     pub async fn wipe(self) -> CryptoKeystoreResult<()> {
-        let (conn, fs) = self.take().await?;
+        let (conn, fs, _guard) = self.take().await?;
         conn.execute_batch(
             "
             PRAGMA writable_schema = 1;
@@ -200,6 +206,10 @@ impl Database {
         if let Some(path) = location {
             // not in-memory
             fs.delete(&path).await?;
+            // `_guard` is still alive, so we unlink the lock file while still holding it; that
+            // keeps a peer from acquiring the fresh lock file before the database is really gone.
+            #[cfg(feature = "cross-process-lock")]
+            file_lock::remove_lock_file(&path).await?;
         }
         Ok(())
     }
