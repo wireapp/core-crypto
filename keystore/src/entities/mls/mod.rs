@@ -11,6 +11,7 @@ mod stored_epoch_encryption_keypair;
 mod stored_hpke_private_key;
 mod stored_keypackage;
 mod stored_psk_bundle;
+mod targeted_message_rx_counter;
 mod targeted_message_tx_counter;
 mod tnt_secret;
 mod x509_intermediate_cert;
@@ -29,6 +30,9 @@ pub use stored_epoch_encryption_keypair::StoredEpochEncryptionKeypair;
 pub use stored_hpke_private_key::StoredHpkePrivateKey;
 pub use stored_keypackage::StoredKeyPackage;
 pub use stored_psk_bundle::StoredPskBundle;
+pub use targeted_message_rx_counter::{
+    TargetedMessageRxCounter, TargetedMessageRxCounterPk, TargetedMessageRxCounterPkRef,
+};
 pub use targeted_message_tx_counter::{TargetedMessageTxCounter, TargetedMessageTxCounterPk};
 pub use tnt_secret::{TntSecret, TntSecretPk, TntSecretPkRef};
 pub use x509_intermediate_cert::X509IntermediateCert;
