@@ -1,10 +1,14 @@
-use core_crypto_keystore::Transaction;
+use core_crypto_keystore::{
+    Transaction,
+    entities::{ConversationEpochsOlderThan, TargetedMessageRxCounter, TntSecret, TntSecretPkRef},
+    traits::FetchFromDatabase as _,
+};
 use openmls::group::InnerState;
 
 use super::{ConversationMut, Result};
 use crate::{
-    RecursiveError,
-    mls::conversation::{Conversation, ConversationIdRef, MlsGroupState},
+    KeystoreError, RecursiveError,
+    mls::conversation::{Conversation, ConversationIdRef, MlsGroupState, config::MAX_PAST_EPOCHS},
 };
 
 impl ConversationMut {
@@ -38,6 +42,21 @@ impl ConversationMut {
         let Conversation { group, id, .. } = &*self.inner;
         let mut group = group.write().await;
         let epoch_before_operation = group.epoch();
+
+        // Save the tnt secret. We need to do this exactly once per epoch.
+        let tnt_secret_key = TntSecretPkRef::new(id.as_ref(), epoch_before_operation.as_u64());
+        if tx
+            .get_borrowed::<TntSecret>(tnt_secret_key)
+            .await
+            .map_err(KeystoreError::wrap("finding tnt secret for current epoch"))?
+            .is_none()
+        {
+            let tnt_secret = self.create_tnt_secret(group.mls_group()).await?;
+            tx.save(tnt_secret)
+                .await
+                .map_err(KeystoreError::wrap("persisting tnt secret for current epoch"))?;
+        }
+
         let ok_result = operation(tx, &mut *group, id).await?;
 
         if group.state_changed() == InnerState::Persisted {
@@ -46,6 +65,12 @@ impl ConversationMut {
 
         if epoch_before_operation < group.epoch() {
             group.reset_targeted_message_tx_counters(tx).await;
+
+            let oldest_retained_epoch = group.epoch().as_u64().saturating_sub(MAX_PAST_EPOCHS as u64);
+            // We can't avoid allocation here because tx needs to own the deletion key.
+            let stale_epochs = ConversationEpochsOlderThan::new(id.as_ref().to_vec(), oldest_retained_epoch);
+            tx.bulk_remove::<TntSecret, _>(stale_epochs.clone()).await;
+            tx.bulk_remove::<TargetedMessageRxCounter, _>(stale_epochs).await;
         }
 
         group.persist(tx).await?;
