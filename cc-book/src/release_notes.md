@@ -1,6 +1,8 @@
 # Release Notes
 
-## Unreleased
+## CoreCrypto 10
+
+### v10.4.0 - 2026-08-19
 
 - `PkiEnvironment` now supports adding multiple trust anchors. Previously, `addTrustAnchor` replaced any existing trust
   anchor. Get all added trust anchor certificates via `getTrustAnchors`. Remove a trust anchor via `removeTrustAnchor`
@@ -27,8 +29,6 @@
 
 - `proteusNewPrekeyAuto` still reuses the ids of deleted prekeys before allocating new ones, but no longer ensures that
   those ids are reused in strictly ascending order.
-
-## CoreCrypto 10
 
 ### v10.3.0 - 2026-08-07
 
