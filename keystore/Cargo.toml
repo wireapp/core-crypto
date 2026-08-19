@@ -14,6 +14,10 @@ workspace = true
 default = ["proteus-keystore"]
 proteus-keystore = ["dep:proteus-traits"]
 log-queries = ["rusqlite/trace"]
+# Extend the guarantee that at most one keystore transaction runs at a time from a single process
+# to every process on the machine, via an advisory lock on a file next to the database.
+# Requires a real filesystem, so it must stay off for `target_os = "unknown"`.
+cross-process-lock = ["dep:blocking"]
 # kept here because legacy keystore module is using this feature.
 serde = []
 dummy-entity = []

@@ -17,6 +17,9 @@ proteus = [
   "dep:proteus-traits",
   "core-crypto-keystore/proteus-keystore",
 ]
+# Guard keystore transactions across processes, not just within one.
+# Not supported on `target_os = "unknown"`; see the keystore feature of the same name.
+cross-process-lock = ["core-crypto-keystore/cross-process-lock"]
 # for test/bench all cipher suites
 test-all-cipher = []
 
