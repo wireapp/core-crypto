@@ -59,10 +59,7 @@ public final class CoreCrypto: CoreCryptoProtocol, @unchecked Sendable {
     public func transaction<Result>(
         _ block: @escaping (_ context: CoreCryptoContextProtocol) async throws -> Result
     ) async throws -> Result {
-        let dbLocation = await database?.getLocation()
-        let filePath = dbLocation.map { FilePath(stringLiteral: $0) }
-        let transactionExecutor = try TransactionExecutor<Result>(
-            keystorePath: filePath, block)
+        let transactionExecutor = try TransactionExecutor<Result>(block)
         let token = CoreCryptoCancellationToken()
 
         do {
@@ -147,34 +144,14 @@ final actor TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand 
     let block: (_ context: CoreCryptoContextProtocol) async throws -> Result
     var result: Result?
     var innerError: Error?
-    var fileDescriptor: FileDescriptor?
 
     init(
-        keystorePath: FilePath?,
         _ block: @escaping (_ context: CoreCryptoContextProtocol) async throws -> Result
     ) throws {
         self.block = block
-
-        if let keystorePath {
-            let path = keystorePath.absolutePath().removingLastComponent()
-            self.fileDescriptor = try FileDescriptor.open(path, .readOnly, options: .directory)
-        }
-    }
-
-    deinit {
-        try? fileDescriptor?.close()
     }
 
     func execute(context: WireCoreCryptoUniffi.CoreCryptoContext) async throws {
-        // Only aquire lock if we are using an instance which persists to disk
-        if fileDescriptor != nil {
-            acquireFileLock()
-        }
-
-        defer {
-            releaseFileLock()
-        }
-
         do {
             result = try await block(context)
         } catch {
@@ -182,23 +159,6 @@ final actor TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand 
             throw error
         }
     }
-
-    func acquireFileLock() {
-        guard let fileDescriptor else { return }
-        let result = flock(fileDescriptor.rawValue, LOCK_EX)
-        if result != 0 {
-            fatalError("Failed aquire lock: \(errno))")
-        }
-    }
-
-    func releaseFileLock() {
-        guard let fileDescriptor else { return }
-        let result = flock(fileDescriptor.rawValue, LOCK_UN)
-        if result != 0 {
-            fatalError("Failed release lock: \(errno))")
-        }
-    }
-
 }
 
 extension PkiEnvironment {
