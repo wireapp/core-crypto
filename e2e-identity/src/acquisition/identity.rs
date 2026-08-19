@@ -109,25 +109,16 @@ impl WireIdentityReader for Vec<u8> {
 }
 
 fn try_extract_subject(cert: &x509_cert::TbsCertificate) -> Result<(String, String)> {
-    let mut display_name = None;
-    let mut domain = None;
-
-    let mut subjects = cert.subject().iter().flat_map(|n| n.0.iter());
-    subjects.try_for_each(|s| -> Result<()> {
-        match s.oid {
-            const_oid::db::rfc4519::ORGANIZATION_NAME => {
-                domain = Some(std::str::from_utf8(s.value.value())?);
-            }
-            const_oid::db::rfc4519::COMMON_NAME => {
-                display_name = Some(std::str::from_utf8(s.value.value())?);
-            }
-            _ => {}
-        }
-
-        Ok(())
-    })?;
-    let display_name = display_name.ok_or(CertificateError::MissingDisplayName)?.to_string();
-    let domain = domain.ok_or(CertificateError::MissingDomain)?.to_string();
+    let display_name = cert
+        .subject()
+        .common_name()?
+        .ok_or(CertificateError::MissingDisplayName)?
+        .into();
+    let domain = cert
+        .subject()
+        .organization()?
+        .ok_or(CertificateError::MissingDomain)?
+        .into();
     Ok((display_name, domain))
 }
 
