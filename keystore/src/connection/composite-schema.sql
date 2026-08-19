@@ -96,3 +96,22 @@ CREATE TABLE targeted_message_tx_counters (
   PRIMARY KEY (conversation_id, receiver),
   FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
 );
+
+CREATE TABLE tnt_secrets (
+  conversation_id BLOB NOT NULL,
+  epoch INTEGER NOT NULL,
+  hpke_private_key BLOB NOT NULL,
+  group_context BLOB NOT NULL,
+  targeted_message_psk BLOB NOT NULL,
+  PRIMARY KEY (conversation_id, epoch),
+  FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
+);
+
+CREATE TABLE targeted_message_rx_counters (
+  conversation_id BLOB NOT NULL,
+  sender INTEGER NOT NULL,
+  epoch INTEGER NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (conversation_id, sender, epoch),
+  FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
+);

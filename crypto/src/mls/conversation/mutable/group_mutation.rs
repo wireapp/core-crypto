@@ -1,10 +1,14 @@
-use core_crypto_keystore::Transaction;
+use core_crypto_keystore::{
+    Transaction,
+    entities::{ConversationId as DbConversationId, TntSecret, TntSecretPk},
+    traits::FetchFromDatabase as _,
+};
 use openmls::group::InnerState;
 
 use super::{ConversationMut, Result};
 use crate::{
-    RecursiveError,
-    mls::conversation::{Conversation, ConversationIdRef, MlsGroupState},
+    KeystoreError, RecursiveError,
+    mls::conversation::{Conversation, ConversationIdRef, MlsGroupState, config::MAX_PAST_EPOCHS},
 };
 
 impl ConversationMut {
@@ -36,6 +40,21 @@ impl ConversationMut {
         let Conversation { group, id, .. } = &*self.inner;
         let mut group = group.write().await;
         let epoch_before_operation = group.epoch();
+
+        // Save the tnt secret. We need to do this exactly once per epoch.
+        let tnt_secret_key = TntSecretPk::new(id.as_ref().to_vec(), epoch_before_operation.as_u64());
+        if tx
+            .get::<TntSecret>(&tnt_secret_key)
+            .await
+            .map_err(KeystoreError::wrap("finding tnt secret for current epoch"))?
+            .is_none()
+        {
+            let tnt_secret = self.create_tnt_secret(group.mls_group()).await?;
+            tx.save(tnt_secret)
+                .await
+                .map_err(KeystoreError::wrap("persisting tnt secret for current epoch"))?;
+        }
+
         let ok_result = operation(tx, &mut *group, id).await?;
 
         if group.state_changed() == InnerState::Persisted {
@@ -44,6 +63,24 @@ impl ConversationMut {
 
         if epoch_before_operation < group.epoch() {
             group.reset_targeted_message_tx_counters(tx).await;
+
+            let oldest_retained_epoch = group.epoch().as_u64().saturating_sub(MAX_PAST_EPOCHS as u64);
+            let conversation_id = DbConversationId::from(id.as_ref().to_vec());
+            let secrets = tx
+                .search::<TntSecret, _>(&conversation_id)
+                .await
+                .map_err(KeystoreError::wrap("finding tnt secrets to remove"))?;
+
+            // This is not a lot of data: just `MAX_PAST_EPOCHS` records. In practice, we could in most cases just
+            // delete the single one with the oldest epoch. However, to avoid any assumptions about the data, let's just
+            // check each of the `MAX_PAST_EPOCHS` records.
+            for secret in secrets {
+                if secret.epoch < oldest_retained_epoch {
+                    tx.remove::<TntSecret>(&TntSecretPk::new(secret.conversation_id.clone(), secret.epoch))
+                        .await
+                        .map_err(KeystoreError::wrap("removing old tnt secret"))?;
+                }
+            }
         }
 
         group.persist(tx).await?;

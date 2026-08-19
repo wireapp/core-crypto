@@ -121,7 +121,7 @@ export async function decryptMessage() {
     const decryptedMessage = await window.cc.transaction((ctx) =>
         ctx.decryptMessage(conversationId, encryptedMessage)
     );
-    if (DecryptedMessage.Text.instanceOf(decryptedMessage)) {
+    if (DecryptedMessage.ApplicationMessage.instanceOf(decryptedMessage)) {
         return decryptedMessage.inner.plaintext;
     }
     return null;

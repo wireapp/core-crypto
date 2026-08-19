@@ -7,8 +7,8 @@ use crate::{ClientId, WireIdentity};
 /// Represents the items a consumer might require after decrypting a message.
 #[derive(Debug, uniffi::Enum)]
 pub enum DecryptedMessage {
-    /// The decrypted message is a text message.
-    Text {
+    /// The decrypted message is an MLS application message.
+    ApplicationMessage {
         /// Decrypted text message.
         plaintext: Vec<u8>,
         /// The sender's `ClientId`.
@@ -37,15 +37,33 @@ pub enum DecryptedMessage {
         /// Identity claims present in the sender credential.
         identity: WireIdentity,
     },
+    /// The decrypted message is a transient targeted message.
+    TransientTargeted {
+        /// Decrypted text message.
+        plaintext: Vec<u8>,
+        /// The sender's `ClientId`.
+        sender_client_id: Arc<ClientId>,
+        /// Identity claims present in the sender credential.
+        identity: WireIdentity,
+    },
+    /// The decrypted message is a persisted targeted message.
+    PersistedTargeted {
+        /// Decrypted text message.
+        plaintext: Vec<u8>,
+        /// The sender's `ClientId`.
+        sender_client_id: Arc<ClientId>,
+        /// Identity claims present in the sender credential.
+        identity: WireIdentity,
+    },
 }
 
 impl From<CcDecryptedMessage> for DecryptedMessage {
     fn from(from: CcDecryptedMessage) -> Self {
         match from {
-            CcDecryptedMessage::Text(text) => Self::Text {
-                plaintext: text.plaintext,
-                sender_client_id: Arc::new(text.sender_client_id.into()),
-                identity: text.identity.into(),
+            CcDecryptedMessage::ApplicationMessage(message) => Self::ApplicationMessage {
+                plaintext: message.plaintext,
+                sender_client_id: Arc::new(message.sender_client_id.into()),
+                identity: message.identity.into(),
             },
             CcDecryptedMessage::Commit(commit) => Self::Commit {
                 is_active: commit.is_active,
@@ -58,6 +76,16 @@ impl From<CcDecryptedMessage> for DecryptedMessage {
                 delay: proposal.delay,
                 identity: proposal.identity.into(),
             },
+            CcDecryptedMessage::TransientTargeted(message) => Self::TransientTargeted {
+                plaintext: message.plaintext,
+                sender_client_id: Arc::new(message.sender_client_id.into()),
+                identity: message.identity.into(),
+            },
+            CcDecryptedMessage::PersistedTargeted(message) => Self::PersistedTargeted {
+                plaintext: message.plaintext,
+                sender_client_id: Arc::new(message.sender_client_id.into()),
+                identity: message.identity.into(),
+            },
         }
     }
 }
@@ -66,8 +94,8 @@ impl From<CcDecryptedMessage> for DecryptedMessage {
 /// It represents messages for the new epoch that arrived before the commit that created it.
 #[derive(Debug, uniffi::Enum)]
 pub enum BufferedDecryptedMessage {
-    /// The decrypted message is a text message.
-    Text {
+    /// The decrypted message is an MLS application message.
+    ApplicationMessage {
         /// Decrypted text message.
         plaintext: Vec<u8>,
         /// The sender's `ClientId`.
@@ -93,15 +121,33 @@ pub enum BufferedDecryptedMessage {
         /// Identity claims present in the sender credential.
         identity: WireIdentity,
     },
+    /// The decrypted message is a transient targeted message.
+    TransientTargeted {
+        /// Decrypted text message.
+        plaintext: Vec<u8>,
+        /// The sender's `ClientId`.
+        sender_client_id: Arc<ClientId>,
+        /// Identity claims present in the sender credential.
+        identity: WireIdentity,
+    },
+    /// The decrypted message is a persisted targeted message.
+    PersistedTargeted {
+        /// Decrypted text message.
+        plaintext: Vec<u8>,
+        /// The sender's `ClientId`.
+        sender_client_id: Arc<ClientId>,
+        /// Identity claims present in the sender credential.
+        identity: WireIdentity,
+    },
 }
 
 impl From<CcBufferedDecryptedMessage> for BufferedDecryptedMessage {
     fn from(from: CcBufferedDecryptedMessage) -> Self {
         match from {
-            CcBufferedDecryptedMessage::Text(text) => Self::Text {
-                plaintext: text.plaintext,
-                sender_client_id: Arc::new(text.sender_client_id.into()),
-                identity: text.identity.into(),
+            CcBufferedDecryptedMessage::ApplicationMessage(message) => Self::ApplicationMessage {
+                plaintext: message.plaintext,
+                sender_client_id: Arc::new(message.sender_client_id.into()),
+                identity: message.identity.into(),
             },
             CcBufferedDecryptedMessage::Commit(commit) => Self::Commit {
                 is_active: commit.is_active,
@@ -110,6 +156,16 @@ impl From<CcBufferedDecryptedMessage> for BufferedDecryptedMessage {
             CcBufferedDecryptedMessage::Proposal(proposal) => Self::Proposal {
                 delay: proposal.delay,
                 identity: proposal.identity.into(),
+            },
+            CcBufferedDecryptedMessage::TransientTargeted(message) => Self::TransientTargeted {
+                plaintext: message.plaintext,
+                sender_client_id: Arc::new(message.sender_client_id.into()),
+                identity: message.identity.into(),
+            },
+            CcBufferedDecryptedMessage::PersistedTargeted(message) => Self::PersistedTargeted {
+                plaintext: message.plaintext,
+                sender_client_id: Arc::new(message.sender_client_id.into()),
+                identity: message.identity.into(),
             },
         }
     }

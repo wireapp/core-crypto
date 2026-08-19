@@ -73,10 +73,13 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
                         context.decryptMessage(ConversationId(bytes = action.conversationId), action.message)
                     }
                 ) {
-                    is DecryptedMessage.Text -> Result.success(Base64.Default.encode(decryptedMessage.plaintext))
+                    is DecryptedMessage.ApplicationMessage -> Result.success(Base64.Default.encode(decryptedMessage.plaintext))
 
                     is DecryptedMessage.Commit,
                     is DecryptedMessage.Proposal -> Result.success("decrypted protocol message")
+                    is DecryptedMessage.PersistedTargeted,
+                    is DecryptedMessage.TransientTargeted -> Result.success
+                        ("decrypted transient message (currently unused in interop)")
                 }
             }
 

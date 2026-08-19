@@ -30,13 +30,19 @@ use tls_codec::Deserialize as _;
 use super::{ConversationMut, Result};
 use crate::{
     ClientId, E2eiConversationState, OpenMlsError, RecursiveError, Session, WireIdentity,
-    mls::{conversation::Error, credential::ext::CredentialExt as _},
+    mls::{
+        conversation::{
+            Error,
+            mutable::tnt::{TntMessage, TntWireFormat},
+        },
+        credential::ext::CredentialExt as _,
+    },
 };
 
-/// A decrypted MLS application message
+/// Decrypted Bytes
 #[derive(Debug)]
-pub struct Text {
-    /// Decrypted text message
+pub struct DecryptedBytes {
+    /// Decrypted content
     pub plaintext: Vec<u8>,
     /// The sender's [ClientId].
     pub sender_client_id: ClientId,
@@ -74,23 +80,28 @@ pub struct BufferedCommit {
     pub identity: WireIdentity,
 }
 
-/// Represents the potential items a consumer might require after passing us an encrypted message we
-/// have decrypted for him
+/// Represents the items a consumer might require after decrypting a message.
 #[derive(Debug, enum_as_inner::EnumAsInner)]
 pub enum DecryptedMessage {
-    /// The decrypted message is a text message.
-    Text(Text),
+    /// The decrypted message is an MLS application message.
+    ApplicationMessage(DecryptedBytes),
     /// The decrypted message is a commit.
     Commit(Commit),
     /// The decrypted message is a proposal.
     Proposal(Proposal),
+    /// The decrypted message is a transient targeted message.
+    TransientTargeted(DecryptedBytes),
+    /// The decrypted message is a persisted targeted message.
+    PersistedTargeted(DecryptedBytes),
 }
 
 impl DecryptedMessage {
     /// Identity claims present in the sender credential
     pub fn identity(&self) -> &WireIdentity {
         match self {
-            DecryptedMessage::Text(text) => &text.identity,
+            DecryptedMessage::ApplicationMessage(decrypted_bytes)
+            | DecryptedMessage::TransientTargeted(decrypted_bytes)
+            | DecryptedMessage::PersistedTargeted(decrypted_bytes) => &decrypted_bytes.identity,
             DecryptedMessage::Commit(commit) => &commit.identity,
             DecryptedMessage::Proposal(proposal) => &proposal.identity,
         }
@@ -101,18 +112,22 @@ impl DecryptedMessage {
 /// It represents messages for the new epoch that arrived before the commit that created it.
 #[derive(Debug)]
 pub enum BufferedDecryptedMessage {
-    /// The decrypted message is a text message.
-    Text(Text),
+    /// The decrypted message is an MLS application message.
+    ApplicationMessage(DecryptedBytes),
     /// The decrypted message is a commit.
     Commit(BufferedCommit),
     /// The decrypted message is a proposal.
     Proposal(Proposal),
+    /// The decrypted message is a transient targeted message.
+    TransientTargeted(DecryptedBytes),
+    /// The decrypted message is a persisted targeted message.
+    PersistedTargeted(DecryptedBytes),
 }
 
 impl From<DecryptedMessage> for BufferedDecryptedMessage {
     fn from(value: DecryptedMessage) -> Self {
         match value {
-            DecryptedMessage::Text(text) => Self::Text(text),
+            DecryptedMessage::ApplicationMessage(message) => Self::ApplicationMessage(message),
             DecryptedMessage::Commit(commit) => Self::Commit({
                 BufferedCommit {
                     is_active: commit.is_active,
@@ -120,6 +135,8 @@ impl From<DecryptedMessage> for BufferedDecryptedMessage {
                 }
             }),
             DecryptedMessage::Proposal(proposal) => Self::Proposal(proposal),
+            DecryptedMessage::TransientTargeted(decrypted_bytes) => Self::TransientTargeted(decrypted_bytes),
+            DecryptedMessage::PersistedTargeted(decrypted_bytes) => Self::PersistedTargeted(decrypted_bytes),
         }
     }
 }
@@ -127,13 +144,15 @@ impl From<DecryptedMessage> for BufferedDecryptedMessage {
 impl From<BufferedDecryptedMessage> for DecryptedMessage {
     fn from(value: BufferedDecryptedMessage) -> Self {
         match value {
-            BufferedDecryptedMessage::Text(text) => Self::Text(text),
+            BufferedDecryptedMessage::ApplicationMessage(message) => Self::ApplicationMessage(message),
             BufferedDecryptedMessage::Commit(buffered_commit) => Self::Commit(Commit {
                 is_active: buffered_commit.is_active,
                 buffered_messages: None,
                 identity: buffered_commit.identity,
             }),
             BufferedDecryptedMessage::Proposal(proposal) => Self::Proposal(proposal),
+            BufferedDecryptedMessage::TransientTargeted(decrypted_bytes) => Self::TransientTargeted(decrypted_bytes),
+            BufferedDecryptedMessage::PersistedTargeted(decrypted_bytes) => Self::PersistedTargeted(decrypted_bytes),
         }
     }
 }
@@ -161,12 +180,20 @@ impl ConversationMut {
     /// If a message has been buffered, this will be indicated by an error.
     /// Other errors are originating from OpenMls and the KeyStore
     pub async fn decrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<DecryptedMessage> {
-        let mls_message_in =
-            MlsMessageIn::tls_deserialize(&mut message.as_ref()).map_err(Error::tls_deserialize("mls message in"))?;
+        let message = message.as_ref();
+        // Bytes 0 and 1 are the protocol version, bytes 2 and 3 are the wire format.
+        let wire_format =
+            u16::tls_deserialize_exact(&message[2..4]).map_err(Error::tls_deserialize("u16 (wire format)"))?;
 
-        let decrypt_message_result = self
-            .decrypt_message_inner(mls_message_in, RecursionPolicy::AsNecessary)
-            .await;
+        let decrypt_message_result = if TntWireFormat::all().contains(&wire_format) {
+            let tnt_message = TntMessage::tls_deserialize_exact(message).map_err(Error::tls_serialize("TntMessage"))?;
+            self.decrypt_tnt_message(tnt_message).await
+        } else {
+            let mls_message_in =
+                MlsMessageIn::tls_deserialize_exact(message).map_err(Error::tls_deserialize("mls message in"))?;
+            self.decrypt_mls_message(mls_message_in, RecursionPolicy::AsNecessary)
+                .await
+        };
 
         // In the inner `decrypt_message` above, we raise the `BufferedCommit` or
         // `BufferedFutureMessage` errors, but we only handle them here.
@@ -191,8 +218,8 @@ impl ConversationMut {
         Ok(decrypt_message)
     }
 
-    /// We need an inner part, because this may be called recursively.
-    async fn decrypt_message_inner(
+    /// Decrypt a deserialized [MlsMessageIn].
+    async fn decrypt_mls_message(
         &mut self,
         message: MlsMessageIn,
         recursion_policy: RecursionPolicy,
@@ -269,7 +296,7 @@ impl ConversationMut {
                     "Application message"
                 );
 
-                DecryptedMessage::Text(Text {
+                DecryptedMessage::ApplicationMessage(DecryptedBytes {
                     plaintext: app_msg.into_bytes(),
                     sender_client_id,
                     identity,
@@ -674,7 +701,7 @@ mod tests {
                     .decrypt_message(encrypted)
                     .await
                     .unwrap();
-                let dec_msg = &decrypted.as_text().unwrap().plaintext;
+                let dec_msg = &decrypted.as_application_message().unwrap().plaintext;
                 assert_eq!(dec_msg, msg);
                 assert!(!bob_observer.has_changed().await);
                 alice
@@ -685,7 +712,7 @@ mod tests {
                 let encrypted = conversation.guard_of(&bob).await.encrypt_message(msg).await.unwrap();
                 assert_ne!(&msg[..], &encrypted[..]);
                 let decrypted = conversation.guard().await.decrypt_message(encrypted).await.unwrap();
-                let dec_msg = &decrypted.as_text().unwrap().plaintext;
+                let dec_msg = &decrypted.as_application_message().unwrap().plaintext;
                 assert_eq!(dec_msg, &msg[..]);
                 assert!(!alice_observer.has_changed().await);
                 bob.verify_sender_identity(&case, &bob.initial_credential, &decrypted)
@@ -737,7 +764,7 @@ mod tests {
                 let decrypted_commit = decrypted_commit.unwrap().into_commit().unwrap();
                 let buffered_msg = decrypted_commit.buffered_messages.unwrap().remove(0);
                 let decrypted_msg = crate::DecryptedMessage::from(buffered_msg);
-                let decrypted_msg = &decrypted_msg.as_text().unwrap().plaintext;
+                let decrypted_msg = &decrypted_msg.as_application_message().unwrap().plaintext;
                 assert_eq!(&decrypted_msg, &msg);
             })
             .await
@@ -765,7 +792,7 @@ mod tests {
                     let decrypt = conversation.guard_of(&bob).await.decrypt_message(encrypted).await;
                     if i < out_of_order_tolerance as usize {
                         let decrypt = decrypt.unwrap();
-                        let decrypted = &decrypt.as_text().unwrap().plaintext;
+                        let decrypted = &decrypt.as_application_message().unwrap().plaintext;
                         assert_eq!(decrypted, original.as_bytes());
                     } else {
                         assert!(matches!(decrypt.unwrap_err(), Error::DuplicateMessage))
@@ -792,7 +819,7 @@ mod tests {
                     .await
                     .unwrap();
 
-                let sender_client_id = &decrypted.as_text().unwrap().sender_client_id;
+                let sender_client_id = &decrypted.as_application_message().unwrap().sender_client_id;
                 assert_eq!(sender_client_id, &alice.get_client_id().await);
             })
             .await
@@ -831,7 +858,7 @@ mod tests {
                     .decrypt_message(&bob_message1)
                     .await
                     .unwrap();
-                assert_eq!(decrypt.as_text().unwrap().plaintext, b"Hello Bob");
+                assert_eq!(decrypt.as_application_message().unwrap().plaintext, b"Hello Bob");
 
                 // Moving the epochs once more should cause an error
                 let conversation = conversation.update_notify().await;

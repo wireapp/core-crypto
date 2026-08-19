@@ -214,10 +214,12 @@ struct InteropClientApp: App {
             }
 
             switch decryptedMessage {
-            case .text(let plaintext, _, _):
+            case .applicationMessage(let plaintext, _, _):
                 return plaintext.base64EncodedString()
             case .commit, .proposal:
                 return "decrypted protocol message"
+            case .persistedTargeted, .transientTargeted:
+                return "decrypted transient message (currently unused in interop)"
             }
 
         case .initProteus:

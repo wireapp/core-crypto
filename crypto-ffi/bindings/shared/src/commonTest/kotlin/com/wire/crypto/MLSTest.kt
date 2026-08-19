@@ -222,7 +222,7 @@ class MLSTest {
 
         val plaintextMsg =
             bob.transaction { ctx ->
-                assertIs<DecryptedMessage.Text>(ctx.decryptMessage(groupId, ciphertextMsg)).plaintext
+                assertIs<DecryptedMessage.ApplicationMessage>(ctx.decryptMessage(groupId, ciphertextMsg)).plaintext
             }
         assertThat(plaintextMsg).isNotEmpty().isEqualTo(msg)
 
@@ -231,6 +231,52 @@ class MLSTest {
                 bob.transaction { ctx -> ctx.decryptMessage(groupId, ciphertextMsg) }
             }
         assertIs<MlsException.DuplicateMessage>(expectedException.mlsError)
+    }
+
+    @Test
+    fun encryptTargetedMessage_should_encrypt_then_receiver_should_decrypt() = runTest {
+        val alice = ccInit()
+        val bobId = genClientId()
+        val bob = ccInit(CcInitOptions(clientId = bobId))
+
+        val conversationId = createConversation(alice)
+        invite(alice, bob, conversationId)
+
+        val persistedMessage = "This persisted message targets Bob".toByteArray()
+        val persistedCiphertext = alice.transaction { ctx ->
+            ctx.encryptTargetedMessage(
+                conversationId,
+                bobId,
+                TargetedMessagePolicy.PERSISTED,
+                persistedMessage
+            )
+        }
+        assertThat(persistedCiphertext).isNotEqualTo(persistedMessage)
+
+        val persistedPlaintext = bob.transaction { ctx ->
+            assertIs<DecryptedMessage.PersistedTargeted>(
+                ctx.decryptMessage(conversationId, persistedCiphertext)
+            ).plaintext
+        }
+        assertThat(persistedPlaintext).isEqualTo(persistedMessage)
+
+        val transientMessage = "This transient message targets Bob".toByteArray()
+        val transientCiphertext = alice.transaction { ctx ->
+            ctx.encryptTargetedMessage(
+                conversationId,
+                bobId,
+                TargetedMessagePolicy.TRANSIENT,
+                transientMessage
+            )
+        }
+        assertThat(transientCiphertext).isNotEqualTo(transientMessage)
+
+        val transientPlaintext = bob.transaction { ctx ->
+            assertIs<DecryptedMessage.TransientTargeted>(
+                ctx.decryptMessage(conversationId, transientCiphertext)
+            ).plaintext
+        }
+        assertThat(transientPlaintext).isEqualTo(transientMessage)
     }
 
     @Test

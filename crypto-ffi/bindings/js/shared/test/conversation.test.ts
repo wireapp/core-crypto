@@ -45,4 +45,66 @@ describe("conversation", () => {
         expect(decryptedByAlice).to.equal(messageText);
         expect(decryptedByBob).to.equal(messageText);
     });
+
+    it("should allow decrypting targeted messages", async () => {
+        const results = await runOnPlatform(async () => {
+            const alice = await helpers.ccInit();
+            const bobId = helpers.newClientId();
+            const bob = await helpers.ccInit({ clientId: bobId });
+            const conversationId = await helpers.createConversation(alice);
+            await helpers.invite(alice, bob, conversationId);
+
+            const persistedMessage = new TextEncoder().encode(
+                "This persisted message targets Bob"
+            );
+            const persistedCiphertext = await alice.transaction((ctx) =>
+                ctx.encryptTargetedMessage(
+                    conversationId,
+                    bobId,
+                    ccModule.TargetedMessagePolicy.Persisted,
+                    persistedMessage
+                )
+            );
+            const persistedDecrypted = await bob.transaction((ctx) =>
+                ctx.decryptMessage(conversationId, persistedCiphertext)
+            );
+
+            const transientMessage = new TextEncoder().encode(
+                "This transient message targets Bob"
+            );
+            const transientCiphertext = await alice.transaction((ctx) =>
+                ctx.encryptTargetedMessage(
+                    conversationId,
+                    bobId,
+                    ccModule.TargetedMessagePolicy.Transient,
+                    transientMessage
+                )
+            );
+            const transientDecrypted = await bob.transaction((ctx) =>
+                ctx.decryptMessage(conversationId, transientCiphertext)
+            );
+
+            const decoder = new TextDecoder();
+
+            return {
+                persistedMessage: decoder.decode(persistedMessage),
+                persistedPlaintext:
+                    ccModule.DecryptedMessage.PersistedTargeted.instanceOf(
+                        persistedDecrypted
+                    )
+                        ? decoder.decode(persistedDecrypted.inner.plaintext)
+                        : "wrong decrypted variant",
+                transientMessage: decoder.decode(transientMessage),
+                transientPlaintext:
+                    ccModule.DecryptedMessage.TransientTargeted.instanceOf(
+                        transientDecrypted
+                    )
+                        ? decoder.decode(transientDecrypted.inner.plaintext)
+                        : "wrong decrypted variant",
+            };
+        });
+
+        expect(results.persistedPlaintext).to.equal(results.persistedMessage);
+        expect(results.transientPlaintext).to.equal(results.transientMessage);
+    });
 });

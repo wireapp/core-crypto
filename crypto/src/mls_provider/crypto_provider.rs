@@ -103,6 +103,81 @@ impl RustCrypto {
             _ => Err(CryptoError::UnsupportedKem),
         }
     }
+
+    #[expect(clippy::too_many_arguments)]
+    pub(crate) fn hpke_open_psk(
+        &self,
+        config: HpkeConfig,
+        input: &HpkeCiphertext,
+        sk_r: &[u8],
+        info: &[u8],
+        aad: &[u8],
+        psk: &[u8],
+        psk_id: &[u8],
+    ) -> Result<Vec<u8>, CryptoError> {
+        match config {
+            HpkeConfig(HpkeKemType::DhKem25519, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
+                hpke_core::hpke_open_psk::<hpke::aead::AesGcm128, hpke::kdf::HkdfSha256, hpke::kem::X25519HkdfSha256>(
+                    sk_r,
+                    input.kem_output.as_slice(),
+                    info,
+                    aad,
+                    psk,
+                    psk_id,
+                    input.ciphertext.as_slice(),
+                )
+            }
+            HpkeConfig(HpkeKemType::DhKem25519, HpkeKdfType::HkdfSha256, HpkeAeadType::ChaCha20Poly1305) => {
+                hpke_core::hpke_open_psk::<
+                    hpke::aead::ChaCha20Poly1305,
+                    hpke::kdf::HkdfSha256,
+                    hpke::kem::X25519HkdfSha256,
+                >(
+                    sk_r,
+                    input.kem_output.as_slice(),
+                    info,
+                    aad,
+                    psk,
+                    psk_id,
+                    input.ciphertext.as_slice(),
+                )
+            }
+            HpkeConfig(HpkeKemType::DhKemP256, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
+                hpke_core::hpke_open_psk::<hpke::aead::AesGcm128, hpke::kdf::HkdfSha256, hpke::kem::DhP256HkdfSha256>(
+                    sk_r,
+                    input.kem_output.as_slice(),
+                    info,
+                    aad,
+                    psk,
+                    psk_id,
+                    input.ciphertext.as_slice(),
+                )
+            }
+            HpkeConfig(HpkeKemType::DhKemP384, HpkeKdfType::HkdfSha384, HpkeAeadType::AesGcm256) => {
+                hpke_core::hpke_open_psk::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha384, hpke::kem::DhP384HkdfSha384>(
+                    sk_r,
+                    input.kem_output.as_slice(),
+                    info,
+                    aad,
+                    psk,
+                    psk_id,
+                    input.ciphertext.as_slice(),
+                )
+            }
+            HpkeConfig(HpkeKemType::DhKemP521, HpkeKdfType::HkdfSha512, HpkeAeadType::AesGcm256) => {
+                hpke_core::hpke_open_psk::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha512, hpke::kem::DhP521HkdfSha512>(
+                    sk_r,
+                    input.kem_output.as_slice(),
+                    info,
+                    aad,
+                    psk,
+                    psk_id,
+                    input.ciphertext.as_slice(),
+                )
+            }
+            _ => Err(CryptoError::UnsupportedKem),
+        }
+    }
 }
 
 impl OpenMlsCrypto for RustCrypto {
@@ -609,6 +684,41 @@ mod hpke_core {
         let plaintext =
             hpke::single_shot_open::<Aead, Kdf, Kem>(&hpke::OpModeR::Base, &key, &encapped_key, info, ciphertext, aad)
                 .map_err(|_| CryptoError::HpkeDecryptionError)?;
+
+        Ok(plaintext)
+    }
+
+    pub(crate) fn hpke_open_psk<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
+        private_key: &[u8],
+        kem_output: &[u8],
+        info: &[u8],
+        aad: &[u8],
+        psk: &[u8],
+        psk_id: &[u8],
+        ciphertext: &[u8],
+    ) -> Result<Vec<u8>, CryptoError> {
+        use hpke::{Deserializable as _, Serializable as _};
+        let encapped_key = Kem::EncappedKey::from_bytes(kem_output).map_err(|_| CryptoError::HpkeDecryptionError)?;
+        // Systematically normalize private keys
+        let sk_len = Kem::PrivateKey::size();
+        let mut sk_buf = zeroize::Zeroizing::new(Vec::with_capacity(sk_len));
+        if private_key.len() < sk_len {
+            for _ in 0..(sk_len - private_key.len()) {
+                sk_buf.push(0x00);
+            }
+        }
+        sk_buf.extend_from_slice(private_key);
+        let key = Kem::PrivateKey::from_bytes(&sk_buf).map_err(|_| CryptoError::HpkeDecryptionError)?;
+        let psk_bundle = PskBundle { psk, psk_id };
+        let plaintext = hpke::single_shot_open::<Aead, Kdf, Kem>(
+            &hpke::OpModeR::Psk(psk_bundle),
+            &key,
+            &encapped_key,
+            info,
+            ciphertext,
+            aad,
+        )
+        .map_err(|_| CryptoError::HpkeDecryptionError)?;
 
         Ok(plaintext)
     }

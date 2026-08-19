@@ -11,13 +11,14 @@
 
 ## DecryptedMessage
 
-`DecryptedMessage` is now an enum with `Text`, `Commit`, and `Proposal` variants. Data that was previously exposed
-through optional properties is now carried by the corresponding variant. Match on the variant before accessing its data:
+`DecryptedMessage` is now an enum with `ApplicationMessage`, `Commit`, and `Proposal` variants. Data that was previously
+exposed through optional properties is now carried by the corresponding variant. Match on the variant before accessing
+its data:
 
 <!-- langtabs-start -->
 
 ```typescript
-if (DecryptedMessage.Text.instanceOf(decryptedMessage)) {
+if (DecryptedMessage.ApplicationMessage.instanceOf(decryptedMessage)) {
     const { plaintext, senderClientId, identity } = decryptedMessage.inner;
     // Handle the application message.
 } else if (DecryptedMessage.Commit.instanceOf(decryptedMessage)) {
@@ -31,7 +32,7 @@ if (DecryptedMessage.Text.instanceOf(decryptedMessage)) {
 
 ```swift
 switch decryptedMessage {
-case let .text(plaintext, senderClientId, identity):
+case let .applicationMessage(plaintext, senderClientId, identity):
     // Handle the application message.
 case let .commit(isActive, bufferedMessages, identity):
     // Handle the commit.
@@ -42,7 +43,7 @@ case let .proposal(delay, identity):
 
 ```kotlin
 when (decryptedMessage) {
-    is DecryptedMessage.Text -> {
+    is DecryptedMessage.ApplicationMessage -> {
         val (plaintext, senderClientId, identity) = decryptedMessage
         // Handle the application message.
     }
