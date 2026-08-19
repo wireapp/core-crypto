@@ -5,14 +5,22 @@
 
 use core_crypto_keystore::entities::MlsPendingMessage;
 use log::{error, info};
-use openmls::framing::{MlsMessageIn, MlsMessageInBody};
+use openmls::{
+    framing::{MlsMessageIn, MlsMessageInBody},
+    prelude::ContentType,
+};
 use tls_codec::Deserialize;
 
 use super::{RecursionPolicy, Result};
 use crate::{
     BufferedDecryptedMessage, KeystoreError, RecursiveError,
-    mls::conversation::{ConversationMut, Error},
+    mls::conversation::{ConversationMut, Error, mutable::tnt::TntWireFormat},
 };
+
+enum PendingMessage {
+    Mls(Box<MlsMessageIn>),
+    Tnt(Vec<u8>),
+}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(crate) enum MessageRestorePolicy {
@@ -82,6 +90,15 @@ impl ConversationMut {
                 .map_err(KeystoreError::wrap("finding all mls pending messages"))?
                 .into_iter()
                 .map(|m| -> Result<_> {
+                    let wire_format = u16::tls_deserialize_exact(&m.message[2..4])
+                        .map_err(Error::tls_deserialize("u16 (wire format)"))?;
+                    if TntWireFormat::all().contains(&wire_format) {
+                        // We want to restore tnt messages with the same priority as application messages, i.e.,
+                        // before proposals or commits, which is why we're using the value equal to that content type
+                        // here.
+                        return Ok((ContentType::Application as u8, PendingMessage::Tnt(m.message.clone())));
+                    }
+
                     let message = MlsMessageIn::tls_deserialize(&mut m.message.as_slice())
                         .map_err(Error::tls_deserialize("mls message in"))?;
                     let content_type = match message.body_as_ref() {
@@ -89,7 +106,7 @@ impl ConversationMut {
                         MlsMessageInBody::PrivateMessage(m) => m.content_type(),
                         _ => return Err(Error::InappropriateMessageBodyType),
                     };
-                    Ok((content_type as u8, message))
+                    Ok((content_type as u8, PendingMessage::Mls(Box::new(message))))
                 })
                 .collect::<Result<Vec<_>>>()?;
 
@@ -101,7 +118,12 @@ impl ConversationMut {
 
             let mut decrypted_messages = Vec::with_capacity(pending_messages.len());
             for (_, m) in pending_messages {
-                let decrypted = self.decrypt_mls_message(m, RecursionPolicy::None).await?;
+                let decrypted = match m {
+                    PendingMessage::Mls(m) => self.decrypt_mls_message(*m, RecursionPolicy::None).await?,
+                    // We can recurse safely into the outer decrypt_message() with a tnt message, because their
+                    // decryption path doesn't recurse further.
+                    PendingMessage::Tnt(m) => self.decrypt_message(m).await?,
+                };
                 decrypted_messages.push(decrypted.into());
             }
 
