@@ -1,6 +1,6 @@
 {
     "name": "@wireapp/core-crypto-native",
-    "version": "10.3.0",
+    "version": "10.4.0",
     "license": "GPL-3.0",
     "type": "module",
     "dependencies": {
