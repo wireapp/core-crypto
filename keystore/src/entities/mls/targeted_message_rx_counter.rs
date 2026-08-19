@@ -72,15 +72,16 @@ impl EntityDatabaseMutation for TargetedMessageRxCounter {
 
     fn save(&self, tx: &rusqlite::Transaction) -> crate::CryptoKeystoreResult<()> {
         let mut stmt = tx.prepare_cached(&format!(
-            "INSERT OR REPLACE INTO {} (conversation_id, sender, epoch, count) VALUES (?, ?, ?, ?)",
+            "INSERT OR REPLACE INTO {} (conversation_id, sender, epoch, count) \
+             VALUES (:conversation_id, :sender, :epoch, :count)",
             Self::TABLE_NAME
         ))?;
-        stmt.execute(rusqlite::params![
-            self.conversation_id,
-            self.sender,
-            self.epoch,
-            self.count
-        ])?;
+        stmt.execute(rusqlite::named_params! {
+            ":conversation_id": self.conversation_id,
+            ":sender": self.sender,
+            ":epoch": self.epoch,
+            ":count": self.count,
+        })?;
         Ok(())
     }
 
