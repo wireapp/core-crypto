@@ -1196,6 +1196,7 @@ dependencies = [
  "async-fs",
  "async-lock",
  "async-trait",
+ "blocking",
  "console_error_panic_hook",
  "core-crypto-keystore",
  "core-crypto-macros",
