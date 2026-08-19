@@ -5,7 +5,7 @@ use async_lock::{Mutex, OnceCell};
 use super::CoreCryptoCommand;
 use crate::{CoreCryptoContext, CoreCryptoResult};
 
-/// Helper for working with the new transasction interface.
+/// Helper for working with the new transaction interface.
 ///
 /// This helper serves two purposes: to present a `FnOnce` interface for transactions,
 /// and to allow the extraction of data from within transactions.
