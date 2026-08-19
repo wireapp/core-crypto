@@ -234,6 +234,52 @@ class MLSTest {
     }
 
     @Test
+    fun encryptTargetedMessage_should_encrypt_then_receiver_should_decrypt() = runTest {
+        val alice = ccInit()
+        val bobId = genClientId()
+        val bob = ccInit(CcInitOptions(clientId = bobId))
+
+        val conversationId = createConversation(alice)
+        invite(alice, bob, conversationId)
+
+        val persistedMessage = "This persisted message targets Bob".toByteArray()
+        val persistedCiphertext = alice.transaction { ctx ->
+            ctx.encryptTargetedMessage(
+                conversationId,
+                bobId,
+                TargetedMessagePolicy.PERSISTED,
+                persistedMessage
+            )
+        }
+        assertThat(persistedCiphertext).isNotEqualTo(persistedMessage)
+
+        val persistedPlaintext = bob.transaction { ctx ->
+            assertIs<DecryptedMessage.PersistedTargeted>(
+                ctx.decryptMessage(conversationId, persistedCiphertext)
+            ).plaintext
+        }
+        assertThat(persistedPlaintext).isEqualTo(persistedMessage)
+
+        val transientMessage = "This transient message targets Bob".toByteArray()
+        val transientCiphertext = alice.transaction { ctx ->
+            ctx.encryptTargetedMessage(
+                conversationId,
+                bobId,
+                TargetedMessagePolicy.TRANSIENT,
+                transientMessage
+            )
+        }
+        assertThat(transientCiphertext).isNotEqualTo(transientMessage)
+
+        val transientPlaintext = bob.transaction { ctx ->
+            assertIs<DecryptedMessage.TransientTargeted>(
+                ctx.decryptMessage(conversationId, transientCiphertext)
+            ).plaintext
+        }
+        assertThat(transientPlaintext).isEqualTo(transientMessage)
+    }
+
+    @Test
     fun addClientsToConversation_should_add_members_to_the_MLS_group() = runTest {
         val aliceId = genClientId()
         val alice = ccInit(CcInitOptions(clientId = aliceId))
