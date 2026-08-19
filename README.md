@@ -192,7 +192,7 @@ Make sure you have all prerequisites:
 - Install chrome via puppeteer for browser tests and benchmarks:
 
   ```sh
-  cd crypto-ffi/bindings/js && bun x puppeteer browsers install chrome-headless-shell    
+  cd crypto-ffi/bindings/js && bun x puppeteer browsers install chrome-headless-shell
   ```
 
 - Install [wasm-bindgen-cli](https://github.com/wasm-bindgen/wasm-bindgen):
@@ -591,7 +591,17 @@ The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.or
 
 ### Making a new release<a name="making-a-new-release"></a>
 
-1. Make a branch based on `main` to prepare for release (`git checkout -b prepare-release/X.Y.Z`)
+1. Run `./scripts/prerelease.sh $major_version` to determine whether we can release from `main` or a release branch.
+
+- If necessary, [cherry-pick the required PRs](https://github.com/134130/gh-cherry-pick#installation) onto the relevant
+  release branch:
+
+  ```sh
+  gh cherry-pick "$pr_number"
+  ```
+
+1. Make a branch based on `main` or the relevant release branch to prepare for release
+   (`git checkout -b prepare-release/X.Y.Z`)
 
 1. Adjust the release notes of the cc-book. Rename the *Unreleased* section to the current release title and summarize
    highlights of the release in the first paragraph:
@@ -608,25 +618,37 @@ The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.or
    in the table, ordering by version number, descending. Search and replace the first 5 occurrences of `x.x.x` with
    `X.Y.Z`.
 
+1. Commit your changes and retain the commit hash for later.
+
 1. Run `sh scripts/update-versions.sh X.Y.Z` to update the versions of
 
    - all workspace member crates
    - `package.json`
    - `crypto-ffi/bindings/gradle.properties` Make sure the result of the script run is correct.
 
+1. Commit these changes separately.
+
 1. Make sure the changes look reasonable and complete; you can use the previous release as a reference
 
-1. Push your `prepare-release/X.Y.Z` branch and create a PR for it
+1. Push your `prepare-release/X.Y.Z` branch and create a PR for it. Ensure you target the correct branch!
 
-1. Get it reviewed, then merge it into `main` and remove the `prepare-release/X.Y.Z` branch from the remote
+1. Get it reviewed and merged
 
-1. Now, pull your local `main`: `git checkout main && git pull`
+1. Pull the current state of the release branch
 
 1. Create the release tag: `git tag -s vX.Y.Z`
 
 1. Push the new tag: `git push origin tag vX.Y.Z`
 
 1. Create a new release on github, copying the release notes
+
+1. If your release was based on a release branch and not `main`:
+
+   1. Check out a new branch based on the head of `main`
+
+   1. Cherry-pick in the docs commit you made earlier.
+
+   1. Get this PR approved and merged.
 
 1. Voilà!
 
