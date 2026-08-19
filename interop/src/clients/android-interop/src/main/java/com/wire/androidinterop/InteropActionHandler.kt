@@ -77,6 +77,8 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
 
                     is DecryptedMessage.Commit,
                     is DecryptedMessage.Proposal -> Result.success("decrypted protocol message")
+                    is DecryptedMessage.PersistedTargeted,
+                    is DecryptedMessage.TransientTargeted -> Result.success("decrypted transient message (currently unused in interop)")
                 }
             }
 
