@@ -85,5 +85,6 @@ export {
     HttpMethod,
     X509CredentialAcquisitionConfiguration,
     type Timestamp,
+    TargetedMessagePolicy,
     type MlsTransport,
 } from "#core-crypto-ffi";
