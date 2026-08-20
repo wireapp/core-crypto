@@ -3,6 +3,7 @@ use const_oid::db::rfc5912::{
     ID_CE_AUTHORITY_KEY_IDENTIFIER, ID_CE_DELTA_CRL_INDICATOR, ID_CE_ISSUING_DISTRIBUTION_POINT,
 };
 use x509_cert::{
+    certificate::Raw,
     crl::CertificateList,
     der::{Decode, Encode},
     ext::pkix::{
@@ -41,10 +42,10 @@ pub(crate) struct CrlInfo {
     pub skid: Option<Vec<u8>>,
 }
 
-impl TryFrom<&CertificateList> for CrlInfo {
+impl TryFrom<&CertificateList<Raw>> for CrlInfo {
     type Error = RustyX509CheckError;
 
-    fn try_from(crl: &CertificateList) -> Result<Self, Self::Error> {
+    fn try_from(crl: &CertificateList<Raw>) -> Result<Self, Self::Error> {
         let this_update = crl.tbs_cert_list.this_update.to_unix_duration().as_secs();
         let next_update = crl.tbs_cert_list.next_update.map(|nu| nu.to_unix_duration().as_secs());
         let issuer_name_blob = crl

@@ -5,7 +5,7 @@ use std::{
 
 use certval::{CrlScope, CrlSource, ExtensionProcessing, PDVCertificate, PDVExtension, TimeOfInterest, name_to_string};
 use const_oid::db::rfc5912::ID_CE_AUTHORITY_KEY_IDENTIFIER;
-use x509_cert::{crl::CertificateList, der::Encode};
+use x509_cert::{certificate::Raw, crl::CertificateList, der::Encode};
 
 use crate::x509_check::{
     RustyX509CheckError, RustyX509CheckResult,
@@ -20,15 +20,15 @@ type SkidMap = BTreeMap<Vec<u8>, Vec<usize>>;
 type DpMap = BTreeMap<Vec<u8>, Vec<usize>>;
 
 pub(crate) struct CrlStore {
-    crls: Arc<Mutex<Vec<x509_cert::crl::CertificateList>>>,
+    crls: Arc<Mutex<Vec<CertificateList<Raw>>>>,
     crl_info: Arc<Mutex<Vec<CrlInfo>>>,
     issuers: Arc<Mutex<IssuerMap>>,
     sk_ids: Arc<Mutex<SkidMap>>,
     dps: Arc<Mutex<DpMap>>,
 }
 
-impl From<&[CertificateList]> for CrlStore {
-    fn from(value: &[CertificateList]) -> Self {
+impl From<&[CertificateList<Raw>]> for CrlStore {
+    fn from(value: &[CertificateList<Raw>]) -> Self {
         Self {
             crls: Mutex::new(value.to_vec()).into(),
             crl_info: Default::default(),
@@ -42,7 +42,7 @@ impl From<&[CertificateList]> for CrlStore {
 impl CrlStore {
     fn add_crl_info_with_guard(
         &self,
-        crl: &CertificateList,
+        crl: &CertificateList<Raw>,
         info: CrlInfo,
         crl_info: &mut MutexGuard<Vec<CrlInfo>>,
     ) -> RustyX509CheckResult<()> {
@@ -87,7 +87,7 @@ impl CrlStore {
     }
 
     #[inline]
-    fn add_crl_info(&self, crl: &CertificateList, info: CrlInfo) -> RustyX509CheckResult<()> {
+    fn add_crl_info(&self, crl: &CertificateList<Raw>, info: CrlInfo) -> RustyX509CheckResult<()> {
         self.add_crl_info_with_guard(
             crl,
             info,
@@ -172,7 +172,7 @@ impl CrlSource for CrlStore {
         Err(certval::Error::NotFound)
     }
 
-    fn add_crl(&self, _: &[u8], crl: &CertificateList, _: &str) -> certval::Result<()> {
+    fn add_crl(&self, _: &[u8], crl: &CertificateList<Raw>, _: &str) -> certval::Result<()> {
         self.crls
             .lock()
             .map_err(|_| certval::Error::Unrecognized)?
