@@ -113,7 +113,7 @@ impl crate::traits::EntityDatabaseMutation for StoredCredential {
     fn save(&self, tx: &rusqlite::Transaction) -> crate::CryptoKeystoreResult<()> {
         use crate::traits::PrimaryKey as _;
         let mut stmt = tx.prepare_cached(
-            "INSERT INTO mls_credentials \
+            "INSERT OR REPLACE INTO mls_credentials \
              (public_key_sha256, public_key, session_id, credential, created_at, ciphersuite, private_key) \
              VALUES \
              (:public_key_sha256, :public_key, :session_id, :credential, datetime(:created_at, 'unixepoch'), :ciphersuite, :private_key)",
