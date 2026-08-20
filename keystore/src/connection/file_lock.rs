@@ -106,7 +106,7 @@ impl Drop for FileLockGuard {
         if let Err(error) = self.lock.file.unlock() {
             // dropping the file would release the lock too, but the `FileLock` outlives this
             // guard, so a failure here really does leave the lock held; all we can do is say so
-            log::error!(
+            panic!(
                 "failed to release the cross-process transaction lock at {}: {error}",
                 self.lock.path
             );
