@@ -4,7 +4,7 @@
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span>tls_codec::Deserialize <span class="kw">as _</span>;
 <a href=#5 id=5 data-nosnippet>5</a>
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use super</span>::{ConversationMut, RecursionPolicy, <span class="prelude-ty">Result</span>};
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use crate</span>::{DecryptedMessage, KeystoreError, RecursiveError, mls::conversation::Error};
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use crate</span>::{DecryptedMessage, KeystoreError, RecursiveError, TlsCodecError};
 <a href=#8 id=8 data-nosnippet>8</a>
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">impl </span>ConversationMut {
 <a href=#10 id=10 data-nosnippet>10</a>    <span class="doccomment">/// Cache the bytes of a buffered commit in the backend.
@@ -16,7 +16,7 @@
 <a href=#16 id=16 data-nosnippet>16</a>
 <a href=#17 id=17 data-nosnippet>17</a>        <span class="kw">let </span>buffered_commit = StoredBufferedCommit::new(<span class="self">self</span>.id().to_bytes(), commit.as_ref().to_owned());
 <a href=#18 id=18 data-nosnippet>18</a>
-<a href=#19 id=19 data-nosnippet>19</a>        <span class="kw">let </span>context_inner = <span class="self">self</span>.tx_context.inner().<span class="kw">await</span>.map_err(RecursiveError::transaction(
+<a href=#19 id=19 data-nosnippet>19</a>        <span class="kw">let </span>context_inner = <span class="self">self</span>.tx_context.inner().<span class="kw">await</span>.map_err(RecursiveError::context(
 <a href=#20 id=20 data-nosnippet>20</a>            <span class="string">"getting context inner for transaction for buffering commit"</span>,
 <a href=#21 id=21 data-nosnippet>21</a>        ))<span class="question-mark">?</span>;
 <a href=#22 id=22 data-nosnippet>22</a>        context_inner
@@ -53,8 +53,8 @@
 <a href=#53 id=53 data-nosnippet>53</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;DecryptedMessage&gt; {
 <a href=#54 id=54 data-nosnippet>54</a>        <span class="macro">info!</span>(group_id = <span class="self">self</span>.id().to_owned(); <span class="string">"attempting to process buffered commit"</span>);
 <a href=#55 id=55 data-nosnippet>55</a>
-<a href=#56 id=56 data-nosnippet>56</a>        <span class="kw">let </span>message =
-<a href=#57 id=57 data-nosnippet>57</a>            MlsMessageIn::tls_deserialize(<span class="kw-2">&amp;mut </span>commit.as_ref()).map_err(Error::tls_deserialize(<span class="string">"mls message in"</span>))<span class="question-mark">?</span>;
+<a href=#56 id=56 data-nosnippet>56</a>        <span class="kw">let </span>message = MlsMessageIn::tls_deserialize(<span class="kw-2">&amp;mut </span>commit.as_ref())
+<a href=#57 id=57 data-nosnippet>57</a>            .map_err(TlsCodecError::deserialize(<span class="string">"mls message in"</span>))<span class="question-mark">?</span>;
 <a href=#58 id=58 data-nosnippet>58</a>
 <a href=#59 id=59 data-nosnippet>59</a>        Box::pin(<span class="self">self</span>.decrypt_message_inner(message, recursion_policy)).<span class="kw">await
 <a href=#60 id=60 data-nosnippet>60</a>    </span>}
@@ -62,7 +62,7 @@
 <a href=#62 id=62 data-nosnippet>62</a>    <span class="doccomment">/// Remove the buffered commit for this conversation; it has been applied.
 <a href=#63 id=63 data-nosnippet>63</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">async fn </span>clear_buffered_commit(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
 <a href=#64 id=64 data-nosnippet>64</a>        <span class="macro">info!</span>(group_id = <span class="self">self</span>.id().to_owned(); <span class="string">"attempting to delete buffered commit"</span>);
-<a href=#65 id=65 data-nosnippet>65</a>        <span class="kw">let </span>context_inner = <span class="self">self</span>.tx_context.inner().<span class="kw">await</span>.map_err(RecursiveError::transaction(
+<a href=#65 id=65 data-nosnippet>65</a>        <span class="kw">let </span>context_inner = <span class="self">self</span>.tx_context.inner().<span class="kw">await</span>.map_err(RecursiveError::context(
 <a href=#66 id=66 data-nosnippet>66</a>            <span class="string">"getting context inner for transaction for clearing buffered commit"</span>,
 <a href=#67 id=67 data-nosnippet>67</a>        ))<span class="question-mark">?</span>;
 <a href=#68 id=68 data-nosnippet>68</a>        context_inner

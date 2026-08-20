@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["Error"],"mod":["enabled"],"type":["Result"]};
+window.SIDEBAR_ITEMS = {"mod":["enabled"]};

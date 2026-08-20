@@ -50,12 +50,12 @@
 <a href=#50 id=50 data-nosnippet>50</a>    build_metadata::{BUILD_METADATA, BuildMetadata},
 <a href=#51 id=51 data-nosnippet>51</a>    ephemeral::{HISTORY_CLIENT_ID_PREFIX, HistorySecret},
 <a href=#52 id=52 data-nosnippet>52</a>    error::{
-<a href=#53 id=53 data-nosnippet>53</a>        Error, InnermostErrorMessage, KeystoreError, LeafError, OpenMlsError, OpenMlsErrorKind, ProteusError,
-<a href=#54 id=54 data-nosnippet>54</a>        ProteusErrorKind, RecursiveError, <span class="prelude-ty">Result</span>, ToRecursiveError,
+<a href=#53 id=53 data-nosnippet>53</a>        Error, InnermostErrorMessage, KeystoreError, OpenMlsError, OpenMlsErrorKind, ProteusError, ProteusErrorKind,
+<a href=#54 id=54 data-nosnippet>54</a>        RecursiveError, <span class="prelude-ty">Result</span>, TlsCodecError, ToRecursiveError,
 <a href=#55 id=55 data-nosnippet>55</a>    },
 <a href=#56 id=56 data-nosnippet>56</a>    identity::{WireIdentity, X509Identity},
 <a href=#57 id=57 data-nosnippet>57</a>    mls::{
-<a href=#58 id=58 data-nosnippet>58</a>        ExternalSender,
+<a href=#58 id=58 data-nosnippet>58</a>        ExternalSender, UnknownCipherSuite,
 <a href=#59 id=59 data-nosnippet>59</a>        cipher_suite::CipherSuite,
 <a href=#60 id=60 data-nosnippet>60</a>        conversation::{
 <a href=#61 id=61 data-nosnippet>61</a>            BufferedCommit, BufferedDecryptedMessage, Commit, CommitBundle, ConversationConfiguration, ConversationId,
@@ -164,7 +164,7 @@
 <a href=#164 id=164 data-nosnippet>164</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(session.clone());
 <a href=#165 id=165 data-nosnippet>165</a>        }
 <a href=#166 id=166 data-nosnippet>166</a>        <span class="kw">let </span>err = <span class="prelude-val">Err</span>(mls::session::Error::MlsNotInitialized);
-<a href=#167 id=167 data-nosnippet>167</a>        err.map_err(RecursiveError::mls_client(<span class="string">"Getting mls session"</span>))<span class="question-mark">?
+<a href=#167 id=167 data-nosnippet>167</a>        err.map_err(RecursiveError::context(<span class="string">"Getting mls session"</span>))<span class="question-mark">?
 <a href=#168 id=168 data-nosnippet>168</a>    </span>}
 <a href=#169 id=169 data-nosnippet>169</a>
 <a href=#170 id=170 data-nosnippet>170</a>    <span class="doccomment">/// Get the database

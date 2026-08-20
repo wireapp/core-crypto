@@ -16,7 +16,7 @@
 <a href=#16 id=16 data-nosnippet>16</a>            .filter(|member| !member.credential.identity().starts_with(prefix))
 <a href=#17 id=17 data-nosnippet>17</a>            .map(|kp| {
 <a href=#18 id=18 data-nosnippet>18</a>                ClientId::new_from_bytes(kp.credential.identity().to_owned())
-<a href=#19 id=19 data-nosnippet>19</a>                    .map_err(RecursiveError::mls_client(<span class="string">"new client id from bytes"</span>))
+<a href=#19 id=19 data-nosnippet>19</a>                    .map_err(RecursiveError::context(<span class="string">"new client id from bytes"</span>))
 <a href=#20 id=20 data-nosnippet>20</a>                    .map_err(Into::into)
 <a href=#21 id=21 data-nosnippet>21</a>            })
 <a href=#22 id=22 data-nosnippet>22</a>            .collect()
@@ -58,7 +58,7 @@
 <a href=#58 id=58 data-nosnippet>58</a>            .filter_map(|member| {
 <a href=#59 id=59 data-nosnippet>59</a>                <span class="kw">if </span>!pending_removals.contains(<span class="kw-2">&amp;</span>member.index) {
 <a href=#60 id=60 data-nosnippet>60</a>                    <span class="kw">let </span>client_id_result = ClientId::new_from_bytes(member.credential.identity().to_owned())
-<a href=#61 id=61 data-nosnippet>61</a>                        .map_err(RecursiveError::mls_client(<span class="string">"new client id from bytes"</span>))
+<a href=#61 id=61 data-nosnippet>61</a>                        .map_err(RecursiveError::context(<span class="string">"new client id from bytes"</span>))
 <a href=#62 id=62 data-nosnippet>62</a>                        .map_err(Into::into);
 <a href=#63 id=63 data-nosnippet>63</a>                    <span class="prelude-val">Some</span>(client_id_result)
 <a href=#64 id=64 data-nosnippet>64</a>                } <span class="kw">else </span>{

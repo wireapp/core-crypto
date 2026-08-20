@@ -55,7 +55,7 @@
 <a href=#55 id=55 data-nosnippet>55</a>
 <a href=#56 id=56 data-nosnippet>56</a>        <span class="kw">let </span>client_id = ClientId::try_from_str_with_base64_user_id(<span class="kw-2">&amp;</span>e2ei_wire_identity.client_id)
 <a href=#57 id=57 data-nosnippet>57</a>            .map(<span class="prelude-val">Some</span>)
-<a href=#58 id=58 data-nosnippet>58</a>            .map_err(RecursiveError::mls_client(<span class="string">"client id from qualified string"</span>))<span class="question-mark">?</span>;
+<a href=#58 id=58 data-nosnippet>58</a>            .map_err(RecursiveError::context(<span class="string">"client id from qualified string"</span>))<span class="question-mark">?</span>;
 <a href=#59 id=59 data-nosnippet>59</a>
 <a href=#60 id=60 data-nosnippet>60</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
 <a href=#61 id=61 data-nosnippet>61</a>            client_id,

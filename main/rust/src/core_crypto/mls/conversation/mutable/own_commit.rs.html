@@ -96,7 +96,7 @@
 <a href=#96 id=96 data-nosnippet>96</a>        <span class="kw">let </span>identity = own_leaf_credential_with_key
 <a href=#97 id=97 data-nosnippet>97</a>            .extract_identity(<span class="self">self</span>.cipher_suite(), pki_env.as_deref())
 <a href=#98 id=98 data-nosnippet>98</a>            .<span class="kw">await
-<a href=#99 id=99 data-nosnippet>99</a>            </span>.map_err(RecursiveError::mls_credential(<span class="string">"extracting identity"</span>))<span class="question-mark">?</span>;
+<a href=#99 id=99 data-nosnippet>99</a>            </span>.map_err(RecursiveError::context(<span class="string">"extracting identity"</span>))<span class="question-mark">?</span>;
 <a href=#100 id=100 data-nosnippet>100</a>
 <a href=#101 id=101 data-nosnippet>101</a>        <span class="kw">let </span>decrypted_message = DecryptedMessage::Commit(Commit {
 <a href=#102 id=102 data-nosnippet>102</a>            is_active: <span class="self">self</span>.group().<span class="kw">await</span>.is_active(),

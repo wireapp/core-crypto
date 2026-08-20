@@ -31,7 +31,7 @@
 <a href=#31 id=31 data-nosnippet>31</a>            <span class="kw-2">&amp;</span><span class="self">self</span>.database,
 <a href=#32 id=32 data-nosnippet>32</a>            CredentialFindFilters::builder().cipher_suite(cipher_suite).build(),
 <a href=#33 id=33 data-nosnippet>33</a>        )
-<a href=#34 id=34 data-nosnippet>34</a>        .map_err(RecursiveError::mls_credential_ref(<span class="string">"finding credentials with filters"</span>))
+<a href=#34 id=34 data-nosnippet>34</a>        .map_err(RecursiveError::context(<span class="string">"finding credentials with filters"</span>))
 <a href=#35 id=35 data-nosnippet>35</a>        .<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#36 id=36 data-nosnippet>36</a>
 <a href=#37 id=37 data-nosnippet>37</a>        <span class="kw">let </span>x509_credential_exists = credentials

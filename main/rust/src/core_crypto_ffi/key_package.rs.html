@@ -1,6 +1,6 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crypto-ffi/src/key_package.rs`."><title>key_package.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-17e0aaed.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core_crypto_ffi" data-themes="" data-resource-suffix="" data-rustdoc-version="1.97.1 (8bab26f4f 2026-07-14)" data-channel="1.97.1" data-search-js="search-fd9372ac.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../static.files/storage-41dd4d93.js"></script><script defer src="../../static.files/src-script-813739b1.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-fcd733ba.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core_crypto_ffi/</div>key_package.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>std::sync::Arc;
 <a href=#2 id=2 data-nosnippet>2</a>
-<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span>core_crypto::{KeyPackageIn, RecursiveError, mls::key_package::KeypackageExt};
+<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span>core_crypto::{KeyPackageIn, RecursiveError, TlsCodecError, mls::key_package::KeypackageExt};
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span>tls_codec::{Deserialize <span class="kw">as _</span>, Serialize <span class="kw">as _</span>};
 <a href=#5 id=5 data-nosnippet>5</a>
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use crate</span>::{CipherSuite, CoreCryptoError, CoreCryptoResult, CredentialType, SignatureScheme};
@@ -88,38 +88,39 @@
 <a href=#88 id=88 data-nosnippet>88</a>    </span><span class="kw">pub fn </span>new(bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; CoreCryptoResult&lt;<span class="self">Self</span>&gt; {
 <a href=#89 id=89 data-nosnippet>89</a>        KeyPackageIn::tls_deserialize_exact(bytes)
 <a href=#90 id=90 data-nosnippet>90</a>            .map(|kp_in| <span class="self">Self</span>(Inner::In(kp_in)))
-<a href=#91 id=91 data-nosnippet>91</a>            .map_err(core_crypto::mls::conversation::Error::tls_deserialize(<span class="string">"keypackagein"</span>))
-<a href=#92 id=92 data-nosnippet>92</a>            .map_err(Into::into)
-<a href=#93 id=93 data-nosnippet>93</a>    }
-<a href=#94 id=94 data-nosnippet>94</a>
-<a href=#95 id=95 data-nosnippet>95</a>    <span class="doccomment">/// Serialize this to a byte vector.
-<a href=#96 id=96 data-nosnippet>96</a>    </span><span class="kw">pub fn </span>serialize(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;Vec&lt;u8&gt;&gt; {
-<a href=#97 id=97 data-nosnippet>97</a>        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>{
-<a href=#98 id=98 data-nosnippet>98</a>            Inner::Out(key_package) =&gt; key_package
-<a href=#99 id=99 data-nosnippet>99</a>                .tls_serialize_detached()
-<a href=#100 id=100 data-nosnippet>100</a>                .map_err(core_crypto::mls::conversation::Error::tls_serialize(<span class="string">"keypackage"</span>))
-<a href=#101 id=101 data-nosnippet>101</a>                .map_err(RecursiveError::mls_conversation(<span class="string">"serializing keypackage"</span>))
-<a href=#102 id=102 data-nosnippet>102</a>                .map_err(Into::into),
-<a href=#103 id=103 data-nosnippet>103</a>            Inner::In(key_package_in) =&gt; key_package_in
-<a href=#104 id=104 data-nosnippet>104</a>                .tls_serialize_detached()
-<a href=#105 id=105 data-nosnippet>105</a>                .map_err(core_crypto::mls::conversation::Error::tls_serialize(<span class="string">"keypackage"</span>))
-<a href=#106 id=106 data-nosnippet>106</a>                .map_err(RecursiveError::mls_conversation(<span class="string">"serializing keypackagein"</span>))
-<a href=#107 id=107 data-nosnippet>107</a>                .map_err(Into::into),
-<a href=#108 id=108 data-nosnippet>108</a>        }
-<a href=#109 id=109 data-nosnippet>109</a>    }
-<a href=#110 id=110 data-nosnippet>110</a>
-<a href=#111 id=111 data-nosnippet>111</a>    <span class="doccomment">/// Convert this to a reference.
-<a href=#112 id=112 data-nosnippet>112</a>    </span><span class="kw">pub fn </span>r#ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;KeyPackageRef&gt; {
-<a href=#113 id=113 data-nosnippet>113</a>        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>{
-<a href=#114 id=114 data-nosnippet>114</a>            Inner::Out(key_package) =&gt; key_package
-<a href=#115 id=115 data-nosnippet>115</a>                .make_ref()
-<a href=#116 id=116 data-nosnippet>116</a>                .map(KeyPackageRef)
-<a href=#117 id=117 data-nosnippet>117</a>                .map_err(RecursiveError::mls_client(<span class="string">"generating hashref for key package"</span>))
-<a href=#118 id=118 data-nosnippet>118</a>                .map_err(Into::into),
-<a href=#119 id=119 data-nosnippet>119</a>            Inner::In(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(CoreCryptoError::ad_hoc(
-<a href=#120 id=120 data-nosnippet>120</a>                <span class="string">"only keypackages provided by CC can generate a reference"</span>,
-<a href=#121 id=121 data-nosnippet>121</a>            )),
-<a href=#122 id=122 data-nosnippet>122</a>        }
-<a href=#123 id=123 data-nosnippet>123</a>    }
-<a href=#124 id=124 data-nosnippet>124</a>}
+<a href=#91 id=91 data-nosnippet>91</a>            .map_err(TlsCodecError::deserialize(<span class="string">"keypackagein"</span>))
+<a href=#92 id=92 data-nosnippet>92</a>            .map_err(RecursiveError::mls_conversation(<span class="string">"deserializing keypackage"</span>))
+<a href=#93 id=93 data-nosnippet>93</a>            .map_err(Into::into)
+<a href=#94 id=94 data-nosnippet>94</a>    }
+<a href=#95 id=95 data-nosnippet>95</a>
+<a href=#96 id=96 data-nosnippet>96</a>    <span class="doccomment">/// Serialize this to a byte vector.
+<a href=#97 id=97 data-nosnippet>97</a>    </span><span class="kw">pub fn </span>serialize(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;Vec&lt;u8&gt;&gt; {
+<a href=#98 id=98 data-nosnippet>98</a>        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>{
+<a href=#99 id=99 data-nosnippet>99</a>            Inner::Out(key_package) =&gt; key_package
+<a href=#100 id=100 data-nosnippet>100</a>                .tls_serialize_detached()
+<a href=#101 id=101 data-nosnippet>101</a>                .map_err(TlsCodecError::serialize(<span class="string">"keypackage"</span>))
+<a href=#102 id=102 data-nosnippet>102</a>                .map_err(RecursiveError::mls_conversation(<span class="string">"serializing keypackage"</span>))
+<a href=#103 id=103 data-nosnippet>103</a>                .map_err(Into::into),
+<a href=#104 id=104 data-nosnippet>104</a>            Inner::In(key_package_in) =&gt; key_package_in
+<a href=#105 id=105 data-nosnippet>105</a>                .tls_serialize_detached()
+<a href=#106 id=106 data-nosnippet>106</a>                .map_err(TlsCodecError::serialize(<span class="string">"keypackage"</span>))
+<a href=#107 id=107 data-nosnippet>107</a>                .map_err(RecursiveError::mls_conversation(<span class="string">"serializing keypackagein"</span>))
+<a href=#108 id=108 data-nosnippet>108</a>                .map_err(Into::into),
+<a href=#109 id=109 data-nosnippet>109</a>        }
+<a href=#110 id=110 data-nosnippet>110</a>    }
+<a href=#111 id=111 data-nosnippet>111</a>
+<a href=#112 id=112 data-nosnippet>112</a>    <span class="doccomment">/// Convert this to a reference.
+<a href=#113 id=113 data-nosnippet>113</a>    </span><span class="kw">pub fn </span>r#ref(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;KeyPackageRef&gt; {
+<a href=#114 id=114 data-nosnippet>114</a>        <span class="kw">match </span><span class="kw-2">&amp;</span><span class="self">self</span>.<span class="number">0 </span>{
+<a href=#115 id=115 data-nosnippet>115</a>            Inner::Out(key_package) =&gt; key_package
+<a href=#116 id=116 data-nosnippet>116</a>                .make_ref()
+<a href=#117 id=117 data-nosnippet>117</a>                .map(KeyPackageRef)
+<a href=#118 id=118 data-nosnippet>118</a>                .map_err(RecursiveError::mls_client(<span class="string">"generating hashref for key package"</span>))
+<a href=#119 id=119 data-nosnippet>119</a>                .map_err(Into::into),
+<a href=#120 id=120 data-nosnippet>120</a>            Inner::In(<span class="kw">_</span>) =&gt; <span class="prelude-val">Err</span>(CoreCryptoError::ad_hoc(
+<a href=#121 id=121 data-nosnippet>121</a>                <span class="string">"only keypackages provided by CC can generate a reference"</span>,
+<a href=#122 id=122 data-nosnippet>122</a>            )),
+<a href=#123 id=123 data-nosnippet>123</a>        }
+<a href=#124 id=124 data-nosnippet>124</a>    }
+<a href=#125 id=125 data-nosnippet>125</a>}
 </code></pre></div></section></main></body></html>

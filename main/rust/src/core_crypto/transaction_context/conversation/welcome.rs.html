@@ -81,44 +81,42 @@
 <a href=#81 id=81 data-nosnippet>81</a>
 <a href=#82 id=82 data-nosnippet>82</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#83 id=83 data-nosnippet>83</a>    </span><span class="kw">async fn </span>process_welcome_should_fail_when_already_exists(case: TestContext) {
-<a href=#84 id=84 data-nosnippet>84</a>        <span class="kw">use </span><span class="kw">crate</span>::LeafError;
-<a href=#85 id=85 data-nosnippet>85</a>
-<a href=#86 id=86 data-nosnippet>86</a>        <span class="kw">let </span>[alice, <span class="kw-2">mut </span>bob] = case.sessions().<span class="kw">await</span>;
-<a href=#87 id=87 data-nosnippet>87</a>        Box::pin(<span class="kw">async move </span>{
-<a href=#88 id=88 data-nosnippet>88</a>            <span class="kw">let </span>credential_ref = <span class="kw-2">&amp;</span>bob.initial_credential;
-<a href=#89 id=89 data-nosnippet>89</a>            <span class="kw">let </span>commit = case.create_conversation([<span class="kw-2">&amp;</span>alice]).<span class="kw">await</span>.invite([<span class="kw-2">&amp;</span>bob]).<span class="kw">await</span>;
-<a href=#90 id=90 data-nosnippet>90</a>            <span class="kw">let </span>conversation = commit.conversation();
-<a href=#91 id=91 data-nosnippet>91</a>            <span class="kw">let </span>id = conversation.id().clone();
-<a href=#92 id=92 data-nosnippet>92</a>                <span class="comment">// Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
-<a href=#93 id=93 data-nosnippet>93</a>                </span>bob
-<a href=#94 id=94 data-nosnippet>94</a>                    .transaction
-<a href=#95 id=95 data-nosnippet>95</a>                    .new_conversation(<span class="kw-2">&amp;</span>id, credential_ref, case.cfg.clone())
-<a href=#96 id=96 data-nosnippet>96</a>                    .<span class="kw">await
-<a href=#97 id=97 data-nosnippet>97</a>                    </span>.unwrap();
-<a href=#98 id=98 data-nosnippet>98</a>
-<a href=#99 id=99 data-nosnippet>99</a>                <span class="comment">// Bob's key packages before processing the welcome
-<a href=#100 id=100 data-nosnippet>100</a>                </span><span class="kw">let </span>key_package_refs_before = bob.transaction.get_key_package_refs().<span class="kw">await</span>.unwrap();
+<a href=#84 id=84 data-nosnippet>84</a>        <span class="kw">let </span>[alice, <span class="kw-2">mut </span>bob] = case.sessions().<span class="kw">await</span>;
+<a href=#85 id=85 data-nosnippet>85</a>        Box::pin(<span class="kw">async move </span>{
+<a href=#86 id=86 data-nosnippet>86</a>            <span class="kw">let </span>credential_ref = <span class="kw-2">&amp;</span>bob.initial_credential;
+<a href=#87 id=87 data-nosnippet>87</a>            <span class="kw">let </span>commit = case.create_conversation([<span class="kw-2">&amp;</span>alice]).<span class="kw">await</span>.invite([<span class="kw-2">&amp;</span>bob]).<span class="kw">await</span>;
+<a href=#88 id=88 data-nosnippet>88</a>            <span class="kw">let </span>conversation = commit.conversation();
+<a href=#89 id=89 data-nosnippet>89</a>            <span class="kw">let </span>id = conversation.id().clone();
+<a href=#90 id=90 data-nosnippet>90</a>                <span class="comment">// Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
+<a href=#91 id=91 data-nosnippet>91</a>                </span>bob
+<a href=#92 id=92 data-nosnippet>92</a>                    .transaction
+<a href=#93 id=93 data-nosnippet>93</a>                    .new_conversation(<span class="kw-2">&amp;</span>id, credential_ref, case.cfg.clone())
+<a href=#94 id=94 data-nosnippet>94</a>                    .<span class="kw">await
+<a href=#95 id=95 data-nosnippet>95</a>                    </span>.unwrap();
+<a href=#96 id=96 data-nosnippet>96</a>
+<a href=#97 id=97 data-nosnippet>97</a>                <span class="comment">// Bob's key packages before processing the welcome
+<a href=#98 id=98 data-nosnippet>98</a>                </span><span class="kw">let </span>key_package_refs_before = bob.transaction.get_key_package_refs().<span class="kw">await</span>.unwrap();
+<a href=#99 id=99 data-nosnippet>99</a>
+<a href=#100 id=100 data-nosnippet>100</a>                <span class="kw">let </span>welcome = conversation.transport().<span class="kw">await</span>.latest_welcome_message().<span class="kw">await</span>;
 <a href=#101 id=101 data-nosnippet>101</a>
-<a href=#102 id=102 data-nosnippet>102</a>                <span class="kw">let </span>welcome = conversation.transport().<span class="kw">await</span>.latest_welcome_message().<span class="kw">await</span>;
-<a href=#103 id=103 data-nosnippet>103</a>
-<a href=#104 id=104 data-nosnippet>104</a>                <span class="comment">// We need Bob's created key package to be persisted, so we can restore it on error.
-<a href=#105 id=105 data-nosnippet>105</a>                // Assuming that key package creation happens in its own transaction matches a sufficiently large
-<a href=#106 id=106 data-nosnippet>106</a>                // portion of real-world usage.
-<a href=#107 id=107 data-nosnippet>107</a>                </span>bob.commit_transaction().<span class="kw">await</span>;
-<a href=#108 id=108 data-nosnippet>108</a>
-<a href=#109 id=109 data-nosnippet>109</a>                <span class="kw">let </span>join_welcome = bob
-<a href=#110 id=110 data-nosnippet>110</a>                    .transaction
-<a href=#111 id=111 data-nosnippet>111</a>                    .process_welcome_message(welcome)
-<a href=#112 id=112 data-nosnippet>112</a>                    .<span class="kw">await</span>;
-<a href=#113 id=113 data-nosnippet>113</a>
-<a href=#114 id=114 data-nosnippet>114</a>                <span class="comment">// Bob's key packages after processing the welcome
-<a href=#115 id=115 data-nosnippet>115</a>                </span><span class="kw">let </span>key_package_refs_after = bob.transaction.get_key_package_refs().<span class="kw">await</span>.unwrap();
-<a href=#116 id=116 data-nosnippet>116</a>
-<a href=#117 id=117 data-nosnippet>117</a>                <span class="macro">assert!</span>(!key_package_refs_before.is_empty());
-<a href=#118 id=118 data-nosnippet>118</a>                <span class="macro">assert_eq!</span>(key_package_refs_before, key_package_refs_after);
-<a href=#119 id=119 data-nosnippet>119</a>                <span class="macro">assert!</span>(<span class="macro">innermost_source_matches!</span>(join_welcome.unwrap_err(), LeafError::ConversationAlreadyExists(i) <span class="kw">if </span>i == <span class="kw-2">&amp;</span>id));
-<a href=#120 id=120 data-nosnippet>120</a>            })
-<a href=#121 id=121 data-nosnippet>121</a>        .<span class="kw">await</span>;
-<a href=#122 id=122 data-nosnippet>122</a>    }
-<a href=#123 id=123 data-nosnippet>123</a>}
+<a href=#102 id=102 data-nosnippet>102</a>                <span class="comment">// We need Bob's created key package to be persisted, so we can restore it on error.
+<a href=#103 id=103 data-nosnippet>103</a>                // Assuming that key package creation happens in its own transaction matches a sufficiently large
+<a href=#104 id=104 data-nosnippet>104</a>                // portion of real-world usage.
+<a href=#105 id=105 data-nosnippet>105</a>                </span>bob.commit_transaction().<span class="kw">await</span>;
+<a href=#106 id=106 data-nosnippet>106</a>
+<a href=#107 id=107 data-nosnippet>107</a>                <span class="kw">let </span>join_welcome = bob
+<a href=#108 id=108 data-nosnippet>108</a>                    .transaction
+<a href=#109 id=109 data-nosnippet>109</a>                    .process_welcome_message(welcome)
+<a href=#110 id=110 data-nosnippet>110</a>                    .<span class="kw">await</span>;
+<a href=#111 id=111 data-nosnippet>111</a>
+<a href=#112 id=112 data-nosnippet>112</a>                <span class="comment">// Bob's key packages after processing the welcome
+<a href=#113 id=113 data-nosnippet>113</a>                </span><span class="kw">let </span>key_package_refs_after = bob.transaction.get_key_package_refs().<span class="kw">await</span>.unwrap();
+<a href=#114 id=114 data-nosnippet>114</a>
+<a href=#115 id=115 data-nosnippet>115</a>                <span class="macro">assert!</span>(!key_package_refs_before.is_empty());
+<a href=#116 id=116 data-nosnippet>116</a>                <span class="macro">assert_eq!</span>(key_package_refs_before, key_package_refs_after);
+<a href=#117 id=117 data-nosnippet>117</a>                <span class="macro">assert!</span>(<span class="macro">innermost_source_matches!</span>(join_welcome.unwrap_err(), <span class="kw">super</span>::Error::ConversationAlreadyExists(i) <span class="kw">if </span>i == <span class="kw-2">&amp;</span>id));
+<a href=#118 id=118 data-nosnippet>118</a>            })
+<a href=#119 id=119 data-nosnippet>119</a>        .<span class="kw">await</span>;
+<a href=#120 id=120 data-nosnippet>120</a>    }
+<a href=#121 id=121 data-nosnippet>121</a>}
 </code></pre></div></section></main></body></html>
