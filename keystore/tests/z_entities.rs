@@ -39,10 +39,9 @@ macro_rules! test_for_entity {
 
             borrowed_key_round_trip!(&store, $entity, $($no_borrowed_key)?);
 
-            // TODO: entities which do not support update tend not to have a primary key constraint. Tracking issue: WPB-9649
-            // This can cause complications with the "default" remove implementation which does not support deleting many entities.
-            // We should have an automated way to test this here
-
+            // Certain entities have PKs which are the hash of all fields in the entity, such as MlsPendingMessage.
+            // Other entities completely ignore their PK, such as ProteusIdentity.
+            // In both cases the update test trivially succeeds without telling us anything.
             if !pat_to_bool!($($ignore_update)?) {
                 crate::tests_impl::can_update_entity::<$entity>(&store, &mut entity).await;
             }
