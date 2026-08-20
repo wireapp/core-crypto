@@ -10,6 +10,7 @@ use certval::{
 use const_oid::AssociatedOid;
 pub(crate) use crl_store::CrlStore;
 use x509_cert::{
+    certificate::Raw,
     der::{Decode, DecodePem, Encode},
     ext::pkix::AuthorityKeyIdentifier,
 };
@@ -28,7 +29,7 @@ pub struct PkiEnvironmentParams<'a> {
     /// Trust Anchor roots
     pub trust_roots: &'a [x509_cert::anchor::TrustAnchorChoice],
     /// CRLs to add to the revocation check
-    pub crls: &'a [x509_cert::crl::CertificateList],
+    pub crls: &'a [x509_cert::crl::CertificateList<Raw>],
 }
 
 pub struct PkiEnvironment {
@@ -83,7 +84,7 @@ impl PkiEnvironment {
         Ok(x509_cert::Certificate::from_pem(pem)?)
     }
 
-    pub fn decode_der_crl(crl_der: Vec<u8>) -> RustyX509CheckResult<x509_cert::crl::CertificateList> {
+    pub fn decode_der_crl(crl_der: Vec<u8>) -> RustyX509CheckResult<x509_cert::crl::CertificateList<Raw>> {
         Ok(x509_cert::crl::CertificateList::from_der(&crl_der)?)
     }
 
@@ -115,7 +116,7 @@ impl PkiEnvironment {
         Ok(cert.to_der()?)
     }
 
-    pub fn encode_crl_to_der(crl: &x509_cert::crl::CertificateList) -> RustyX509CheckResult<Vec<u8>> {
+    pub fn encode_crl_to_der(crl: &x509_cert::crl::CertificateList<Raw>) -> RustyX509CheckResult<Vec<u8>> {
         Ok(crl.to_der()?)
     }
 
@@ -198,7 +199,7 @@ impl PkiEnvironment {
         Ok(())
     }
 
-    pub fn validate_crl_with_raw(&self, crl_raw: &[u8]) -> RustyX509CheckResult<x509_cert::crl::CertificateList> {
+    pub fn validate_crl_with_raw(&self, crl_raw: &[u8]) -> RustyX509CheckResult<x509_cert::crl::CertificateList<Raw>> {
         let crl = x509_cert::crl::CertificateList::from_der(crl_raw)?;
 
         let mut spki_list = vec![];
