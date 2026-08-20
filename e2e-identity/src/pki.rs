@@ -4,6 +4,7 @@
 use std::sync::Arc;
 
 use async_lock::{RwLock, RwLockReadGuard};
+use ecdsa::SignatureEncoding as _;
 use openmls_traits::{
     authentication_service::{CredentialAuthenticationStatus, CredentialRef},
     crypto::OpenMlsCrypto,
@@ -89,7 +90,8 @@ impl signature::Keypair for P521PkiKeypair {
 impl signature::Signer<p521::ecdsa::DerSignature> for P521PkiKeypair {
     fn try_sign(&self, message: &[u8]) -> Result<p521::ecdsa::DerSignature, p521::ecdsa::Error> {
         let sk = p521::ecdsa::SigningKey::from(self.0.clone());
-        Ok(sk.try_sign(message)?.to_der())
+        let signature: p521::ecdsa::Signature = sk.sign(message);
+        Ok(signature.to_der())
     }
 }
 
@@ -145,9 +147,9 @@ impl PkiKeypair {
 
 pub use x509_cert::builder::profile::BuilderProfile;
 
-pub struct CertificateGenerationArgs<'a> {
+pub struct CertificateGenerationArgs<'a, P: BuilderProfile> {
     pub signature_scheme: SignatureScheme,
-    pub profile: BuilderProfile,
+    pub profile: P,
     pub serial: u64,
     /// Duration since UNIX EPOCH
     pub validity_start: Option<std::time::Duration>,
@@ -179,17 +181,11 @@ macro_rules! impl_certgen {
         $subject:expr, $org:expr, $domain:expr, $validity:expr, $alt_names:expr,
         $crl_dps:expr, $is_ca:expr, $is_root:expr
     ) => {{
-        let add_akid = $is_ca && $profile == x509_cert::builder::Profile::Root;
+        let profile = x509_cert::builder::profile::cabf::Root::new(false, $subject).expect("create root profile");
+        let add_akid = $is_ca && $is_root;
 
-        let mut builder = x509_cert::builder::CertificateBuilder::new(
-            $profile,
-            $serial,
-            $validity,
-            $subject,
-            $own_spki,
-            $signer_keypair,
-        )
-        .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
+        let mut builder = x509_cert::builder::CertificateBuilder::new($profile, $serial, $validity, $own_spki)
+            .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
 
         if add_akid {
             builder
@@ -293,7 +289,7 @@ macro_rules! impl_certgen {
         }
 
         builder
-            .build::<$sig_type>()
+            .build::<_, $sig_type>($signer_keypair)
             .map_err(|_| E2eIdentityError::CertificateGenerationError)?
     }};
 }
@@ -338,13 +334,13 @@ impl PkiKeypair {
 
     pub fn spki(&self) -> E2eIdentityResult<spki::SubjectPublicKeyInfoOwned> {
         match self {
-            Self::P256(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(*sk.verifying_key())
+            Self::P256(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(sk.verifying_key())
                 .map_err(|_| E2eIdentityError::CertificateGenerationError)?),
-            Self::P384(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(*sk.verifying_key())
+            Self::P384(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(sk.verifying_key())
                 .map_err(|_| E2eIdentityError::CertificateGenerationError)?),
-            Self::P521(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(*sk.0.verifying_key())
+            Self::P521(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(sk.0.verifying_key())
                 .map_err(|_| E2eIdentityError::CertificateGenerationError)?),
-            Self::Ed25519(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(sk.0.verifying_key())
+            Self::Ed25519(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(&sk.0.verifying_key())
                 .map_err(|_| E2eIdentityError::CertificateGenerationError)?),
         }
     }
@@ -400,24 +396,25 @@ impl PkiKeypair {
             .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
 
         use signature::Signer as _;
-
         let signature: Vec<u8> = match self {
-            PkiKeypair::P256(sk) => signature::Signer::<p256::ecdsa::DerSignature>::try_sign(sk, &tbs)?
-                .to_der()
-                .map_err(|_| E2eIdentityError::CertificateGenerationError),
-            PkiKeypair::P384(sk) => signature::Signer::<p384::ecdsa::DerSignature>::try_sign(sk, &tbs)?
-                .to_der()
-                .map_err(|_| E2eIdentityError::CertificateGenerationError),
+            PkiKeypair::P256(sk) => {
+                let signature: p256::ecdsa::Signature = sk.sign(&tbs);
+                signature.to_der().to_vec()
+            }
+            PkiKeypair::P384(sk) => {
+                let signature: p384::ecdsa::Signature = sk.sign(&tbs);
+                signature.to_der().to_vec()
+            }
             PkiKeypair::P521(sk) => {
                 let sk = p521::ecdsa::SigningKey::from(sk.0.clone());
-                let signature: p521::ecdsa::DerSignature = sk.try_sign(&tbs)?.to_der();
-
-                signature
-                    .to_der()
-                    .map_err(|_| E2eIdentityError::CertificateGenerationError)
+                let signature: p521::ecdsa::Signature = sk.sign(&tbs);
+                signature.to_der().to_vec()
             }
-            PkiKeypair::Ed25519(sk) => Ok(sk.try_sign(&tbs)?.0.to_vec()),
-        }?;
+            PkiKeypair::Ed25519(sk) => {
+                let signature = sk.sign(&tbs);
+                signature.0.to_vec()
+            }
+        };
 
         let signature =
             spki::der::asn1::BitString::new(0, signature).map_err(|_| E2eIdentityError::CertificateGenerationError)?;
@@ -429,7 +426,10 @@ impl PkiKeypair {
         })
     }
 
-    pub fn generate_cert(&self, args: CertificateGenerationArgs) -> E2eIdentityResult<x509_cert::Certificate> {
+    pub fn generate_cert<P: BuilderProfile>(
+        &self,
+        args: CertificateGenerationArgs<P>,
+    ) -> E2eIdentityResult<x509_cert::Certificate> {
         use std::str::FromStr as _;
 
         use x509_cert::builder::Builder as _;
