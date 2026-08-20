@@ -253,7 +253,9 @@ mod tests_impl {
 
         assert_no_transaction_in_flight(store).await;
         let entity2 = store.get::<E>(&entity.primary_key()).await.unwrap().unwrap();
-        assert_eq!(*entity, *entity2);
+        let mut entity2 = Arc::into_inner(entity2).expect("this had to come from the db; no tx in flight");
+        entity2.equalize();
+        assert_eq!(*entity, entity2);
     }
 
     pub(crate) async fn can_remove_entity<E>(store: &Arc<CryptoKeystore>, entity: E)
@@ -332,7 +334,7 @@ mod tests {
     test_for_entity!(test_tnt_message_counter, TargetedMessageTxCounter no_borrowed_key:true);
     test_for_entity!(test_persisted_mls_pending_group, PersistedMlsPendingGroup);
     test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_entity_count: true ignore_update:true ignore_remove:true ignore_find_many:true no_borrowed_key:true);
-    test_for_entity!(test_mls_credential, StoredCredential ignore_update:true no_borrowed_key:true);
+    test_for_entity!(test_mls_credential, StoredCredential no_borrowed_key:true);
     test_for_entity!(test_mls_keypackage, StoredKeyPackage);
     test_for_entity!(test_mls_psk_bundle, StoredPskBundle);
     test_for_entity!(test_mls_encryption_keypair, StoredEncryptionKeyPair);
@@ -501,7 +503,7 @@ pub mod utils {
             }
 
     impl_entity_random_update_ext!(StoredKeyPackage, blob_fields=[key_package,], additional_fields=[(key_package_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
-    impl_entity_random_update_ext!(StoredCredential, blob_fields=[credential,public_key,private_key,], additional_fields=[(session_id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),(ciphersuite: rand::random()),]);
+    impl_entity_random_update_ext!(StoredCredential, id_field = public_key, blob_fields=[credential,private_key,], additional_fields=[(session_id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),(ciphersuite: rand::random()),]);
     impl_entity_random_update_ext!(StoredHpkePrivateKey, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredPskBundle, blob_fields=[psk,psk_id id_like:true,]);
