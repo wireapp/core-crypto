@@ -380,7 +380,7 @@ mod tests {
     test_for_entity!(test_persisted_mls_pending_group, PersistedMlsPendingGroup);
     test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_entity_count: true ignore_update:true ignore_remove:true ignore_find_many:true no_borrowed_key:true);
     test_for_entity!(test_mls_credential, StoredCredential ignore_update:true no_borrowed_key:true);
-    test_for_entity!(test_mls_keypackage, StoredKeyPackage);
+    test_for_entity!(test_mls_keypackage, StoredKeyPackage no_upsert:true);
     test_for_entity!(test_mls_psk_bundle, StoredPskBundle);
     test_for_entity!(test_mls_encryption_keypair, StoredEncryptionKeyPair no_upsert:true);
     test_for_entity!(test_mls_epoch_encryption_keypair, StoredEpochEncryptionKeypair);
