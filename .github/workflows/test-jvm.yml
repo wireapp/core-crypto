@@ -1,9 +1,13 @@
 concurrency:
-  group: "${{ github.workflow }}-${{ github.ref }}-test-jvm"
+  group: "${{ github.workflow }}-${{ github.ref }}-test-jvm-${{ inputs.runs_on || 'ubuntu-latest' }}"
   cancel-in-progress: true
 
 on:
   workflow_call:
+    inputs:
+      runs_on:
+        type: string
+        default: ubuntu-latest
   workflow_dispatch:
 
 env:
@@ -11,7 +15,7 @@ env:
 
 jobs:
   test-jvm:
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runs_on || 'ubuntu-latest' }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -31,6 +35,26 @@ jobs:
       - name: download linux library
         uses: ./.github/actions/make/jvm
         with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: download aarch64 linux artifact
+        if: runner.arch == 'X64'
+        uses: ./.github/actions/make
+        with:
+          key: jvm-linux-aarch64
+          make-rule: jvm-linux-aarch64
+          target-path: target/aarch64-unknown-linux-gnu/release/libcore_crypto_ffi.so
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: download x86_64 linux artifact
+        if: runner.arch == 'ARM64'
+        uses: ./.github/actions/make
+        with:
+          key: jvm-linux-x86-64
+          make-rule: jvm-linux-x86-64
+          target-path: target/x86_64-unknown-linux-gnu/release/libcore_crypto_ffi.so
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
@@ -54,7 +78,7 @@ jobs:
       - name: build and test jvm package
         uses: ./.github/actions/make
         with:
-          key: jvm-test
+          key: jvm-test-${{ runner.arch }}
           make-rule: jvm-test
           always-run: ${{ github.event_name == 'workflow_dispatch' || github.ref_name == 'main' }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}

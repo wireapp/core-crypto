@@ -24,6 +24,7 @@ TARGET_DIR := target/$(RELEASE_MODE)
 
 # Detect host platform for NDK and library extensions
 UNAME_S := $(shell uname -s)
+UNAME_M := $(shell uname -m)
 ifeq ($(UNAME_S),Linux)
   PLATFORM_DIR       := linux-x86_64
   LIBRARY_EXTENSION  := so

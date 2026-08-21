@@ -90,9 +90,18 @@ jobs:
       - name: download linux library
         uses: ./.github/actions/make
         with:
-          key: jvm-linux
-          make-rule: jvm-linux
+          key: jvm-linux-x86-64
+          make-rule: jvm-linux-x86-64
           target-path: target/x86_64-unknown-linux-gnu/release/libcore_crypto_ffi.so
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: download aarch64 linux artifact
+        uses: ./.github/actions/make
+        with:
+          key: jvm-linux-aarch64
+          make-rule: jvm-linux-aarch64
+          target-path: target/aarch64-unknown-linux-gnu/release/libcore_crypto_ffi.so
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 

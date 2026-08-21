@@ -58,6 +58,15 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
 
+      - name: download aarch64 linux artifact
+        uses: ./.github/actions/make
+        with:
+          key: jvm-linux-aarch64
+          make-rule: jvm-linux-aarch64
+          target-path: target/aarch64-unknown-linux-gnu/release/libcore_crypto_ffi.so
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
       # The specific jvm action uses `uname -s` to determine which `jvm` make rule to call.
       # Because this workflow runs on ubuntu, we're using the generic action
       - name: download aarch64 apple darwin artifact

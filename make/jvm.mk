@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 
 # darwin build
-JVM_DARWIN_LIB := target/aarch64-apple-darwin/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+JVM_DARWIN_LIB := target/aarch64-apple-darwin/$(RELEASE_MODE)/libcore_crypto_ffi.dylib
 jvm-darwin-deps := $(RUST_SOURCES)
 $(JVM_DARWIN_LIB): $(jvm-darwin-deps)
 	cargo rustc --locked \
@@ -14,18 +14,46 @@ $(JVM_DARWIN_LIB): $(jvm-darwin-deps)
 .PHONY: jvm-darwin
 jvm-darwin: $(JVM_DARWIN_LIB) ## Build core-crypto-ffi for JVM on aarch64-apple-darwin
 
-# linux build
-JVM_LINUX_LIB := target/x86_64-unknown-linux-gnu/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
-jvm-linux-deps := $(RUST_SOURCES)
-$(JVM_LINUX_LIB): $(jvm-linux-deps)
+# linux x86_64 build
+JVM_LINUX_X86_64_TARGET := x86_64-unknown-linux-gnu
+JVM_LINUX_X86_64_LIB := target/$(JVM_LINUX_X86_64_TARGET)/$(RELEASE_MODE)/libcore_crypto_ffi.so
+jvm-linux-x86-64-deps := $(RUST_SOURCES)
+$(JVM_LINUX_X86_64_LIB): $(jvm-linux-x86-64-deps)
 	cargo rustc --locked \
-	  --target x86_64-unknown-linux-gnu \
+	  --target $(JVM_LINUX_X86_64_TARGET) \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
 	  $(CARGO_BUILD_ARGS) -- $(RUST_STRIP_FLAGS)
 
+.PHONY: jvm-linux-x86-64
+jvm-linux-x86-64: $(JVM_LINUX_X86_64_LIB) ## Build core-crypto-ffi for JVM on x86_64-unknown-linux-gnu
+
+# linux aarch64 build
+JVM_LINUX_AARCH64_TARGET := aarch64-unknown-linux-gnu
+JVM_LINUX_AARCH64_LIB := target/$(JVM_LINUX_AARCH64_TARGET)/$(RELEASE_MODE)/libcore_crypto_ffi.so
+jvm-linux-aarch64-deps := $(RUST_SOURCES)
+$(JVM_LINUX_AARCH64_LIB): $(jvm-linux-aarch64-deps)
+	cargo rustc --locked \
+	  --target $(JVM_LINUX_AARCH64_TARGET) \
+	  --package core-crypto-ffi \
+	  --crate-type=cdylib --crate-type=staticlib \
+	  $(CARGO_BUILD_ARGS) -- $(RUST_STRIP_FLAGS)
+
+.PHONY: jvm-linux-aarch64
+jvm-linux-aarch64: $(JVM_LINUX_AARCH64_LIB) ## Build core-crypto-ffi for JVM on aarch64-unknown-linux-gnu
+
 .PHONY: jvm-linux
-jvm-linux: $(JVM_LINUX_LIB) ## Build core-crypto-ffi for JVM on x86_64-unknown-linux-gnu
+ifeq ($(UNAME_M),x86_64)
+JVM_LINUX_LIB := $(JVM_LINUX_X86_64_LIB)
+jvm-linux-deps := $(jvm-linux-x86-64-deps)
+jvm-linux: jvm-linux-x86-64 ## Build core-crypto-ffi for JVM on Linux (automatically select the target based on the host architecture)
+else ifneq ($(filter $(UNAME_M),aarch64 arm64),)
+JVM_LINUX_LIB := $(JVM_LINUX_AARCH64_LIB)
+jvm-linux-deps := $(jvm-linux-aarch64-deps)
+jvm-linux: jvm-linux-aarch64
+else
+$(error Unsupported Linux architecture for jvm: $(UNAME_M))
+endif
 
 .PHONY: jvm
 ifeq ($(UNAME_S),Linux)

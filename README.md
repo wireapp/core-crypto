@@ -176,8 +176,11 @@ rustup target add aarch64-apple-darwin
 Install Linux targets:
 
 ```sh
-rustup target add x86_64-unknown-linux-gnu
+rustup target add x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu
 ```
+
+The `jvm` and `jvm-linux` Make targets select the matching x86_64 or ARM64
+Linux target from the host architecture.
 
 ### WASM<a name="wasm"></a>
 

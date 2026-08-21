@@ -13,14 +13,26 @@ runs:
         id: platform-specs
         run: |
           os="$(uname -s)"
+          arch="$(uname -m)"
           if [ "$os" = "Linux" ]; then
             library_extension="so"
-            target="x86_64-unknown-linux-gnu"
-            rule="jvm-linux"
+            if [ "$arch" = "x86_64" ]; then
+              target="x86_64-unknown-linux-gnu"
+              rule="jvm-linux-x86-64"
+            elif [ "$arch" = "aarch64" ] || [ "$arch" = "arm64" ]; then
+              target="aarch64-unknown-linux-gnu"
+              rule="jvm-linux-aarch64"
+            else
+              echo "Unsupported Linux architecture: $arch" >&2
+              exit 1
+            fi
           elif [ "$os" = "Darwin" ]; then
             library_extension="dylib"
             target="aarch64-apple-darwin"
             rule="jvm-darwin"
+          else
+            echo "Unsupported operating system: $os" >&2
+            exit 1
           fi
           # The jvm-darwin/jvm-linux make rules build both a dynamic library (dylib/so) and a
           # static library (.a); upload both so consumers that link statically can use the .a.
