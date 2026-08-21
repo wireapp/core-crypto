@@ -1,4 +1,8 @@
-use core_crypto_keystore::{Transaction, entities::ProteusPrekey, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{
+    CryptoKeystoreError, Transaction,
+    entities::ProteusPrekey,
+    traits::{Entity, FetchFromDatabase as _},
+};
 use proteus_wasm::keys::PreKeyBundle;
 
 use super::ProteusCentral;
@@ -7,8 +11,31 @@ use crate::{KeystoreError, ProteusError, Result};
 impl ProteusCentral {
     /// Generates a new Proteus PreKey, stores it in the keystore and returns a serialized PreKeyBundle to be consumed
     /// externally
+    ///
+    /// Fails if `id` is already taken. Prekeys are not replaceable: the id has been published to
+    /// peers in a bundle, and overwriting it would strand anyone still holding that bundle.
     pub(crate) async fn new_prekey(&self, id: u16, transaction: &Transaction) -> Result<Vec<u8>> {
         use proteus_wasm::keys::{PreKey, PreKeyId};
+
+        // The keystore also refuses a duplicate id, but only once the transaction is applied,
+        // which would take down whatever else that transaction was doing and report the conflict
+        // far from the call responsible for it. Catch it here, while we can still name the id and
+        // leave the transaction usable. Reading through the transaction consults its buffered
+        // operations as well as the database, so an id claimed earlier in this same transaction
+        // counts as taken.
+        if transaction
+            .get::<ProteusPrekey>(&id)
+            .await
+            .map_err(KeystoreError::wrap("checking whether a proteus prekey id is free"))?
+            .is_some()
+        {
+            return Err(
+                KeystoreError::wrap("saving keystore prekey")(CryptoKeystoreError::AlreadyExists(
+                    <ProteusPrekey as Entity>::TABLE_NAME,
+                ))
+                .into(),
+            );
+        }
 
         let prekey_id = PreKeyId::new(id);
         let prekey = PreKey::new(prekey_id);
@@ -250,6 +277,59 @@ mod tests {
         let tx = keystore.new_transaction().await.unwrap();
         let (pk_id, _) = alice.new_prekey_auto(&tx).await.unwrap();
         assert_eq!(pk_id, 2, "a persisted last resort prekey must not block auto prekeys");
+        tx.commit().await.unwrap();
+
+        #[cfg(not(target_os = "unknown"))]
+        drop(db_file);
+    }
+
+    /// Claiming a prekey id which is already taken fails, and fails at the call responsible.
+    ///
+    /// The keystore refuses the duplicate on its own, but only when the transaction is applied.
+    /// This exercises the guard in front of it: the caller learns immediately, the prekey already
+    /// stored under that id is left alone, and the transaction survives to commit whatever else
+    /// it was carrying.
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn cannot_reuse_a_prekey_id() {
+        #[cfg(not(target_os = "unknown"))]
+        let (path, db_file) = tmp_db_file();
+        #[cfg(target_os = "unknown")]
+        let (path, _) = tmp_db_file();
+
+        let key = DatabaseKey::generate();
+        let keystore = core_crypto_keystore::Database::open(&path, &key).await.unwrap();
+        let tx = keystore.new_transaction().await.unwrap();
+        let alice = ProteusCentral::try_new(&tx).await.unwrap();
+
+        let bundle = alice.new_prekey(1, &tx).await.unwrap();
+
+        // taken by an id claimed earlier in this same transaction, which is only visible in the
+        // transaction's buffered operations and not yet in the database
+        assert!(
+            alice.new_prekey(1, &tx).await.is_err(),
+            "an id claimed earlier in this transaction must not be reassigned"
+        );
+        tx.commit().await.unwrap();
+
+        // and taken by an id claimed in an earlier transaction, which reaches the database
+        let tx = keystore.new_transaction().await.unwrap();
+        assert!(
+            alice.new_prekey(1, &tx).await.is_err(),
+            "a persisted id must not be reassigned"
+        );
+
+        // the original prekey survived both rejected claims
+        let stored = tx.get::<ProteusPrekey>(&1).await.unwrap().unwrap();
+        let stored = proteus_wasm::keys::PreKey::deserialise(&stored.prekey).unwrap();
+        let bundle = PreKeyBundle::deserialise(&bundle).unwrap();
+        assert_eq!(
+            stored.key_pair.public_key, bundle.public_key,
+            "the rejected claims must have left the original prekey in place"
+        );
+
+        // and the transaction is still usable
+        let (pk_id, _) = alice.new_prekey_auto(&tx).await.unwrap();
+        assert_eq!(pk_id, 2, "a rejected claim must not poison the transaction");
         tx.commit().await.unwrap();
 
         #[cfg(not(target_os = "unknown"))]

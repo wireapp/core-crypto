@@ -104,6 +104,10 @@ impl CoreCryptoContext {
 
     /// Creates a new Proteus prekey with the given ID and returns its CBOR-serialized bundle.
     ///
+    /// Fails if the ID is already in use. Prekeys are not replaceable: the ID has been published to
+    /// peers in a bundle, and overwriting it would strand anyone still holding that bundle. Use
+    /// `proteus_new_prekey_auto` to have a free ID chosen instead.
+    ///
     /// Warning: the Proteus client must be initialized with `proteus_init` first or an error will be returned.
     pub async fn proteus_new_prekey(&self, prekey_id: u16) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl!({ self.inner.proteus_new_prekey(prekey_id).await.map_err(Into::into) })

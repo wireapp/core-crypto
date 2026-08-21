@@ -155,6 +155,12 @@ impl TransactionContext {
 
     /// Creates a new Proteus prekey and returns the CBOR-serialized version of the prekey bundle
     ///
+    /// Fails if `prekey_id` is already in use. Prekeys are reusable but not replaceable: the id has been
+    /// published to peers in a bundle, and overwriting it would strand anyone still holding that
+    /// bundle. Use [Self::proteus_new_prekey_auto] to have a free id chosen instead.
+    ///
+    /// To free a prekey which has been claimed, delete the old prekey for that ID before inserting a new one.
+    ///
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error
     /// will be returned
     pub async fn proteus_new_prekey(&self, prekey_id: u16) -> Result<Vec<u8>> {
