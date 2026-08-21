@@ -66,8 +66,11 @@ impl Entity {
             .map(|tokens| quote!(#tokens,))
             .collect::<TokenStream>();
 
+        // `TABLE_NAME` is qualified rather than written as `Self::TABLE_NAME` because entity
+        // modules are not obliged to import `Entity`, and an associated const of a trait which is
+        // not in scope cannot be named through `Self`.
         let sql_map_err = (!upsert).then_some(quote! {
-            .map_err(|_| crate::CryptoKeystoreError::AlreadyExists(Self::TABLE_NAME))
+            .map_err(|_| crate::CryptoKeystoreError::AlreadyExists(<Self as crate::traits::Entity>::TABLE_NAME))
         });
 
         (sql_statement, fields, sql_map_err)
