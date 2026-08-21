@@ -27,8 +27,9 @@ jobs:
           VM_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
         run: |
           scripts/benchmarks-to-openmetrics.py --format jmh crypto-ffi/bindings/jvm/build/reports/jmh/results.json --extra-label target=jvm > metrics.txt
+          COMMIT_HASH=$(git rev-parse --short HEAD)"
           curl -sS --fail-with-body -u "ci-writer:$VM_PASSWORD" --data-binary @metrics.txt \
-              "https://monitoring.zinfra.io/prometheus/api/v1/import/prometheus?extra_label=job=core-crypto-benchmark&extra_label=repo=$GITHUB_REPOSITORY"
+              "https://monitoring.zinfra.io/prometheus/api/v1/import/prometheus?extra_label=job=core-crypto-benchmark&extra_label=repo=$GITHUB_REPOSITORY&extra_label=commit=$COMMIT_HASH"
 
       - name: Publish benchmark result to GitHub pages
         uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
