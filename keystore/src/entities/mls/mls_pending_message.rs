@@ -16,6 +16,9 @@ use crate::{
 /// fully established but the message belongs to epoch `n + 1` while we are still in epoch `n`. The first
 /// kind of conversation is stored in `mls_pending_groups` and the second in `mls_groups`, so
 /// `conversation_id` carries no foreign key — there is no single parent table for it to reference.
+///
+/// This entity cannot be updated in the DB: the primary key is formed of a hash of all the rest
+/// of the data, so duplicate save attempts silently succeed without changing anything.
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct MlsPendingMessage {
