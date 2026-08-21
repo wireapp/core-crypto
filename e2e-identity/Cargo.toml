@@ -43,6 +43,7 @@ ed25519-dalek.workspace = true
 signature.workspace = true
 log.workspace = true
 ecdsa.workspace = true
+elliptic-curve.workspace = true
 p256.workspace = true
 p384.workspace = true
 p521.workspace = true
