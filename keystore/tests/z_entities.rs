@@ -374,7 +374,7 @@ mod tests {
     #[cfg(feature = "proteus-keystore")]
     test_for_entity!(test_proteus_identity, ProteusIdentity ignore_entity_count:true ignore_update:true no_borrowed_key:true);
     #[cfg(feature = "proteus-keystore")]
-    test_for_entity!(test_proteus_prekey, ProteusPrekey no_borrowed_key:true);
+    test_for_entity!(test_proteus_prekey, ProteusPrekey no_upsert:true no_borrowed_key:true);
     #[cfg(feature = "proteus-keystore")]
     test_for_entity!(test_proteus_session, ProteusSession);
 
@@ -606,7 +606,13 @@ pub mod utils {
                 use rand::Rng as _;
                 let mut rng = rand::thread_rng();
 
-                let id: u16 = rng.r#gen();
+                // Counted rather than drawn at random. A prekey id is only 16 bits wide and this
+                // entity does not upsert, so random ids would collide across the dozen prekeys a
+                // single run creates about once in a thousand runs, and each collision would fail
+                // the run. Counting makes the ids unique by construction.
+                static NEXT_ID: std::sync::atomic::AtomicU16 = std::sync::atomic::AtomicU16::new(1);
+                let id = NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+
                 let mut prekey = vec![0u8; rng.gen_range(MAX_BLOB_SIZE)];
                 rng.fill(&mut prekey[..]);
 
