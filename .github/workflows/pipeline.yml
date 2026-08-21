@@ -157,6 +157,7 @@ jobs:
     needs:
       - bindings-jvm
       - build-jvm-linux
+      - build-jvm-linux-aarch64
       - build-jvm-darwin
     uses: ./.github/workflows/kotlin-check.yml
 
