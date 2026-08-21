@@ -70,7 +70,7 @@ impl Entity {
         // modules are not obliged to import `Entity`, and an associated const of a trait which is
         // not in scope cannot be named through `Self`.
         let sql_map_err = (!upsert).then_some(quote! {
-            .map_err(|_| crate::CryptoKeystoreError::AlreadyExists(<Self as crate::traits::Entity>::TABLE_NAME))
+            .map_err(crate::CryptoKeystoreError::map_already_exists(<Self as crate::traits::Entity>::TABLE_NAME))
         });
 
         (sql_statement, fields, sql_map_err)

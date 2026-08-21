@@ -78,8 +78,9 @@ impl crate::traits::EntityDatabaseMutation for StoredPskBundle {
     fn save(&self, tx: &rusqlite::Transaction) -> crate::CryptoKeystoreResult<()> {
         let hash = crate::Sha256Hash::hash_from(&self.psk_id);
         let mut stmt = tx.prepare_cached("INSERT INTO mls_psk_bundles (id_sha256, psk_id, psk) VALUES (?, ?, ?)")?;
-        stmt.execute(rusqlite::params![hash, self.psk_id, self.psk])
-            .map_err(|_| crate::CryptoKeystoreError::AlreadyExists(<Self as crate::traits::Entity>::TABLE_NAME))?;
+        stmt.execute(rusqlite::params![hash, self.psk_id, self.psk]).map_err(
+            crate::CryptoKeystoreError::map_already_exists(<Self as crate::traits::Entity>::TABLE_NAME),
+        )?;
         Ok(())
     }
 

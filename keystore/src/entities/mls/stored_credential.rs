@@ -1,6 +1,9 @@
 use zeroize::Zeroize;
 
-use crate::{Sha256Hash, traits::PrimaryKey};
+use crate::{
+    CryptoKeystoreError, Sha256Hash,
+    traits::{Entity, PrimaryKey},
+};
 
 /// This type exists so that we can efficiently search for credentials by a variety of metrics at the database level.
 ///
@@ -126,7 +129,8 @@ impl crate::traits::EntityDatabaseMutation for StoredCredential {
             ":created_at": self.created_at,
             ":ciphersuite": self.ciphersuite,
             ":private_key": self.private_key,
-        ])?;
+        ])
+        .map_err(CryptoKeystoreError::map_already_exists(StoredCredential::TABLE_NAME))?;
         Ok(())
     }
 
