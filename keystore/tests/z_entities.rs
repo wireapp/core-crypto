@@ -28,7 +28,7 @@ macro_rules! borrowed_key_round_trip {
 }
 
 macro_rules! test_for_entity {
-    ($test_name:ident, $entity:ident $(ignore_entity_count:$ignore_entity_count:literal)? $(ignore_update:$ignore_update:literal)? $(ignore_remove:$ignore_remove:literal)? $(ignore_find_many:$ignore_find_many:literal)? $(no_borrowed_key:$no_borrowed_key:literal)?) => {
+    ($test_name:ident, $entity:ident $(ignore_entity_count:$ignore_entity_count:literal)? $(ignore_update:$ignore_update:literal)? $(no_upsert:$no_upsert:literal)? $(ignore_remove:$ignore_remove:literal)? $(ignore_find_many:$ignore_find_many:literal)? $(no_borrowed_key:$no_borrowed_key:literal)?) => {
         #[apply(all_storage_types)]
         async fn $test_name(context: KeystoreTestContext) {
             let store = context.store();
@@ -43,7 +43,9 @@ macro_rules! test_for_entity {
             // This can cause complications with the "default" remove implementation which does not support deleting many entities.
             // We should have an automated way to test this here
 
-            if !pat_to_bool!($($ignore_update)?) {
+            if pat_to_bool!($($no_upsert)?) {
+                crate::tests_impl::cannot_update_entity::<$entity>(&store, &entity).await;
+            } else if !pat_to_bool!($($ignore_update)?) {
                 crate::tests_impl::can_update_entity::<$entity>(&store, &mut entity).await;
             }
             if !pat_to_bool!($($ignore_remove)?) {
@@ -64,7 +66,8 @@ mod tests_impl {
     use std::{any::Any, borrow::Borrow, sync::Arc};
 
     use core_crypto_keystore::{
-        entities::{MlsPendingMessage, PersistedMlsPendingGroup, StoredCredential},
+        CryptoKeystoreError,
+        entities::{MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential},
         traits::{
             BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed,
             FetchFromDatabase as _, PrimaryKey as _,
@@ -245,6 +248,50 @@ mod tests_impl {
         assert_no_transaction_in_flight(store).await;
         let entity2 = store.get::<E>(&entity.primary_key()).await.unwrap().unwrap();
         assert_eq!(*entity, *entity2);
+    }
+
+    /// The mirror image of [`can_update_entity`], for entities whose primary key determines their
+    /// contents: rewriting one under its existing key must fail rather than clobber it.
+    ///
+    /// The rejection happens at commit rather than at `save`, because `save` only buffers an
+    /// operation; nothing reaches SQL until the transaction is applied. The whole transaction is
+    /// therefore lost, which is the intended outcome — for these entities a duplicate key with
+    /// different contents is a bug, not a caller error to be recovered from.
+    pub(crate) async fn cannot_update_entity<E>(store: &Arc<CryptoKeystore>, entity: &E)
+    where
+        E: 'static
+            + Clone
+            + std::fmt::Debug
+            + Eq
+            + EntityRandomUpdateExt
+            + Entity
+            + EntityDatabaseMutation
+            + Send
+            + Sync,
+    {
+        let mut updated = entity.clone();
+        updated.random_update();
+        assert_ne!(
+            *entity, updated,
+            "`random_update` left the entity unchanged, so this test would pass vacuously"
+        );
+
+        let tx = store.new_transaction().await.unwrap();
+        tx.save(updated).await.unwrap();
+        let commit_error = tx
+            .commit()
+            .await
+            .expect_err("this entity does not upsert, so rewriting it under its own key must fail");
+        assert!(
+            matches!(commit_error, CryptoKeystoreError::AlreadyExists(table) if table == E::TABLE_NAME),
+            "expected a uniqueness violation for {}, got {commit_error:?}",
+            E::TABLE_NAME
+        );
+
+        assert_no_transaction_in_flight(store).await;
+        let mut stored = Arc::unwrap_or_clone(store.get::<E>(&entity.primary_key()).await.unwrap().unwrap());
+        stored.equalize();
+        assert_eq!(*entity, stored, "the rejected save must have left the row untouched");
     }
 
     pub(crate) async fn can_remove_entity<E>(store: &Arc<CryptoKeystore>, entity: E)
