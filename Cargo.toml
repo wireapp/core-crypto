@@ -92,6 +92,7 @@ const-oid = { version = "0.10", default-features = false, features = ["db"] }
 der = { version = "0.8", default-features = false, features = ["std"] }
 ecdsa = { version = "0.17", default-features = false }
 ed25519-dalek = { version = "3", features = ["alloc", "pkcs8"] }
+elliptic-curve = "0.14"
 flagset = { version = "0.4", default-features = false }
 getrandom = { version = "0.2.8", default-features = false }
 jwt-simple = { version = "0.13", git = "https://github.com/wireapp/rust-jwt-simple", tag = "v0.13.0-pre.core-crypto-1.0.0", default-features = false }
