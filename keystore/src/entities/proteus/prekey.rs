@@ -102,7 +102,7 @@ impl EntityDatabaseMutation for ProteusPrekey {
     fn save(&self, tx: &rusqlite::Transaction) -> CryptoKeystoreResult<()> {
         let mut stmt = tx.prepare_cached("INSERT INTO proteus_prekeys (id, key) VALUES (?, ?)")?;
         stmt.execute(rusqlite::params![self.id, self.prekey])
-            .map_err(|_| CryptoKeystoreError::AlreadyExists(Self::TABLE_NAME))?;
+            .map_err(CryptoKeystoreError::map_already_exists(Self::TABLE_NAME))?;
         Ok(())
     }
 

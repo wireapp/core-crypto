@@ -79,8 +79,9 @@ impl crate::traits::EntityDatabaseMutation for StoredEncryptionKeyPair {
     fn save(&self, tx: &rusqlite::Transaction) -> crate::CryptoKeystoreResult<()> {
         let hash = crate::Sha256Hash::hash_from(&self.pk);
         let mut stmt = tx.prepare_cached("INSERT INTO mls_encryption_keypairs (pk_sha256, pk, sk) VALUES (?, ?, ?)")?;
-        stmt.execute(rusqlite::params![hash, self.pk, self.sk])
-            .map_err(|_| crate::CryptoKeystoreError::AlreadyExists(<Self as crate::traits::Entity>::TABLE_NAME))?;
+        stmt.execute(rusqlite::params![hash, self.pk, self.sk]).map_err(
+            crate::CryptoKeystoreError::map_already_exists(<Self as crate::traits::Entity>::TABLE_NAME),
+        )?;
         Ok(())
     }
 
