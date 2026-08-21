@@ -98,3 +98,141 @@ impl TransactionLock {
         }))
     }
 }
+
+#[cfg(all(test, feature = "cross-process-lock", not(target_os = "unknown")))]
+mod tests {
+    use std::time::Duration;
+
+    use futures_lite::future;
+    use smol::Timer;
+
+    use crate::{CryptoKeystoreError, Database, DatabaseKey};
+
+    /// Long enough that a lock which is genuinely free gets taken well within it.
+    const TIMEOUT: Duration = Duration::from_secs(10);
+    /// Short enough to keep the suite quick, since the expected outcome is that nothing happens.
+    const CONTENTION_WINDOW: Duration = Duration::from_millis(250);
+
+    /// Two `Database` handles over one path are what a second process looks like to the file lock:
+    /// each has its own semaphore and its own open lock file, so only the file lock can separate
+    /// them. That makes this a faithful stand-in for genuine cross-process contention without
+    /// having to spawn one.
+    async fn two_handles(dir: &std::path::Path) -> (std::sync::Arc<Database>, std::sync::Arc<Database>) {
+        let path = dir.join("keystore.db");
+        let path = path.to_str().expect("temp dir path is utf-8");
+        let key = DatabaseKey::generate();
+        (
+            Database::open(path, &key).await.expect("opening the first handle"),
+            Database::open(path, &key).await.expect("opening the second handle"),
+        )
+    }
+
+    #[test]
+    fn an_immediate_transaction_is_refused_while_another_handle_holds_one() {
+        future::block_on(async {
+            let dir = tempfile::tempdir().unwrap();
+            let (first, second) = two_handles(dir.path()).await;
+
+            let transaction = first.new_transaction().await.unwrap();
+
+            match second.try_new_immediate_transaction().await {
+                Err(CryptoKeystoreError::TransactionInProgress) => {}
+                Err(error) => panic!("expected the second handle to be locked out, got {error}"),
+                Ok(_) => panic!("the second handle started a transaction while the first held one"),
+            }
+
+            // committing releases the lock, so the other handle can take it
+            transaction.commit().await.unwrap();
+            second.try_new_immediate_transaction().await.unwrap();
+        });
+    }
+
+    #[test]
+    fn a_waiting_transaction_blocks_until_the_other_handle_is_done() {
+        future::block_on(async {
+            let dir = tempfile::tempdir().unwrap();
+            let (first, second) = two_handles(dir.path()).await;
+
+            let transaction = first.new_transaction().await.unwrap();
+
+            // the file lock is held elsewhere, so this must not resolve
+            let acquired = future::or(async { Some(second.new_transaction().await) }, async {
+                Timer::after(CONTENTION_WINDOW).await;
+                None
+            })
+            .await;
+            assert!(
+                acquired.is_none(),
+                "the second handle acquired a lock it should have waited for"
+            );
+
+            // rolling back by drop releases the lock just as committing does
+            drop(transaction);
+
+            future::or(async { Some(second.new_transaction().await) }, async {
+                Timer::after(TIMEOUT).await;
+                None
+            })
+            .await
+            .expect("timed out waiting for the released lock")
+            .unwrap();
+        });
+    }
+
+    /// Dropping a pending acquisition must not strand the lock: the blocking acquire may still
+    /// land after the future is gone, and its guard has to release what it took.
+    #[test]
+    fn abandoning_a_pending_acquisition_leaves_the_lock_free() {
+        future::block_on(async {
+            let dir = tempfile::tempdir().unwrap();
+            let (first, second) = two_handles(dir.path()).await;
+
+            let transaction = first.new_transaction().await.unwrap();
+            // start waiting, then walk away
+            future::or(async { Some(second.new_transaction().await) }, async {
+                Timer::after(CONTENTION_WINDOW).await;
+                None
+            })
+            .await;
+            drop(transaction);
+
+            // the abandoned wait may win the race for the lock, but only transiently; retry until
+            // its guard has been dropped
+            let acquired = future::or(
+                async {
+                    loop {
+                        if let Ok(transaction) = second.try_new_immediate_transaction().await {
+                            return Some(transaction);
+                        }
+                        Timer::after(Duration::from_millis(10)).await;
+                    }
+                },
+                async {
+                    Timer::after(TIMEOUT).await;
+                    None
+                },
+            )
+            .await;
+            assert!(acquired.is_some(), "the abandoned acquisition stranded the file lock");
+        });
+    }
+
+    #[test]
+    fn wiping_a_database_removes_its_lock_file() {
+        future::block_on(async {
+            let dir = tempfile::tempdir().unwrap();
+            let path = dir.path().join("keystore.db");
+            let database = Database::open(path.to_str().unwrap(), &DatabaseKey::generate())
+                .await
+                .unwrap();
+
+            database.new_transaction().await.unwrap().commit().await.unwrap();
+
+            let lock_file = dir.path().join("keystore.db-cc-tx.lock");
+            assert!(lock_file.exists(), "expected a lock file next to the database");
+
+            std::sync::Arc::into_inner(database).unwrap().wipe().await.unwrap();
+            assert!(!lock_file.exists(), "wipe left the lock file behind");
+        });
+    }
+}
