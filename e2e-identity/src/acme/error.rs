@@ -61,4 +61,7 @@ pub enum RustyAcmeError {
     /// UTF-8 parsing error
     #[error(transparent)]
     Utf8(#[from] std::str::Utf8Error),
+    /// Error while decoding elliptic curve keys (e.g. from PEM or DER)
+    #[error(transparent)]
+    DecodeError(#[from] elliptic_curve::DecodeError),
 }
