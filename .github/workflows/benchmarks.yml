@@ -9,16 +9,20 @@ jobs:
     uses: ./.github/workflows/benchmark-jvm.yml
     with:
       runs_on: '["self-hosted", "benchmark"]'
+      benchmark_message_counts: "1"
+      benchmark_message_sizes: "16"
+      benchmark_user_counts: "1"
+      benchmark_cipher_suites: "MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519"
     secrets: inherit
 
-  benchmark-ts-browser:
-    uses: ./.github/workflows/benchmark-ts-browser.yml
-    with:
-      runs_on: '["self-hosted", "benchmark"]'
-    secrets: inherit
-
-  benchmark-ts-native:
-    uses: ./.github/workflows/benchmark-ts-native.yml
-    with:
-      runs_on: '["self-hosted", "benchmark"]'
-    secrets: inherit
+#  benchmark-ts-browser:
+#    uses: ./.github/workflows/benchmark-ts-browser.yml
+#    with:
+#      runs_on: '["self-hosted", "benchmark"]'
+#    secrets: inherit
+#
+#  benchmark-ts-native:
+#    uses: ./.github/workflows/benchmark-ts-native.yml
+#    with:
+#      runs_on: '["self-hosted", "benchmark"]'
+#    secrets: inherit
