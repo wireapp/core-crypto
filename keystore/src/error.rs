@@ -7,6 +7,12 @@ pub enum CryptoKeystoreError {
     MutatingOperationWithoutTransaction,
     #[error("cannot open a new transaction as there exists another transaction currently in progress")]
     TransactionInProgress,
+    #[error("failed to operate the cross-process transaction lock at {path}")]
+    TransactionLock {
+        path: String,
+        #[source]
+        source: std::io::Error,
+    },
     #[error(transparent)]
     TryFromSliceError(#[from] std::array::TryFromSliceError),
     #[error("One of the Keystore locks has been poisoned")]
