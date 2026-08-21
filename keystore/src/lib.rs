@@ -5,8 +5,6 @@ mod error;
 mod hash;
 pub(crate) mod migrations;
 pub(crate) mod mls;
-#[cfg(feature = "proteus-keystore")]
-pub(crate) mod proteus;
 pub mod traits;
 pub mod transaction;
 mod unique_arc;
