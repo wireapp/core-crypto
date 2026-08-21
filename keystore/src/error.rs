@@ -98,6 +98,20 @@ pub enum CryptoKeystoreError {
 }
 
 impl CryptoKeystoreError {
+    /// If the produced rusqlite error came from a constraint violation, then map it to our
+    /// AlreadyExists variant. Otherwise pass it through.
+    pub(crate) fn map_already_exists(table_name: &'static str) -> impl FnOnce(rusqlite::Error) -> Self {
+        move |err| {
+            if let rusqlite::Error::SqliteFailure(inner, _) = err
+                && let rusqlite::ErrorCode::ConstraintViolation = inner.code
+            {
+                Self::AlreadyExists(table_name)
+            } else {
+                err.into()
+            }
+        }
+    }
+
     #[cfg(target_os = "unknown")]
     pub(crate) fn relaxed_idb(
         context: &'static str,
