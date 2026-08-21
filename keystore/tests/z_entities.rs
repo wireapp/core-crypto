@@ -39,10 +39,6 @@ macro_rules! test_for_entity {
 
             borrowed_key_round_trip!(&store, $entity, $($no_borrowed_key)?);
 
-            // TODO: entities which do not support update tend not to have a primary key constraint. Tracking issue: WPB-9649
-            // This can cause complications with the "default" remove implementation which does not support deleting many entities.
-            // We should have an automated way to test this here
-
             if pat_to_bool!($($no_upsert)?) {
                 crate::tests_impl::cannot_update_entity::<$entity>(&store, &entity).await;
             } else if !pat_to_bool!($($ignore_update)?) {
