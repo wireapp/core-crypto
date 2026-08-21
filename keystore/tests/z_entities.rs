@@ -370,7 +370,7 @@ mod tests {
     test_for_entity!(test_mls_hpke_private_key, StoredHpkePrivateKey no_upsert:true);
     test_for_entity!(test_e2ei_intermediate_cert, X509IntermediateCert);
     test_for_entity!(test_e2ei_crl, X509Crl);
-    test_for_entity!(test_e2ei_acme_ca, X509TrustAnchor ignore_entity_count:true ignore_find_many:true no_borrowed_key:true);
+    test_for_entity!(test_e2ei_acme_ca, X509TrustAnchor ignore_entity_count:true no_upsert:true ignore_find_many:true no_borrowed_key:true);
     #[cfg(feature = "proteus-keystore")]
     test_for_entity!(test_proteus_identity, ProteusIdentity ignore_entity_count:true ignore_update:true no_borrowed_key:true);
     #[cfg(feature = "proteus-keystore")]
