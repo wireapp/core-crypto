@@ -4,6 +4,15 @@ use zeroize::Zeroize;
 use crate::traits::{BorrowPrimaryKey, PrimaryKey};
 
 /// Entity representing a temporarily persisted `MlsGroup`
+///
+/// This entity keeps its upsert semantics deliberately. Nothing updates one in place — there is a
+/// single writer, and the row is deleted once the external join it represents is merged or
+/// abandoned — so it reads like a candidate for a plain `INSERT`. It is not. `join_by_external_commit`
+/// invites the caller to retry, and whether the abandoned row is still there on the retry depends on
+/// what the caller did with the previous failure: an error crossing the FFI becomes an exception
+/// which by default cancels the transaction, discarding the row, but a caller may catch it and carry
+/// on with the same transaction, in which case the row survives. Both are legitimate, so the second
+/// save has to be allowed to replace the first.
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct PersistedMlsPendingGroup {
