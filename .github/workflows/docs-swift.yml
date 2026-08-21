@@ -50,7 +50,10 @@ jobs:
           ruby-version: '3.3'
 
       - name: install jazzy
-        run: gem install jazzy
+        run: | # pinned mustache to avoid https://github.com/mustache/mustache/issues/293
+          gem install jazzy
+          gem uninstall mustache -aIx
+          gem install mustache -v 1.1.1
 
       - uses: swift-actions/setup-swift@364295d9c23900ce04d4e5cc708387921b4e50f9 # v3.0.0-beta.1
         with:
