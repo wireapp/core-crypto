@@ -1540,6 +1540,10 @@
                       <div class="abstract">
                         <p>Creates a new Proteus prekey with the given ID and returns its CBOR-serialized bundle.</p>
 
+<p>Fails if the ID is already in use. Prekeys are not replaceable: the ID has been published to
+ peers in a bundle, and overwriting it would strand anyone still holding that bundle. Use
+ <code>proteus_new_prekey_auto</code> to have a free ID chosen instead.</p>
+
 <p>Warning: the Proteus client must be initialized with <code>proteus_init</code> first or an error will be returned.</p>
 
                       </div>
