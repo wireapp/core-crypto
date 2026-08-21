@@ -154,28 +154,24 @@ impl RustyAcme {
         let signature = match alg {
             JwsAlgorithm::Ed25519 => {
                 let kp = Ed25519KeyPair::from_pem(kp.as_str())?;
-                let signature = kp.key_pair().as_ref().sign(&cert_data);
+                let signing_key = ed25519_dalek::SigningKey::from_bytes(kp.key_pair().as_ref().as_bytes());
+                let signature = signing_key.sign(&cert_data);
                 x509_cert::der::asn1::BitString::new(0, signature.to_vec())?
             }
             JwsAlgorithm::P256 => {
-                let kp = ES256KeyPair::from_pem(kp.as_str())?;
-                let sk: &p256::ecdsa::SigningKey = kp.key_pair().as_ref();
-                let signature: p256::ecdsa::DerSignature = sk.try_sign(&cert_data)?;
-                x509_cert::der::asn1::BitString::new(0, signature.to_der()?)?
+                let sk = p256::ecdsa::SigningKey::from_str(kp)?;
+                let signature: p256::ecdsa::Signature = sk.sign(&cert_data);
+                x509_cert::der::asn1::BitString::new(0, signature.to_vec())?
             }
             JwsAlgorithm::P384 => {
-                let kp = ES384KeyPair::from_pem(kp.as_str())?;
-                let sk: &p384::ecdsa::SigningKey = kp.key_pair().as_ref();
-                let signature: p384::ecdsa::DerSignature = sk.try_sign(&cert_data)?;
-                x509_cert::der::asn1::BitString::new(0, signature.to_der()?)?
+                let sk = p384::ecdsa::SigningKey::from_str(kp)?;
+                let signature: p384::ecdsa::Signature = sk.sign(&cert_data);
+                x509_cert::der::asn1::BitString::new(0, signature.to_vec())?
             }
             JwsAlgorithm::P521 => {
-                let kp = ES512KeyPair::from_pem(kp.as_str())?;
-                let sk: ecdsa::SigningKey<p521::NistP521> = kp.key_pair().as_ref().clone();
-                let sk = p521::ecdsa::SigningKey::from(sk);
-
-                let signature: p521::ecdsa::DerSignature = sk.try_sign(&cert_data)?.to_der();
-                x509_cert::der::asn1::BitString::new(0, signature.to_der()?)?
+                let sk = p521::ecdsa::SigningKey::from_str(kp)?;
+                let signature: p521::ecdsa::Signature = sk.sign(&cert_data);
+                x509_cert::der::asn1::BitString::new(0, signature.to_vec())?
             }
         };
         Ok(signature)
