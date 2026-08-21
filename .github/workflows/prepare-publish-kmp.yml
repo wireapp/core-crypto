@@ -5,6 +5,12 @@ concurrency:
 
 on:
   workflow_call:
+    inputs:
+      release_tag:
+        description: "Release tag used to derive the Maven version. Defaults to the current ref."
+        required: false
+        type: string
+        default: ""
     secrets:
       SONATYPE_USERNAME:
         required: true
@@ -26,7 +32,9 @@ env:
 
 jobs:
   kmp:
-    if: github.repository == 'wireapp/core-crypto'
+    if: >
+      github.repository == 'wireapp/core-crypto' ||
+      github.repository == 'MohamadJaara/core-crypto-kmp'
     runs-on: macos-latest
     outputs:
       staging_repository_id: ${{ steps.stage.outputs.staging_repository_id }}
@@ -103,6 +111,31 @@ jobs:
           target-path: target/x86_64-unknown-linux-gnu/release/libcore_crypto_ffi.a
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+
+      - name: configure fork Maven publication
+        if: github.repository == 'MohamadJaara/core-crypto-kmp'
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          release_tag="${RELEASE_TAG:-$GITHUB_REF_NAME}"
+          if [[ "$release_tag" != v* ]]; then
+            echo "::error ::Release tag '$release_tag' must have the form v<version>"
+            exit 1
+          fi
+
+          echo "ORG_GRADLE_PROJECT_VERSION_NAME=${release_tag#v}" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_GROUP=io.github.mohamadjaara" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_SONATYPE_PACKAGE_GROUP=io.github.mohamadjaara" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_KMP_ANDROID_NAMESPACE=io.github.mohamadjaara.crypto" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_POM_NAME=Core Crypto KMP" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_POM_DESCRIPTION=MLS/Proteus multiplexer abstraction with encrypted persistent storage in Rust - Kotlin Multiplatform" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_POM_URL=https://github.com/MohamadJaara/core-crypto-kmp" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_POM_LICENSE_URL=https://github.com/MohamadJaara/core-crypto-kmp/blob/main/LICENSE" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_POM_SCM_URL=https://github.com/MohamadJaara/core-crypto-kmp" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_POM_SCM_CONNECTION=scm:git:github.com/MohamadJaara/core-crypto-kmp.git" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_POM_SCM_DEV_CONNECTION=scm:git:ssh://github.com/MohamadJaara/core-crypto-kmp.git" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_POM_DEVELOPER_NAME=Mohamad Jaara" >> "$GITHUB_ENV"
+          echo "ORG_GRADLE_PROJECT_POM_DEVELOPER_EMAIL=" >> "$GITHUB_ENV"
 
       - name: stage artifact in sonatype
         id: stage

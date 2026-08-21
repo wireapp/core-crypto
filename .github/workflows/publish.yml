@@ -17,9 +17,10 @@ on:
           - npm
           - jvm
           - android
+          - kmp
       sonatype-action:
         description: >
-          For JVM/Android: 'release' promotes an existing closed staging repository.
+          For JVM/Android/KMP: 'release' promotes an existing closed staging repository.
           'prepare-and-release' re-stages from scratch first (requires workflow
           artifacts from the original run to still be available).
         required: false
@@ -42,12 +43,19 @@ on:
         required: false
         type: string
         default: ""
+      kmp-staging-repository-id:
+        description: >
+          Required when publishing KMP with 'sonatype-action' set to 'release'.
+          Specify the Sonatype repository id which will be promoted.
+        required: false
+        type: string
+        default: ""
 
 env:
   RELEASE: 1
 
 jobs:
-  # For JVM/Android we use Sonatype's two-phase staging model.
+  # For JVM/Android/KMP we use Sonatype's two-phase staging model.
   # 'prepare' uploads to a staging repo and closes it (validation happens here).
   # 'release' finds the closed staging repo and promotes it to Maven Central.
   # In the normal failure-retry case only the 'release' step is needed.
@@ -185,6 +193,8 @@ jobs:
       (inputs.registry == 'all' || inputs.registry == 'kmp') &&
       inputs.sonatype-action == 'prepare-and-release'
     uses: ./.github/workflows/prepare-publish-kmp.yml
+    with:
+      release_tag: ${{ inputs.tag }}
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}

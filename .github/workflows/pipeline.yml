@@ -87,8 +87,10 @@ jobs:
   # JVM Darwin
 
   build-jvm-darwin:
-    if: github.repository == 'wireapp/core-crypto'
-    runs-on: self-hosted
+    if: >
+      github.repository == 'wireapp/core-crypto' ||
+      (github.repository == 'MohamadJaara/core-crypto-kmp' && github.ref_type == 'tag')
+    runs-on: ${{ github.repository == 'wireapp/core-crypto' && 'self-hosted' || 'macos-latest' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/make/setup
@@ -379,6 +381,69 @@ jobs:
   #################
   # Publish
 
+  verify-fork-release:
+    if: >
+      github.ref_type == 'tag' &&
+      github.repository == 'MohamadJaara/core-crypto-kmp'
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.tag.outputs.name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: force fetch the tag
+        run: git fetch -f origin "$GITHUB_REF:$GITHUB_REF"
+
+      - name: verify signed release tag
+        id: tag
+        run: |
+          tag_name=${GITHUB_REF#refs/tags/}
+          if ! git cat-file tag "$tag_name" | grep -qE -- '-----BEGIN (PGP|SSH) SIGNATURE-----'; then
+            echo "::error ::Tag '$tag_name' is not signed with PGP or SSH"
+            exit 1
+          fi
+          echo "name=$tag_name" >> "$GITHUB_OUTPUT"
+
+  prepare-publish-fork-kmp:
+    needs:
+      - verify-fork-release
+      - ffi-library-linux
+      - ffi-library-macos
+      - build-android
+      - build-ios
+      - build-jvm-linux
+      - build-jvm-darwin
+    if: >
+      github.ref_type == 'tag' &&
+      github.repository == 'MohamadJaara/core-crypto-kmp'
+    uses: ./.github/workflows/prepare-publish-kmp.yml
+    with:
+      release_tag: ${{ needs.verify-fork-release.outputs.tag_name }}
+    secrets:
+      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
+      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+
+  publish-fork-kmp:
+    needs: prepare-publish-fork-kmp
+    if: >
+      github.ref_type == 'tag' &&
+      github.repository == 'MohamadJaara/core-crypto-kmp'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: release artifact
+        uses: ./.github/actions/sonatype/release
+        with:
+          staging-repository-id: ${{ needs.prepare-publish-fork-kmp.outputs.staging_repository_id }}
+          sonatype-username: ${{ secrets.SONATYPE_USERNAME }}
+          sonatype-password: ${{ secrets.SONATYPE_PASSWORD }}
+          pgp-key-id: ${{ secrets.PGP_KEY_ID }}
+          pgp-signing-key: ${{ secrets.PGP_SIGNING_KEY }}
+          pgp-passphrase: ${{ secrets.PGP_PASSPHRASE }}
+
   prepare-publish:
     needs:
       - package-ios
@@ -390,7 +455,9 @@ jobs:
       - build-jvm-linux-aarch64
       - build-jvm-darwin
       - bindings-jvm
-    if: github.ref_type == 'tag'
+    if: >
+      github.ref_type == 'tag' &&
+      github.repository == 'wireapp/core-crypto'
     uses: ./.github/workflows/prepare-publish.yml
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}

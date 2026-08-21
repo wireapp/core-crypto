@@ -106,7 +106,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.wire.crypto"
+    namespace = findProperty("KMP_ANDROID_NAMESPACE") as String? ?: "com.wire.crypto"
     compileSdk = libs.versions.sdk.compile.get().toInt()
 
     defaultConfig {

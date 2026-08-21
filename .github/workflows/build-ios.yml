@@ -17,8 +17,10 @@ env:
 
 jobs:
   build-ios:
-    if: github.repository == 'wireapp/core-crypto'
-    runs-on: self-hosted
+    if: >
+      github.repository == 'wireapp/core-crypto' ||
+      (github.repository == 'MohamadJaara/core-crypto-kmp' && github.ref_type == 'tag')
+    runs-on: ${{ github.repository == 'wireapp/core-crypto' && 'self-hosted' || 'macos-latest' }}
     strategy:
       matrix:
         include:
