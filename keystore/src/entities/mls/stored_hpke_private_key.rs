@@ -3,6 +3,13 @@ use zeroize::Zeroize;
 use crate::traits::{BorrowPrimaryKey, PrimaryKey};
 
 /// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)
+///
+/// This entity cannot be updated in the DB: the primary key is the public half of the keypair whose
+/// private half it stores, and OpenMLS only ever writes one at key package generation, from a
+/// freshly generated pair. A second save under the same public key with a different secret would
+/// mean the two halves had come apart, so it reports
+/// [`CryptoKeystoreError::AlreadyExists`][crate::CryptoKeystoreError::AlreadyExists] rather than
+/// overwriting.
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 #[sensitive]
@@ -71,9 +78,9 @@ impl crate::traits::EntityDatabaseMutation for StoredHpkePrivateKey {
 
     fn save(&self, tx: &rusqlite::Transaction) -> crate::CryptoKeystoreResult<()> {
         let hash = crate::Sha256Hash::hash_from(&self.pk);
-        let mut stmt =
-            tx.prepare_cached("INSERT OR REPLACE INTO mls_hpke_private_keys (pk_sha256, pk, sk) VALUES (?, ?, ?)")?;
-        stmt.execute(rusqlite::params![hash, self.pk, self.sk])?;
+        let mut stmt = tx.prepare_cached("INSERT INTO mls_hpke_private_keys (pk_sha256, pk, sk) VALUES (?, ?, ?)")?;
+        stmt.execute(rusqlite::params![hash, self.pk, self.sk])
+            .map_err(|_| crate::CryptoKeystoreError::AlreadyExists(<Self as crate::traits::Entity>::TABLE_NAME))?;
         Ok(())
     }
 
