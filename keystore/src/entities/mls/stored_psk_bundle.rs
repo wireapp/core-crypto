@@ -3,6 +3,12 @@ use zeroize::Zeroize;
 use crate::traits::{BorrowPrimaryKey, PrimaryKey};
 
 /// Entity representing a persisted PSK Bundle
+///
+/// This entity cannot be updated in the DB: the primary key is a hash of the `PreSharedKeyId` which
+/// names the secret, and the secret is derived from what that id names, so a second save under the
+/// same id can only ever write identical bytes. A save which does not is a bug, and reports
+/// [`CryptoKeystoreError::AlreadyExists`][crate::CryptoKeystoreError::AlreadyExists] instead of
+/// silently overwriting the old secret.
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 #[sensitive]
@@ -71,9 +77,9 @@ impl crate::traits::EntityDatabaseMutation for StoredPskBundle {
 
     fn save(&self, tx: &rusqlite::Transaction) -> crate::CryptoKeystoreResult<()> {
         let hash = crate::Sha256Hash::hash_from(&self.psk_id);
-        let mut stmt =
-            tx.prepare_cached("INSERT OR REPLACE INTO mls_psk_bundles (id_sha256, psk_id, psk) VALUES (?, ?, ?)")?;
-        stmt.execute(rusqlite::params![hash, self.psk_id, self.psk])?;
+        let mut stmt = tx.prepare_cached("INSERT INTO mls_psk_bundles (id_sha256, psk_id, psk) VALUES (?, ?, ?)")?;
+        stmt.execute(rusqlite::params![hash, self.psk_id, self.psk])
+            .map_err(|_| crate::CryptoKeystoreError::AlreadyExists(<Self as crate::traits::Entity>::TABLE_NAME))?;
         Ok(())
     }
 
