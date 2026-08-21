@@ -28,7 +28,15 @@ macro_rules! borrowed_key_round_trip {
 }
 
 macro_rules! test_for_entity {
-    ($test_name:ident, $entity:ident $(ignore_entity_count:$ignore_entity_count:literal)? $(ignore_update:$ignore_update:literal)? $(no_upsert:$no_upsert:literal)? $(ignore_remove:$ignore_remove:literal)? $(ignore_find_many:$ignore_find_many:literal)? $(no_borrowed_key:$no_borrowed_key:literal)?) => {
+    (
+        $test_name:ident, $entity:ident
+        $(ignore_entity_count:$ignore_entity_count:literal)?
+        $(ignore_update:$ignore_update:literal)?
+        $(no_upsert:$no_upsert:literal)?
+        $(ignore_remove:$ignore_remove:literal)?
+        $(ignore_find_many:$ignore_find_many:literal)?
+        $(no_borrowed_key:$no_borrowed_key:literal)?
+    ) => {
         #[apply(all_storage_types)]
         async fn $test_name(context: KeystoreTestContext) {
             let store = context.store();
