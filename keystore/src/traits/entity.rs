@@ -33,5 +33,5 @@ pub trait Entity: PrimaryKey + Sized {
 
 pub trait EntityGetBorrowed: Entity + BorrowPrimaryKey {
     /// Get an entity by a borrowed form of its primary key.
-    fn get_borrowed(conn: &Connection, key: &Self::BorrowedPrimaryKey) -> CryptoKeystoreResult<Option<Self>>;
+    fn get_borrowed(conn: &Connection, key: Self::BorrowedPrimaryKey<'_>) -> CryptoKeystoreResult<Option<Self>>;
 }

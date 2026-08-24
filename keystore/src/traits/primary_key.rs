@@ -17,12 +17,14 @@ pub trait PrimaryKey {
 
 /// Something whose primary key can be borrowed as a distinct type.
 ///
-/// i.e. `String`, `Vec<u8>`, etc.
+/// i.e. `&str`, `&[u8]`, or a type with one or more borrowed fields.
 pub trait BorrowPrimaryKey: PrimaryKey {
-    type BorrowedPrimaryKey: ?Sized + ToOwned<Owned = Self::PrimaryKey>;
+    type BorrowedPrimaryKey<'a>: Copy + Send + Sync + Into<<Self as PrimaryKey>::PrimaryKey>
+    where
+        Self: 'a;
 
     /// Borrow this entity's primary key without copying any data.
     ///
     /// This borrowed key has a lifetime tied to that of this entity.
-    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey;
+    fn borrow_primary_key(&self) -> Self::BorrowedPrimaryKey<'_>;
 }
