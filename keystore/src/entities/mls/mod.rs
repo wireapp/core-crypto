@@ -1,3 +1,4 @@
+mod conversation_epochs_older_than;
 mod conversation_id;
 mod e2ei_crl;
 mod mls_pending_message;
@@ -14,6 +15,7 @@ mod targeted_message_tx_counter;
 mod x509_intermediate_cert;
 mod x509_trust_anchor;
 
+pub use conversation_epochs_older_than::ConversationEpochsOlderThan;
 pub use conversation_id::{ConversationId, ConversationIdRef};
 pub use e2ei_crl::X509Crl;
 pub use mls_pending_message::MlsPendingMessage;
