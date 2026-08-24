@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, sync::Arc};
+use std::sync::Arc;
 
 use async_trait::async_trait;
 
@@ -29,12 +29,10 @@ pub trait FetchFromDatabase: Send + Sync {
     /// Get an instance of `E` from the database by the borrowed form of its primary key.
     async fn get_borrowed<E>(
         &self,
-        id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey,
+        id: <E as BorrowPrimaryKey>::BorrowedPrimaryKey<'_>,
     ) -> CryptoKeystoreResult<Option<Arc<E>>>
     where
-        E: 'static + EntityGetBorrowed + Clone + Send + Sync,
-        E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
-        <E as BorrowPrimaryKey>::BorrowedPrimaryKey: Send + Sync;
+        E: 'static + EntityGetBorrowed + Clone + Send + Sync;
 
     /// Get the requested unique entity from the database.
     async fn get_unique<'a, U>(&self) -> CryptoKeystoreResult<Option<Arc<U>>>
