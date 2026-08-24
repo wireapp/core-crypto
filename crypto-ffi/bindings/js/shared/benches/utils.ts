@@ -84,11 +84,11 @@ function parseCipherSuiteList(
 
     const values = rawValue.split(",").map((value) => value.trim());
     return values.map((value) => {
-        const cipherSuite = CipherSuite[value as keyof typeof CipherSuite];
-        if (typeof cipherSuite !== "number") {
+        const index = Number(value)
+        if (!Object.values(CipherSuite).includes(index)) {
             throw new Error(`Invalid cipher suite override: ${value}`);
         }
-        return cipherSuite;
+        return index as CipherSuite
     });
 }
 

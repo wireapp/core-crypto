@@ -18,7 +18,7 @@ export async function setupRemoveUserBench() {
         });
         for (const { userCount, cipherSuite } of parameters) {
             bench.add(
-                `cipherSuite=${ccModule.CipherSuite[cipherSuite]} userCount=${userCount}`,
+                `cipherSuite=${cipherSuite} userCount=${userCount}`,
                 async () => {
                     const aliceCc = await helpers.ccInit({
                         withBasicCredential: true,

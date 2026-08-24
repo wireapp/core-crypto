@@ -33,7 +33,7 @@ export async function setupProcessMessageBench() {
             // This means that we can't encrypt the messages beforehand as this would lead to bob decrypting
             // the same messages over and over again.
             bench.add(
-                `cipherSuite=${ccModule.CipherSuite[cipherSuite]} size=${size}B count=${count}`,
+                `cipherSuite=${cipherSuite} size=${size}B count=${count}`,
                 async () => {
                     const encryptedMessages = await aliceCc.transaction(
                         async (ctx) => {
