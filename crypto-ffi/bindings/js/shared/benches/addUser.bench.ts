@@ -6,7 +6,7 @@ export async function setupAddUserBench() {
     const parameters = await userBenchmarkParameters();
     await runOnPlatform(async (parameters) => {
         globalThis.bench = new globalThis.tinybench.Bench({
-            name: "Add a User",
+            name: "AddUser",
             time: 1000,
             iterations: 5,
             warmupIterations: 1,

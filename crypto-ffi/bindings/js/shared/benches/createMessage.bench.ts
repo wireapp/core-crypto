@@ -5,7 +5,7 @@ export async function setupCreateMessageBench() {
     const parameters = await messageBenchmarkParameters();
     await runOnPlatform(async (parameters) => {
         globalThis.bench = new tinybench.Bench({
-            name: "Create Messages",
+            name: "CreateMessage",
             time: 1000,
             iterations: 5,
             warmupIterations: 1,

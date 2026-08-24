@@ -6,7 +6,7 @@ export async function setupJoinGroupBench() {
     const parameters = await userBenchmarkParameters();
     await runOnPlatform(async (parameters) => {
         globalThis.bench = new tinybench.Bench({
-            name: "Join a Group",
+            name: "JoinGroup",
             time: 1000,
             iterations: 5,
             warmupIterations: 1,

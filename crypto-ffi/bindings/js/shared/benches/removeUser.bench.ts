@@ -7,7 +7,7 @@ export async function setupRemoveUserBench() {
 
     await runOnPlatform(async (parameters) => {
         globalThis.bench = new tinybench.Bench({
-            name: "Removing a User",
+            name: "RemoveUser",
             time: 0,
             iterations: 10,
             warmup: true,

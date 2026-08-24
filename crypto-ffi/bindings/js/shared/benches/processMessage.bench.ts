@@ -6,7 +6,7 @@ export async function setupProcessMessageBench() {
 
     await runOnPlatform(async (parameters) => {
         globalThis.bench = new tinybench.Bench({
-            name: "Process Message",
+            name: "ProcessMessage",
             time: 1000,
             iterations: 5,
             warmupIterations: 1,
