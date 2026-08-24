@@ -3,7 +3,10 @@
 //! This module deals with buffering these messages until we receive the commit that advances the
 //! group epoch.
 
-use core_crypto_keystore::entities::MlsPendingMessage;
+use core_crypto_keystore::{
+    entities::{ConversationIdRef, MlsPendingMessage},
+    traits::FetchFromDatabase,
+};
 use log::{error, info};
 use openmls::framing::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize;
@@ -40,12 +43,14 @@ impl ConversationMut {
     }
 
     async fn clear_pending_messages(&self) -> Result<()> {
-        let database = self.database().await?;
-        database
-            .remove_pending_messages_by_conversation_id(self.id())
+        self.tx_context
+            .inner()
             .await
-            .map_err(KeystoreError::wrap("removing pending mls messages"))
-            .map_err(Into::into)
+            .map_err(RecursiveError::context("getting tx context to clear pending messages"))?
+            .transaction()
+            .bulk_remove::<MlsPendingMessage, _>(self.id().into())
+            .await;
+        Ok(())
     }
 
     pub(super) async fn restore_and_clear_pending_messages(&mut self) -> Result<Option<Vec<BufferedDecryptedMessage>>> {
@@ -77,7 +82,7 @@ impl ConversationMut {
             }
 
             let mut pending_messages = database
-                .find_pending_messages_by_conversation_id(conversation_id.as_ref())
+                .search::<MlsPendingMessage, _>(ConversationIdRef::new(conversation_id.as_ref()))
                 .await
                 .map_err(KeystoreError::wrap("finding all mls pending messages"))?
                 .into_iter()

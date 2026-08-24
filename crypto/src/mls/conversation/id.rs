@@ -94,6 +94,18 @@ impl<'a> From<&'a ConversationIdRef> for Cow<'a, [u8]> {
     }
 }
 
+impl<'a> From<&'a ConversationIdRef> for &'a core_crypto_keystore::entities::ConversationIdRef {
+    fn from(value: &'a ConversationIdRef) -> Self {
+        core_crypto_keystore::entities::ConversationIdRef::new(value.as_ref())
+    }
+}
+
+impl From<&ConversationIdRef> for core_crypto_keystore::entities::ConversationId {
+    fn from(value: &ConversationIdRef) -> Self {
+        core_crypto_keystore::entities::ConversationId::from(value.as_ref())
+    }
+}
+
 // Cross-type equality so that `&ConversationIdRef` can be used to look up an entry
 // in a hash-keyed collection (e.g. `schnellru::LruMap<ConversationId, _>`) without
 // allocating a `ConversationId`. The `Hash` derives on both types compare equal
