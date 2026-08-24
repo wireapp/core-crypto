@@ -55,7 +55,7 @@ impl FetchFromDatabase for ImmutableDatabase {
     async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: Entity + SearchableEntity<SearchKey> + Clone + Send + Sync + 'static,
-        SearchKey: Send + Sync,
+        SearchKey: Send + Sync + ?Sized,
     {
         self.0.search::<E, SearchKey>(search_key).await
     }
