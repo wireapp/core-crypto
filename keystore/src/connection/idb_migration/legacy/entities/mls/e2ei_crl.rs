@@ -144,7 +144,7 @@ impl legacy::traits::EntityGetBorrowed for E2eiCrl {
     )]
     fn get_borrowed<'life0, 'life1, 'async_trait>(
         conn: &'life0 mut Self::ConnectionType,
-        key: &'life1 Self::BorrowedPrimaryKey,
+        key: Self::BorrowedPrimaryKey<'life1>,
     ) -> ::core::pin::Pin<
         Box<dyn ::core::future::Future<Output = crate::CryptoKeystoreResult<Option<Self>>> + 'async_trait>,
     >
@@ -161,7 +161,7 @@ impl legacy::traits::EntityGetBorrowed for E2eiCrl {
                 return __ret;
             }
             let __ret: crate::CryptoKeystoreResult<Option<Self>> = {
-                let key = <&Self::BorrowedPrimaryKey as KeyType>::bytes(&key);
+                let key = <Self::BorrowedPrimaryKey<'life1> as KeyType>::bytes(&key);
                 let key = key.as_ref();
                 { conn.storage().get(key).await }
             };
@@ -287,10 +287,10 @@ impl<'a> legacy::traits::EntityDeleteBorrowed<'a> for E2eiCrl {
     )]
     fn delete_borrowed<'life0, 'life1, 'async_trait>(
         tx: &'life0 <Self as legacy::traits::EntityDatabaseMutation<'a>>::Transaction,
-        id: &'life1 <Self as BorrowPrimaryKey>::BorrowedPrimaryKey,
+        id: <Self as BorrowPrimaryKey>::BorrowedPrimaryKey<'life1>,
     ) -> ::core::pin::Pin<Box<dyn ::core::future::Future<Output = crate::CryptoKeystoreResult<bool>> + 'async_trait>>
     where
-        for<'pk> &'pk <Self as BorrowPrimaryKey>::BorrowedPrimaryKey: KeyType,
+        for<'pk> <Self as BorrowPrimaryKey>::BorrowedPrimaryKey<'pk>: KeyType,
         'a: 'async_trait,
         'life0: 'async_trait,
         'life1: 'async_trait,
@@ -304,7 +304,7 @@ impl<'a> legacy::traits::EntityDeleteBorrowed<'a> for E2eiCrl {
                 return __ret;
             }
             let __ret: crate::CryptoKeystoreResult<bool> = {
-                let key = <&<Self as BorrowPrimaryKey>::BorrowedPrimaryKey as KeyType>::bytes(&id);
+                let key = <<Self as BorrowPrimaryKey>::BorrowedPrimaryKey<'life1> as KeyType>::bytes(&id);
                 let key = key.as_ref();
                 { tx.delete::<Self>(key).await }
             };
@@ -566,9 +566,9 @@ impl PrimaryKey for E2eiCrl {
 }
 
 impl BorrowPrimaryKey for E2eiCrl {
-    type BorrowedPrimaryKey = str;
+    type BorrowedPrimaryKey<'a> = &'a str;
 
-    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+    fn borrow_primary_key(&self) -> Self::BorrowedPrimaryKey<'_> {
         &self.distribution_point
     }
 }

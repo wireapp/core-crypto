@@ -103,10 +103,10 @@ impl EntityId {
     ///
     /// Equal to what [`Self::from_primary_key`] produces for the owned form of the same key, so the
     /// two are interchangeable for lookups.
-    pub fn from_borrowed_primary_key<E>(primary_key: &E::BorrowedPrimaryKey) -> Self
+    pub fn from_borrowed_primary_key<E>(primary_key: &E::BorrowedPrimaryKey<'_>) -> Self
     where
         E: Entity + BorrowPrimaryKey,
     {
-        Self::from_primary_key::<E>(primary_key.to_owned())
+        Self::from_primary_key::<E>((*primary_key).into())
     }
 }

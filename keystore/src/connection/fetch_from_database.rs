@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, sync::Arc};
+use std::sync::Arc;
 
 use async_trait::async_trait;
 
@@ -42,15 +42,13 @@ impl FetchFromDatabase for Database {
 
     async fn get_borrowed<E>(
         &self,
-        id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey,
+        id: <E as BorrowPrimaryKey>::BorrowedPrimaryKey<'_>,
     ) -> CryptoKeystoreResult<Option<Arc<E>>>
     where
         E: 'static + EntityGetBorrowed + Clone + Send + Sync,
-        E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
-        <E as BorrowPrimaryKey>::BorrowedPrimaryKey: Send + Sync,
     {
         let read_outcome = self
-            .with_transaction(async |transaction| Ok(transaction.get_borrowed::<E>(id).await))
+            .with_transaction(async |transaction| Ok(transaction.get_borrowed::<E>(&id).await))
             .await
             .or_else(no_transaction_to_default_read_outcome)?;
 

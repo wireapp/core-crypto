@@ -1,5 +1,4 @@
 use std::{
-    borrow::Borrow,
     ops::Deref,
     sync::{Arc, Weak},
 };
@@ -161,12 +160,10 @@ where
     /// Get an instance of `E` from the database by the borrowed form of its primary key.
     async fn get_borrowed<E>(
         &self,
-        id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey,
+        id: <E as BorrowPrimaryKey>::BorrowedPrimaryKey<'_>,
     ) -> CryptoKeystoreResult<Option<Arc<E>>>
     where
         E: 'static + EntityGetBorrowed + Clone + Send + Sync,
-        E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
-        <E as BorrowPrimaryKey>::BorrowedPrimaryKey: 'static + Send + Sync,
     {
         <T as FetchFromDatabase>::get_borrowed::<E>(&self.arc, id).await
     }

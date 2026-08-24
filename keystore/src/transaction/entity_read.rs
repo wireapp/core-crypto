@@ -69,7 +69,7 @@ impl Transaction {
     /// This produces a [`ReadOutcome`] which has information about whether the tx
     /// knows about an upsert or delete of that entity, and also a set of filters
     /// which can be used to exclude matching entities produced by the underlying DB.
-    pub(crate) async fn get_borrowed<E>(&self, id: &E::BorrowedPrimaryKey) -> ReadOutcome<E>
+    pub(crate) async fn get_borrowed<E>(&self, id: &E::BorrowedPrimaryKey<'_>) -> ReadOutcome<E>
     where
         E: 'static + Entity + BorrowPrimaryKey + Send + Sync,
     {

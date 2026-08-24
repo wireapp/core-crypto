@@ -4,7 +4,7 @@
 //! It doesn't matter whether someone is holding a [`Database`][crate::Database] or a
 //! [`Transaction`] instance; every implementation of the trait will always agree.
 
-use std::{borrow::Borrow, sync::Arc};
+use std::sync::Arc;
 
 use async_trait::async_trait;
 
@@ -34,14 +34,12 @@ impl FetchFromDatabase for Transaction {
 
     async fn get_borrowed<E>(
         &self,
-        id: &<E as BorrowPrimaryKey>::BorrowedPrimaryKey,
+        id: <E as BorrowPrimaryKey>::BorrowedPrimaryKey<'_>,
     ) -> CryptoKeystoreResult<Option<Arc<E>>>
     where
         E: 'static + EntityGetBorrowed + Clone + Send + Sync,
-        E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
-        <E as BorrowPrimaryKey>::BorrowedPrimaryKey: Send + Sync,
     {
-        let read_outcome = <Self>::get_borrowed::<E>(self, id).await;
+        let read_outcome = <Self>::get_borrowed::<E>(self, &id).await;
         if let Some(result) = read_outcome.entity {
             return Ok(result);
         }

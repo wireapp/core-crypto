@@ -58,7 +58,7 @@ pub(crate) trait EntityDatabaseMutation<'a>: Entity<ConnectionType = KeystoreDat
 #[cfg_attr(not(target_os = "unknown"), async_trait)]
 pub(crate) trait EntityDeleteBorrowed<'a>: EntityDatabaseMutation<'a> + BorrowPrimaryKey {
     /// Delete an entity by a borrowed form of its primary key.
-    async fn delete_borrowed(tx: &Self::Transaction, id: &Self::BorrowedPrimaryKey) -> CryptoKeystoreResult<bool>
+    async fn delete_borrowed(tx: &Self::Transaction, id: Self::BorrowedPrimaryKey<'_>) -> CryptoKeystoreResult<bool>
     where
-        for<'pk> &'pk Self::BorrowedPrimaryKey: KeyType;
+        for<'pk> Self::BorrowedPrimaryKey<'pk>: KeyType;
 }

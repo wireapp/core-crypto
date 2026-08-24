@@ -37,8 +37,8 @@ pub(crate) trait EntityGetBorrowed: Entity + BorrowPrimaryKey {
     /// Get an entity by a borrowed form of its primary key.
     async fn get_borrowed(
         conn: &mut Self::ConnectionType,
-        key: &Self::BorrowedPrimaryKey,
+        key: Self::BorrowedPrimaryKey<'_>,
     ) -> CryptoKeystoreResult<Option<Self>>
     where
-        for<'pk> &'pk Self::BorrowedPrimaryKey: KeyType;
+        for<'pk> Self::BorrowedPrimaryKey<'pk>: KeyType;
 }

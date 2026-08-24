@@ -38,7 +38,7 @@ impl Entity for PersistedMlsPendingGroup {
 impl EntityGetBorrowed for PersistedMlsPendingGroup {
     async fn get_borrowed(
         conn: &mut Self::ConnectionType,
-        key: &Self::BorrowedPrimaryKey,
+        key: Self::BorrowedPrimaryKey<'_>,
     ) -> CryptoKeystoreResult<Option<Self>> {
         conn.storage().get(key.bytes().as_ref()).await
     }
@@ -64,7 +64,7 @@ impl<'a> EntityDatabaseMutation<'a> for PersistedMlsPendingGroup {
 
 #[async_trait(?Send)]
 impl<'a> EntityDeleteBorrowed<'a> for PersistedMlsPendingGroup {
-    async fn delete_borrowed(tx: &Self::Transaction, id: &Self::BorrowedPrimaryKey) -> CryptoKeystoreResult<bool> {
+    async fn delete_borrowed(tx: &Self::Transaction, id: Self::BorrowedPrimaryKey<'_>) -> CryptoKeystoreResult<bool> {
         tx.delete::<Self>(id.bytes().as_ref()).await
     }
 }

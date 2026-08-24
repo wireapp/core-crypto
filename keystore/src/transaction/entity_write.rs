@@ -56,11 +56,11 @@ impl Transaction {
     ///
     /// Note that this doesn't return whether or not anything was actually removed because
     /// that won't happen until the transaction is committed.
-    pub async fn remove_borrowed<E>(&self, id: &E::BorrowedPrimaryKey) -> CryptoKeystoreResult<()>
+    pub async fn remove_borrowed<E>(&self, id: E::BorrowedPrimaryKey<'_>) -> CryptoKeystoreResult<()>
     where
         E: EntityDeleteBorrowed + BorrowPrimaryKey,
     {
-        let entity_id = EntityId::from_borrowed_primary_key::<E>(id);
+        let entity_id = EntityId::from_borrowed_primary_key::<E>(&id);
         self.remove_by_entity_id::<E>(entity_id).await
     }
 
@@ -77,11 +77,11 @@ impl Transaction {
     /// CAUTION: Does not affect entities which were bulk-deleted.
     ///
     /// CAUTION: Entities which are restored might still be overwritten within this transaction.
-    pub async fn restore<E>(&self, id: &E::BorrowedPrimaryKey) -> CryptoKeystoreResult<()>
+    pub async fn restore<E>(&self, id: E::BorrowedPrimaryKey<'_>) -> CryptoKeystoreResult<()>
     where
         E: EntityDeleteBorrowed + BorrowPrimaryKey,
     {
-        let entity_id = EntityId::from_borrowed_primary_key::<E>(id);
+        let entity_id = EntityId::from_borrowed_primary_key::<E>(&id);
 
         {
             let mut operations = self.operations.write().await;

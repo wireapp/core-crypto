@@ -34,9 +34,9 @@ impl PrimaryKey for PersistedMlsPendingGroup {
 }
 
 impl BorrowPrimaryKey for PersistedMlsPendingGroup {
-    type BorrowedPrimaryKey = [u8];
+    type BorrowedPrimaryKey<'a> = &'a [u8];
 
-    fn borrow_primary_key(&self) -> &[u8] {
+    fn borrow_primary_key(&self) -> Self::BorrowedPrimaryKey<'_> {
         &self.id
     }
 }
