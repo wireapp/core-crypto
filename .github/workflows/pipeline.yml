@@ -154,7 +154,7 @@ jobs:
       benchmark_message_counts: "1"
       benchmark_message_sizes: "16"
       benchmark_user_counts: "1"
-      benchmark_cipher_suites: "MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519"
+      benchmark_cipher_suites: "1"
 
   #################
   # KMP
@@ -278,7 +278,7 @@ jobs:
       benchmark_message_counts: "1"
       benchmark_message_sizes: "16"
       benchmark_user_counts: "1"
-      benchmark_cipher_suites: "Mls128Dhkemx25519Aes128gcmSha256Ed25519"
+      benchmark_cipher_suites: "1"
 
   check-benchmark-ts-native:
     needs:
@@ -289,7 +289,7 @@ jobs:
       benchmark_message_counts: "1"
       benchmark_message_sizes: "16"
       benchmark_user_counts: "1"
-      benchmark_cipher_suites: "Mls128Dhkemx25519Aes128gcmSha256Ed25519"
+      benchmark_cipher_suites: "1"
 
   #################
   # Rust
