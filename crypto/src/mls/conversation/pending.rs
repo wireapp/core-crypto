@@ -249,11 +249,15 @@ impl PendingConversation {
             .map_err(RecursiveError::mls_conversation("restoring pending messages"))?;
 
         if pending_messages.is_some() {
-            self.keystore()
-                .await?
-                .remove_pending_messages_by_conversation_id(id)
+            context
+                .inner()
                 .await
-                .map_err(KeystoreError::wrap("deleting mls pending messages by conversation id"))?;
+                .map_err(RecursiveError::transaction(
+                    "getting transaction context to delete pending messages",
+                ))?
+                .transaction()
+                .bulk_remove::<MlsPendingMessage, _>(id.into())
+                .await;
         }
 
         // cleanup the pending group we no longer need

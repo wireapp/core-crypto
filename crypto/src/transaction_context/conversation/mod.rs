@@ -7,7 +7,7 @@ pub mod welcome;
 use std::sync::Arc;
 
 use core_crypto_keystore::{
-    entities::{PersistedMlsPendingGroup, StoredBufferedCommit},
+    entities::{MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit},
     traits::FetchFromDatabase as _,
 };
 use openmls::group::MlsGroup;
@@ -73,31 +73,28 @@ impl TransactionContext {
     /// [`Self::conversation_exists`]: the question is which rows will exist once the transaction
     /// commits, which the in-memory conversation cache does not answer.
     pub(crate) async fn clear_orphaned_conversation_buffers(&self, id: &ConversationIdRef) -> Result<()> {
-        let database = self.database().await?;
+        let inner = self.inner().await?;
+        let tx = inner.transaction();
 
-        let conversation_remains = database.mls_group_exists(id).await
-            || database
-                .get_borrowed::<PersistedMlsPendingGroup>(id.as_ref())
-                .await
-                .map_err(KeystoreError::wrap(
-                    "looking for a pending group of a removed conversation",
-                ))?
-                .is_some();
-        if conversation_remains {
+        let group_exists = tx
+            .get_borrowed::<PersistedMlsGroup>(id.as_ref())
+            .await
+            .map_err(KeystoreError::wrap("looking for a group of a removed conversation"))?
+            .is_some();
+        let pending_group_exists = tx
+            .get_borrowed::<PersistedMlsPendingGroup>(id.as_ref())
+            .await
+            .map_err(KeystoreError::wrap(
+                "looking for a pending group of a removed conversation",
+            ))?
+            .is_some();
+        if group_exists || pending_group_exists {
             return Ok(());
         }
 
-        database
-            .remove_pending_messages_by_conversation_id(id)
-            .await
-            .map_err(KeystoreError::wrap(
-                "clearing buffered messages of a removed conversation",
-            ))?;
+        tx.bulk_remove::<MlsPendingMessage, _>(id.into()).await;
 
-        self.inner()
-            .await?
-            .transaction()
-            .remove_borrowed::<StoredBufferedCommit>(id.as_ref())
+        tx.remove_borrowed::<StoredBufferedCommit>(id.as_ref())
             .await
             .map_err(KeystoreError::wrap(
                 "clearing the buffered commit of a removed conversation",
