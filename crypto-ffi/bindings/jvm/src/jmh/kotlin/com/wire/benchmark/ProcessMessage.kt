@@ -18,13 +18,13 @@ import kotlin.collections.MutableList
 @State(Scope.Thread)
 open class ProcessMessage {
     @Param(
-        "MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519",
-        "MLS_128_DHKEMP256_AES128GCM_SHA256_P256",
-        "MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_ED25519",
-        "MLS_256_DHKEMP521_AES256GCM_SHA512_P521",
-        "MLS_256_DHKEMP384_AES256GCM_SHA384_P384"
+        "1",
+        "2",
+        "3",
+        "5",
+        "7"
     )
-    var cipherSuite: String = ""
+    var cipherSuite: UShort = 1u
 
     @Param("1", "10", "100")
     var messageCount: Int = 0
@@ -39,7 +39,8 @@ open class ProcessMessage {
 
     @Setup(Level.Invocation)
     fun setup() = runBlocking {
-        val options = CcInitOptions.Mode.WithBasicCredential(CipherSuite.valueOf(cipherSuite))
+        val cipherSuite = CipherSuite.entries.first { it.value == cipherSuite }
+        val options = CcInitOptions.Mode.WithBasicCredential(cipherSuite)
         val aliceCc = ccInit(CcInitOptions(options))
         conversationId = createConversation(aliceCc)
 
