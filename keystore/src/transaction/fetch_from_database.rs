@@ -74,7 +74,7 @@ impl FetchFromDatabase for Transaction {
     async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: 'static + Entity + SearchableEntity<SearchKey> + Clone + Send + Sync,
-        SearchKey: Send + Sync,
+        SearchKey: Send + Sync + ?Sized,
     {
         let conn = self.database.conn().await;
         let persisted_records = E::find_all_matching(&conn, search_key)?.into_iter().map(Arc::new);
