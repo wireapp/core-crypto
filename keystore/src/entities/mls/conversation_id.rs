@@ -8,3 +8,9 @@
 )]
 #[deref(forward)]
 pub struct ConversationId(Vec<u8>);
+
+impl From<&[u8]> for ConversationId {
+    fn from(value: &[u8]) -> Self {
+        value.to_owned().into()
+    }
+}

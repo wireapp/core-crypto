@@ -145,7 +145,7 @@ mod tests_impl {
         let any_e: &dyn Any = entity;
         if let Some(pending_message) = any_e.downcast_ref::<MlsPendingMessage>() {
             let pending_message_from_store = store
-                .find_pending_messages_by_conversation_id(&pending_message.conversation_id)
+                .search::<MlsPendingMessage, _>(&pending_message.conversation_id.clone().into())
                 .await
                 .unwrap()
                 .pop()

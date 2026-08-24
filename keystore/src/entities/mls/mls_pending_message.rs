@@ -251,10 +251,7 @@ mod tests {
             assert_eq!(store.count::<MlsPendingMessage>().await.unwrap(), 2);
 
             let tx = store.new_transaction().await.unwrap();
-            store
-                .remove_pending_messages_by_conversation_id(CONVERSATION_ID)
-                .await
-                .unwrap();
+            tx.bulk_remove::<MlsPendingMessage, _>(CONVERSATION_ID.into()).await;
             tx.commit().await.unwrap();
 
             assert_eq!(store.count::<MlsPendingMessage>().await.unwrap(), 0);
@@ -275,10 +272,7 @@ mod tests {
 
             let tx = store.new_transaction().await.unwrap();
             tx.save(pending_message()).await.unwrap();
-            store
-                .remove_pending_messages_by_conversation_id(CONVERSATION_ID)
-                .await
-                .unwrap();
+            tx.bulk_remove::<MlsPendingMessage, _>(CONVERSATION_ID.into()).await;
             tx.commit().await.unwrap();
 
             assert!(
@@ -313,10 +307,7 @@ mod tests {
             tx.commit().await.unwrap();
 
             let tx = store.new_transaction().await.unwrap();
-            store
-                .remove_pending_messages_by_conversation_id(CONVERSATION_ID)
-                .await
-                .unwrap();
+            tx.bulk_remove::<MlsPendingMessage, _>(CONVERSATION_ID.into()).await;
             tx.save(fresh).await.unwrap();
             tx.commit().await.unwrap();
 
@@ -350,13 +341,10 @@ mod tests {
             tx.commit().await.unwrap();
 
             let tx = store.new_transaction().await.unwrap();
-            store
-                .remove_pending_messages_by_conversation_id(CONVERSATION_ID)
-                .await
-                .unwrap();
+            tx.bulk_remove::<MlsPendingMessage, _>(CONVERSATION_ID.into()).await;
 
             let found = store
-                .find_pending_messages_by_conversation_id(CONVERSATION_ID)
+                .search::<MlsPendingMessage, _>(&CONVERSATION_ID.into())
                 .await
                 .unwrap();
             assert!(
