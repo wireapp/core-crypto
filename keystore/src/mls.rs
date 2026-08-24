@@ -20,7 +20,7 @@ impl Database {
         self.with_transaction(async |tx| tx.save(entity).await).await
     }
 
-    async fn remove_borrowed<E>(&self, id: &E::BorrowedPrimaryKey) -> CryptoKeystoreResult<()>
+    async fn remove_borrowed<E>(&self, id: E::BorrowedPrimaryKey<'_>) -> CryptoKeystoreResult<()>
     where
         E: EntityDeleteBorrowed,
     {

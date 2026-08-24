@@ -67,7 +67,7 @@ macro_rules! test_for_entity {
 
 #[cfg(test)]
 mod tests_impl {
-    use std::{any::Any, borrow::Borrow, sync::Arc};
+    use std::{any::Any, sync::Arc};
 
     use core_crypto_keystore::{
         CryptoKeystoreError,
@@ -75,8 +75,8 @@ mod tests_impl {
             ConversationIdRef, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential,
         },
         traits::{
-            BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed,
-            FetchFromDatabase as _, PrimaryKey as _,
+            Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase as _,
+            PrimaryKey as _,
         },
         transaction::EntityId,
     };
@@ -191,11 +191,10 @@ mod tests_impl {
             + EntityDeleteBorrowed
             + Send
             + Sync,
-        E::PrimaryKey: Borrow<E::BorrowedPrimaryKey>,
-        <E as BorrowPrimaryKey>::BorrowedPrimaryKey: Send + Sync,
     {
         let entity = E::random();
         let primary_key = entity.primary_key();
+        let borrowed_primary_key = entity.borrow_primary_key();
 
         let tx = store.new_transaction().await.unwrap();
         tx.save(entity.clone()).await.unwrap();
@@ -204,7 +203,7 @@ mod tests_impl {
         assert_no_transaction_in_flight(store).await;
         let mut found = Arc::unwrap_or_clone(
             store
-                .get_borrowed::<E>(primary_key.borrow())
+                .get_borrowed::<E>(borrowed_primary_key)
                 .await
                 .unwrap()
                 .expect("an entity which was just saved is findable by its borrowed primary key"),
@@ -213,12 +212,12 @@ mod tests_impl {
         assert_eq!(entity, found);
 
         let tx = store.new_transaction().await.unwrap();
-        tx.remove_borrowed::<E>(primary_key.borrow()).await.unwrap();
+        tx.remove_borrowed::<E>(borrowed_primary_key).await.unwrap();
         tx.commit().await.unwrap();
 
         assert_no_transaction_in_flight(store).await;
         assert!(
-            store.get_borrowed::<E>(primary_key.borrow()).await.unwrap().is_none(),
+            store.get_borrowed::<E>(borrowed_primary_key).await.unwrap().is_none(),
             "the entity is still findable by its borrowed primary key after being removed"
         );
 

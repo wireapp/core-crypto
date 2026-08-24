@@ -14,8 +14,8 @@ impl PrimaryKey for DummyStoreValue {
 }
 
 impl BorrowPrimaryKey for DummyStoreValue {
-    type BorrowedPrimaryKey = [u8];
-    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+    type BorrowedPrimaryKey<'a> = &'a [u8];
+    fn borrow_primary_key(&self) -> Self::BorrowedPrimaryKey<'_> {
         &[]
     }
 }

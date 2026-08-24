@@ -26,9 +26,9 @@ impl PrimaryKey for StoredPskBundle {
 }
 
 impl BorrowPrimaryKey for StoredPskBundle {
-    type BorrowedPrimaryKey = [u8];
+    type BorrowedPrimaryKey<'a> = &'a [u8];
 
-    fn borrow_primary_key(&self) -> &Self::BorrowedPrimaryKey {
+    fn borrow_primary_key(&self) -> Self::BorrowedPrimaryKey<'_> {
         &self.psk_id
     }
 }
