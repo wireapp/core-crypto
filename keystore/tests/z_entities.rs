@@ -72,7 +72,8 @@ mod tests_impl {
     use core_crypto_keystore::{
         CryptoKeystoreError,
         entities::{
-            MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, TargetedMessageTxCounter,
+            ConversationIdRef, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential,
+            TargetedMessageTxCounter,
         },
         traits::{
             BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed,
@@ -154,7 +155,7 @@ mod tests_impl {
         let any_e: &dyn Any = entity;
         if let Some(pending_message) = any_e.downcast_ref::<MlsPendingMessage>() {
             let pending_message_from_store = store
-                .search::<MlsPendingMessage, _>(&pending_message.conversation_id.clone().into())
+                .search::<MlsPendingMessage, _>(ConversationIdRef::new(&pending_message.conversation_id))
                 .await
                 .unwrap()
                 .pop()
