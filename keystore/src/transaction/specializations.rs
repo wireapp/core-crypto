@@ -2,30 +2,11 @@
 
 use std::sync::Arc;
 
-use crate::{
-    CryptoKeystoreResult,
-    entities::{ConversationId, MlsPendingMessage},
-    transaction::Transaction,
-};
+use crate::{CryptoKeystoreResult, transaction::Transaction};
 #[cfg(feature = "proteus-keystore")]
 use crate::{entities::ProteusPrekey, transaction::EntityId};
 
 impl Transaction {
-    pub(crate) async fn remove_pending_messages_by_conversation_id(&self, conversation_id: impl AsRef<[u8]> + Send) {
-        let conversation_id = conversation_id.as_ref().to_vec().into();
-        self.bulk_remove::<MlsPendingMessage, ConversationId>(conversation_id)
-            .await;
-    }
-
-    pub(crate) async fn find_pending_messages_by_conversation_id(
-        &self,
-        conversation_id: &[u8],
-        persisted_records: impl IntoIterator<Item = Arc<MlsPendingMessage>>,
-    ) -> CryptoKeystoreResult<Vec<Arc<MlsPendingMessage>>> {
-        let conversation_id = conversation_id.to_vec().into();
-        Ok(self.search(persisted_records, &conversation_id).await.collect())
-    }
-
     /// Find a free proteus prekey id.
     ///
     /// Prefers an id freed by a deletion in this transaction, which is not necessarily the lowest

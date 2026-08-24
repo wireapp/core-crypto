@@ -1,5 +1,4 @@
 mod encryption;
-mod entity_extension_methods;
 mod fetch_from_database;
 #[cfg(feature = "cross-process-lock")]
 mod file_lock;
