@@ -2,7 +2,7 @@ use zeroize::Zeroize;
 
 use crate::{
     entities::{
-        ConversationId,
+        ConversationId, ConversationIdRef,
         helpers::{count_helper, get_helper_composite_key, load_all_helper},
     },
     traits::{DeletableBySearchKey, EntityDatabaseMutation, PrimaryKey, SearchableEntity},
@@ -89,19 +89,32 @@ impl EntityDatabaseMutation for TargetedMessageTxCounter {
     }
 }
 
+impl SearchableEntity<ConversationIdRef> for TargetedMessageTxCounter {
+    fn find_all_matching(
+        conn: &rusqlite::Connection,
+        conversation_id: &ConversationIdRef,
+    ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+        let mut stmt = conn.prepare_cached(&format!("SELECT * FROM {} WHERE conversation_id = ?", Self::TABLE_NAME))?;
+        stmt.query_map([conversation_id], Self::from_row)?
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    fn matches(&self, conversation_id: &ConversationIdRef) -> bool {
+        self.conversation_id.as_slice() == conversation_id.bytes()
+    }
+}
+
 impl SearchableEntity<ConversationId> for TargetedMessageTxCounter {
     fn find_all_matching(
         conn: &rusqlite::Connection,
         conversation_id: &ConversationId,
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
-        let mut stmt = conn.prepare_cached(&format!("SELECT * FROM {} WHERE conversation_id = ?", Self::TABLE_NAME))?;
-        stmt.query_map([conversation_id.as_ref()], Self::from_row)?
-            .collect::<Result<_, _>>()
-            .map_err(Into::into)
+        Self::find_all_matching(conn, ConversationIdRef::new(conversation_id))
     }
 
     fn matches(&self, conversation_id: &ConversationId) -> bool {
-        self.conversation_id.as_slice() == conversation_id.as_ref()
+        self.conversation_id.as_slice() == conversation_id.bytes()
     }
 }
 
@@ -179,14 +192,14 @@ mod tests {
         assert_eq!(store.count::<TargetedMessageTxCounter>().await.unwrap(), 3);
 
         let mut counters = store
-            .search::<TargetedMessageTxCounter, _>(&(conversation_id.clone().into()))
+            .search::<TargetedMessageTxCounter, _>(ConversationIdRef::new(&conversation_id))
             .await
             .unwrap();
         counters.sort_by_key(|counter| counter.receiver);
         assert_eq!(counters, vec![first.clone().into(), second.clone().into()]);
 
         let counters = store
-            .search::<TargetedMessageTxCounter, _>(&(other_conversation_id.into()))
+            .search::<TargetedMessageTxCounter, _>(ConversationIdRef::new(&other_conversation_id))
             .await
             .unwrap();
         assert_eq!(counters, vec![third.into()]);
