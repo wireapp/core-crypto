@@ -138,6 +138,7 @@ impl Transaction {
     async fn search_in_cache<E, SearchKey>(&self, search_key: &SearchKey) -> impl Iterator<Item = Arc<E>>
     where
         E: 'static + Entity + SearchableEntity<SearchKey> + Send + Sync,
+        SearchKey: ?Sized,
     {
         self.find_all_in_cache::<E>()
             .await
@@ -166,6 +167,7 @@ impl Transaction {
     ) -> impl Iterator<Item = Arc<E>>
     where
         E: 'static + Clone + Entity + SearchableEntity<SearchKey> + Send + Sync,
+        SearchKey: ?Sized,
     {
         let cached_records = self.search_in_cache(search_key).await;
         self.merge_records(cached_records, persisted_records).await

@@ -95,6 +95,9 @@ impl Transaction {
     }
 
     /// Bulk-remove entities matching a given search key.
+    ///
+    /// We need `S: 'static` because we're not actually applying this remove operation
+    /// immediately, but storing it for later application once the transaction is committed.
     pub async fn bulk_remove<E, S>(&self, search_key: S)
     where
         E: 'static + DeletableBySearchKey<S>,

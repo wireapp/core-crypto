@@ -5,7 +5,10 @@ use crate::{
     traits::{Entity, EntityDatabaseMutation},
 };
 
-pub trait SearchableEntity<SearchKey>: Entity {
+pub trait SearchableEntity<SearchKey>: Entity
+where
+    SearchKey: ?Sized,
+{
     /// Find all entities matching the search key.
     ///
     /// The specific meaning of "matching" the search key will depend on the entity in question,
@@ -30,7 +33,19 @@ pub trait SearchableEntity<SearchKey>: Entity {
 ///
 /// While the trait design does not require it, implementations should take advantage of
 /// database features such as indices to ensure that deletion by a search key is efficient.
-pub trait DeletableBySearchKey<SearchKey>: SearchableEntity<SearchKey> + EntityDatabaseMutation {
+///
+/// There is an asymmetry between this and [`SearchableEntity`]: in the former case,
+/// `SearchableEntity: ?Sized` because searching is an immediate operation, so there are no
+/// lifetime issues performing a search with a borrowed key. Here, however, we need to store
+/// the search key for later application (see [`Transaction::bulk_remove`][crate::Transaction::bulk_remove]),
+/// which requires the search key type to have a static lifetime because we can't know when
+/// the transaction will eventually be committed. That lifetime bound propagates here just
+/// to ensure that nobody wastes effort pointlessly implementing this trait on a type which
+/// does not satisfy the bound where it will eventually be called.
+pub trait DeletableBySearchKey<SearchKey>: SearchableEntity<SearchKey> + EntityDatabaseMutation
+where
+    SearchKey: 'static,
+{
     /// Delete all entities matching the search key.
     ///
     /// The specific meaning of "matching" the search key will depend on the entity

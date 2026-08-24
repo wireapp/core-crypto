@@ -191,7 +191,7 @@ where
     async fn search<E, SearchKey>(&self, search_key: &SearchKey) -> CryptoKeystoreResult<Vec<Arc<E>>>
     where
         E: 'static + Entity + SearchableEntity<SearchKey> + Clone + Send + Sync,
-        SearchKey: Send + Sync,
+        SearchKey: Send + Sync + ?Sized,
     {
         <T as FetchFromDatabase>::search::<E, SearchKey>(&self.arc, search_key).await
     }
