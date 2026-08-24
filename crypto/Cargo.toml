@@ -71,16 +71,13 @@ p256 = { workspace = true, features = ["pkcs8"] }
 p384 = { workspace = true, features = ["pkcs8"] }
 p521 = { workspace = true, features = ["pkcs8"] }
 hkdf = "0.13"
+hpke = { version = "0.14", features = ["x25519", "nistp", "aes"] }
 x509-cert = { workspace = true, features = ["builder", "hazmat"] }
 web-time.workspace = true
 rand = { workspace = true, features = ["getrandom"] }
 getrandom = { workspace = true, features = ["js"] }
 rand_core = "0.6"
 rand_chacha = "0.3"
-
-[dependencies.hpke]
-version = "0.14"
-features = ["x25519", "nistp"]
 
 [target.'cfg(target_os = "unknown")'.dependencies]
 serde-wasm-bindgen.workspace = true
