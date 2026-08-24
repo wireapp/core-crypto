@@ -1,5 +1,4 @@
 mod encryption;
-mod entity_extension_methods;
 mod fetch_from_database;
 mod filesystem;
 #[cfg(target_os = "unknown")]
