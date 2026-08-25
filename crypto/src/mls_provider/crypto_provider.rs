@@ -2,9 +2,10 @@ use std::sync::{Arc, LazyLock, RwLock, RwLockWriteGuard};
 
 use aes_gcm::{
     Aes128Gcm, Aes256Gcm, KeyInit,
-    aead::{Aead, Payload},
+    aead::{Aead, Nonce, Payload},
 };
 use chacha20poly1305::ChaCha20Poly1305;
+use elliptic_curve::Generate as _;
 use hkdf::Hkdf;
 use openmls::prelude::HpkeCiphertext;
 use openmls_traits::{
@@ -279,18 +280,22 @@ impl OpenMlsCrypto for RustCrypto {
         nonce: &[u8],
         aad: &[u8],
     ) -> Result<Vec<u8>, CryptoError> {
+        // All supported algorithms use the same nonce size of 96 bits, so
+        // picking any of them for the generic parameter of Nonce<A> is fine.
+        let nonce = Nonce::<Aes128Gcm>::try_from(nonce).map_err(|_| CryptoError::InvalidLength)?;
+
         match alg {
             AeadType::Aes128Gcm => {
                 let aes = Aes128Gcm::new_from_slice(key).map_err(|_| CryptoError::CryptoLibraryError)?;
 
-                aes.encrypt(nonce.into(), Payload { msg: data, aad })
+                aes.encrypt(&nonce, Payload { msg: data, aad })
                     .map(|r| r.as_slice().into())
                     .map_err(|_| CryptoError::CryptoLibraryError)
             }
             AeadType::Aes256Gcm => {
                 let aes = Aes256Gcm::new_from_slice(key).map_err(|_| CryptoError::CryptoLibraryError)?;
 
-                aes.encrypt(nonce.into(), Payload { msg: data, aad })
+                aes.encrypt(&nonce, Payload { msg: data, aad })
                     .map(|r| r.as_slice().into())
                     .map_err(|_| CryptoError::CryptoLibraryError)
             }
@@ -298,7 +303,7 @@ impl OpenMlsCrypto for RustCrypto {
                 let chacha_poly = ChaCha20Poly1305::new_from_slice(key).map_err(|_| CryptoError::CryptoLibraryError)?;
 
                 chacha_poly
-                    .encrypt(nonce.into(), Payload { msg: data, aad })
+                    .encrypt(&nonce, Payload { msg: data, aad })
                     .map(|r| r.as_slice().into())
                     .map_err(|_| CryptoError::CryptoLibraryError)
             }
@@ -313,23 +318,27 @@ impl OpenMlsCrypto for RustCrypto {
         nonce: &[u8],
         aad: &[u8],
     ) -> Result<Vec<u8>, CryptoError> {
+        // All supported algorithms use the same nonce size of 96 bits, so
+        // picking any of them for the generic parameter of Nonce<A> is fine.
+        let nonce = Nonce::<Aes128Gcm>::try_from(nonce).map_err(|_| CryptoError::InvalidLength)?;
+
         match alg {
             AeadType::Aes128Gcm => {
                 let aes = Aes128Gcm::new_from_slice(key).map_err(|_| CryptoError::CryptoLibraryError)?;
-                aes.decrypt(nonce.into(), Payload { msg: ct_tag, aad })
+                aes.decrypt(&nonce, Payload { msg: ct_tag, aad })
                     .map(|r| r.as_slice().into())
                     .map_err(|_| CryptoError::AeadDecryptionError)
             }
             AeadType::Aes256Gcm => {
                 let aes = Aes256Gcm::new_from_slice(key).map_err(|_| CryptoError::CryptoLibraryError)?;
-                aes.decrypt(nonce.into(), Payload { msg: ct_tag, aad })
+                aes.decrypt(&nonce, Payload { msg: ct_tag, aad })
                     .map(|r| r.as_slice().into())
                     .map_err(|_| CryptoError::AeadDecryptionError)
             }
             AeadType::ChaCha20Poly1305 => {
                 let chacha_poly = ChaCha20Poly1305::new_from_slice(key).map_err(|_| CryptoError::CryptoLibraryError)?;
                 chacha_poly
-                    .decrypt(nonce.into(), Payload { msg: ct_tag, aad })
+                    .decrypt(&nonce, Payload { msg: ct_tag, aad })
                     .map(|r| r.as_slice().into())
                     .map_err(|_| CryptoError::AeadDecryptionError)
             }
@@ -342,17 +351,17 @@ impl OpenMlsCrypto for RustCrypto {
 
         match alg {
             SignatureScheme::ECDSA_SECP256R1_SHA256 => {
-                let sk = p256::ecdsa::SigningKey::random(&mut *rng);
+                let sk = p256::ecdsa::SigningKey::generate_from_rng(&mut *rng);
                 let pk = sk.verifying_key().to_sec1_bytes().to_vec();
                 Ok((sk.to_bytes().to_vec(), pk))
             }
             SignatureScheme::ECDSA_SECP384R1_SHA384 => {
-                let sk = p384::ecdsa::SigningKey::random(&mut *rng);
+                let sk = p384::ecdsa::SigningKey::generate_from_rng(&mut *rng);
                 let pk = sk.verifying_key().to_sec1_bytes().to_vec();
                 Ok((sk.to_bytes().to_vec(), pk))
             }
             SignatureScheme::ECDSA_SECP521R1_SHA512 => {
-                let sk = p521::ecdsa::SigningKey::random(&mut *rng);
+                let sk = p521::ecdsa::SigningKey::generate_from_rng(&mut *rng);
                 let pk = p521::ecdsa::VerifyingKey::from(&sk)
                     .to_encoded_point(false)
                     .to_bytes()
@@ -708,7 +717,7 @@ mod hpke_core {
         }
         sk_buf.extend_from_slice(private_key);
         let key = Kem::PrivateKey::from_bytes(&sk_buf).map_err(|_| CryptoError::HpkeDecryptionError)?;
-        let psk_bundle = PskBundle { psk, psk_id };
+        let psk_bundle = PskBundle::new(psk, psk_id).map_err(|_| CryptoError::HpkeDecryptionError)?;
         let plaintext = hpke::single_shot_open::<Aead, Kdf, Kem>(
             &hpke::OpModeR::Psk(psk_bundle),
             &key,
@@ -732,7 +741,7 @@ mod hpke_core {
         use hpke::{Deserializable as _, Serializable as _};
         let key = Kem::PublicKey::from_bytes(public_key).map_err(|_| CryptoError::HpkeEncryptionError)?;
         let (encapped, ciphertext) =
-            hpke::single_shot_seal::<Aead, Kdf, Kem, _>(&hpke::OpModeS::Base, &key, info, plaintext, aad, csprng)
+            hpke::single_shot_seal_with_rng::<Aead, Kdf, Kem>(&hpke::OpModeS::Base, &key, info, plaintext, aad, csprng)
                 .map_err(|_| CryptoError::HpkeEncryptionError)?;
 
         Ok(HpkeCiphertext {
@@ -752,8 +761,8 @@ mod hpke_core {
     ) -> Result<HpkeCiphertext, CryptoError> {
         use hpke::{Deserializable as _, Serializable as _};
         let key = Kem::PublicKey::from_bytes(public_key).map_err(|_| CryptoError::HpkeEncryptionError)?;
-        let psk_bundle = PskBundle { psk, psk_id };
-        let (encapped, ciphertext) = hpke::single_shot_seal::<Aead, Kdf, Kem, _>(
+        let psk_bundle = PskBundle::new(psk, psk_id).map_err(|_| CryptoError::HpkeEncryptionError)?;
+        let (encapped, ciphertext) = hpke::single_shot_seal_with_rng::<Aead, Kdf, Kem>(
             &hpke::OpModeS::Psk(psk_bundle),
             &key,
             info,
@@ -818,7 +827,7 @@ mod hpke_core {
     ) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
         use hpke::{Deserializable as _, Serializable as _};
         let key = Kem::PublicKey::from_bytes(tx_public_key).map_err(|_| CryptoError::SenderSetupError)?;
-        let (kem_output, ctx) = hpke::setup_sender::<Aead, Kdf, Kem, _>(&hpke::OpModeS::Base, &key, info, csprng)
+        let (kem_output, ctx) = hpke::setup_sender_with_rng::<Aead, Kdf, Kem>(&hpke::OpModeS::Base, &key, info, csprng)
             .map_err(|_| CryptoError::SenderSetupError)?;
 
         let mut export = vec![0u8; export_len];

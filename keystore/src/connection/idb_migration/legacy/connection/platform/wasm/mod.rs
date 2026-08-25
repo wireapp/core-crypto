@@ -104,7 +104,7 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
         match self.conn.storage {
             WasmStorageWrapper::Persistent(ref mut db) => {
                 let old_cipher = self.conn.cipher.clone();
-                let new_cipher = aes_gcm::Aes256Gcm::new(new_key.as_ref().into());
+                let new_cipher = aes_gcm::Aes256Gcm::new(AsRef::<[u8; _]>::as_ref(new_key).into());
 
                 rekey::rekey_entities!(
                     db,
