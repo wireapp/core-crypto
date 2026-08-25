@@ -62,6 +62,7 @@ fn run_meta_migration(sql_migration_version: i32, conn: &mut rusqlite::Connectio
         meta_migrations::v19::VERSION => meta_migrations::v19::meta_migration(conn),
         meta_migrations::v28::VERSION => meta_migrations::v28::meta_migration(conn),
         meta_migrations::v31::VERSION => meta_migrations::v31::meta_migration(conn),
+        meta_migrations::v34::VERSION => meta_migrations::v34::meta_migration(conn),
         _ => Ok(()),
     }
 }
