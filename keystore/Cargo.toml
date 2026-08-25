@@ -29,7 +29,7 @@ async-trait.workspace = true
 const_format.workspace = true
 core-crypto-macros.workspace = true
 derive_more.workspace = true
-getrandom = { workspace = true, features = ["js"] }
+getrandom.workspace = true
 hex.workspace = true
 itertools.workspace = true
 log = { workspace = true }
@@ -40,7 +40,7 @@ openmls_traits = { workspace = true }
 openmls_x509_credential = { workspace = true }
 postcard = { version = "1.1", default-features = false, features = ["use-std"] }
 proteus-traits = { workspace = true, optional = true }
-rand = { workspace = true, features = ["getrandom"] }
+rand.workspace = true
 refinery = { version = "0.9.1", default-features = false, features = [
   "rusqlite",
 ] }
