@@ -575,7 +575,6 @@ pub mod utils {
 
     impl_entity_random_update_ext!(PersistedMlsPendingGroup, id_field=id, blob_fields=[state,custom_configuration,], additional_fields=[(parent_id: None),]);
     impl_entity_random_update_ext!(MlsPendingMessage, id_field = conversation_id, blob_fields = [message,]);
-    impl_entity_random_update_ext!(StoredEpochEncryptionKeypair, id_field = id, blob_fields = [keypairs,]);
     impl_entity_random_update_ext!(X509TrustAnchor, id_field = fingerprint, blob_fields = [content,]);
 
     impl EntityRandomExt for core_crypto_keystore::entities::X509IntermediateCert {
@@ -687,6 +686,36 @@ pub mod utils {
 
                 self.pk = vec![0u8; Self::PK_KEY_SIZE];
                 rng.fill(&mut self.pk[..]);
+            }
+        }
+
+        impl EntityRandomExt for StoredEpochEncryptionKeypair {
+            fn random() -> Self {
+                use rand::Rng as _;
+                let mut rng = rand::thread_rng();
+                let conversation_id = uuid::Uuid::new_v4().into_bytes().into();
+                let own_leaf_idx = rng.r#gen();
+                let epoch = rng.r#gen();
+                let mut keypairs = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                rng.fill(keypairs.as_mut_slice());
+
+                Self {
+                    conversation_id,
+                    own_leaf_idx,
+                    epoch,
+                    keypairs,
+                }
+            }
+        }
+
+        impl EntityRandomUpdateExt for StoredEpochEncryptionKeypair {
+            fn random_update(&mut self) {
+                let mut rng = rand::thread_rng();
+                let include_in_update = !false;
+                if include_in_update {
+                    self.keypairs = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(self.keypairs.as_mut_slice());
+                }
             }
         }
     };
