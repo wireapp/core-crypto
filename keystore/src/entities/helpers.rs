@@ -82,3 +82,40 @@ pub(crate) fn delete_helper<E: Entity>(
     let updated = statement.execute([primary_key])?;
     Ok(updated > 0)
 }
+
+/// Helper to delete an entity by its primary key.
+///
+/// This function prepares and caches a statement of the form `DELETE FROM table_name WHERE key_part_1 = ? AND
+/// key_part_2 = ?`. The primary-key column names and corresponding parameter values must be provided in the same order.
+/// Both simple and composite primary keys are supported.
+///
+/// Returns the number of rows affected
+pub(crate) fn delete_helper_composite_key<E>(
+    conn: &Connection,
+    primary_key_column_names: &[&str],
+    primary_key: impl Params,
+) -> CryptoKeystoreResult<u32>
+where
+    E: Entity,
+{
+    debug_assert!(
+        !primary_key_column_names.is_empty(),
+        "a primary key must contain at least one column"
+    );
+
+    let predicates = primary_key_column_names
+        .iter()
+        .map(|column| format!("{column} = ?"))
+        .collect::<Vec<_>>()
+        .join(" AND ");
+
+    let sql = format!(
+        "DELETE FROM {table_name} WHERE {predicates}",
+        table_name = E::TABLE_NAME,
+    );
+
+    conn.prepare_cached(&sql)?
+        .execute(primary_key)
+        .map(|count| count.try_into().unwrap_or(u32::MAX))
+        .map_err(Into::into)
+}
