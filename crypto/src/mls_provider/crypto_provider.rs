@@ -363,7 +363,7 @@ impl OpenMlsCrypto for RustCrypto {
             SignatureScheme::ECDSA_SECP521R1_SHA512 => {
                 let sk = p521::ecdsa::SigningKey::generate_from_rng(&mut *rng);
                 let pk = p521::ecdsa::VerifyingKey::from(&sk)
-                    .to_encoded_point(false)
+                    .to_sec1_point(false)
                     .to_bytes()
                     .into();
                 Ok((sk.to_bytes().to_vec(), pk))
