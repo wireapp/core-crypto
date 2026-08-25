@@ -15,12 +15,13 @@ use openmls_traits::{
         HpkeKemType, SignatureScheme,
     },
 };
-use rand_core::{RngCore, SeedableRng};
+use rand::Rng as _;
+use rand_core::SeedableRng as _;
 use sha2::{Digest, Sha256, Sha384, Sha512};
 use signature::digest::typenum::Unsigned;
 use tls_codec::SecretVLBytes;
 
-use super::{EntropySeed, Error};
+use super::{EntropySeed, Error, RawEntropySeed};
 
 /// Singleton for `RustCrypto`
 /// Because of the reseed feature we have to use this
@@ -38,15 +39,13 @@ pub struct RustCrypto {
 
 impl Default for RustCrypto {
     fn default() -> Self {
-        Self {
-            rng: Arc::new(rand_chacha::ChaCha20Rng::from_entropy().into()),
-        }
+        let mut seed = RawEntropySeed::default();
+        getrandom::fill(&mut seed).expect("system RNG has to work");
+        Self::new_with_seed(EntropySeed::from_raw(seed))
     }
 }
 
 impl RustCrypto {
-    // TODO: remove this expect(unused) once reseeding has been restored.
-    #[expect(unused)]
     pub(crate) fn new_with_seed(seed: EntropySeed) -> Self {
         Self {
             rng: Arc::new(rand_chacha::ChaCha20Rng::from_seed(seed.0).into()),
@@ -728,7 +727,7 @@ mod hpke_core {
         info: &[u8],
         aad: &[u8],
         plaintext: &[u8],
-        csprng: &mut impl rand_core::CryptoRngCore,
+        csprng: &mut impl rand_core::CryptoRng,
     ) -> Result<HpkeCiphertext, CryptoError> {
         use hpke::{Deserializable as _, Serializable as _};
         let key = Kem::PublicKey::from_bytes(public_key).map_err(|_| CryptoError::HpkeEncryptionError)?;
@@ -749,7 +748,7 @@ mod hpke_core {
         psk: &[u8],
         psk_id: &[u8],
         plaintext: &[u8],
-        csprng: &mut impl rand_core::CryptoRngCore,
+        csprng: &mut impl rand_core::CryptoRng,
     ) -> Result<HpkeCiphertext, CryptoError> {
         use hpke::{Deserializable as _, Serializable as _};
         let key = Kem::PublicKey::from_bytes(public_key).map_err(|_| CryptoError::HpkeEncryptionError)?;
@@ -772,10 +771,10 @@ mod hpke_core {
 
     #[allow(dead_code)]
     pub(crate) fn hpke_gen_keypair<Kem: hpke::Kem>(
-        csprng: &mut impl rand_core::CryptoRngCore,
+        csprng: &mut impl rand_core::CryptoRng,
     ) -> Result<HpkeKeyPair, CryptoError> {
         use hpke::Serializable as _;
-        let (sk, pk) = Kem::gen_keypair(csprng);
+        let (sk, pk) = Kem::gen_keypair_with_rng(csprng);
         let (private, public) = (sk.to_bytes().to_vec().into(), pk.to_bytes().to_vec());
 
         Ok(HpkeKeyPair { private, public })
@@ -815,7 +814,7 @@ mod hpke_core {
         info: &[u8],
         export_info: &[u8],
         export_len: usize,
-        csprng: &mut impl rand_core::CryptoRngCore,
+        csprng: &mut impl rand_core::CryptoRng,
     ) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
         use hpke::{Deserializable as _, Serializable as _};
         let key = Kem::PublicKey::from_bytes(tx_public_key).map_err(|_| CryptoError::SenderSetupError)?;
@@ -844,14 +843,14 @@ impl OpenMlsRand for RustCrypto {
     fn random_array<const N: usize>(&self) -> Result<[u8; N], Self::Error> {
         let mut rng = self.borrow_rand()?;
         let mut out = [0u8; N];
-        rng.try_fill_bytes(&mut out).map_err(|_| Error::UnsufficientEntropy)?;
+        rng.fill_bytes(&mut out);
         Ok(out)
     }
 
     fn random_vec(&self, len: usize) -> Result<Vec<u8>, Self::Error> {
         let mut rng = self.borrow_rand()?;
         let mut out = vec![0u8; len];
-        rng.try_fill_bytes(&mut out).map_err(|_| Error::UnsufficientEntropy)?;
+        rng.fill_bytes(&mut out);
         Ok(out)
     }
 }

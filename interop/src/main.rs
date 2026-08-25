@@ -134,7 +134,7 @@ fn run_test() -> Result<()> {
 #[cfg(not(target_os = "unknown"))]
 async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &std::net::SocketAddr) -> Result<()> {
     use core_crypto::{mls::conversation::TargetedMessagePolicy, *};
-    use rand::distributions::DistString;
+    use rand::distr::SampleString as _;
 
     log::info!("Using cipher suite {CIPHERSUITE_IN_USE}");
 
@@ -204,10 +204,10 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
         true,
     );
 
-    let mut prng = rand::thread_rng();
+    let mut prng = rand::rng();
     let mut message;
     for i in 1..=ROUNDTRIP_MSG_COUNT {
-        message = rand::distributions::Alphanumeric.sample_string(&mut prng, 16);
+        message = rand::distr::Alphanumeric.sample_string(&mut prng, 16);
 
         log::info!(
             "Master client [{}] >>> {}",
@@ -440,11 +440,11 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server:
         true,
     );
 
-    let mut prng = rand::thread_rng();
+    let mut prng = rand::rng();
     let mut message = [0u8; 128];
     let mut master_messages_to_decrypt = std::collections::HashMap::new();
     for i in 0..ROUNDTRIP_MSG_COUNT {
-        use rand::RngCore as _;
+        use rand::Rng as _;
 
         prng.fill_bytes(&mut message);
 

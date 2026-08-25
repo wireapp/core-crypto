@@ -117,6 +117,7 @@ impl ProteusCentral {
 #[cfg(test)]
 mod tests {
     use core_crypto_keystore::DatabaseKey;
+    use rand::RngExt as _;
 
     use super::*;
     use crate::test_utils::{proteus_utils::*, *};
@@ -185,7 +186,7 @@ mod tests {
         fn pick_gap_ids(rng: &mut impl rand::Rng, count: usize) -> Vec<u16> {
             let mut ids = Vec::with_capacity(count);
             while ids.len() < count {
-                let id = rng.gen_range(ID_TEST_RANGE);
+                let id = rng.random_range(ID_TEST_RANGE);
                 if !ids.contains(&id) {
                     ids.push(id);
                 }
@@ -214,7 +215,7 @@ mod tests {
         let claimed = claim(&alice, &tx, ID_TEST_RANGE.count()).await;
         assert_eq!(claimed, ID_TEST_RANGE.collect::<Vec<_>>());
 
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         // punch some holes; the next claims must fill exactly those
         let gap_ids = pick_gap_ids(&mut rng, GAP_AMOUNT);
