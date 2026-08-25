@@ -40,7 +40,7 @@ impl Drop for WasmEncryptedStorage {
 
 impl WasmEncryptedStorage {
     pub(crate) fn new(key: &DatabaseKey, storage: WasmStorageWrapper) -> Self {
-        let cipher = aes_gcm::Aes256Gcm::new(key.as_ref().into());
+        let cipher = aes_gcm::Aes256Gcm::new(AsRef::<[u8; _]>::as_ref(key).into());
         Self { cipher, storage }
     }
 

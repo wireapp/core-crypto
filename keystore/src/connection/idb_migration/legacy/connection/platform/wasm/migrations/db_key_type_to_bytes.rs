@@ -25,7 +25,7 @@ pub(crate) async fn migrate_db_key_type_to_bytes(
     new_key: &DatabaseKey,
 ) -> CryptoKeystoreResult<()> {
     let old_cipher = aes_gcm::Aes256Gcm::new(&sha2::Sha256::digest(old_key));
-    let new_cipher = aes_gcm::Aes256Gcm::new(new_key.as_ref().into());
+    let new_cipher = aes_gcm::Aes256Gcm::new(AsRef::<[u8; _]>::as_ref(new_key).into());
 
     let db = pre_v04::open_and_migrate(name).await?;
 
