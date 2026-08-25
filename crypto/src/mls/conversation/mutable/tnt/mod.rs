@@ -1,5 +1,6 @@
 mod targeted;
 mod tnt_message_counter;
+mod transient;
 
 use openmls::prelude::{LeafNodeIndex, OpenMlsSignaturePublicKey, Signature, Verifiable as _};
 use openmls_traits::OpenMlsCryptoProvider;
@@ -11,7 +12,7 @@ pub(crate) use self::tnt_message_counter::TntMessageCounter;
 use super::Result;
 use crate::{
     DecryptedMessage, OpenMlsError,
-    mls::conversation::{ConversationMut, Error},
+    mls::conversation::{ConversationMut, Error, mutable::tnt::transient::TransientMessage},
 };
 
 /// The version of the Transient and Targeted Messages protocol.
@@ -39,7 +40,7 @@ impl ProtocolVersion {
 enum TntMessageBody {
     /// A transient message.
     #[tls_codec(discriminant = 0xF000)]
-    Transient(()),
+    Transient(TransientMessage),
     /// A targeted message.
     #[tls_codec(discriminant = 0xF001)]
     Targeted(TargetedMessage),
@@ -48,7 +49,7 @@ enum TntMessageBody {
     TransientTargeted(TargetedMessage),
 }
 
-#[derive(TlsSize, TlsDeserialize)]
+#[derive(TlsSize, TlsDeserialize, TlsSerialize, derive_more::From)]
 pub(crate) struct TntWireFormat(u16);
 
 impl TntWireFormat {
@@ -71,8 +72,7 @@ struct TntMessageTBS {
 }
 
 impl TntMessageTBS {
-    #[expect(dead_code)]
-    fn new_transient(transient: ()) -> Self {
+    fn new_transient(transient: TransientMessage) -> Self {
         Self {
             protocol_version: ProtocolVersion::CURRENT,
             body: TntMessageBody::Transient(transient),
@@ -119,7 +119,7 @@ impl openmls::prelude::Signable for TntMessageTBS {
 
     fn label(&self) -> &str {
         match self.body {
-            TntMessageBody::Transient(_) => todo!(),
+            TntMessageBody::Transient(_) => TransientMessage::SIGN_LABEL,
             TntMessageBody::Targeted(_) => TargetedMessage::SIGN_LABEL_PERSISTED,
             TntMessageBody::TransientTargeted(_) => TargetedMessage::SIGN_LABEL_TRANSIENT,
         }
