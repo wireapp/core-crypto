@@ -187,7 +187,7 @@
 <a href=#187 id=187 data-nosnippet>187</a>            u16::tls_deserialize_exact(<span class="kw-2">&amp;</span>message[<span class="number">2</span>..<span class="number">4</span>]).map_err(TlsCodecError::deserialize(<span class="string">"u16 (wire format)"</span>))<span class="question-mark">?</span>;
 <a href=#188 id=188 data-nosnippet>188</a>
 <a href=#189 id=189 data-nosnippet>189</a>        <span class="kw">let </span>decrypt_message_result = <span class="kw">match </span>wire_format {
-<a href=#190 id=190 data-nosnippet>190</a>            wire_format <span class="kw">if </span>TntWireFormat::ALL.contains(<span class="kw-2">&amp;</span>wire_format) =&gt; {
+<a href=#190 id=190 data-nosnippet>190</a>            TntWireFormat::MIN..=TntWireFormat::MAX =&gt; {
 <a href=#191 id=191 data-nosnippet>191</a>                <span class="kw">let </span>tnt_message =
 <a href=#192 id=192 data-nosnippet>192</a>                    TntMessage::tls_deserialize_exact(message).map_err(TlsCodecError::deserialize(<span class="string">"TntMessage"</span>))<span class="question-mark">?</span>;
 <a href=#193 id=193 data-nosnippet>193</a>                <span class="self">self</span>.decrypt_tnt_message(tnt_message).<span class="kw">await
