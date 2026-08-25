@@ -400,9 +400,9 @@ It represents messages for the new epoch that arrived before the commit that cre
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi24BufferedDecryptedMessageO4textyAC10Foundation4DataV_AA8ClientIdCAA0A8IdentityVtcACmF"></a>
-                    <a name="//apple_ref/swift/Element/text(plaintext:senderClientId:identity:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi24BufferedDecryptedMessageO4textyAC10Foundation4DataV_AA8ClientIdCAA0A8IdentityVtcACmF">text(plaintext:<wbr>senderClientId:<wbr>identity:<wbr>)</a>
+                    <a name="/s:20WireCoreCryptoUniffi24BufferedDecryptedMessageO011applicationG0yAC10Foundation4DataV_AA8ClientIdCAA0A8IdentityVtcACmF"></a>
+                    <a name="//apple_ref/swift/Element/applicationMessage(plaintext:senderClientId:identity:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi24BufferedDecryptedMessageO011applicationG0yAC10Foundation4DataV_AA8ClientIdCAA0A8IdentityVtcACmF">applicationMessage(plaintext:<wbr>senderClientId:<wbr>identity:<wbr>)</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -410,14 +410,14 @@ It represents messages for the new epoch that arrived before the commit that cre
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>The decrypted message is a text message.</p>
+                        <p>The decrypted message is an MLS application message.</p>
 
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">case</span> <span class="nf">text</span><span class="p">(</span>
+                          <pre class="highlight swift"><code><span class="k">case</span> <span class="nf">applicationMessage</span><span class="p">(</span>
     <span class="cm">/**
      * Decrypted text message.
      */</span><span class="nv">plaintext</span><span class="p">:</span> <span class="kt">Data</span><span class="p">,</span> 
@@ -496,6 +496,80 @@ It represents messages for the new epoch that arrived before the commit that cre
      * When set, clients must delay by this time interval before processing a commit. This reduces load on the
      * backend, which otherwise would receive epoch change notifications from all clients simultaneously.
      */</span><span class="nv">delay</span><span class="p">:</span> <span class="kt">UInt64</span><span class="p">?,</span> 
+    <span class="cm">/**
+     * Identity claims present in the sender credential.
+     */</span><span class="nv">identity</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/WireIdentity.html">WireIdentity</a></span>
+<span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi24BufferedDecryptedMessageO17transientTargetedyAC10Foundation4DataV_AA8ClientIdCAA0A8IdentityVtcACmF"></a>
+                    <a name="//apple_ref/swift/Element/transientTargeted(plaintext:senderClientId:identity:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi24BufferedDecryptedMessageO17transientTargetedyAC10Foundation4DataV_AA8ClientIdCAA0A8IdentityVtcACmF">transientTargeted(plaintext:<wbr>senderClientId:<wbr>identity:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The decrypted message is a transient targeted message.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">case</span> <span class="nf">transientTargeted</span><span class="p">(</span>
+    <span class="cm">/**
+     * Decrypted text message.
+     */</span><span class="nv">plaintext</span><span class="p">:</span> <span class="kt">Data</span><span class="p">,</span> 
+    <span class="cm">/**
+     * The sender's `ClientId`.
+     */</span><span class="nv">senderClientId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></span><span class="p">,</span> 
+    <span class="cm">/**
+     * Identity claims present in the sender credential.
+     */</span><span class="nv">identity</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/WireIdentity.html">WireIdentity</a></span>
+<span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi24BufferedDecryptedMessageO17persistedTargetedyAC10Foundation4DataV_AA8ClientIdCAA0A8IdentityVtcACmF"></a>
+                    <a name="//apple_ref/swift/Element/persistedTargeted(plaintext:senderClientId:identity:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi24BufferedDecryptedMessageO17persistedTargetedyAC10Foundation4DataV_AA8ClientIdCAA0A8IdentityVtcACmF">persistedTargeted(plaintext:<wbr>senderClientId:<wbr>identity:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The decrypted message is a persisted targeted message.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">case</span> <span class="nf">persistedTargeted</span><span class="p">(</span>
+    <span class="cm">/**
+     * Decrypted text message.
+     */</span><span class="nv">plaintext</span><span class="p">:</span> <span class="kt">Data</span><span class="p">,</span> 
+    <span class="cm">/**
+     * The sender's `ClientId`.
+     */</span><span class="nv">senderClientId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></span><span class="p">,</span> 
     <span class="cm">/**
      * Identity claims present in the sender credential.
      */</span><span class="nv">identity</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/WireIdentity.html">WireIdentity</a></span>

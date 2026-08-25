@@ -56,11 +56,11 @@
 <a href=#56 id=56 data-nosnippet>56</a>    ///
 <a href=#57 id=57 data-nosnippet>57</a>    /// Note that this doesn't return whether or not anything was actually removed because
 <a href=#58 id=58 data-nosnippet>58</a>    /// that won't happen until the transaction is committed.
-<a href=#59 id=59 data-nosnippet>59</a>    </span><span class="kw">pub async fn </span>remove_borrowed&lt;E&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>E::BorrowedPrimaryKey) -&gt; CryptoKeystoreResult&lt;()&gt;
+<a href=#59 id=59 data-nosnippet>59</a>    </span><span class="kw">pub async fn </span>remove_borrowed&lt;E&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, id: E::BorrowedPrimaryKey&lt;<span class="lifetime">'_</span>&gt;) -&gt; CryptoKeystoreResult&lt;()&gt;
 <a href=#60 id=60 data-nosnippet>60</a>    <span class="kw">where
 <a href=#61 id=61 data-nosnippet>61</a>        </span>E: EntityDeleteBorrowed + BorrowPrimaryKey,
 <a href=#62 id=62 data-nosnippet>62</a>    {
-<a href=#63 id=63 data-nosnippet>63</a>        <span class="kw">let </span>entity_id = EntityId::from_borrowed_primary_key::&lt;E&gt;(id);
+<a href=#63 id=63 data-nosnippet>63</a>        <span class="kw">let </span>entity_id = EntityId::from_borrowed_primary_key::&lt;E&gt;(<span class="kw-2">&amp;</span>id);
 <a href=#64 id=64 data-nosnippet>64</a>        <span class="self">self</span>.remove_by_entity_id::&lt;E&gt;(entity_id).<span class="kw">await
 <a href=#65 id=65 data-nosnippet>65</a>    </span>}
 <a href=#66 id=66 data-nosnippet>66</a>
@@ -77,11 +77,11 @@
 <a href=#77 id=77 data-nosnippet>77</a>    /// CAUTION: Does not affect entities which were bulk-deleted.
 <a href=#78 id=78 data-nosnippet>78</a>    ///
 <a href=#79 id=79 data-nosnippet>79</a>    /// CAUTION: Entities which are restored might still be overwritten within this transaction.
-<a href=#80 id=80 data-nosnippet>80</a>    </span><span class="kw">pub async fn </span>restore&lt;E&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>E::BorrowedPrimaryKey) -&gt; CryptoKeystoreResult&lt;()&gt;
+<a href=#80 id=80 data-nosnippet>80</a>    </span><span class="kw">pub async fn </span>restore&lt;E&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, id: E::BorrowedPrimaryKey&lt;<span class="lifetime">'_</span>&gt;) -&gt; CryptoKeystoreResult&lt;()&gt;
 <a href=#81 id=81 data-nosnippet>81</a>    <span class="kw">where
 <a href=#82 id=82 data-nosnippet>82</a>        </span>E: EntityDeleteBorrowed + BorrowPrimaryKey,
 <a href=#83 id=83 data-nosnippet>83</a>    {
-<a href=#84 id=84 data-nosnippet>84</a>        <span class="kw">let </span>entity_id = EntityId::from_borrowed_primary_key::&lt;E&gt;(id);
+<a href=#84 id=84 data-nosnippet>84</a>        <span class="kw">let </span>entity_id = EntityId::from_borrowed_primary_key::&lt;E&gt;(<span class="kw-2">&amp;</span>id);
 <a href=#85 id=85 data-nosnippet>85</a>
 <a href=#86 id=86 data-nosnippet>86</a>        {
 <a href=#87 id=87 data-nosnippet>87</a>            <span class="kw">let </span><span class="kw-2">mut </span>operations = <span class="self">self</span>.operations.write().<span class="kw">await</span>;

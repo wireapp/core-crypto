@@ -33,6 +33,6 @@
 <a href=#33 id=33 data-nosnippet>33</a>
 <a href=#34 id=34 data-nosnippet>34</a><span class="kw">pub trait </span>EntityGetBorrowed: Entity + BorrowPrimaryKey {
 <a href=#35 id=35 data-nosnippet>35</a>    <span class="doccomment">/// Get an entity by a borrowed form of its primary key.
-<a href=#36 id=36 data-nosnippet>36</a>    </span><span class="kw">fn </span>get_borrowed(conn: <span class="kw-2">&amp;</span>Connection, key: <span class="kw-2">&amp;</span><span class="self">Self</span>::BorrowedPrimaryKey) -&gt; CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt;;
+<a href=#36 id=36 data-nosnippet>36</a>    </span><span class="kw">fn </span>get_borrowed(conn: <span class="kw-2">&amp;</span>Connection, key: <span class="self">Self</span>::BorrowedPrimaryKey&lt;<span class="lifetime">'_</span>&gt;) -&gt; CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt;;
 <a href=#37 id=37 data-nosnippet>37</a>}
 </code></pre></div></section></main></body></html>

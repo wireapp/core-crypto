@@ -17,13 +17,15 @@
 <a href=#17 id=17 data-nosnippet>17</a>
 <a href=#18 id=18 data-nosnippet>18</a><span class="doccomment">/// Something whose primary key can be borrowed as a distinct type.
 <a href=#19 id=19 data-nosnippet>19</a>///
-<a href=#20 id=20 data-nosnippet>20</a>/// i.e. `String`, `Vec&lt;u8&gt;`, etc.
+<a href=#20 id=20 data-nosnippet>20</a>/// i.e. `&amp;str`, `&amp;[u8]`, or a type with one or more borrowed fields.
 <a href=#21 id=21 data-nosnippet>21</a></span><span class="kw">pub trait </span>BorrowPrimaryKey: PrimaryKey {
-<a href=#22 id=22 data-nosnippet>22</a>    <span class="kw">type </span>BorrowedPrimaryKey: <span class="question-mark">?</span>Sized + ToOwned&lt;Owned = <span class="self">Self</span>::PrimaryKey&gt;;
-<a href=#23 id=23 data-nosnippet>23</a>
-<a href=#24 id=24 data-nosnippet>24</a>    <span class="doccomment">/// Borrow this entity's primary key without copying any data.
-<a href=#25 id=25 data-nosnippet>25</a>    ///
-<a href=#26 id=26 data-nosnippet>26</a>    /// This borrowed key has a lifetime tied to that of this entity.
-<a href=#27 id=27 data-nosnippet>27</a>    </span><span class="kw">fn </span>borrow_primary_key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="self">Self</span>::BorrowedPrimaryKey;
-<a href=#28 id=28 data-nosnippet>28</a>}
+<a href=#22 id=22 data-nosnippet>22</a>    <span class="kw">type </span>BorrowedPrimaryKey&lt;<span class="lifetime">'a</span>&gt;: Copy + Send + Sync + Into&lt;&lt;<span class="self">Self </span><span class="kw">as </span>PrimaryKey&gt;::PrimaryKey&gt;
+<a href=#23 id=23 data-nosnippet>23</a>    <span class="kw">where
+<a href=#24 id=24 data-nosnippet>24</a>        </span><span class="self">Self</span>: <span class="lifetime">'a</span>;
+<a href=#25 id=25 data-nosnippet>25</a>
+<a href=#26 id=26 data-nosnippet>26</a>    <span class="doccomment">/// Borrow this entity's primary key without copying any data.
+<a href=#27 id=27 data-nosnippet>27</a>    ///
+<a href=#28 id=28 data-nosnippet>28</a>    /// This borrowed key has a lifetime tied to that of this entity.
+<a href=#29 id=29 data-nosnippet>29</a>    </span><span class="kw">fn </span>borrow_primary_key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::BorrowedPrimaryKey&lt;<span class="lifetime">'_</span>&gt;;
+<a href=#30 id=30 data-nosnippet>30</a>}
 </code></pre></div></section></main></body></html>

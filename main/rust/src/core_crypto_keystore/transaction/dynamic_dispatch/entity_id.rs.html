@@ -103,11 +103,11 @@
 <a href=#103 id=103 data-nosnippet>103</a>    ///
 <a href=#104 id=104 data-nosnippet>104</a>    /// Equal to what [`Self::from_primary_key`] produces for the owned form of the same key, so the
 <a href=#105 id=105 data-nosnippet>105</a>    /// two are interchangeable for lookups.
-<a href=#106 id=106 data-nosnippet>106</a>    </span><span class="kw">pub fn </span>from_borrowed_primary_key&lt;E&gt;(primary_key: <span class="kw-2">&amp;</span>E::BorrowedPrimaryKey) -&gt; <span class="self">Self
+<a href=#106 id=106 data-nosnippet>106</a>    </span><span class="kw">pub fn </span>from_borrowed_primary_key&lt;E&gt;(primary_key: <span class="kw-2">&amp;</span>E::BorrowedPrimaryKey&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="self">Self
 <a href=#107 id=107 data-nosnippet>107</a>    </span><span class="kw">where
 <a href=#108 id=108 data-nosnippet>108</a>        </span>E: Entity + BorrowPrimaryKey,
 <a href=#109 id=109 data-nosnippet>109</a>    {
-<a href=#110 id=110 data-nosnippet>110</a>        <span class="self">Self</span>::from_primary_key::&lt;E&gt;(primary_key.to_owned())
+<a href=#110 id=110 data-nosnippet>110</a>        <span class="self">Self</span>::from_primary_key::&lt;E&gt;((<span class="kw-2">*</span>primary_key).into())
 <a href=#111 id=111 data-nosnippet>111</a>    }
 <a href=#112 id=112 data-nosnippet>112</a>}
 </code></pre></div></section></main></body></html>
