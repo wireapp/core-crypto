@@ -60,7 +60,7 @@ pub(super) struct PskId {
 /// mls-rs, we're going to use mls-rs types.
 #[derive(TlsSize, TlsSerialize, TlsDeserialize, Constructor)]
 pub(super) struct TargetedMessage {
-    nonce: TntMessageCounter,
+    counter: TntMessageCounter,
     sender: LeafNodeIndex,
     recipient: LeafNodeIndex,
     epoch: GroupEpoch,

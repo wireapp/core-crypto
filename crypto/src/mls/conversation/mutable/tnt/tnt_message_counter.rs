@@ -2,7 +2,7 @@ use tls_codec::{TlsDeserialize, TlsSerialize, TlsSize};
 
 use crate::mls::conversation::{Error, Result};
 
-/// A shared nonce type for Transient and Targeted Messages.
+/// A shared counter type for Transient and Targeted Messages.
 #[derive(Clone, Default, Copy, TlsSize, TlsSerialize, TlsDeserialize, derive_more::Into, derive_more::From)]
 #[repr(transparent)]
 pub(crate) struct TntMessageCounter(u32);

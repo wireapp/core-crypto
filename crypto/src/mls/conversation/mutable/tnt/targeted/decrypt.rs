@@ -60,7 +60,7 @@ impl ConversationMut {
             .map_err(KeystoreError::wrap("getting TargetedMessageRxCounter"))?
             .map(|counter| counter.count)
             .unwrap_or_default();
-        if u32::from(message.nonce) <= existing_counter {
+        if u32::from(message.counter) <= existing_counter {
             return Err(Error::DuplicateMessage);
         }
 
@@ -70,7 +70,7 @@ impl ConversationMut {
             .load_hpke_decryption_data(&mls_group, &crypto_provider, cipher_suite, &message, policy)
             .await?;
         let aad = message
-            .nonce
+            .counter
             .tls_serialize_detached()
             .map_err(TlsCodecError::serialize("TntMessageCounter"))?;
         let padded_plaintext = crypto_provider
@@ -116,7 +116,7 @@ impl ConversationMut {
             conversation_id: self.id.to_bytes(),
             sender: message.sender().u32(),
             epoch: group_epoch,
-            count: message.nonce.into(),
+            count: message.counter.into(),
         })
         .await
         .map_err(KeystoreError::wrap("persisting TargetedMessageRxCounter"))?;

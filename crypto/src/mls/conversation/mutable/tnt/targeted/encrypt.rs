@@ -90,11 +90,11 @@ impl ConversationMut {
         recipient: &Member,
         message: &[u8],
     ) -> Result<TargetedMessage, Error> {
-        let nonce = group_state
+        let counter = group_state
             .obtain_targeted_message_tx_counter(recipient.index, database)
             .await?;
         let mls_group = group_state.mls_group();
-        let aad = nonce
+        let aad = counter
             .tls_serialize_detached()
             .map_err(TlsCodecError::serialize("TntMessageCounter"))?;
         let context = TargetedMessageContext::new(
@@ -121,7 +121,7 @@ impl ConversationMut {
         let group_id = mls_group.group_id();
         let epoch = mls_group.epoch();
 
-        let targeted = TargetedMessage::new(nonce, sender, recipient.index, epoch, group_id.clone(), payload);
+        let targeted = TargetedMessage::new(counter, sender, recipient.index, epoch, group_id.clone(), payload);
         Ok(targeted)
     }
 }
