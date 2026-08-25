@@ -1,7 +1,7 @@
 use core_crypto_keystore::{
     entities::{
-        StoredEpochEncryptionKeypair, TargetedMessageRxCounter, TargetedMessageRxCounterPkRef, TntSecret,
-        TntSecretPkRef,
+        StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef, TargetedMessageRxCounter,
+        TargetedMessageRxCounterPkRef, TntSecret, TntSecretPkRef,
     },
     traits::FetchFromDatabase as _,
 };
@@ -207,17 +207,16 @@ impl ConversationMut {
 
     // Ideally, openmls would offer this API for us, but it doesn't. So we load the data we need from the database.
     async fn load_decryption_key(&self, mls_group: &MlsGroup) -> Result<HpkePrivateKey> {
-        let epoch_keypair_id = [
+        let kp_ref = StoredEpochEncryptionKeypairPkRef::new(
             mls_group.group_id().as_slice(),
-            &mls_group.own_leaf_index().u32().to_be_bytes(),
-            &mls_group.epoch().as_u64().to_be_bytes(),
-        ]
-        .concat();
+            mls_group.own_leaf_index().u32(),
+            mls_group.epoch().as_u64(),
+        );
 
         let database = self.database().await?;
 
         let stored_keypairs = database
-            .get_borrowed::<StoredEpochEncryptionKeypair>(&epoch_keypair_id)
+            .get_borrowed::<StoredEpochEncryptionKeypair>(kp_ref)
             .await
             .map_err(KeystoreError::wrap("loading epoch encryption keypairs"))?
             .ok_or(Error::MlsGroupInvalidState("epoch encryption keypairs are missing"))?;
