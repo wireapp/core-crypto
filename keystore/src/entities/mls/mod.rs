@@ -26,7 +26,9 @@ pub use persisted_mls_pending_group::PersistedMlsPendingGroup;
 pub use stored_buffered_commit::StoredBufferedCommit;
 pub use stored_credential::{CredentialFindFilters, StoredCredential};
 pub use stored_encryption_key_pair::StoredEncryptionKeyPair;
-pub use stored_epoch_encryption_keypair::StoredEpochEncryptionKeypair;
+pub use stored_epoch_encryption_keypair::{
+    StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPk, StoredEpochEncryptionKeypairPkRef,
+};
 pub use stored_hpke_private_key::StoredHpkePrivateKey;
 pub use stored_keypackage::StoredKeyPackage;
 pub use stored_psk_bundle::StoredPskBundle;
