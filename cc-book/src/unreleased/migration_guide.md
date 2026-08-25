@@ -1,19 +1,13 @@
-# Migrating from v10.0 to Unreleased
+# Migrating from v10.3.0 or later to Unreleased
 
 > [!NOTE]
 > These changes will be relevant with the next release of CoreCrypto.
 
-## Database
-
-1. Deprecated the `key` parameter from in-memory Database constructor. In-memory databases are never encrypted.
-
-1. `Database.getLocation` now returns the absolute path to the database file for non-web platforms.
-
 ## DecryptedMessage
 
-`DecryptedMessage` is now an enum with `ApplicationMessage`, `Commit`, and `Proposal` variants. Data that was previously
-exposed through optional properties is now carried by the corresponding variant. Match on the variant before accessing
-its data:
+`DecryptedMessage.Text` and `BufferedDecryptedMessage.Text` have been renamed to `DecryptedMessage.ApplicationMessage`
+and `BufferedDecryptedMessage.ApplicationMessage`, respectively. Both enums now also include `TransientTargeted` and
+`PersistedTargeted` variants. Match on all five `DecryptedMessage` variants before accessing their data:
 
 <!-- langtabs-start -->
 
@@ -22,11 +16,17 @@ if (DecryptedMessage.ApplicationMessage.instanceOf(decryptedMessage)) {
     const { plaintext, senderClientId, identity } = decryptedMessage.inner;
     // Handle the application message.
 } else if (DecryptedMessage.Commit.instanceOf(decryptedMessage)) {
-    // Handle the commit.
     const { isActive, bufferedMessages, identity } = decryptedMessage.inner;
+    // Handle the commit.
 } else if (DecryptedMessage.Proposal.instanceOf(decryptedMessage)) {
     const { delay, identity } = decryptedMessage.inner;
     // Handle the proposal.
+} else if (DecryptedMessage.TransientTargeted.instanceOf(decryptedMessage)) {
+    const { plaintext, senderClientId, identity } = decryptedMessage.inner;
+    // Handle the transient targeted message.
+} else if (DecryptedMessage.PersistedTargeted.instanceOf(decryptedMessage)) {
+    const { plaintext, senderClientId, identity } = decryptedMessage.inner;
+    // Handle the persisted targeted message.
 }
 ```
 
@@ -38,6 +38,10 @@ case let .commit(isActive, bufferedMessages, identity):
     // Handle the commit.
 case let .proposal(delay, identity):
     // Handle the proposal.
+case let .transientTargeted(plaintext, senderClientId, identity):
+    // Handle the transient targeted message.
+case let .persistedTargeted(plaintext, senderClientId, identity):
+    // Handle the persisted targeted message.
 }
 ```
 
@@ -54,6 +58,14 @@ when (decryptedMessage) {
     is DecryptedMessage.Proposal -> {
         val (delay, identity) = decryptedMessage
         // Handle the proposal.
+    }
+    is DecryptedMessage.TransientTargeted -> {
+        val (plaintext, senderClientId, identity) = decryptedMessage
+        // Handle the transient targeted message.
+    }
+    is DecryptedMessage.PersistedTargeted -> {
+        val (plaintext, senderClientId, identity) = decryptedMessage
+        // Handle the persisted targeted message.
     }
 }
 ```
