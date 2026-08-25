@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ad7aef29.js";
+            window.path_to_searchindex_js = "../searchindex-d2dbacb6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-6ea44124.js"></script>
@@ -175,24 +175,15 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="migrating-from-v100-to-unreleased"><a class="header" href="#migrating-from-v100-to-unreleased">Migrating from v10.0 to Unreleased</a></h1>
+                        <h1 id="migrating-from-v1030-or-later-to-unreleased"><a class="header" href="#migrating-from-v1030-or-later-to-unreleased">Migrating from v10.3.0 or later to Unreleased</a></h1>
 <blockquote class="blockquote-tag blockquote-tag-note">
 <p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
 <p>These changes will be relevant with the next release of CoreCrypto.</p>
 </blockquote>
-<h2 id="database"><a class="header" href="#database">Database</a></h2>
-<ol>
-<li>
-<p>Deprecated the <code>key</code> parameter from in-memory Database constructor. In-memory databases are never encrypted.</p>
-</li>
-<li>
-<p><code>Database.getLocation</code> now returns the absolute path to the database file for non-web platforms.</p>
-</li>
-</ol>
 <h2 id="decryptedmessage"><a class="header" href="#decryptedmessage">DecryptedMessage</a></h2>
-<p><code>DecryptedMessage</code> is now an enum with <code>ApplicationMessage</code>, <code>Commit</code>, and <code>Proposal</code> variants. Data that was previously
-exposed through optional properties is now carried by the corresponding variant. Match on the variant before accessing
-its data:</p>
+<p><code>DecryptedMessage.Text</code> and <code>BufferedDecryptedMessage.Text</code> have been renamed to <code>DecryptedMessage.ApplicationMessage</code>
+and <code>BufferedDecryptedMessage.ApplicationMessage</code>, respectively. Both enums now also include <code>TransientTargeted</code> and
+<code>PersistedTargeted</code> variants. Match on all five <code>DecryptedMessage</code> variants before accessing their data:</p>
 <div class="langtabs">
 <div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
 <div class="langtabs-content">
@@ -201,11 +192,17 @@ its data:</p>
     const { plaintext, senderClientId, identity } = decryptedMessage.inner;
     // Handle the application message.
 } else if (DecryptedMessage.Commit.instanceOf(decryptedMessage)) {
-    // Handle the commit.
     const { isActive, bufferedMessages, identity } = decryptedMessage.inner;
+    // Handle the commit.
 } else if (DecryptedMessage.Proposal.instanceOf(decryptedMessage)) {
     const { delay, identity } = decryptedMessage.inner;
     // Handle the proposal.
+} else if (DecryptedMessage.TransientTargeted.instanceOf(decryptedMessage)) {
+    const { plaintext, senderClientId, identity } = decryptedMessage.inner;
+    // Handle the transient targeted message.
+} else if (DecryptedMessage.PersistedTargeted.instanceOf(decryptedMessage)) {
+    const { plaintext, senderClientId, identity } = decryptedMessage.inner;
+    // Handle the persisted targeted message.
 }
 </code></pre>
 </div>
@@ -218,6 +215,10 @@ case let .commit(isActive, bufferedMessages, identity):
     // Handle the commit.
 case let .proposal(delay, identity):
     // Handle the proposal.
+case let .transientTargeted(plaintext, senderClientId, identity):
+    // Handle the transient targeted message.
+case let .persistedTargeted(plaintext, senderClientId, identity):
+    // Handle the persisted targeted message.
 }
 </code></pre>
 </div>
@@ -235,6 +236,14 @@ case let .proposal(delay, identity):
     is DecryptedMessage.Proposal -&gt; {
         val (delay, identity) = decryptedMessage
         // Handle the proposal.
+    }
+    is DecryptedMessage.TransientTargeted -&gt; {
+        val (plaintext, senderClientId, identity) = decryptedMessage
+        // Handle the transient targeted message.
+    }
+    is DecryptedMessage.PersistedTargeted -&gt; {
+        val (plaintext, senderClientId, identity) = decryptedMessage
+        // Handle the persisted targeted message.
     }
 }
 </code></pre>

@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-ad7aef29.js";
+            window.path_to_searchindex_js = "../searchindex-d2dbacb6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-6ea44124.js"></script>
@@ -175,7 +175,69 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="migrating-from-v9x-to-v100"><a class="header" href="#migrating-from-v9x-to-v100">Migrating from v9.x to v10.0</a></h1>
+                        <h2 id="migrating-from-v100-to-v1030"><a class="header" href="#migrating-from-v100-to-v1030">Migrating from v10.0 to v10.3.0</a></h2>
+<h3 id="database"><a class="header" href="#database">Database</a></h3>
+<ol>
+<li>
+<p>Deprecated the <code>key</code> parameter from in-memory Database constructor. In-memory databases are never encrypted.</p>
+</li>
+<li>
+<p><code>Database.getLocation</code> now returns the absolute path to the database file for non-web platforms.</p>
+</li>
+</ol>
+<h3 id="decryptedmessage"><a class="header" href="#decryptedmessage">DecryptedMessage</a></h3>
+<p><code>DecryptedMessage</code> is now an enum with <code>Text</code>, <code>Commit</code>, and <code>Proposal</code> variants. Data that was previously exposed
+through optional properties is now carried by the corresponding variant. Match on the variant before accessing its data:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">if (DecryptedMessage.Text.instanceOf(decryptedMessage)) {
+    const { plaintext, senderClientId, identity } = decryptedMessage.inner;
+    // Handle the application message.
+} else if (DecryptedMessage.Commit.instanceOf(decryptedMessage)) {
+    // Handle the commit.
+    const { isActive, bufferedMessages, identity } = decryptedMessage.inner;
+} else if (DecryptedMessage.Proposal.instanceOf(decryptedMessage)) {
+    const { delay, identity } = decryptedMessage.inner;
+    // Handle the proposal.
+}
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">switch decryptedMessage {
+case let .text(plaintext, senderClientId, identity):
+    // Handle the application message.
+case let .commit(isActive, bufferedMessages, identity):
+    // Handle the commit.
+case let .proposal(delay, identity):
+    // Handle the proposal.
+}
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">when (decryptedMessage) {
+    is DecryptedMessage.Text -&gt; {
+        val (plaintext, senderClientId, identity) = decryptedMessage
+        // Handle the application message.
+    }
+    is DecryptedMessage.Commit -&gt; {
+        val (isActive, bufferedMessages, identity) = decryptedMessage
+        // Handle the commit.
+    }
+    is DecryptedMessage.Proposal -&gt; {
+        val (delay, identity) = decryptedMessage
+        // Handle the proposal.
+    }
+}
+</code></pre>
+</div>
+</div>
+</div>
+
+<h1 id="migrating-from-v9x-to-v100"><a class="header" href="#migrating-from-v9x-to-v100">Migrating from v9.x to v10.0</a></h1>
 <p>This page covers breaking changes that are identical across all platforms. For platform-specific migration steps, see
 the sub-pages:</p>
 <ul>

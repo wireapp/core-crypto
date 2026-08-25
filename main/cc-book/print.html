@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-ad7aef29.js";
+            window.path_to_searchindex_js = "searchindex-d2dbacb6.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-6ea44124.js"></script>
@@ -820,24 +820,15 @@ so both slots are cleared before dropping the context that releases the semaphor
 cannot observe the previous transaction’s token. If cancellation wins a callback race, dropping the Rust future also
 causes UniFFI’s generated foreign-language binding to cancel the task executing that callback.</p>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="migrating-from-v100-to-unreleased"><a class="header" href="#migrating-from-v100-to-unreleased">Migrating from v10.0 to Unreleased</a></h1>
+<h1 id="migrating-from-v1030-or-later-to-unreleased"><a class="header" href="#migrating-from-v1030-or-later-to-unreleased">Migrating from v10.3.0 or later to Unreleased</a></h1>
 <blockquote class="blockquote-tag blockquote-tag-note">
 <p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
 <p>These changes will be relevant with the next release of CoreCrypto.</p>
 </blockquote>
-<h2 id="database"><a class="header" href="#database">Database</a></h2>
-<ol>
-<li>
-<p>Deprecated the <code>key</code> parameter from in-memory Database constructor. In-memory databases are never encrypted.</p>
-</li>
-<li>
-<p><code>Database.getLocation</code> now returns the absolute path to the database file for non-web platforms.</p>
-</li>
-</ol>
 <h2 id="decryptedmessage"><a class="header" href="#decryptedmessage">DecryptedMessage</a></h2>
-<p><code>DecryptedMessage</code> is now an enum with <code>ApplicationMessage</code>, <code>Commit</code>, and <code>Proposal</code> variants. Data that was previously
-exposed through optional properties is now carried by the corresponding variant. Match on the variant before accessing
-its data:</p>
+<p><code>DecryptedMessage.Text</code> and <code>BufferedDecryptedMessage.Text</code> have been renamed to <code>DecryptedMessage.ApplicationMessage</code>
+and <code>BufferedDecryptedMessage.ApplicationMessage</code>, respectively. Both enums now also include <code>TransientTargeted</code> and
+<code>PersistedTargeted</code> variants. Match on all five <code>DecryptedMessage</code> variants before accessing their data:</p>
 <div class="langtabs">
 <div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
 <div class="langtabs-content">
@@ -846,11 +837,17 @@ its data:</p>
     const { plaintext, senderClientId, identity } = decryptedMessage.inner;
     // Handle the application message.
 } else if (DecryptedMessage.Commit.instanceOf(decryptedMessage)) {
-    // Handle the commit.
     const { isActive, bufferedMessages, identity } = decryptedMessage.inner;
+    // Handle the commit.
 } else if (DecryptedMessage.Proposal.instanceOf(decryptedMessage)) {
     const { delay, identity } = decryptedMessage.inner;
     // Handle the proposal.
+} else if (DecryptedMessage.TransientTargeted.instanceOf(decryptedMessage)) {
+    const { plaintext, senderClientId, identity } = decryptedMessage.inner;
+    // Handle the transient targeted message.
+} else if (DecryptedMessage.PersistedTargeted.instanceOf(decryptedMessage)) {
+    const { plaintext, senderClientId, identity } = decryptedMessage.inner;
+    // Handle the persisted targeted message.
 }
 </code></pre>
 </div>
@@ -863,6 +860,10 @@ case let .commit(isActive, bufferedMessages, identity):
     // Handle the commit.
 case let .proposal(delay, identity):
     // Handle the proposal.
+case let .transientTargeted(plaintext, senderClientId, identity):
+    // Handle the transient targeted message.
+case let .persistedTargeted(plaintext, senderClientId, identity):
+    // Handle the persisted targeted message.
 }
 </code></pre>
 </div>
@@ -881,6 +882,14 @@ case let .proposal(delay, identity):
         val (delay, identity) = decryptedMessage
         // Handle the proposal.
     }
+    is DecryptedMessage.TransientTargeted -&gt; {
+        val (plaintext, senderClientId, identity) = decryptedMessage
+        // Handle the transient targeted message.
+    }
+    is DecryptedMessage.PersistedTargeted -&gt; {
+        val (plaintext, senderClientId, identity) = decryptedMessage
+        // Handle the persisted targeted message.
+    }
 }
 </code></pre>
 </div>
@@ -890,7 +899,7 @@ case let .proposal(delay, identity):
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="migrating-to-unreleased-typescript"><a class="header" href="#migrating-to-unreleased-typescript">Migrating to Unreleased: TypeScript</a></h1>
 <p>See the <a href="unreleased/migration-guide.html">common migration guide</a> for changes that apply to all platforms.</p>
-<h2 id="database-1"><a class="header" href="#database-1">Database</a></h2>
+<h2 id="database"><a class="header" href="#database">Database</a></h2>
 <p>Deprecated <code>Database.close()</code>. Database references are now automatically destroyed when the garbage collector cleans up
 the object. If you need to explicitly close the database, you can call <code>uniffiDestroy()</code> on the <code>Database</code> instance.</p>
 <div style="break-before: page; page-break-before: always;"></div>
@@ -953,7 +962,7 @@ credential is not in use by any conversation, removes every key package derived 
 working set and the keystore.</p>
 <blockquote class="blockquote-tag blockquote-tag-note">
 <p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
-<p>CC v10.0 introduces lots of changes. We provide a <a href="#migrating-from-v9x-to-v100">migration guide</a>.</p>
+<p>CC v10.0 introduces lots of changes. We provide a <a href="#migration-guide">migration guide</a>.</p>
 </blockquote>
 <h2 id="new-platform-ts-native"><a class="header" href="#new-platform-ts-native">New Platform: TS Native</a></h2>
 <p>With CC 10 we are expanding the set of supported bindings. In addition to the existing browser bindings–now published
@@ -980,6 +989,69 @@ include these dependencies.</p>
 of the TS Native bindings, this is no longer supported. The TS Native bindings enable fully-persistent usage patterns
 outside the browser and should replace all usage of the WASM bindings outside the browser.</p>
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="migration-guide"><a href="#migration-guide" class="header">Migration Guide</a></h1>
+<h2 id="migrating-from-v100-to-v1030"><a class="header" href="#migrating-from-v100-to-v1030">Migrating from v10.0 to v10.3.0</a></h2>
+<h3 id="database-1"><a class="header" href="#database-1">Database</a></h3>
+<ol>
+<li>
+<p>Deprecated the <code>key</code> parameter from in-memory Database constructor. In-memory databases are never encrypted.</p>
+</li>
+<li>
+<p><code>Database.getLocation</code> now returns the absolute path to the database file for non-web platforms.</p>
+</li>
+</ol>
+<h3 id="decryptedmessage-1"><a class="header" href="#decryptedmessage-1">DecryptedMessage</a></h3>
+<p><code>DecryptedMessage</code> is now an enum with <code>Text</code>, <code>Commit</code>, and <code>Proposal</code> variants. Data that was previously exposed
+through optional properties is now carried by the corresponding variant. Match on the variant before accessing its data:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">if (DecryptedMessage.Text.instanceOf(decryptedMessage)) {
+    const { plaintext, senderClientId, identity } = decryptedMessage.inner;
+    // Handle the application message.
+} else if (DecryptedMessage.Commit.instanceOf(decryptedMessage)) {
+    // Handle the commit.
+    const { isActive, bufferedMessages, identity } = decryptedMessage.inner;
+} else if (DecryptedMessage.Proposal.instanceOf(decryptedMessage)) {
+    const { delay, identity } = decryptedMessage.inner;
+    // Handle the proposal.
+}
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">switch decryptedMessage {
+case let .text(plaintext, senderClientId, identity):
+    // Handle the application message.
+case let .commit(isActive, bufferedMessages, identity):
+    // Handle the commit.
+case let .proposal(delay, identity):
+    // Handle the proposal.
+}
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">when (decryptedMessage) {
+    is DecryptedMessage.Text -&gt; {
+        val (plaintext, senderClientId, identity) = decryptedMessage
+        // Handle the application message.
+    }
+    is DecryptedMessage.Commit -&gt; {
+        val (isActive, bufferedMessages, identity) = decryptedMessage
+        // Handle the commit.
+    }
+    is DecryptedMessage.Proposal -&gt; {
+        val (delay, identity) = decryptedMessage
+        // Handle the proposal.
+    }
+}
+</code></pre>
+</div>
+</div>
+</div>
+
 <h1 id="migrating-from-v9x-to-v100"><a class="header" href="#migrating-from-v9x-to-v100">Migrating from v9.x to v10.0</a></h1>
 <p>This page covers breaking changes that are identical across all platforms. For platform-specific migration steps, see
 the sub-pages:</p>
@@ -1245,7 +1317,7 @@ return a <code>ConversationId</code> now only.</p>
 </ol>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="migrating-to-cc-10-typescript"><a class="header" href="#migrating-to-cc-10-typescript">Migrating to CC 10: TypeScript</a></h1>
-<p>See the <a href="#migrating-from-v9x-to-v100">common migration guide</a> for changes that apply to all platforms.</p>
+<p>See the <a href="#migration-guide">common migration guide</a> for changes that apply to all platforms.</p>
 <h2 id="browser-module-location"><a class="header" href="#browser-module-location">Browser Module Location</a></h2>
 <p>We want to prepare the ground for a native module, which runs on node or bun. Therefore, the browser module is now
 exported as <code>@wireapp/core-crypto/browser</code>. Update your imports:</p>
@@ -1361,7 +1433,7 @@ persistence.</p>
 </ol>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="migrating-to-cc-10-swift"><a class="header" href="#migrating-to-cc-10-swift">Migrating to CC 10: Swift</a></h1>
-<p>See the <a href="#migrating-from-v9x-to-v100">common migration guide</a> for changes that apply to all platforms.</p>
+<p>See the <a href="#migration-guide">common migration guide</a> for changes that apply to all platforms.</p>
 <h2 id="corecrypto-instantiation-1"><a class="header" href="#corecrypto-instantiation-1">CoreCrypto Instantiation</a></h2>
 <ol>
 <li>
@@ -1405,7 +1477,7 @@ raw bytes, call <code>externalSenderKey.copyBytes()</code>.</p>
 </ol>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="migrating-to-cc-10-kotlin"><a class="header" href="#migrating-to-cc-10-kotlin">Migrating to CC 10: Kotlin</a></h1>
-<p>See the <a href="#migrating-from-v9x-to-v100">common migration guide</a> for changes that apply to all platforms.</p>
+<p>See the <a href="#migration-guide">common migration guide</a> for changes that apply to all platforms.</p>
 <h2 id="renames-and-moves"><a class="header" href="#renames-and-moves">Renames and Moves</a></h2>
 <ol>
 <li>
