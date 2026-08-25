@@ -16,6 +16,9 @@ use crate::{CipherSuite, ExternalSender};
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
 
+/// A CoreCrypto-only configuration: how many epochs in the future we buffer messages for.
+pub(crate) const MAX_FUTURE_EPOCHS: u64 = 1;
+
 /// Window for which decryption secrets are kept within an epoch. Use this with caution since this affects forward
 /// secrecy within an epoch. Use this when the Delivery Service cannot guarantee application messages order
 pub(crate) const OUT_OF_ORDER_TOLERANCE: u32 = 2;

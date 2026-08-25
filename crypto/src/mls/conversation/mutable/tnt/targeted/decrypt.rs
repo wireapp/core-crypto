@@ -23,7 +23,7 @@ use crate::{
     mls::{
         conversation::{
             ConversationMut, Error, MlsGroupState, Result, TargetedMessagePolicy,
-            config::MAX_PAST_EPOCHS,
+            config::{MAX_FUTURE_EPOCHS, MAX_PAST_EPOCHS},
             mutable::{decrypt::DecryptedBytes, tnt::TargetedMessage},
         },
         credential::ext::CredentialExt,
@@ -46,9 +46,10 @@ impl ConversationMut {
 
         let message_epoch = message.epoch.as_u64();
         let group_epoch = mls_group.epoch().as_u64();
-        if message_epoch == group_epoch + 1 {
+        let max_future_epoch = group_epoch.saturating_add(MAX_FUTURE_EPOCHS);
+        if message_epoch > group_epoch && message_epoch <= max_future_epoch {
             return Err(Error::BufferedFutureMessage { message_epoch });
-        } else if message_epoch > group_epoch + 1 {
+        } else if message_epoch > max_future_epoch {
             return Err(Error::UnbufferedFarFutureMessage);
         }
 

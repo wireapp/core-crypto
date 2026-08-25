@@ -33,6 +33,7 @@ use crate::{
     mls::{
         conversation::{
             Error,
+            config::MAX_FUTURE_EPOCHS,
             mutable::tnt::{TntMessage, TntWireFormat},
         },
         credential::ext::CredentialExt as _,
@@ -483,7 +484,8 @@ impl ConversationMut {
                     ProcessMessageError::ValidationError(ValidationError::WrongEpoch) => {
                         if is_duplicate {
                             Error::DuplicateMessage
-                        } else if msg_epoch == group_epoch + 1 {
+                        } else if msg_epoch > group_epoch && msg_epoch <= group_epoch.saturating_add(MAX_FUTURE_EPOCHS)
+                        {
                             // limit to next epoch otherwise if we were buffering a commit for epoch + 2
                             // we would fail when trying to decrypt it in [MlsCentral::commit_accepted]
 
