@@ -55,7 +55,10 @@ impl TntWireFormat {
     pub(crate) const TARGETED_MESSAGE: u16 = 0xF001;
     pub(crate) const TRANSIENT_TARGETED_MESSAGE: u16 = 0xF002;
 
-    pub(crate) const ALL: std::ops::RangeInclusive<u16> = Self::TRANSIENT_MESSAGE..=Self::TRANSIENT_TARGETED_MESSAGE;
+    pub(crate) const MIN: u16 = Self::TRANSIENT_MESSAGE;
+    pub(crate) const MAX: u16 = Self::TRANSIENT_TARGETED_MESSAGE;
+
+    pub(crate) const ALL: std::ops::RangeInclusive<u16> = Self::MIN..=Self::MAX;
 }
 
 /// The to-be-signed [TntMessage].

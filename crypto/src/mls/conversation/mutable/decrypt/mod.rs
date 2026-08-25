@@ -187,7 +187,7 @@ impl ConversationMut {
             u16::tls_deserialize_exact(&message[2..4]).map_err(TlsCodecError::deserialize("u16 (wire format)"))?;
 
         let decrypt_message_result = match wire_format {
-            wire_format if TntWireFormat::ALL.contains(&wire_format) => {
+            TntWireFormat::MIN..=TntWireFormat::MAX => {
                 let tnt_message =
                     TntMessage::tls_deserialize_exact(message).map_err(TlsCodecError::deserialize("TntMessage"))?;
                 self.decrypt_tnt_message(tnt_message).await
