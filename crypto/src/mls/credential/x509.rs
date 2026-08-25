@@ -157,8 +157,8 @@ impl Credential {
 #[cfg(test)]
 fn new_rand_client(domain: Option<String>) -> (ClientId, String) {
     let rand_str = |n: usize| {
-        use rand::distributions::{Alphanumeric, DistString as _};
-        Alphanumeric.sample_string(&mut rand::thread_rng(), n)
+        use rand::distr::{Alphanumeric, SampleString as _};
+        Alphanumeric.sample_string(&mut rand::rng(), n)
     };
     let user_id = uuid::Uuid::new_v4();
     let domain = domain.unwrap_or_else(|| format!("{}.com", rand_str(6)));
@@ -189,8 +189,8 @@ impl CertificateBundle {
         // one.
         // TODO: this should all be reworked by the time WPB-19540 is done.
         let rand_str = |n: usize| {
-            use rand::distributions::{Alphanumeric, DistString as _};
-            Alphanumeric.sample_string(&mut rand::thread_rng(), n)
+            use rand::distr::{Alphanumeric, SampleString as _};
+            Alphanumeric.sample_string(&mut rand::rng(), n)
         };
         let name = rand_str(10);
         let handle = format!("{name}_wire");

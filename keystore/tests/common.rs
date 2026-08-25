@@ -20,10 +20,9 @@ pub fn store_name() -> String {
         if true {
             use rand::{
                 Rng as _,
-                distributions::{Alphanumeric, DistString},
+                distr::{Alphanumeric, SampleString as _},
             };
-            let mut rng = rand::thread_rng();
-            let dynamism = Alphanumeric.sample_string(&mut rng, 12);
+            let dynamism = Alphanumeric.sample_string(&mut rand::rng(), 12);
             format!("corecrypto.{dynamism}.test")
         } else {
             "corecrypto.test".to_owned()
