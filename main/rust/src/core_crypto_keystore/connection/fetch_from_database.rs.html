@@ -95,7 +95,7 @@
 <a href=#95 id=95 data-nosnippet>95</a>    <span class="kw">async fn </span>search&lt;E, SearchKey&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, search_key: <span class="kw-2">&amp;</span>SearchKey) -&gt; CryptoKeystoreResult&lt;Vec&lt;Arc&lt;E&gt;&gt;&gt;
 <a href=#96 id=96 data-nosnippet>96</a>    <span class="kw">where
 <a href=#97 id=97 data-nosnippet>97</a>        </span>E: <span class="lifetime">'static </span>+ Entity + SearchableEntity&lt;SearchKey&gt; + Clone + Send + Sync,
-<a href=#98 id=98 data-nosnippet>98</a>        SearchKey: Send + Sync,
+<a href=#98 id=98 data-nosnippet>98</a>        SearchKey: Send + Sync + <span class="question-mark">?</span>Sized,
 <a href=#99 id=99 data-nosnippet>99</a>    {
 <a href=#100 id=100 data-nosnippet>100</a>        <span class="kw">let </span>conn = <span class="self">self</span>.conn().<span class="kw">await</span>;
 <a href=#101 id=101 data-nosnippet>101</a>        <span class="kw">let </span>persisted_records = E::find_all_matching(<span class="kw-2">&amp;</span>conn, search_key)<span class="question-mark">?</span>.into_iter().map(Arc::new);

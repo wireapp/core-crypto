@@ -95,13 +95,16 @@
 <a href=#95 id=95 data-nosnippet>95</a>    }
 <a href=#96 id=96 data-nosnippet>96</a>
 <a href=#97 id=97 data-nosnippet>97</a>    <span class="doccomment">/// Bulk-remove entities matching a given search key.
-<a href=#98 id=98 data-nosnippet>98</a>    </span><span class="kw">pub async fn </span>bulk_remove&lt;E, S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, search_key: S)
-<a href=#99 id=99 data-nosnippet>99</a>    <span class="kw">where
-<a href=#100 id=100 data-nosnippet>100</a>        </span>E: <span class="lifetime">'static </span>+ DeletableBySearchKey&lt;S&gt;,
-<a href=#101 id=101 data-nosnippet>101</a>        S: <span class="lifetime">'static </span>+ Send + Sync,
-<a href=#102 id=102 data-nosnippet>102</a>    {
-<a href=#103 id=103 data-nosnippet>103</a>        <span class="kw">let </span><span class="kw-2">mut </span>operations = <span class="self">self</span>.operations.write().<span class="kw">await</span>;
-<a href=#104 id=104 data-nosnippet>104</a>        operations.push(Operation::bulk_delete::&lt;E, S&gt;(search_key))
-<a href=#105 id=105 data-nosnippet>105</a>    }
-<a href=#106 id=106 data-nosnippet>106</a>}
+<a href=#98 id=98 data-nosnippet>98</a>    ///
+<a href=#99 id=99 data-nosnippet>99</a>    /// We need `S: 'static` because we're not actually applying this remove operation
+<a href=#100 id=100 data-nosnippet>100</a>    /// immediately, but storing it for later application once the transaction is committed.
+<a href=#101 id=101 data-nosnippet>101</a>    </span><span class="kw">pub async fn </span>bulk_remove&lt;E, S&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, search_key: S)
+<a href=#102 id=102 data-nosnippet>102</a>    <span class="kw">where
+<a href=#103 id=103 data-nosnippet>103</a>        </span>E: <span class="lifetime">'static </span>+ DeletableBySearchKey&lt;S&gt;,
+<a href=#104 id=104 data-nosnippet>104</a>        S: <span class="lifetime">'static </span>+ Send + Sync,
+<a href=#105 id=105 data-nosnippet>105</a>    {
+<a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span><span class="kw-2">mut </span>operations = <span class="self">self</span>.operations.write().<span class="kw">await</span>;
+<a href=#107 id=107 data-nosnippet>107</a>        operations.push(Operation::bulk_delete::&lt;E, S&gt;(search_key))
+<a href=#108 id=108 data-nosnippet>108</a>    }
+<a href=#109 id=109 data-nosnippet>109</a>}
 </code></pre></div></section></main></body></html>

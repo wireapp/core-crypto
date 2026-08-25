@@ -191,7 +191,7 @@
 <a href=#191 id=191 data-nosnippet>191</a>    </span><span class="kw">async fn </span>search&lt;E, SearchKey&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, search_key: <span class="kw-2">&amp;</span>SearchKey) -&gt; CryptoKeystoreResult&lt;Vec&lt;Arc&lt;E&gt;&gt;&gt;
 <a href=#192 id=192 data-nosnippet>192</a>    <span class="kw">where
 <a href=#193 id=193 data-nosnippet>193</a>        </span>E: <span class="lifetime">'static </span>+ Entity + SearchableEntity&lt;SearchKey&gt; + Clone + Send + Sync,
-<a href=#194 id=194 data-nosnippet>194</a>        SearchKey: Send + Sync,
+<a href=#194 id=194 data-nosnippet>194</a>        SearchKey: Send + Sync + <span class="question-mark">?</span>Sized,
 <a href=#195 id=195 data-nosnippet>195</a>    {
 <a href=#196 id=196 data-nosnippet>196</a>        &lt;T <span class="kw">as </span>FetchFromDatabase&gt;::search::&lt;E, SearchKey&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>.arc, search_key).<span class="kw">await
 <a href=#197 id=197 data-nosnippet>197</a>    </span>}

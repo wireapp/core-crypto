@@ -57,6 +57,6 @@
 <a href=#57 id=57 data-nosnippet>57</a>    </span><span class="kw">async fn </span>search&lt;E, SearchKey&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, search_key: <span class="kw-2">&amp;</span>SearchKey) -&gt; CryptoKeystoreResult&lt;Vec&lt;Arc&lt;E&gt;&gt;&gt;
 <a href=#58 id=58 data-nosnippet>58</a>    <span class="kw">where
 <a href=#59 id=59 data-nosnippet>59</a>        </span>E: <span class="lifetime">'static </span>+ Entity + SearchableEntity&lt;SearchKey&gt; + Clone + Send + Sync,
-<a href=#60 id=60 data-nosnippet>60</a>        SearchKey: Send + Sync;
+<a href=#60 id=60 data-nosnippet>60</a>        SearchKey: Send + Sync + <span class="question-mark">?</span>Sized;
 <a href=#61 id=61 data-nosnippet>61</a>}
 </code></pre></div></section></main></body></html>
