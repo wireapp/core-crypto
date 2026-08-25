@@ -6,7 +6,8 @@ use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Database, Sha256Hash,
     entities::{
         PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, StoredEncryptionKeyPair,
-        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
+        StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef, StoredHpkePrivateKey, StoredKeyPackage,
+        StoredPskBundle,
     },
     traits::{Entity, EntityDatabaseMutation, EntityDeleteBorrowed, FetchFromDatabase as _},
 };
@@ -236,8 +237,15 @@ impl openmls_traits::key_store::OpenMlsKeyStore for Database {
                 self.save(kp).await?;
             }
             MlsEntityId::EpochEncryptionKeyPair => {
+                let StoredEpochEncryptionKeypairPkRef {
+                    conversation_id,
+                    own_leaf_idx,
+                    epoch,
+                } = StoredEpochEncryptionKeypairPkRef::parse_bytes(id)?;
                 let kp = StoredEpochEncryptionKeypair {
-                    id: id.into(),
+                    conversation_id: conversation_id.bytes().into(),
+                    own_leaf_idx,
+                    epoch,
                     keypairs: data,
                 };
                 self.save(kp).await?;
@@ -295,8 +303,9 @@ impl openmls_traits::key_store::OpenMlsKeyStore for Database {
                 deser(&v.sk).ok()
             }
             MlsEntityId::EpochEncryptionKeyPair => {
+                let kp_ref = StoredEpochEncryptionKeypairPkRef::parse_bytes(id).ok()?;
                 let v = self
-                    .get_borrowed::<StoredEpochEncryptionKeypair>(id)
+                    .get_borrowed::<StoredEpochEncryptionKeypair>(kp_ref)
                     .await
                     .ok()
                     .flatten()?;
@@ -316,7 +325,10 @@ impl openmls_traits::key_store::OpenMlsKeyStore for Database {
             MlsEntityId::KeyPackage => self.remove_borrowed::<StoredKeyPackage>(id).await?,
             MlsEntityId::PskBundle => self.remove_borrowed::<StoredPskBundle>(id).await?,
             MlsEntityId::EncryptionKeyPair => self.remove_borrowed::<StoredEncryptionKeyPair>(id).await?,
-            MlsEntityId::EpochEncryptionKeyPair => self.remove_borrowed::<StoredEpochEncryptionKeypair>(id).await?,
+            MlsEntityId::EpochEncryptionKeyPair => {
+                let kp_ref = StoredEpochEncryptionKeypairPkRef::parse_bytes(id)?;
+                self.remove_borrowed::<StoredEpochEncryptionKeypair>(kp_ref).await?
+            }
         }
 
         Ok(())
