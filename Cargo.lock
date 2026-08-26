@@ -1197,6 +1197,7 @@ dependencies = [
  "async-trait",
  "blocking",
  "console_error_panic_hook",
+ "const_format",
  "core-crypto-keystore",
  "core-crypto-macros",
  "core-foundation 0.10.1",
