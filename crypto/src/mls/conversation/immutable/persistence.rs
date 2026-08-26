@@ -21,7 +21,7 @@ impl Conversation {
         };
 
         // The tnt message counters are empty when initializing, we're loading them lazily on usage.
-        let group = MlsGroupState::new(group, Default::default()).into();
+        let group = MlsGroupState::new(group, Default::default(), Default::default()).into();
 
         Ok(Self {
             id,

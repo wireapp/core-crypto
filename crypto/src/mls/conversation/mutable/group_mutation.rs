@@ -64,7 +64,7 @@ impl ConversationMut {
         }
 
         if epoch_before_operation < group.epoch() {
-            group.reset_targeted_message_tx_counters(tx).await;
+            group.reset_tnt_message_tx_counters(tx).await?;
 
             let oldest_retained_epoch = group.epoch().as_u64().saturating_sub(MAX_PAST_EPOCHS as u64);
             // We can't avoid allocation here because tx needs to own the deletion key.
