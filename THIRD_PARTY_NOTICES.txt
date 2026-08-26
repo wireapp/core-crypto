@@ -1,0 +1,421 @@
+THIRD PARTY NOTICES
+===================
+
+This file lists the third-party components used by core-crypto, the author(s) and the
+licenses they are distributed under.
+
+------------------------------------------------------------------------------
+
+Apache-2.0
+----------
+  License text: https://www.apache.org/licenses/LICENSE-2.0.txt
+
+  addr2line 0.24.2; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  adler2 2.0.1; Copyright: Jonas Schievink <jonasschievink@gmail.com>, oyvindln <oyvindln@users.noreply.github.com>; Licensed under `0BSD OR MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  aead 0.5.2; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  aes 0.8.4; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  aes-gcm 0.10.3; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  ahash 0.8.11; Copyright: Tom Kaitchuck <Tom.Kaitchuck@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  android_system_properties 0.1.5; Copyright: Nicolas Silva <nical@fastmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  anstream 1.0.0; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  anstyle 1.0.14; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  anstyle-parse 1.0.0; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  anstyle-query 1.1.1; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  anstyle-wincon 3.0.11; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  anyhow 1.0.104; Copyright: David Tolnay <dtolnay@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  async-channel 2.5.0; Copyright: Stjepan Glavina <stjepang@gmail.com>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  async-executor 1.13.0; Copyright: Stjepan Glavina <stjepang@gmail.com>, John Nunley <dev@notgull.net>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  async-fs 2.2.0; Copyright: Stjepan Glavina <stjepang@gmail.com>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  async-io 2.3.4; Copyright: Stjepan Glavina <stjepang@gmail.com>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  async-lock 3.4.2; Copyright: Stjepan Glavina <stjepang@gmail.com>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  async-net 2.0.0; Copyright: Stjepan Glavina <stjepang@gmail.com>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  async-process 2.4.0; Copyright: Stjepan Glavina <stjepang@gmail.com>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  async-signal 0.2.12; Copyright: John Nunley <dev@notgull.net>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  async-task 4.7.1; Copyright: Stjepan Glavina <stjepang@gmail.com>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  atomic-waker 1.1.2; Copyright: Stjepan Glavina <stjepang@gmail.com>, Contributors to futures-rs; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  backtrace 0.3.75; Copyright: The Rust Project Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  base16ct 0.2.0; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  base64 0.21.7; Copyright: Alice Maz <alice@alicemaz.com>, Marshall Pierce <marshall@mpierce.org>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  base64 0.22.1, 0.23.1; Copyright: Marshall Pierce <marshall@mpierce.org>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  base64ct 1.8.3; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  bitflags 2.13.1; Copyright: The Rust Project Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  block-buffer 0.10.4, 0.12.0; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  blocking 1.6.2; Copyright: Stjepan Glavina <stjepang@gmail.com>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  certval 0.1.4; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  cfg-if 1.0.4; Copyright: Alex Crichton <alex@alexcrichton.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  chacha20 0.9.1; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  chacha20poly1305 0.10.1; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  chrono 0.4.45; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  ciborium 0.2.2; Copyright: Nathaniel McCallum <npmccallum@profian.com>
+  ciborium-io 0.2.2; Copyright: Nathaniel McCallum <npmccallum@profian.com>
+  ciborium-ll 0.2.2; Copyright: Nathaniel McCallum <npmccallum@profian.com>
+  cipher 0.4.4; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  clap 4.6.6; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  clap_builder 4.6.6; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  clap_lex 1.0.0; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  cmov 0.5.4; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  cms 0.2.3; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  cobs 0.3.0; Copyright: Allen Welkie <>, James Munns <james@onevariable.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  colorchoice 1.0.2; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  concurrent-queue 2.5.0; Copyright: Stjepan Glavina <stjepang@gmail.com>, Taiki Endo <te316e89@gmail.com>, John Nunley <dev@notgull.net>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  console_error_panic_hook 0.1.7; Copyright: Nick Fitzgerald <fitzgen@gmail.com>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  const-oid 0.9.6; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  cookie 0.16.2, 0.18.1; Copyright: Sergio Benitez <sb@sergio.bz>, Alex Crichton <alex@alexcrichton.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  core-foundation 0.10.1, 0.9.4; Copyright: The Servo Project Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  core-foundation-sys 0.8.7; Copyright: The Servo Project Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  cpufeatures 0.2.13; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  crossbeam-utils 0.8.20; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  crypto-bigint 0.5.5; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  crypto-common 0.1.6, 0.2.1; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  ctr 0.9.2; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  ctutils 0.4.0; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  der 0.7.10, 0.8.1; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  deranged 0.5.8; Copyright: Jacob Pratt <jacob@jhpratt.dev>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  digest 0.10.7, 0.11.2; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  ecdsa 0.16.9; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  ed25519 2.2.3; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  either 1.13.0; Copyright: bluss; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  elliptic-curve 0.13.8; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  embedded-io 0.4.0, 0.6.1; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  env_filter 2.0.0; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  env_logger 0.11.11; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  equivalent 1.0.2; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  erased-serde 0.4.9; Copyright: David Tolnay <dtolnay@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  errno 0.3.10; Copyright: Chris Wong <lambda.fairy@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  event-listener 5.3.1; Copyright: Stjepan Glavina <stjepang@gmail.com>, John Nunley <dev@notgull.net>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  event-listener-strategy 0.5.4; Copyright: John Nunley <dev@notgull.net>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  eyre 0.6.12; Copyright: David Tolnay <dtolnay@gmail.com>, Jane Lusby <jlusby42@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  fallible-iterator 0.3.0; Copyright: Steven Fackler <sfackler@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  fallible-streaming-iterator 0.1.9; Copyright: Steven Fackler <sfackler@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  fantoccini 0.22.1; Copyright: Jon Gjengset <jon@thesquareplanet.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  fastrand 2.1.1; Copyright: Stjepan Glavina <stjepang@gmail.com>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  ff 0.13.0; Copyright: Sean Bowe <ewillbefull@gmail.com>, Jack Grigg <thestr4d@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  fiat-crypto 0.2.9; Copyright: Fiat Crypto library authors <jgross@mit.edu>; Licensed under `MIT OR Apache-2.0 OR BSD-1-Clause`, used here under `Apache-2.0`.
+  flagset 0.4.7; Copyright: Nathaniel McCallum <nathaniel@profian.com>
+  fnv 1.0.7; Copyright: Alex Crichton <alex@alexcrichton.com>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  foreign-types 0.3.2; Copyright: Steven Fackler <sfackler@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  foreign-types-shared 0.1.1; Copyright: Steven Fackler <sfackler@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  form_urlencoded 1.2.1; Copyright: The rust-url developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  futures-channel 0.3.34; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  futures-core 0.3.34; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  futures-io 0.3.33; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  futures-lite 2.6.1; Copyright: Stjepan Glavina <stjepang@gmail.com>, Contributors to futures-rs; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  futures-sink 0.3.34; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  futures-task 0.3.33; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  futures-util 0.3.33; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  getrandom 0.2.15, 0.3.4, 0.4.1; Copyright: The Rand Project Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  ghash 0.5.1; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  gimli 0.31.1; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  group 0.13.0; Copyright: Sean Bowe <ewillbefull@gmail.com>, Jack Grigg <jack@z.cash>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  half 2.4.1; Copyright: Kathryn Long <squeeself@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  hashbrown 0.13.2, 0.15.2, 0.16.1; Copyright: Amanieu d'Antras <amanieu@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  hashbrown 0.17.1; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  hashlink 0.11.0; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  hermit-abi 0.4.0; Copyright: Stefan Lankes; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  hex 0.4.3; Copyright: KokaKiwi <kokakiwi@kokakiwi.net>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  hkdf 0.12.4; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  hmac 0.12.1, 0.13.0; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  hpke 0.12.0; Copyright: Michael Rosenberg <michael@mrosenberg.pub>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  http 0.2.12, 1.5.0; Copyright: Alex Crichton <alex@alexcrichton.com>, Carl Lerche <me@carllerche.com>, Sean McArthur <sean@seanmonstar.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  httparse 1.9.4; Copyright: Sean McArthur <sean@seanmonstar.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  httpdate 1.0.3; Copyright: Pyfisch <pyfisch@posteo.org>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  hybrid-array 0.4.9; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  hyper-tls 0.6.0; Copyright: Sean McArthur <sean@seanmonstar.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  iana-time-zone 0.1.64; Copyright: Andrew Straw <strawman@astraw.com>, René Kijewski <rene.kijewski@fu-berlin.de>, Ryan Lopopolo <rjl@hyperbo.la>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  iana-time-zone-haiku 0.1.2; Copyright: René Kijewski <crates.io@k6i.de>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  idb 0.6.5; Copyright: Devashish Dixit <devashishdxt@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  idna 1.0.3; Copyright: The rust-url developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  idna_adapter 1.2.0; Copyright: The rust-url developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  indenter 0.3.3; Copyright: Jane Lusby <jlusby@yaah.dev>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  indexmap 2.14.0; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  inout 0.1.3; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  ipnet 2.11.0; Copyright: Kris Price <kris@krisprice.nz>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  is_terminal_polyfill 1.70.1; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  itertools 0.12.1, 0.15.0; Copyright: bluss; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  itoa 1.0.17; Copyright: David Tolnay <dtolnay@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  js-sys 0.3.82; Copyright: The wasm-bindgen Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  k256 0.13.3; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  lazy_static 1.4.0; Copyright: Marvin Löbel <loebel.marvin@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  libc 0.2.185; Copyright: The Rust Project Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  linux-raw-sys 0.12.1, 0.4.14; Copyright: Dan Gohman <dev@sunfishcode.online>; Licensed under `Apache-2.0 OR Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  lock_api 0.4.13; Copyright: Amanieu d'Antras <amanieu@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  log 0.4.33; Copyright: The Rust Project Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  log-reload 0.1.3; Copyright: Sebastian Wiesner <sebastian@swsnr.de>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  macro_rules_attribute 0.2.3; Copyright: Daniel Henry-Mantilla <daniel.henry.mantilla@gmail.com>; Licensed under `Apache-2.0 OR MIT OR Zlib`, used here under `Apache-2.0`.
+  matrixmultiply 0.3.9; Copyright: bluss, R. Janis Goldschmidt; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  mime 0.3.17; Copyright: Sean McArthur <sean@seanmonstar.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  miniz_oxide 0.8.9; Copyright: Frommi <daniil.liferenko@gmail.com>, oyvindln <oyvindln@users.noreply.github.com>, Rich Geldreich richgel99@gmail.com; Licensed under `MIT OR Zlib OR Apache-2.0`, used here under `Apache-2.0`.
+  native-tls 0.2.18; Copyright: Steven Fackler <sfackler@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  ndarray 0.15.6; Copyright: Ulrik Sverdrup "bluss", Jim Turner; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  num-bigint-dig 0.8.6; Copyright: dignifiedquire <dignifiedquire@gmail.com>, The Rust Project Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  num-complex 0.4.6; Copyright: The Rust Project Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  num-conv 0.2.2; Copyright: Jacob Pratt <jacob@jhpratt.dev>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  num-integer 0.1.46; Copyright: The Rust Project Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  num-iter 0.1.45; Copyright: The Rust Project Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  num-traits 0.2.19; Copyright: The Rust Project Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  num_threads 0.1.7; Copyright: Jacob Pratt <open-source@jhpratt.dev>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  object 0.36.7; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  once_cell 1.21.3; Copyright: Aleksey Kladov <aleksey.kladov@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  once_cell_polyfill 1.70.2; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  opaque-debug 0.3.1; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  openssl 0.10.80; Copyright: Steven Fackler <sfackler@gmail.com>
+  openssl-probe 0.2.1; Copyright: Alex Crichton <alex@alexcrichton.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  p256 0.13.2; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  p384 0.13.1; Copyright: RustCrypto Developers, Frank Denis <github@pureftpd.org>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  p521 0.13.3; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  parking 2.2.0; Copyright: Stjepan Glavina <stjepang@gmail.com>, The Rust Project Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  parking_lot 0.12.4; Copyright: Amanieu d'Antras <amanieu@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  parking_lot_core 0.9.11; Copyright: Amanieu d'Antras <amanieu@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  pem-rfc7468 0.7.0; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  percent-encoding 2.3.2; Copyright: The rust-url developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  pin-project 1.1.5; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  pin-project-lite 0.2.14; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  piper 0.2.4; Copyright: Stjepan Glavina <stjepang@gmail.com>, John Nunley <dev@notgull.net>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  pkcs1 0.7.5; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  pkcs8 0.10.2; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  polling 3.7.3; Copyright: Stjepan Glavina <stjepang@gmail.com>, John Nunley <dev@notgull.net>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  poly1305 0.8.0; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  polyval 0.6.2; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  portable-atomic 1.13.0; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  portable-atomic-util 0.2.4; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  postcard 1.1.3; Copyright: James Munns <james@onevariable.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  powerfmt 0.2.0; Copyright: Jacob Pratt <jacob@jhpratt.dev>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  ppv-lite86 0.2.20; Copyright: The CryptoCorrosion Contributors; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  primeorder 0.13.6; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  r-efi 5.2.0; Licensed under `MIT OR Apache-2.0 OR LGPL-2.1-or-later`, used here under `Apache-2.0`.
+  rand 0.8.6, 0.9.2; Copyright: The Rand Project Developers, The Rust Project Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  rand_chacha 0.3.1, 0.9.0; Copyright: The Rand Project Developers, The Rust Project Developers, The CryptoCorrosion Contributors; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  rand_core 0.10.1; Copyright: The Rand Project Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  rand_core 0.6.4, 0.9.3; Copyright: The Rand Project Developers, The Rust Project Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  rawpointer 0.2.1; Copyright: bluss; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  refinery-core 0.9.2; Copyright: Katharina Fey <kookie@spacekookie.de>, João Oliveira <hello@jxs.pt>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  regex 1.12.4; Copyright: The Rust Project Developers, Andrew Gallant <jamslam@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  regex-automata 0.4.13; Copyright: The Rust Project Developers, Andrew Gallant <jamslam@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  regex-syntax 0.8.11; Copyright: The Rust Project Developers, Andrew Gallant <jamslam@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  rfc6979 0.4.0; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  rsa 0.9.10; Copyright: RustCrypto Developers, dignifiedquire <dignifiedquire@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  rustc-demangle 0.1.24; Copyright: Alex Crichton <alex@alexcrichton.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  rustix 0.38.41, 1.1.4; Copyright: Dan Gohman <dev@sunfishcode.online>, Jakub Konka <kubkon@jakubkonka.com>; Licensed under `Apache-2.0 OR Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  ryu 1.0.18; Copyright: David Tolnay <dtolnay@gmail.com>; Licensed under `Apache-2.0 OR BSL-1.0`, used here under `Apache-2.0`.
+  schnellru 0.2.4; Copyright: Jan Bujak <j@exia.io>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  scoped-tls 1.0.1; Copyright: Alex Crichton <alex@alexcrichton.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  scopeguard 1.2.0; Copyright: bluss; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  sec1 0.7.3; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  secrecy 0.8.0; Copyright: Tony Arcieri <tony@iqlusion.io>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  security-framework 3.7.0; Copyright: Steven Fackler <sfackler@gmail.com>, Kornel <kornel@geekhood.net>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  security-framework-sys 2.17.0; Copyright: Steven Fackler <sfackler@gmail.com>, Kornel <kornel@geekhood.net>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  serde 1.0.228; Copyright: Erick Tryzelaar <erick.tryzelaar@gmail.com>, David Tolnay <dtolnay@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  serde-transcode 1.1.1; Copyright: Steven Fackler <sfackler@palantir.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  serde_core 1.0.228; Copyright: Erick Tryzelaar <erick.tryzelaar@gmail.com>, David Tolnay <dtolnay@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  serde_fmt 1.0.3; Copyright: Ashley Mannix <ashleymannix@live.com.au>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  serde_json 1.0.151; Copyright: Erick Tryzelaar <erick.tryzelaar@gmail.com>, David Tolnay <dtolnay@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  serde_urlencoded 0.7.1; Copyright: Anthony Ramine <n.oxyde@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  sha-1 0.10.1; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  sha1 0.10.6; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  sha2 0.10.9; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  signal-hook-registry 1.4.2; Copyright: Michal 'vorner' Vaner <vorner@vorner.cz>, Masaki Hara <ackie.h.gmai@gmail.com>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  signature 2.2.0; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  siphasher 0.3.11, 1.0.1; Copyright: Frank Denis <github@pureftpd.org>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  smallvec 1.13.2; Copyright: The Servo Project Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  smol 2.0.2; Copyright: Stjepan Glavina <stjepang@gmail.com>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  smol-hyper 0.1.1; Copyright: John Nunley <dev@notgull.net>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  smol-macros 0.1.1; Copyright: John Nunley <dev@notgull.net>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  socket2 0.6.3; Copyright: Alex Crichton <alex@alexcrichton.com>, Thomas de Zeeuw <thomasdezeeuw@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  spki 0.7.3; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  stable_deref_trait 1.2.0; Copyright: Robert Grosse <n210241048576@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  static_assertions 1.1.0; Copyright: Nikolai Vazquez; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  streaming-iterator 0.1.9; Copyright: Steven Fackler <sfackler@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  subtle-encoding 0.5.1; Copyright: Tony Arcieri <tony@iqlusion.io>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  sval 2.13.0; Copyright: Ashley Mannix <ashleymannix@live.com.au>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  sval_buffer 2.13.0; Copyright: Ashley Mannix <ashleymannix@live.com.au>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  sval_dynamic 2.13.0; Copyright: Ashley Mannix <ashleymannix@live.com.au>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  sval_fmt 2.13.0; Copyright: Ashley Mannix <ashleymannix@live.com.au>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  sval_json 2.13.0; Copyright: Ashley Mannix <ashleymannix@live.com.au>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  sval_nested 2.13.0; Copyright: Ashley Mannix <ashleymannix@live.com.au>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  sval_ref 2.13.0; Copyright: Ashley Mannix <ashleymannix@live.com.au>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  sval_serde 2.13.0; Copyright: Ashley Mannix <ashleymannix@live.com.au>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  system-configuration 0.7.0; Copyright: Mullvad VPN; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  system-configuration-sys 0.6.0; Copyright: Mullvad VPN; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  tempfile 3.27.0; Copyright: Steven Allen <steven@stebalien.com>, The Rust Project Developers, Ashley Mannix <ashleymannix@live.com.au>, Jason White <me@jasonwhite.io>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  thiserror 1.0.69, 2.0.19; Copyright: David Tolnay <dtolnay@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  time 0.3.55; Copyright: Jacob Pratt <open-source@jhpratt.dev>, Time contributors; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  time-core 0.1.9; Copyright: Jacob Pratt <open-source@jhpratt.dev>, Time contributors; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  tls_codec 0.4.2; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  typed-builder 0.23.2; Copyright: IdanArye <idanarye@gmail.com>, Chris Morgan <me@chrismorgan.info>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  typeid 1.0.0; Copyright: David Tolnay <dtolnay@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  typenum 1.17.0; Copyright: Paho Lurie-Gregg <paho@paholg.com>, Andre Bogus <bogusandre@gmail.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  unicase 2.7.0; Copyright: Sean McArthur <sean@seanmonstar.com>; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  universal-hash 0.5.1; Copyright: RustCrypto Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  url 2.5.4; Copyright: The rust-url developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  utf16_iter 1.0.5; Copyright: Henri Sivonen <hsivonen@hsivonen.fi>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  utf8_iter 1.0.4; Copyright: Henri Sivonen <hsivonen@hsivonen.fi>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  utf8parse 0.2.2; Copyright: Joe Wilm <joe@jwilm.com>, Christian Duerr <contact@christianduerr.com>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  uuid 1.25.0; Copyright: Ashley Mannix<ashleymannix@live.com.au>, Dylan DPC<dylan.dpc@gmail.com>, Hunar Roop Kahlon<hunar.roop@gmail.com>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  value-bag 1.12.0; Copyright: Ashley Mannix <ashleymannix@live.com.au>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  value-bag-serde1 1.12.0; Copyright: Ashley Mannix <ashleymannix@live.com.au>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  value-bag-sval2 1.12.0; Copyright: Ashley Mannix <ashleymannix@live.com.au>; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  wasi 0.11.0+wasi-snapshot-preview1; Copyright: The Cranelift Project Developers; Licensed under `Apache-2.0 OR Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  wasip2 1.0.2+wasi-0.2.9; Licensed under `Apache-2.0 OR Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  wasip3 0.4.0+wasi-0.3.0-rc-2026-01-06; Licensed under `Apache-2.0 OR Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  wasix 0.12.21; Copyright: The Cranelift Project Developers, john-sharratt; Licensed under `Apache-2.0 OR Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  wasm-bindgen 0.2.105; Copyright: The wasm-bindgen Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  wasm-bindgen-futures 0.4.55; Copyright: The wasm-bindgen Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  wasm-bindgen-shared 0.2.105; Copyright: The wasm-bindgen Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  web-sys 0.3.82; Copyright: The wasm-bindgen Developers; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  web-time 1.1.0; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  windows-core 0.62.2; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  windows-link 0.1.3; Copyright: Microsoft; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  windows-link 0.2.1; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  windows-registry 0.5.3; Copyright: Microsoft; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  windows-result 0.3.4; Copyright: Microsoft; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  windows-result 0.4.1; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  windows-strings 0.4.2; Copyright: Microsoft; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  windows-strings 0.5.1; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  windows-sys 0.48.0, 0.52.0, 0.59.0, 0.60.2; Copyright: Microsoft; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  windows-sys 0.61.2; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  windows-targets 0.48.5, 0.52.6, 0.53.3; Copyright: Microsoft; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  windows_x86_64_msvc 0.48.5, 0.52.6, 0.53.0; Copyright: Microsoft; Licensed under `MIT OR Apache-2.0`, used here under `Apache-2.0`.
+  wit-bindgen 0.51.0; Copyright: Alex Crichton <alex@alexcrichton.com>; Licensed under `Apache-2.0 OR Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  write16 1.0.0; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  x509-cert 0.2.5; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  x509-ocsp 0.2.1; Copyright: RustCrypto Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  zerocopy 0.7.35; Copyright: Joshua Liebow-Feeser <joshlf@google.com>; Licensed under `BSD-2-Clause OR Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+  zeroize 1.9.0; Copyright: The RustCrypto Project Developers; Licensed under `Apache-2.0 OR MIT`, used here under `Apache-2.0`.
+
+BSD-3-Clause
+------------
+  License text: https://opensource.org/license/bsd-3-clause
+
+  curve25519-dalek 4.1.3; Copyright: Isis Lovecruft <isis@patternsinthevoid.net>, Henry de Valence <hdevalence@hdevalence.ca>
+  ed25519-dalek 2.2.0; Copyright: isis lovecruft <isis@patternsinthevoid.net>, Tony Arcieri <bascule@gmail.com>, Michael Rosenberg <michael@mrosenberg.pub>
+  subtle 2.6.1; Copyright: Isis Lovecruft <isis@patternsinthevoid.net>, Henry de Valence <hdevalence@hdevalence.ca>
+  x25519-dalek 2.0.1; Copyright: Isis Lovecruft <isis@patternsinthevoid.net>, DebugSteven <debugsteven@gmail.com>, Henry de Valence <hdevalence@hdevalence.ca>
+
+GPL 3.0 or Wire commercial license
+----------------------------------
+  core-crypto 10.3.0; Copyright: Wire Swiss GmbH
+  core-crypto-ffi 10.3.0; Copyright: Wire Swiss GmbH
+  core-crypto-keystore 10.3.0; Copyright: Wire Swiss GmbH
+  core-crypto-macros 10.3.0; Copyright: Wire Swiss GmbH
+  obfuscate 0.1.0; Copyright: Wire Swiss GmbH
+  proteus-traits 2.1.0; Copyright: Wire Swiss GmbH
+  proteus-wasm 2.1.0; Copyright: Wire Swiss GmbH
+
+ISC
+---
+  License text: https://opensource.org/license/isc-license-txt
+
+  coarsetime 0.1.34; Copyright: Frank Denis <github@pureftpd.org>
+  jwt-simple 0.13.0; Copyright: Frank Denis <github@pureftpd.org>
+
+MIT
+---
+  License text: https://opensource.org/license/mit
+
+  aho-corasick 1.1.4; Copyright: Andrew Gallant <jamslam@gmail.com>; Licensed under `Unlicense OR MIT`, used here under `MIT`.
+  binstring 0.1.1; Copyright: Frank Denis <github@pureftpd.org>
+  byteorder 1.5.0; Copyright: Andrew Gallant <jamslam@gmail.com>; Licensed under `Unlicense OR MIT`, used here under `MIT`.
+  bytes 1.11.1; Copyright: Carl Lerche <me@carllerche.com>, Sean McArthur <sean@seanmonstar.com>
+  core_maths 0.1.1; Copyright: Robert Bastian <me@robertbastian.dev
+  crunchy 0.2.2; Copyright: Vurich <jackefransham@hotmail.co.uk>
+  ct-codecs 1.1.1; Copyright: Frank Denis <github@pureftpd.org>
+  derive_more 2.1.1; Copyright: Jelte Fennema <github-tech@jeltef.nl>
+  generic-array 0.14.7; Copyright: Bartłomiej Kamiński <fizyk20@gmail.com>, Aaron Trent <novacrazy@gmail.com>
+  h2 0.4.16; Copyright: Carl Lerche <me@carllerche.com>, Sean McArthur <sean@seanmonstar.com>
+  headers 0.4.1; Copyright: Sean McArthur <sean@seanmonstar.com>
+  headers-core 0.3.0; Copyright: Sean McArthur <sean@seanmonstar.com>
+  http-body 1.0.1; Copyright: Carl Lerche <me@carllerche.com>, Lucio Franco <luciofranco14@gmail.com>, Sean McArthur <sean@seanmonstar.com>
+  http-body-util 0.1.4; Copyright: Carl Lerche <me@carllerche.com>, Lucio Franco <luciofranco14@gmail.com>, Sean McArthur <sean@seanmonstar.com>
+  hyper 1.11.0; Copyright: Sean McArthur <sean@seanmonstar.com>
+  hyper-util 0.1.20; Copyright: Sean McArthur <sean@seanmonstar.com>
+  indexed_db_futures 0.6.4; Copyright: Arturas Molcanovas <amolc@pm.me>
+  jiff 0.2.23; Copyright: Andrew Gallant <jamslam@gmail.com>; Licensed under `Unlicense OR MIT`, used here under `MIT`.
+  libm 0.2.15; Copyright: Jorge Aparicio <jorge@japaric.io>
+  libsqlite3-sys 0.36.0; Copyright: The rusqlite developers
+  memchr 2.7.6; Copyright: Andrew Gallant <jamslam@gmail.com>, bluss; Licensed under `Unlicense OR MIT`, used here under `MIT`.
+  mime_guess 2.0.5; Copyright: Austin Bonander <austin.bonander@gmail.com>
+  mio 1.2.0; Copyright: Carl Lerche <me@carllerche.com>, Thomas de Zeeuw <thomasdezeeuw@gmail.com>, Tokio Contributors <team@tokio.rs>
+  openmls 1.0.0; Copyright: OpenMLS Authors
+  openmls_basic_credential 0.2.0; Copyright: OpenMLS Authors
+  openmls_traits 0.2.0; Copyright: OpenMLS Authors
+  openmls_x509_credential 0.2.0
+  openssl-sys 0.9.116; Copyright: Alex Crichton <alex@alexcrichton.com>, Steven Fackler <sfackler@gmail.com>
+  pem 4.0.0; Copyright: Jonathan Creekmore <jonathan@thecreekmores.org>
+  redox_syscall 0.5.17; Copyright: Jeremy Soller <jackpot51@gmail.com>
+  refinery 0.9.2; Copyright: Katharina Fey <kookie@spacekookie.de>, João Oliveira <hello@jxs.pt>
+  rmp 0.8.14; Copyright: Evgeny Safronov <division494@gmail.com>
+  rmp-serde 1.3.1; Copyright: Evgeny Safronov <division494@gmail.com>
+  rsqlite-vfs 0.1.0
+  rusqlite 0.38.0; Copyright: The rusqlite developers
+  same-file 1.0.6; Copyright: Andrew Gallant <jamslam@gmail.com>; Licensed under `Unlicense OR MIT`, used here under `MIT`.
+  schannel 0.1.28; Copyright: Steven Fackler <sfackler@gmail.com>, Steffen Butzer <steffen.butzer@outlook.com>
+  serde-wasm-bindgen 0.6.5; Copyright: Ingvar Stepanyan <me@rreverser.com>
+  slab 0.4.9; Copyright: Carl Lerche <me@carllerche.com>
+  spin 0.5.2; Copyright: Mathijs van de Nes <git@mathijs.vd-nes.nl>, John Ericson <git@JohnEricson.me>
+  spinoff 0.8.0; Copyright: ad4m
+  sqlite-wasm-rs 0.5.5; Copyright: Spxg <unsafe@outlook.es>
+  sqlite-wasm-vfs 0.2.0; Copyright: Spxg <unsafe@outlook.es>
+  strsim 0.11.1; Copyright: Danny Guo <danny@dannyguo.com>, maxbachmann <oss@maxbachmann.de>
+  tokio 1.53.1; Copyright: Tokio Contributors <team@tokio.rs>
+  tokio-native-tls 0.3.1; Copyright: Tokio Contributors <team@tokio.rs>
+  tokio-util 0.7.11; Copyright: Tokio Contributors <team@tokio.rs>
+  tower-layer 0.3.3; Copyright: Tower Maintainers <team@tower-rs.com>
+  tower-service 0.3.3; Copyright: Tower Maintainers <team@tower-rs.com>
+  tracing 0.1.40; Copyright: Eliza Weisman <eliza@buoyant.io>, Tokio Contributors <team@tokio.rs>
+  tracing-core 0.1.32; Copyright: Tokio Contributors <team@tokio.rs>
+  tree-sitter 0.26.11; Copyright: Max Brunsfeld <maxbrunsfeld@gmail.com>, Amaan Qureshi <amaanq12@gmail.com>
+  tree-sitter-language 0.1.5; Copyright: Max Brunsfeld <maxbrunsfeld@gmail.com>, Amaan Qureshi <amaanq12@gmail.com>
+  tree-sitter-typescript 0.23.2; Copyright: Max Brunsfeld <maxbrunsfeld@gmail.com>, Amaan Qureshi <amaanq12@gmail.com>
+  try-lock 0.2.5; Copyright: Sean McArthur <sean@seanmonstar.com>
+  unicode-ident 1.0.22; Copyright: David Tolnay <dtolnay@gmail.com>; Licensed under `(MIT OR Apache-2.0) AND Unicode-3.0`, used here under `MIT`.
+  walkdir 2.5.0; Copyright: Andrew Gallant <jamslam@gmail.com>; Licensed under `Unlicense OR MIT`, used here under `MIT`.
+  want 0.3.1; Copyright: Sean McArthur <sean@seanmonstar.com>
+  warp 0.4.3; Copyright: Sean McArthur <sean@seanmonstar.com>
+  which 8.0.5; Copyright: Harry Fei <tiziyuanfang@gmail.com>, Jacob Kiesel <jake@bitcrafters.co>
+  winapi-util 0.1.9; Copyright: Andrew Gallant <jamslam@gmail.com>; Licensed under `Unlicense OR MIT`, used here under `MIT`.
+  zmij 1.0.14; Copyright: David Tolnay <dtolnay@gmail.com>
+
+MPL-2.0
+-------
+  License text: https://www.mozilla.org/media/MPL/2.0/index.txt
+
+  cbor-codec 0.7.1; Copyright: Toralf Wittner <tw@dtex.org>
+  colored 2.1.0; Copyright: Thomas Wickham <mackwic@gmail.com>
+  rusty-jwt-tools 0.14.0
+  uniffi 0.29.5, 0.31.0
+  uniffi_core 0.29.5, 0.31.0
+  webdriver 0.53.0; Copyright: Mozilla
+  wire-e2e-identity 0.13.0
+
+Unicode-3.0
+-----------
+  License text: https://spdx.org/licenses/Unicode-3.0.html
+
+  icu_collections 1.5.0; Copyright: The ICU4X Project Developers
+  icu_locid 1.5.0; Copyright: The ICU4X Project Developers
+  icu_locid_transform 1.5.0; Copyright: The ICU4X Project Developers
+  icu_locid_transform_data 1.5.0; Copyright: The ICU4X Project Developers
+  icu_normalizer 1.5.0; Copyright: The ICU4X Project Developers
+  icu_normalizer_data 1.5.0; Copyright: The ICU4X Project Developers
+  icu_properties 1.5.1; Copyright: The ICU4X Project Developers
+  icu_properties_data 1.5.0; Copyright: The ICU4X Project Developers
+  icu_provider 1.5.0; Copyright: The ICU4X Project Developers
+  icu_segmenter 1.5.0; Copyright: The ICU4X Project Developers
+  icu_segmenter_data 1.5.1; Copyright: The ICU4X Project Developers
+  litemap 0.7.4; Copyright: The ICU4X Project Developers
+  tinystr 0.7.6; Copyright: The ICU4X Project Developers
+  writeable 0.5.5; Copyright: The ICU4X Project Developers
+  yoke 0.7.5; Copyright: Manish Goregaokar <manishsmail@gmail.com>
+  zerofrom 0.1.5; Copyright: Manish Goregaokar <manishsmail@gmail.com>
+  zerovec 0.10.4; Copyright: The ICU4X Project Developers
+
+Zlib
+----
+  License text: https://opensource.org/license/zlib
+
+  const_format 0.2.36; Copyright: rodrimati1992 <rodrimatt1985@gmail.com>
+  foldhash 0.1.5, 0.2.0; Copyright: Orson Peters <orsonpeters@gmail.com>
+  konst 0.2.20; Copyright: rodrimati1992 <rodrimatt1985@gmail.com>
+  konst_macro_rules 0.2.19; Copyright: rodrimati1992 <rodrimatt1985@gmail.com>
+
+------------------------------------------------------------------------------
