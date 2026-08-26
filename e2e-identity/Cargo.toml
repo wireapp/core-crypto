@@ -39,7 +39,6 @@ time = { workspace = true, features = [
   "serde-well-known",
   "wasm-bindgen",
 ] }
-rand = { workspace = true, optional = true }
 ed25519-dalek.workspace = true
 signature.workspace = true
 log.workspace = true
