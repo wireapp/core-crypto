@@ -129,7 +129,6 @@ mod error;
 mod types;
 
 pub mod acme;
-pub mod legacy;
 pub mod pki;
 pub mod pki_env;
 pub mod utils;
