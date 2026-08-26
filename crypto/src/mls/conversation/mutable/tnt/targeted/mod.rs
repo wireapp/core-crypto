@@ -5,7 +5,7 @@ use const_format::concatcp;
 use derive_more::Constructor;
 use openmls::{
     group::{GroupEpoch, GroupId, MlsGroup, group_context::GroupContext},
-    prelude::{Ciphersuite, HpkeCiphertext, LeafNodeIndex},
+    prelude::{HpkeCiphertext, LeafNodeIndex},
 };
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Serialize as _, TlsDeserialize, TlsSerialize, TlsSize};
@@ -93,7 +93,6 @@ struct HpkeContextData {
 
 fn extract_hpke_context_data(
     crypto_provider: &impl OpenMlsCryptoProvider,
-    cipher_suite: &Ciphersuite,
     context: &TargetedMessageContext,
     mls_group: &MlsGroup,
 ) -> Result<HpkeContextData> {
@@ -101,7 +100,7 @@ fn extract_hpke_context_data(
         .tls_serialize_detached()
         .map_err(TlsCodecError::serialize("TargetedMessageContext"))?;
 
-    let psk = derive_targeted_message_psk(crypto_provider, cipher_suite, mls_group)?;
+    let psk = derive_targeted_message_psk(crypto_provider, mls_group)?;
     let psk_id = PskId::new(mls_group.group_id().clone(), mls_group.epoch());
     let psk_id = psk_id
         .tls_serialize_detached()
@@ -110,11 +109,8 @@ fn extract_hpke_context_data(
     Ok(HpkeContextData { info, psk_id, psk })
 }
 
-fn derive_targeted_message_psk(
-    crypto_provider: &impl OpenMlsCryptoProvider,
-    cipher_suite: &Ciphersuite,
-    mls_group: &MlsGroup,
-) -> Result<Vec<u8>> {
+fn derive_targeted_message_psk(crypto_provider: &impl OpenMlsCryptoProvider, mls_group: &MlsGroup) -> Result<Vec<u8>> {
+    let cipher_suite = mls_group.ciphersuite();
     // We can use an empty context because we're using a unique label.
     mls_group
         .export_secret(

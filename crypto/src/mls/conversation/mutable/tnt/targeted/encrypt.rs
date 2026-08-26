@@ -103,7 +103,7 @@ impl ConversationMut {
             mls_group.own_leaf_index(),
             recipient.index,
         );
-        let context_data = extract_hpke_context_data(crypto_provider, cipher_suite, &context, mls_group)?;
+        let context_data = extract_hpke_context_data(crypto_provider, &context, mls_group)?;
         let message = tls_serialize_padded(message).map_err(TlsCodecError::serialize("TargetedMessageContent"))?;
         let payload = crypto_provider
             .hpke_seal_psk(

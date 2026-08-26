@@ -19,7 +19,7 @@ use tls_codec::{Deserialize as _, Serialize as _, VLBytes};
 
 use super::{HpkeContextData, PskId, TargetedMessageContext, derive_targeted_message_psk, extract_hpke_context_data};
 use crate::{
-    CipherSuite, CryptoProvider, DecryptedMessage, KeystoreError, OpenMlsError, RecursiveError, TlsCodecError,
+    CryptoProvider, DecryptedMessage, KeystoreError, OpenMlsError, RecursiveError, TlsCodecError,
     mls::{
         conversation::{
             ConversationMut, Error, MlsGroupState, Result, TargetedMessagePolicy,
@@ -68,7 +68,7 @@ impl ConversationMut {
         let crypto_provider = self.crypto_provider().await?;
         let cipher_suite = &self.cipher_suite();
         let (context_data, decryption_key) = self
-            .load_hpke_decryption_data(&mls_group, &crypto_provider, cipher_suite, &message, policy)
+            .load_hpke_decryption_data(&mls_group, &crypto_provider, &message, policy)
             .await?;
         let aad = message
             .counter
@@ -140,7 +140,6 @@ impl ConversationMut {
         &self,
         mls_group: &MlsGroupState,
         crypto_provider: &CryptoProvider,
-        cipher_suite: &CipherSuite,
         message: &TargetedMessage,
         policy: TargetedMessagePolicy,
     ) -> Result<(HpkeContextData, HpkePrivateKey), Error> {
@@ -151,7 +150,7 @@ impl ConversationMut {
                 message.sender(),
                 message.recipient,
             );
-            let context_data = extract_hpke_context_data(crypto_provider, cipher_suite, &context, mls_group)?;
+            let context_data = extract_hpke_context_data(crypto_provider, &context, mls_group)?;
             let decryption_key = self.load_decryption_key(mls_group).await?;
             return Ok((context_data, decryption_key));
         }
@@ -190,7 +189,7 @@ impl ConversationMut {
     pub(in crate::mls::conversation) async fn create_tnt_secret(&self, mls_group: &MlsGroup) -> Result<TntSecret> {
         let crypto_provider = self.crypto_provider().await?;
         let hpke_private_key = self.load_decryption_key(mls_group).await?;
-        let targeted_message_psk = derive_targeted_message_psk(&crypto_provider, &self.cipher_suite(), mls_group)?;
+        let targeted_message_psk = derive_targeted_message_psk(&crypto_provider, mls_group)?;
 
         Ok(TntSecret {
             conversation_id: mls_group.group_id().to_vec(),
