@@ -97,13 +97,13 @@
 <a href=#97 id=97 data-nosnippet>97</a>        <span class="kw">let </span>aad = counter
 <a href=#98 id=98 data-nosnippet>98</a>            .tls_serialize_detached()
 <a href=#99 id=99 data-nosnippet>99</a>            .map_err(TlsCodecError::serialize(<span class="string">"TntMessageCounter"</span>))<span class="question-mark">?</span>;
-<a href=#100 id=100 data-nosnippet>100</a>        <span class="kw">let </span>context = TargetedMessageContext::new(
+<a href=#100 id=100 data-nosnippet>100</a>        <span class="kw">let </span>context = TargetedMessageContext::new_with_current_protocol_version(
 <a href=#101 id=101 data-nosnippet>101</a>            policy,
 <a href=#102 id=102 data-nosnippet>102</a>            mls_group.export_group_context(),
 <a href=#103 id=103 data-nosnippet>103</a>            mls_group.own_leaf_index(),
 <a href=#104 id=104 data-nosnippet>104</a>            recipient.index,
 <a href=#105 id=105 data-nosnippet>105</a>        );
-<a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span>context_data = extract_hpke_context_data(crypto_provider, cipher_suite, <span class="kw-2">&amp;</span>context, mls_group)<span class="question-mark">?</span>;
+<a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span>context_data = extract_hpke_context_data(crypto_provider, <span class="kw-2">&amp;</span>context, mls_group)<span class="question-mark">?</span>;
 <a href=#107 id=107 data-nosnippet>107</a>        <span class="kw">let </span>message = tls_serialize_padded(message).map_err(TlsCodecError::serialize(<span class="string">"TargetedMessageContent"</span>))<span class="question-mark">?</span>;
 <a href=#108 id=108 data-nosnippet>108</a>        <span class="kw">let </span>payload = crypto_provider
 <a href=#109 id=109 data-nosnippet>109</a>            .hpke_seal_psk(
