@@ -24,7 +24,10 @@ use crate::{
         conversation::{
             ConversationMut, Error, MlsGroupState, Result, TargetedMessagePolicy,
             config::{MAX_FUTURE_EPOCHS, MAX_PAST_EPOCHS},
-            mutable::{decrypt::DecryptedBytes, tnt::TargetedMessage},
+            mutable::{
+                decrypt::DecryptedBytes,
+                tnt::{ProtocolVersion, TargetedMessage},
+            },
         },
         credential::ext::CredentialExt,
     },
@@ -35,6 +38,7 @@ impl ConversationMut {
         &self,
         message: TargetedMessage,
         policy: TargetedMessagePolicy,
+        protocol_version: ProtocolVersion,
         sender: &Member,
     ) -> Result<DecryptedMessage> {
         let mls_group = self.group().await;
@@ -68,7 +72,7 @@ impl ConversationMut {
         let crypto_provider = self.crypto_provider().await?;
         let cipher_suite = &self.cipher_suite();
         let (context_data, decryption_key) = self
-            .load_hpke_decryption_data(&mls_group, &crypto_provider, &message, policy)
+            .load_hpke_decryption_data(&mls_group, &crypto_provider, &message, policy, protocol_version)
             .await?;
         let aad = message
             .counter
@@ -142,13 +146,15 @@ impl ConversationMut {
         crypto_provider: &CryptoProvider,
         message: &TargetedMessage,
         policy: TargetedMessagePolicy,
+        protocol_version: ProtocolVersion,
     ) -> Result<(HpkeContextData, HpkePrivateKey), Error> {
         if message.epoch == mls_group.epoch() {
             let context = TargetedMessageContext::new(
+                protocol_version,
                 policy,
-                mls_group.export_group_context(),
                 message.sender(),
                 message.recipient,
+                mls_group.export_group_context().clone(),
             );
             let context_data = extract_hpke_context_data(crypto_provider, &context, mls_group)?;
             let decryption_key = self.load_decryption_key(mls_group).await?;
@@ -169,7 +175,12 @@ impl ConversationMut {
             .ok_or(Error::MlsGroupInvalidState("tnt secret is missing"))?;
         let group_context = GroupContext::tls_deserialize(&mut secret.group_context.as_slice())
             .map_err(TlsCodecError::deserialize("TntSecret GroupContext"))?;
-        let context = TargetedMessageContext::new(policy, &group_context, message.sender(), message.recipient);
+        let context = TargetedMessageContext::new_with_current_protocol_version(
+            policy,
+            &group_context,
+            message.sender(),
+            message.recipient,
+        );
         let info = context
             .tls_serialize_detached()
             .map_err(TlsCodecError::serialize("TargetedMessageContext"))?;

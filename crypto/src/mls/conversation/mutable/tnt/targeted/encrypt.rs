@@ -97,7 +97,7 @@ impl ConversationMut {
         let aad = counter
             .tls_serialize_detached()
             .map_err(TlsCodecError::serialize("TntMessageCounter"))?;
-        let context = TargetedMessageContext::new(
+        let context = TargetedMessageContext::new_with_current_protocol_version(
             policy,
             mls_group.export_group_context(),
             mls_group.own_leaf_index(),

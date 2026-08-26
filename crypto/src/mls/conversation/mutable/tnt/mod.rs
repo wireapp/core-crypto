@@ -15,13 +15,15 @@ use crate::{
 };
 
 /// The version of the Transient and Targeted Messages protocol.
-#[derive(TlsSize, TlsSerialize, TlsDeserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, TlsSize, TlsSerialize, TlsDeserialize)]
 #[repr(transparent)]
 struct ProtocolVersion(u16);
 
 impl ProtocolVersion {
     /// Transient and Targeted Messages Version 1
     const V1: Self = Self(1);
+
+    const CURRENT: Self = Self::V1;
 
     const fn as_u16(&self) -> u16 {
         self.0
@@ -72,21 +74,21 @@ impl TntMessageTBS {
     #[expect(dead_code)]
     fn new_transient(transient: ()) -> Self {
         Self {
-            protocol_version: ProtocolVersion::V1,
+            protocol_version: ProtocolVersion::CURRENT,
             body: TntMessageBody::Transient(transient),
         }
     }
 
     fn new_targeted(targeted: TargetedMessage) -> Self {
         Self {
-            protocol_version: ProtocolVersion::V1,
+            protocol_version: ProtocolVersion::CURRENT,
             body: TntMessageBody::Targeted(targeted),
         }
     }
 
     fn new_transient_targeted(targeted: TargetedMessage) -> Self {
         Self {
-            protocol_version: ProtocolVersion::V1,
+            protocol_version: ProtocolVersion::CURRENT,
             body: TntMessageBody::TransientTargeted(targeted),
         }
     }
@@ -154,6 +156,13 @@ impl openmls::prelude::Verifiable for TntMessage {
 impl ConversationMut {
     /// Verify the [TntMessage] signature, then proceed with decryption.
     pub(super) async fn decrypt_tnt_message(&self, message: TntMessage) -> Result<DecryptedMessage> {
+        let protocol_version = message.content.protocol_version;
+        // Currently, we only support `ProtocolVersion::V1`, so we're throwing an error if anyone from a future version
+        // sends us a message.
+        if protocol_version != ProtocolVersion::V1 {
+            return Err(Error::MlsMessageInvalidState("Unsupported tnt protocol version"));
+        }
+
         let crypto_provider = self.crypto_provider().await?;
         let signature_algorithm = self.cipher_suite().signature_algorithm();
         let sender = self
@@ -173,12 +182,22 @@ impl ConversationMut {
         match message.content.body {
             TntMessageBody::Transient(_) => todo!(),
             TntMessageBody::Targeted(targeted_message) => {
-                self.decrypt_targeted(targeted_message, TargetedMessagePolicy::Persisted, &sender)
-                    .await
+                self.decrypt_targeted(
+                    targeted_message,
+                    TargetedMessagePolicy::Persisted,
+                    protocol_version,
+                    &sender,
+                )
+                .await
             }
             TntMessageBody::TransientTargeted(targeted_message) => {
-                self.decrypt_targeted(targeted_message, TargetedMessagePolicy::Transient, &sender)
-                    .await
+                self.decrypt_targeted(
+                    targeted_message,
+                    TargetedMessagePolicy::Transient,
+                    protocol_version,
+                    &sender,
+                )
+                .await
             }
         }
     }

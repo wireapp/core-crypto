@@ -16,7 +16,7 @@ use crate::{ConversationConfiguration, OpenMlsError, TlsCodecError};
 
 /// Used to parameterize HPKE Seal/Open.
 /// Not carried with the payload, constructed freshly when decrypting.
-#[derive(TlsSize, TlsSerialize)]
+#[derive(TlsSize, TlsSerialize, derive_more::Constructor)]
 pub(super) struct TargetedMessageContext {
     protocol_version: ProtocolVersion,
     policy: TargetedMessagePolicy,
@@ -26,7 +26,7 @@ pub(super) struct TargetedMessageContext {
 }
 
 impl TargetedMessageContext {
-    fn new(
+    fn new_with_current_protocol_version(
         policy: TargetedMessagePolicy,
         group_context: &GroupContext,
         sender: LeafNodeIndex,
@@ -34,7 +34,7 @@ impl TargetedMessageContext {
     ) -> Self {
         Self {
             policy,
-            protocol_version: ProtocolVersion::V1,
+            protocol_version: ProtocolVersion::CURRENT,
             sender,
             recipient,
             group_context: group_context.clone(),
@@ -74,10 +74,10 @@ pub(super) struct TargetedMessage {
 impl TargetedMessage {
     pub(super) const PADDING_SIZE: usize = ConversationConfiguration::PADDING_SIZE;
     pub(super) const SIGN_LABEL_PERSISTED: &str =
-        concatcp!("TntMessageTBS-Persisted-Targeted v", ProtocolVersion::V1.as_u16());
+        concatcp!("TntMessageTBS-Persisted-Targeted v", ProtocolVersion::CURRENT.as_u16());
     pub(super) const SIGN_LABEL_TRANSIENT: &str =
-        concatcp!("TntMessageTBS-Transient-Targeted v", ProtocolVersion::V1.as_u16());
-    pub(super) const PSK_LABEL: &str = concatcp!("Tnt TargetedMessage Psk v", ProtocolVersion::V1.as_u16());
+        concatcp!("TntMessageTBS-Transient-Targeted v", ProtocolVersion::CURRENT.as_u16());
+    pub(super) const PSK_LABEL: &str = concatcp!("Tnt TargetedMessage Psk v", ProtocolVersion::CURRENT.as_u16());
 
     pub(super) fn sender(&self) -> LeafNodeIndex {
         self.sender
