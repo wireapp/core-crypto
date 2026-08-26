@@ -663,7 +663,12 @@ pub mod utils {
                 let mut rng = rand::thread_rng();
                 let conversation_id = uuid::Uuid::new_v4().into_bytes().into();
                 let own_leaf_idx = rng.r#gen();
-                let epoch = rng.r#gen();
+                // sqlite stores all its integer fields as i64, so if the leftmost bit
+                // of an epoch is ever set, the DB will start erroring out.
+                // in practice 63 bits is still a big number, so we expect nobody to ever get
+                // an epoch that high.
+                // here, we just zero out that bit regardless.
+                let epoch = rng.r#gen::<u64>() & !(1 << 63);
                 let mut keypairs = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                 rng.fill(keypairs.as_mut_slice());
 
