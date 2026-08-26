@@ -1,3 +1,5 @@
+use const_format::formatcp;
+
 use crate::{
     CryptoKeystoreResult,
     entities::StoredCredential,
@@ -9,7 +11,7 @@ pub(crate) const VERSION: i32 = 16;
 
 pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
     let tx = conn.transaction()?;
-    let mut stmt = tx.prepare(&format!(
+    let mut stmt = tx.prepare(formatcp!(
         "SELECT
             {credential_table}.rowid AS cred_rowid,
             id,
