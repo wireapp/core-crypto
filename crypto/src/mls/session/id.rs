@@ -318,13 +318,6 @@ impl fmt::Debug for ClientIdRef {
     }
 }
 
-type LegacyClientId = wire_e2e_identity::legacy::id::ClientId;
-
-impl From<ClientId> for LegacyClientId {
-    fn from(value: ClientId) -> Self {
-        Self::from(value.0)
-    }
-}
 #[cfg(test)]
 impl ClientId {
     pub(crate) fn as_user_id(&self) -> Uuid {

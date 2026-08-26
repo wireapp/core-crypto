@@ -4,9 +4,7 @@ use derive_more::derive;
 use openmls::prelude::Credential as MlsCredential;
 use openmls_traits::types::SignatureScheme;
 use openmls_x509_credential::CertificateKeyPair;
-use wire_e2e_identity::{
-    HashAlgorithm, WireIdentityReader, legacy::id::WireQualifiedClientId, pki_env::PkiEnvironment,
-};
+use wire_e2e_identity::{HashAlgorithm, WireIdentityReader, pki_env::PkiEnvironment};
 #[cfg(test)]
 use x509_cert::der::Encode;
 use zeroize::Zeroize;
@@ -95,16 +93,11 @@ impl CertificateBundle {
             .await
             .map_err(|_| Error::InvalidIdentity)?;
 
-        use wire_e2e_identity::legacy::id as legacy_id;
-
-        let client_id: legacy_id::ClientId = identity
-            .client_id
-            .parse::<WireQualifiedClientId>()
-            .map_err(RecursiveError::e2e_identity("parsing wire qualified client id"))?
-            .into();
-        let client_id: Vec<u8> = client_id.into();
-        let client_id = ClientId::new_from_bytes(client_id).map_err(RecursiveError::context("client id from bytes"))?;
-        Ok(client_id)
+        ClientId::try_from_str_with_base64_user_id(&identity.client_id)
+            .map_err(RecursiveError::context(
+                "converting client id types from leaf certificate",
+            ))
+            .map_err(Into::into)
     }
 
     /// Reads the 'Not Before' claim from the leaf certificate
