@@ -33,8 +33,6 @@ pub enum E2eIdentityError {
     OutOfOrderEnrollment(&'static str),
     #[error("Invalid OIDC RefreshToken supplied")]
     InvalidRefreshToken,
-    #[error("The encountered ClientId does not match Wire's definition")]
-    InvalidClientId,
     #[error("This function accepts a list of IDs as a parameter, but that list was empty")]
     EmptyInputIdList,
     #[error("No enrollment was found")]
