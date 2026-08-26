@@ -22,6 +22,7 @@ dummy-entity = []
 aes-gcm = "0.10"
 async-lock.workspace = true
 async-trait.workspace = true
+const_format.workspace = true
 core-crypto-macros.workspace = true
 derive_more.workspace = true
 getrandom = { workspace = true, features = ["js"] }
