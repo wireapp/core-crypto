@@ -1,3 +1,5 @@
+use const_format::formatcp;
+
 use crate::{
     CryptoKeystoreResult,
     entities::StoredCredential,
@@ -10,7 +12,7 @@ pub(crate) const VERSION: i32 = 19;
 pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
     let tx = conn.transaction()?;
 
-    let mut group_stmt = tx.prepare(&format!(
+    let mut group_stmt = tx.prepare(formatcp!(
         "SELECT state FROM {mls_group_table}",
         mls_group_table = "mls_groups",
     ))?;
@@ -25,7 +27,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
         .filter_map(|row| row.ok()); // rows which can't load at the SQL level are skipped
     let least_used_ciphersuite = make_least_used_ciphersuite(persisted_mls_groups)?;
 
-    let mut credential_stmt = tx.prepare(&format!(
+    let mut credential_stmt = tx.prepare(formatcp!(
         "SELECT ciphersuite, public_key FROM {table}",
         table = StoredCredential::TABLE_NAME,
     ))?;
