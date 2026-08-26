@@ -37,10 +37,6 @@ CREATE TABLE "mls_credentials" (
   private_key BLOB NOT NULL
 );
 
-CREATE TABLE "mls_epoch_encryption_keypairs" (id BLOB UNIQUE, keypairs BLOB);
-
-CREATE INDEX idx_mls_epoch_encryption_keypairs_id ON mls_epoch_encryption_keypairs(id);
-
 CREATE TABLE "mls_key_packages" (
   key_package_ref BLOB UNIQUE,
   key_package BLOB
@@ -114,4 +110,12 @@ CREATE TABLE targeted_message_rx_counters (
   count INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (conversation_id, sender, epoch),
   FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
+);
+
+CREATE TABLE epoch_encryption_keypairs (
+  conversation_id BLOB NOT NULL,
+  own_leaf_index INTEGER NOT NULL,
+  epoch INTEGER NOT NULL,
+  keypairs BLOB NOT NULL,
+  PRIMARY KEY (conversation_id, own_leaf_index, epoch)
 );
