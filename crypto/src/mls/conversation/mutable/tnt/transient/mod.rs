@@ -1,3 +1,5 @@
+mod encrypt;
+
 use const_format::concatcp;
 use openmls::{
     group::{GroupEpoch, MlsGroup, group_context::GroupContext},
@@ -84,4 +86,59 @@ impl TransientMessage {
     pub(super) fn sender(&self) -> LeafNodeIndex {
         self.sender
     }
+}
+
+struct TransientMessageSecrets {
+    aead_nonce: SecretVLBytes,
+    secret_key: zeroize::Zeroizing<Vec<u8>>,
+}
+
+fn transient_message_secrets(
+    crypto_provider: &impl OpenMlsCryptoProvider,
+    aad: &TransientMessageAad,
+    mls_group: &MlsGroup,
+) -> Result<TransientMessageSecrets> {
+    let cipher_suite = mls_group.ciphersuite();
+
+    // Mix both the sender index and the counter into the aead nonce
+    let sender_index_bytes = aad
+        .sender
+        .tls_serialize_detached()
+        .map_err(TlsCodecError::serialize("LeafNodeIndex"))?;
+    let nonce_secret = mls_group
+        .export_secret(
+            crypto_provider,
+            TransientMessage::AEAD_NONCE_SECRET_LABEL,
+            &sender_index_bytes,
+            cipher_suite.hash_length(),
+        )
+        .map_err(OpenMlsError::wrap("exporting aead nonce secret"))?;
+
+    let counter_bytes = aad
+        .counter
+        .tls_serialize_detached()
+        .map_err(TlsCodecError::serialize("TntMessageCounter"))?;
+    let aead_nonce = crypto_provider
+        .crypto()
+        .hkdf_expand(
+            cipher_suite.hash_algorithm(),
+            &nonce_secret,
+            &counter_bytes,
+            cipher_suite.aead_nonce_length(),
+        )
+        .map_err(OpenMlsError::wrap("expanding aead nonce secret to nonce"))?;
+
+    let secret_key = mls_group
+        .export_secret(
+            crypto_provider,
+            TransientMessage::AEAD_SECRET_KEY_LABEL,
+            &sender_index_bytes,
+            cipher_suite.aead_key_length(),
+        )
+        .map_err(OpenMlsError::wrap("exporting aead encryption key"))?;
+
+    Ok(TransientMessageSecrets {
+        aead_nonce,
+        secret_key: secret_key.into(),
+    })
 }
