@@ -281,3 +281,11 @@ pub(crate) fn detect_duplicate_credentials(creds: &[StoredCredential]) -> Vec<(&
     }
     duplicates
 }
+
+/// [`StoredEpochEncryptionKeypair`][crate::entities::StoredEpochEncryptionKeypair] as it appeared prior to v34
+#[derive(core_crypto_macros::Entity)]
+#[entity(table_name = "mls_epoch_encryption_keypairs")]
+pub(crate) struct V33StoredEpochEncryptionKeypair {
+    pub(crate) id: Vec<u8>,
+    pub(crate) keypairs: Vec<u8>,
+}

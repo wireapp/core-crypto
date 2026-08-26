@@ -15,9 +15,9 @@ use crate::{
     },
     entities::{
         MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession, StoredCredential,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredPskBundle,
+        StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle,
     },
-    migrations::LegacyPersistedMlsGroup,
+    migrations::{LegacyPersistedMlsGroup, V33StoredEpochEncryptionKeypair},
 };
 
 pub(crate) mod migrations;
@@ -114,7 +114,7 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
                         StoredCredential,
                         StoredHpkePrivateKey,
                         StoredEncryptionKeyPair,
-                        StoredEpochEncryptionKeypair,
+                        V33StoredEpochEncryptionKeypair,
                         StoredPskBundle,
                         StoredKeypackage,
                         LegacyPersistedMlsGroup,
