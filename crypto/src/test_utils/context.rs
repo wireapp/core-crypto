@@ -8,7 +8,7 @@ use openmls::prelude::{Credential as MlsCredential, ExternalSender, HpkePublicKe
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto};
 use tls_codec::Serialize;
 use uuid::Uuid;
-use wire_e2e_identity::{WireIdentityReader, legacy::device_status::DeviceStatus};
+use wire_e2e_identity::{IdentityStatus, WireIdentityReader};
 use x509_cert::der::Encode;
 
 use crate::{
@@ -295,7 +295,7 @@ impl SessionContext {
             );
             assert_eq!(cert_identity.status, identity.status);
             assert_eq!(cert_identity.thumbprint, identity.thumbprint);
-            assert_eq!(identity.status, DeviceStatus::Valid);
+            assert_eq!(identity.status, IdentityStatus::Valid);
             assert!(!identity.thumbprint.is_empty());
         }
     }

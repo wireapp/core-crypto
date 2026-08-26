@@ -1,10 +1,12 @@
 use openmls::prelude::{Credential, CredentialWithKey};
 use openmls_traits::types::{HashType, SignatureScheme};
-use wire_e2e_identity::{HashAlgorithm, JwsAlgorithm, compute_raw_key_thumbprint, pki_env::PkiEnvironment};
+use wire_e2e_identity::{
+    HashAlgorithm, IdentityStatus, JwsAlgorithm, compute_raw_key_thumbprint, pki_env::PkiEnvironment,
+};
 use x509_cert::{Certificate, der::Decode};
 
 use super::{Error, Result};
-use crate::{CipherSuite, ClientId, CredentialType, DeviceStatus, WireIdentity};
+use crate::{CipherSuite, ClientId, CredentialType, WireIdentity};
 
 #[allow(dead_code)]
 pub(crate) trait CredentialExt {
@@ -46,7 +48,7 @@ impl CredentialExt for CredentialWithKey {
                     client_id,
                     credential_type: CredentialType::Basic,
                     thumbprint,
-                    status: DeviceStatus::Valid,
+                    status: IdentityStatus::Valid,
                     x509_identity: None,
                 })
             }

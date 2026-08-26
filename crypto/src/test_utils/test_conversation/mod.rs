@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use openmls::prelude::group_info::VerifiableGroupInfo;
 use openmls_traits::OpenMlsCryptoProvider as _;
+use wire_e2e_identity::IdentityStatus;
 
 use super::{CredentialType, MessageExt as _, MlsTransportTestExt, SessionContext, TestContext, TestError};
 use crate::{
@@ -346,7 +347,7 @@ impl<'a> TestConversation<'a> {
             new_display_name
         );
         assert_eq!(group_identity.x509_identity.as_ref().unwrap().handle, new_handle);
-        assert_eq!(group_identity.status, crate::DeviceStatus::Valid);
+        assert_eq!(group_identity.status, IdentityStatus::Valid);
         assert!(!group_identity.thumbprint.is_empty());
 
         // the given credential ref
@@ -367,7 +368,7 @@ impl<'a> TestConversation<'a> {
             new_display_name
         );
         assert_eq!(local_identity.x509_identity.as_ref().unwrap().handle, new_handle);
-        assert_eq!(local_identity.status, crate::DeviceStatus::Valid);
+        assert_eq!(local_identity.status, IdentityStatus::Valid);
         assert!(!local_identity.thumbprint.is_empty());
 
         let signature_key = mls_credential_with_key.signature_key;
@@ -387,7 +388,7 @@ impl<'a> TestConversation<'a> {
             new_display_name
         );
         assert_eq!(keystore_identity.x509_identity.as_ref().unwrap().handle, new_handle);
-        assert_eq!(keystore_identity.status, crate::DeviceStatus::Valid);
+        assert_eq!(keystore_identity.status, IdentityStatus::Valid);
         assert!(!keystore_identity.thumbprint.is_empty());
     }
 }

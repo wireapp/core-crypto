@@ -1,4 +1,4 @@
-use wire_e2e_identity::legacy::device_status::DeviceStatus;
+use wire_e2e_identity::IdentityStatus;
 use x509_cert::der::pem::LineEnding;
 
 use super::{Error, Result};
@@ -13,7 +13,7 @@ pub struct WireIdentity {
     /// MLS thumbprint
     pub thumbprint: String,
     /// Status of the Credential at the moment T when this object is created
-    pub status: DeviceStatus,
+    pub status: IdentityStatus,
     /// Indicates whether the credential is Basic or X509
     pub credential_type: CredentialType,
     /// In case 'credential_type' is [CredentialType::X509] this is populated
@@ -59,7 +59,7 @@ impl<'a> TryFrom<(wire_e2e_identity::WireIdentity, &'a [u8])> for WireIdentity {
 
         Ok(Self {
             client_id,
-            status: e2ei_wire_identity.status.into(),
+            status: e2ei_wire_identity.status,
             thumbprint: e2ei_wire_identity.thumbprint,
             credential_type: CredentialType::X509,
             x509_identity: Some(X509Identity {

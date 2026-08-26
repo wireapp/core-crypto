@@ -96,12 +96,10 @@ mod tests {
 
     mod wire_identity_getters {
         use uuid::Uuid;
+        use wire_e2e_identity::IdentityStatus;
 
         use super::Error;
-        use crate::{
-            ClientId, CredentialType, DeviceStatus, E2eiConversationState, mls::conversation::Conversation,
-            test_utils::*,
-        };
+        use crate::{ClientId, CredentialType, E2eiConversationState, mls::conversation::Conversation, test_utils::*};
 
         async fn all_identities_check<const N: usize>(
             conversation: &Conversation,
@@ -126,7 +124,7 @@ mod tests {
         async fn check_identities_device_status<const N: usize>(
             conversation: &Conversation,
             client_ids: &[ClientId; N],
-            device_status: &[DeviceStatus; N],
+            device_status: &[IdentityStatus; N],
         ) {
             let mut identities = conversation.get_device_identities(client_ids).await.unwrap();
 
@@ -235,7 +233,7 @@ mod tests {
                     bob.get_client_id().await,
                     rupert.get_client_id().await,
                 ];
-                let device_status = [DeviceStatus::Valid, DeviceStatus::Valid, DeviceStatus::Revoked];
+                let device_status = [IdentityStatus::Valid, IdentityStatus::Valid, IdentityStatus::Revoked];
 
                 // Do it a multiple times to avoid WPB-6904 happening again
                 for _ in 0..2 {
@@ -279,7 +277,7 @@ mod tests {
 
                 assert!(ios_ids.iter().all(|i| {
                     matches!(i.credential_type, CredentialType::Basic)
-                        && matches!(i.status, DeviceStatus::Valid)
+                        && matches!(i.status, IdentityStatus::Valid)
                         && i.x509_identity.is_none()
                         && !i.thumbprint.is_empty()
                         && i.client_id.is_some()
