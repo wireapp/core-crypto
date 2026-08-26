@@ -50,7 +50,7 @@ impl From<certval::Error> for RustyX509CheckError {
 
 pub type RustyX509CheckResult<T> = Result<T, RustyX509CheckError>;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum IdentityStatus {
     /// All is fine
     Valid,
