@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use wire_e2e_identity::legacy::device_status;
+use wire_e2e_identity::IdentityStatus;
 
 use crate::{ClientId, CredentialType, X509Identity};
 
@@ -50,12 +50,12 @@ pub enum DeviceStatus {
     Revoked = 3,
 }
 
-impl From<device_status::DeviceStatus> for DeviceStatus {
-    fn from(value: device_status::DeviceStatus) -> Self {
+impl From<IdentityStatus> for DeviceStatus {
+    fn from(value: IdentityStatus) -> Self {
         match value {
-            device_status::DeviceStatus::Valid => Self::Valid,
-            device_status::DeviceStatus::Expired => Self::Expired,
-            device_status::DeviceStatus::Revoked => Self::Revoked,
+            IdentityStatus::Valid => Self::Valid,
+            IdentityStatus::Expired => Self::Expired,
+            IdentityStatus::Revoked => Self::Revoked,
         }
     }
 }
