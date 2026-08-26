@@ -304,6 +304,19 @@ impl CoreCryptoContext {
         conversation.encrypt_message(message).await.map_err(Into::into)
     }
 
+    /// Encrypts a transient plaintext message for all members of the given conversation.
+    ///
+    /// Any feature using a targeted, transient or transient targeted message MUST specify why the lower security
+    /// guarantees (compared to MLS application messages) are acceptable and/or how they are mitigated.
+    pub async fn encrypt_transient_message(
+        &self,
+        conversation_id: &ConversationId,
+        message: Vec<u8>,
+    ) -> CoreCryptoResult<Vec<u8>> {
+        let mut conversation = self.inner.conversation(conversation_id.as_ref()).await?;
+        conversation.encrypt_transient(message).await.map_err(Into::into)
+    }
+
     /// Encrypts a plaintext message for one member of the given conversation.
     ///
     /// Any feature using a targeted, transient or transient targeted message MUST specify why the lower security
