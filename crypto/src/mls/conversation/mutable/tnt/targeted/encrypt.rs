@@ -1,7 +1,7 @@
 use std::borrow::Borrow;
 
 use core_crypto_keystore::Database;
-use openmls::prelude::{Ciphersuite, Member, Signable as _};
+use openmls::prelude::{Member, Signable as _};
 use tls_codec::{Serialize as _, TlsSerialize, TlsSize, VLBytes};
 
 use super::{TargetedMessage, TargetedMessageContext, extract_hpke_context_data};
@@ -36,7 +36,6 @@ impl ConversationMut {
         policy: TargetedMessagePolicy,
         message: Vec<u8>,
     ) -> Result<Vec<u8>> {
-        let cipher_suite = self.cipher_suite();
         let crypto_provider = self
             .tx_context
             .crypto_provider()
@@ -51,16 +50,8 @@ impl ConversationMut {
                     .members()
                     .find(|member| ClientIdRef::new(member.credential.identity()) == recipient.borrow())
                     .ok_or_else(|| Error::MemberNotFound(recipient.borrow().to_owned()))?;
-                Self::create_targeted_message(
-                    &database,
-                    policy,
-                    group_state,
-                    &cipher_suite,
-                    &crypto_provider,
-                    &recipient,
-                    &message,
-                )
-                .await
+                Self::create_targeted_message(&database, policy, group_state, &crypto_provider, &recipient, &message)
+                    .await
             })
             .await?;
 
@@ -85,11 +76,10 @@ impl ConversationMut {
         database: &Database,
         policy: TargetedMessagePolicy,
         group_state: &mut MlsGroupState,
-        cipher_suite: &Ciphersuite,
         crypto_provider: &CryptoProvider,
         recipient: &Member,
         message: &[u8],
-    ) -> Result<TargetedMessage, Error> {
+    ) -> Result<TargetedMessage> {
         let counter = group_state
             .obtain_targeted_message_tx_counter(recipient.index, database)
             .await?;
@@ -107,7 +97,7 @@ impl ConversationMut {
         let message = tls_serialize_padded(message).map_err(TlsCodecError::serialize("TargetedMessageContent"))?;
         let payload = crypto_provider
             .hpke_seal_psk(
-                cipher_suite.hpke_config(),
+                mls_group.ciphersuite().hpke_config(),
                 &recipient.encryption_key,
                 &context_data.info,
                 &aad,
