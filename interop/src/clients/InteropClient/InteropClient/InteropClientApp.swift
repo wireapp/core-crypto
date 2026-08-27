@@ -218,8 +218,8 @@ struct InteropClientApp: App {
                 return plaintext.base64EncodedString()
             case .commit, .proposal:
                 return "decrypted protocol message"
-            case .persistedTargeted, .transientTargeted:
-                return "decrypted transient message (currently unused in interop)"
+            case .transient, .persistedTargeted, .transientTargeted:
+                return "decrypted tnt message (currently unused in interop)"
             }
 
         case .initProteus:
