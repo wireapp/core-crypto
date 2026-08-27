@@ -1,6 +1,8 @@
 use core_crypto_keystore::{
     Transaction,
-    entities::{ConversationEpochsOlderThan, TargetedMessageRxCounter, TntSecret, TntSecretPkRef},
+    entities::{
+        ConversationEpochsOlderThan, TargetedMessageRxCounter, TntSecret, TntSecretPkRef, TransientMessageRxCounter,
+    },
     traits::FetchFromDatabase as _,
 };
 use openmls::group::InnerState;
@@ -70,7 +72,9 @@ impl ConversationMut {
             // We can't avoid allocation here because tx needs to own the deletion key.
             let stale_epochs = ConversationEpochsOlderThan::new(id.as_ref().to_vec(), oldest_retained_epoch);
             tx.bulk_remove::<TntSecret, _>(stale_epochs.clone()).await;
-            tx.bulk_remove::<TargetedMessageRxCounter, _>(stale_epochs).await;
+            tx.bulk_remove::<TargetedMessageRxCounter, _>(stale_epochs.clone())
+                .await;
+            tx.bulk_remove::<TransientMessageRxCounter, _>(stale_epochs).await;
         }
 
         group.persist(tx).await?;
