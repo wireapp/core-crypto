@@ -143,3 +143,70 @@ fn transient_message_secrets(
         secret_key: secret_key.into(),
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::test_utils::*;
+
+    #[apply(all_cred_cipher)]
+    async fn can_decrypt_transient_message(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+
+        let message = b"This is a transient message";
+        let encrypted = conversation
+            .guard()
+            .await
+            .encrypt_transient(message.to_vec())
+            .await
+            .unwrap();
+        assert_ne!(&message, &encrypted.as_slice());
+
+        let decrypted = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(encrypted)
+            .await
+            .unwrap()
+            .into_transient()
+            .unwrap()
+            .plaintext;
+
+        assert_eq!(&decrypted, &message);
+    }
+
+    #[apply(all_cred_cipher)]
+    async fn cant_decrypt_same_transient_message_twice(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+
+        let message = b"This is a transient message";
+        let encrypted = conversation
+            .guard()
+            .await
+            .encrypt_transient(message.to_vec())
+            .await
+            .unwrap();
+        assert_ne!(&message, &encrypted.as_slice());
+
+        let decrypted = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(&encrypted)
+            .await
+            .unwrap()
+            .into_transient()
+            .unwrap()
+            .plaintext;
+
+        assert_eq!(&decrypted, &message);
+
+        let error = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(encrypted)
+            .await
+            .unwrap_err();
+        assert!(matches!(error, crate::mls::conversation::Error::DuplicateMessage));
+    }
+}
