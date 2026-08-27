@@ -7,29 +7,20 @@ use core_crypto_keystore::{
 };
 use openmls::{
     group::{MlsGroup, group_context::GroupContext},
-    prelude::{CredentialWithKey, HpkePrivateKey, Member},
+    prelude::{HpkePrivateKey, Member},
     treesync::EncryptionKey,
 };
-use openmls_traits::{
-    OpenMlsCryptoProvider as _,
-    key_store::{MlsEntity, MlsEntityId},
-};
+use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 use serde::{Deserialize, Serialize};
 use tls_codec::{Deserialize as _, Serialize as _, VLBytes};
 
 use super::{HpkeContextData, PskId, TargetedMessageContext, derive_targeted_message_psk, extract_hpke_context_data};
 use crate::{
     CryptoProvider, DecryptedMessage, KeystoreError, OpenMlsError, RecursiveError, TlsCodecError,
-    mls::{
-        conversation::{
-            ConversationMut, Error, MlsGroupState, Result, TargetedMessagePolicy,
-            config::{MAX_FUTURE_EPOCHS, MAX_PAST_EPOCHS},
-            mutable::{
-                decrypt::DecryptedBytes,
-                tnt::{ProtocolVersion, TargetedMessage},
-            },
-        },
-        credential::ext::CredentialExt,
+    mls::conversation::{
+        ConversationMut, Error, MlsGroupState, Result, TargetedMessagePolicy,
+        config::{MAX_FUTURE_EPOCHS, MAX_PAST_EPOCHS},
+        mutable::tnt::{ProtocolVersion, TargetedMessage},
     },
 };
 
@@ -96,21 +87,6 @@ impl ConversationMut {
             .map_err(TlsCodecError::deserialize("TargetedMessageContent"))?
             .into();
 
-        let sender_credential_with_key = CredentialWithKey {
-            credential: sender.credential.clone(),
-            signature_key: sender.signature_key.clone().into(),
-        };
-        let pki_env = crypto_provider.authentication_service().pki_env().await;
-        let identity = sender_credential_with_key
-            .extract_identity(*cipher_suite, pki_env.as_deref())
-            .await
-            .map_err(RecursiveError::mls_credential("extracting identity"))?;
-        let sender_client_id = sender
-            .credential
-            .identity()
-            .try_into()
-            .map_err(RecursiveError::mls_client("client id from credential"))?;
-
         let tx = self
             .tx_context
             .inner()
@@ -126,11 +102,7 @@ impl ConversationMut {
         .await
         .map_err(KeystoreError::wrap("persisting TargetedMessageRxCounter"))?;
 
-        let decrypted_bytes = DecryptedBytes {
-            plaintext,
-            sender_client_id,
-            identity,
-        };
+        let decrypted_bytes = self.extract_sender_id(sender, plaintext).await?;
 
         match policy {
             TargetedMessagePolicy::Transient => Ok(DecryptedMessage::TransientTargeted(decrypted_bytes)),
