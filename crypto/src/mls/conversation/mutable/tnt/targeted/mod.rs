@@ -12,7 +12,7 @@ use tls_codec::{Serialize as _, TlsDeserialize, TlsSerialize, TlsSize};
 
 use self::encrypt::TargetedMessagePolicy;
 use super::{ProtocolVersion, Result, tnt_message_counter::TntMessageCounter};
-use crate::{ConversationConfiguration, OpenMlsError, TlsCodecError};
+use crate::{OpenMlsError, TlsCodecError};
 
 /// Used to parameterize HPKE Seal/Open.
 /// Not carried with the payload, constructed freshly when decrypting.
@@ -72,7 +72,6 @@ pub(super) struct TargetedMessage {
 }
 
 impl TargetedMessage {
-    pub(super) const PADDING_SIZE: usize = ConversationConfiguration::PADDING_SIZE;
     pub(super) const SIGN_LABEL_PERSISTED: &str =
         concatcp!("TntMessageTBS-Persisted-Targeted v", ProtocolVersion::CURRENT.as_u16());
     pub(super) const SIGN_LABEL_TRANSIENT: &str =

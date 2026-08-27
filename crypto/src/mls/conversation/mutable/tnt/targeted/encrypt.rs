@@ -1,15 +1,15 @@
 use std::borrow::Borrow;
 
 use core_crypto_keystore::Database;
-use openmls::prelude::{Member, Signable as _};
-use tls_codec::{Serialize as _, TlsSerialize, TlsSize, VLBytes};
+use openmls::prelude::Member;
+use tls_codec::{Serialize as _, TlsSerialize, TlsSize};
 
 use super::{TargetedMessage, TargetedMessageContext, extract_hpke_context_data};
 use crate::{
     ClientIdRef, CryptoProvider, OpenMlsError, RecursiveError, TlsCodecError,
     mls::conversation::{
         ConversationMut, Error, MlsGroupState, Result,
-        mutable::tnt::{TntMessage, TntMessageTBS},
+        mutable::tnt::{TntMessageTBS, tls_serialize_padded},
     },
 };
 
@@ -59,17 +59,7 @@ impl ConversationMut {
             TargetedMessagePolicy::Transient => TntMessageTBS::new_transient_targeted(targeted),
             TargetedMessagePolicy::Persisted => TntMessageTBS::new_targeted(targeted),
         };
-
-        let credential = self.find_current_credential().await?;
-        let signature_key = credential.signature_key();
-        let signed_message: TntMessage = tbs
-            .sign(signature_key)
-            .map_err(OpenMlsError::wrap("signing TntMessageTBS"))?;
-
-        signed_message
-            .tls_serialize_detached()
-            .map_err(TlsCodecError::serialize("TntMessage: targeted"))
-            .map_err(Into::into)
+        self.sign_tnt_message(tbs).await
     }
 
     async fn create_targeted_message(
@@ -114,11 +104,4 @@ impl ConversationMut {
         let targeted = TargetedMessage::new(counter, sender, recipient.index, epoch, group_id.clone(), payload);
         Ok(targeted)
     }
-}
-
-fn tls_serialize_padded(message: &[u8]) -> Result<Vec<u8>, tls_codec::Error> {
-    // VLBytes includes a length prefix, so whoever decrypts the ciphertext will know the payload length.
-    let mut payload = VLBytes::from(message).tls_serialize_detached()?;
-    payload.resize(payload.len().next_multiple_of(TargetedMessage::PADDING_SIZE), 0);
-    Ok(payload)
 }
