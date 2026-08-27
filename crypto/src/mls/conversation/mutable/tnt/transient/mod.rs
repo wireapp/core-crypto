@@ -1,3 +1,4 @@
+mod decrypt;
 mod encrypt;
 
 use const_format::concatcp;
