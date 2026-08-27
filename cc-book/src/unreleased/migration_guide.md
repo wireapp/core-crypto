@@ -6,8 +6,9 @@
 ## DecryptedMessage
 
 `DecryptedMessage.Text` and `BufferedDecryptedMessage.Text` have been renamed to `DecryptedMessage.ApplicationMessage`
-and `BufferedDecryptedMessage.ApplicationMessage`, respectively. Both enums now also include `TransientTargeted` and
-`PersistedTargeted` variants. Match on all five `DecryptedMessage` variants before accessing their data:
+and `BufferedDecryptedMessage.ApplicationMessage`, respectively. Both enums now also include `Transient`,
+`TransientTargeted` and `PersistedTargeted` variants. Match on all `DecryptedMessage` variants before accessing their
+data:
 
 <!-- langtabs-start -->
 
@@ -21,6 +22,9 @@ if (DecryptedMessage.ApplicationMessage.instanceOf(decryptedMessage)) {
 } else if (DecryptedMessage.Proposal.instanceOf(decryptedMessage)) {
     const { delay, identity } = decryptedMessage.inner;
     // Handle the proposal.
+} else if (DecryptedMessage.Transient.instanceOf(decryptedMessage)) {
+    const { plaintext, senderClientId, identity } = decryptedMessage.inner;
+    // Handle the transient message.
 } else if (DecryptedMessage.TransientTargeted.instanceOf(decryptedMessage)) {
     const { plaintext, senderClientId, identity } = decryptedMessage.inner;
     // Handle the transient targeted message.
@@ -38,6 +42,8 @@ case let .commit(isActive, bufferedMessages, identity):
     // Handle the commit.
 case let .proposal(delay, identity):
     // Handle the proposal.
+case let .transient(plaintext, senderClientId, identity):
+    // Handle the transient message.
 case let .transientTargeted(plaintext, senderClientId, identity):
     // Handle the transient targeted message.
 case let .persistedTargeted(plaintext, senderClientId, identity):
@@ -58,6 +64,10 @@ when (decryptedMessage) {
     is DecryptedMessage.Proposal -> {
         val (delay, identity) = decryptedMessage
         // Handle the proposal.
+    }
+    is DecryptedMessage.Transient -> {
+        val (plaintext, senderClientId, identity) = decryptedMessage
+        // Handle the transient message.
     }
     is DecryptedMessage.TransientTargeted -> {
         val (plaintext, senderClientId, identity) = decryptedMessage

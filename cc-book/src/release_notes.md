@@ -1,5 +1,14 @@
 # Release Notes
 
+## Unreleased
+
+- CoreCrypto now supports encrypting and decrypting transient messages. Transient messages are encrypted and decrypted
+  for/from group members without affecting the cryptographic state of the group, which enables their use case: to be
+  distributed only to currently online group members.
+- CoreCrypto now also supports encrypting and decrypting targeted messages. A Targeted message is encrypted for a single
+  group member specifically. This enables the long-awaited read receipts feature for MLS. Regular MLS messages aren't a
+  good fit for read receipts because of the massive amount of irrelevant messages that would need to be distributed.
+
 ## CoreCrypto 10
 
 ### v10.4.0 - 2026-08-19
