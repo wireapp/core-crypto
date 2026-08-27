@@ -1,6 +1,6 @@
 import { runOnPlatform, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { ConversationId, type CommitBundle } from "#core-crypto";
+import { ConversationId } from "#core-crypto";
 import { expect } from "chai";
 
 beforeEach(async () => {
@@ -62,7 +62,7 @@ describe("core crypto errors", () => {
     it("should be correct when message rejected", async () => {
         const result = await runOnPlatform(async () => {
             const transport_override = {
-                async sendCommitBundle(_: CommitBundle) {
+                async sendCommitBundle() {
                     throw ccModule.MlsTransportError.MessageRejected.new({
                         reason: "just testing",
                     });
