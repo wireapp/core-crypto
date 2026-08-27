@@ -6,8 +6,80 @@ overrides:
     license: Apache-2.0
     comment: "This is detected as GPL 3.0, but the project page at https://github.com/carl-wallace/rust-pki specifies this is dual licensed under Apache-2.0 and MIT. For this project we elect to use Apache-2.0."
 
+  - name: activity
+    license: Apache-2.0
+    author: The Android Open Source Project
+
+  - name: jna
+    license: Apache-2.0
+    author: Java Native Access contributors
+
+  - name: kotlinx-coroutines-core
+    license: Apache-2.0
+    author: JetBrains s.r.o. and contributors
+
+  - name: kotlinx-datetime
+    license: Apache-2.0
+    author: JetBrains s.r.o. and contributors
+
+  - name: kotlinx-serialization-json
+    license: Apache-2.0
+    author: JetBrains s.r.o. and contributors
+    
+subfolders:
+  - crypto-ffi
+  - crypto-ffi/bindings
+  - crypto-macros
+  - e2e-identity
+  - interop
+  - interop/src/clients/gradle
+  - keystore
+  - obfuscate
+
+manual_dependency_entries:
+  - name: "@ubjs/core"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node-darwin-arm64"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node-darwin-x64"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node-linux-arm64-gnu"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node-linux-arm64-musl"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node-linux-x64-gnu"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node-linux-x64-musl"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node-win32-arm64-msvc"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node-win32-x64-msvc"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+
 ignore.proc-macros:
-  comment: proc-macro crate - it runs inside the compiler and is not linked into the shipped artifacts
+  comment: it runs inside the compiler and is not linked into the shipped artifacts
   entries:
     - accessory
     - askama_derive
@@ -57,10 +129,6 @@ ignore.proc-macros:
     - zerofrom-derive
     - zeroize_derive
     - zerovec-derive
-
-ignore.proc-macro-support:
-  comment: compile-time only - reachable only through proc-macro crates (code generation)
-  entries:
     - askama_parser
     - basic-toml
     - bumpalo
@@ -131,3 +199,87 @@ ignore.windows-unused-abis:
     - windows_i686_msvc
     - windows_x86_64_gnu
     - windows_x86_64_gnullvm
+
+ignore.build-time-only:
+  comment: compile, publish or test-time only
+  entries:
+    - kotlin-gradle-plugin
+    - dev.*
+    - assertj-core
+    - org.jetbrains.kotlin.plugin.*
+    - io.github.gradle-nexus.publish-plugin
+    - gradle
+    - com.android.library
+    - com.android.application
+    - espresso-core
+    - org.jetbrains.dokka
+    - org.jetbrains.kotlin.android
+    - "*-test"
+    - "*-bom"
+
+
+ignore.jvm-test-and-benchmark:
+  comment: test and benchmark harnesses, and what they pull in
+  entries:
+    - "jmh-*"
+    - "junit-jupiter-*"
+    - "junit-platform-*"
+    - "kotlin-test*"
+    - "kotlinx-coroutines-test*"
+    - opentest4j
+    - byte-buddy
+    - jopt-simple
+    - commons-math3
+
+ignore.kotlin-toolchain:
+  comment: the Kotlin compiler, its build daemon and the native/swift export tooling
+  entries:
+    - "kotlin-build-tools-*"
+    - "kotlin-compiler*"
+    - "kotlin-daemon-*"
+    - "kotlin-scripting-*"
+    - kotlin-script-runtime
+    - kotlin-native-prebuilt
+    - kotlin-tooling-core
+    - kotlin-reflect
+    - swift-export-embeddable
+    - asm
+
+ignore.dokka:
+  comment: the API documentation generator, and what it pulls in
+  entries:
+    - "dokka-*"
+    - "analysis-*"
+    - templating-plugin
+    - "markdown*"
+    - kotlinx-html-jvm
+    - freemarker
+    - jsoup
+    - "jackson-*"
+    - woodstox-core
+    - stax2-api
+
+ignore.detekt:
+  comment: the static analysis pass, and what it pulls in
+  entries:
+    - "detekt-*"
+    - "sarif4k*"
+    - "poko-annotations*"
+    - snakeyaml-engine
+    - caffeine
+    - jcommander
+    - "opentelemetry-*"
+
+ignore.artifact-signing:
+  comment: the crypto provider of the Gradle signing plugin - it signs the artifacts, it is not part of them
+  entries:
+    - "bc*-jdk18on"
+
+ignore.cdxgen-version-catalog-misparse:
+  comment: >-
+    cdxgen mis-reads `version = { prefer = ... }` in a Gradle version catalog and emits
+    the component with the literal version `{prefer`; the same components are read
+    correctly from the catalog itself
+  entries:
+    - name: "*"
+      version: "{prefer"
