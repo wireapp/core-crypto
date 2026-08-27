@@ -26,6 +26,30 @@ operations available on `CoreCrypto` is intentionally kept narrow.
 Any operation that might change state — creating or deleting a conversation, adding members, encrypting or decrypting a
 message — requires a transaction.
 
+## Lifetimes
+
+The lifetime for objects created by `CoreCrypto` vary slightly depending on the platform. Objects have a rust
+counterpart, and the rust counterpart might hold on to resources like files or database connections. When exactly the
+rust counterpart and its resources are freed depends on the platform.
+
+### Swift
+
+When last reference to the object is dropped and `deinit` runs.
+
+### Kotlin
+
+When the object is garbage collected or explicitly closed by calling `close()`
+([Autocloseable](https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-auto-closeable.html)).
+
+More details: https://mozilla.github.io/uniffi-rs/latest/kotlin/lifetimes.html
+
+### TypeScript
+
+When the object is garbage collected or explicitly destroyed by calling `uniffiDestroy()`.
+
+More Details:
+https://jhugman.github.io/uniffi-bindgen-react-native/idioms/gc.html#garbage-collected-objects-trigger-a-drop-call-into-rust
+
 ## Lifecycle
 
 A `CoreCrypto` instance is typically created once at application startup and kept alive for the life of the process. The
