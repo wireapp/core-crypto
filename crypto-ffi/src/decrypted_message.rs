@@ -5,11 +5,16 @@ use core_crypto::{BufferedDecryptedMessage as CcBufferedDecryptedMessage, Decryp
 use crate::{ClientId, WireIdentity};
 
 /// Represents the items a consumer might require after decrypting a message.
+//
+// Implementation note: from a pure rust perspective, it would be desirable to use tuple-struct-like variants where
+// structure is equal. However, uniffi's generated code isn't particularly nice with those kind of variants, because it
+// generates classes with members named after their index in the tuple, which isn't idiomatic in any of our target
+// languages.
 #[derive(Debug, uniffi::Enum)]
 pub enum DecryptedMessage {
     /// The decrypted message is an MLS application message.
     ApplicationMessage {
-        /// Decrypted text message.
+        /// Decrypted message.
         plaintext: Vec<u8>,
         /// The sender's `ClientId`.
         sender_client_id: Arc<ClientId>,
@@ -37,9 +42,18 @@ pub enum DecryptedMessage {
         /// Identity claims present in the sender credential.
         identity: WireIdentity,
     },
+    /// The decrypted message is a transient message.
+    Transient {
+        /// Decrypted message.
+        plaintext: Vec<u8>,
+        /// The sender's `ClientId`.
+        sender_client_id: Arc<ClientId>,
+        /// Identity claims present in the sender credential.
+        identity: WireIdentity,
+    },
     /// The decrypted message is a transient targeted message.
     TransientTargeted {
-        /// Decrypted text message.
+        /// Decrypted message.
         plaintext: Vec<u8>,
         /// The sender's `ClientId`.
         sender_client_id: Arc<ClientId>,
@@ -48,7 +62,7 @@ pub enum DecryptedMessage {
     },
     /// The decrypted message is a persisted targeted message.
     PersistedTargeted {
-        /// Decrypted text message.
+        /// Decrypted message.
         plaintext: Vec<u8>,
         /// The sender's `ClientId`.
         sender_client_id: Arc<ClientId>,
@@ -76,6 +90,11 @@ impl From<CcDecryptedMessage> for DecryptedMessage {
                 delay: proposal.delay,
                 identity: proposal.identity.into(),
             },
+            CcDecryptedMessage::Transient(message) => Self::Transient {
+                plaintext: message.plaintext,
+                sender_client_id: Arc::new(message.sender_client_id.into()),
+                identity: message.identity.into(),
+            },
             CcDecryptedMessage::TransientTargeted(message) => Self::TransientTargeted {
                 plaintext: message.plaintext,
                 sender_client_id: Arc::new(message.sender_client_id.into()),
@@ -96,7 +115,7 @@ impl From<CcDecryptedMessage> for DecryptedMessage {
 pub enum BufferedDecryptedMessage {
     /// The decrypted message is an MLS application message.
     ApplicationMessage {
-        /// Decrypted text message.
+        /// Decrypted message.
         plaintext: Vec<u8>,
         /// The sender's `ClientId`.
         sender_client_id: Arc<ClientId>,
@@ -121,9 +140,18 @@ pub enum BufferedDecryptedMessage {
         /// Identity claims present in the sender credential.
         identity: WireIdentity,
     },
+    /// The decrypted message is a transient message.
+    Transient {
+        /// Decrypted message.
+        plaintext: Vec<u8>,
+        /// The sender's `ClientId`.
+        sender_client_id: Arc<ClientId>,
+        /// Identity claims present in the sender credential.
+        identity: WireIdentity,
+    },
     /// The decrypted message is a transient targeted message.
     TransientTargeted {
-        /// Decrypted text message.
+        /// Decrypted message.
         plaintext: Vec<u8>,
         /// The sender's `ClientId`.
         sender_client_id: Arc<ClientId>,
@@ -132,7 +160,7 @@ pub enum BufferedDecryptedMessage {
     },
     /// The decrypted message is a persisted targeted message.
     PersistedTargeted {
-        /// Decrypted text message.
+        /// Decrypted message.
         plaintext: Vec<u8>,
         /// The sender's `ClientId`.
         sender_client_id: Arc<ClientId>,
@@ -156,6 +184,11 @@ impl From<CcBufferedDecryptedMessage> for BufferedDecryptedMessage {
             CcBufferedDecryptedMessage::Proposal(proposal) => Self::Proposal {
                 delay: proposal.delay,
                 identity: proposal.identity.into(),
+            },
+            CcBufferedDecryptedMessage::Transient(message) => Self::Transient {
+                plaintext: message.plaintext,
+                sender_client_id: Arc::new(message.sender_client_id.into()),
+                identity: message.identity.into(),
             },
             CcBufferedDecryptedMessage::TransientTargeted(message) => Self::TransientTargeted {
                 plaintext: message.plaintext,
