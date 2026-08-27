@@ -1,7 +1,7 @@
 use core_crypto_keystore::{
     entities::{
-        StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef, TargetedMessageRxCounter,
-        TargetedMessageRxCounterPkRef, TntSecret, TntSecretPkRef,
+        MessageRxCounterPkRef, StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef,
+        TargetedMessageRxCounter, TntSecret, TntSecretPkRef,
     },
     traits::FetchFromDatabase as _,
 };
@@ -58,7 +58,7 @@ impl ConversationMut {
         }
 
         let database = self.database().await?;
-        let counter_pk = TargetedMessageRxCounterPkRef::new(self.id.as_ref(), message.sender().u32(), group_epoch);
+        let counter_pk = MessageRxCounterPkRef::new(self.id.as_ref(), message.sender().u32(), group_epoch);
         let existing_counter = database
             .get_borrowed::<TargetedMessageRxCounter>(counter_pk)
             .await
