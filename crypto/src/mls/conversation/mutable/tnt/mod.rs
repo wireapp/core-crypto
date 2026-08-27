@@ -102,7 +102,7 @@ impl TntMessageTBS {
 
     pub(super) fn sender_index(&self) -> LeafNodeIndex {
         match &self.body {
-            TntMessageBody::Transient(_) => todo!(),
+            TntMessageBody::Transient(transient_message) => transient_message.sender(),
             TntMessageBody::Targeted(targeted_message) | TntMessageBody::TransientTargeted(targeted_message) => {
                 targeted_message.sender()
             }
@@ -153,7 +153,7 @@ impl openmls::prelude::Verifiable for TntMessage {
 
     fn label(&self) -> &str {
         match self.content.body {
-            TntMessageBody::Transient(_) => todo!(),
+            TntMessageBody::Transient(_) => TransientMessage::SIGN_LABEL,
             TntMessageBody::Targeted(_) => TargetedMessage::SIGN_LABEL_PERSISTED,
             TntMessageBody::TransientTargeted(_) => TargetedMessage::SIGN_LABEL_TRANSIENT,
         }
@@ -187,7 +187,10 @@ impl ConversationMut {
             .map_err(OpenMlsError::wrap("verifying tnt message signature"))?;
 
         match message.content.body {
-            TntMessageBody::Transient(_) => todo!(),
+            TntMessageBody::Transient(transient_message) => {
+                self.decrypt_transient(transient_message, protocol_version, &sender)
+                    .await
+            }
             TntMessageBody::Targeted(targeted_message) => {
                 self.decrypt_targeted(
                     targeted_message,

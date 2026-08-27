@@ -55,6 +55,11 @@ pub enum Error {
     MlsGroupInvalidState(&'static str),
     #[error("MLS message is in an invalid state: {0}")]
     MlsMessageInvalidState(&'static str),
+    #[error(
+        "A transient message can only be decrypted in the same epoch as it was sent.
+        Message eppoch: {message_epoch}, group epoch: {group_epoch}."
+    )]
+    InvalidTransientMessageEpoch { group_epoch: u64, message_epoch: u64 },
     #[error("The group lacks an ExternalSender extension whereas it should have at least one")]
     MissingExternalSenderExtension,
     #[error("unexpectedly failed to retrieve group info")]
