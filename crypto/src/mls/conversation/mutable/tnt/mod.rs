@@ -2,7 +2,9 @@ mod targeted;
 mod tnt_message_counter;
 mod transient;
 
-use openmls::prelude::{LeafNodeIndex, OpenMlsSignaturePublicKey, Signable as _, Signature, Verifiable as _};
+use openmls::prelude::{
+    CredentialWithKey, LeafNodeIndex, Member, OpenMlsSignaturePublicKey, Signable as _, Signature, Verifiable as _,
+};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Serialize, TlsDeserialize, TlsSerialize, TlsSize, VLBytes};
 
@@ -11,8 +13,11 @@ pub use self::targeted::encrypt::TargetedMessagePolicy;
 pub(crate) use self::tnt_message_counter::TntMessageCounter;
 use super::Result;
 use crate::{
-    ConversationConfiguration, DecryptedMessage, OpenMlsError, TlsCodecError,
-    mls::conversation::{ConversationMut, Error, mutable::tnt::transient::TransientMessage},
+    ConversationConfiguration, DecryptedBytes, DecryptedMessage, OpenMlsError, RecursiveError, TlsCodecError,
+    mls::{
+        conversation::{ConversationMut, Error, mutable::tnt::transient::TransientMessage},
+        credential::ext::CredentialExt as _,
+    },
 };
 
 const PADDING_SIZE: usize = ConversationConfiguration::PADDING_SIZE;
@@ -216,6 +221,31 @@ impl ConversationMut {
             .tls_serialize_detached()
             .map_err(TlsCodecError::serialize("TntMessage"))
             .map_err(Into::into)
+    }
+
+    /// The final step after decrypting a tnt message: extract the sender client id and format as [DecryptedBytes].
+    async fn extract_sender_id(&self, sender: &Member, plaintext: Vec<u8>) -> Result<DecryptedBytes> {
+        let crypto_provider = self.crypto_provider().await?;
+        let sender_credential_with_key = CredentialWithKey {
+            credential: sender.credential.clone(),
+            signature_key: sender.signature_key.clone().into(),
+        };
+        let pki_env = crypto_provider.authentication_service().pki_env().await;
+        let identity = sender_credential_with_key
+            .extract_identity(self.cipher_suite(), pki_env.as_deref())
+            .await
+            .map_err(RecursiveError::mls_credential("extracting identity"))?;
+        let sender_client_id = sender
+            .credential
+            .identity()
+            .try_into()
+            .map_err(RecursiveError::mls_client("client id from credential"))?;
+        let decrypted_bytes = DecryptedBytes {
+            plaintext,
+            sender_client_id,
+            identity,
+        };
+        Ok(decrypted_bytes)
     }
 }
 
