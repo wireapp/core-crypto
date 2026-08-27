@@ -107,4 +107,36 @@ describe("conversation", () => {
         expect(results.persistedPlaintext).to.equal(results.persistedMessage);
         expect(results.transientPlaintext).to.equal(results.transientMessage);
     });
+
+    it("should allow decrypting transient messages", async () => {
+        const results = await runOnPlatform(async () => {
+            const alice = await helpers.ccInit();
+            const bob = await helpers.ccInit();
+            const conversationId = await helpers.createConversation(alice);
+            await helpers.invite(alice, bob, conversationId);
+
+            const message = new TextEncoder().encode(
+                "This is a transient message"
+            );
+            const ciphertext = await alice.transaction((ctx) =>
+                ctx.encryptTransientMessage(conversationId, message)
+            );
+            const decrypted = await bob.transaction((ctx) =>
+                ctx.decryptMessage(conversationId, ciphertext)
+            );
+
+            const decoder = new TextDecoder();
+
+            return {
+                message: decoder.decode(message),
+                plaintext: ccModule.DecryptedMessage.Transient.instanceOf(
+                    decrypted
+                )
+                    ? decoder.decode(decrypted.inner.plaintext)
+                    : "wrong decrypted variant",
+            };
+        });
+
+        expect(results.plaintext).to.equal(results.message);
+    });
 });
