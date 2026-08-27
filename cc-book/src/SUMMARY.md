@@ -5,10 +5,10 @@
 # Concepts
 
 - [Proteus](concepts/proteus.md)
-- [MLS](concepts/mls/overview.md)
-  - [The Database](concepts/mls/database.md)
-  - [The Client](concepts/mls/client.md)
-  - [Transactions](concepts/mls/transactions.md)
+- [MLS](concepts/mls.md)
+- [The Client](concepts/client/overview.md)
+  - [The Database](concepts/client/database.md)
+  - [Transactions](concepts/client/transactions.md)
 
 # Unreleased
 
