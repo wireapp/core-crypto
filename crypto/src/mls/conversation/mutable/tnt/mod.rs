@@ -2,18 +2,20 @@ mod targeted;
 mod tnt_message_counter;
 mod transient;
 
-use openmls::prelude::{LeafNodeIndex, OpenMlsSignaturePublicKey, Signature, Verifiable as _};
+use openmls::prelude::{LeafNodeIndex, OpenMlsSignaturePublicKey, Signable as _, Signature, Verifiable as _};
 use openmls_traits::OpenMlsCryptoProvider;
-use tls_codec::{Serialize, TlsDeserialize, TlsSerialize, TlsSize};
+use tls_codec::{Serialize, TlsDeserialize, TlsSerialize, TlsSize, VLBytes};
 
 use self::targeted::TargetedMessage;
 pub use self::targeted::encrypt::TargetedMessagePolicy;
 pub(crate) use self::tnt_message_counter::TntMessageCounter;
 use super::Result;
 use crate::{
-    DecryptedMessage, OpenMlsError,
+    ConversationConfiguration, DecryptedMessage, OpenMlsError, TlsCodecError,
     mls::conversation::{ConversationMut, Error, mutable::tnt::transient::TransientMessage},
 };
+
+const PADDING_SIZE: usize = ConversationConfiguration::PADDING_SIZE;
 
 /// The version of the Transient and Targeted Messages protocol.
 #[derive(Clone, Copy, PartialEq, Eq, TlsSize, TlsSerialize, TlsDeserialize)]
@@ -201,4 +203,26 @@ impl ConversationMut {
             }
         }
     }
+
+    /// The final steps of each tnt message encryption procedure: sign, format as [TntMessage] and serialize.
+    async fn sign_tnt_message(&self, tbs: TntMessageTBS) -> Result<Vec<u8>> {
+        let credential = self.find_current_credential().await?;
+        let signature_key = credential.signature_key();
+        let signed_message: TntMessage = tbs
+            .sign(signature_key)
+            .map_err(OpenMlsError::wrap("signing TntMessageTBS"))?;
+
+        signed_message
+            .tls_serialize_detached()
+            .map_err(TlsCodecError::serialize("TntMessage"))
+            .map_err(Into::into)
+    }
+}
+
+/// Used for plaintext padding before encrypting tnt messages.
+fn tls_serialize_padded(message: &[u8]) -> Result<Vec<u8>, tls_codec::Error> {
+    // VLBytes includes a length prefix, so whoever decrypts the ciphertext will know the payload length.
+    let mut payload = VLBytes::from(message).tls_serialize_detached()?;
+    payload.resize(payload.len().next_multiple_of(PADDING_SIZE), 0);
+    Ok(payload)
 }
