@@ -280,6 +280,28 @@ class MLSTest {
     }
 
     @Test
+    fun encryptTransientMessage_should_encrypt_then_receiver_should_decrypt() = runTest {
+        val alice = ccInit()
+        val bob = ccInit()
+
+        val conversationId = createConversation(alice)
+        invite(alice, bob, conversationId)
+
+        val message = "This is a transient message".toByteArray()
+        val ciphertext = alice.transaction { ctx ->
+            ctx.encryptTransientMessage(conversationId, message)
+        }
+        assertThat(ciphertext).isNotEqualTo(message)
+
+        val plaintext = bob.transaction { ctx ->
+            assertIs<DecryptedMessage.Transient>(
+                ctx.decryptMessage(conversationId, ciphertext)
+            ).plaintext
+        }
+        assertThat(plaintext).isEqualTo(message)
+    }
+
+    @Test
     fun addClientsToConversation_should_add_members_to_the_MLS_group() = runTest {
         val aliceId = genClientId()
         val alice = ccInit(CcInitOptions(clientId = aliceId))

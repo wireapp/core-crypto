@@ -667,6 +667,35 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertEqual(plaintext, transientMessage)
     }
 
+    func testTransientMessagesCanBeDecrypted() async throws {
+        let alice = try await ccInit()
+        let bob = try await ccInit()
+
+        let conversationId = try await createConversation(coreCrypto: alice)
+        _ = try await invite(cc1: alice, cc2: bob, conversationId: conversationId)
+
+        let message = Data("This is a transient message".utf8)
+        let ciphertext = try await alice.transaction { ctx in
+            try await ctx.encryptTransientMessage(
+                conversationId: conversationId,
+                message: message
+            )
+        }
+        XCTAssertNotEqual(ciphertext, message)
+
+        let decrypted = try await bob.transaction { ctx in
+            try await ctx.decryptMessage(
+                conversationId: conversationId,
+                payload: ciphertext
+            )
+        }
+        guard case .transient(let plaintext, _, _) = decrypted else {
+            XCTFail("Expected a decrypted transient message")
+            return
+        }
+        XCTAssertEqual(plaintext, message)
+    }
+
     func testRegisterEpochObserverShouldNotifyObserverOnNewEpoch() async throws {
         struct Epoch: Equatable {
             let conversationId: ConversationId
