@@ -1,4 +1,8 @@
-use rusqlite::{ToSql, types::ToSqlOutput};
+use obfuscate::Obfuscate;
+use rusqlite::{
+    ToSql,
+    types::{FromSql, FromSqlResult, ToSqlOutput, ValueRef},
+};
 
 /// Type-safe reference to a conversation id.
 ///
@@ -6,7 +10,17 @@ use rusqlite::{ToSql, types::ToSqlOutput};
 /// callers almost always want every buffered message of one conversation at once. This type is the search key
 /// which makes that possible.
 #[derive(
-    Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, derive_more::From, derive_more::Into, derive_more::Deref,
+    core_crypto_macros::Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    serde::Serialize,
+    derive_more::From,
+    derive_more::Into,
+    derive_more::Deref,
+    derive_more::DerefMut,
+    serde::Deserialize,
 )]
 #[deref(forward)]
 pub struct ConversationId(Vec<u8>);
@@ -36,13 +50,19 @@ impl ConversationId {
     }
 }
 
+impl Obfuscate for ConversationId {
+    fn obfuscate(&self, f: &mut std::fmt::Formatter<'_>) -> core::fmt::Result {
+        self.0.obfuscate(f)
+    }
+}
+
 /// Reference to a ConversationId.
 ///
 /// This type is `!Sized` and is only ever seen as a reference, like `str` or `[u8]`.
 //
 // pattern from https://stackoverflow.com/a/64990850
 #[repr(transparent)]
-#[derive(PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ConversationIdRef([u8]);
 
 impl ConversationIdRef {
@@ -68,6 +88,18 @@ impl AsRef<[u8]> for ConversationIdRef {
 impl ToSql for ConversationIdRef {
     fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
         self.as_ref().to_sql()
+    }
+}
+
+impl ToSql for ConversationId {
+    fn to_sql(&self) -> rusqlite::Result<ToSqlOutput<'_>> {
+        self.bytes().to_sql()
+    }
+}
+
+impl FromSql for ConversationId {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        Vec::<u8>::column_result(value).map(Self)
     }
 }
 
