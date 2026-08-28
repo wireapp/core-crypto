@@ -82,7 +82,7 @@ impl TransactionContext {
             .map_err(KeystoreError::wrap("looking for a group of a removed conversation"))?
             .is_some();
         let pending_group_exists = tx
-            .get_borrowed::<PersistedMlsPendingGroup>(id.as_ref())
+            .get_borrowed::<PersistedMlsPendingGroup>(id.into())
             .await
             .map_err(KeystoreError::wrap(
                 "looking for a pending group of a removed conversation",
@@ -107,7 +107,7 @@ impl TransactionContext {
         let inner = self.inner().await?;
         let Some(pending_group) = inner
             .transaction
-            .get_borrowed::<PersistedMlsPendingGroup>(id.as_ref())
+            .get_borrowed::<PersistedMlsPendingGroup>(id.into())
             .await
             .map_err(KeystoreError::wrap("finding persisted mls pending group"))?
         else {

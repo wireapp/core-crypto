@@ -46,7 +46,7 @@ impl ConversationMut {
         let epoch_before_operation = group.epoch();
 
         // Save the tnt secret. We need to do this exactly once per epoch.
-        let tnt_secret_key = TntSecretPkRef::new(id.as_ref(), epoch_before_operation.as_u64());
+        let tnt_secret_key = TntSecretPkRef::new(id.as_ref().into(), epoch_before_operation.as_u64());
         if tx
             .get_borrowed::<TntSecret>(tnt_secret_key)
             .await
@@ -70,7 +70,7 @@ impl ConversationMut {
 
             let oldest_retained_epoch = group.epoch().as_u64().saturating_sub(MAX_PAST_EPOCHS as u64);
             // We can't avoid allocation here because tx needs to own the deletion key.
-            let stale_epochs = ConversationEpochsOlderThan::new(id.as_ref().to_vec(), oldest_retained_epoch);
+            let stale_epochs = ConversationEpochsOlderThan::new(id.as_ref().into(), oldest_retained_epoch);
             tx.bulk_remove::<TntSecret, _>(stale_epochs.clone()).await;
             tx.bulk_remove::<TargetedMessageRxCounter, _>(stale_epochs.clone())
                 .await;

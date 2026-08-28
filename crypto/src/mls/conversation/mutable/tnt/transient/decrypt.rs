@@ -33,7 +33,7 @@ impl ConversationMut {
         }
 
         let database = self.database().await?;
-        let counter_pk = MessageRxCounterPkRef::new(self.id.as_ref(), message.sender.u32(), group_epoch);
+        let counter_pk = MessageRxCounterPkRef::new(self.id.as_ref().into(), message.sender.u32(), group_epoch);
 
         let existing_counter = database
             .get_borrowed::<TransientMessageRxCounter>(counter_pk)
@@ -77,7 +77,7 @@ impl ConversationMut {
             .map_err(RecursiveError::transaction("getting inner context"))?;
         let tx = tx.transaction();
         tx.save(TransientMessageRxCounter {
-            conversation_id: self.id.to_bytes(),
+            conversation_id: self.id().into(),
             sender: message.sender.u32(),
             epoch: group_epoch,
             count: message.counter.into(),

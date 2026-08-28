@@ -12,8 +12,8 @@ use async_lock::{RwLock, RwLockReadGuard};
 use core_crypto_keystore::{
     Transaction,
     entities::{
-        ConversationIdRef as KeystoreConversationIdRef, PersistedMlsGroup, TargetedMessageTxCounter,
-        TargetedMessageTxCounterPk, TransientMessageTxCounter,
+        ConversationId as KeystoreConversationId, ConversationIdRef as KeystoreConversationIdRef, PersistedMlsGroup,
+        TargetedMessageTxCounter, TargetedMessageTxCounterPk, TransientMessageTxCounter,
     },
     traits::FetchFromDatabase,
 };
@@ -69,7 +69,7 @@ impl MlsGroupState {
         recipient: LeafNodeIndex,
         database: &impl FetchFromDatabase,
     ) -> Result<TntMessageCounter> {
-        let key = TargetedMessageTxCounterPk::new(self.group_id().to_vec(), recipient.u32());
+        let key = TargetedMessageTxCounterPk::new(self.group_id().to_vec().into(), recipient.u32());
 
         // `or_insert_with` can't be used because db loading is async.
         let mut counter = match self.targeted_message_tx_counters.entry(recipient) {
@@ -122,11 +122,11 @@ impl MlsGroupState {
     pub(in crate::mls::conversation) async fn reset_tnt_message_tx_counters(&mut self, tx: &Transaction) -> Result<()> {
         self.targeted_message_tx_counters = Default::default();
         self.transient_message_tx_counter = Default::default();
-        let id = self.group.group_id();
-        tx.bulk_remove::<TargetedMessageTxCounter, _>(id.to_vec().into()).await;
-        tx.remove_borrowed::<TransientMessageTxCounter>(KeystoreConversationIdRef::new(id.as_slice()))
+        let id: KeystoreConversationId = self.group.group_id().to_vec().into();
+        tx.remove_borrowed::<TransientMessageTxCounter>(id.as_ref())
             .await
             .map_err(KeystoreError::wrap("removing transient message tx counter"))?;
+        tx.bulk_remove::<TargetedMessageTxCounter, _>(id).await;
         Ok(())
     }
 
@@ -145,7 +145,7 @@ impl MlsGroupState {
 
         for (receiver, counter) in self.targeted_message_tx_counters.iter() {
             tx.save(TargetedMessageTxCounter {
-                conversation_id: id.to_vec(),
+                conversation_id: id.to_vec().into(),
                 receiver: receiver.u32(),
                 count: (*counter).into(),
             })

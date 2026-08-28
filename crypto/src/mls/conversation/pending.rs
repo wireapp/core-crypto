@@ -48,7 +48,7 @@ impl PendingConversation {
         let group_id = group.group_id().to_vec();
 
         let inner = PersistedMlsPendingGroup {
-            id: group_id,
+            id: group_id.into(),
             state: serialized_group,
             custom_configuration: serialized_cfg,
             parent_id: None,
@@ -73,7 +73,7 @@ impl PendingConversation {
     }
 
     fn id(&self) -> &ConversationIdRef {
-        ConversationIdRef::new(&self.inner.id)
+        ConversationIdRef::new(self.inner.id.bytes())
     }
 
     pub(crate) async fn save(&self) -> Result<()> {
@@ -87,7 +87,7 @@ impl PendingConversation {
             .map_err(RecursiveError::context("getting inner context"))?;
         let tx = context.transaction();
         tx.save(PersistedMlsPendingGroup {
-            id: group_id.as_ref().to_owned(),
+            id: group_id.into(),
             state: mls_group.into(),
             custom_configuration: custom_configuration.into(),
             parent_id: None,
@@ -131,7 +131,7 @@ impl PendingConversation {
         let tx = context_inner.transaction();
 
         let pending_msg = MlsPendingMessage {
-            conversation_id: self.id().as_ref().to_owned(),
+            conversation_id: self.id().into(),
             message: message.as_ref().to_vec(),
         };
         tx.save::<MlsPendingMessage>(pending_msg)
@@ -147,7 +147,7 @@ impl PendingConversation {
         let database = self.keystore().await?;
         // Instantiate the pending group
         let group = database
-            .get_borrowed::<PersistedMlsPendingGroup>(self.id().as_ref())
+            .get_borrowed::<PersistedMlsPendingGroup>(self.id().into())
             .await
             .map_err(KeystoreError::wrap("getting mls group"))?
             .map(|pending_group| pending_group.state.clone())
@@ -305,7 +305,7 @@ impl PendingConversation {
             .map_err(RecursiveError::context("getting inner context"))?;
         let tx = context.transaction();
         let group_id = self.id();
-        tx.remove_borrowed::<PersistedMlsPendingGroup>(group_id.as_ref())
+        tx.remove_borrowed::<PersistedMlsPendingGroup>(group_id.into())
             .await
             .map_err(KeystoreError::wrap("deleting pending groups by id"))?;
 

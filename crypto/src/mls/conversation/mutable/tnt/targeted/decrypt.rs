@@ -1,7 +1,7 @@
 use core_crypto_keystore::{
     entities::{
-        MessageRxCounterPkRef, StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef,
-        TargetedMessageRxCounter, TntSecret, TntSecretPkRef,
+        ConversationIdRef as KeystoreConversationIdRef, MessageRxCounterPkRef, StoredEpochEncryptionKeypair,
+        StoredEpochEncryptionKeypairPkRef, TargetedMessageRxCounter, TntSecret, TntSecretPkRef,
     },
     traits::FetchFromDatabase as _,
 };
@@ -49,7 +49,7 @@ impl ConversationMut {
         }
 
         let database = self.database().await?;
-        let counter_pk = MessageRxCounterPkRef::new(self.id.as_ref(), message.sender().u32(), group_epoch);
+        let counter_pk = MessageRxCounterPkRef::new(self.id.as_ref().into(), message.sender().u32(), group_epoch);
         let existing_counter = database
             .get_borrowed::<TargetedMessageRxCounter>(counter_pk)
             .await
@@ -94,7 +94,7 @@ impl ConversationMut {
             .map_err(RecursiveError::transaction("getting inner context"))?;
         let tx = tx.transaction();
         tx.save(TargetedMessageRxCounter {
-            conversation_id: self.id.to_bytes(),
+            conversation_id: self.id().into(),
             sender: message.sender().u32(),
             epoch: group_epoch,
             count: message.counter.into(),
@@ -139,7 +139,10 @@ impl ConversationMut {
         }
 
         let database = self.database().await?;
-        let key = TntSecretPkRef::new(mls_group.group_id().as_slice(), message.epoch.as_u64());
+        let key = TntSecretPkRef::new(
+            KeystoreConversationIdRef::new(mls_group.group_id().as_slice()),
+            message.epoch.as_u64(),
+        );
         let secret = database
             .get_borrowed::<TntSecret>(key)
             .await
@@ -175,7 +178,7 @@ impl ConversationMut {
         let targeted_message_psk = derive_targeted_message_psk(&crypto_provider, mls_group)?;
 
         Ok(TntSecret {
-            conversation_id: mls_group.group_id().to_vec(),
+            conversation_id: mls_group.group_id().as_slice().into(),
             epoch: mls_group.epoch().as_u64(),
             hpke_private_key: core_crypto_keystore::ser(&hpke_private_key)
                 .map_err(KeystoreError::wrap("serializing tnt hpke private key"))?,
