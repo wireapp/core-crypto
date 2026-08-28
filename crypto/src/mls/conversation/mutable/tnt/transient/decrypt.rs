@@ -1,7 +1,4 @@
-use core_crypto_keystore::{
-    entities::{MessageRxCounterPkRef, TransientMessageRxCounter},
-    traits::FetchFromDatabase as _,
-};
+use core_crypto_keystore::entities::TransientMessageRxCounter;
 use openmls::prelude::{Member, OpenMlsCrypto};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Deserialize as _, Serialize, VLBytes};
@@ -11,7 +8,7 @@ use crate::{
     DecryptedMessage, KeystoreError, OpenMlsError, RecursiveError, TlsCodecError,
     mls::conversation::{
         ConversationMut,
-        mutable::tnt::{ProtocolVersion, TransientMessage, transient::transient_message_secrets},
+        mutable::tnt::{ProtocolVersion, TntWireFormat, TransientMessage, transient::transient_message_secrets},
     },
 };
 
@@ -32,18 +29,13 @@ impl ConversationMut {
             });
         }
 
-        let database = self.database().await?;
-        let counter_pk = MessageRxCounterPkRef::new(self.id.as_ref(), message.sender.u32(), group_epoch);
-
-        let existing_counter = database
-            .get_borrowed::<TransientMessageRxCounter>(counter_pk)
-            .await
-            .map_err(KeystoreError::wrap("getting TransientMessageRxCounter"))?
-            .map(|counter| counter.count)
-            .unwrap_or_default();
-        if u32::from(message.counter) <= existing_counter {
-            return Err(Error::DuplicateMessage);
-        }
+        self.ensure_no_duplicate_message(
+            group_epoch,
+            TntWireFormat::TRANSIENT_MESSAGE,
+            message.sender(),
+            message.counter,
+        )
+        .await?;
 
         let crypto_provider = self.crypto_provider().await?;
         let cipher_suite = self.cipher_suite();

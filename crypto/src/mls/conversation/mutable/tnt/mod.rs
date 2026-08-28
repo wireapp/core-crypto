@@ -2,6 +2,10 @@ mod targeted;
 mod tnt_message_counter;
 mod transient;
 
+use core_crypto_keystore::{
+    entities::{MessageRxCounterPkRef, TargetedMessageRxCounter, TransientMessageRxCounter},
+    traits::FetchFromDatabase,
+};
 use openmls::prelude::{
     CredentialWithKey, LeafNodeIndex, Member, OpenMlsSignaturePublicKey, Signable as _, Signature, Verifiable as _,
 };
@@ -13,7 +17,8 @@ pub use self::targeted::encrypt::TargetedMessagePolicy;
 pub(crate) use self::tnt_message_counter::TntMessageCounter;
 use super::Result;
 use crate::{
-    ConversationConfiguration, DecryptedBytes, DecryptedMessage, OpenMlsError, RecursiveError, TlsCodecError,
+    ConversationConfiguration, DecryptedBytes, DecryptedMessage, KeystoreError, OpenMlsError, RecursiveError,
+    TlsCodecError,
     mls::{
         conversation::{ConversationMut, Error, mutable::tnt::transient::TransientMessage},
         credential::ext::CredentialExt as _,
@@ -61,7 +66,7 @@ pub(crate) struct TntWireFormat(u16);
 
 impl TntWireFormat {
     pub(crate) const TRANSIENT_MESSAGE: Self = Self(0xF000);
-    #[expect(unused)]
+
     pub(crate) const TARGETED_MESSAGE: Self = Self(0xF001);
     pub(crate) const TRANSIENT_TARGETED_MESSAGE: Self = Self(0xF002);
 
@@ -69,6 +74,41 @@ impl TntWireFormat {
     pub(crate) const MAX: u16 = Self::TRANSIENT_TARGETED_MESSAGE.0;
 
     pub(crate) const ALL: std::ops::RangeInclusive<u16> = Self::MIN..=Self::MAX;
+
+    /// The total received count of the given message type from the given sender, conversation, and epoch.
+    ///
+    /// Implementation note: because transient targeted message and targeted message share a type, we're implementing
+    /// this here instead of the types themselves.
+    async fn total_received_message_count(
+        &self,
+        database: &impl FetchFromDatabase,
+        primary_key: MessageRxCounterPkRef<'_>,
+    ) -> Result<u32> {
+        let count = match *self {
+            Self::TRANSIENT_MESSAGE => database
+                .get_borrowed::<TransientMessageRxCounter>(primary_key)
+                .await
+                .map_err(KeystoreError::wrap("getting TransientMessageRxCounter"))?
+                .map(|counter| counter.count)
+                .unwrap_or_default(),
+            Self::TRANSIENT_TARGETED_MESSAGE => database
+                .get_borrowed::<TransientMessageRxCounter>(primary_key)
+                .await
+                .map_err(KeystoreError::wrap("getting TransientMessageRxCounter"))?
+                .map(|counter| counter.count)
+                .unwrap_or_default(),
+            Self::TARGETED_MESSAGE => database
+                .get_borrowed::<TargetedMessageRxCounter>(primary_key)
+                .await
+                .map_err(KeystoreError::wrap("getting TargetedMessageRxCounter"))?
+                .map(|counter| counter.count)
+                .unwrap_or_default(),
+
+            _ => panic!("All TntWireFormats map to a MessageRxCounter implementation"),
+        };
+
+        Ok(count)
+    }
 }
 
 /// The to-be-signed [TntMessage].
@@ -224,6 +264,31 @@ impl ConversationMut {
             .tls_serialize_detached()
             .map_err(TlsCodecError::serialize("TntMessage"))
             .map_err(Into::into)
+    }
+
+    /// Shared function for all tnt message types, parameterized by message type and sender, because that's how the
+    /// receiver counters are split.
+    /// The additional complexity introduced by this split is worthwhile, because each message type may be delivered in
+    /// a unique way. We don't want to assume that messages arrive in order across different message types. This is why
+    /// we're just checking the counter of the same message type, which is enough for duplicate message detection.
+    async fn ensure_no_duplicate_message(
+        &self,
+        group_epoch: u64,
+        message_type: TntWireFormat,
+        message_sender: LeafNodeIndex,
+        message_counter: TntMessageCounter,
+    ) -> Result<()> {
+        let database = self.database().await?;
+        let counter_pk = MessageRxCounterPkRef::new(self.id.as_ref(), message_sender.u32(), group_epoch);
+        let existing_counter = message_type
+            .total_received_message_count(database.as_ref(), counter_pk)
+            .await?;
+
+        if u32::from(message_counter) > existing_counter {
+            Ok(())
+        } else {
+            Err(Error::DuplicateMessage)
+        }
     }
 
     /// The final step after decrypting a tnt message: extract the sender client id and format as [DecryptedBytes].
