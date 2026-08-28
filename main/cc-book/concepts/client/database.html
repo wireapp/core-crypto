@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>The Client - CoreCrypto Book</title>
+        <title>The Database - CoreCrypto Book</title>
 
 
         <!-- Custom HTML head -->
@@ -36,10 +36,10 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-d2dbacb6.js";
+            window.path_to_searchindex_js = "../../searchindex-92b475a8.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../../toc-6ea44124.js"></script>
+        <script src="../../toc-1c113b1d.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -175,79 +175,124 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="the-client"><a class="header" href="#the-client">The Client</a></h1>
-<p>In MLS terminology a <em>client</em> is a single device acting on behalf of a user — each phone, desktop, or web session that
-participates in MLS groups is a distinct client with its own identity and key material. CoreCrypto maps this concept to
-the <code>CoreCrypto</code> object itself. One <code>CoreCrypto</code> instance, backed by one <code>Database</code>, represents one MLS client.</p>
-<blockquote class="blockquote-tag blockquote-tag-note">
-<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
-<p>The Rust library internally calls this type <code>Session</code> to avoid ambiguity — “client” means something different at the
-Wire application layer (where it refers to a registered device in the Wire backend sense) and at the MLS protocol
-layer. The name <code>Session</code> does not appear in platform bindings; from Swift, Kotlin, and TypeScript, the type is always
-<code>CoreCrypto</code>.</p>
-</blockquote>
-<h2 id="sharing-a-corecrypto-instance"><a class="header" href="#sharing-a-corecrypto-instance">Sharing a CoreCrypto Instance</a></h2>
-<p><code>CoreCrypto</code> is cheap to clone. All internal state — the database connection, the MLS session, the Proteus state — is
-reference-counted, so cloning the object creates a new handle to the same shared state rather than copying anything.
-This means <code>CoreCrypto</code> can be freely passed to background tasks or across threads without wrapping it in an additional
-mutex or reference type.</p>
-<h2 id="read-only-operations"><a class="header" href="#read-only-operations">Read-Only Operations</a></h2>
-<p>Most MLS work happens inside a transaction (see <a href="transactions.html">Transactions and the TransactionContext</a>), but a
-handful of read-only operations are available directly on <code>CoreCrypto</code> without opening one. The set of read-only
-operations available on <code>CoreCrypto</code> is intentionally kept narrow.</p>
-<p>Any operation that might change state — creating or deleting a conversation, adding members, encrypting or decrypting a
-message — requires a transaction.</p>
-<h2 id="lifecycle"><a class="header" href="#lifecycle">Lifecycle</a></h2>
-<p>A <code>CoreCrypto</code> instance is typically created once at application startup and kept alive for the life of the process. The
-initialization sequence is:</p>
+                        <h1 id="the-database"><a class="header" href="#the-database">The Database</a></h1>
+<p>The <code>Database</code> is CoreCrypto’s keystore: the persistent store for all key material and cryptographic state, as well as
+some non-cryptographic internal data. It is opened before constructing a <code>CoreCrypto</code> instance and passed in as an
+argument, making the storage layer an explicit dependency rather than something CoreCrypto manages internally.</p>
+<h2 id="what-the-database-stores"><a class="header" href="#what-the-database-stores">What the Database Stores</a></h2>
+<p>The database holds all state that must survive process restarts:</p>
+<ul>
+<li><strong>MLS group state</strong> — the serialized ratchet tree and secrets for every conversation the device participates in</li>
+<li><strong>Credentials and key packages</strong> — the device’s identity material and the key packages it has published to the
+delivery service</li>
+<li><strong>Pending messages</strong> — application messages and commits that arrived during an epoch transition and are waiting to be
+merged</li>
+<li><strong>Proteus identity and sessions</strong> — the device’s long-lived Proteus identity keypair and the state of every active
+Proteus session</li>
+<li><strong>Proteus prekeys</strong> — including the last-resort prekey</li>
+<li><strong>Data needed for X509 credentials</strong> — X509 trust anchors, intermediate and leaf certificates, CRLs and the like</li>
+</ul>
+<p>All entries are encrypted at rest using the <code>DatabaseKey</code> provided at open time.</p>
+<h2 id="backing-storage"><a class="header" href="#backing-storage">Backing Storage</a></h2>
+<p>On non-browser platforms the database is backed by <a href="https://www.zetetic.net/sqlcipher/">SQLCipher</a>, an encrypted SQLite
+variant. On the browser, the database sits atop IndexedDB and uses item-level encryption managed by CoreCrypto. In both
+cases, data is encrypted at rest.</p>
+<p>Future work on the database is intended to unify the backing storages, such that CoreCrypto will internally see an
+encrypted SQLite connection for all platforms. That work will be part of CC 11, but not CC 10. This change should be
+invisible to clients.</p>
+<h2 id="the-database-key"><a class="header" href="#the-database-key">The Database Key</a></h2>
+<p>The <code>DatabaseKey</code> is a 32-byte symmetric key used to encrypt all data at rest. Construct it from a byte array:</p>
 <div class="langtabs">
 <div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
 <div class="langtabs-content">
 <div class="langtabs-code active" data-lang="typescript-0">
-<pre><code class="language-typescript">const db = await Database.open(path, key);       // open the keystore
-const cc = CoreCrypto.new(db);                   // construct CoreCrypto
-await cc.transaction(async (ctx) =&gt; {
-    await ctx.mlsInit(clientId, transport);      // initialize the MLS session
-});
+<pre><code class="language-typescript">const key = DatabaseKey.new(bytes)  // bytes must be exactly 32 bytes
 </code></pre>
 </div>
 
 <div class="langtabs-code" data-lang="swift-1">
-<pre><code class="language-swift">let db = try await Database.open(location: path, key: key)  // open the keystore
-let cc = CoreCrypto(database: db)                            // construct CoreCrypto
-try await cc.transaction { ctx in
-    try await ctx.mlsInit(clientId: clientId, transport: transport)  // initialize the MLS session
-}
+<pre><code class="language-swift">let key = DatabaseKey(bytes: bytes)  // bytes must be exactly 32 bytes
 </code></pre>
 </div>
 
 <div class="langtabs-code" data-lang="kotlin-2">
-<pre><code class="language-kotlin">val db = Database.open(path, key)  // open the keystore
-val cc = CoreCrypto(db)            // construct CoreCrypto
-cc.transaction { ctx -&gt;
-    ctx.mlsInit(clientId, transport)  // initialize the MLS session
-}
+<pre><code class="language-kotlin">val key = DatabaseKey(bytes)  // bytes must be exactly 32 bytes
 </code></pre>
 </div>
 </div>
 </div>
 
-<p>After <code>mlsInit()</code> is committed, the instance is ready to use.</p>
-<h3 id="multiple-instances"><a class="header" href="#multiple-instances">Multiple Instances</a></h3>
-<p>Only one <code>CoreCrypto</code> instance (and its clones) should be active against a given database file at a time. The iOS client
-has a file lock which prevents two instances of the CoreCrypto from interfering with each other. On other clients
-opening the same database from two independent <code>CoreCrypto</code> instances — whether in the same process or different
-processes — is not supported and will produce undefined behavior.</p>
+<p>CoreCrypto does not generate or store the key — that is entirely the client’s responsibility. The key should be kept in
+the platform’s secure credential storage.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>The database key is never written to disk by CoreCrypto. If the key is lost, the database contents are unrecoverable.</p>
+</blockquote>
+<h2 id="opening-the-database"><a class="header" href="#opening-the-database">Opening the Database</a></h2>
+<p>All platforms define an async <code>Database.open</code> static method accepting a location and key. On platforms with an OS, the
+location is a filesystem path. On WASM, the location is the IndexedDB store name.</p>
+<p>All platforms define an async static method to open a transient database in memory. On WASM, this is
+<code>Database.inMemory</code>. For Kotlin and Swift, this is an overload of <code>Database.open</code>.</p>
+<h2 id="key-rotation"><a class="header" href="#key-rotation">Key Rotation</a></h2>
+<p>The database can be re-encrypted with a new key without closing and reopening it:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">await db.updateKey(newKey)
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">try await db.updateKey(key: newKey)
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">db.updateKey(newKey)
+</code></pre>
+</div>
+</div>
+</div>
+
+<p>This re-encrypts all stored data in place.</p>
+<h2 id="lifetime-and-closing"><a class="header" href="#lifetime-and-closing">Lifetime and Closing</a></h2>
+<p>On browser platforms, explicitly close the database when tearing down:</p>
+<pre><code class="language-typescript">await db.close()
+</code></pre>
+<h2 id="single-transaction-constraint"><a class="header" href="#single-transaction-constraint">Single-Transaction Constraint</a></h2>
+<p>Only one transaction may write to the database at a time. If a transaction is requested while another transaction is in
+flight, the call will block until the first transaction concludes.</p>
+<p>For more detail, see <a href="transactions.html#concurrency">Transactions → Concurrency</a>.</p>
+<h2 id="exporting-a-copy"><a class="header" href="#exporting-a-copy">Exporting a Copy</a></h2>
+<p>On native platforms, a fully vacuumed copy of the database can be written to a new file:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="swift-0"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-1"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="swift-0">
+<pre><code class="language-swift">try await exportDatabaseCopy(database: db, destinationPath: destinationPath)
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-1">
+<pre><code class="language-kotlin">exportDatabaseCopy(db, destinationPath)
+</code></pre>
+</div>
+</div>
+</div>
+
+<p>The copy is encrypted with the same key as the source. This is useful for backup or for migrating the database to a new
+location. This function is not available on browser platforms.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../../concepts/mls/database.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../../concepts/client/overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../../concepts/mls/transactions.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../../concepts/client/transactions.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -257,11 +302,11 @@ processes — is not supported and will produce undefined behavior.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../../concepts/mls/database.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../../concepts/client/overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../../concepts/mls/transactions.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../../concepts/client/transactions.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

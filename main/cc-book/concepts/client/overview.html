@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Transactions - CoreCrypto Book</title>
+        <title>The Client - CoreCrypto Book</title>
 
 
         <!-- Custom HTML head -->
@@ -36,10 +36,10 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-d2dbacb6.js";
+            window.path_to_searchindex_js = "../../searchindex-92b475a8.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../../toc-6ea44124.js"></script>
+        <script src="../../toc-1c113b1d.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -175,215 +175,93 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="transactions-and-the-transactioncontext"><a class="header" href="#transactions-and-the-transactioncontext">Transactions and the TransactionContext</a></h1>
-<p>Every operation in CoreCrypto that can potentially mutate state must happen inside a transaction. Transactions provide
-an atomicity guarantee: either all of the operations in a transaction are persisted together, or none of them are. This
-prevents the keystore from being left in an inconsistent state if an operation fails partway through — for example, if a
-commit is produced but the delivery service rejects it before the local group state is updated.</p>
-<h2 id="opening-a-transaction"><a class="header" href="#opening-a-transaction">Opening a Transaction</a></h2>
-<p>Transactions are opened with a callback pattern. Call <code>transaction()</code> on the <code>CoreCrypto</code> instance and pass an async
-function; CoreCrypto calls that function with a <code>CoreCryptoContext</code> (the transaction handle), and commits or rolls back
-the transaction automatically based on whether the function succeeds or throws:</p>
+                        <h1 id="the-client"><a class="header" href="#the-client">The Client</a></h1>
+<p>In MLS terminology a <em>client</em> is a single device acting on behalf of a user — each phone, desktop, or web session that
+participates in MLS groups is a distinct client with its own identity and key material. CoreCrypto maps this concept to
+the <code>CoreCrypto</code> object itself. One <code>CoreCrypto</code> instance, backed by one <code>Database</code>, represents one MLS client.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>The Rust library internally calls this type <code>Session</code> to avoid ambiguity — “client” means something different at the
+Wire application layer (where it refers to a registered device in the Wire backend sense) and at the MLS protocol
+layer. The name <code>Session</code> does not appear in platform bindings; from Swift, Kotlin, and TypeScript, the type is always
+<code>CoreCrypto</code>.</p>
+</blockquote>
+<h2 id="sharing-a-corecrypto-instance"><a class="header" href="#sharing-a-corecrypto-instance">Sharing a CoreCrypto Instance</a></h2>
+<p><code>CoreCrypto</code> is cheap to clone. All internal state — the database connection, the MLS session, the Proteus state — is
+reference-counted, so cloning the object creates a new handle to the same shared state rather than copying anything.
+This means <code>CoreCrypto</code> can be freely passed to background tasks or across threads without wrapping it in an additional
+mutex or reference type.</p>
+<h2 id="read-only-operations"><a class="header" href="#read-only-operations">Read-Only Operations</a></h2>
+<p>Most MLS work happens inside a transaction (see <a href="transactions.html">Transactions and the TransactionContext</a>), but a
+handful of read-only operations are available directly on <code>CoreCrypto</code> without opening one. The set of read-only
+operations available on <code>CoreCrypto</code> is intentionally kept narrow.</p>
+<p>Any operation that might change state — creating or deleting a conversation, adding members, encrypting or decrypting a
+message — requires a transaction.</p>
+<h2 id="lifetimes"><a class="header" href="#lifetimes">Lifetimes</a></h2>
+<p>The lifetime for objects created by <code>CoreCrypto</code> vary slightly depending on the platform. Objects have a rust
+counterpart, and the rust counterpart might hold on to resources like files or database connections. When exactly the
+rust counterpart and its resources are freed depends on the platform.</p>
+<h3 id="swift"><a class="header" href="#swift">Swift</a></h3>
+<p>When last reference to the object is dropped and <code>deinit</code> runs.</p>
+<h3 id="kotlin"><a class="header" href="#kotlin">Kotlin</a></h3>
+<p>When the object is garbage collected or explicitly closed by calling <code>close()</code>
+(<a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-auto-closeable.html">Autocloseable</a>).</p>
+<p>More details: https://mozilla.github.io/uniffi-rs/latest/kotlin/lifetimes.html</p>
+<h3 id="typescript"><a class="header" href="#typescript">TypeScript</a></h3>
+<p>When the object is garbage collected or explicitly destroyed by calling <code>uniffiDestroy()</code>.</p>
+<p>More Details:
+https://jhugman.github.io/uniffi-bindgen-react-native/idioms/gc.html#garbage-collected-objects-trigger-a-drop-call-into-rust</p>
+<h2 id="lifecycle"><a class="header" href="#lifecycle">Lifecycle</a></h2>
+<p>A <code>CoreCrypto</code> instance is typically created once at application startup and kept alive for the life of the process. The
+initialization sequence is:</p>
 <div class="langtabs">
 <div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
 <div class="langtabs-content">
 <div class="langtabs-code active" data-lang="typescript-0">
-<pre><code class="language-typescript">await cc.transaction(async (ctx) =&gt; {
-    await ctx.mlsInit(clientId, transport);
-    // more operations...
+<pre><code class="language-typescript">const db = await Database.open(path, key);       // open the keystore
+const cc = CoreCrypto.new(db);                   // construct CoreCrypto
+await cc.transaction(async (ctx) =&gt; {
+    await ctx.mlsInit(clientId, transport);      // initialize the MLS session
 });
 </code></pre>
 </div>
 
 <div class="langtabs-code" data-lang="swift-1">
-<pre><code class="language-swift">try await cc.transaction { ctx in
-    try await ctx.mlsInit(clientId: clientId, transport: transport)
-    // more operations...
+<pre><code class="language-swift">let db = try await Database.open(location: path, key: key)  // open the keystore
+let cc = CoreCrypto(database: db)                            // construct CoreCrypto
+try await cc.transaction { ctx in
+    try await ctx.mlsInit(clientId: clientId, transport: transport)  // initialize the MLS session
 }
 </code></pre>
 </div>
 
 <div class="langtabs-code" data-lang="kotlin-2">
-<pre><code class="language-kotlin">cc.transaction { ctx -&gt;
-    ctx.mlsInit(clientId, transport)
-    // more operations...
+<pre><code class="language-kotlin">val db = Database.open(path, key)  // open the keystore
+val cc = CoreCrypto(db)            // construct CoreCrypto
+cc.transaction { ctx -&gt;
+    ctx.mlsInit(clientId, transport)  // initialize the MLS session
 }
 </code></pre>
 </div>
 </div>
 </div>
 
-<p>If the callback completes without throwing, the transaction is committed — all buffered operations are written to the
-keystore in a single atomic database transaction. If the callback throws, the transaction is rolled back and no changes
-are persisted.</p>
-<p>There is no explicit <code>finish()</code> or <code>abort()</code> to call; both are handled automatically by <code>transaction()</code>.</p>
-<h2 id="the-corecryptocontext"><a class="header" href="#the-corecryptocontext">The CoreCryptoContext</a></h2>
-<p>The <code>ctx</code> parameter is the <code>CoreCryptoContext</code>: the object through which all mutating operations are performed. It is
-only valid for the lifetime of the callback — using it after the callback returns will produce an
-<code>InvalidTransactionContext</code> error.</p>
-<p>All operations are <strong>buffered in memory</strong> inside the context. Nothing is written to the database until the callback
-returns successfully. This means reads within the same transaction will observe the in-memory state, not the on-disk
-state — if you create a conversation and immediately query it within the same transaction, the query will find it.</p>
-<h2 id="concurrency"><a class="header" href="#concurrency">Concurrency</a></h2>
-<p>Only one transaction may be active at a time. Calling <code>cc.transaction()</code> while another transaction is already running
-will block until the first transaction finishes. This is a consequence of the single-writer constraint in the keystore;
-see <a href="database.html#single-transaction-constraint">the Database chapter</a> for more detail.</p>
-<p>The practical implication is that large batches of work — for example, decrypting a backlog of incoming messages — will
-block any concurrent attempt to encrypt and send a new message. During an initial sync, this is desirable, because there
-are notable performance improvements to performing a large number of operations in a single transaction. On the other
-hand, once a client is fully synced and active, the opposite advice applies: because they are blocking, it is advisable
-to structure transactions to be as short-lived as possible.</p>
-<h2 id="error-handling"><a class="header" href="#error-handling">Error Handling</a></h2>
-<p>If an operation inside a transaction fails, it is usually best to let the error propagate out of the callback.
-<code>transaction()</code> will catch it, roll back automatically, and rethrow — the caller can then handle the error without
-worrying about cleanup:</p>
-<div class="langtabs">
-<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
-<div class="langtabs-content">
-<div class="langtabs-code active" data-lang="typescript-0">
-<pre><code class="language-typescript">try {
-    await cc.transaction(async (ctx) =&gt; {
-        await ctx.decryptMessage(conversationId, incomingCiphertext);
-        await ctx.encryptMessage(conversationId, outgoingPlaintext);
-    });
-} catch (err) {
-    // The transaction was rolled back. No state was changed.
-}
-</code></pre>
-</div>
-
-<div class="langtabs-code" data-lang="swift-1">
-<pre><code class="language-swift">do {
-    try await cc.transaction { ctx in
-        try await ctx.decryptMessage(conversationId: conversationId, payload: incomingCiphertext)
-        try await ctx.encryptMessage(conversationId: conversationId, message: outgoingPlaintext)
-    }
-} catch {
-    // The transaction was rolled back. No state was changed.
-}
-</code></pre>
-</div>
-
-<div class="langtabs-code" data-lang="kotlin-2">
-<pre><code class="language-kotlin">try {
-    cc.transaction { ctx -&gt;
-        ctx.decryptMessage(conversationId, incomingCiphertext)
-        ctx.encryptMessage(conversationId, outgoingPlaintext)
-    }
-} catch (e: Exception) {
-    // The transaction was rolled back. No state was changed.
-}
-</code></pre>
-</div>
-</div>
-</div>
-
-<h3 id="retry-after-delivery-failure"><a class="header" href="#retry-after-delivery-failure">Retry After Delivery Failure</a></h3>
-<p>Some operations — those that produce a commit — invoke <code>MlsTransport.sendCommitBundle()</code> inside the transaction. If the
-delivery service returns <code>Retry</code>, CoreCrypto propagates this as an <code>MlsError</code> and the transaction is rolled back. The
-caller should fetch and process all pending incoming messages and then retry the operation in a new transaction.</p>
-<h3 id="reuse-after-completion"><a class="header" href="#reuse-after-completion">Reuse After Completion</a></h3>
-<p>Once <code>transaction()</code> returns (whether by success or failure), the <code>CoreCryptoContext</code> passed to the callback is
-permanently invalidated. Any attempt to call methods on a finished context returns <code>InvalidTransactionContext</code>. Always
-perform all work within the callback scope.</p>
-<h2 id="arbitrary-data-storage"><a class="header" href="#arbitrary-data-storage">Arbitrary Data Storage</a></h2>
-<p>The context provides two methods for storing a single blob of arbitrary bytes in the keystore, associated with the
-device:</p>
-<div class="langtabs">
-<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
-<div class="langtabs-content">
-<div class="langtabs-code active" data-lang="typescript-0">
-<pre><code class="language-typescript">await ctx.setData(bytes)
-const bytes = await ctx.getData()
-</code></pre>
-</div>
-
-<div class="langtabs-code" data-lang="swift-1">
-<pre><code class="language-swift">try await ctx.setData(data: bytes)
-let bytes = try await ctx.getData()
-</code></pre>
-</div>
-
-<div class="langtabs-code" data-lang="kotlin-2">
-<pre><code class="language-kotlin">ctx.setData(bytes)
-val bytes = ctx.getData()
-</code></pre>
-</div>
-</div>
-</div>
-
-<p>These were implemented for the purpose of checkpointing during initial sync / batch decryption, but are not limited to
-that use.</p>
-<h2 id="transaction-cancellation-swift"><a class="header" href="#transaction-cancellation-swift">Transaction Cancellation (Swift)</a></h2>
-<p>The foreign-language wrappers can associate a <code>CoreCryptoCancellationToken</code> with a transaction, i.e., this is invisible
-to users of the wrappers. However, currently <strong>only the Swift wrapper</strong> supports cancellable transactions. The
-<code>CoreCryptoCancellationToken</code> is created through FFI but lives on the Rust side. Once the transaction owns the
-transaction semaphore, Rust publishes the token in the <code>CoreCrypto</code> cancellation slot and, when a PKI environment
-exists, in its separate slot. The returned guards keep the slots filled for exactly the lifetime of the transaction.</p>
-<p>The following shows a transaction with a cancellable foreign callback, such as <code>MlsTransport.sendCommitBundle()</code> or a
-<code>PkiEnvironment</code> hook. A transaction that does not invoke such a callback skips the callback portion of the sequence.</p>
-<pre class="mermaid">sequenceDiagram
-    autonumber
-    participant Foreign as Foreign language Wrapper
-    participant Tx as Rust transaction
-    participant Slots as Rust cancellation slots
-    participant Callback as Foreign callback
-
-    Foreign-&gt;&gt;Foreign: create cancellation token
-    Foreign-&gt;&gt;Tx: start cancellable transaction
-    Tx-&gt;&gt;Tx: race cancellation against semaphore acquisition
-
-    alt Token is cancelled before acquisition
-        Foreign-&gt;&gt;Tx: cancel token
-        Tx--&gt;&gt;Foreign: TransactionCanceled (slots remain empty)
-    else Transaction semaphore is acquired
-        Tx-&gt;&gt;Slots: enter token in CoreCrypto slot
-        Slots--&gt;&gt;Tx: cancellation guard
-        opt PKI environment exists
-            Tx-&gt;&gt;Slots: enter token in PKI slot
-            Slots--&gt;&gt;Tx: cancellation guard
-        end
-        Tx-&gt;&gt;Foreign: execute command with context
-        Foreign-&gt;&gt;Tx: context operation
-        Tx-&gt;&gt;Slots: read active token
-        Slots--&gt;&gt;Tx: shared token
-        Tx-&gt;&gt;Callback: invoke callback and race its result against cancellation
-
-        alt Command finishes first
-            Callback--&gt;&gt;Tx: callback result
-            Tx--&gt;&gt;Foreign: context operation result
-            Foreign--&gt;&gt;Tx: command result
-            alt Command succeeded
-                Tx-&gt;&gt;Tx: commit
-            else Command failed
-                Tx-&gt;&gt;Tx: abort
-            end
-        else Token is cancelled while callback is running
-            Foreign-&gt;&gt;Tx: cancel token
-            Tx-xCallback: drop callback future, causing UniFFI to cancel the foreign task
-            Tx-&gt;&gt;Tx: drop command future and abort
-        end
-
-        Tx-&gt;&gt;Slots: drop guards and clear both slots
-        Tx-&gt;&gt;Tx: drop context and release semaphore
-        Tx--&gt;&gt;Foreign: success, command error, or TransactionCanceled
-    end
-</pre>
-
-<p>The guards are deliberately created after the transaction context. Rust drops local values in reverse declaration order,
-so both slots are cleared before dropping the context that releases the semaphore. Consequently, the next transaction
-cannot observe the previous transaction’s token. If cancellation wins a callback race, dropping the Rust future also
-causes UniFFI’s generated foreign-language binding to cancel the task executing that callback.</p>
+<p>After <code>mlsInit()</code> is committed, the instance is ready to use.</p>
+<h3 id="multiple-instances"><a class="header" href="#multiple-instances">Multiple Instances</a></h3>
+<p>Only one <code>CoreCrypto</code> instance (and its clones) should be active against a given database file at a time. The iOS client
+has a file lock which prevents two instances of the CoreCrypto from interfering with each other. On other clients
+opening the same database from two independent <code>CoreCrypto</code> instances — whether in the same process or different
+processes — is not supported and will produce undefined behavior.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../../concepts/mls/client.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../../concepts/mls.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../../unreleased/migration_guide.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../../concepts/client/database.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -393,11 +271,11 @@ causes UniFFI’s generated foreign-language binding to cancel the task executin
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../../concepts/mls/client.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../../concepts/mls.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../../unreleased/migration_guide.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../../concepts/client/database.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

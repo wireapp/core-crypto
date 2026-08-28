@@ -37,10 +37,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-d2dbacb6.js";
+            window.path_to_searchindex_js = "searchindex-92b475a8.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-6ea44124.js"></script>
+        <script src="toc-1c113b1d.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -447,6 +447,84 @@ formally supports any of the cipher suites specified in the RFC, but is primaril
 (MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519).</p>
 <p>The cipher suite is fixed per conversation at the conversation’s creation.</p>
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="the-client"><a class="header" href="#the-client">The Client</a></h1>
+<p>In MLS terminology a <em>client</em> is a single device acting on behalf of a user — each phone, desktop, or web session that
+participates in MLS groups is a distinct client with its own identity and key material. CoreCrypto maps this concept to
+the <code>CoreCrypto</code> object itself. One <code>CoreCrypto</code> instance, backed by one <code>Database</code>, represents one MLS client.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>The Rust library internally calls this type <code>Session</code> to avoid ambiguity — “client” means something different at the
+Wire application layer (where it refers to a registered device in the Wire backend sense) and at the MLS protocol
+layer. The name <code>Session</code> does not appear in platform bindings; from Swift, Kotlin, and TypeScript, the type is always
+<code>CoreCrypto</code>.</p>
+</blockquote>
+<h2 id="sharing-a-corecrypto-instance"><a class="header" href="#sharing-a-corecrypto-instance">Sharing a CoreCrypto Instance</a></h2>
+<p><code>CoreCrypto</code> is cheap to clone. All internal state — the database connection, the MLS session, the Proteus state — is
+reference-counted, so cloning the object creates a new handle to the same shared state rather than copying anything.
+This means <code>CoreCrypto</code> can be freely passed to background tasks or across threads without wrapping it in an additional
+mutex or reference type.</p>
+<h2 id="read-only-operations"><a class="header" href="#read-only-operations">Read-Only Operations</a></h2>
+<p>Most MLS work happens inside a transaction (see <a href="#transactions-and-the-transactioncontext">Transactions and the TransactionContext</a>), but a
+handful of read-only operations are available directly on <code>CoreCrypto</code> without opening one. The set of read-only
+operations available on <code>CoreCrypto</code> is intentionally kept narrow.</p>
+<p>Any operation that might change state — creating or deleting a conversation, adding members, encrypting or decrypting a
+message — requires a transaction.</p>
+<h2 id="lifetimes"><a class="header" href="#lifetimes">Lifetimes</a></h2>
+<p>The lifetime for objects created by <code>CoreCrypto</code> vary slightly depending on the platform. Objects have a rust
+counterpart, and the rust counterpart might hold on to resources like files or database connections. When exactly the
+rust counterpart and its resources are freed depends on the platform.</p>
+<h3 id="swift"><a class="header" href="#swift">Swift</a></h3>
+<p>When last reference to the object is dropped and <code>deinit</code> runs.</p>
+<h3 id="kotlin"><a class="header" href="#kotlin">Kotlin</a></h3>
+<p>When the object is garbage collected or explicitly closed by calling <code>close()</code>
+(<a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-auto-closeable.html">Autocloseable</a>).</p>
+<p>More details: https://mozilla.github.io/uniffi-rs/latest/kotlin/lifetimes.html</p>
+<h3 id="typescript"><a class="header" href="#typescript">TypeScript</a></h3>
+<p>When the object is garbage collected or explicitly destroyed by calling <code>uniffiDestroy()</code>.</p>
+<p>More Details:
+https://jhugman.github.io/uniffi-bindgen-react-native/idioms/gc.html#garbage-collected-objects-trigger-a-drop-call-into-rust</p>
+<h2 id="lifecycle"><a class="header" href="#lifecycle">Lifecycle</a></h2>
+<p>A <code>CoreCrypto</code> instance is typically created once at application startup and kept alive for the life of the process. The
+initialization sequence is:</p>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">const db = await Database.open(path, key);       // open the keystore
+const cc = CoreCrypto.new(db);                   // construct CoreCrypto
+await cc.transaction(async (ctx) =&gt; {
+    await ctx.mlsInit(clientId, transport);      // initialize the MLS session
+});
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">let db = try await Database.open(location: path, key: key)  // open the keystore
+let cc = CoreCrypto(database: db)                            // construct CoreCrypto
+try await cc.transaction { ctx in
+    try await ctx.mlsInit(clientId: clientId, transport: transport)  // initialize the MLS session
+}
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">val db = Database.open(path, key)  // open the keystore
+val cc = CoreCrypto(db)            // construct CoreCrypto
+cc.transaction { ctx -&gt;
+    ctx.mlsInit(clientId, transport)  // initialize the MLS session
+}
+</code></pre>
+</div>
+</div>
+</div>
+
+<p>After <code>mlsInit()</code> is committed, the instance is ready to use.</p>
+<h3 id="multiple-instances"><a class="header" href="#multiple-instances">Multiple Instances</a></h3>
+<p>Only one <code>CoreCrypto</code> instance (and its clones) should be active against a given database file at a time. The iOS client
+has a file lock which prevents two instances of the CoreCrypto from interfering with each other. On other clients
+opening the same database from two independent <code>CoreCrypto</code> instances — whether in the same process or different
+processes — is not supported and will produce undefined behavior.</p>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="the-database"><a class="header" href="#the-database">The Database</a></h1>
 <p>The <code>Database</code> is CoreCrypto’s keystore: the persistent store for all key material and cryptographic state, as well as
 some non-cryptographic internal data. It is opened before constructing a <code>CoreCrypto</code> instance and passed in as an
@@ -555,70 +633,6 @@ flight, the call will block until the first transaction concludes.</p>
 
 <p>The copy is encrypted with the same key as the source. This is useful for backup or for migrating the database to a new
 location. This function is not available on browser platforms.</p>
-<div style="break-before: page; page-break-before: always;"></div>
-<h1 id="the-client"><a class="header" href="#the-client">The Client</a></h1>
-<p>In MLS terminology a <em>client</em> is a single device acting on behalf of a user — each phone, desktop, or web session that
-participates in MLS groups is a distinct client with its own identity and key material. CoreCrypto maps this concept to
-the <code>CoreCrypto</code> object itself. One <code>CoreCrypto</code> instance, backed by one <code>Database</code>, represents one MLS client.</p>
-<blockquote class="blockquote-tag blockquote-tag-note">
-<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
-<p>The Rust library internally calls this type <code>Session</code> to avoid ambiguity — “client” means something different at the
-Wire application layer (where it refers to a registered device in the Wire backend sense) and at the MLS protocol
-layer. The name <code>Session</code> does not appear in platform bindings; from Swift, Kotlin, and TypeScript, the type is always
-<code>CoreCrypto</code>.</p>
-</blockquote>
-<h2 id="sharing-a-corecrypto-instance"><a class="header" href="#sharing-a-corecrypto-instance">Sharing a CoreCrypto Instance</a></h2>
-<p><code>CoreCrypto</code> is cheap to clone. All internal state — the database connection, the MLS session, the Proteus state — is
-reference-counted, so cloning the object creates a new handle to the same shared state rather than copying anything.
-This means <code>CoreCrypto</code> can be freely passed to background tasks or across threads without wrapping it in an additional
-mutex or reference type.</p>
-<h2 id="read-only-operations"><a class="header" href="#read-only-operations">Read-Only Operations</a></h2>
-<p>Most MLS work happens inside a transaction (see <a href="#transactions-and-the-transactioncontext">Transactions and the TransactionContext</a>), but a
-handful of read-only operations are available directly on <code>CoreCrypto</code> without opening one. The set of read-only
-operations available on <code>CoreCrypto</code> is intentionally kept narrow.</p>
-<p>Any operation that might change state — creating or deleting a conversation, adding members, encrypting or decrypting a
-message — requires a transaction.</p>
-<h2 id="lifecycle"><a class="header" href="#lifecycle">Lifecycle</a></h2>
-<p>A <code>CoreCrypto</code> instance is typically created once at application startup and kept alive for the life of the process. The
-initialization sequence is:</p>
-<div class="langtabs">
-<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
-<div class="langtabs-content">
-<div class="langtabs-code active" data-lang="typescript-0">
-<pre><code class="language-typescript">const db = await Database.open(path, key);       // open the keystore
-const cc = CoreCrypto.new(db);                   // construct CoreCrypto
-await cc.transaction(async (ctx) =&gt; {
-    await ctx.mlsInit(clientId, transport);      // initialize the MLS session
-});
-</code></pre>
-</div>
-
-<div class="langtabs-code" data-lang="swift-1">
-<pre><code class="language-swift">let db = try await Database.open(location: path, key: key)  // open the keystore
-let cc = CoreCrypto(database: db)                            // construct CoreCrypto
-try await cc.transaction { ctx in
-    try await ctx.mlsInit(clientId: clientId, transport: transport)  // initialize the MLS session
-}
-</code></pre>
-</div>
-
-<div class="langtabs-code" data-lang="kotlin-2">
-<pre><code class="language-kotlin">val db = Database.open(path, key)  // open the keystore
-val cc = CoreCrypto(db)            // construct CoreCrypto
-cc.transaction { ctx -&gt;
-    ctx.mlsInit(clientId, transport)  // initialize the MLS session
-}
-</code></pre>
-</div>
-</div>
-</div>
-
-<p>After <code>mlsInit()</code> is committed, the instance is ready to use.</p>
-<h3 id="multiple-instances"><a class="header" href="#multiple-instances">Multiple Instances</a></h3>
-<p>Only one <code>CoreCrypto</code> instance (and its clones) should be active against a given database file at a time. The iOS client
-has a file lock which prevents two instances of the CoreCrypto from interfering with each other. On other clients
-opening the same database from two independent <code>CoreCrypto</code> instances — whether in the same process or different
-processes — is not supported and will produce undefined behavior.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="transactions-and-the-transactioncontext"><a class="header" href="#transactions-and-the-transactioncontext">Transactions and the TransactionContext</a></h1>
 <p>Every operation in CoreCrypto that can potentially mutate state must happen inside a transaction. Transactions provide
@@ -2271,13 +2285,13 @@ pub enum MlsError {
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="release-artifacts"><a class="header" href="#release-artifacts">Release Artifacts</a></h1>
 <p>Core-Crypto publishes releases to a variety of platforms.</p>
-<h2 id="typescript"><a class="header" href="#typescript">Typescript</a></h2>
+<h2 id="typescript-1"><a class="header" href="#typescript-1">Typescript</a></h2>
 <p>Typescript releases are published <a href="https://www.npmjs.com/package/@wireapp/core-crypto">on NPM</a>.</p>
 <h2 id="jvm--kmp"><a class="header" href="#jvm--kmp">JVM / KMP</a></h2>
 <p>Java bindings are published <a href="https://central.sonatype.com/artifact/com.wire/core-crypto-jvm">on Sonatype</a>.</p>
 <h2 id="android"><a class="header" href="#android">Android</a></h2>
 <p>Android bindings are published <a href="https://central.sonatype.com/artifact/com.wire/core-crypto-android">on Sonatype</a>.</p>
-<h2 id="swift"><a class="header" href="#swift">Swift</a></h2>
+<h2 id="swift-1"><a class="header" href="#swift-1">Swift</a></h2>
 <p>Swift bindings are published as a pair of <code>.xcframework.zip</code> files on the
 <a href="https://github.com/wireapp/core-crypto/releases/latest">Github release</a>.</p>
 <h2 id="rust"><a class="header" href="#rust">Rust</a></h2>
