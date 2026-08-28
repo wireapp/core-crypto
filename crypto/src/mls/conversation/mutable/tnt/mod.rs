@@ -56,17 +56,17 @@ enum TntMessageBody {
     TransientTargeted(TargetedMessage),
 }
 
-#[derive(TlsSize, TlsDeserialize, TlsSerialize, derive_more::From)]
+#[derive(TlsSize, TlsDeserialize, TlsSerialize, derive_more::From, PartialEq, Eq)]
 pub(crate) struct TntWireFormat(u16);
 
 impl TntWireFormat {
-    pub(crate) const TRANSIENT_MESSAGE: u16 = 0xF000;
+    pub(crate) const TRANSIENT_MESSAGE: Self = Self(0xF000);
     #[expect(unused)]
-    pub(crate) const TARGETED_MESSAGE: u16 = 0xF001;
-    pub(crate) const TRANSIENT_TARGETED_MESSAGE: u16 = 0xF002;
+    pub(crate) const TARGETED_MESSAGE: Self = Self(0xF001);
+    pub(crate) const TRANSIENT_TARGETED_MESSAGE: Self = Self(0xF002);
 
-    pub(crate) const MIN: u16 = Self::TRANSIENT_MESSAGE;
-    pub(crate) const MAX: u16 = Self::TRANSIENT_TARGETED_MESSAGE;
+    pub(crate) const MIN: u16 = Self::TRANSIENT_MESSAGE.0;
+    pub(crate) const MAX: u16 = Self::TRANSIENT_TARGETED_MESSAGE.0;
 
     pub(crate) const ALL: std::ops::RangeInclusive<u16> = Self::MIN..=Self::MAX;
 }

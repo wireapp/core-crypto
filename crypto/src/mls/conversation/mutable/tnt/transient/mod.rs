@@ -34,7 +34,7 @@ impl TransientMessageAad {
     fn new(sender: LeafNodeIndex, counter: TntMessageCounter, group_context: &GroupContext) -> Self {
         Self {
             protocol_version: ProtocolVersion::CURRENT,
-            wire_format: TntWireFormat::TRANSIENT_MESSAGE.into(),
+            wire_format: TntWireFormat::TRANSIENT_MESSAGE,
             sender,
             counter,
             group_context: group_context.clone(),
@@ -73,7 +73,7 @@ impl TransientMessage {
     fn aad(&self, protocol_version: ProtocolVersion) -> TransientMessageAad {
         TransientMessageAad {
             protocol_version,
-            wire_format: TntWireFormat::TRANSIENT_MESSAGE.into(),
+            wire_format: TntWireFormat::TRANSIENT_MESSAGE,
             sender: self.sender,
             counter: self.counter,
             group_context: self.group_context.clone(),
