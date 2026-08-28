@@ -84,7 +84,7 @@ mod tests {
                 assert_eq!(*conversation.id(), id);
                 assert_eq!(
                     conversation.guard().await.group().await.group_id().as_slice(),
-                    id.as_ref()
+                    id.as_ref().as_ref()
                 );
                 assert_eq!(conversation.member_count().await, 2);
                 assert!(conversation.is_functional_and_contains([&alice, &bob]).await);

@@ -194,7 +194,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
 
     for c in clients.iter_mut() {
         let conversation_id_from_welcome = c.process_welcome(&welcome_raw).await?;
-        assert_eq!(conversation_id_from_welcome, conversation_id.as_ref());
+        assert_eq!(conversation_id_from_welcome, conversation_id.as_ref().as_ref());
     }
 
     spinner.success("[MLS] Step 2: Added clients [OK]");
@@ -223,7 +223,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
 
         for c in clients.iter_mut() {
             let decrypted_message_raw = c
-                .decrypt_message(conversation_id.as_ref(), &message_to_decrypt)
+                .decrypt_message(conversation_id.as_ref().as_ref(), &message_to_decrypt)
                 .await?
                 .ok_or_else(|| {
                     anyhow!(
@@ -249,7 +249,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
             );
 
             message_to_decrypt = c
-                .encrypt_message(conversation_id.as_ref(), decrypted_message.as_bytes())
+                .encrypt_message(conversation_id.as_ref().as_ref(), decrypted_message.as_bytes())
                 .await?;
         }
 

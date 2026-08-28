@@ -5,19 +5,9 @@ use std::{
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
 #[derive(
-    core_crypto_macros::Debug,
-    derive_more::AsRef,
-    derive_more::From,
-    derive_more::Into,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Clone,
+    core_crypto_macros::Debug, derive_more::From, derive_more::Into, PartialEq, Eq, PartialOrd, Ord, Hash, Clone,
 )]
 #[sensitive]
-#[as_ref([u8])]
 #[from(&[u8], Vec<u8>)]
 pub struct ConversationId(Vec<u8>);
 
@@ -35,6 +25,12 @@ impl Deref for ConversationId {
     }
 }
 
+impl AsRef<ConversationIdRef> for ConversationId {
+    fn as_ref(&self) -> &ConversationIdRef {
+        ConversationIdRef::new(&self.0)
+    }
+}
+
 impl From<ConversationId> for Cow<'_, [u8]> {
     fn from(value: ConversationId) -> Self {
         Cow::Owned(value.0)
@@ -43,7 +39,7 @@ impl From<ConversationId> for Cow<'_, [u8]> {
 
 impl<'a> From<&'a ConversationId> for Cow<'a, [u8]> {
     fn from(value: &'a ConversationId) -> Self {
-        Cow::Borrowed(value.as_ref())
+        Cow::Borrowed(value.as_ref().as_ref())
     }
 }
 
@@ -112,12 +108,12 @@ impl From<&ConversationIdRef> for core_crypto_keystore::entities::ConversationId
 // bytes to equal hashes, keeping these impls consistent with the `Hash` impls.
 impl PartialEq<ConversationId> for ConversationIdRef {
     fn eq(&self, other: &ConversationId) -> bool {
-        self.as_ref() == other.as_ref()
+        self == other.as_ref()
     }
 }
 
 impl PartialEq<ConversationIdRef> for ConversationId {
     fn eq(&self, other: &ConversationIdRef) -> bool {
-        self.as_ref() == other.as_ref()
+        self.as_ref() == other
     }
 }

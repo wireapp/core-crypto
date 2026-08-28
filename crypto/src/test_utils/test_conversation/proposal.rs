@@ -99,7 +99,7 @@ impl<'a> TestConversation<'a> {
         let (cs, ct) = (self.case.cipher_suite(), self.case.credential_type);
         let cb = external_actor.find_any_credential(cs, ct).await;
 
-        let group_id = openmls::group::GroupId::from_slice(self.id().as_ref());
+        let group_id = openmls::group::GroupId::from_slice(self.id().as_ref().as_ref());
         let epoch = self.guard().await.epoch().await;
         let proposal = ExternalProposal::new_remove(
             to_remove_index,

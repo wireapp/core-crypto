@@ -176,7 +176,7 @@ pub struct Conversation {
 impl Conversation {
     /// Returns the conversation's ID
     pub fn id(&self) -> &ConversationIdRef {
-        ConversationIdRef::new(&self.id)
+        self.id.as_ref()
     }
 
     /// Returns an immutable guard over the underlying MLS group

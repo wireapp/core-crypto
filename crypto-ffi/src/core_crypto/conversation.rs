@@ -22,13 +22,13 @@ impl_display_via_hex!(ConversationId);
 
 impl Borrow<ConversationIdRef> for ConversationId {
     fn borrow(&self) -> &ConversationIdRef {
-        ConversationIdRef::new(&self.0)
+        self.as_ref()
     }
 }
 
 impl AsRef<ConversationIdRef> for ConversationId {
     fn as_ref(&self) -> &ConversationIdRef {
-        ConversationIdRef::new(&self.0)
+        self.0.as_ref()
     }
 }
 

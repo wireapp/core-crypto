@@ -29,7 +29,7 @@ pub enum Error {
     Keystore(#[from] crate::KeystoreError),
     #[error(transparent)]
     OpenMls(#[from] crate::OpenMlsError),
-    #[error("this credential is still in use by the conversation with id \"{}\"", hex::encode(.0))]
+    #[error("this credential is still in use by the conversation with id \"{}\"", hex::encode(.0.as_ref()))]
     CredentialStillInUse(ConversationId),
     #[error("The supplied credential does not match the id this CC instance was initialized with")]
     WrongCredential,

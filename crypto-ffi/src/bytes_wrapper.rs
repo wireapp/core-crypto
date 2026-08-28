@@ -130,7 +130,7 @@ macro_rules! impl_display_via_hex {
     ($id:ident) => {
         impl std::fmt::Display for $id {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                f.write_str(&hex::encode(<_ as AsRef<[u8]>>::as_ref(&self.0)))
+                f.write_str(&hex::encode(<_ as AsRef<[u8]>>::as_ref(&self.0.as_ref())))
             }
         }
     };
