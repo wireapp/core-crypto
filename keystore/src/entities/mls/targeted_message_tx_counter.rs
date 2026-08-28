@@ -12,14 +12,14 @@ use crate::{
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct TargetedMessageTxCounter {
-    pub conversation_id: Vec<u8>,
+    pub conversation_id: ConversationId,
     pub receiver: u32,
     pub count: u32,
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, derive_more::Constructor)]
 pub struct TargetedMessageTxCounterPk {
-    conversation_id: Vec<u8>,
+    conversation_id: ConversationId,
     receiver_idx: u32,
 }
 
@@ -105,7 +105,7 @@ impl SearchableEntity<ConversationIdRef> for TargetedMessageTxCounter {
     }
 
     fn matches(&self, conversation_id: &ConversationIdRef) -> bool {
-        self.conversation_id.as_slice() == conversation_id.bytes()
+        self.conversation_id.as_ref() == conversation_id
     }
 }
 
@@ -114,11 +114,11 @@ impl SearchableEntity<ConversationId> for TargetedMessageTxCounter {
         conn: &rusqlite::Connection,
         conversation_id: &ConversationId,
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
-        Self::find_all_matching(conn, ConversationIdRef::new(conversation_id))
+        Self::find_all_matching(conn, conversation_id.as_ref())
     }
 
     fn matches(&self, conversation_id: &ConversationId) -> bool {
-        self.conversation_id.as_slice() == conversation_id.bytes()
+        self.conversation_id.as_ref() == conversation_id
     }
 }
 
@@ -148,18 +148,18 @@ mod tests {
         let store = Database::open_in_memory().unwrap();
         let conversation_id = b"conversation".to_vec();
         let mut first = TargetedMessageTxCounter {
-            conversation_id: conversation_id.clone(),
+            conversation_id: conversation_id.as_slice().into(),
             receiver: 7,
             count: 11,
         };
         let second = TargetedMessageTxCounter {
-            conversation_id: conversation_id.clone(),
+            conversation_id: conversation_id.as_slice().into(),
             receiver: 8,
             count: 12,
         };
         let other_conversation_id = b"another conversation".to_vec();
         let third = TargetedMessageTxCounter {
-            conversation_id: other_conversation_id.clone(),
+            conversation_id: other_conversation_id.as_slice().into(),
             receiver: 9,
             count: 13,
         };

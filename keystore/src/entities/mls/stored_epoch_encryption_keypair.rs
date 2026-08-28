@@ -10,7 +10,7 @@ use crate::{
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct StoredEpochEncryptionKeypair {
-    pub conversation_id: Vec<u8>,
+    pub conversation_id: ConversationId,
     pub own_leaf_idx: u32,
     pub epoch: u64,
     #[sensitive]
@@ -42,7 +42,7 @@ impl<'a> From<&'a StoredEpochEncryptionKeypairPk> for StoredEpochEncryptionKeypa
         }: &'a StoredEpochEncryptionKeypairPk,
     ) -> Self {
         StoredEpochEncryptionKeypairPkRef {
-            conversation_id: ConversationIdRef::new(conversation_id.bytes()),
+            conversation_id: conversation_id.as_ref(),
             own_leaf_idx: *own_leaf_idx,
             epoch: *epoch,
         }
@@ -134,7 +134,7 @@ impl crate::traits::PrimaryKey for StoredEpochEncryptionKeypair {
     type PrimaryKey = StoredEpochEncryptionKeypairPk;
     fn primary_key(&self) -> Self::PrimaryKey {
         StoredEpochEncryptionKeypairPk {
-            conversation_id: self.conversation_id.clone().into(),
+            conversation_id: self.conversation_id.clone(),
             own_leaf_idx: self.own_leaf_idx,
             epoch: self.epoch,
         }
@@ -145,7 +145,7 @@ impl crate::traits::BorrowPrimaryKey for StoredEpochEncryptionKeypair {
     type BorrowedPrimaryKey<'a> = StoredEpochEncryptionKeypairPkRef<'a>;
     fn borrow_primary_key(&self) -> Self::BorrowedPrimaryKey<'_> {
         StoredEpochEncryptionKeypairPkRef {
-            conversation_id: ConversationIdRef::new(&self.conversation_id),
+            conversation_id: self.conversation_id.as_ref(),
             own_leaf_idx: self.own_leaf_idx,
             epoch: self.epoch,
         }

@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use async_trait::async_trait;
 use js_sys::Uint8Array;
 use serde::{Deserialize, Serialize};
@@ -12,7 +10,7 @@ use crate::{
         traits::{
             DecryptWithExplicitEncryptionKey as _, Decryptable, Decrypting, DeletableBySearchKey,
             EncryptWithExplicitEncryptionKey as _, Encrypting, EncryptionKey, Entity, EntityBase,
-            EntityDatabaseMutation, KeyType, SearchableEntity,
+            EntityDatabaseMutation, SearchableEntity,
         },
     },
     entities::{ConversationId, MlsPendingMessage},
@@ -58,7 +56,7 @@ impl<'a> EntityDatabaseMutation<'a> for MlsPendingMessage {
 
 impl EncryptionKey for MlsPendingMessage {
     fn encryption_key(&self) -> &[u8] {
-        &self.conversation_id
+        self.conversation_id.bytes()
     }
 }
 
@@ -74,7 +72,7 @@ impl<'a> Encrypting<'a> for MlsPendingMessage {
     fn encrypt(&'a self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::EncryptedForm> {
         let message = self.encrypt_data_with_encryption_key(cipher, &self.message)?;
         Ok(MlsPendingMessageEncrypt {
-            conversation_id: &self.conversation_id,
+            conversation_id: self.conversation_id.bytes(),
             message,
         })
     }
@@ -93,7 +91,7 @@ impl Decrypting<'static> for MlsPendingMessageDecrypt {
         let message =
             MlsPendingMessage::decrypt_data_with_encryption_key(cipher, &self.conversation_id, &self.message)?;
         Ok(MlsPendingMessage {
-            conversation_id: self.conversation_id,
+            conversation_id: self.conversation_id.into(),
             message,
         })
     }
@@ -103,33 +101,27 @@ impl Decryptable<'static> for MlsPendingMessage {
     type DecryptableFrom = MlsPendingMessageDecrypt;
 }
 
-impl KeyType for ConversationId {
-    fn bytes(&self) -> std::borrow::Cow<'_, [u8]> {
-        self.deref().into()
-    }
-}
-
 #[async_trait(?Send)]
 impl SearchableEntity<ConversationId> for MlsPendingMessage {
     async fn find_all_matching(
         conn: &mut Self::ConnectionType,
         conversation_id: &ConversationId,
     ) -> CryptoKeystoreResult<Vec<Self>> {
-        let conversation_id = &**conversation_id;
+        let conversation_id = conversation_id.bytes();
         let storage = conn.storage();
         let id = JsValue::from(Uint8Array::from(conversation_id));
         storage.get_all_with_query(Some(id.into())).await
     }
 
     fn matches(&self, conversation_id: &ConversationId) -> bool {
-        &**conversation_id == self.conversation_id.as_slice()
+        conversation_id.bytes() == self.conversation_id.bytes()
     }
 }
 
 #[async_trait(?Send)]
 impl<'a> DeletableBySearchKey<'a, ConversationId> for MlsPendingMessage {
     async fn delete_all_matching(tx: &Self::Transaction, conversation_id: &ConversationId) -> CryptoKeystoreResult<()> {
-        tx.delete::<Self>(&**conversation_id).await?;
+        tx.delete::<Self>(conversation_id.bytes()).await?;
         Ok(())
     }
 }

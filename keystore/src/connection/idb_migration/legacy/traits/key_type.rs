@@ -1,6 +1,9 @@
 use std::borrow::Cow;
 
-use crate::Sha256Hash;
+use crate::{
+    Sha256Hash,
+    entities::{ConversationId, ConversationIdRef},
+};
 
 /// A Key Type is a type which can act as a key for a database.
 ///
@@ -40,6 +43,9 @@ impl_keytype!(&str, |self| self.as_bytes());
 impl_keytype!(String, |self| self.as_bytes(), |bytes| str::from_utf8(bytes)
     .ok()
     .map(ToOwned::to_owned));
+
+impl_keytype!(ConversationId, |self| self.bytes());
+impl_keytype!(&ConversationIdRef, |self| (*self).bytes());
 
 macro_rules! impl_keytype_for_integer {
     ($t:ty) => {

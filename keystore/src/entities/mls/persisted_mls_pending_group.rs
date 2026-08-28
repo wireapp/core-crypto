@@ -1,7 +1,10 @@
 use rusqlite::Connection;
 use zeroize::Zeroize;
 
-use crate::traits::{BorrowPrimaryKey, PrimaryKey};
+use crate::{
+    entities::{ConversationId, ConversationIdRef},
+    traits::{BorrowPrimaryKey, PrimaryKey},
+};
 
 /// Entity representing a temporarily persisted `MlsGroup`
 ///
@@ -17,7 +20,7 @@ use crate::traits::{BorrowPrimaryKey, PrimaryKey};
 #[zeroize(drop)]
 pub struct PersistedMlsPendingGroup {
     #[sensitive]
-    pub id: Vec<u8>,
+    pub id: ConversationId,
     #[sensitive]
     pub state: Vec<u8>,
     #[sensitive]
@@ -26,7 +29,7 @@ pub struct PersistedMlsPendingGroup {
 }
 
 impl PrimaryKey for PersistedMlsPendingGroup {
-    type PrimaryKey = Vec<u8>;
+    type PrimaryKey = ConversationId;
 
     fn primary_key(&self) -> Self::PrimaryKey {
         self.id.clone()
@@ -34,18 +37,18 @@ impl PrimaryKey for PersistedMlsPendingGroup {
 }
 
 impl BorrowPrimaryKey for PersistedMlsPendingGroup {
-    type BorrowedPrimaryKey<'a> = &'a [u8];
+    type BorrowedPrimaryKey<'a> = &'a ConversationIdRef;
 
     fn borrow_primary_key(&self) -> Self::BorrowedPrimaryKey<'_> {
-        &self.id
+        self.id.as_ref()
     }
 }
 
 impl crate::traits::Entity for PersistedMlsPendingGroup {
     const TABLE_NAME: &'static str = "mls_pending_groups";
 
-    fn get(conn: &Connection, key: &Vec<u8>) -> crate::CryptoKeystoreResult<Option<Self>> {
-        crate::entities::helpers::get_helper(conn, "id", key.as_slice(), |row| {
+    fn get(conn: &Connection, key: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<Option<Self>> {
+        crate::entities::helpers::get_helper(conn, "id", key, |row| {
             Ok(Self {
                 id: row.get("id")?,
                 state: row.get("state")?,
@@ -72,7 +75,7 @@ impl crate::traits::Entity for PersistedMlsPendingGroup {
 }
 
 impl crate::traits::EntityGetBorrowed for PersistedMlsPendingGroup {
-    fn get_borrowed(conn: &Connection, key: &[u8]) -> crate::CryptoKeystoreResult<Option<Self>> {
+    fn get_borrowed(conn: &Connection, key: Self::BorrowedPrimaryKey<'_>) -> crate::CryptoKeystoreResult<Option<Self>> {
         crate::entities::helpers::get_helper(conn, "id", key, |row| {
             Ok(Self {
                 id: row.get("id")?,
@@ -100,13 +103,16 @@ impl crate::traits::EntityDatabaseMutation for PersistedMlsPendingGroup {
         Ok(())
     }
 
-    fn delete(tx: &rusqlite::Transaction, id: &Vec<u8>) -> crate::CryptoKeystoreResult<bool> {
-        crate::entities::helpers::delete_helper::<Self>(tx, "id", id.as_slice())
+    fn delete(tx: &rusqlite::Transaction, id: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<bool> {
+        crate::entities::helpers::delete_helper::<Self>(tx, "id", id)
     }
 }
 
 impl crate::traits::EntityDeleteBorrowed for PersistedMlsPendingGroup {
-    fn delete_borrowed(tx: &rusqlite::Transaction, id: &[u8]) -> crate::CryptoKeystoreResult<bool> {
+    fn delete_borrowed(
+        tx: &rusqlite::Transaction,
+        id: Self::BorrowedPrimaryKey<'_>,
+    ) -> crate::CryptoKeystoreResult<bool> {
         crate::entities::helpers::delete_helper::<Self>(tx, "id", id)
     }
 }

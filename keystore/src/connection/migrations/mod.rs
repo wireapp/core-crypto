@@ -423,7 +423,7 @@ r9IJmL6kDQ==
             let migrated = MlsPendingMessage::load_all(&conn).expect("loading migrated pending messages");
             assert_eq!(migrated.len(), 1, "the migration must not lose the pending message");
             let migrated = migrated.into_iter().next().unwrap();
-            assert_eq!(migrated.conversation_id, CONVERSATION_ID);
+            assert_eq!(migrated.conversation_id.bytes(), CONVERSATION_ID);
             assert_eq!(migrated.message, MESSAGE);
 
             // spelled out rather than taken from `primary_key()`, so that this pins the derivation
@@ -487,7 +487,7 @@ r9IJmL6kDQ==
                 "V31 must carry an orphan pending message across, not drop it or fail the migration"
             );
             let migrated = migrated.into_iter().next().unwrap();
-            assert_eq!(migrated.conversation_id, CONVERSATION_ID);
+            assert_eq!(migrated.conversation_id.bytes(), CONVERSATION_ID);
             assert_eq!(migrated.message, MESSAGE);
         });
     }

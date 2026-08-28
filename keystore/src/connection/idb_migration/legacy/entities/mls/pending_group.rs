@@ -22,7 +22,7 @@ impl EntityBase for PersistedMlsPendingGroup {
 #[async_trait(?Send)]
 impl Entity for PersistedMlsPendingGroup {
     async fn get(conn: &mut Self::ConnectionType, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
-        Self::get_borrowed(conn, key).await
+        Self::get_borrowed(conn, key.as_ref()).await
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<u32> {
@@ -58,7 +58,7 @@ impl<'a> EntityDatabaseMutation<'a> for PersistedMlsPendingGroup {
     }
 
     async fn delete(tx: &Self::Transaction, id: &Self::PrimaryKey) -> CryptoKeystoreResult<bool> {
-        Self::delete_borrowed(tx, id).await
+        Self::delete_borrowed(tx, id.as_ref()).await
     }
 }
 
@@ -85,7 +85,7 @@ impl<'a> Encrypting<'a> for PersistedMlsPendingGroup {
 
         Ok(PersistedMlsPendingGroupEncrypt {
             state,
-            id: &self.id,
+            id: self.id.bytes(),
             parent_id: &self.parent_id,
             custom_configuration: &self.custom_configuration,
         })
@@ -104,11 +104,12 @@ impl Decrypting<'static> for PersistedMlsPendingGroupDecrypt {
     type DecryptedForm = PersistedMlsPendingGroup;
 
     fn decrypt(self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::DecryptedForm> {
-        let state = <PersistedMlsPendingGroup as DecryptData>::decrypt_data(cipher, &self.id, &self.state)?;
+        let id = self.id.as_slice().into();
+        let state = <PersistedMlsPendingGroup as DecryptData>::decrypt_data(cipher, &id, &self.state)?;
 
         Ok(PersistedMlsPendingGroup {
             state,
-            id: self.id,
+            id,
             parent_id: self.parent_id,
             custom_configuration: self.custom_configuration,
         })

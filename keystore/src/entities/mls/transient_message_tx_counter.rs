@@ -76,7 +76,7 @@ impl BorrowPrimaryKey for TransientMessageTxCounter {
     type BorrowedPrimaryKey<'a> = &'a ConversationIdRef;
 
     fn borrow_primary_key(&self) -> Self::BorrowedPrimaryKey<'_> {
-        ConversationIdRef::new(&self.conversation_id)
+        self.conversation_id.as_ref()
     }
 }
 

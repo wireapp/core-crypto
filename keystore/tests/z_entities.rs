@@ -72,8 +72,8 @@ mod tests_impl {
     use core_crypto_keystore::{
         CryptoKeystoreError,
         entities::{
-            ConversationIdRef, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential,
-            TargetedMessageRxCounter, TargetedMessageTxCounter, TransientMessageRxCounter, TransientMessageTxCounter,
+            MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, TargetedMessageRxCounter,
+            TargetedMessageTxCounter, TransientMessageRxCounter, TransientMessageTxCounter,
         },
         traits::{
             Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase as _,
@@ -127,7 +127,7 @@ mod tests_impl {
             // tnt message counters also have a foreign key constraint which must be satisfied
             } else if let Some(counter) = any_e.downcast_mut::<TargetedMessageTxCounter>() {
                 let group = PersistedMlsGroup::random();
-                counter.conversation_id = group.id.clone();
+                counter.conversation_id = group.id.clone().into();
 
                 tx.save(group).await.unwrap();
             } else if let Some(counter) = any_e.downcast_mut::<TransientMessageTxCounter>() {
@@ -137,12 +137,12 @@ mod tests_impl {
                 tx.save(group).await.unwrap();
             } else if let Some(counter) = any_e.downcast_mut::<TargetedMessageRxCounter>() {
                 let group = PersistedMlsGroup::random();
-                counter.conversation_id = group.id.clone();
+                counter.conversation_id = group.id.clone().into();
 
                 tx.save(group).await.unwrap();
             } else if let Some(counter) = any_e.downcast_mut::<TransientMessageRxCounter>() {
                 let group = PersistedMlsGroup::random();
-                counter.conversation_id = group.id.clone();
+                counter.conversation_id = group.id.clone().into();
 
                 tx.save(group).await.unwrap();
             }
@@ -170,7 +170,7 @@ mod tests_impl {
         let any_e: &dyn Any = entity;
         if let Some(pending_message) = any_e.downcast_ref::<MlsPendingMessage>() {
             let pending_message_from_store = store
-                .search::<MlsPendingMessage, _>(ConversationIdRef::new(&pending_message.conversation_id))
+                .search::<MlsPendingMessage, _>(pending_message.conversation_id.as_ref())
                 .await
                 .unwrap()
                 .pop()
@@ -225,11 +225,11 @@ mod tests_impl {
             tx.save(group).await.unwrap();
         } else if let Some(counter) = any_e.downcast_mut::<TargetedMessageRxCounter>() {
             let group = PersistedMlsGroup::random();
-            counter.conversation_id = group.id.clone();
+            counter.conversation_id = group.id.clone().into();
             tx.save(group).await.unwrap();
         } else if let Some(counter) = any_e.downcast_mut::<TransientMessageRxCounter>() {
             let group = PersistedMlsGroup::random();
-            counter.conversation_id = group.id.clone();
+            counter.conversation_id = group.id.clone().into();
             tx.save(group).await.unwrap();
         }
         let primary_key = entity.primary_key();
@@ -377,7 +377,7 @@ mod tests_impl {
             let any_e: &mut dyn Any = &mut entity;
             if let Some(counter) = any_e.downcast_mut::<TargetedMessageTxCounter>() {
                 let group = PersistedMlsGroup::random();
-                counter.conversation_id = group.id.clone();
+                counter.conversation_id = group.id.clone().into();
                 tx.save(group).await.unwrap();
             } else if let Some(counter) = any_e.downcast_mut::<TransientMessageTxCounter>() {
                 let group = PersistedMlsGroup::random();
@@ -385,11 +385,11 @@ mod tests_impl {
                 tx.save(group).await.unwrap();
             } else if let Some(counter) = any_e.downcast_mut::<TargetedMessageRxCounter>() {
                 let group = PersistedMlsGroup::random();
-                counter.conversation_id = group.id.clone();
+                counter.conversation_id = group.id.clone().into();
                 tx.save(group).await.unwrap();
             } else if let Some(counter) = any_e.downcast_mut::<TransientMessageRxCounter>() {
                 let group = PersistedMlsGroup::random();
-                counter.conversation_id = group.id.clone();
+                counter.conversation_id = group.id.clone().into();
                 tx.save(group).await.unwrap();
             }
             tx.save(entity).await.unwrap();
@@ -533,7 +533,7 @@ pub mod utils {
                             )*
 
                             Self {
-                                $($id_field: $id_field.into(),)?
+                                $($id_field: $id_field.as_slice().into(),)?
                                 $($blob_field,)*
                                 $($($additional_field_ident: $additional_field_value,)+)?
                             }
@@ -605,7 +605,9 @@ pub mod utils {
     impl EntityRandomExt for TargetedMessageTxCounter {
         fn random() -> Self {
             Self {
-                conversation_id: b"This cannot be filled meaninfully here; need a real conversation".to_vec(),
+                conversation_id: b"This cannot be filled meaninfully here; need a real conversation"
+                    .as_slice()
+                    .into(),
                 receiver: rand::random(),
                 count: rand::random(),
             }
@@ -638,7 +640,9 @@ pub mod utils {
     impl EntityRandomExt for TargetedMessageRxCounter {
         fn random() -> Self {
             Self {
-                conversation_id: b"This cannot be filled meaningfully here; need a real conversation".to_vec(),
+                conversation_id: b"This cannot be filled meaningfully here; need a real conversation"
+                    .as_slice()
+                    .into(),
                 sender: rand::random(),
                 epoch: u64::from(rand::random::<u32>()),
                 count: rand::random(),
@@ -655,7 +659,9 @@ pub mod utils {
     impl EntityRandomExt for TransientMessageRxCounter {
         fn random() -> Self {
             Self {
-                conversation_id: b"This cannot be filled meaningfully here; need a real conversation".to_vec(),
+                conversation_id: b"This cannot be filled meaningfully here; need a real conversation"
+                    .as_slice()
+                    .into(),
                 sender: rand::random(),
                 epoch: u64::from(rand::random::<u32>()),
                 count: rand::random(),
@@ -789,7 +795,8 @@ pub mod utils {
             fn random() -> Self {
                 use rand::Rng as _;
                 let mut rng = rand::thread_rng();
-                let conversation_id = uuid::Uuid::new_v4().into_bytes().into();
+                let conversation_id = uuid::Uuid::new_v4().into_bytes();
+                let conversation_id = conversation_id.as_slice().into();
                 let own_leaf_idx = rng.r#gen();
                 // sqlite stores all its integer fields as i64, so if the leftmost bit
                 // of an epoch is ever set, the DB will start erroring out.

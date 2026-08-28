@@ -4,7 +4,7 @@ use zeroize::Zeroize;
 use crate::{
     CryptoKeystoreResult,
     entities::{
-        ConversationEpochsOlderThan,
+        ConversationEpochsOlderThan, ConversationId, ConversationIdRef,
         helpers::{count_helper, get_helper_composite_key, load_all_helper},
     },
     traits::{
@@ -16,7 +16,7 @@ use crate::{
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct TntSecret {
-    pub conversation_id: Vec<u8>,
+    pub conversation_id: ConversationId,
     pub epoch: u64,
     #[sensitive]
     pub hpke_private_key: Vec<u8>,
@@ -27,7 +27,7 @@ pub struct TntSecret {
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, derive_more::Constructor)]
 pub struct TntSecretPk {
-    conversation_id: Vec<u8>,
+    conversation_id: ConversationId,
     epoch: u64,
 }
 
@@ -108,7 +108,7 @@ impl EntityDatabaseMutation for TntSecret {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, derive_more::Constructor)]
 pub struct TntSecretPkRef<'a> {
-    conversation_id: &'a [u8],
+    conversation_id: &'a ConversationIdRef,
     epoch: u64,
 }
 
@@ -116,7 +116,7 @@ impl BorrowPrimaryKey for TntSecret {
     type BorrowedPrimaryKey<'a> = TntSecretPkRef<'a>;
 
     fn borrow_primary_key(&self) -> Self::BorrowedPrimaryKey<'_> {
-        TntSecretPkRef::new(&self.conversation_id, self.epoch)
+        TntSecretPkRef::new(self.conversation_id.as_ref(), self.epoch)
     }
 }
 
@@ -164,7 +164,7 @@ impl SearchableEntity<ConversationEpochsOlderThan> for TntSecret {
     }
 
     fn matches(&self, conversation_epoch: &ConversationEpochsOlderThan) -> bool {
-        self.conversation_id.as_slice() == conversation_epoch.conversation_id && self.epoch < conversation_epoch.epoch
+        self.conversation_id == conversation_epoch.conversation_id && self.epoch < conversation_epoch.epoch
     }
 }
 
@@ -187,6 +187,6 @@ impl DeletableBySearchKey<ConversationEpochsOlderThan> for TntSecret {
 
 impl From<TntSecretPkRef<'_>> for TntSecretPk {
     fn from(key: TntSecretPkRef<'_>) -> Self {
-        Self::new(key.conversation_id.to_vec(), key.epoch)
+        Self::new(key.conversation_id.into(), key.epoch)
     }
 }

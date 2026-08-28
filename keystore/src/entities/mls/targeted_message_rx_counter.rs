@@ -4,7 +4,7 @@ use zeroize::Zeroize;
 use crate::{
     CryptoKeystoreResult,
     entities::{
-        ConversationEpochsOlderThan, MessageRxCounterPk, MessageRxCounterPkRef,
+        ConversationEpochsOlderThan, ConversationId, MessageRxCounterPk, MessageRxCounterPkRef,
         helpers::{count_helper, get_helper_composite_key, load_all_helper},
     },
     traits::{
@@ -16,7 +16,7 @@ use crate::{
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct TargetedMessageRxCounter {
-    pub conversation_id: Vec<u8>,
+    pub conversation_id: ConversationId,
     pub sender: u32,
     pub epoch: u64,
     pub count: u32,
@@ -102,7 +102,7 @@ impl BorrowPrimaryKey for TargetedMessageRxCounter {
     type BorrowedPrimaryKey<'a> = MessageRxCounterPkRef<'a>;
 
     fn borrow_primary_key(&self) -> Self::BorrowedPrimaryKey<'_> {
-        MessageRxCounterPkRef::new(&self.conversation_id, self.sender, self.epoch)
+        MessageRxCounterPkRef::new(self.conversation_id.as_ref(), self.sender, self.epoch)
     }
 }
 
@@ -150,7 +150,7 @@ impl SearchableEntity<ConversationEpochsOlderThan> for TargetedMessageRxCounter 
     }
 
     fn matches(&self, conversation_epoch: &ConversationEpochsOlderThan) -> bool {
-        self.conversation_id.as_slice() == conversation_epoch.conversation_id && self.epoch < conversation_epoch.epoch
+        self.conversation_id == conversation_epoch.conversation_id && self.epoch < conversation_epoch.epoch
     }
 }
 

@@ -22,7 +22,7 @@ use crate::{
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct MlsPendingMessage {
-    pub conversation_id: Vec<u8>,
+    pub conversation_id: ConversationId,
     #[sensitive]
     pub message: Vec<u8>,
 }
@@ -110,7 +110,7 @@ impl SearchableEntity<ConversationIdRef> for MlsPendingMessage {
     }
 
     fn matches(&self, conversation_id: &ConversationIdRef) -> bool {
-        conversation_id.bytes() == self.conversation_id.as_slice()
+        conversation_id.bytes() == self.conversation_id.bytes()
     }
 }
 
@@ -119,11 +119,11 @@ impl SearchableEntity<ConversationId> for MlsPendingMessage {
         conn: &rusqlite::Connection,
         conversation_id: &ConversationId,
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
-        Self::find_all_matching(conn, ConversationIdRef::new(conversation_id))
+        Self::find_all_matching(conn, conversation_id.as_ref())
     }
 
     fn matches(&self, conversation_id: &ConversationId) -> bool {
-        conversation_id.bytes() == self.conversation_id.as_slice()
+        conversation_id.bytes() == self.conversation_id.bytes()
     }
 }
 
@@ -150,7 +150,7 @@ mod tests {
 
     fn pending_message() -> MlsPendingMessage {
         MlsPendingMessage {
-            conversation_id: CONVERSATION_ID.to_owned(),
+            conversation_id: CONVERSATION_ID.into(),
             message: MESSAGE.to_owned(),
         }
     }
@@ -220,7 +220,7 @@ mod tests {
         future::block_on(async {
             let store = Database::open_in_memory().unwrap();
             let sibling = MlsPendingMessage {
-                conversation_id: CONVERSATION_ID.to_owned(),
+                conversation_id: CONVERSATION_ID.into(),
                 message: b"a second buffered message in the same conversation".to_vec(),
             };
             let doomed_key = pending_message().primary_key();
@@ -260,7 +260,7 @@ mod tests {
             let tx = store.new_transaction().await.unwrap();
             tx.save(pending_message()).await.unwrap();
             tx.save(MlsPendingMessage {
-                conversation_id: CONVERSATION_ID.to_owned(),
+                conversation_id: CONVERSATION_ID.into(),
                 message: b"a second buffered message in the same conversation".to_vec(),
             })
             .await
@@ -314,7 +314,7 @@ mod tests {
             let stale = pending_message();
             let stale_key = stale.primary_key();
             let fresh = MlsPendingMessage {
-                conversation_id: CONVERSATION_ID.to_owned(),
+                conversation_id: CONVERSATION_ID.into(),
                 message: b"a message buffered after the conversation was cleared".to_vec(),
             };
             let fresh_key = fresh.primary_key();

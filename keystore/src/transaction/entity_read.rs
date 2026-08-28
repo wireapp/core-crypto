@@ -195,7 +195,7 @@ mod tests {
 
     fn pending_message() -> MlsPendingMessage {
         MlsPendingMessage {
-            conversation_id: CONVERSATION_ID.to_owned(),
+            conversation_id: CONVERSATION_ID.into(),
             message: b"a message which arrived before we could decrypt it".to_vec(),
         }
     }
