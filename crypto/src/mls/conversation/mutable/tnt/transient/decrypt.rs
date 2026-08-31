@@ -1,11 +1,10 @@
-use core_crypto_keystore::entities::TransientMessageRxCounter;
 use openmls::prelude::{Member, OpenMlsCrypto};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Deserialize as _, Serialize, VLBytes};
 
 use super::{Error, Result};
 use crate::{
-    DecryptedMessage, KeystoreError, OpenMlsError, RecursiveError, TlsCodecError,
+    DecryptedMessage, OpenMlsError, TlsCodecError,
     mls::conversation::{
         ConversationMut,
         mutable::tnt::{ProtocolVersion, TntWireFormat, TransientMessage, transient::transient_message_secrets},
@@ -64,22 +63,15 @@ impl ConversationMut {
             .map_err(TlsCodecError::deserialize("TargetedMessageContent"))?
             .into();
 
-        let tx = self
-            .tx_context
-            .inner()
-            .await
-            .map_err(RecursiveError::transaction("getting inner context"))?;
-        let tx = tx.transaction();
-        tx.save(TransientMessageRxCounter {
-            conversation_id: self.id().into(),
-            sender: message.sender.u32(),
-            epoch: group_epoch,
-            count: message.counter.into(),
-        })
-        .await
-        .map_err(KeystoreError::wrap("persisting TransientMessageRxCounter"))?;
-
         let decrypted_bytes = self.extract_sender_id(sender, plaintext).await?;
+
+        self.persist_rx_message_counter(
+            group_epoch,
+            TntWireFormat::TRANSIENT_MESSAGE,
+            message_sender,
+            message_counter,
+        )
+        .await?;
 
         Ok(DecryptedMessage::Transient(decrypted_bytes))
     }

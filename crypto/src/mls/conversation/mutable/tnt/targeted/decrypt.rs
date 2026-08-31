@@ -1,7 +1,7 @@
 use core_crypto_keystore::{
     entities::{
         ConversationIdRef as KeystoreConversationIdRef, StoredEpochEncryptionKeypair,
-        StoredEpochEncryptionKeypairPkRef, TargetedMessageRxCounter, TntSecret, TntSecretPkRef,
+        StoredEpochEncryptionKeypairPkRef, TntSecret, TntSecretPkRef,
     },
     traits::FetchFromDatabase as _,
 };
@@ -16,7 +16,7 @@ use tls_codec::{Deserialize as _, Serialize as _, VLBytes};
 
 use super::{HpkeContextData, PskId, TargetedMessageContext, derive_targeted_message_psk, extract_hpke_context_data};
 use crate::{
-    CryptoProvider, DecryptedMessage, KeystoreError, OpenMlsError, RecursiveError, TlsCodecError,
+    CryptoProvider, DecryptedMessage, KeystoreError, OpenMlsError, TlsCodecError,
     mls::conversation::{
         ConversationMut, Error, MlsGroupState, Result, TargetedMessagePolicy,
         config::{MAX_FUTURE_EPOCHS, MAX_PAST_EPOCHS},
@@ -85,22 +85,10 @@ impl ConversationMut {
             .map_err(TlsCodecError::deserialize("TargetedMessageContent"))?
             .into();
 
-        let tx = self
-            .tx_context
-            .inner()
-            .await
-            .map_err(RecursiveError::transaction("getting inner context"))?;
-        let tx = tx.transaction();
-        tx.save(TargetedMessageRxCounter {
-            conversation_id: self.id().into(),
-            sender: message.sender().u32(),
-            epoch: group_epoch,
-            count: message.counter.into(),
-        })
-        .await
-        .map_err(KeystoreError::wrap("persisting TargetedMessageRxCounter"))?;
-
         let decrypted_bytes = self.extract_sender_id(sender, plaintext).await?;
+
+        self.persist_rx_message_counter(group_epoch, message_type, message_sender, message_counter)
+            .await?;
 
         match policy {
             TargetedMessagePolicy::Transient => Ok(DecryptedMessage::TransientTargeted(decrypted_bytes)),
