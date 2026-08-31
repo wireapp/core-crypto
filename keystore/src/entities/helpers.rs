@@ -1,6 +1,6 @@
-use rusqlite::{Connection, OptionalExtension, Params, Row, ToSql, Transaction};
+use rusqlite::{Connection, OptionalExtension, Params, Row, ToSql};
 
-use crate::{CryptoKeystoreResult, traits::Entity};
+use crate::{CryptoKeystoreResult, Transactionlike, traits::Entity};
 
 /// Helper to perform an SQL query to get an entity by its primary key
 ///
@@ -111,12 +111,17 @@ where
 /// You need to provide the primary key's column name and the actual primary key.
 ///
 /// Returns `true` if at least one entity was deleted, or `false` if the id was not found in the database.
-pub(crate) fn delete_helper<E: Entity>(
-    tx: &Transaction<'_>,
+pub(crate) fn delete_helper<'a, E, Tx>(
+    tx: &'a Tx,
     primary_key_column_name: &str,
     primary_key: impl ToSql,
-) -> CryptoKeystoreResult<bool> {
-    let mut statement = tx.prepare_cached(&format!(
+) -> CryptoKeystoreResult<bool>
+where
+    E: Entity,
+    &'a Tx: Into<Transactionlike<'a>>,
+{
+    let conn = tx.into().conn()?;
+    let mut statement = conn.prepare_cached(&format!(
         "DELETE FROM {table_name} WHERE {primary_key_column_name} = ?",
         table_name = E::TABLE_NAME,
     ))?;
@@ -131,13 +136,14 @@ pub(crate) fn delete_helper<E: Entity>(
 /// Both simple and composite primary keys are supported.
 ///
 /// Returns the number of rows affected
-pub(crate) fn delete_helper_composite_key<E>(
-    conn: &Connection,
+pub(crate) fn delete_helper_composite_key<'a, E, Tx>(
+    tx: &'a Tx,
     primary_key_column_names: &[&str],
     primary_key: impl Params,
 ) -> CryptoKeystoreResult<u32>
 where
     E: Entity,
+    &'a Tx: Into<Transactionlike<'a>>,
 {
     debug_assert!(
         !primary_key_column_names.is_empty(),
@@ -155,6 +161,7 @@ where
         table_name = E::TABLE_NAME,
     );
 
+    let conn = tx.into().conn()?;
     conn.prepare_cached(&sql)?
         .execute(primary_key)
         .map(|count| count.try_into().unwrap_or(u32::MAX))

@@ -162,7 +162,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for Transaction {
                 let kp_ref = StoredEpochEncryptionKeypairPkRef::parse_bytes(id)?;
                 StoredEpochEncryptionKeypair::delete_borrowed(self, kp_ref)?
             }
-        }
+        };
 
         Ok(())
     }
