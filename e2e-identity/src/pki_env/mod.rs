@@ -15,7 +15,7 @@ use certval::{
 use core_crypto_keystore::{
     Database, Transaction,
     entities::{X509Crl, X509IntermediateCert, X509TrustAnchor},
-    traits::FetchFromDatabase,
+    traits::{EntityDatabaseMutation as _, EntityDeleteBorrowed, FetchFromDatabase},
 };
 use openmls_traits::authentication_service::{CredentialAuthenticationStatus, CredentialRef};
 use x509_cert::{
@@ -189,7 +189,7 @@ impl PkiEnvironment {
             content: cert.to_der()?,
         };
 
-        tx.save(cert_data).await?;
+        cert_data.save(tx)?;
 
         let mut trust_anchors = TaSource::new();
         trust_anchors.push(certval::CertFile {
@@ -209,7 +209,7 @@ impl PkiEnvironment {
     /// Note that any certificates relying on the removed trust anchor may no longer
     /// validate.
     pub async fn remove_trust_anchor(&self, tx: &Transaction, fingerprint: &[u8]) -> Result<()> {
-        tx.remove_borrowed::<X509TrustAnchor>(fingerprint).await?;
+        X509TrustAnchor::delete_borrowed(tx, fingerprint)?;
 
         let anchors = tx.load_all::<X509TrustAnchor>().await?;
 
@@ -248,7 +248,7 @@ impl PkiEnvironment {
             ski_aki_pair,
         };
 
-        tx.save(intermediate_cert).await?;
+        intermediate_cert.save(tx)?;
 
         // Get CRL distribution points and CRLs
         let dps: Vec<String> = extract_crl_uris(&cert)?.iter().flatten().cloned().collect();

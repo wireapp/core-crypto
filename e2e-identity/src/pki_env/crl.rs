@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use core_crypto_keystore::{Transaction, entities::X509Crl};
+use core_crypto_keystore::{Transaction, entities::X509Crl, traits::EntityDatabaseMutation as _};
 
 use super::{Error, Result};
 use crate::{
@@ -49,6 +49,6 @@ impl PkiEnvironment {
             distribution_point: crl_dp.to_owned(),
         };
 
-        tx.save(crl_data).await.map_err(Into::into)
+        crl_data.save(tx).map_err(Into::into)
     }
 }
