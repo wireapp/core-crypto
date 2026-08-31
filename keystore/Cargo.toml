@@ -59,6 +59,7 @@ thiserror.workspace = true
 x509-cert = { workspace = true }
 spki.workspace = true
 zeroize = { workspace = true, features = ["zeroize_derive"] }
+parking_lot = { version = "0.12.5", features = ["arc_lock"] }
 
 [target.'cfg(target_os = "ios")'.dependencies]
 core-foundation = "0.10"
