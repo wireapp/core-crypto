@@ -1,6 +1,6 @@
 use core_crypto_keystore::{
     entities::{
-        ConversationIdRef as KeystoreConversationIdRef, MessageRxCounterPkRef, StoredEpochEncryptionKeypair,
+        ConversationIdRef as KeystoreConversationIdRef, StoredEpochEncryptionKeypair,
         StoredEpochEncryptionKeypairPkRef, TargetedMessageRxCounter, TntSecret, TntSecretPkRef,
     },
     traits::FetchFromDatabase as _,
@@ -20,7 +20,7 @@ use crate::{
     mls::conversation::{
         ConversationMut, Error, MlsGroupState, Result, TargetedMessagePolicy,
         config::{MAX_FUTURE_EPOCHS, MAX_PAST_EPOCHS},
-        mutable::tnt::{ProtocolVersion, TargetedMessage},
+        mutable::tnt::{ProtocolVersion, TargetedMessage, TntWireFormat},
     },
 };
 
@@ -48,17 +48,15 @@ impl ConversationMut {
             return Err(Error::UnbufferedFarFutureMessage);
         }
 
-        let database = self.database().await?;
-        let counter_pk = MessageRxCounterPkRef::new(self.id.as_ref().into(), message.sender().u32(), group_epoch);
-        let existing_counter = database
-            .get_borrowed::<TargetedMessageRxCounter>(counter_pk)
-            .await
-            .map_err(KeystoreError::wrap("getting TargetedMessageRxCounter"))?
-            .map(|counter| counter.count)
-            .unwrap_or_default();
-        if u32::from(message.counter) <= existing_counter {
-            return Err(Error::DuplicateMessage);
-        }
+        let message_type = match policy {
+            TargetedMessagePolicy::Transient => TntWireFormat::TRANSIENT_MESSAGE,
+            TargetedMessagePolicy::Persisted => TntWireFormat::TARGETED_MESSAGE,
+        };
+
+        let message_sender = message.sender();
+        let message_counter = message.counter;
+        self.ensure_no_duplicate_message(group_epoch, message_type, message_sender, message_counter)
+            .await?;
 
         let crypto_provider = self.crypto_provider().await?;
         let cipher_suite = &self.cipher_suite();
