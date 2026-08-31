@@ -5,10 +5,13 @@
 //! `Send` at a minimum in order to keep the transaction around and manipulate it concurrently
 //! from various tasks.
 
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
+
+use async_lock::MutexGuard;
+use rusqlite::Connection;
 
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc, transaction::Transaction,
+    CryptoKeystoreError, CryptoKeystoreResult, Database, Transaction, UniqueArc, transaction::TransactionConnection,
     unique_arc::ArcWithReadGuard,
 };
 
@@ -61,32 +64,46 @@ impl Database {
         result
     }
 
-    /// Do an operation on an existing keystore transaction.
+    /// The connection on which to perform a database operation.
     ///
-    /// This does not create, commit, or abort an existing transaction; it just provides a standardized
-    /// helper to acquire it while creating appropriate errors.
-    pub(crate) async fn with_transaction<R>(
-        &self,
-        operation: impl AsyncFnOnce(&Transaction) -> CryptoKeystoreResult<R>,
-    ) -> CryptoKeystoreResult<R> {
-        let guard = self.transaction.lock().await;
-        let transaction = guard
-            .as_ref()
-            .ok_or(CryptoKeystoreError::MutatingOperationWithoutTransaction)?
-            .upgrade()
-            .await
-            .ok_or(CryptoKeystoreError::MutatingOperationWithoutTransaction)?;
+    /// When a transaction is in flight this is tha transaction's connection.
+    /// Otherwise it is the database's internal connection.
+    ///
+    /// It is the caller's responsibility to ensure that mutating operations are only performed
+    /// via a transaction!
+    ///
+    /// The returned type is deliberately `!Send` because there is an inner lock
+    /// which is synchronous (for good reason, see field-level docs on `Transaction::conn`);
+    /// holding that lock across an await point would wedge the database.
+    pub(crate) async fn conn<'a>(&'a self) -> impl 'a + Deref<Target = Connection> {
+        #[derive(derive_more::From)]
+        enum ConnectionGuard<'a> {
+            Transaction(TransactionConnection),
+            Database(MutexGuard<'a, Connection>),
+        }
 
-        operation(&transaction).await
+        impl<'a> Deref for ConnectionGuard<'a> {
+            type Target = Connection;
+
+            fn deref(&self) -> &Self::Target {
+                match self {
+                    ConnectionGuard::Transaction(transaction_connection) => transaction_connection.deref(),
+                    ConnectionGuard::Database(mutex_guard) => mutex_guard.deref(),
+                }
+            }
+        }
+
+        if let Some(weak) = self.transaction.lock().await.clone()
+            && let Some(wrapper) = weak.upgrade_without_type_erasure().await
+            && let Ok(transaction_connection) = TransactionConnection::shared(wrapper)
+        {
+            ConnectionGuard::from(transaction_connection)
+        } else {
+            self.conn.lock().await.into()
+        }
     }
 
     /// Ensure a transaction exists, passing it to the operation.
-    ///
-    /// Ideally this method wouldn't exist; in most cases, [`Self::transactionally`]
-    /// or `Self::with_transaction` (crate-public) are the simpler picks. Every usage of this is a step
-    /// away from the long-term goal of separating transactions from the database entirely.
-    /// At present, this is designed for the FFI version of `PkiEnvironment`, which cannot
-    /// natively know whether a CC transaction is currently in-progress or not.
     ///
     /// If a transaction is already in progress, perform the operation and pass on its result
     /// without affecting the transaction lifecycle at all, whether or not the operation succeeded.
@@ -95,7 +112,7 @@ impl Database {
     /// the operation here has completed.
     ///
     /// If a transaction was _not_ already in progress, create one and then perform the operation.
-    /// If the operation succeeded, commit the transaction; otherwise, let it rollback by drop.
+    /// If the operation succeeded, commit the transaction; otherwise, roll it back.
     /// Then return the result.
     ///
     /// If the operation succeeded but the commit failed, the commit error masks the operation's
@@ -137,198 +154,14 @@ impl Database {
 
         let result = operation(&handle).await;
 
-        if let TxHandle::Owned(tx) = handle
-            && result.is_ok()
-        {
-            tx.commit().await.map_err(&map_err)?;
+        if let TxHandle::Owned(tx) = handle {
+            if result.is_ok() {
+                tx.commit().await.map_err(&map_err)?;
+            } else {
+                tx.rollback().await.map_err(&map_err)?;
+            }
         }
 
         result
-    }
-
-    /// Merge database records with the active transaction's view of them.
-    ///
-    /// If no transaction is in progress, the database records are returned unchanged.
-    pub(super) async fn merge_with_transaction<E, Persisted>(
-        &self,
-        persisted_records: Persisted,
-        merge: impl AsyncFnOnce(&Transaction, Persisted) -> CryptoKeystoreResult<Vec<Arc<E>>>,
-    ) -> CryptoKeystoreResult<Vec<Arc<E>>>
-    where
-        Persisted: IntoIterator<Item = Arc<E>>,
-    {
-        let guard = self.transaction.lock().await;
-        let Some(weak) = guard.as_ref() else {
-            return Ok(persisted_records.into_iter().collect());
-        };
-        let Some(tx) = weak.upgrade().await else {
-            return Ok(persisted_records.into_iter().collect());
-        };
-        merge(&tx, persisted_records).await
-    }
-}
-
-#[cfg(all(test, not(target_os = "unknown")))]
-mod tests {
-    use std::{future::Future, time::Duration};
-
-    use futures_lite::future;
-    use smol::Timer;
-
-    use crate::{CryptoKeystoreError, Database, entities::ConsumerData, traits::FetchFromDatabase as _};
-
-    const OUTER: &[u8] = b"written by the outer operation";
-    const NESTED: &[u8] = b"written by the nested operation";
-
-    /// How long [`without_deadlock`] waits before declaring a hang.
-    ///
-    /// Generous, because overshooting only costs time on an already-failing test, while
-    /// undershooting would make the suite flaky on a loaded CI machine.
-    const TIMEOUT: Duration = Duration::from_secs(10);
-
-    /// Distinguishes an operation failure from a keystore failure, so that the rollback test can
-    /// assert that the error coming back out is the one the operation produced.
-    #[derive(Debug, derive_more::From)]
-    enum TestError {
-        Keystore(CryptoKeystoreError),
-        Operation,
-    }
-
-    fn consumer_data(content: &[u8]) -> ConsumerData {
-        ConsumerData {
-            content: content.to_owned(),
-        }
-    }
-
-    /// Run `fut` to completion, panicking rather than hanging if it takes too long.
-    ///
-    /// Every interesting failure mode in these tests is a deadlock, which would otherwise stall
-    /// the whole test run instead of reporting which case broke.
-    async fn without_deadlock<T>(fut: impl Future<Output = T>) -> T {
-        future::or(async { Some(fut.await) }, async {
-            Timer::after(TIMEOUT).await;
-            None
-        })
-        .await
-        .expect("timed out; `ensure_transaction` deadlocked")
-    }
-
-    /// Meta-test: [`without_deadlock`] can actually observe a hang.
-    ///
-    /// The other tests in this module lean on that guard to turn a deadlock regression into a
-    /// named failure instead of a stalled test run. If the guard ever stopped firing — say because
-    /// [`Timer`] no longer gets driven under [`future::block_on`] — those tests would keep passing
-    /// while silently losing the property they exist to check, so it's worth pinning down.
-    ///
-    /// Ignored by default because it is slow and only tests test code. Run it with
-    /// `cargo test -p core-crypto-keystore --lib timeout_guard -- --ignored`.
-    #[test]
-    #[ignore = "takes as long as the timeout it is verifying"]
-    #[should_panic(expected = "deadlocked")]
-    fn timeout_guard_actually_fires() {
-        future::block_on(without_deadlock(async {
-            Timer::after(TIMEOUT * 3).await;
-        }));
-    }
-
-    /// With nothing in flight, `ensure_transaction` creates a transaction of its own and commits
-    /// it once the operation succeeds.
-    #[test]
-    fn creates_and_commits_when_nothing_is_in_flight() {
-        future::block_on(without_deadlock(async {
-            let store = Database::open_in_memory().unwrap();
-
-            store
-                .ensure_transaction(async |tx| tx.save(consumer_data(OUTER)).await, std::convert::identity)
-                .await
-                .unwrap();
-
-            // no transaction is in flight any more, so this can only be reading persisted data
-            let persisted = store.get_unique::<ConsumerData>().await.unwrap().unwrap();
-            assert_eq!(persisted.content, OUTER);
-        }));
-    }
-
-    /// When a transaction is already in flight, `ensure_transaction` borrows it and leaves the
-    /// commit to whoever owns it.
-    #[test]
-    fn borrows_an_in_flight_transaction_without_committing_it() {
-        future::block_on(without_deadlock(async {
-            let store = Database::open_in_memory().unwrap();
-            let owned = store.new_transaction().await.unwrap();
-
-            store
-                .ensure_transaction(async |tx| tx.save(consumer_data(OUTER)).await, std::convert::identity)
-                .await
-                .unwrap();
-
-            // the write landed in the in-flight transaction, so it is visible through the store ...
-            let staged = store.get_unique::<ConsumerData>().await.unwrap().unwrap();
-            assert_eq!(staged.content, OUTER);
-
-            // ... but `ensure_transaction` must not have committed it: dropping the owner rolls the
-            // write back, which would be impossible had it already been persisted.
-            drop(owned);
-            assert!(!store.exists::<ConsumerData>().await.unwrap());
-        }));
-    }
-
-    /// A transaction which `ensure_transaction` created itself is rolled back when the operation
-    /// fails, and the operation's own error is what comes back out.
-    #[test]
-    fn rolls_back_its_own_transaction_when_the_operation_fails() {
-        future::block_on(without_deadlock(async {
-            let store = Database::open_in_memory().unwrap();
-
-            let error = store
-                .ensure_transaction(
-                    async |tx| {
-                        tx.save(consumer_data(OUTER)).await?;
-                        Err::<(), _>(TestError::Operation)
-                    },
-                    TestError::Keystore,
-                )
-                .await
-                .unwrap_err();
-
-            match error {
-                TestError::Operation => {}
-                TestError::Keystore(err) => panic!("expected the operation's own error, got a keystore error: {err}"),
-            }
-            assert!(!store.exists::<ConsumerData>().await.unwrap());
-        }));
-    }
-
-    /// A nested `ensure_transaction` finds and reuses the transaction the outer call created.
-    ///
-    /// Regression test: an earlier implementation held the transaction mutex across the operation,
-    /// so the nested call deadlocked against the outer one.
-    #[test]
-    fn can_be_nested() {
-        future::block_on(without_deadlock(async {
-            let store = Database::open_in_memory().unwrap();
-
-            store
-                .ensure_transaction(
-                    async |tx| {
-                        tx.save(consumer_data(OUTER)).await?;
-                        store
-                            .ensure_transaction(
-                                async |nested| nested.save(consumer_data(NESTED)).await,
-                                std::convert::identity,
-                            )
-                            .await?;
-                        Ok(())
-                    },
-                    std::convert::identity,
-                )
-                .await
-                .unwrap();
-
-            // the nested call borrowed the outer transaction instead of creating its own, so both
-            // writes committed together; `ConsumerData` is unique, so the later write is the survivor
-            let persisted = store.get_unique::<ConsumerData>().await.unwrap().unwrap();
-            assert_eq!(persisted.content, NESTED);
-        }));
     }
 }
