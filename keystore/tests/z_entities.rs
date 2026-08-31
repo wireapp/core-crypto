@@ -390,21 +390,16 @@ mod tests_impl {
         );
 
         let tx = store.new_transaction().await.unwrap();
-        updated
+        let update_err = updated
             .save(&*tx)
-            .inspect_err(|err| {
-                dbg!(err);
-            })
-            .unwrap();
-        let commit_error = tx
-            .commit()
-            .await
             .expect_err("this entity does not upsert, so rewriting it under its own key must fail");
         assert!(
-            matches!(commit_error, CryptoKeystoreError::AlreadyExists(table) if table == E::TABLE_NAME),
-            "expected a uniqueness violation for {}, got {commit_error:?}",
+            matches!(update_err, CryptoKeystoreError::AlreadyExists(table) if table == E::TABLE_NAME),
+            "expected a uniqueness violation for {}, got {update_err:?}",
             E::TABLE_NAME
         );
+        // a commit here commits nothing because the update was rejected
+        tx.commit().await.unwrap();
 
         assert_no_transaction_in_flight(store).await;
         let mut stored = Arc::unwrap_or_clone(store.get::<E>(&entity.primary_key()).await.unwrap().unwrap());
