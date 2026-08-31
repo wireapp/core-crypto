@@ -54,8 +54,9 @@ impl Database {
         let result = operation(&transaction).await;
         if result.is_ok() {
             transaction.commit().await?;
+        } else {
+            transaction.rollback().await?;
         }
-        // otherwise implicit rollback on tx drop
 
         result
     }
