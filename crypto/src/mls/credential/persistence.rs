@@ -46,17 +46,21 @@ impl Credential {
             .tls_serialize_detached()
             .map_err(TlsCodecError::serialize("credential"))?;
 
-        self.earliest_validity = tx
-            .save(StoredCredential {
-                session_id: self.client_id().to_owned().into_inner(),
-                credential: credential_data,
-                created_at: Default::default(), // updated by the `.save` impl
-                ciphersuite: u16::from(self.cipher_suite),
-                private_key: self.signature_key_pair.private().to_owned(),
-                public_key: self.signature_key().public().to_owned(),
-            })
+        let mut stored_credential = StoredCredential {
+            session_id: self.client_id().to_owned().into_inner(),
+            credential: credential_data,
+            created_at: Default::default(), // updated by `.pre_save`
+            ciphersuite: u16::from(self.cipher_suite),
+            private_key: self.signature_key_pair.private().to_owned(),
+            public_key: self.signature_key().public().to_owned(),
+        };
+        stored_credential.pre_save()?;
+        tx.save(stored_credential)
             .await
             .map_err(KeystoreError::wrap("saving credential"))?;
+
+        // ensure everything succeeded before mutating self
+        self.earliest_validity = stored_credential.created_at;
 
         Ok(CredentialRef::from_credential(self))
     }
