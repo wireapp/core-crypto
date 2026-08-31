@@ -7,6 +7,8 @@ pub enum CryptoKeystoreError {
     MutatingOperationWithoutTransaction,
     #[error("cannot open a new transaction as there exists another transaction currently in progress")]
     TransactionInProgress,
+    #[error("the transaction was unexpectedly rolled back by sqlite")]
+    UnexpectedRollback,
     #[error("failed to operate the cross-process transaction lock at {path}")]
     TransactionLock {
         path: String,

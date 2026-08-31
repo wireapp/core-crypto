@@ -4,7 +4,6 @@ pub mod entities;
 mod error;
 mod hash;
 pub(crate) mod migrations;
-pub(crate) mod mls;
 pub mod traits;
 pub mod transaction;
 mod unique_arc;
@@ -16,9 +15,8 @@ pub use unique_arc::UniqueArc;
 #[cfg(feature = "dummy-entity")]
 pub use self::entities::{DummyStoreValue, DummyValue};
 pub use self::{
-    connection::Database,
+    connection::{Database, deser, ser},
     database_key::DatabaseKey,
     error::{CryptoKeystoreError, CryptoKeystoreResult},
-    mls::{deser, ser},
     transaction::Transaction,
 };

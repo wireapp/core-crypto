@@ -8,6 +8,7 @@ mod idb_migration;
 #[cfg(target_os = "ios")]
 mod ios_wal_compat;
 mod migrations;
+mod mls;
 #[cfg(target_os = "unknown")]
 mod os_unknown;
 mod transaction;
@@ -22,9 +23,12 @@ use rusqlite::trace::{TraceEvent, TraceEventCodes};
 
 #[cfg(target_os = "unknown")]
 pub use self::idb_migration::{delete_legacy_idb, legacy_idb_exists};
-pub use self::migrations::migrate_db_key_type_to_bytes;
 use self::transaction_lock::TransactionLock;
 pub(crate) use self::{filesystem::Filesystem, transaction_lock::TransactionGuard};
+pub use self::{
+    migrations::migrate_db_key_type_to_bytes,
+    mls::{deser, ser},
+};
 use crate::{
     CryptoKeystoreResult, DatabaseKey, Transaction, connection::migrations::MigrationTarget, unique_arc::UniqueWeak,
 };
