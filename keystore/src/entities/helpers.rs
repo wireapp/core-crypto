@@ -22,14 +22,12 @@ where
     E: Entity,
     FromRow: FnOnce(&Row<'_>) -> rusqlite::Result<E>,
 {
-    let mut statement = conn.prepare_cached(&format!(
-        "SELECT * FROM {table_name} WHERE {primary_key_column_name} = ?",
-        table_name = E::TABLE_NAME
-    ))?;
-    statement
-        .query_row([primary_key], from_row)
-        .optional()
-        .map_err(Into::into)
+    get_helper_composite_key(
+        conn,
+        &[primary_key_column_name],
+        rusqlite::params![primary_key],
+        from_row,
+    )
 }
 
 /// Helper to query an entity by its primary key.
