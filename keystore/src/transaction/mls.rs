@@ -1,6 +1,6 @@
 use openmls::prelude::Ciphersuite;
 use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::key_store::{MlsEntity, MlsEntityId, OpenMlsKeyStore};
+use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 
 use crate::{
     CryptoKeystoreError, Sha256Hash, Transaction, deser,
@@ -9,12 +9,12 @@ use crate::{
         StoredEpochEncryptionKeypairPkRef, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
     },
     ser,
-    traits::FetchFromDatabase,
+    traits::{Entity, EntityDatabaseMutation, EntityDeleteBorrowed, FetchFromDatabase as _},
 };
 
 #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
-impl OpenMlsKeyStore for Transaction {
+impl openmls_traits::key_store::OpenMlsKeyStore for Transaction {
     type Error = CryptoKeystoreError;
 
     async fn store<V: MlsEntity + Sync>(&self, id: &[u8], value: &V) -> Result<(), Self::Error>
@@ -42,32 +42,32 @@ impl OpenMlsKeyStore for Transaction {
                 ));
             }
             MlsEntityId::KeyPackage => {
-                let kp = StoredKeyPackage {
+                StoredKeyPackage {
                     key_package_ref: id.into(),
                     key_package: data,
-                };
-                self.save(kp).await?;
+                }
+                .save(self)?;
             }
             MlsEntityId::HpkePrivateKey => {
-                let kp = StoredHpkePrivateKey {
+                StoredHpkePrivateKey {
                     pk: id.into(),
                     sk: data,
-                };
-                self.save(kp).await?;
+                }
+                .save(self)?;
             }
             MlsEntityId::PskBundle => {
-                let kp = StoredPskBundle {
+                StoredPskBundle {
                     psk_id: id.into(),
                     psk: data,
-                };
-                self.save(kp).await?;
+                }
+                .save(self)?;
             }
             MlsEntityId::EncryptionKeyPair => {
-                let kp = StoredEncryptionKeyPair {
+                StoredEncryptionKeyPair {
                     pk: id.into(),
                     sk: data,
-                };
-                self.save(kp).await?;
+                }
+                .save(self)?;
             }
             MlsEntityId::EpochEncryptionKeyPair => {
                 let StoredEpochEncryptionKeypairPkRef {
@@ -75,13 +75,13 @@ impl OpenMlsKeyStore for Transaction {
                     own_leaf_idx,
                     epoch,
                 } = StoredEpochEncryptionKeypairPkRef::parse_bytes(id)?;
-                let kp = StoredEpochEncryptionKeypair {
+                StoredEpochEncryptionKeypair {
                     conversation_id: conversation_id.bytes().into(),
                     own_leaf_idx,
                     epoch,
                     keypairs: data,
-                };
-                self.save(kp).await?;
+                }
+                .save(self)?;
             }
         }
 
@@ -98,18 +98,13 @@ impl OpenMlsKeyStore for Transaction {
 
         match V::ID {
             MlsEntityId::GroupState => {
-                let v = FetchFromDatabase::get_borrowed::<PersistedMlsGroup>(self, id)
-                    .await
-                    .ok()
-                    .flatten()?;
+                let v = self.get_borrowed::<PersistedMlsGroup>(id).await.ok().flatten()?;
                 deser(&v.state).ok()
             }
             MlsEntityId::SignatureKeyPair => {
+                let conn = self.conn().ok()?;
                 let hash = Sha256Hash::from_existing_hash(id).ok()?;
-                let stored_credential = FetchFromDatabase::get::<StoredCredential>(self, &hash)
-                    .await
-                    .ok()
-                    .flatten()?;
+                let stored_credential = StoredCredential::get(&conn, &hash).ok().flatten()?;
                 let ciphersuite = Ciphersuite::try_from(stored_credential.ciphersuite).ok()?;
                 let signature_scheme = ciphersuite.signature_algorithm();
 
@@ -125,36 +120,25 @@ impl OpenMlsKeyStore for Transaction {
                 deser(&data).ok()
             }
             MlsEntityId::KeyPackage => {
-                let v = FetchFromDatabase::get_borrowed::<StoredKeyPackage>(self, id)
-                    .await
-                    .ok()
-                    .flatten()?;
+                let v = self.get_borrowed::<StoredKeyPackage>(id).await.ok().flatten()?;
                 deser(&v.key_package).ok()
             }
             MlsEntityId::HpkePrivateKey => {
-                let v = FetchFromDatabase::get_borrowed::<StoredHpkePrivateKey>(self, id)
-                    .await
-                    .ok()
-                    .flatten()?;
+                let v = self.get_borrowed::<StoredHpkePrivateKey>(id).await.ok().flatten()?;
                 deser(&v.sk).ok()
             }
             MlsEntityId::PskBundle => {
-                let v = FetchFromDatabase::get_borrowed::<StoredPskBundle>(self, id)
-                    .await
-                    .ok()
-                    .flatten()?;
+                let v = self.get_borrowed::<StoredPskBundle>(id).await.ok().flatten()?;
                 deser(&v.psk).ok()
             }
             MlsEntityId::EncryptionKeyPair => {
-                let v = FetchFromDatabase::get_borrowed::<StoredEncryptionKeyPair>(self, id)
-                    .await
-                    .ok()
-                    .flatten()?;
+                let v = self.get_borrowed::<StoredEncryptionKeyPair>(id).await.ok().flatten()?;
                 deser(&v.sk).ok()
             }
             MlsEntityId::EpochEncryptionKeyPair => {
                 let kp_ref = StoredEpochEncryptionKeypairPkRef::parse_bytes(id).ok()?;
-                let v = FetchFromDatabase::get_borrowed::<StoredEpochEncryptionKeypair>(self, kp_ref)
+                let v = self
+                    .get_borrowed::<StoredEpochEncryptionKeypair>(kp_ref)
                     .await
                     .ok()
                     .flatten()?;
@@ -165,18 +149,18 @@ impl OpenMlsKeyStore for Transaction {
 
     async fn delete<V: MlsEntity>(&self, id: &[u8]) -> Result<(), Self::Error> {
         match V::ID {
-            MlsEntityId::GroupState => self.remove_borrowed::<PersistedMlsGroup>(id).await?,
             MlsEntityId::SignatureKeyPair => unimplemented!(
                 "Deleting a signature key pair should not be done through this API, any keypair should be deleted via
                 deleting a credential."
             ),
-            MlsEntityId::HpkePrivateKey => self.remove_borrowed::<StoredHpkePrivateKey>(id).await?,
-            MlsEntityId::KeyPackage => self.remove_borrowed::<StoredKeyPackage>(id).await?,
-            MlsEntityId::PskBundle => self.remove_borrowed::<StoredPskBundle>(id).await?,
-            MlsEntityId::EncryptionKeyPair => self.remove_borrowed::<StoredEncryptionKeyPair>(id).await?,
+            MlsEntityId::GroupState => PersistedMlsGroup::delete_borrowed(self, id)?,
+            MlsEntityId::HpkePrivateKey => StoredHpkePrivateKey::delete_borrowed(self, id)?,
+            MlsEntityId::KeyPackage => StoredKeyPackage::delete_borrowed(self, id)?,
+            MlsEntityId::PskBundle => StoredPskBundle::delete_borrowed(self, id)?,
+            MlsEntityId::EncryptionKeyPair => StoredEncryptionKeyPair::delete_borrowed(self, id)?,
             MlsEntityId::EpochEncryptionKeyPair => {
                 let kp_ref = StoredEpochEncryptionKeypairPkRef::parse_bytes(id)?;
-                self.remove_borrowed::<StoredEpochEncryptionKeypair>(kp_ref).await?
+                StoredEpochEncryptionKeypair::delete_borrowed(self, kp_ref)?
             }
         }
 

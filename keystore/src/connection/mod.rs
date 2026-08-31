@@ -6,6 +6,7 @@ mod idb_migration;
 #[cfg(target_os = "ios")]
 mod ios_wal_compat;
 mod migrations;
+mod mls;
 #[cfg(target_os = "unknown")]
 mod os_unknown;
 mod transaction;
@@ -20,7 +21,11 @@ use rusqlite::trace::{TraceEvent, TraceEventCodes};
 pub(crate) use self::filesystem::Filesystem;
 #[cfg(target_os = "unknown")]
 pub use self::idb_migration::{delete_legacy_idb, legacy_idb_exists};
-pub use self::migrations::migrate_db_key_type_to_bytes;
+pub(crate) use self::{filesystem::Filesystem, transaction_lock::TransactionGuard};
+pub use self::{
+    migrations::migrate_db_key_type_to_bytes,
+    mls::{deser, ser},
+};
 use crate::{
     CryptoKeystoreResult, DatabaseKey, Transaction, connection::migrations::MigrationTarget, unique_arc::UniqueWeak,
 };
@@ -176,14 +181,14 @@ impl Database {
     ///
     /// The returned guard keeps other processes out for as long as the caller holds it, so that
     /// teardown is not interleaved with somebody else's transaction.
-    async fn take(self) -> CryptoKeystoreResult<(Connection, Box<dyn Filesystem>, TransactionGuard)> {
+    async fn take(self) -> CryptoKeystoreResult<(Connection, Box<dyn Filesystem>)> {
         // Nobody ever clones `self.conn`; the Arc is only so we can have a lifetime-free guard over
         // the interior mutex. So we know that its strong count is 1.
         let conn = Arc::into_inner(self.conn)
             .expect("nobody ever clones self.conn")
             .into_inner();
         let _semaphore = self.transaction_semaphore.acquire().await;
-        Ok((conn, self.filesystem.into_inner(), guard))
+        Ok((conn, self.filesystem.into_inner()))
     }
 
     // Close this database connection
@@ -220,7 +225,9 @@ impl Database {
     /// Get a reference to this database's connection without checking if a transaction is in flight.
     ///
     /// **CAUTION**: this will block until the in-flight transaction completes, if one exists.
-    pub(crate) async fn conn(&self) -> MutexGuardArc<Connection> {
+    ///
+    /// Most users should prefer [`Self::conn`].
+    pub(crate) async fn raw_conn(&self) -> MutexGuardArc<Connection> {
         self.conn.lock_arc().await
     }
 

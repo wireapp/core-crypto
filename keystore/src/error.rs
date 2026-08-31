@@ -7,6 +7,8 @@ pub enum CryptoKeystoreError {
     MutatingOperationWithoutTransaction,
     #[error("cannot open a new transaction as there exists another transaction currently in progress")]
     TransactionInProgress,
+    #[error("the transaction was unexpectedly rolled back by sqlite")]
+    UnexpectedRollback,
     #[error(transparent)]
     TryFromSliceError(#[from] std::array::TryFromSliceError),
     #[error("One of the Keystore locks has been poisoned")]

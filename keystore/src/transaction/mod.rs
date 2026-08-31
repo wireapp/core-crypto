@@ -1,27 +1,24 @@
-mod bulk_delete_filter;
-mod dynamic_dispatch;
-mod entity_read;
-mod entity_write;
+mod conn;
 mod fetch_from_database;
+mod finalize;
 mod mls;
-mod operations;
 #[cfg(feature = "proteus-keystore")]
-pub mod proteus;
-mod read_outcome;
-mod specializations;
+mod proteus;
 
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
-use async_lock::{RwLock, SemaphoreGuardArc};
-use rusqlite::TransactionBehavior;
+use async_lock::{MutexGuardArc, SemaphoreGuardArc};
+use rusqlite::Connection;
 
-pub use self::dynamic_dispatch::EntityId;
-pub(crate) use self::{bulk_delete_filter::BulkDeleteFilter, read_outcome::ReadOutcome};
-use self::{dynamic_dispatch::Operation, operations::Operations};
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc, traits::Entity};
+use crate::{CryptoKeystoreResult, Database, UniqueArc, connection::TransactionGuard};
 
-/// This is an in-flight transaction: all operations are buffered in memory, and only
-/// applied to the database on [`commit`][UniqueArc<Self>::commit].
+const GUARD_EXPECTATION: &str = "connection guard is present for the lifetime of the transaction wrapper";
+
+/// This is a guard over an in-flight transaction.
+///
+/// In a perfect world we'd be able to use [`rusqlite::Transaction`], but that type
+/// is intentionally `!Send + !Sync`, which prevents us from being able to keep a
+/// long-lived transaction around.
 ///
 /// Dropping the transaction without committing performs an implicit rollback.
 ///
@@ -31,9 +28,32 @@ use crate::{CryptoKeystoreError, CryptoKeystoreResult, Database, UniqueArc, trai
 /// Alternately, wrap the entire thing in an `Arc<Mutex<Option<UniqueArc<Self>>>>` or similar.
 /// Just be aware that you'll need to take the unique arc out in order to commit.
 pub struct Transaction {
-    operations: RwLock<Operations>,
     _semaphore_guard: SemaphoreGuardArc,
+    /// The database reference is kept only to invalidate the weak pointer when this transaction
+    /// is either committed or rolled back.
+    ///
+    /// **IMPORTANT**: do not attempt to take `self.database.conn().await`. THIS WILL DEADLOCK.
+    /// Use `self.conn` instead.
+    ///
+    /// We have to hold a separate long-lived lock to the database's internal connection because
+    /// the mutex guarding it is async, but we depend on non-async `Drop` behavior.
     database: Arc<Database>,
+    /// Guard over the actual database connection. We have to hold this for the entire lifetime
+    /// of this transaction. That's a bit selfish on one hand, because it opens the door to
+    /// potential deadlocks if we write things wrong. On the other hand it is required because
+    /// our `Drop` impl would otherwise need to asynchronously lock the database to get the connection,
+    /// and async `Drop` is not yet a thing.
+    ///
+    /// The `Option` ensures we can safely invalidate this transaction after commit and rollback.
+    /// Can't mess with the database after either of those!
+    ///
+    /// The synchronous Mutex here does a few things:
+    ///
+    /// - turns `Connection: Send + !Sync` -> `TransactionWrapper: Send + Sync`
+    /// - by using the synchronous version, the compiler ensures we don't hold a guard over an await point, which would
+    ///   deadlock everything
+    /// - ensures that no two threads race on `conn.prepare` / `prepare_cached`
+    conn: Arc<parking_lot::Mutex<Option<MutexGuardArc<Connection>>>>,
 }
 
 impl Transaction {
@@ -44,10 +64,20 @@ impl Transaction {
         semaphore_guard: SemaphoreGuardArc,
         database: Arc<Database>,
     ) -> CryptoKeystoreResult<UniqueArc<Self>> {
+        let conn = database.raw_conn().await;
+
+        {
+            // initialize the DB-level transaction before doing any construction work on the type-level
+            // transaction; failure here invalidates everything to follow. We don't need to worry about
+            // concurrency; we already hold the lock guard.
+            let mut stmt = conn.prepare_cached("BEGIN IMMEDIATE TRANSACTION")?;
+            stmt.execute([])?;
+        }
+
         let transaction = UniqueArc::from(Self {
-            operations: Default::default(),
             _semaphore_guard: semaphore_guard,
             database,
+            conn: Arc::new(parking_lot::Mutex::new(Some(conn))),
         });
 
         let weak = UniqueArc::downgrade(&transaction);
@@ -65,94 +95,18 @@ impl Transaction {
         Ok(transaction)
     }
 
-    /// Merge the database's view of entity records with entities from the transaction cache.
+    /// `true` when the transaction is active.
     ///
-    /// Entities deleted singly or in bulk from the operations list are excluded, unless later re-added.
+    /// You'd think that given the presence of this wrapper, you could assume that a transaction
+    /// is active: instantiating one creates a transaction, and the consuming methods close it.
+    /// However, Sqlite can sometimes automatically roll back transactions without telling the
+    /// user:
     ///
-    /// Entities upserted in the tx cache overwrite entities from the database.
+    /// <https://sqlite.org/c3ref/get_autocommit.html>
     ///
-    /// Note that the position of each deletion within the transaction is not consulted here, unlike
-    /// in the cache-only reads. Every record in `from_database` predates the whole transaction, so any
-    /// deletion in it applies; and "unless later re-added" needs no ordering either, because a
-    /// re-added entity arrives through `from_tx_cache`, which is applied afterwards and therefore
-    /// wins. That leaves the two sources responsible for different halves of the answer:
-    /// `from_tx_cache` is expected to have resolved ordering among the operations already, which is
-    /// what [`Self::find_all_in_cache`] does for it.
-    ///
-    /// The returned order is unspecified, as the merge runs through a `HashMap`.
-    async fn merge_records<E>(
-        &self,
-        from_tx_cache: impl IntoIterator<Item = Arc<E>>,
-        from_database: impl IntoIterator<Item = Arc<E>>,
-    ) -> impl Iterator<Item = Arc<E>>
-    where
-        E: 'static + Clone + Entity + Send + Sync,
-    {
-        let mut cache = {
-            let operations = self.operations.read().await;
-            let filters = operations.bulk_delete_filters();
-
-            // construct the cache from the database's items,
-            // filtering out those items which have been deleted individually or in bulk
-            from_database
-                .into_iter()
-                .filter_map(|entity| {
-                    let entity_id = EntityId::from_entity(&*entity);
-
-                    // the delete may have been overwritten by a later upsert, true,
-                    // but in that case we lose nothing by deleting here, because we
-                    // are still about to upsert a few lines from now
-                    //
-                    // bulk-deletes apply to the database entities regardless of when they happen
-                    let excluded =
-                        operations.last_delete_idx_for(&entity_id).is_some() || filters.applies_after(&*entity, 0);
-                    (!excluded).then_some((entity_id, entity))
-                })
-                .collect::<HashMap<_, _>>()
-        };
-
-        // update with everything which was inserted by the tx cache
-        for entity in from_tx_cache {
-            let id = EntityId::from_entity(&*entity);
-            cache.insert(id, entity);
-        }
-
-        cache.into_values()
-    }
-}
-
-impl UniqueArc<Transaction> {
-    /// Persists all the operations in the database. It will effectively open a transaction
-    /// internally, perform all the buffered operations and commit.
-    pub async fn commit(self) -> Result<(), CryptoKeystoreError> {
-        let Transaction {
-            operations,
-            database,
-            _semaphore_guard,
-        } = UniqueArc::into_inner(self).await;
-        let operations = operations.into_inner();
-
-        // clear the weak reference to this transaction
-        *database.transaction.lock().await = None;
-
-        if operations.is_empty() {
-            log::debug!("Empty transaction was committed.");
-            return Ok(());
-        }
-
-        // open a database transaction
-        // Because `rusqlite::Transaction: !Send + !Sync`, it's critical that
-        // we don't hold this transaction over any `.await` points.
-        let mut conn = database.conn().await;
-        let tx = conn.transaction_with_behavior(TransactionBehavior::Immediate)?;
-
-        for operation in operations {
-            operation.apply(&tx)?;
-        }
-
-        // and commit everything
-        tx.commit()?;
-
-        Ok(())
+    /// > The only way to find out whether SQLite automatically rolled back the transaction
+    /// > after an error is to use this function.
+    fn is_active(conn: &Connection) -> bool {
+        !conn.is_autocommit()
     }
 }
