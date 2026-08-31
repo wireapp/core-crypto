@@ -3,7 +3,11 @@ mod tnt_message_counter;
 mod transient;
 
 use core_crypto_keystore::{
-    entities::{MessageRxCounterPkRef, TargetedMessageRxCounter, TransientMessageRxCounter},
+    Transaction,
+    entities::{
+        ConversationId as KeystoreConversationId, MessageRxCounterPkRef, TargetedMessageRxCounter,
+        TransientMessageRxCounter,
+    },
     traits::FetchFromDatabase,
 };
 use openmls::prelude::{
@@ -106,6 +110,43 @@ impl TntWireFormat {
         };
 
         Ok(count)
+    }
+
+    /// Perist the receiver counter for this message type.
+    ///
+    /// Implementation note: because transient targeted message and targeted message share a type but don't share a
+    /// counter table, we're implementing this here instead of on the types themselves.
+    async fn persist_rx_message_counter(
+        &self,
+        group_epoch: u64,
+        message_sender: LeafNodeIndex,
+        message_counter: TntMessageCounter,
+        tx: &Transaction,
+        conversation_id: KeystoreConversationId,
+    ) -> Result<(), Error> {
+        match *self {
+            TntWireFormat::TRANSIENT_MESSAGE | TntWireFormat::TRANSIENT_TARGETED_MESSAGE => tx
+                .save(TransientMessageRxCounter {
+                    conversation_id,
+                    sender: message_sender.u32(),
+                    epoch: group_epoch,
+                    count: message_counter.into(),
+                })
+                .await
+                .map_err(KeystoreError::wrap("persisting TransientMessageRxCounter"))?,
+            TntWireFormat::TARGETED_MESSAGE => tx
+                .save(TargetedMessageRxCounter {
+                    conversation_id,
+                    sender: message_sender.u32(),
+                    epoch: group_epoch,
+                    count: message_counter.into(),
+                })
+                .await
+                .map_err(KeystoreError::wrap("persisting TargetedMessageRxCounter"))?,
+
+            _ => panic!("All TntWireFormats map to a MessageRxCounter implementation"),
+        }
+        Ok(())
     }
 }
 
@@ -285,6 +326,27 @@ impl ConversationMut {
         } else {
             Err(Error::DuplicateMessage)
         }
+    }
+
+    async fn persist_rx_message_counter(
+        &self,
+        group_epoch: u64,
+        message_type: TntWireFormat,
+        message_sender: LeafNodeIndex,
+        message_counter: TntMessageCounter,
+    ) -> Result<()> {
+        let tx = self
+            .tx_context
+            .inner()
+            .await
+            .map_err(RecursiveError::transaction("getting inner context"))?;
+        let tx = tx.transaction();
+        let conversation_id = self.id().into();
+
+        message_type
+            .persist_rx_message_counter(group_epoch, message_sender, message_counter, tx, conversation_id)
+            .await?;
+        Ok(())
     }
 
     /// The final step after decrypting a tnt message: extract the sender client id and format as [DecryptedBytes].
