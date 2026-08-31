@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-92b475a8.js";
+            window.path_to_searchindex_js = "../searchindex-b286e215.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-1c113b1d.js"></script>
@@ -182,8 +182,9 @@
 </blockquote>
 <h2 id="decryptedmessage"><a class="header" href="#decryptedmessage">DecryptedMessage</a></h2>
 <p><code>DecryptedMessage.Text</code> and <code>BufferedDecryptedMessage.Text</code> have been renamed to <code>DecryptedMessage.ApplicationMessage</code>
-and <code>BufferedDecryptedMessage.ApplicationMessage</code>, respectively. Both enums now also include <code>TransientTargeted</code> and
-<code>PersistedTargeted</code> variants. Match on all five <code>DecryptedMessage</code> variants before accessing their data:</p>
+and <code>BufferedDecryptedMessage.ApplicationMessage</code>, respectively. Both enums now also include <code>Transient</code>,
+<code>TransientTargeted</code> and <code>PersistedTargeted</code> variants. Match on all <code>DecryptedMessage</code> variants before accessing their
+data:</p>
 <div class="langtabs">
 <div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
 <div class="langtabs-content">
@@ -197,6 +198,9 @@ and <code>BufferedDecryptedMessage.ApplicationMessage</code>, respectively. Both
 } else if (DecryptedMessage.Proposal.instanceOf(decryptedMessage)) {
     const { delay, identity } = decryptedMessage.inner;
     // Handle the proposal.
+} else if (DecryptedMessage.Transient.instanceOf(decryptedMessage)) {
+    const { plaintext, senderClientId, identity } = decryptedMessage.inner;
+    // Handle the transient message.
 } else if (DecryptedMessage.TransientTargeted.instanceOf(decryptedMessage)) {
     const { plaintext, senderClientId, identity } = decryptedMessage.inner;
     // Handle the transient targeted message.
@@ -215,6 +219,8 @@ case let .commit(isActive, bufferedMessages, identity):
     // Handle the commit.
 case let .proposal(delay, identity):
     // Handle the proposal.
+case let .transient(plaintext, senderClientId, identity):
+    // Handle the transient message.
 case let .transientTargeted(plaintext, senderClientId, identity):
     // Handle the transient targeted message.
 case let .persistedTargeted(plaintext, senderClientId, identity):
@@ -236,6 +242,10 @@ case let .persistedTargeted(plaintext, senderClientId, identity):
     is DecryptedMessage.Proposal -&gt; {
         val (delay, identity) = decryptedMessage
         // Handle the proposal.
+    }
+    is DecryptedMessage.Transient -&gt; {
+        val (plaintext, senderClientId, identity) = decryptedMessage
+        // Handle the transient message.
     }
     is DecryptedMessage.TransientTargeted -&gt; {
         val (plaintext, senderClientId, identity) = decryptedMessage

@@ -48,7 +48,7 @@
 <a href=#48 id=48 data-nosnippet>48</a>        <span class="kw">let </span>group_id = group.group_id().to_vec();
 <a href=#49 id=49 data-nosnippet>49</a>
 <a href=#50 id=50 data-nosnippet>50</a>        <span class="kw">let </span>inner = PersistedMlsPendingGroup {
-<a href=#51 id=51 data-nosnippet>51</a>            id: group_id,
+<a href=#51 id=51 data-nosnippet>51</a>            id: group_id.into(),
 <a href=#52 id=52 data-nosnippet>52</a>            state: serialized_group,
 <a href=#53 id=53 data-nosnippet>53</a>            custom_configuration: serialized_cfg,
 <a href=#54 id=54 data-nosnippet>54</a>            parent_id: <span class="prelude-val">None</span>,
@@ -73,7 +73,7 @@
 <a href=#73 id=73 data-nosnippet>73</a>    }
 <a href=#74 id=74 data-nosnippet>74</a>
 <a href=#75 id=75 data-nosnippet>75</a>    <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ConversationIdRef {
-<a href=#76 id=76 data-nosnippet>76</a>        ConversationIdRef::new(<span class="kw-2">&amp;</span><span class="self">self</span>.inner.id)
+<a href=#76 id=76 data-nosnippet>76</a>        ConversationIdRef::new(<span class="self">self</span>.inner.id.bytes())
 <a href=#77 id=77 data-nosnippet>77</a>    }
 <a href=#78 id=78 data-nosnippet>78</a>
 <a href=#79 id=79 data-nosnippet>79</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>save(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
@@ -87,7 +87,7 @@
 <a href=#87 id=87 data-nosnippet>87</a>            </span>.map_err(RecursiveError::context(<span class="string">"getting inner context"</span>))<span class="question-mark">?</span>;
 <a href=#88 id=88 data-nosnippet>88</a>        <span class="kw">let </span>tx = context.transaction();
 <a href=#89 id=89 data-nosnippet>89</a>        tx.save(PersistedMlsPendingGroup {
-<a href=#90 id=90 data-nosnippet>90</a>            id: group_id.as_ref().to_owned(),
+<a href=#90 id=90 data-nosnippet>90</a>            id: group_id.into(),
 <a href=#91 id=91 data-nosnippet>91</a>            state: mls_group.into(),
 <a href=#92 id=92 data-nosnippet>92</a>            custom_configuration: custom_configuration.into(),
 <a href=#93 id=93 data-nosnippet>93</a>            parent_id: <span class="prelude-val">None</span>,
@@ -131,7 +131,7 @@
 <a href=#131 id=131 data-nosnippet>131</a>        <span class="kw">let </span>tx = context_inner.transaction();
 <a href=#132 id=132 data-nosnippet>132</a>
 <a href=#133 id=133 data-nosnippet>133</a>        <span class="kw">let </span>pending_msg = MlsPendingMessage {
-<a href=#134 id=134 data-nosnippet>134</a>            conversation_id: <span class="self">self</span>.id().as_ref().to_owned(),
+<a href=#134 id=134 data-nosnippet>134</a>            conversation_id: <span class="self">self</span>.id().into(),
 <a href=#135 id=135 data-nosnippet>135</a>            message: message.as_ref().to_vec(),
 <a href=#136 id=136 data-nosnippet>136</a>        };
 <a href=#137 id=137 data-nosnippet>137</a>        tx.save::&lt;MlsPendingMessage&gt;(pending_msg)
@@ -147,7 +147,7 @@
 <a href=#147 id=147 data-nosnippet>147</a>        <span class="kw">let </span>database = <span class="self">self</span>.keystore().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#148 id=148 data-nosnippet>148</a>        <span class="comment">// Instantiate the pending group
 <a href=#149 id=149 data-nosnippet>149</a>        </span><span class="kw">let </span>group = database
-<a href=#150 id=150 data-nosnippet>150</a>            .get_borrowed::&lt;PersistedMlsPendingGroup&gt;(<span class="self">self</span>.id().as_ref())
+<a href=#150 id=150 data-nosnippet>150</a>            .get_borrowed::&lt;PersistedMlsPendingGroup&gt;(<span class="self">self</span>.id().into())
 <a href=#151 id=151 data-nosnippet>151</a>            .<span class="kw">await
 <a href=#152 id=152 data-nosnippet>152</a>            </span>.map_err(KeystoreError::wrap(<span class="string">"getting mls group"</span>))<span class="question-mark">?
 <a href=#153 id=153 data-nosnippet>153</a>            </span>.map(|pending_group| pending_group.state.clone())
@@ -305,7 +305,7 @@
 <a href=#305 id=305 data-nosnippet>305</a>            </span>.map_err(RecursiveError::context(<span class="string">"getting inner context"</span>))<span class="question-mark">?</span>;
 <a href=#306 id=306 data-nosnippet>306</a>        <span class="kw">let </span>tx = context.transaction();
 <a href=#307 id=307 data-nosnippet>307</a>        <span class="kw">let </span>group_id = <span class="self">self</span>.id();
-<a href=#308 id=308 data-nosnippet>308</a>        tx.remove_borrowed::&lt;PersistedMlsPendingGroup&gt;(group_id.as_ref())
+<a href=#308 id=308 data-nosnippet>308</a>        tx.remove_borrowed::&lt;PersistedMlsPendingGroup&gt;(group_id.into())
 <a href=#309 id=309 data-nosnippet>309</a>            .<span class="kw">await
 <a href=#310 id=310 data-nosnippet>310</a>            </span>.map_err(KeystoreError::wrap(<span class="string">"deleting pending groups by id"</span>))<span class="question-mark">?</span>;
 <a href=#311 id=311 data-nosnippet>311</a>

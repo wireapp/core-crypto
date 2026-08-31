@@ -84,7 +84,7 @@
 <a href=#84 id=84 data-nosnippet>84</a>                <span class="macro">assert_eq!</span>(<span class="kw-2">*</span>conversation.id(), id);
 <a href=#85 id=85 data-nosnippet>85</a>                <span class="macro">assert_eq!</span>(
 <a href=#86 id=86 data-nosnippet>86</a>                    conversation.guard().<span class="kw">await</span>.group().<span class="kw">await</span>.group_id().as_slice(),
-<a href=#87 id=87 data-nosnippet>87</a>                    id.as_ref()
+<a href=#87 id=87 data-nosnippet>87</a>                    id.as_ref().as_ref()
 <a href=#88 id=88 data-nosnippet>88</a>                );
 <a href=#89 id=89 data-nosnippet>89</a>                <span class="macro">assert_eq!</span>(conversation.member_count().<span class="kw">await</span>, <span class="number">2</span>);
 <a href=#90 id=90 data-nosnippet>90</a>                <span class="macro">assert!</span>(conversation.is_functional_and_contains([<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>bob]).<span class="kw">await</span>);

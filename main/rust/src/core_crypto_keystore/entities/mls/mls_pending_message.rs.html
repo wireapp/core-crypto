@@ -22,7 +22,7 @@
 <a href=#22 id=22 data-nosnippet>22</a></span><span class="attr">#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 <a href=#23 id=23 data-nosnippet>23</a>#[zeroize(drop)]
 <a href=#24 id=24 data-nosnippet>24</a></span><span class="kw">pub struct </span>MlsPendingMessage {
-<a href=#25 id=25 data-nosnippet>25</a>    <span class="kw">pub </span>conversation_id: Vec&lt;u8&gt;,
+<a href=#25 id=25 data-nosnippet>25</a>    <span class="kw">pub </span>conversation_id: ConversationId,
 <a href=#26 id=26 data-nosnippet>26</a>    <span class="attr">#[sensitive]
 <a href=#27 id=27 data-nosnippet>27</a>    </span><span class="kw">pub </span>message: Vec&lt;u8&gt;,
 <a href=#28 id=28 data-nosnippet>28</a>}
@@ -110,7 +110,7 @@
 <a href=#110 id=110 data-nosnippet>110</a>    }
 <a href=#111 id=111 data-nosnippet>111</a>
 <a href=#112 id=112 data-nosnippet>112</a>    <span class="kw">fn </span>matches(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>ConversationIdRef) -&gt; bool {
-<a href=#113 id=113 data-nosnippet>113</a>        conversation_id.bytes() == <span class="self">self</span>.conversation_id.as_slice()
+<a href=#113 id=113 data-nosnippet>113</a>        conversation_id.bytes() == <span class="self">self</span>.conversation_id.bytes()
 <a href=#114 id=114 data-nosnippet>114</a>    }
 <a href=#115 id=115 data-nosnippet>115</a>}
 <a href=#116 id=116 data-nosnippet>116</a>
@@ -119,11 +119,11 @@
 <a href=#119 id=119 data-nosnippet>119</a>        conn: <span class="kw-2">&amp;</span>rusqlite::Connection,
 <a href=#120 id=120 data-nosnippet>120</a>        conversation_id: <span class="kw-2">&amp;</span>ConversationId,
 <a href=#121 id=121 data-nosnippet>121</a>    ) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
-<a href=#122 id=122 data-nosnippet>122</a>        <span class="self">Self</span>::find_all_matching(conn, ConversationIdRef::new(conversation_id))
+<a href=#122 id=122 data-nosnippet>122</a>        <span class="self">Self</span>::find_all_matching(conn, conversation_id.as_ref())
 <a href=#123 id=123 data-nosnippet>123</a>    }
 <a href=#124 id=124 data-nosnippet>124</a>
 <a href=#125 id=125 data-nosnippet>125</a>    <span class="kw">fn </span>matches(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>ConversationId) -&gt; bool {
-<a href=#126 id=126 data-nosnippet>126</a>        conversation_id.bytes() == <span class="self">self</span>.conversation_id.as_slice()
+<a href=#126 id=126 data-nosnippet>126</a>        conversation_id.bytes() == <span class="self">self</span>.conversation_id.bytes()
 <a href=#127 id=127 data-nosnippet>127</a>    }
 <a href=#128 id=128 data-nosnippet>128</a>}
 <a href=#129 id=129 data-nosnippet>129</a>
@@ -150,7 +150,7 @@
 <a href=#150 id=150 data-nosnippet>150</a>
 <a href=#151 id=151 data-nosnippet>151</a>    <span class="kw">fn </span>pending_message() -&gt; MlsPendingMessage {
 <a href=#152 id=152 data-nosnippet>152</a>        MlsPendingMessage {
-<a href=#153 id=153 data-nosnippet>153</a>            conversation_id: CONVERSATION_ID.to_owned(),
+<a href=#153 id=153 data-nosnippet>153</a>            conversation_id: CONVERSATION_ID.into(),
 <a href=#154 id=154 data-nosnippet>154</a>            message: MESSAGE.to_owned(),
 <a href=#155 id=155 data-nosnippet>155</a>        }
 <a href=#156 id=156 data-nosnippet>156</a>    }
@@ -220,7 +220,7 @@
 <a href=#220 id=220 data-nosnippet>220</a>        future::block_on(<span class="kw">async </span>{
 <a href=#221 id=221 data-nosnippet>221</a>            <span class="kw">let </span>store = Database::open_in_memory().unwrap();
 <a href=#222 id=222 data-nosnippet>222</a>            <span class="kw">let </span>sibling = MlsPendingMessage {
-<a href=#223 id=223 data-nosnippet>223</a>                conversation_id: CONVERSATION_ID.to_owned(),
+<a href=#223 id=223 data-nosnippet>223</a>                conversation_id: CONVERSATION_ID.into(),
 <a href=#224 id=224 data-nosnippet>224</a>                message: <span class="string">b"a second buffered message in the same conversation"</span>.to_vec(),
 <a href=#225 id=225 data-nosnippet>225</a>            };
 <a href=#226 id=226 data-nosnippet>226</a>            <span class="kw">let </span>doomed_key = pending_message().primary_key();
@@ -260,7 +260,7 @@
 <a href=#260 id=260 data-nosnippet>260</a>            <span class="kw">let </span>tx = store.new_transaction().<span class="kw">await</span>.unwrap();
 <a href=#261 id=261 data-nosnippet>261</a>            tx.save(pending_message()).<span class="kw">await</span>.unwrap();
 <a href=#262 id=262 data-nosnippet>262</a>            tx.save(MlsPendingMessage {
-<a href=#263 id=263 data-nosnippet>263</a>                conversation_id: CONVERSATION_ID.to_owned(),
+<a href=#263 id=263 data-nosnippet>263</a>                conversation_id: CONVERSATION_ID.into(),
 <a href=#264 id=264 data-nosnippet>264</a>                message: <span class="string">b"a second buffered message in the same conversation"</span>.to_vec(),
 <a href=#265 id=265 data-nosnippet>265</a>            })
 <a href=#266 id=266 data-nosnippet>266</a>            .<span class="kw">await
@@ -314,7 +314,7 @@
 <a href=#314 id=314 data-nosnippet>314</a>            <span class="kw">let </span>stale = pending_message();
 <a href=#315 id=315 data-nosnippet>315</a>            <span class="kw">let </span>stale_key = stale.primary_key();
 <a href=#316 id=316 data-nosnippet>316</a>            <span class="kw">let </span>fresh = MlsPendingMessage {
-<a href=#317 id=317 data-nosnippet>317</a>                conversation_id: CONVERSATION_ID.to_owned(),
+<a href=#317 id=317 data-nosnippet>317</a>                conversation_id: CONVERSATION_ID.into(),
 <a href=#318 id=318 data-nosnippet>318</a>                message: <span class="string">b"a message buffered after the conversation was cleared"</span>.to_vec(),
 <a href=#319 id=319 data-nosnippet>319</a>            };
 <a href=#320 id=320 data-nosnippet>320</a>            <span class="kw">let </span>fresh_key = fresh.primary_key();

@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-92b475a8.js";
+            window.path_to_searchindex_js = "searchindex-b286e215.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1c113b1d.js"></script>
@@ -176,6 +176,15 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
+<h2 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h2>
+<ul>
+<li>CoreCrypto now supports encrypting and decrypting transient messages. Transient messages are encrypted and decrypted
+for/from group members without affecting the cryptographic state of the group, which enables their use case: to be
+distributed only to currently online group members.</li>
+<li>CoreCrypto now also supports encrypting and decrypting targeted messages. A Targeted message is encrypted for a single
+group member specifically. This enables the long-awaited read receipts feature for MLS. Regular MLS messages aren’t a
+good fit for read receipts because of the massive amount of irrelevant messages that would need to be distributed.</li>
+</ul>
 <h2 id="corecrypto-10"><a class="header" href="#corecrypto-10">CoreCrypto 10</a></h2>
 <h3 id="v1040---2026-08-19"><a class="header" href="#v1040---2026-08-19">v10.4.0 - 2026-08-19</a></h3>
 <ul>

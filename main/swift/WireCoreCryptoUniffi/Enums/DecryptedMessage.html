@@ -418,7 +418,7 @@
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="k">case</span> <span class="nf">applicationMessage</span><span class="p">(</span>
     <span class="cm">/**
-     * Decrypted text message.
+     * Decrypted message.
      */</span><span class="nv">plaintext</span><span class="p">:</span> <span class="kt">Data</span><span class="p">,</span> 
     <span class="cm">/**
      * The sender's `ClientId`.
@@ -512,6 +512,43 @@
                 <li class="item">
                   <div>
                     <code>
+                    <a name="/s:20WireCoreCryptoUniffi16DecryptedMessageO9transientyAC10Foundation4DataV_AA8ClientIdCAA0A8IdentityVtcACmF"></a>
+                    <a name="//apple_ref/swift/Element/transient(plaintext:senderClientId:identity:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi16DecryptedMessageO9transientyAC10Foundation4DataV_AA8ClientIdCAA0A8IdentityVtcACmF">transient(plaintext:<wbr>senderClientId:<wbr>identity:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>The decrypted message is a transient message.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="k">case</span> <span class="nf">transient</span><span class="p">(</span>
+    <span class="cm">/**
+     * Decrypted message.
+     */</span><span class="nv">plaintext</span><span class="p">:</span> <span class="kt">Data</span><span class="p">,</span> 
+    <span class="cm">/**
+     * The sender's `ClientId`.
+     */</span><span class="nv">senderClientId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></span><span class="p">,</span> 
+    <span class="cm">/**
+     * Identity claims present in the sender credential.
+     */</span><span class="nv">identity</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/WireIdentity.html">WireIdentity</a></span>
+<span class="p">)</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
                     <a name="/s:20WireCoreCryptoUniffi16DecryptedMessageO17transientTargetedyAC10Foundation4DataV_AA8ClientIdCAA0A8IdentityVtcACmF"></a>
                     <a name="//apple_ref/swift/Element/transientTargeted(plaintext:senderClientId:identity:)" class="dashAnchor"></a>
                     <a class="token" href="#/s:20WireCoreCryptoUniffi16DecryptedMessageO17transientTargetedyAC10Foundation4DataV_AA8ClientIdCAA0A8IdentityVtcACmF">transientTargeted(plaintext:<wbr>senderClientId:<wbr>identity:<wbr>)</a>
@@ -531,7 +568,7 @@
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="k">case</span> <span class="nf">transientTargeted</span><span class="p">(</span>
     <span class="cm">/**
-     * Decrypted text message.
+     * Decrypted message.
      */</span><span class="nv">plaintext</span><span class="p">:</span> <span class="kt">Data</span><span class="p">,</span> 
     <span class="cm">/**
      * The sender's `ClientId`.
@@ -568,7 +605,7 @@
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="k">case</span> <span class="nf">persistedTargeted</span><span class="p">(</span>
     <span class="cm">/**
-     * Decrypted text message.
+     * Decrypted message.
      */</span><span class="nv">plaintext</span><span class="p">:</span> <span class="kt">Data</span><span class="p">,</span> 
     <span class="cm">/**
      * The sender's `ClientId`.

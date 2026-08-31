@@ -54,6 +54,12 @@ $dokka.location:com.wire.crypto/BufferedDecryptedMessage.Proposal///PointingToDe
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage.Proposal/Proposal/#kotlin.ULong?#com.wire.crypto.WireIdentity/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-proposal/-proposal.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage.Proposal/delay/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-proposal/delay.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage.Proposal/identity/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-proposal/identity.html
+$dokka.location:com.wire.crypto/BufferedDecryptedMessage.Transient.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-transient/-companion/index.html
+$dokka.location:com.wire.crypto/BufferedDecryptedMessage.Transient///PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-transient/index.html
+$dokka.location:com.wire.crypto/BufferedDecryptedMessage.Transient/Transient/#kotlin.ByteArray#com.wire.crypto.ClientId#com.wire.crypto.WireIdentity/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-transient/-transient.html
+$dokka.location:com.wire.crypto/BufferedDecryptedMessage.Transient/identity/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-transient/identity.html
+$dokka.location:com.wire.crypto/BufferedDecryptedMessage.Transient/plaintext/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-transient/plaintext.html
+$dokka.location:com.wire.crypto/BufferedDecryptedMessage.Transient/senderClientId/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-transient/sender-client-id.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage.TransientTargeted.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-transient-targeted/-companion/index.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage.TransientTargeted///PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-transient-targeted/index.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage.TransientTargeted/TransientTargeted/#kotlin.ByteArray#com.wire.crypto.ClientId#com.wire.crypto.WireIdentity/PointingToDeclaration/-core-crypto/com.wire.crypto/-buffered-decrypted-message/-transient-targeted/-transient-targeted.html
@@ -170,6 +176,7 @@ $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiIsEnabled/#com.wire.crypto
 $dokka.location:com.wire.crypto/CoreCryptoContext/enableHistorySharing/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/enable-history-sharing.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/encryptMessage/#com.wire.crypto.ConversationId#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/encrypt-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/encryptTargetedMessage/#com.wire.crypto.ConversationId#com.wire.crypto.ClientId#com.wire.crypto.TargetedMessagePolicy#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/encrypt-targeted-message.html
+$dokka.location:com.wire.crypto/CoreCryptoContext/encryptTransientMessage/#com.wire.crypto.ConversationId#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/encrypt-transient-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/exportSecretKey/#com.wire.crypto.ConversationId#kotlin.UInt/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/export-secret-key.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/generateKeyPackage/#com.wire.crypto.CredentialRef#java.time.Duration?/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/generate-key-package.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/getClientIds/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/get-client-ids.html
@@ -225,6 +232,7 @@ $dokka.location:com.wire.crypto/CoreCryptoContextInterface/e2eiIsEnabled/#com.wi
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/enableHistorySharing/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/enable-history-sharing.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/encryptMessage/#com.wire.crypto.ConversationId#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/encrypt-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/encryptTargetedMessage/#com.wire.crypto.ConversationId#com.wire.crypto.ClientId#com.wire.crypto.TargetedMessagePolicy#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/encrypt-targeted-message.html
+$dokka.location:com.wire.crypto/CoreCryptoContextInterface/encryptTransientMessage/#com.wire.crypto.ConversationId#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/encrypt-transient-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/exportSecretKey/#com.wire.crypto.ConversationId#kotlin.UInt/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/export-secret-key.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/generateKeyPackage/#com.wire.crypto.CredentialRef#java.time.Duration?/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/generate-key-package.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/getClientIds/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/get-client-ids.html
@@ -461,6 +469,12 @@ $dokka.location:com.wire.crypto/DecryptedMessage.Proposal///PointingToDeclaratio
 $dokka.location:com.wire.crypto/DecryptedMessage.Proposal/Proposal/#kotlin.ULong?#com.wire.crypto.WireIdentity/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/-proposal/-proposal.html
 $dokka.location:com.wire.crypto/DecryptedMessage.Proposal/delay/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/-proposal/delay.html
 $dokka.location:com.wire.crypto/DecryptedMessage.Proposal/identity/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/-proposal/identity.html
+$dokka.location:com.wire.crypto/DecryptedMessage.Transient.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/-transient/-companion/index.html
+$dokka.location:com.wire.crypto/DecryptedMessage.Transient///PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/-transient/index.html
+$dokka.location:com.wire.crypto/DecryptedMessage.Transient/Transient/#kotlin.ByteArray#com.wire.crypto.ClientId#com.wire.crypto.WireIdentity/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/-transient/-transient.html
+$dokka.location:com.wire.crypto/DecryptedMessage.Transient/identity/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/-transient/identity.html
+$dokka.location:com.wire.crypto/DecryptedMessage.Transient/plaintext/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/-transient/plaintext.html
+$dokka.location:com.wire.crypto/DecryptedMessage.Transient/senderClientId/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/-transient/sender-client-id.html
 $dokka.location:com.wire.crypto/DecryptedMessage.TransientTargeted.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/-transient-targeted/-companion/index.html
 $dokka.location:com.wire.crypto/DecryptedMessage.TransientTargeted///PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/-transient-targeted/index.html
 $dokka.location:com.wire.crypto/DecryptedMessage.TransientTargeted/TransientTargeted/#kotlin.ByteArray#com.wire.crypto.ClientId#com.wire.crypto.WireIdentity/PointingToDeclaration/-core-crypto/com.wire.crypto/-decrypted-message/-transient-targeted/-transient-targeted.html
