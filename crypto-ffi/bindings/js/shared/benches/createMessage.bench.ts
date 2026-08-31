@@ -22,7 +22,7 @@ export async function setupCreateMessageBench() {
             const conversationId = await helpers.createConversation(cc);
 
             bench.add(
-                `cipherSuite=${cipherSuite} size=${size}B count=${count}`,
+                `cipherSuite=${cipherSuite} messageSize=${size} messageCount=${count}`,
                 async () => {
                     await cc.transaction(async (ctx) => {
                         for (let i = 0; i < count; i++) {
