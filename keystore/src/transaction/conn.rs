@@ -24,7 +24,7 @@ type Keepalive = Option<ArcWithReadGuard<Transaction>>;
 /// released before `_keepalive`. Were `_keepalive` to drop first it could drop the wrapper's
 /// last strong reference, and `TransactionWrapper::drop` would then block trying to lock a
 /// mutex we still hold.
-pub(crate) struct TransactionConnection {
+pub struct TransactionConnection {
     guard: InternalGuard,
     _keepalive: Keepalive,
 }
@@ -54,7 +54,7 @@ impl Transaction {
     /// Guard over this transaction's connection.
     ///
     /// Errors if SQLite has already rolled this transaction back under us.
-    pub(crate) fn conn(&self) -> CryptoKeystoreResult<TransactionConnection> {
+    pub fn conn(&self) -> CryptoKeystoreResult<TransactionConnection> {
         TransactionConnection::new(self.conn.lock_arc(), None)
     }
 }
