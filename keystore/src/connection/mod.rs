@@ -12,7 +12,7 @@ mod transaction;
 
 use std::sync::Arc;
 
-use async_lock::{Mutex, MutexGuard, Semaphore};
+use async_lock::{Mutex, MutexGuardArc, Semaphore};
 use rusqlite::Connection;
 #[cfg(feature = "log-queries")]
 use rusqlite::trace::{TraceEvent, TraceEventCodes};
@@ -22,8 +22,7 @@ pub(crate) use self::filesystem::Filesystem;
 pub use self::idb_migration::{delete_legacy_idb, legacy_idb_exists};
 pub use self::migrations::migrate_db_key_type_to_bytes;
 use crate::{
-    CryptoKeystoreResult, DatabaseKey, connection::migrations::MigrationTarget, transaction::Transaction,
-    unique_arc::UniqueWeak,
+    CryptoKeystoreResult, DatabaseKey, Transaction, connection::migrations::MigrationTarget, unique_arc::UniqueWeak,
 };
 
 #[cfg(feature = "log-queries")]
@@ -38,8 +37,14 @@ fn log_query(event: TraceEvent) {
 #[derive(derive_more::Debug)]
 pub struct Database {
     // internal connection; mutexed in order to ensure unique access
-    // and provide `Sync`
-    conn: Mutex<Connection>,
+    // and provide `Sync`. `Arc` allows us to hand out lifetime-free
+    // lock guards to the connection.
+    //
+    // Note: it is important for the correctness of `Self::take` that
+    // nobody ever actually clones this `Arc`. For now I don't believe it's
+    // worth the effort of making a `UniqueArc` work here, but if this proves
+    // to be a problem, we might make that effort in the future.
+    conn: Arc<Mutex<Connection>>,
     // handler with which to delete the database;
     // mutexed to provide `Sync`
     pub(crate) filesystem: Mutex<Box<dyn Filesystem>>,
@@ -111,7 +116,8 @@ impl Database {
         }
 
         migrations::run_migrations(&mut conn, migration_target)?;
-        let conn = conn.into();
+
+        let conn = Arc::new(Mutex::new(conn));
 
         Ok(Self {
             conn,
@@ -167,9 +173,17 @@ impl Database {
 
     /// Wait for any running transaction to finish, then take the connection out of this database,
     /// preventing this from being used again.
-    async fn take(self) -> CryptoKeystoreResult<(Connection, Box<dyn Filesystem>)> {
+    ///
+    /// The returned guard keeps other processes out for as long as the caller holds it, so that
+    /// teardown is not interleaved with somebody else's transaction.
+    async fn take(self) -> CryptoKeystoreResult<(Connection, Box<dyn Filesystem>, TransactionGuard)> {
+        // Nobody ever clones `self.conn`; the Arc is only so we can have a lifetime-free guard over
+        // the interior mutex. So we know that its strong count is 1.
+        let conn = Arc::into_inner(self.conn)
+            .expect("nobody ever clones self.conn")
+            .into_inner();
         let _semaphore = self.transaction_semaphore.acquire().await;
-        Ok((self.conn.into_inner(), self.filesystem.into_inner()))
+        Ok((conn, self.filesystem.into_inner(), guard))
     }
 
     // Close this database connection
@@ -203,9 +217,11 @@ impl Database {
         Ok(())
     }
 
-    /// Get a reference to this database's connection.
-    pub(crate) async fn conn(&self) -> MutexGuard<'_, Connection> {
-        self.conn.lock().await
+    /// Get a reference to this database's connection without checking if a transaction is in flight.
+    ///
+    /// **CAUTION**: this will block until the in-flight transaction completes, if one exists.
+    pub(crate) async fn conn(&self) -> MutexGuardArc<Connection> {
+        self.conn.lock_arc().await
     }
 
     /// Get the location of the database.
