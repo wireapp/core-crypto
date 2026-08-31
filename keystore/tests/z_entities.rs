@@ -14,6 +14,69 @@ macro_rules! pat_to_bool {
     };
 }
 
+/// Like [`matches!`], but with an out expression which can reference items captured by the pattern.
+///
+/// Hopefully only ever use this in conjunction with `interior_matches!`, because for most sane
+/// circumstances, `if let` is the better design pattern.
+macro_rules! matches_option {
+    // Without cfg attribute
+    (
+        $val:expr,
+        $pattern:pat $(if $guard:expr)? => $out:expr
+    ) => {
+        match ($val) {
+            $pattern $(if $guard)? => Some($out),
+            _ => None,
+        }
+    };
+    // With cfg attribute
+    (
+        $val:expr,
+        #[cfg($meta:meta)]
+        $pattern:pat $(if $guard:expr)? => $out:expr
+    ) => {
+        {
+            #[cfg($meta)]
+            let result = match ($val) {
+                $pattern $(if $guard)? => Some($out),
+                _ => None,
+            };
+            #[cfg(not($meta))]
+            let result = None;
+            result
+        }
+    };
+}
+
+/// This is moderately horrific and we hopefully will not require it anywhere else, but
+/// it solves a real problem here: how do we match against the innermost types,
+/// when we have a heterogenous set of types to match against?
+macro_rules! match_heterogenous {
+    (
+        $err:expr => {
+            $(
+                $( #[cfg($meta:meta)] )?
+                $pattern:pat $(if $guard:expr)? => $var:expr,
+            )*
+            ||=> $default:expr,
+        }
+    ) => {{
+        if false { unreachable!() }
+        $(
+            else if let Some(v) = matches_option!(
+                $err.downcast_ref(),
+                $( #[cfg($meta)] )?
+                Some($pattern) $(if $guard)? => $var
+            ) {
+                v
+            }
+        )*
+        else {
+            $default
+        }
+    }};
+}
+
 /// Emit a borrowed-primary-key round trip for this entity, or nothing if it opted out.
 ///
 /// Unlike the `ignore_*` flags, this cannot be a runtime condition: an entity without a borrowed
@@ -112,40 +175,40 @@ mod tests_impl {
     where
         E: 'static + Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
     {
-        let mut entity = E::random();
+        let entity = E::random();
         let tx = store.new_transaction().await.unwrap();
-        {
-            let any_e: &mut dyn Any = &mut entity;
+        let any_e: &dyn Any = &entity;
 
+        let group_id_as_foreign_key = match_heterogenous!(any_e => {
             // pending messages have a foreign key constraint which must be satisfied
-            if let Some(pending_message) = any_e.downcast_mut::<MlsPendingMessage>() {
-                let pending_groups = PersistedMlsPendingGroup::random();
-                pending_message.conversation_id = pending_groups.id.clone();
+            pending_message @ MlsPendingMessage { .. } => {
+                let mut pending_group = PersistedMlsPendingGroup::random();
+                pending_group.id = pending_message.conversation_id.clone();
 
-                tx.save(pending_groups).await.unwrap();
+                tx.save(pending_group).await.unwrap();
+                None
+            },
 
             // tnt message counters also have a foreign key constraint which must be satisfied
-            } else if let Some(counter) = any_e.downcast_mut::<TargetedMessageTxCounter>() {
-                let group = PersistedMlsGroup::random();
-                counter.conversation_id = group.id.clone().into();
+            counter @ TargetedMessageTxCounter { .. } => {
+                Some(counter.conversation_id.clone())
+            },
+            counter @ TransientMessageTxCounter { .. } => {
+                Some(counter.conversation_id.clone())
+            },
+            counter @ TargetedMessageRxCounter { .. } => {
+                Some(counter.conversation_id.clone())
+            },
+            counter @ TransientMessageRxCounter { .. } => {
+                Some(counter.conversation_id.clone())
+            },
+            ||=> None,
+        });
 
-                tx.save(group).await.unwrap();
-            } else if let Some(counter) = any_e.downcast_mut::<TransientMessageTxCounter>() {
-                let group = PersistedMlsGroup::random();
-                counter.conversation_id = group.id.clone().into();
-
-                tx.save(group).await.unwrap();
-            } else if let Some(counter) = any_e.downcast_mut::<TargetedMessageRxCounter>() {
-                let group = PersistedMlsGroup::random();
-                counter.conversation_id = group.id.clone().into();
-
-                tx.save(group).await.unwrap();
-            } else if let Some(counter) = any_e.downcast_mut::<TransientMessageRxCounter>() {
-                let group = PersistedMlsGroup::random();
-                counter.conversation_id = group.id.clone().into();
-
-                tx.save(group).await.unwrap();
-            }
+        if let Some(id) = group_id_as_foreign_key {
+            let mut group = PersistedMlsGroup::random();
+            group.id = id.into();
+            tx.save(group).await.unwrap();
         }
 
         tx.save(entity.clone()).await.unwrap();
@@ -168,30 +231,35 @@ mod tests_impl {
         assert_no_transaction_in_flight(store).await;
 
         let any_e: &dyn Any = entity;
-        if let Some(pending_message) = any_e.downcast_ref::<MlsPendingMessage>() {
-            let pending_message_from_store = store
-                .search::<MlsPendingMessage, _>(pending_message.conversation_id.as_ref())
-                .await
-                .unwrap()
-                .pop()
-                .unwrap();
-            assert_eq!(*pending_message, *pending_message_from_store);
-        } else if let Some(credential) = any_e.downcast_ref::<StoredCredential>() {
-            let mut credential_from_store = Arc::unwrap_or_clone(
-                store
-                    .get::<StoredCredential>(&credential.primary_key())
+        match_heterogenous!(any_e => {
+            pending_message @ MlsPendingMessage { .. } => {
+                let pending_message_from_store = store
+                    .search::<MlsPendingMessage, _>(pending_message.conversation_id.as_ref())
                     .await
                     .unwrap()
-                    .unwrap(),
-            );
-            credential_from_store.equalize();
-            assert_eq!(*credential, credential_from_store);
-        } else {
-            let primary_key = entity.primary_key();
-            let mut entity_from_store = Arc::unwrap_or_clone(store.get::<E>(&primary_key).await.unwrap().unwrap());
-            entity_from_store.equalize();
-            assert_eq!(*entity, entity_from_store);
-        };
+                    .pop()
+                    .unwrap();
+                assert_eq!(*pending_message, *pending_message_from_store);
+            },
+            credential @ StoredCredential { .. } => {
+                let mut credential_from_store = Arc::unwrap_or_clone(
+                    store
+                        .get::<StoredCredential>(&credential.primary_key())
+                        .await
+                        .unwrap()
+                        .unwrap(),
+                );
+                credential_from_store.equalize();
+                assert_eq!(*credential, credential_from_store);
+            },
+            ||=> {
+                let primary_key = entity.primary_key();
+                let mut entity_from_store =
+                    Arc::unwrap_or_clone(store.get::<E>(&primary_key).await.unwrap().unwrap());
+                entity_from_store.equalize();
+                assert_eq!(*entity, entity_from_store);
+            },
+        });
     }
 
     /// Save, find, and remove an entity through the borrowed form of its primary key.
@@ -215,25 +283,32 @@ mod tests_impl {
             + Send
             + Sync,
     {
-        let mut entity = E::random();
-
-        let tx = store.new_transaction().await.unwrap();
-        let any_e = &mut entity as &mut dyn Any;
-        if let Some(counter) = any_e.downcast_mut::<TransientMessageTxCounter>() {
-            let group = PersistedMlsGroup::random();
-            counter.conversation_id = group.id.clone().into();
-            tx.save(group).await.unwrap();
-        } else if let Some(counter) = any_e.downcast_mut::<TargetedMessageRxCounter>() {
-            let group = PersistedMlsGroup::random();
-            counter.conversation_id = group.id.clone().into();
-            tx.save(group).await.unwrap();
-        } else if let Some(counter) = any_e.downcast_mut::<TransientMessageRxCounter>() {
-            let group = PersistedMlsGroup::random();
-            counter.conversation_id = group.id.clone().into();
-            tx.save(group).await.unwrap();
-        }
+        let entity = E::random();
         let primary_key = entity.primary_key();
         let borrowed_primary_key = entity.borrow_primary_key();
+
+        let tx = store.new_transaction().await.unwrap();
+        let any_e = &entity as &dyn Any;
+
+        let group_id_as_foreign_key = match_heterogenous!(any_e => {
+            counter @ TransientMessageTxCounter { .. } => {
+                Some(counter.conversation_id.clone())
+            },
+            counter @ TargetedMessageRxCounter { .. } => {
+                Some(counter.conversation_id.clone())
+            },
+            counter @ TransientMessageRxCounter { .. } => {
+                Some(counter.conversation_id.clone())
+            },
+            ||=> None,
+        });
+
+        if let Some(id) = group_id_as_foreign_key {
+            let mut group = PersistedMlsGroup::random();
+            group.id = id.into();
+            tx.save(group).await.unwrap();
+        }
+
         tx.save(entity.clone()).await.unwrap();
         tx.commit().await.unwrap();
 
@@ -373,25 +448,30 @@ mod tests_impl {
         let tx = store.new_transaction().await.unwrap();
         for _ in 0..ENTITY_COUNT {
             // tnt message counters also have a foreign key constraint which must be satisfied
-            let mut entity = E::random();
-            let any_e: &mut dyn Any = &mut entity;
-            if let Some(counter) = any_e.downcast_mut::<TargetedMessageTxCounter>() {
-                let group = PersistedMlsGroup::random();
-                counter.conversation_id = group.id.clone().into();
-                tx.save(group).await.unwrap();
-            } else if let Some(counter) = any_e.downcast_mut::<TransientMessageTxCounter>() {
-                let group = PersistedMlsGroup::random();
-                counter.conversation_id = group.id.clone().into();
-                tx.save(group).await.unwrap();
-            } else if let Some(counter) = any_e.downcast_mut::<TargetedMessageRxCounter>() {
-                let group = PersistedMlsGroup::random();
-                counter.conversation_id = group.id.clone().into();
-                tx.save(group).await.unwrap();
-            } else if let Some(counter) = any_e.downcast_mut::<TransientMessageRxCounter>() {
-                let group = PersistedMlsGroup::random();
-                counter.conversation_id = group.id.clone().into();
+            let entity = E::random();
+            let any_e: &dyn Any = &entity;
+            let group_id_as_foreign_key = match_heterogenous!(any_e => {
+                counter @ TargetedMessageTxCounter { .. } => {
+                    Some(counter.conversation_id.clone())
+                },
+                counter @ TransientMessageTxCounter { .. } => {
+                    Some(counter.conversation_id.clone())
+                },
+                counter @ TargetedMessageRxCounter { .. } => {
+                    Some(counter.conversation_id.clone())
+                },
+                counter @ TransientMessageRxCounter { .. } => {
+                    Some(counter.conversation_id.clone())
+                },
+                ||=> None,
+            });
+
+            if let Some(id) = group_id_as_foreign_key {
+                let mut group = PersistedMlsGroup::random();
+                group.id = id.into();
                 tx.save(group).await.unwrap();
             }
+
             tx.save(entity).await.unwrap();
         }
         tx.commit().await.unwrap();
@@ -485,14 +565,25 @@ mod tests {
 #[cfg(test)]
 pub mod utils {
     use core_crypto_keystore::entities::{
-        MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusSession, StoredCredential,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
-        TargetedMessageRxCounter, TargetedMessageTxCounter, TransientMessageRxCounter, TransientMessageTxCounter,
-        X509TrustAnchor,
+        ConversationId, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusSession,
+        StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
+        StoredKeyPackage, StoredPskBundle, TargetedMessageRxCounter, TargetedMessageTxCounter,
+        TransientMessageRxCounter, TransientMessageTxCounter, X509TrustAnchor,
     };
     use rand::Rng as _;
 
     const MAX_BLOB_SIZE: std::ops::Range<usize> = 1024..8192;
+
+    fn random_conversation_id() -> ConversationId {
+        uuid::Uuid::new_v4().into_bytes().as_slice().into()
+    }
+
+    fn random_blob() -> Vec<u8> {
+        let mut rng = rand::thread_rng();
+        let mut blob = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+        rng.fill(&mut blob[..]);
+        blob
+    }
 
     pub trait EntityRandomExt {
         fn random() -> Self;
@@ -511,6 +602,9 @@ pub mod utils {
                         $($blob_field:ident
                         $( id_like:$id_like:literal)?, )*
                     ]
+                    $(, update_fields=[
+                        $(($update_field_ident:ident: $update_field_value:expr_2021),)+
+                    ])?
                     $(, additional_fields=[
                         $((
                             $additional_field_ident:ident: $additional_field_value:expr_2021
@@ -519,22 +613,19 @@ pub mod utils {
                 ) => {
                     impl EntityRandomExt for $struct_name {
                         fn random() -> Self {
-                            use rand::Rng as _;
-                            let mut rng = rand::thread_rng();
-
                             $(
                                 let uuid = uuid::Uuid::new_v4();
                                 let $id_field: [u8; 16] = uuid.into_bytes();
                             )?
 
                             $(
-                                let mut $blob_field = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                                rng.fill(&mut $blob_field[..]);
+                                let $blob_field = random_blob();
                             )*
 
                             Self {
                                 $($id_field: $id_field.as_slice().into(),)?
                                 $($blob_field,)*
+                                $($($update_field_ident: $update_field_value,)+)?
                                 $($($additional_field_ident: $additional_field_value,)+)?
                             }
                         }
@@ -550,6 +641,9 @@ pub mod utils {
                         $($blob_field:ident
                         $( id_like:$id_like:literal)?, )*
                     ]
+                    $(, update_fields=[
+                        $(($update_field_ident:ident: $update_field_value:expr_2021),)+
+                    ])?
                     $(, additional_fields=[
                         $((
                             $additional_field_ident:ident: $additional_field_value:expr_2021
@@ -564,6 +658,9 @@ pub mod utils {
                         blob_fields=[
                             $($blob_field $(id_like:$id_like)?, )*
                         ]
+                        $(, update_fields=[
+                            $(($update_field_ident: $update_field_value),)+
+                        ])?
                         $(, additional_fields=[
                             $(($additional_field_ident: $additional_field_value),)+
                         ])?
@@ -571,15 +668,16 @@ pub mod utils {
 
                     impl EntityRandomUpdateExt for $struct_name {
                         fn random_update(&mut self) {
-                            let mut rng = rand::thread_rng();
                             $(
                                 // Don't include id-like fields in update
                                 let include_in_update = !pat_to_bool!($($id_like)?);
                                 if include_in_update {
-                                    self.$blob_field = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                                    rng.fill(&mut self.$blob_field[..]);
+                                    self.$blob_field = random_blob();
                                 }
                             )*
+                            $($(
+                                self.$update_field_ident = $update_field_value;
+                            )+)?
                         }
 
                         $(
@@ -602,78 +700,10 @@ pub mod utils {
     impl_entity_random_update_ext!(StoredEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredPskBundle, blob_fields=[psk,psk_id id_like:true,]);
     impl_entity_random_update_ext!(PersistedMlsGroup, id_field = id, blob_fields = [state,]);
-    impl EntityRandomExt for TargetedMessageTxCounter {
-        fn random() -> Self {
-            Self {
-                conversation_id: b"This cannot be filled meaninfully here; need a real conversation"
-                    .as_slice()
-                    .into(),
-                receiver: rand::random(),
-                count: rand::random(),
-            }
-        }
-    }
-
-    impl EntityRandomUpdateExt for TargetedMessageTxCounter {
-        fn random_update(&mut self) {
-            self.count = rand::random();
-        }
-    }
-
-    impl EntityRandomExt for TransientMessageTxCounter {
-        fn random() -> Self {
-            Self {
-                conversation_id: b"This cannot be filled meaningfully here; need a real conversation"
-                    .as_slice()
-                    .into(),
-                count: rand::random(),
-            }
-        }
-    }
-
-    impl EntityRandomUpdateExt for TransientMessageTxCounter {
-        fn random_update(&mut self) {
-            self.count = rand::random();
-        }
-    }
-
-    impl EntityRandomExt for TargetedMessageRxCounter {
-        fn random() -> Self {
-            Self {
-                conversation_id: b"This cannot be filled meaningfully here; need a real conversation"
-                    .as_slice()
-                    .into(),
-                sender: rand::random(),
-                epoch: u64::from(rand::random::<u32>()),
-                count: rand::random(),
-            }
-        }
-    }
-
-    impl EntityRandomUpdateExt for TargetedMessageRxCounter {
-        fn random_update(&mut self) {
-            self.count = rand::random();
-        }
-    }
-
-    impl EntityRandomExt for TransientMessageRxCounter {
-        fn random() -> Self {
-            Self {
-                conversation_id: b"This cannot be filled meaningfully here; need a real conversation"
-                    .as_slice()
-                    .into(),
-                sender: rand::random(),
-                epoch: u64::from(rand::random::<u32>()),
-                count: rand::random(),
-            }
-        }
-    }
-
-    impl EntityRandomUpdateExt for TransientMessageRxCounter {
-        fn random_update(&mut self) {
-            self.count = rand::random();
-        }
-    }
+    impl_entity_random_update_ext!(TargetedMessageTxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(receiver: rand::random()),]);
+    impl_entity_random_update_ext!(TransientMessageTxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),]);
+    impl_entity_random_update_ext!(TargetedMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);
+    impl_entity_random_update_ext!(TransientMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);
 
     impl_entity_random_update_ext!(PersistedMlsPendingGroup, id_field=id, blob_fields=[state,custom_configuration,], additional_fields=[(parent_id: None),]);
     impl_entity_random_update_ext!(MlsPendingMessage, id_field = conversation_id, blob_fields = [message,]);
