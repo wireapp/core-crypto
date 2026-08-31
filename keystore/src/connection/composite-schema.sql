@@ -85,14 +85,6 @@ CREATE TABLE "mls_pending_messages" (
 
 CREATE INDEX idx_mls_pending_messages_conversation_id ON mls_pending_messages(conversation_id);
 
-CREATE TABLE targeted_message_tx_counters (
-  conversation_id BLOB NOT NULL,
-  receiver INTEGER NOT NULL,
-  count INTEGER NOT NULL DEFAULT 0,
-  PRIMARY KEY (conversation_id, receiver),
-  FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
-);
-
 CREATE TABLE tnt_secrets (
   conversation_id BLOB NOT NULL,
   epoch INTEGER NOT NULL,

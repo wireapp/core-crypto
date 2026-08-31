@@ -9,8 +9,7 @@ mod persistence;
 use async_lock::{RwLock, RwLockReadGuard};
 use core_crypto_keystore::{
     Transaction,
-    entities::{ConversationIdRef as KeystoreConversationIdRef, PersistedMlsGroup,
-        TargetedMessageTxCounter, TntMessageTxCounter},
+    entities::{ConversationIdRef as KeystoreConversationIdRef, PersistedMlsGroup, TntMessageTxCounter},
     traits::FetchFromDatabase,
 };
 use openmls::group::{InnerState, MlsGroup};
