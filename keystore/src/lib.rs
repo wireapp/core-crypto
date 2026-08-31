@@ -6,6 +6,7 @@ mod hash;
 pub(crate) mod migrations;
 pub mod traits;
 pub mod transaction;
+mod transactionlike;
 mod unique_arc;
 
 pub use hash::Sha256Hash;
@@ -19,4 +20,5 @@ pub use self::{
     database_key::DatabaseKey,
     error::{CryptoKeystoreError, CryptoKeystoreResult},
     transaction::Transaction,
+    transactionlike::Transactionlike,
 };
