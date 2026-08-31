@@ -27,7 +27,7 @@ mod stored_credential {
 
     use core_crypto_keystore::{
         entities::{CredentialFindFilters, StoredCredential},
-        traits::{FetchFromDatabase as _, PrimaryKey as _},
+        traits::{EntityDatabaseMutation as _, FetchFromDatabase as _, PrimaryKey as _},
     };
     use rand::Rng;
     use rstest_reuse::apply;
@@ -39,19 +39,23 @@ mod stored_credential {
 
         let session_id = random_bytes(32..=32);
         let credential = random_bytes(128..=256);
-        let created_at = 0; // updated on save
+        let created_at = 0; // updated on pre_save
         let ciphersuite = rng.gen_range(1_u16..=7);
         let public_key = random_bytes(512..=1024);
         let private_key = random_bytes(128..=256);
 
-        StoredCredential {
+        let mut entity = StoredCredential {
             session_id,
             credential,
             created_at,
             ciphersuite,
             public_key,
             private_key,
-        }
+        };
+
+        entity.pre_save().unwrap();
+
+        entity
     }
 
     fn get_search_key(entity: &StoredCredential) -> CredentialFindFilters<'_> {
@@ -78,10 +82,11 @@ mod stored_credential {
         let store = context.store();
         let _ = env_logger::try_init();
 
-        let mut entity = random_entity();
+        let entity = random_entity();
 
         let tx = store.new_transaction().await.unwrap();
-        entity.created_at = tx.save(entity.clone()).await.unwrap();
+
+        entity.save(&*tx).unwrap();
         tx.commit().await.unwrap();
 
         let search_key = get_search_key(&entity);
@@ -103,7 +108,7 @@ mod stored_credential {
 
         let tx = store.new_transaction().await.unwrap();
         for entity in &mut entities {
-            entity.created_at = tx.save(entity.clone()).await.unwrap();
+            entity.save(&*tx).unwrap();
         }
         entities[1].created_at = entities[0].created_at;
         tx.commit().await.unwrap();
@@ -134,7 +139,8 @@ mod stored_credential {
 
         let tx = store.new_transaction().await.unwrap();
         for entity in [&mut relevant_entity, &mut irrelevant_entity] {
-            entity.created_at = tx.save(entity.clone()).await.unwrap();
+            entity.pre_save().unwrap();
+            entity.save(&*tx).unwrap();
             // ensure the entities are created in different seconds so they don't accidentally match
             smol::Timer::after(std::time::Duration::from_secs(1)).await;
         }
@@ -154,9 +160,9 @@ mod stored_credential {
         let store = context.store();
         let _ = env_logger::try_init();
 
-        let mut entity = random_entity();
+        let entity = random_entity();
         let tx = store.new_transaction().await.unwrap();
-        entity.created_at = tx.save(entity.clone()).await.unwrap();
+        entity.save(&*tx).unwrap();
         let search_key = get_search_key(&entity);
 
         let found = store
@@ -175,11 +181,11 @@ mod stored_credential {
         let search_key = get_search_key(&entity);
 
         let tx = store.new_transaction().await.unwrap();
-        tx.save(entity.clone()).await.unwrap();
+        entity.save(&*tx).unwrap();
         tx.commit().await.unwrap();
 
         let tx = store.new_transaction().await.unwrap();
-        tx.remove::<StoredCredential>(&entity.primary_key()).await.unwrap();
+        StoredCredential::delete(&*tx, &entity.primary_key()).unwrap();
 
         let found = store
             .search::<StoredCredential, CredentialFindFilters>(&search_key)

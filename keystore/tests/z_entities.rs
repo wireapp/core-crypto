@@ -142,7 +142,6 @@ mod tests_impl {
             Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase as _,
             PrimaryKey as _,
         },
-        transaction::EntityId,
     };
 
     use super::common::*;
@@ -185,7 +184,7 @@ mod tests_impl {
                 let mut pending_group = PersistedMlsPendingGroup::random();
                 pending_group.id = pending_message.conversation_id.clone();
 
-                tx.save(pending_group).await.unwrap();
+                pending_group.save(&*tx).unwrap();
                 None
             },
 
@@ -205,10 +204,10 @@ mod tests_impl {
         if let Some(id) = group_id_as_foreign_key {
             let mut group = PersistedMlsGroup::random();
             group.id = id.into();
-            tx.save(group).await.unwrap();
+            group.save(&*tx).unwrap();
         }
 
-        tx.save(entity.clone()).await.unwrap();
+        entity.save(&*tx).unwrap();
         tx.commit().await.unwrap();
         entity
     }
@@ -279,6 +278,7 @@ mod tests_impl {
             + EntityDeleteBorrowed
             + Send
             + Sync,
+        E::PrimaryKey: Eq,
     {
         let entity = E::random();
         let primary_key = entity.primary_key();
@@ -303,10 +303,10 @@ mod tests_impl {
         if let Some(id) = group_id_as_foreign_key {
             let mut group = PersistedMlsGroup::random();
             group.id = id.into();
-            tx.save(group).await.unwrap();
+            group.save(&*tx).unwrap();
         }
 
-        tx.save(entity.clone()).await.unwrap();
+        entity.save(&*tx).unwrap();
         tx.commit().await.unwrap();
 
         assert_no_transaction_in_flight(store).await;
@@ -321,7 +321,7 @@ mod tests_impl {
         assert_eq!(entity, found);
 
         let tx = store.new_transaction().await.unwrap();
-        tx.remove_borrowed::<E>(borrowed_primary_key).await.unwrap();
+        E::delete_borrowed(&*tx, borrowed_primary_key).unwrap();
         tx.commit().await.unwrap();
 
         assert_no_transaction_in_flight(store).await;
@@ -331,12 +331,11 @@ mod tests_impl {
         );
 
         // As in `can_remove_entity`, confirm the deletion against the one read which binds no key.
-        let key = EntityId::from_primary_key::<E>(primary_key);
         let remaining = store.load_all::<E>().await.unwrap();
         assert!(
             !remaining.iter().any(|remaining| {
-                let remaining_key = EntityId::from_primary_key::<E>(remaining.primary_key());
-                remaining_key == key
+                let remaining_key = remaining.primary_key();
+                remaining_key == primary_key
             }),
             "the entity is still in the database, so the borrowed-key removal deleted no rows"
         );
@@ -356,7 +355,7 @@ mod tests_impl {
     {
         entity.random_update();
         let tx = store.new_transaction().await.unwrap();
-        tx.save(entity.clone()).await.unwrap();
+        entity.clone().save(&*tx).unwrap();
         tx.commit().await.unwrap();
 
         assert_no_transaction_in_flight(store).await;
@@ -391,7 +390,12 @@ mod tests_impl {
         );
 
         let tx = store.new_transaction().await.unwrap();
-        tx.save(updated).await.unwrap();
+        updated
+            .save(&*tx)
+            .inspect_err(|err| {
+                dbg!(err);
+            })
+            .unwrap();
         let commit_error = tx
             .commit()
             .await
@@ -411,9 +415,10 @@ mod tests_impl {
     pub(crate) async fn can_remove_entity<E>(store: &Arc<CryptoKeystore>, entity: E)
     where
         E: 'static + Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
+        E::PrimaryKey: Eq,
     {
         let tx = store.new_transaction().await.unwrap();
-        tx.remove::<E>(&entity.primary_key()).await.unwrap();
+        E::delete(&*tx, &entity.primary_key()).unwrap();
         tx.commit().await.unwrap();
 
         assert_no_transaction_in_flight(store).await;
@@ -427,11 +432,11 @@ mod tests_impl {
         //
         // Not every primary key is `PartialEq`, but every primary key can produce its byte
         // encoding, which is what the transaction cache already uses for record identity.
-        let removed_key = EntityId::from_primary_key::<E>(entity.primary_key());
+        let removed_key = entity.primary_key();
         let remaining = store.load_all::<E>().await.unwrap();
         assert!(
             !remaining.iter().any(|remaining| {
-                let remaining_key = EntityId::from_primary_key::<E>(remaining.primary_key());
+                let remaining_key = remaining.primary_key();
                 remaining_key == removed_key
             }),
             "the entity is still in the database, so the removal deleted no rows"
@@ -463,10 +468,10 @@ mod tests_impl {
             if let Some(id) = group_id_as_foreign_key {
                 let mut group = PersistedMlsGroup::random();
                 group.id = id.into();
-                tx.save(group).await.unwrap();
+                group.save(&*tx).unwrap();
             }
 
-            tx.save(entity).await.unwrap();
+            entity.save(&*tx).unwrap();
         }
         tx.commit().await.unwrap();
     }
@@ -518,7 +523,7 @@ mod tests {
 
     #[apply(all_storage_types)]
     async fn can_save_and_load_consumer_data(context: KeystoreTestContext) {
-        use core_crypto_keystore::traits::FetchFromDatabase as _;
+        use core_crypto_keystore::traits::{EntityDatabaseMutation as _, FetchFromDatabase as _};
 
         eprintln!("creating store");
         let store = context.store();
@@ -532,10 +537,10 @@ mod tests {
 
         eprintln!("saving some consumer data");
         const DATA: &[u8] = b"here is some arbitrary data";
-        tx.save(ConsumerData {
+        ConsumerData {
             content: DATA.to_owned(),
-        })
-        .await
+        }
+        .save(&*tx)
         .unwrap();
 
         // from transaction
