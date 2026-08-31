@@ -70,9 +70,7 @@ impl ConversationMut {
         recipient: &Member,
         message: &[u8],
     ) -> Result<TargetedMessage> {
-        let counter = group_state
-            .obtain_targeted_message_tx_counter(recipient.index, database)
-            .await?;
+        let counter = group_state.obtain_tnt_message_tx_counter(database).await?;
         let mls_group = group_state.mls_group();
         let aad = counter
             .tls_serialize_detached()

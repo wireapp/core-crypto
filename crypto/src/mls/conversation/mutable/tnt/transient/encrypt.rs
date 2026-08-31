@@ -44,7 +44,7 @@ impl ConversationMut {
         crypto_provider: &CryptoProvider,
         message: &[u8],
     ) -> Result<TransientMessage> {
-        let counter = group_state.obtain_transient_message_tx_counter(database).await?;
+        let counter = group_state.obtain_tnt_message_tx_counter(database).await?;
         let mls_group = group_state.mls_group();
         let aad = TransientMessageAad::new(mls_group.own_leaf_index(), counter, mls_group.export_group_context());
 

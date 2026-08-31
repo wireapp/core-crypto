@@ -6,21 +6,14 @@ mod e2ei;
 mod history_sharing;
 mod persistence;
 
-use std::collections::{HashMap, hash_map::Entry};
-
 use async_lock::{RwLock, RwLockReadGuard};
 use core_crypto_keystore::{
     Transaction,
-    entities::{
-        ConversationId as KeystoreConversationId, ConversationIdRef as KeystoreConversationIdRef, PersistedMlsGroup,
-        TargetedMessageTxCounter, TargetedMessageTxCounterPk, TransientMessageTxCounter,
-    },
+    entities::{ConversationIdRef as KeystoreConversationIdRef, PersistedMlsGroup,
+        TargetedMessageTxCounter, TntMessageTxCounter},
     traits::FetchFromDatabase,
 };
-use openmls::{
-    group::{InnerState, MlsGroup},
-    prelude::LeafNodeIndex,
-};
+use openmls::group::{InnerState, MlsGroup};
 
 use super::{ConversationIdRef, Error, Result, SecretKey};
 use crate::{
@@ -33,21 +26,14 @@ pub(crate) struct MlsGroupState {
     #[deref]
     #[deref_mut]
     group: MlsGroup,
-    /// The count of targeted messages sent (hereafter `tx`) this epoch, keyed by recipients.
-    /// Supposed to be used when encrypting targeted messages only, and to be reset whenever the mls epoch is
-    /// incremented. Do not access this field directly, use [MlsGroupState::obtain_targeted_message_tx_counter] and
-    /// [MlsGroupState::reset_tnt_message_tx_counters] only.
+    /// The count of transient messages plus targeted messages sent (hereafter `tx`) this epoch.
+    /// Supposed to be used when encrypting tnt messages only, and to be reset whenever the mls epoch is
+    /// incremented. Do not access this field directly, use [MlsGroupState::obtain_tnt_message_tx_counter] and
+    /// [MlsGroupState::reset_tnt_message_tx_counter] only.
     ///
     /// The purpose of these counters is replay protection on the recipient side: we provide the count when sending a
     /// message to a receiver, and they check if the counter is greater than any they've seen before.
-    targeted_message_tx_counters: HashMap<LeafNodeIndex, TntMessageCounter>,
-
-    /// The count of transient messages sent (hereafter `tx`) this epoch. Because all currently online members receive
-    /// a transient message, this counter isn't keyed by recipients.
-    /// Serves the same purpose as the above counter but for transient messages.
-    /// No direct field access, use [MlsGroupState::obtain_transient_message_tx_counter] and
-    /// [MlsGroupState::reset_tnt_message_tx_counters] only.
-    transient_message_tx_counter: TntMessageCounter,
+    tnt_message_tx_counter: TntMessageCounter,
 }
 
 impl MlsGroupState {
@@ -59,52 +45,19 @@ impl MlsGroupState {
         &mut self.group
     }
 
-    /// Get the targeted message sender (tx) counter bound to this conversation and the given recipient after
-    /// incrementing it.
-    ///
-    /// If the counter hasn't been used yet for this conversation, it is loaded from the database or initialized
-    /// freshly.
-    pub(in crate::mls::conversation) async fn obtain_targeted_message_tx_counter(
-        &mut self,
-        recipient: LeafNodeIndex,
-        database: &impl FetchFromDatabase,
-    ) -> Result<TntMessageCounter> {
-        let key = TargetedMessageTxCounterPk::new(self.group_id().to_vec().into(), recipient.u32());
-
-        // `or_insert_with` can't be used because db loading is async.
-        let mut counter = match self.targeted_message_tx_counters.entry(recipient) {
-            Entry::Occupied(entry) => entry,
-            Entry::Vacant(entry) => {
-                let count = database
-                    .get::<TargetedMessageTxCounter>(&key)
-                    .await
-                    .map_err(KeystoreError::wrap("searching for tnt message counters for group"))?
-                    .map(|counter| counter.count)
-                    .unwrap_or_default();
-
-                entry.insert_entry(count.into())
-            }
-        };
-
-        counter.get_mut().increment()?;
-        self.group.set_state(openmls::group::InnerState::Changed);
-
-        Ok(*counter.get())
-    }
-
     /// Get the transient message sender (tx) counter bound to this conversation after incrementing it.
     ///
     /// If the counter hasn't been used yet for this conversation, it is loaded from the database or initialized
     /// freshly.
-    pub(in crate::mls::conversation) async fn obtain_transient_message_tx_counter(
+    pub(in crate::mls::conversation) async fn obtain_tnt_message_tx_counter(
         &mut self,
         database: &impl FetchFromDatabase,
     ) -> Result<TntMessageCounter> {
-        let mut counter = self.transient_message_tx_counter;
+        let mut counter = self.tnt_message_tx_counter;
 
         if counter.is_zero() {
             counter = database
-                .get_borrowed::<TransientMessageTxCounter>(KeystoreConversationIdRef::new(self.group_id().as_slice()))
+                .get_borrowed::<TntMessageTxCounter>(KeystoreConversationIdRef::new(self.group_id().as_slice()))
                 .await
                 .map_err(KeystoreError::wrap("searching for tnt message counters for group"))?
                 .map(|counter| counter.count)
@@ -113,20 +66,18 @@ impl MlsGroupState {
         }
 
         counter.increment()?;
-        self.transient_message_tx_counter = counter;
+        self.tnt_message_tx_counter = counter;
         self.group.set_state(InnerState::Changed);
 
         Ok(counter)
     }
 
-    pub(in crate::mls::conversation) async fn reset_tnt_message_tx_counters(&mut self, tx: &Transaction) -> Result<()> {
-        self.targeted_message_tx_counters = Default::default();
-        self.transient_message_tx_counter = Default::default();
-        let id: KeystoreConversationId = self.group.group_id().to_vec().into();
-        tx.remove_borrowed::<TransientMessageTxCounter>(id.as_ref())
+    pub(in crate::mls::conversation) async fn reset_tnt_message_tx_counter(&mut self, tx: &Transaction) -> Result<()> {
+        self.tnt_message_tx_counter = Default::default();
+        let id = KeystoreConversationIdRef::new(self.group.group_id().as_slice());
+        tx.remove_borrowed::<TntMessageTxCounter>(id)
             .await
             .map_err(KeystoreError::wrap("removing transient message tx counter"))?;
-        tx.bulk_remove::<TargetedMessageTxCounter, _>(id).await;
         Ok(())
     }
 
@@ -143,19 +94,9 @@ impl MlsGroupState {
         .await
         .map_err(KeystoreError::wrap("persisting mls group"))?;
 
-        for (receiver, counter) in self.targeted_message_tx_counters.iter() {
-            tx.save(TargetedMessageTxCounter {
-                conversation_id: id.to_vec().into(),
-                receiver: receiver.u32(),
-                count: (*counter).into(),
-            })
-            .await
-            .map_err(KeystoreError::wrap("saving targeted message tx counter"))?;
-        }
-
-        tx.save(TransientMessageTxCounter {
+        tx.save(TntMessageTxCounter {
             conversation_id: id.as_slice().into(),
-            count: self.transient_message_tx_counter.into(),
+            count: self.tnt_message_tx_counter.into(),
         })
         .await
         .map_err(KeystoreError::wrap("saving transient message tx counter"))?;

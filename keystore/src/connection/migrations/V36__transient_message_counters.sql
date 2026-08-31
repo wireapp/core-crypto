@@ -1,4 +1,4 @@
-CREATE TABLE transient_message_tx_counters (
+CREATE TABLE tnt_message_tx_counters (
     conversation_id BLOB NOT NULL,
     count INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (conversation_id),

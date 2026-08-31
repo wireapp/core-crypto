@@ -136,7 +136,7 @@ mod tests_impl {
         CryptoKeystoreError,
         entities::{
             MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, TargetedMessageRxCounter,
-            TargetedMessageTxCounter, TransientMessageRxCounter, TransientMessageTxCounter,
+            TargetedMessageTxCounter, TntMessageTxCounter, TransientMessageRxCounter,
         },
         traits::{
             Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase as _,
@@ -193,7 +193,7 @@ mod tests_impl {
             counter @ TargetedMessageTxCounter { .. } => {
                 Some(counter.conversation_id.clone())
             },
-            counter @ TransientMessageTxCounter { .. } => {
+            counter @ TntMessageTxCounter { .. } => {
                 Some(counter.conversation_id.clone())
             },
             counter @ TargetedMessageRxCounter { .. } => {
@@ -291,7 +291,7 @@ mod tests_impl {
         let any_e = &entity as &dyn Any;
 
         let group_id_as_foreign_key = match_heterogenous!(any_e => {
-            counter @ TransientMessageTxCounter { .. } => {
+            counter @ TntMessageTxCounter { .. } => {
                 Some(counter.conversation_id.clone())
             },
             counter @ TargetedMessageRxCounter { .. } => {
@@ -454,7 +454,7 @@ mod tests_impl {
                 counter @ TargetedMessageTxCounter { .. } => {
                     Some(counter.conversation_id.clone())
                 },
-                counter @ TransientMessageTxCounter { .. } => {
+                counter @ TntMessageTxCounter { .. } => {
                     Some(counter.conversation_id.clone())
                 },
                 counter @ TargetedMessageRxCounter { .. } => {
@@ -502,7 +502,7 @@ mod tests {
 
     test_for_entity!(test_persisted_mls_group, PersistedMlsGroup);
     test_for_entity!(test_tnt_message_counter, TargetedMessageTxCounter no_borrowed_key:true);
-    test_for_entity!(test_transient_message_tx_counter, TransientMessageTxCounter);
+    test_for_entity!(test_transient_message_tx_counter, TntMessageTxCounter);
     test_for_entity!(test_targeted_message_rx_counter, TargetedMessageRxCounter);
     test_for_entity!(test_transient_message_rx_counter, TransientMessageRxCounter);
     test_for_entity!(test_persisted_mls_pending_group, PersistedMlsPendingGroup);
@@ -567,8 +567,8 @@ pub mod utils {
     use core_crypto_keystore::entities::{
         ConversationId, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusSession,
         StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredKeyPackage, StoredPskBundle, TargetedMessageRxCounter, TargetedMessageTxCounter,
-        TransientMessageRxCounter, TransientMessageTxCounter, X509TrustAnchor,
+        StoredKeyPackage, StoredPskBundle, TargetedMessageRxCounter, TargetedMessageTxCounter, TntMessageTxCounter,
+        TransientMessageRxCounter, X509TrustAnchor,
     };
     use rand::Rng as _;
 
@@ -701,7 +701,7 @@ pub mod utils {
     impl_entity_random_update_ext!(StoredPskBundle, blob_fields=[psk,psk_id id_like:true,]);
     impl_entity_random_update_ext!(PersistedMlsGroup, id_field = id, blob_fields = [state,]);
     impl_entity_random_update_ext!(TargetedMessageTxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(receiver: rand::random()),]);
-    impl_entity_random_update_ext!(TransientMessageTxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),]);
+    impl_entity_random_update_ext!(TntMessageTxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),]);
     impl_entity_random_update_ext!(TargetedMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);
     impl_entity_random_update_ext!(TransientMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);
 
