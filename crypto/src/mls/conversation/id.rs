@@ -66,6 +66,10 @@ impl ConversationIdRef {
         // identical to `[u8]`, so we can perform this cast
         unsafe { &*(bytes.as_ref() as *const [u8] as *const ConversationIdRef) }
     }
+
+    pub(crate) fn keystore(&self) -> &core_crypto_keystore::entities::ConversationIdRef {
+        self.into()
+    }
 }
 
 impl ConversationIdRef {

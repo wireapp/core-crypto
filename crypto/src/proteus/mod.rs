@@ -8,7 +8,11 @@ mod session_cache;
 use std::sync::Arc;
 
 pub use conversation_session::{ProteusConversationSession, SessionIdentifier};
-use core_crypto_keystore::{Transaction, entities::ProteusIdentity, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{
+    Transaction,
+    entities::ProteusIdentity,
+    traits::{EntityDatabaseMutation as _, FetchFromDatabase as _},
+};
 use proteus_wasm::keys::IdentityKeyPair;
 pub(crate) use session_cache::ProteusSessionCache;
 
@@ -67,9 +71,8 @@ impl ProteusCentral {
             sk: kp.secret_key.to_keypair_bytes().into(),
             pk,
         };
-        transaction
-            .save(ks_identity)
-            .await
+        ks_identity
+            .save(transaction)
             .map_err(KeystoreError::wrap("saving new proteus identity"))?;
 
         Ok(kp)

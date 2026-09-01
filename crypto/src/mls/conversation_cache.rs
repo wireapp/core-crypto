@@ -3,7 +3,11 @@
 
 use std::sync::Arc;
 
-use core_crypto_keystore::{Transaction, entities::PersistedMlsGroup, traits::FetchFromDatabase};
+use core_crypto_keystore::{
+    Transaction,
+    entities::PersistedMlsGroup,
+    traits::{EntityDeleteBorrowed, FetchFromDatabase},
+};
 use schnellru::{ByLength, LruMap};
 
 use super::conversation::{ConversationId, ConversationIdRef};
@@ -60,9 +64,7 @@ impl ConversationCache {
         };
 
         if !conversation.group().await.is_active() {
-            transaction
-                .remove_borrowed::<PersistedMlsGroup>(id.as_ref())
-                .await
+            PersistedMlsGroup::delete_borrowed(transaction, id.as_ref())
                 .map_err(KeystoreError::wrap("deleting inactive conversation from keystore"))?;
             return Ok(None);
         }

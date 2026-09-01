@@ -27,16 +27,16 @@
 //! | 0 pend. Proposal  | ❌              | ✅              |
 //! | 1+ pend. Proposal | ❌              | ✅              |
 
-use core_crypto_keystore::entities::StoredEncryptionKeyPair;
+use core_crypto_keystore::{entities::StoredEncryptionKeyPair, traits::EntityDeleteBorrowed};
 
 use super::{ConversationMut, Result};
-use crate::{OpenMlsError, mls::conversation::Error};
+use crate::{KeystoreError, OpenMlsError, mls::conversation::Error};
 
 impl ConversationMut {
     /// Apply a pending commit
     pub(super) async fn commit_accepted(&mut self) -> Result<()> {
         let provider = &self.crypto_provider().await?;
-        self.mutate_group(async |database, group, _| {
+        self.mutate_group(async |tx, group, _| {
             // openmls stores here all the encryption keypairs used for update proposals..
             let previous_own_leaf_nodes = group.own_leaf_nodes.clone();
 
@@ -48,7 +48,8 @@ impl ConversationMut {
             // ..so if there's any, we clear them after the commit is merged
             for oln in &previous_own_leaf_nodes {
                 let ek = oln.encryption_key().as_slice();
-                let _ = database.remove_borrowed::<StoredEncryptionKeyPair>(ek).await;
+                StoredEncryptionKeyPair::delete_borrowed(tx, ek)
+                    .map_err(KeystoreError::wrap("deleting stored encryption keypair"))?;
             }
 
             Ok(())

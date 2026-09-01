@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use core_crypto_keystore::{
     entities::{MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup},
-    traits::FetchFromDatabase as _,
+    traits::{DeletableBySearchKey, EntityDatabaseMutation as _, EntityDeleteBorrowed, FetchFromDatabase as _},
 };
 use log::trace;
 use openmls::{
@@ -86,13 +86,13 @@ impl PendingConversation {
             .await
             .map_err(RecursiveError::transaction("getting inner context"))?;
         let tx = context.transaction();
-        tx.save(PersistedMlsPendingGroup {
+        PersistedMlsPendingGroup {
             id: group_id.as_ref().to_owned(),
             state: mls_group.into(),
             custom_configuration: custom_configuration.into(),
             parent_id: None,
-        })
-        .await
+        }
+        .save(tx)
         .map_err(KeystoreError::wrap("saving mls pending groups"))
         .map_err(Into::into)
     }
@@ -132,8 +132,8 @@ impl PendingConversation {
             conversation_id: self.id().as_ref().to_owned(),
             message: message.as_ref().to_vec(),
         };
-        tx.save::<MlsPendingMessage>(pending_msg)
-            .await
+        pending_msg
+            .save(tx)
             .map_err(KeystoreError::wrap("saving mls pending message"))?;
         Err(Error::BufferedForPendingConversation)
     }
@@ -270,15 +270,16 @@ impl PendingConversation {
             .map_err(RecursiveError::mls_conversation("restoring pending messages"))?;
 
         if pending_messages.is_some() {
-            context
-                .inner()
-                .await
-                .map_err(RecursiveError::transaction(
-                    "getting transaction context to delete pending messages",
-                ))?
-                .transaction()
-                .bulk_remove::<MlsPendingMessage, _>(id.into())
-                .await;
+            let tx = context.inner().await.map_err(RecursiveError::transaction(
+                "getting transaction context to delete pending messages",
+            ))?;
+            MlsPendingMessage::delete_all_matching(
+                tx.transaction(),
+                core_crypto_keystore::entities::ConversationIdRef::new(id.as_ref()),
+            )
+            .map_err(KeystoreError::wrap(
+                "deleting pending messages while merging conversation",
+            ))?;
         }
 
         // cleanup the pending group we no longer need
@@ -301,8 +302,7 @@ impl PendingConversation {
             .map_err(RecursiveError::transaction("getting inner context"))?;
         let tx = context.transaction();
         let group_id = self.id();
-        tx.remove_borrowed::<PersistedMlsPendingGroup>(group_id.as_ref())
-            .await
+        PersistedMlsPendingGroup::delete_borrowed(tx, group_id.as_ref())
             .map_err(KeystoreError::wrap("deleting pending groups by id"))?;
 
         // Messages buffered while this join was pending are unreachable once it is abandoned, so

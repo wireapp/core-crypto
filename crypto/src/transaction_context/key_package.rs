@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use core_crypto_keystore::{
     entities::{StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeyPackage},
-    traits::FetchFromDatabase as _,
+    traits::{EntityDeleteBorrowed, FetchFromDatabase as _},
 };
 use openmls::prelude::{CryptoConfig, Lifetime};
 
@@ -86,20 +86,12 @@ impl TransactionContext {
         };
 
         let inner = self.inner().await?;
-        inner
-            .transaction
-            .remove_borrowed::<StoredKeyPackage>(kp_ref.hash_ref())
-            .await
+        let tx = inner.transaction();
+        StoredKeyPackage::delete_borrowed(tx, kp_ref.hash_ref())
             .map_err(KeystoreError::wrap("removing key package from keystore"))?;
-        inner
-            .transaction
-            .remove_borrowed::<StoredHpkePrivateKey>(kp.hpke_init_key().as_slice())
-            .await
+        StoredHpkePrivateKey::delete_borrowed(tx, kp.hpke_init_key().as_slice())
             .map_err(KeystoreError::wrap("removing private key from keystore"))?;
-        inner
-            .transaction
-            .remove_borrowed::<StoredEncryptionKeyPair>(kp.leaf_node().encryption_key().as_slice())
-            .await
+        StoredEncryptionKeyPair::delete_borrowed(tx, kp.leaf_node().encryption_key().as_slice())
             .map_err(KeystoreError::wrap("removing encryption keypair from keystore"))?;
 
         Ok(())

@@ -1,4 +1,4 @@
-use core_crypto_keystore::{Transaction, entities::PersistedMlsGroup};
+use core_crypto_keystore::Transaction;
 use openmls::group::InnerState;
 
 use super::{ConversationMut, Result};
@@ -46,15 +46,7 @@ impl ConversationMut {
             group.reset_tnt_message_counter();
         }
 
-        tx.save(PersistedMlsGroup {
-            id: id.to_bytes(),
-            state: core_crypto_keystore::ser(group.mls_group())
-                .map_err(KeystoreError::wrap("serializing group state"))?,
-        })
-        .await
-        .map_err(KeystoreError::wrap("persisting mls group"))?;
-
-        group.mls_group_mut().set_state(InnerState::Persisted);
+        group.persist(tx).await?;
 
         Ok(ok_result)
     }

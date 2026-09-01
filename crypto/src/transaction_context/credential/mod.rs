@@ -49,7 +49,7 @@ impl TransactionContext {
     ///
     /// First checks that the credential is not used in any conversation.
     /// Removes both the credential itself and also any key packages which were generated from it.
-    pub async fn remove_credential(&self, credential_ref: &CredentialRef) -> Result<()> {
+    pub async fn remove_credential(&self, credential_ref: &CredentialRef) -> Result<bool> {
         // setup
         if *credential_ref.client_id() != self.session().await?.id() {
             return Err(Error::WrongCredential);

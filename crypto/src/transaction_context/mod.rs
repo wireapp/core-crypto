@@ -4,7 +4,11 @@
 use std::sync::Arc;
 
 use async_lock::{Mutex, MutexGuardArc, RwLock};
-use core_crypto_keystore::{CryptoKeystoreError, UniqueArc, entities::ConsumerData, traits::FetchFromDatabase as _};
+use core_crypto_keystore::{
+    CryptoKeystoreError, UniqueArc,
+    entities::ConsumerData,
+    traits::{EntityDatabaseMutation as _, FetchFromDatabase as _},
+};
 pub use error::{Error, Result};
 use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::pki_env::PkiEnvironment;
@@ -266,10 +270,8 @@ impl TransactionContext {
     /// The data should be limited to a reasonable size.
     pub async fn set_data(&self, data: Vec<u8>) -> Result<()> {
         let inner = self.inner().await?;
-        inner
-            .transaction
-            .save(ConsumerData::from(data))
-            .await
+        ConsumerData::from(data)
+            .save(inner.transaction())
             .map_err(KeystoreError::wrap("saving consumer data"))?;
         Ok(())
     }

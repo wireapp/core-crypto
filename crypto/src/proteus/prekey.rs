@@ -1,7 +1,7 @@
 use core_crypto_keystore::{
     CryptoKeystoreError, Transaction,
     entities::ProteusPrekey,
-    traits::{Entity, FetchFromDatabase as _},
+    traits::{Entity, EntityDatabaseMutation as _, FetchFromDatabase as _},
 };
 use proteus_wasm::keys::PreKeyBundle;
 
@@ -47,9 +47,8 @@ impl ProteusCentral {
         let bundle = bundle
             .serialise()
             .map_err(ProteusError::wrap("serialising prekey bundle"))?;
-        transaction
-            .save(keystore_prekey)
-            .await
+        keystore_prekey
+            .save(transaction)
             .map_err(KeystoreError::wrap("saving keystore prekey"))?;
         Ok(bundle)
     }
@@ -58,9 +57,10 @@ impl ProteusCentral {
     ///
     /// See [ProteusCentral::new_prekey]
     pub(crate) async fn new_prekey_auto(&self, transaction: &Transaction) -> Result<(u16, Vec<u8>)> {
-        let id = core_crypto_keystore::entities::ProteusPrekey::get_free_id(transaction)
-            .await
-            .map_err(KeystoreError::wrap("getting proteus prekey by id"))?;
+        let conn = transaction
+            .conn()
+            .map_err(KeystoreError::wrap("getting connection from transaction"))?;
+        let id = ProteusPrekey::get_free_id(&conn).map_err(KeystoreError::wrap("getting proteus prekey by id"))?;
         Ok((id, self.new_prekey(id, transaction).await?))
     }
 
@@ -85,9 +85,8 @@ impl ProteusCentral {
                 .serialise()
                 .map_err(ProteusError::wrap("serializing last resort prekey"))?;
 
-            transaction
-                .save(ProteusPrekey::from_raw(Self::last_resort_prekey_id(), prekey))
-                .await
+            ProteusPrekey::from_raw(Self::last_resort_prekey_id(), prekey)
+                .save(transaction)
                 .map_err(KeystoreError::wrap("storing proteus last resort prekey"))?;
 
             last_resort
@@ -216,7 +215,7 @@ mod tests {
         // punch some holes; the next claims must fill exactly those
         let gap_ids = pick_gap_ids(&mut rng, GAP_AMOUNT);
         for gap_id in &gap_ids {
-            tx.remove::<ProteusPrekey>(gap_id).await.unwrap();
+            ProteusPrekey::delete(&*tx, gap_id).unwrap();
         }
         let claimed = claim(&alice, &tx, GAP_AMOUNT).await;
         assert_eq!(
@@ -229,7 +228,7 @@ mod tests {
         // priority over fresh ids and that the fresh ids resume above the filled id space
         let gap_ids = pick_gap_ids(&mut rng, GAP_AMOUNT);
         for gap_id in &gap_ids {
-            tx.remove::<ProteusPrekey>(gap_id).await.unwrap();
+            ProteusPrekey::delete(&*tx, gap_id).unwrap();
         }
         let claimed = claim(&alice, &tx, GAP_AMOUNT + EXTRA_AMOUNT as usize).await;
         let (filled, extended) = claimed.split_at(GAP_AMOUNT);

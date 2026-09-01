@@ -7,12 +7,13 @@ mod history_sharing;
 mod persistence;
 
 use async_lock::{RwLock, RwLockReadGuard};
-use openmls::group::MlsGroup;
+use core_crypto_keystore::{Transaction, entities::PersistedMlsGroup, traits::EntityDatabaseMutation as _};
+use openmls::group::{InnerState, MlsGroup};
 
 use super::{ConversationIdRef, Error, Result, SecretKey};
 use crate::{
-    CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, ExternalSender, OpenMlsError, Session,
-    mls::TntMessageCounter,
+    CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, ExternalSender, KeystoreError,
+    OpenMlsError, Session, mls::TntMessageCounter,
 };
 
 #[derive(derive_more::Constructor, derive_more::Deref, derive_more::DerefMut, derive_more::Debug)]
@@ -41,12 +42,28 @@ impl MlsGroupState {
     /// Get the tnt message counter bound to this conversation after incrementing it.
     pub(in crate::mls::conversation) fn obtain_tnt_message_counter(&mut self) -> Result<TntMessageCounter> {
         self.tnt_message_counter.increment()?;
-        self.group.set_state(openmls::group::InnerState::Changed);
+        self.group.set_state(InnerState::Changed);
         Ok(self.tnt_message_counter)
     }
 
     pub(in crate::mls::conversation) fn reset_tnt_message_counter(&mut self) {
         self.tnt_message_counter = Default::default()
+    }
+
+    pub(crate) async fn persist(&mut self, tx: &Transaction) -> Result<()> {
+        // We must change the mls group persisted state before persisting, otherwise it will never reach the DB.
+        self.mls_group_mut().set_state(InnerState::Persisted);
+        let id = self.group.group_id();
+
+        PersistedMlsGroup {
+            id: id.to_vec(),
+            state: core_crypto_keystore::ser(self.mls_group())
+                .map_err(KeystoreError::wrap("serializing group state"))?,
+        }
+        .save(tx)
+        .map_err(KeystoreError::wrap("persisting mls group"))?;
+
+        Ok(())
     }
 }
 
