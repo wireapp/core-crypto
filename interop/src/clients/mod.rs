@@ -1,7 +1,7 @@
 #![allow(clippy::assign_op_pattern)]
 
 use anyhow::Result;
-use core_crypto::CipherSuite;
+use core_crypto::{CipherSuite, ClientId, mls::conversation::TargetedMessagePolicy};
 
 pub(crate) mod corecrypto;
 
@@ -38,7 +38,7 @@ impl std::fmt::Display for EmulatedClientType {
 pub(crate) trait EmulatedClient {
     fn client_name(&self) -> &str;
     fn client_type(&self) -> EmulatedClientType;
-    fn client_id(&self) -> &[u8];
+    fn client_id(&self) -> &ClientId;
     fn client_protocol(&self) -> EmulatedClientProtocol;
     async fn wipe(&mut self) -> Result<()>;
 }
@@ -49,6 +49,14 @@ pub(crate) trait EmulatedMlsClient: EmulatedClient {
     async fn get_keypackage(&self) -> Result<Vec<u8>>;
     async fn process_welcome(&self, welcome: &[u8]) -> Result<Vec<u8>>;
     async fn encrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>>;
+    async fn encrypt_targeted_message(
+        &self,
+        conversation_id: &[u8],
+        recipient: &ClientId,
+        policy: TargetedMessagePolicy,
+        message: &[u8],
+    ) -> Result<Vec<u8>>;
+    async fn encrypt_transient_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>>;
     // TODO: Make it more complex so that we can extract other things like proposals etc. Tracking issue: WPB-9647
     async fn decrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Option<Vec<u8>>>;
 }

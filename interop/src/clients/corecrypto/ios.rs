@@ -8,7 +8,7 @@ use std::{
 
 use anyhow::Result;
 use base64::{Engine as _, engine::general_purpose};
-use core_crypto::{KeyPackageIn, Keypackage};
+use core_crypto::{ClientId, KeyPackageIn, Keypackage, mls::conversation::TargetedMessagePolicy};
 use thiserror::Error;
 use tls_codec::Deserialize;
 
@@ -154,16 +154,17 @@ impl Drop for SimulatorDriver {
 #[derive(Debug)]
 pub(crate) struct CoreCryptoIosClient {
     driver: SimulatorDriver,
-    client_id: Vec<u8>,
+    client_id: ClientId,
     #[cfg(feature = "proteus")]
     prekey_last_id: Cell<u16>,
 }
 
 impl CoreCryptoIosClient {
     pub(crate) async fn new() -> Result<Self> {
-        let client_id = uuid::Uuid::new_v4();
-        let client_id_str = client_id.as_hyphenated().to_string();
-        let client_id_base64 = general_purpose::STANDARD.encode(client_id_str.as_str());
+        let user_id = uuid::Uuid::new_v4();
+        let user_id_base64 = general_purpose::STANDARD.encode(user_id.as_hyphenated().to_string());
+        let device_id = rand::random::<u64>();
+        let client_id = ClientId::new(user_id, device_id, "wire.com");
         let cipher_suite = CIPHERSUITE_IN_USE as u16;
         let device = std::env::var("INTEROP_SIMULATOR_DEVICE").unwrap_or("booted".into());
 
@@ -171,14 +172,14 @@ impl CoreCryptoIosClient {
         log::info!("initialising core crypto with cipher suite {}", cipher_suite);
         driver
             .execute(format!(
-                "init-mls?client={}&cipherSuite={}",
-                client_id_base64, cipher_suite
+                "init-mls?client={}&deviceId={device_id:x}&cipherSuite={}",
+                user_id_base64, cipher_suite
             ))
             .await?;
 
         Ok(Self {
             driver,
-            client_id: client_id.into_bytes().into(),
+            client_id,
             #[cfg(feature = "proteus")]
             prekey_last_id: Cell::new(0),
         })
@@ -195,8 +196,8 @@ impl EmulatedClient for CoreCryptoIosClient {
         EmulatedClientType::AppleiOS
     }
 
-    fn client_id(&self) -> &[u8] {
-        self.client_id.as_slice()
+    fn client_id(&self) -> &ClientId {
+        &self.client_id
     }
 
     fn client_protocol(&self) -> EmulatedClientProtocol {
@@ -256,6 +257,47 @@ impl EmulatedMlsClient for CoreCryptoIosClient {
         let encrypted_message = general_purpose::STANDARD.decode(encrypted_message_base64)?;
 
         Ok(encrypted_message)
+    }
+
+    async fn encrypt_targeted_message(
+        &self,
+        conversation_id: &[u8],
+        recipient: &ClientId,
+        policy: TargetedMessagePolicy,
+        message: &[u8],
+    ) -> Result<Vec<u8>> {
+        let cid_base64 = general_purpose::STANDARD.encode(conversation_id);
+        let recipient_base64 = general_purpose::STANDARD.encode(recipient.as_slice());
+        let policy = match policy {
+            TargetedMessagePolicy::Transient => "transient",
+            TargetedMessagePolicy::Persisted => "persisted",
+        };
+        let message_base64 = general_purpose::STANDARD.encode(message);
+        let encrypted_message_base64 = self
+            .driver
+            .execute(format!(
+                "encrypt-targeted-message?cid={cid_base64}&recipient={recipient_base64}&policy={policy}&message={message_base64}"
+            ))
+            .await?;
+
+        general_purpose::STANDARD
+            .decode(encrypted_message_base64)
+            .map_err(Into::into)
+    }
+
+    async fn encrypt_transient_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
+        let cid_base64 = general_purpose::STANDARD.encode(conversation_id);
+        let message_base64 = general_purpose::STANDARD.encode(message);
+        let encrypted_message_base64 = self
+            .driver
+            .execute(format!(
+                "encrypt-transient-message?cid={cid_base64}&message={message_base64}"
+            ))
+            .await?;
+
+        general_purpose::STANDARD
+            .decode(encrypted_message_base64)
+            .map_err(Into::into)
     }
 
     async fn decrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Option<Vec<u8>>> {

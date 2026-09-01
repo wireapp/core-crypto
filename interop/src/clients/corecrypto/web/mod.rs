@@ -5,7 +5,7 @@ use std::{collections::HashMap, net::SocketAddr, sync::LazyLock};
 #[cfg(feature = "proteus")]
 use anyhow::anyhow;
 use anyhow::{Context as _, Result};
-use core_crypto::{KeyPackageIn, Keypackage};
+use core_crypto::{ClientId, KeyPackageIn, Keypackage, mls::conversation::TargetedMessagePolicy};
 use tls_codec::Deserialize;
 use tree_sitter::{Parser, Query, QueryCursor, StreamingIterator as _};
 
@@ -76,20 +76,23 @@ static PROTEUS_FUNCTIONS: LazyLock<HashMap<String, String>> = LazyLock::new(|| {
 #[derive(Debug)]
 pub(crate) struct CoreCryptoWebClient {
     browser: fantoccini::Client,
-    client_id: Vec<u8>,
+    client_id: ClientId,
     #[cfg(feature = "proteus")]
     prekey_last_id: Cell<u16>,
 }
 
 impl CoreCryptoWebClient {
     pub(crate) async fn new(driver_addr: &SocketAddr, server: &SocketAddr) -> Result<Self> {
-        let client_id = uuid::Uuid::new_v4();
-        let client_id_str = client_id.as_hyphenated().to_string();
+        let user_id = uuid::Uuid::new_v4();
+        let user_id_str = user_id.as_hyphenated().to_string();
+        let device_id = rand::random::<u64>();
+        let client_id = ClientId::new(user_id, device_id, "wire.com");
         let cipher_suite = CIPHERSUITE_IN_USE as u16;
         let client_config = serde_json::json!({
-            "databaseName": format!("db-{client_id_str}"),
+            "databaseName": format!("db-{user_id_str}"),
             "cipherSuites": [cipher_suite],
-            "clientId": client_id_str
+            "userId": user_id_str,
+            "deviceId": format!("{device_id:x}")
         });
 
         let js = MLS_FUNCTIONS.get("ccNew").context("getting `ccNew` from `mls.ts`")?;
@@ -98,7 +101,7 @@ impl CoreCryptoWebClient {
 
         Ok(Self {
             browser,
-            client_id: client_id.into_bytes().into(),
+            client_id,
             #[cfg(feature = "proteus")]
             prekey_last_id: Cell::new(0),
         })
@@ -115,8 +118,8 @@ impl EmulatedClient for CoreCryptoWebClient {
         EmulatedClientType::Web
     }
 
-    fn client_id(&self) -> &[u8] {
-        self.client_id.as_slice()
+    fn client_id(&self) -> &ClientId {
+        &self.client_id
     }
 
     fn client_protocol(&self) -> EmulatedClientProtocol {
@@ -124,9 +127,8 @@ impl EmulatedClient for CoreCryptoWebClient {
     }
 
     async fn wipe(&mut self) -> Result<()> {
-        let client_id = uuid::Uuid::from_slice(self.client_id.as_slice())?;
-        let client_id_str = client_id.as_hyphenated().to_string();
-        let database_name = format!("db-{client_id_str}");
+        let user_id = self.client_id.deserialize().user_id;
+        let database_name = format!("db-{}", user_id.as_hyphenated());
         self.browser
             .execute_async(
                 r#"
@@ -179,6 +181,46 @@ impl EmulatedMlsClient for CoreCryptoWebClient {
         let js = MLS_FUNCTIONS
             .get("encryptMessage")
             .context("getting `encryptMessage` from `mls.ts`")?;
+        let ciphertext = self
+            .browser
+            .execute(js, vec![conversation_id.into(), message.into()])
+            .await?;
+        serde_json::from_value(ciphertext).map_err(Into::into)
+    }
+
+    async fn encrypt_targeted_message(
+        &self,
+        conversation_id: &[u8],
+        recipient: &ClientId,
+        policy: TargetedMessagePolicy,
+        message: &[u8],
+    ) -> Result<Vec<u8>> {
+        let js = MLS_FUNCTIONS
+            .get("encryptTargetedMessage")
+            .context("getting `encryptTargetedMessage` from `mls.ts`")?;
+        let policy = match policy {
+            TargetedMessagePolicy::Transient => "transient",
+            TargetedMessagePolicy::Persisted => "persisted",
+        };
+        let ciphertext = self
+            .browser
+            .execute(
+                js,
+                vec![
+                    conversation_id.into(),
+                    recipient.as_slice().into(),
+                    policy.into(),
+                    message.into(),
+                ],
+            )
+            .await?;
+        serde_json::from_value(ciphertext).map_err(Into::into)
+    }
+
+    async fn encrypt_transient_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
+        let js = MLS_FUNCTIONS
+            .get("encryptTransientMessage")
+            .context("getting `encryptTransientMessage` from `mls.ts`")?;
         let ciphertext = self
             .browser
             .execute(js, vec![conversation_id.into(), message.into()])

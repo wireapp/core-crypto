@@ -6,11 +6,14 @@ enum InteropResponse: Codable {
 }
 
 enum InteropAction {
-    case initMLS(clientId: Data, cipherSuite: UInt16)
+    case initMLS(clientId: Data, deviceId: UInt64, cipherSuite: UInt16)
     case getKeyPackage(cipherSuite: UInt16)
     case addClient(conversationId: Data, cipherSuite: UInt16, keyPackage: Data)
     case processWelcome(welcomePath: URL)
     case encryptMessage(conversationId: Data, message: Data)
+    case encryptTargetedMessage(
+        conversationId: Data, recipient: Data, transient: Bool, message: Data)
+    case encryptTransientMessage(conversationId: Data, message: Data)
     case decryptMessage(conversationId: Data, message: Data)
     case initProteus
     case getPrekey(id: UInt16)
@@ -37,9 +40,14 @@ extension InteropAction {
             })?.value.flatMap { value in
                 UInt16(value)
             }
+            let deviceId = components?.queryItems?.first(where: { item in
+                item.name == "deviceId"
+            })?.value.flatMap { value in
+                UInt64(value, radix: 16)
+            }
 
-            if let clientId, let cipherSuite {
-                self = .initMLS(clientId: clientId, cipherSuite: cipherSuite)
+            if let clientId, let deviceId, let cipherSuite {
+                self = .initMLS(clientId: clientId, deviceId: deviceId, cipherSuite: cipherSuite)
             } else {
                 return nil
             }
@@ -129,6 +137,50 @@ extension InteropAction {
 
             if let converationId, let message {
                 self = .decryptMessage(conversationId: converationId, message: message)
+            } else {
+                return nil
+            }
+
+        case "encrypt-targeted-message":
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            let conversationId = components?.queryItems?.first(where: { $0.name == "cid" })?.value
+                .flatMap { value in
+                    Data(base64Encoded: value)
+                }
+            let recipient = components?.queryItems?.first(where: { $0.name == "recipient" })?.value
+                .flatMap { value in
+                    Data(base64Encoded: value)
+                }
+            let policy = components?.queryItems?.first(where: { $0.name == "policy" })?.value
+            let message = components?.queryItems?.first(where: { $0.name == "message" })?.value
+                .flatMap { value in
+                    Data(base64Encoded: value)
+                }
+
+            if let conversationId, let recipient, let policy, let message {
+                self = .encryptTargetedMessage(
+                    conversationId: conversationId,
+                    recipient: recipient,
+                    transient: policy == "transient",
+                    message: message
+                )
+            } else {
+                return nil
+            }
+
+        case "encrypt-transient-message":
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            let conversationId = components?.queryItems?.first(where: { $0.name == "cid" })?.value
+                .flatMap { value in
+                    Data(base64Encoded: value)
+                }
+            let message = components?.queryItems?.first(where: { $0.name == "message" })?.value
+                .flatMap { value in
+                    Data(base64Encoded: value)
+                }
+
+            if let conversationId, let message {
+                self = .encryptTransientMessage(conversationId: conversationId, message: message)
             } else {
                 return nil
             }

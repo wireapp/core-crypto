@@ -12,6 +12,7 @@ import com.wire.crypto.HistorySecret
 import com.wire.crypto.KeyPackage
 import com.wire.crypto.MlsTransport
 import com.wire.crypto.MlsTransportData
+import com.wire.crypto.TargetedMessagePolicy
 import com.wire.crypto.Uuid
 import com.wire.crypto.Welcome
 import com.wire.crypto.cipherSuiteFromU16
@@ -36,7 +37,7 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
     suspend fun handleAction(action: InteropAction): Result<String> {
         return when (action) {
             is InteropAction.MLS.InitMLS -> {
-                val clientId = genClientId(String(action.clientId, Charsets.UTF_8))
+                val clientId = genClientId(String(action.clientId, Charsets.UTF_8), action.deviceId)
                 coreCrypto.transaction({ context ->
                     context.mlsInit(
                         clientId = clientId,
@@ -77,15 +78,39 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
 
                     is DecryptedMessage.Commit,
                     is DecryptedMessage.Proposal -> Result.success("decrypted protocol message")
-                    is DecryptedMessage.Transient,
-                    is DecryptedMessage.PersistedTargeted,
-                    is DecryptedMessage.TransientTargeted -> Result.success("decrypted tnt message (currently unused in interop)")
+
+                    is DecryptedMessage.Transient -> Result.success(Base64.Default.encode(decryptedMessage.plaintext))
+
+                    is DecryptedMessage.PersistedTargeted -> Result.success(Base64.Default.encode(decryptedMessage.plaintext))
+
+                    is DecryptedMessage.TransientTargeted -> Result.success(Base64.Default.encode(decryptedMessage.plaintext))
                 }
             }
 
             is InteropAction.MLS.EncryptMessage -> {
                 coreCrypto.transaction { context ->
                     context.encryptMessage(ConversationId(action.conversationId), action.message)
+                }.let {
+                    Result.success(Base64.Default.encode(it))
+                }
+            }
+
+            is InteropAction.MLS.EncryptTargetedMessage -> {
+                coreCrypto.transaction { context ->
+                    context.encryptTargetedMessage(
+                        ConversationId(action.conversationId),
+                        clientIdFromBytes(action.recipient),
+                        if (action.transient) TargetedMessagePolicy.TRANSIENT else TargetedMessagePolicy.PERSISTED,
+                        action.message
+                    )
+                }.let {
+                    Result.success(Base64.Default.encode(it))
+                }
+            }
+
+            is InteropAction.MLS.EncryptTransientMessage -> {
+                coreCrypto.transaction { context ->
+                    context.encryptTransientMessage(ConversationId(action.conversationId), action.message)
                 }.let {
                     Result.success(Base64.Default.encode(it))
                 }
@@ -187,9 +212,14 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
             return DatabaseKey(bytes)
         }
 
-        private fun genClientId(userId: String): ClientId {
-            val deviceId = SecureRandom().nextLong().toULong()
-            return ClientId(Uuid(userId), DeviceId(deviceId), "wire.com")
+        private fun genClientId(userId: String, deviceId: String): ClientId {
+            return ClientId(Uuid(userId), DeviceId(deviceId.toULong(16)), "wire.com")
+        }
+
+        private fun clientIdFromBytes(bytes: ByteArray): ClientId {
+            val (userId, deviceAndDomain) = String(bytes, Charsets.UTF_8).split(":", limit = 2)
+            val (deviceId, domain) = deviceAndDomain.split("@", limit = 2)
+            return ClientId(Uuid(userId), DeviceId(deviceId.toULong(16)), domain)
         }
 
         private fun randomIdentifier(n: Int = 12): String {

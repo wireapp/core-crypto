@@ -8,7 +8,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 @Serializable
 sealed class InteropAction {
     sealed class MLS : InteropAction() {
-        class InitMLS(val clientId: ByteArray, val cipherSuite: Int) : MLS()
+        class InitMLS(val clientId: ByteArray, val deviceId: String, val cipherSuite: Int) : MLS()
 
         class GetKeyPackage(val cipherSuite: Int) : MLS()
 
@@ -17,6 +17,15 @@ sealed class InteropAction {
         class ProcessWelcome(val welcome: ByteArray) : MLS()
 
         class EncryptMessage(val conversationId: ByteArray, val message: ByteArray) : MLS()
+
+        class EncryptTargetedMessage(
+            val conversationId: ByteArray,
+            val recipient: ByteArray,
+            val transient: Boolean,
+            val message: ByteArray
+        ) : MLS()
+
+        class EncryptTransientMessage(val conversationId: ByteArray, val message: ByteArray) : MLS()
 
         class DecryptMessage(val conversationId: ByteArray, val message: ByteArray) : MLS()
     }
@@ -43,9 +52,10 @@ sealed class InteropAction {
             return when (intent.getStringExtra("action")) {
                 "init-mls" -> {
                     val clientId = intent.getStringExtra("client_id") ?: throw IllegalArgumentException("client_id is missing")
+                    val deviceId = intent.getStringExtra("device_id") ?: throw IllegalArgumentException("device_id is missing")
                     val cipherSuite = intent.getIntExtra("cipherSuite", 0)
 
-                    MLS.InitMLS(clientId = Base64.Default.decode(clientId), cipherSuite = cipherSuite)
+                    MLS.InitMLS(clientId = Base64.Default.decode(clientId), deviceId = deviceId, cipherSuite = cipherSuite)
                 }
 
                 "get-key-package" -> {
@@ -71,6 +81,27 @@ sealed class InteropAction {
                     val message = intent.getStringExtra("message") ?: throw IllegalArgumentException("message is missing")
 
                     MLS.EncryptMessage(Base64.Default.decode(conversationId), Base64.Default.decode(message))
+                }
+
+                "encrypt-targeted-message" -> {
+                    val conversationId = intent.getStringExtra("cid") ?: throw IllegalArgumentException("conversation_id is missing")
+                    val recipient = intent.getStringExtra("recipient") ?: throw IllegalArgumentException("recipient is missing")
+                    val policy = intent.getStringExtra("policy") ?: throw IllegalArgumentException("policy is missing")
+                    val message = intent.getStringExtra("message") ?: throw IllegalArgumentException("message is missing")
+
+                    MLS.EncryptTargetedMessage(
+                        Base64.Default.decode(conversationId),
+                        Base64.Default.decode(recipient),
+                        policy == "transient",
+                        Base64.Default.decode(message)
+                    )
+                }
+
+                "encrypt-transient-message" -> {
+                    val conversationId = intent.getStringExtra("cid") ?: throw IllegalArgumentException("conversation_id is missing")
+                    val message = intent.getStringExtra("message") ?: throw IllegalArgumentException("message is missing")
+
+                    MLS.EncryptTransientMessage(Base64.Default.decode(conversationId), Base64.Default.decode(message))
                 }
 
                 "decrypt-message" -> {

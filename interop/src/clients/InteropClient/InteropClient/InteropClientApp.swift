@@ -100,16 +100,26 @@ struct InteropClientApp: App {
         return try! WireCoreCrypto.DatabaseKey(bytes: Data(bytes))
     }
 
-    private func genClientId(userId: String = UUID().uuidString) throws -> ClientId {
-        let userUuid = try Uuid(uuid: userId)
-        let deviceId = UInt64.random(in: 0...UInt64.max)
-        return try ClientId(userId: userUuid, deviceId: DeviceId(id: deviceId), domain: "wire.com")
+    private func clientId(from bytes: Data) throws -> ClientId {
+        guard let value = String(data: bytes, encoding: .utf8),
+            let userSeparator = value.firstIndex(of: ":"),
+            let domainSeparator = value[userSeparator...].firstIndex(of: "@"),
+            let deviceId = UInt64(
+                value[value.index(after: userSeparator)..<domainSeparator], radix: 16)
+        else {
+            throw InteropError.encodingError
+        }
+
+        let userId = String(value[..<userSeparator])
+        let domain = String(value[value.index(after: domainSeparator)...])
+        return try ClientId(
+            userId: Uuid(uuid: userId), deviceId: DeviceId(id: deviceId), domain: domain)
     }
 
     // swiftlint:disable:next function_body_length cyclomatic_complexity
     private func executeAction(_ action: InteropAction) async throws -> String {
         switch action {
-        case .initMLS(let clientIdBytes, let cipherSuite):
+        case .initMLS(let clientIdBytes, let deviceId, let cipherSuite):
             let key = try generateDatabaseKey()
             let keystorePath = try generateKeystorePath()
             let database = try await Database.open(location: keystorePath.path, key: key)
@@ -121,7 +131,8 @@ struct InteropClientApp: App {
             guard let userId = String(data: clientIdBytes, encoding: .utf8) else {
                 throw InteropError.encodingError
             }
-            let clientId = try genClientId(userId: userId)
+            let clientId = try ClientId(
+                userId: Uuid(uuid: userId), deviceId: DeviceId(id: deviceId), domain: "wire.com")
             try await self.coreCrypto?.transaction({ context in
                 try await context.mlsInit(
                     clientId: clientId,
@@ -202,6 +213,35 @@ struct InteropClientApp: App {
 
             return encryptedMessage.base64EncodedString()
 
+        case .encryptTargetedMessage(let conversationId, let recipient, let transient, let message):
+            guard let coreCrypto else { throw InteropError.notInitialised }
+            let conversationId = ConversationId(bytes: conversationId)
+            let recipient = try clientId(from: recipient)
+
+            let encryptedMessage = try await coreCrypto.transaction { ctx in
+                try await ctx.encryptTargetedMessage(
+                    conversationId: conversationId,
+                    recipient: recipient,
+                    policy: transient ? .transient : .persisted,
+                    message: message
+                )
+            }
+
+            return encryptedMessage.base64EncodedString()
+
+        case .encryptTransientMessage(let conversationId, let message):
+            guard let coreCrypto else { throw InteropError.notInitialised }
+            let conversationId = ConversationId(bytes: conversationId)
+
+            let encryptedMessage = try await coreCrypto.transaction { ctx in
+                try await ctx.encryptTransientMessage(
+                    conversationId: conversationId,
+                    message: message
+                )
+            }
+
+            return encryptedMessage.base64EncodedString()
+
         case .decryptMessage(let conversationId, let message):
             guard let coreCrypto else { throw InteropError.notInitialised }
             let conversationId = ConversationId(bytes: conversationId)
@@ -218,8 +258,10 @@ struct InteropClientApp: App {
                 return plaintext.base64EncodedString()
             case .commit, .proposal:
                 return "decrypted protocol message"
-            case .transient, .persistedTargeted, .transientTargeted:
-                return "decrypted tnt message (currently unused in interop)"
+            case .transient(let plaintext, _, _),
+                .persistedTargeted(let plaintext, _, _),
+                .transientTargeted(let plaintext, _, _):
+                return plaintext.base64EncodedString()
             }
 
         case .initProteus:
