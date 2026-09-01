@@ -70,39 +70,37 @@
 <a href=#70 id=70 data-nosnippet>70</a>        recipient: <span class="kw-2">&amp;</span>Member,
 <a href=#71 id=71 data-nosnippet>71</a>        message: <span class="kw-2">&amp;</span>[u8],
 <a href=#72 id=72 data-nosnippet>72</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;TargetedMessage&gt; {
-<a href=#73 id=73 data-nosnippet>73</a>        <span class="kw">let </span>counter = group_state
-<a href=#74 id=74 data-nosnippet>74</a>            .obtain_targeted_message_tx_counter(recipient.index, database)
-<a href=#75 id=75 data-nosnippet>75</a>            .<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#76 id=76 data-nosnippet>76</a>        <span class="kw">let </span>mls_group = group_state.mls_group();
-<a href=#77 id=77 data-nosnippet>77</a>        <span class="kw">let </span>aad = counter
-<a href=#78 id=78 data-nosnippet>78</a>            .tls_serialize_detached()
-<a href=#79 id=79 data-nosnippet>79</a>            .map_err(TlsCodecError::serialize(<span class="string">"TntMessageCounter"</span>))<span class="question-mark">?</span>;
-<a href=#80 id=80 data-nosnippet>80</a>        <span class="kw">let </span>context = TargetedMessageContext::new_with_current_protocol_version(
-<a href=#81 id=81 data-nosnippet>81</a>            policy,
-<a href=#82 id=82 data-nosnippet>82</a>            mls_group.export_group_context(),
-<a href=#83 id=83 data-nosnippet>83</a>            mls_group.own_leaf_index(),
-<a href=#84 id=84 data-nosnippet>84</a>            recipient.index,
-<a href=#85 id=85 data-nosnippet>85</a>        );
-<a href=#86 id=86 data-nosnippet>86</a>        <span class="kw">let </span>context_data = extract_hpke_context_data(crypto_provider, <span class="kw-2">&amp;</span>context, mls_group)<span class="question-mark">?</span>;
-<a href=#87 id=87 data-nosnippet>87</a>        <span class="kw">let </span>message = tls_serialize_padded(message).map_err(TlsCodecError::serialize(<span class="string">"TargetedMessageContent"</span>))<span class="question-mark">?</span>;
-<a href=#88 id=88 data-nosnippet>88</a>        <span class="kw">let </span>payload = crypto_provider
-<a href=#89 id=89 data-nosnippet>89</a>            .hpke_seal_psk(
-<a href=#90 id=90 data-nosnippet>90</a>                mls_group.ciphersuite().hpke_config(),
-<a href=#91 id=91 data-nosnippet>91</a>                <span class="kw-2">&amp;</span>recipient.encryption_key,
-<a href=#92 id=92 data-nosnippet>92</a>                <span class="kw-2">&amp;</span>context_data.info,
-<a href=#93 id=93 data-nosnippet>93</a>                <span class="kw-2">&amp;</span>aad,
-<a href=#94 id=94 data-nosnippet>94</a>                <span class="kw-2">&amp;</span>context_data.psk,
-<a href=#95 id=95 data-nosnippet>95</a>                <span class="kw-2">&amp;</span>context_data.psk_id,
-<a href=#96 id=96 data-nosnippet>96</a>                <span class="kw-2">&amp;</span>message,
-<a href=#97 id=97 data-nosnippet>97</a>            )
-<a href=#98 id=98 data-nosnippet>98</a>            .map_err(OpenMlsError::wrap(<span class="string">"encrypting targeted message"</span>))<span class="question-mark">?</span>;
-<a href=#99 id=99 data-nosnippet>99</a>
-<a href=#100 id=100 data-nosnippet>100</a>        <span class="kw">let </span>sender = mls_group.own_leaf_index();
-<a href=#101 id=101 data-nosnippet>101</a>        <span class="kw">let </span>group_id = mls_group.group_id();
-<a href=#102 id=102 data-nosnippet>102</a>        <span class="kw">let </span>epoch = mls_group.epoch();
-<a href=#103 id=103 data-nosnippet>103</a>
-<a href=#104 id=104 data-nosnippet>104</a>        <span class="kw">let </span>targeted = TargetedMessage::new(counter, sender, recipient.index, epoch, group_id.clone(), payload);
-<a href=#105 id=105 data-nosnippet>105</a>        <span class="prelude-val">Ok</span>(targeted)
-<a href=#106 id=106 data-nosnippet>106</a>    }
-<a href=#107 id=107 data-nosnippet>107</a>}
+<a href=#73 id=73 data-nosnippet>73</a>        <span class="kw">let </span>counter = group_state.obtain_tnt_message_tx_counter(database).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#74 id=74 data-nosnippet>74</a>        <span class="kw">let </span>mls_group = group_state.mls_group();
+<a href=#75 id=75 data-nosnippet>75</a>        <span class="kw">let </span>aad = counter
+<a href=#76 id=76 data-nosnippet>76</a>            .tls_serialize_detached()
+<a href=#77 id=77 data-nosnippet>77</a>            .map_err(TlsCodecError::serialize(<span class="string">"TntMessageCounter"</span>))<span class="question-mark">?</span>;
+<a href=#78 id=78 data-nosnippet>78</a>        <span class="kw">let </span>context = TargetedMessageContext::new_with_current_protocol_version(
+<a href=#79 id=79 data-nosnippet>79</a>            policy,
+<a href=#80 id=80 data-nosnippet>80</a>            mls_group.export_group_context(),
+<a href=#81 id=81 data-nosnippet>81</a>            mls_group.own_leaf_index(),
+<a href=#82 id=82 data-nosnippet>82</a>            recipient.index,
+<a href=#83 id=83 data-nosnippet>83</a>        );
+<a href=#84 id=84 data-nosnippet>84</a>        <span class="kw">let </span>context_data = extract_hpke_context_data(crypto_provider, <span class="kw-2">&amp;</span>context, mls_group)<span class="question-mark">?</span>;
+<a href=#85 id=85 data-nosnippet>85</a>        <span class="kw">let </span>message = tls_serialize_padded(message).map_err(TlsCodecError::serialize(<span class="string">"TargetedMessageContent"</span>))<span class="question-mark">?</span>;
+<a href=#86 id=86 data-nosnippet>86</a>        <span class="kw">let </span>payload = crypto_provider
+<a href=#87 id=87 data-nosnippet>87</a>            .hpke_seal_psk(
+<a href=#88 id=88 data-nosnippet>88</a>                mls_group.ciphersuite().hpke_config(),
+<a href=#89 id=89 data-nosnippet>89</a>                <span class="kw-2">&amp;</span>recipient.encryption_key,
+<a href=#90 id=90 data-nosnippet>90</a>                <span class="kw-2">&amp;</span>context_data.info,
+<a href=#91 id=91 data-nosnippet>91</a>                <span class="kw-2">&amp;</span>aad,
+<a href=#92 id=92 data-nosnippet>92</a>                <span class="kw-2">&amp;</span>context_data.psk,
+<a href=#93 id=93 data-nosnippet>93</a>                <span class="kw-2">&amp;</span>context_data.psk_id,
+<a href=#94 id=94 data-nosnippet>94</a>                <span class="kw-2">&amp;</span>message,
+<a href=#95 id=95 data-nosnippet>95</a>            )
+<a href=#96 id=96 data-nosnippet>96</a>            .map_err(OpenMlsError::wrap(<span class="string">"encrypting targeted message"</span>))<span class="question-mark">?</span>;
+<a href=#97 id=97 data-nosnippet>97</a>
+<a href=#98 id=98 data-nosnippet>98</a>        <span class="kw">let </span>sender = mls_group.own_leaf_index();
+<a href=#99 id=99 data-nosnippet>99</a>        <span class="kw">let </span>group_id = mls_group.group_id();
+<a href=#100 id=100 data-nosnippet>100</a>        <span class="kw">let </span>epoch = mls_group.epoch();
+<a href=#101 id=101 data-nosnippet>101</a>
+<a href=#102 id=102 data-nosnippet>102</a>        <span class="kw">let </span>targeted = TargetedMessage::new(counter, sender, recipient.index, epoch, group_id.clone(), payload);
+<a href=#103 id=103 data-nosnippet>103</a>        <span class="prelude-val">Ok</span>(targeted)
+<a href=#104 id=104 data-nosnippet>104</a>    }
+<a href=#105 id=105 data-nosnippet>105</a>}
 </code></pre></div></section></main></body></html>

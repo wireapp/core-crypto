@@ -34,7 +34,7 @@
 <a href=#34 id=34 data-nosnippet>34</a>    <span class="kw">fn </span>new(sender: LeafNodeIndex, counter: TntMessageCounter, group_context: <span class="kw-2">&amp;</span>GroupContext) -&gt; <span class="self">Self </span>{
 <a href=#35 id=35 data-nosnippet>35</a>        <span class="self">Self </span>{
 <a href=#36 id=36 data-nosnippet>36</a>            protocol_version: ProtocolVersion::CURRENT,
-<a href=#37 id=37 data-nosnippet>37</a>            wire_format: TntWireFormat::TRANSIENT_MESSAGE.into(),
+<a href=#37 id=37 data-nosnippet>37</a>            wire_format: TntWireFormat::TRANSIENT_MESSAGE,
 <a href=#38 id=38 data-nosnippet>38</a>            sender,
 <a href=#39 id=39 data-nosnippet>39</a>            counter,
 <a href=#40 id=40 data-nosnippet>40</a>            group_context: group_context.clone(),
@@ -73,7 +73,7 @@
 <a href=#73 id=73 data-nosnippet>73</a>    <span class="kw">fn </span>aad(<span class="kw-2">&amp;</span><span class="self">self</span>, protocol_version: ProtocolVersion) -&gt; TransientMessageAad {
 <a href=#74 id=74 data-nosnippet>74</a>        TransientMessageAad {
 <a href=#75 id=75 data-nosnippet>75</a>            protocol_version,
-<a href=#76 id=76 data-nosnippet>76</a>            wire_format: TntWireFormat::TRANSIENT_MESSAGE.into(),
+<a href=#76 id=76 data-nosnippet>76</a>            wire_format: TntWireFormat::TRANSIENT_MESSAGE,
 <a href=#77 id=77 data-nosnippet>77</a>            sender: <span class="self">self</span>.sender,
 <a href=#78 id=78 data-nosnippet>78</a>            counter: <span class="self">self</span>.counter,
 <a href=#79 id=79 data-nosnippet>79</a>            group_context: <span class="self">self</span>.group_context.clone(),
