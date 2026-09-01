@@ -5,9 +5,30 @@
 - CoreCrypto now supports encrypting and decrypting transient messages. Transient messages are encrypted and decrypted
   for/from group members without affecting the cryptographic state of the group, which enables their use case: to be
   distributed only to currently online group members.
+
 - CoreCrypto now also supports encrypting and decrypting targeted messages. A Targeted message is encrypted for a single
   group member specifically. This enables the long-awaited read receipts feature for MLS. Regular MLS messages aren't a
   good fit for read receipts because of the massive amount of irrelevant messages that would need to be distributed.
+
+- Operations in a CoreCrypto transaction now write to the database as they happen, within a real database transaction,
+  instead of being buffered in memory and replayed at commit time. Atomicity is unchanged: nothing is visible to another
+  process until the transaction commits, and a rollback still undoes everything. The observable differences are:
+
+  - A keystore error is raised by the operation which caused it, rather than by `transaction()` at commit time.
+  - A rejected write no longer poisons the transaction. If you catch the error inside the callback and carry on,
+    everything else in the transaction still commits.
+  - Reads performed outside the transaction, while a transaction is in flight, observe its uncommitted writes.
+    Previously they observed the state as of the start of the transaction.
+  - If SQLite rolls a transaction back on its own initiative, subsequent operations on that transaction now fail with an
+    "unexpectedly rolled back" error instead of operating directly on the database without the possibility of rollback.
+
+- Failures to delete keystore records are now reported. Several cleanup paths — clearing a conversation's buffered
+  messages and commits, discarding superseded encryption keypairs — previously discarded the error and reported success,
+  as a consequence of the old behavior where errors only propagated at commit time.
+
+- When `processWelcomeMessage` fails to persist the new conversation, the key package the welcome consumed is restored
+  reliably. Previously restoration only worked if the key package had been created in an earlier transaction; a key
+  package created in the same transaction was lost, along with its private keys.
 
 ## CoreCrypto 10
 
