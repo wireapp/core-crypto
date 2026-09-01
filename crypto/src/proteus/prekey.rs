@@ -57,10 +57,14 @@ impl ProteusCentral {
     ///
     /// See [ProteusCentral::new_prekey]
     pub(crate) async fn new_prekey_auto(&self, transaction: &Transaction) -> Result<(u16, Vec<u8>)> {
-        let conn = transaction
-            .conn()
-            .map_err(KeystoreError::wrap("getting connection from transaction"))?;
-        let id = ProteusPrekey::get_free_id(&conn).map_err(KeystoreError::wrap("getting proteus prekey by id"))?;
+        // the guard over the transaction's connectin is not reentrant, so we have to release
+        // it before `self.new_prekey` tries to acquire it
+        let id = {
+            let conn = transaction
+                .conn()
+                .map_err(KeystoreError::wrap("getting connection from transaction"))?;
+            ProteusPrekey::get_free_id(&conn).map_err(KeystoreError::wrap("getting proteus prekey by id"))?
+        };
         Ok((id, self.new_prekey(id, transaction).await?))
     }
 
