@@ -133,7 +133,7 @@ fn run_test() -> Result<()> {
 
 #[cfg(not(target_os = "unknown"))]
 async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &std::net::SocketAddr) -> Result<()> {
-    use core_crypto::*;
+    use core_crypto::{mls::conversation::TargetedMessagePolicy, *};
     use rand::distributions::DistString;
 
     log::info!("Using cipher suite {CIPHERSUITE_IN_USE}");
@@ -276,11 +276,87 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
         "[MLS] Step 3: Roundtripping {ROUNDTRIP_MSG_COUNT} messages... [OK]"
     ));
 
-    let spinner = util::RunningProcess::new("[MLS] Step 4: Deleting clients...", true);
+    const STEP_4_MESSAGE: &str =
+        "[MLS] Step 4: Send and receive a transient targeted and persisted targeted message from/to each client...";
+    let spinner = util::RunningProcess::new(STEP_4_MESSAGE, true);
+    for client in &mut clients {
+        for policy in [TargetedMessagePolicy::Persisted, TargetedMessagePolicy::Transient] {
+            let message = format!("targeted message for {} ({policy:?})", client.client_name());
+            let encrypted = transaction
+                .conversation(&conversation_id)
+                .await?
+                .encrypt_targeted(client.client_id(), policy, message.as_bytes().to_vec())
+                .await?;
+            let decrypted = client
+                .decrypt_message(conversation_id.as_ref().as_ref(), &encrypted)
+                .await?
+                .ok_or_else(|| anyhow!("[MLS] Targeted message decrypted as a protocol message"))?;
+            assert_eq!(decrypted, message.as_bytes());
+
+            let encrypted = client
+                .encrypt_targeted_message(
+                    conversation_id.as_ref().as_ref(),
+                    &master_client_id,
+                    policy,
+                    message.as_bytes(),
+                )
+                .await?;
+            let decrypted = transaction
+                .conversation(&conversation_id)
+                .await?
+                .decrypt_message(encrypted)
+                .await?;
+            let plaintext = match decrypted {
+                DecryptedMessage::PersistedTargeted(message) | DecryptedMessage::TransientTargeted(message) => {
+                    message.plaintext
+                }
+                _ => {
+                    return Err(anyhow!(
+                        "[MLS] Targeted message decrypted as an unexpected message type"
+                    ));
+                }
+            };
+            assert_eq!(plaintext, message.as_bytes());
+        }
+    }
+    spinner.success(format!("{} [OK]", STEP_4_MESSAGE));
+
+    const STEP_5_MESSAGE: &str = "[MLS] Step 5: Decrypt and encrypt a transient message on each client...";
+    let spinner = util::RunningProcess::new(STEP_5_MESSAGE, true);
+    let message = b"transient interop message";
+    let encrypted = transaction
+        .conversation(&conversation_id)
+        .await?
+        .encrypt_transient(message.to_vec())
+        .await?;
+    for client in &mut clients {
+        let decrypted = client
+            .decrypt_message(conversation_id.as_ref().as_ref(), &encrypted)
+            .await?
+            .ok_or_else(|| anyhow!("[MLS] Transient message decrypted as a protocol message"))?;
+        assert_eq!(decrypted, message);
+
+        let encrypted = client
+            .encrypt_transient_message(conversation_id.as_ref().as_ref(), message)
+            .await?;
+        let decrypted = transaction
+            .conversation(&conversation_id)
+            .await?
+            .decrypt_message(encrypted)
+            .await?;
+        let plaintext = decrypted
+            .into_transient()
+            .map_err(|_| anyhow!("[MLS] Transient message decrypted as an unexpected message type"))?
+            .plaintext;
+        assert_eq!(plaintext, message);
+    }
+    spinner.success(format!("{} [OK]", STEP_5_MESSAGE));
+
+    let spinner = util::RunningProcess::new("[MLS] Step 6: Deleting clients...", true);
     for client in &mut clients {
         client.wipe().await?;
     }
-    spinner.success("[MLS] Step 4: Deleting clients [OK]");
+    spinner.success("[MLS] Step 6: Deleting clients [OK]");
 
     Ok(())
 }
