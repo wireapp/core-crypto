@@ -54,13 +54,31 @@ impl Entity {
             ..
         } = self;
 
-        let or_replace = upsert.then_some("OR REPLACE").unwrap_or_default();
         let sql_column_names = std::iter::once(id_column.sql_name())
             .chain(other_columns.iter().map(|column| column.sql_name()))
             .join(", ");
         let sql_field_placeholders = std::iter::repeat_n("?", other_columns.len() + 1).join(", ");
+
+        let on_conflict = if !upsert {
+            String::new()
+        } else {
+            let id_name = id_column.sql_name();
+            let assignments = other_columns
+                .iter()
+                .map(|column| {
+                    let name = column.sql_name();
+                    format!("{name} = excluded.{name}")
+                })
+                .join(", ");
+            if assignments.is_empty() {
+                format!(" ON CONFLICT ({id_name}) DO NOTHING")
+            } else {
+                format!(" ON CONFLICT ({id_name}) DO UPDATE SET {assignments}")
+            }
+        };
+
         let sql_statement =
-            format!("INSERT {or_replace} INTO {table_name} ({sql_column_names}) VALUES ({sql_field_placeholders})");
+            format!("INSERT INTO {table_name} ({sql_column_names}) VALUES ({sql_field_placeholders}){on_conflict}");
         let fields = std::iter::once(id_column.store_expression())
             .chain(other_columns.iter().map(|column| column.store_expression()))
             .map(|tokens| quote!(#tokens,))
