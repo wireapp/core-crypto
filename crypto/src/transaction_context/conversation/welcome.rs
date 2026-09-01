@@ -1,9 +1,10 @@
 //! This module contains transactional conversation operations that are related to processing welcome messages.
 
+use const_format::formatcp;
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 
 use super::{Error, Result, TransactionContext};
-use crate::{ConversationConfiguration, ConversationId};
+use crate::{ConversationConfiguration, ConversationId, KeystoreError};
 
 impl TransactionContext {
     /// Create a conversation from a received MLS Welcome message
@@ -31,17 +32,52 @@ impl TransactionContext {
             ..Default::default()
         };
 
-        let welcome_clone = welcome.clone();
+        // processing a welcome message deletes some data at the openmls level; we can't avoid it by simply
+        // ordering things better. But what we can do is undelete it with a sql savepoint:
+        // <https://sqlite.org/lang_savepoint.html>.
+        //
+        // we can use a const savepoint because we always either rollback or release the savepoint before exiting this
+        // function (unless something goes wrong with accessing the database)
+        const SAVEPOINT_NAME: &str = "process_welcome_message_savepoint";
+
+        // we don't want to keep any of these guards around while openmls needs access to the db
+        {
+            let inner = self.inner().await?;
+            let tx = inner.transaction();
+            let conn = tx
+                .conn()
+                .map_err(KeystoreError::wrap("getting raw sql connection to create savepoint"))?;
+            let mut stmt = conn
+                .prepare_cached(formatcp!("SAVEPOINT {SAVEPOINT_NAME}"))
+                .map_err(KeystoreError::wrap("creating savepoint creation stmt"))?;
+            stmt.execute([]).map_err(KeystoreError::wrap("creating savepoint"))?;
+        }
+
         let conversation_result = self
-            .persist_conversation_from_welcome_message(welcome_clone, configuration)
+            .persist_conversation_from_welcome_message(welcome, configuration)
             .await;
 
-        if conversation_result.is_err() {
-            // If persisting failed, we want to pretend we didn't process the welcome at all and restore the key
-            // package that may have been marked for deletion by openmls:
-            // https://github.com/wireapp/openmls/blob/c9cde17076508968c9cbead5728454f0a1f60c4f/openmls/src/group/mls_group/creation.rs#L166
-            for key_package_hash_ref in welcome.secrets().iter().map(|secret| secret.new_member().as_slice()) {
-                self.restore_key_package(key_package_hash_ref).await?;
+        // now we pick up the guards again and either release or rollback our savepoint
+        // a consequence of all this is that we can't avoid having keystore problems mask
+        // a failed conversation persistence result.
+        {
+            let inner = self.inner().await?;
+            let tx = inner.transaction();
+            let conn = tx
+                .conn()
+                .map_err(KeystoreError::wrap("getting raw sql connection finalize savepoint"))?;
+
+            if conversation_result.is_ok() {
+                let mut stmt = conn
+                    .prepare_cached(formatcp!("RELEASE SAVEPOINT {SAVEPOINT_NAME}"))
+                    .map_err(KeystoreError::wrap("creating savepoint release stmt"))?;
+                stmt.execute([]).map_err(KeystoreError::wrap("releasing savepoint"))?;
+            } else {
+                let mut stmt = conn
+                    .prepare_cached(formatcp!("ROLLBACK TO SAVEPOINT {SAVEPOINT_NAME}"))
+                    .map_err(KeystoreError::wrap("creating savepoint rollback stmt"))?;
+                stmt.execute([])
+                    .map_err(KeystoreError::wrap("rolling back savepoint"))?;
             }
         }
 
