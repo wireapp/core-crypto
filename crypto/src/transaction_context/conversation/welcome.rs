@@ -156,4 +156,96 @@ mod tests {
             })
         .await;
     }
+
+    /// Processing a welcome message makes openmls consume the key package it was addressed to; when
+    /// persisting the conversation then fails, the savepoint in `process_welcome_message` must put
+    /// that key material back.
+    ///
+    /// Unlike [`process_welcome_should_fail_when_already_exists`], this does not commit before
+    /// processing the welcome: a savepoint rolls back within the transaction which created the key
+    /// package, so restoration must work even then.
+    #[apply(all_cred_cipher)]
+    async fn failed_welcome_should_restore_key_material_in_same_transaction(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let credential_ref = &bob.initial_credential;
+        let commit = case.create_conversation([&alice]).await.invite([&bob]).await;
+        let conversation = commit.conversation();
+        let id = conversation.id().clone();
+
+        // Bob creates a conversation with the exact same id as the one he's trying to join, so
+        // persisting the conversation from the welcome message is bound to fail
+        bob.transaction
+            .new_conversation(&id, credential_ref, case.cfg.clone())
+            .await
+            .unwrap();
+
+        let welcome = conversation.transport().await.latest_welcome_message().await;
+
+        let count_before = bob.transaction.count_entities().await;
+        let key_package_refs_before = bob.transaction.get_key_package_refs().await.unwrap();
+        assert!(!key_package_refs_before.is_empty());
+
+        let join_welcome = bob.transaction.process_welcome_message(welcome).await;
+        assert!(innermost_source_matches!(
+            join_welcome.unwrap_err(),
+            super::Error::ConversationAlreadyExists(i) if i == &id
+        ));
+
+        // Every entity the welcome touched must be back where it was: the key package itself,
+        // its hpke init private key, and its leaf node encryption keypair.
+        let count_after = bob.transaction.count_entities().await;
+        assert_eq!(count_before, count_after);
+        let key_package_refs_after = bob.transaction.get_key_package_refs().await.unwrap();
+        assert_eq!(key_package_refs_before, key_package_refs_after);
+    }
+
+    /// Restoring the key material is only worth anything if it is complete: a key package whose
+    /// private keys were not restored is unusable. So once the reason the welcome failed is gone,
+    /// processing that same welcome message again has to succeed.
+    #[apply(all_cred_cipher)]
+    async fn restored_key_material_should_still_be_able_to_join_from_welcome(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let credential_ref = &bob.initial_credential;
+        let commit = case.create_conversation([&alice]).await.invite([&bob]).await;
+        let conversation = commit.conversation();
+        let id = conversation.id().clone();
+
+        // The conflicting conversation which makes the first attempt fail
+        bob.transaction
+            .new_conversation(&id, credential_ref, case.cfg.clone())
+            .await
+            .unwrap();
+
+        let welcome = conversation.transport().await.latest_welcome_message().await;
+
+        let join_welcome = bob.transaction.process_welcome_message(welcome.clone()).await;
+        assert!(innermost_source_matches!(
+            join_welcome.unwrap_err(),
+            super::Error::ConversationAlreadyExists(i) if i == &id
+        ));
+
+        // Bob gets rid of the conversation which was in the way
+        bob.transaction.conversation(&id).await.unwrap().wipe().await.unwrap();
+
+        // The restored key material is complete, so the second attempt goes through
+        let joined_id = bob.transaction.process_welcome_message(welcome).await.unwrap();
+        assert_eq!(joined_id, id);
+
+        // And the conversation Bob joined is the real thing: he can talk in it
+        let message = bob
+            .transaction
+            .conversation(&id)
+            .await
+            .unwrap()
+            .encrypt_message(b"hello")
+            .await
+            .unwrap();
+        let decrypted = conversation
+            .guard_of(&alice)
+            .await
+            .decrypt_message(&message)
+            .await
+            .unwrap();
+        assert_eq!(decrypted.as_application_message().unwrap().plaintext, b"hello");
+    }
 }
