@@ -10,7 +10,7 @@ use async_lock::{RwLock, RwLockReadGuard};
 use core_crypto_keystore::{
     Transaction,
     entities::{ConversationIdRef as KeystoreConversationIdRef, PersistedMlsGroup, TntMessageTxCounter},
-    traits::FetchFromDatabase,
+    traits::{EntityDatabaseMutation as _, EntityDeleteBorrowed as _, FetchFromDatabase},
 };
 use openmls::group::{InnerState, MlsGroup};
 
@@ -74,8 +74,7 @@ impl MlsGroupState {
     pub(in crate::mls::conversation) async fn reset_tnt_message_tx_counter(&mut self, tx: &Transaction) -> Result<()> {
         self.tnt_message_tx_counter = Default::default();
         let id = KeystoreConversationIdRef::new(self.group.group_id().as_slice());
-        tx.remove_borrowed::<TntMessageTxCounter>(id)
-            .await
+        TntMessageTxCounter::delete_borrowed(tx, id)
             .map_err(KeystoreError::wrap("removing transient message tx counter"))?;
         Ok(())
     }
@@ -85,19 +84,19 @@ impl MlsGroupState {
         self.mls_group_mut().set_state(InnerState::Persisted);
         let id = self.group.group_id();
 
-        tx.save(PersistedMlsGroup {
+        PersistedMlsGroup {
             id: id.to_vec(),
             state: core_crypto_keystore::ser(self.mls_group())
                 .map_err(KeystoreError::wrap("serializing group state"))?,
-        })
-        .await
+        }
+        .save(tx)
         .map_err(KeystoreError::wrap("persisting mls group"))?;
 
-        tx.save(TntMessageTxCounter {
+        TntMessageTxCounter {
             conversation_id: id.as_slice().into(),
             count: self.tnt_message_tx_counter.into(),
-        })
-        .await
+        }
+        .save(tx)
         .map_err(KeystoreError::wrap("saving transient message tx counter"))?;
 
         Ok(())

@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use core_crypto_keystore::{
     entities::{MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit},
-    traits::FetchFromDatabase as _,
+    traits::{DeletableBySearchKey, EntityDeleteBorrowed, FetchFromDatabase as _},
 };
 use openmls::group::MlsGroup;
 
@@ -92,13 +92,12 @@ impl TransactionContext {
             return Ok(());
         }
 
-        tx.bulk_remove::<MlsPendingMessage, _>(id.into()).await;
-
-        tx.remove_borrowed::<StoredBufferedCommit>(id.as_ref())
-            .await
-            .map_err(KeystoreError::wrap(
-                "clearing the buffered commit of a removed conversation",
-            ))?;
+        MlsPendingMessage::delete_all_matching(tx, id.keystore()).map_err(KeystoreError::wrap(
+            "clearing the pending messages of a removed conversation",
+        ))?;
+        StoredBufferedCommit::delete_borrowed(tx, id.as_ref()).map_err(KeystoreError::wrap(
+            "clearing the buffered commit of a removed conversation",
+        ))?;
 
         Ok(())
     }

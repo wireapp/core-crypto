@@ -1,4 +1,8 @@
-use core_crypto_keystore::{Transaction, entities::ProteusSession, traits::FetchFromDatabase};
+use core_crypto_keystore::{
+    Transaction,
+    entities::ProteusSession,
+    traits::{EntityDatabaseMutation as _, EntityDeleteBorrowed, FetchFromDatabase},
+};
 use proteus_wasm::{keys::PreKeyBundle, message::Envelope, session::Session};
 
 use super::{ProteusCentral, ProteusConversationSession};
@@ -91,23 +95,21 @@ impl ProteusCentral {
         transaction: &Transaction,
         session: &ProteusConversationSession,
     ) -> Result<()> {
-        let db_session = ProteusSession {
+        ProteusSession {
             id: session.identifier().to_string(),
             session: session
                 .session
                 .serialise()
                 .map_err(ProteusError::wrap("serializing session"))?,
-        };
-        transaction
-            .save(db_session)
-            .await
-            .map_err(KeystoreError::wrap("saving proteus session"))?;
+        }
+        .save(transaction)
+        .map_err(KeystoreError::wrap("saving proteus session"))?;
         Ok(())
     }
 
     /// Deletes a session in the store
     pub(crate) async fn session_delete(&mut self, transaction: &Transaction, session_id: &str) -> Result<()> {
-        if transaction.remove_borrowed::<ProteusSession>(session_id).await.is_ok() {
+        if ProteusSession::delete_borrowed(transaction, session_id).is_ok() {
             let _ = self.proteus_sessions.remove(session_id);
         }
         Ok(())

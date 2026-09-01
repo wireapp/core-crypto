@@ -1,4 +1,8 @@
-use core_crypto_keystore::{Sha256Hash, Transaction, entities::StoredCredential, traits::FetchFromDatabase};
+use core_crypto_keystore::{
+    Sha256Hash, Transaction,
+    entities::StoredCredential,
+    traits::{EntityDatabaseMutation as _, FetchFromDatabase},
+};
 use openmls::prelude::SignaturePublicKey;
 use tls_codec::Serialize as _;
 
@@ -54,9 +58,11 @@ impl Credential {
             private_key: self.signature_key_pair.private().to_owned(),
             public_key: self.signature_key().public().to_owned(),
         };
-        stored_credential.pre_save()?;
-        tx.save(stored_credential)
-            .await
+        stored_credential
+            .pre_save()
+            .map_err(KeystoreError::wrap("presaving credential"))?;
+        stored_credential
+            .save(tx)
             .map_err(KeystoreError::wrap("saving credential"))?;
 
         // ensure everything succeeded before mutating self
@@ -66,11 +72,9 @@ impl Credential {
     }
 
     /// Delete this credential from the database
-    pub(crate) async fn delete(self, tx: &Transaction) -> Result<()> {
-        tx.remove::<StoredCredential>(&Sha256Hash::hash_from(self.signature_key_pair.public()))
-            .await
-            .map_err(KeystoreError::wrap("deleting credential"))?;
-
-        Ok(())
+    pub(crate) async fn delete(self, tx: &Transaction) -> Result<bool> {
+        StoredCredential::delete(tx, &Sha256Hash::hash_from(self.signature_key_pair.public()))
+            .map_err(KeystoreError::wrap("deleting credential"))
+            .map_err(Into::into)
     }
 }

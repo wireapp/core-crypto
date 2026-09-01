@@ -1,4 +1,4 @@
-use core_crypto_keystore::entities::PersistedMlsGroup;
+use core_crypto_keystore::{entities::PersistedMlsGroup, traits::EntityDeleteBorrowed};
 
 use super::Result;
 use crate::{KeystoreError, OpenMlsError, RecursiveError, mls::conversation::ConversationMut};
@@ -47,9 +47,7 @@ impl ConversationMut {
             .await
             .map_err(RecursiveError::context("getting inner context"))?;
         let tx = context.transaction();
-        tx.remove_borrowed::<PersistedMlsGroup>(id.as_ref())
-            .await
-            .map_err(KeystoreError::wrap("deleting mls group"))?;
+        PersistedMlsGroup::delete_borrowed(tx, id.as_ref()).map_err(KeystoreError::wrap("deleting mls group"))?;
         let _ = conversation_cache.remove(id);
 
         // Release the cache guard before clearing the buffers: that path reaches back into the

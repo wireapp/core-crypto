@@ -8,7 +8,7 @@ use core_crypto_keystore::{
         ConversationId as KeystoreConversationId, MessageRxCounterPkRef, TargetedMessageRxCounter,
         TransientMessageRxCounter,
     },
-    traits::FetchFromDatabase,
+    traits::{EntityDatabaseMutation as _, FetchFromDatabase},
 };
 use openmls::prelude::{
     CredentialWithKey, LeafNodeIndex, Member, OpenMlsSignaturePublicKey, Signable as _, Signature, Verifiable as _,
@@ -125,24 +125,22 @@ impl TntWireFormat {
         conversation_id: KeystoreConversationId,
     ) -> Result<(), Error> {
         match *self {
-            TntWireFormat::TRANSIENT_MESSAGE | TntWireFormat::TRANSIENT_TARGETED_MESSAGE => tx
-                .save(TransientMessageRxCounter {
-                    conversation_id,
-                    sender: message_sender.u32(),
-                    epoch: group_epoch,
-                    count: message_counter.into(),
-                })
-                .await
-                .map_err(KeystoreError::wrap("persisting TransientMessageRxCounter"))?,
-            TntWireFormat::TARGETED_MESSAGE => tx
-                .save(TargetedMessageRxCounter {
-                    conversation_id,
-                    sender: message_sender.u32(),
-                    epoch: group_epoch,
-                    count: message_counter.into(),
-                })
-                .await
-                .map_err(KeystoreError::wrap("persisting TargetedMessageRxCounter"))?,
+            TntWireFormat::TRANSIENT_MESSAGE | TntWireFormat::TRANSIENT_TARGETED_MESSAGE => TransientMessageRxCounter {
+                conversation_id,
+                sender: message_sender.u32(),
+                epoch: group_epoch,
+                count: message_counter.into(),
+            }
+            .save(tx)
+            .map_err(KeystoreError::wrap("persisting TransientMessageRxCounter"))?,
+            TntWireFormat::TARGETED_MESSAGE => TargetedMessageRxCounter {
+                conversation_id,
+                sender: message_sender.u32(),
+                epoch: group_epoch,
+                count: message_counter.into(),
+            }
+            .save(tx)
+            .map_err(KeystoreError::wrap("persisting TargetedMessageRxCounter"))?,
 
             _ => panic!("All TntWireFormats map to a MessageRxCounter implementation"),
         }

@@ -5,7 +5,7 @@
 
 use core_crypto_keystore::{
     entities::{ConversationIdRef, MlsPendingMessage},
-    traits::FetchFromDatabase,
+    traits::{DeletableBySearchKey, EntityDatabaseMutation as _, FetchFromDatabase},
 };
 use log::{error, info};
 use openmls::{
@@ -45,22 +45,20 @@ impl ConversationMut {
         let context_inner = self.tx_context.inner().await.map_err(RecursiveError::context(
             "getting transaction inner to buffer future message",
         ))?;
-        context_inner
-            .transaction()
-            .save::<MlsPendingMessage>(pending_msg)
-            .await
+        pending_msg
+            .save(context_inner.transaction())
             .map_err(KeystoreError::wrap("saving pending mls message"))?;
         Ok(())
     }
 
     async fn clear_pending_messages(&self) -> Result<()> {
-        self.tx_context
+        let tx = self
+            .tx_context
             .inner()
             .await
-            .map_err(RecursiveError::context("getting tx context to clear pending messages"))?
-            .transaction()
-            .bulk_remove::<MlsPendingMessage, _>(self.id().into())
-            .await;
+            .map_err(RecursiveError::context("getting tx context to clear pending messages"))?;
+        MlsPendingMessage::delete_all_matching(tx.transaction(), ConversationIdRef::new(self.id().as_ref()))
+            .map_err(KeystoreError::wrap("clearing pending messages"))?;
         Ok(())
     }
 

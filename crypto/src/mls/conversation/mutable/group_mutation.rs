@@ -3,7 +3,7 @@ use core_crypto_keystore::{
     entities::{
         ConversationEpochsOlderThan, TargetedMessageRxCounter, TntSecret, TntSecretPkRef, TransientMessageRxCounter,
     },
-    traits::FetchFromDatabase as _,
+    traits::{DeletableBySearchKey as _, EntityDatabaseMutation as _, FetchFromDatabase as _},
 };
 use openmls::group::InnerState;
 
@@ -53,9 +53,9 @@ impl ConversationMut {
             .map_err(KeystoreError::wrap("finding tnt secret for current epoch"))?
             .is_none()
         {
-            let tnt_secret = self.create_tnt_secret(group.mls_group()).await?;
-            tx.save(tnt_secret)
-                .await
+            self.create_tnt_secret(group.mls_group())
+                .await?
+                .save(tx)
                 .map_err(KeystoreError::wrap("persisting tnt secret for current epoch"))?;
         }
 
@@ -69,12 +69,15 @@ impl ConversationMut {
             group.reset_tnt_message_tx_counter(tx).await?;
 
             let oldest_retained_epoch = group.epoch().as_u64().saturating_sub(MAX_PAST_EPOCHS as u64);
-            // We can't avoid allocation here because tx needs to own the deletion key.
             let stale_epochs = ConversationEpochsOlderThan::new(id.as_ref().into(), oldest_retained_epoch);
-            tx.bulk_remove::<TntSecret, _>(stale_epochs.clone()).await;
-            tx.bulk_remove::<TargetedMessageRxCounter, _>(stale_epochs.clone())
-                .await;
-            tx.bulk_remove::<TransientMessageRxCounter, _>(stale_epochs).await;
+            TntSecret::delete_all_matching(tx, &stale_epochs)
+                .map_err(KeystoreError::wrap("deleting tnt secrets on epoch change"))?;
+            TargetedMessageRxCounter::delete_all_matching(tx, &stale_epochs).map_err(KeystoreError::wrap(
+                "deleting targeted message rx counter on epoch change",
+            ))?;
+            TransientMessageRxCounter::delete_all_matching(tx, &stale_epochs).map_err(KeystoreError::wrap(
+                "deleting transient message rx counter on epoch change",
+            ))?;
         }
 
         group.persist(tx).await?;
