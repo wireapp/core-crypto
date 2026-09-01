@@ -48,9 +48,14 @@ The `ctx` parameter is the `CoreCryptoContext`: the object through which all mut
 only valid for the lifetime of the callback — using it after the callback returns will produce an
 `InvalidTransactionContext` error.
 
-All operations are **buffered in memory** inside the context. Nothing is written to the database until the callback
-returns successfully. This means reads within the same transaction will observe the in-memory state, not the on-disk
-state — if you create a conversation and immediately query it within the same transaction, the query will find it.
+Operations are written to the database as they are performed, inside a real database transaction which is opened when
+the callback starts and committed when it returns. Nothing becomes visible to anyone else until that commit, but reads
+within the same transaction observe the writes that preceded them — if you create a conversation and immediately query
+it within the same transaction, the query will find it.
+
+Reads performed outside the transaction — on `CoreCrypto` or `Database` rather than on `ctx` — also go through the
+in-flight transaction while one exists, so they too observe its not-yet-committed writes. If the transaction is
+subsequently rolled back, those writes are undone.
 
 ## Concurrency
 
@@ -106,6 +111,19 @@ try {
 ```
 
 <!-- langtabs-end -->
+
+### Where Errors Surface
+
+A keystore error is raised by the operation which caused it, not by `transaction()`. A uniqueness or foreign key
+violation, for example, is thrown from the `ctx` call that attempted the offending write.
+
+Such a rejected write does not poison the transaction. Nothing was written, but everything that already succeeded is
+still there and the transaction remains usable: if you catch the error inside the callback and carry on, the callback
+can still return successfully and the transaction commits the rest.
+
+Rarely, SQLite rolls a transaction back on its own initiative. Every subsequent operation on that transaction then fails
+with an "unexpectedly rolled back" keystore error rather than potentially mutating the database directly without the
+opportunity for rollback.
 
 ### Retry After Delivery Failure
 
