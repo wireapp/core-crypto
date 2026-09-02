@@ -290,6 +290,13 @@ impl<'a> TestConversation<'a> {
     /// This does _not_ distribute the external commit to the existing members. To do that,
     /// use the [`notify_existing_members` method][CommitGuard::notify_members] of
     /// the returned item.
+    ///
+    /// The pending conversation is persisted before it is returned.
+    /// [`TransactionContext::create_external_join_commit`] deliberately does not do that:
+    /// [`TransactionContext::join_by_external_commit`] merges immediately, so on the happy path
+    /// the row would only ever be written to be deleted again. A caller which holds an unmerged
+    /// pending conversation across other operations is in the state that survives a failed merge,
+    /// and that state is on disk, so this reproduces it.
     pub async fn external_join_via_group_info_unmerged(
         self,
         joiner: &'a SessionContext,
@@ -301,6 +308,7 @@ impl<'a> TestConversation<'a> {
             .create_external_join_commit(group_info, &joiner_credential_ref)
             .await
             .unwrap();
+        pending_conversation.save().await.unwrap();
 
         // if this is a rejoin, make sure that the joiner doesn't receive their join commit again
         let already_notified: &[usize] = if self.is_member(joiner).await {

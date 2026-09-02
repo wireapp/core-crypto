@@ -220,11 +220,11 @@ impl PendingConversation {
         let mls_provider = self.mls_provider().await?;
         let database = self.keystore().await?;
         let id = self.id();
-        let group = self.inner.state.clone();
-        let cfg = self.inner.custom_configuration.clone();
+        let group = &self.inner.state;
+        let cfg = &self.inner.custom_configuration;
 
         let mut mls_group =
-            core_crypto_keystore::deser::<MlsGroup>(&group).map_err(KeystoreError::wrap("deserializing mls group"))?;
+            core_crypto_keystore::deser::<MlsGroup>(group).map_err(KeystoreError::wrap("deserializing mls group"))?;
 
         // Merge it aka bring the MLS group to life and make it usable
         mls_group

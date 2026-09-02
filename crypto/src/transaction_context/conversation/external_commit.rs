@@ -40,20 +40,24 @@ impl TransactionContext {
         let (commit_bundle, id, mut pending_conversation) =
             self.create_external_join_commit(group_info, credential_ref).await?;
 
-        let commit_result = pending_conversation.send_commit(commit_bundle).await;
-        if let Err(err @ mls::conversation::Error::MessageRejected { .. }) = commit_result {
-            pending_conversation
-                .clear()
-                .await
-                .map_err(RecursiveError::context("clearing external commit"))?;
-            return Err(RecursiveError::context("sending commit")(err).into());
+        if let Err(err) = pending_conversation.send_commit(commit_bundle).await {
+            let is_message_rejected = matches!(err, mls::conversation::Error::MessageRejected { .. });
+            let err = RecursiveError::context("sending commit")(err).into();
+            if !is_message_rejected {
+                // for anything except a message rejected, attempt to save here so we can recover later
+                // (a message rejected error will always be that though, don't bother in that case)
+                // (and don't shadow the existing error)
+                let _ = pending_conversation.save().await;
+            }
+            return Err(err);
         }
-        commit_result.map_err(RecursiveError::context("sending commit"))?;
 
-        pending_conversation
-            .merge()
-            .await
-            .map_err(RecursiveError::context("merging from external commit"))?;
+        if let Err(err) = pending_conversation.merge().await {
+            // here also, we need to attempt to persist the pending conversation for recovery later
+            // and once again, the existing error is more important than a failure to save
+            let _ = pending_conversation.save().await;
+            return Err(RecursiveError::context("merging from external commit")(err).into());
+        }
 
         Ok(id)
     }
@@ -103,10 +107,6 @@ impl TransactionContext {
 
         let pending_conversation = PendingConversation::from_mls_group(group, self.clone())
             .map_err(RecursiveError::context("creating pending conversation"))?;
-        pending_conversation
-            .save()
-            .await
-            .map_err(RecursiveError::context("saving pending conversation"))?;
 
         let commit_bundle = CommitBundle {
             welcome: None,
