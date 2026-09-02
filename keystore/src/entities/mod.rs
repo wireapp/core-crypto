@@ -1,7 +1,6 @@
 pub(crate) mod consumer_data;
 #[cfg(feature = "dummy-entity")]
 mod dummy_entity;
-pub(crate) mod helpers;
 pub(crate) mod mls;
 
 #[cfg(feature = "dummy-entity")]
