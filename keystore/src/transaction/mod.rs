@@ -4,6 +4,7 @@ mod finalize;
 mod mls;
 #[cfg(feature = "proteus-keystore")]
 mod proteus;
+mod savepoint;
 
 use std::sync::Arc;
 
