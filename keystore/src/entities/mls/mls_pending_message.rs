@@ -137,7 +137,7 @@ impl DeletableBySearchKey<ConversationId> for MlsPendingMessage {
     where
         &'a Tx: Into<Transactionlike<'a>>,
     {
-        delete_helper::<Self, _>(tx, "conversation_id", conversation_id)?;
+        delete_helper::<Self, _>(tx, "conversation_id", conversation_id.as_ref())?;
         Ok(())
     }
 }

@@ -10,7 +10,8 @@ use std::sync::Arc;
 use async_lock::{MutexGuardArc, SemaphoreGuardArc};
 use rusqlite::Connection;
 
-use crate::{CryptoKeystoreResult, Database, UniqueArc, connection::TransactionGuard};
+pub(crate) use self::{conn::TransactionConnection, mls::read_mls_entity};
+use crate::{CryptoKeystoreResult, Database, UniqueArc};
 
 const GUARD_EXPECTATION: &str = "connection guard is present for the lifetime of the transaction wrapper";
 

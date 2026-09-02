@@ -21,7 +21,6 @@ use rusqlite::trace::{TraceEvent, TraceEventCodes};
 pub(crate) use self::filesystem::Filesystem;
 #[cfg(target_os = "unknown")]
 pub use self::idb_migration::{delete_legacy_idb, legacy_idb_exists};
-pub(crate) use self::{filesystem::Filesystem, transaction_lock::TransactionGuard};
 pub use self::{
     migrations::migrate_db_key_type_to_bytes,
     mls::{deser, ser},
