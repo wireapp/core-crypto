@@ -306,18 +306,10 @@ impl PkiEnvironment {
                 PathValidationStatus::CertificateRevoked
                 | PathValidationStatus::CertificateRevokedEndEntity
                 | PathValidationStatus::CertificateRevokedIntermediateCa,
-            ))) => {
-                // ? Revoked credentials are A-OK. They still degrade conversations though.
-                // TODO: update this after WPB-25524
-                CredentialAuthenticationStatus::Valid
-            }
+            ))) => CredentialAuthenticationStatus::Revoked,
             Err(RustyX509CheckError::CertValError(CertvalError::PathValidation(
                 PathValidationStatus::InvalidNotAfterDate,
-            ))) => {
-                // ? Expired credentials are A-OK. They still degrade conversations though.
-                // TODO: update this after WPB-25524
-                CredentialAuthenticationStatus::Valid
-            }
+            ))) => CredentialAuthenticationStatus::Expired,
             Err(RustyX509CheckError::CertValError(CertvalError::PathValidation(_))) => {
                 CredentialAuthenticationStatus::Invalid
             }
