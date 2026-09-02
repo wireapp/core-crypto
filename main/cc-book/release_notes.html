@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-b286e215.js";
+            window.path_to_searchindex_js = "searchindex-fcca518a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1c113b1d.js"></script>
@@ -178,12 +178,40 @@
                         <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
 <h2 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h2>
 <ul>
-<li>CoreCrypto now supports encrypting and decrypting transient messages. Transient messages are encrypted and decrypted
+<li>
+<p>CoreCrypto now supports encrypting and decrypting transient messages. Transient messages are encrypted and decrypted
 for/from group members without affecting the cryptographic state of the group, which enables their use case: to be
-distributed only to currently online group members.</li>
-<li>CoreCrypto now also supports encrypting and decrypting targeted messages. A Targeted message is encrypted for a single
+distributed only to currently online group members.</p>
+</li>
+<li>
+<p>CoreCrypto now also supports encrypting and decrypting targeted messages. A Targeted message is encrypted for a single
 group member specifically. This enables the long-awaited read receipts feature for MLS. Regular MLS messages aren’t a
-good fit for read receipts because of the massive amount of irrelevant messages that would need to be distributed.</li>
+good fit for read receipts because of the massive amount of irrelevant messages that would need to be distributed.</p>
+</li>
+<li>
+<p>Operations in a CoreCrypto transaction now write to the database as they happen, within a real database transaction,
+instead of being buffered in memory and replayed at commit time. Atomicity is unchanged: nothing is visible to another
+process until the transaction commits, and a rollback still undoes everything. The observable differences are:</p>
+<ul>
+<li>A keystore error is raised by the operation which caused it, rather than by <code>transaction()</code> at commit time.</li>
+<li>A rejected write no longer poisons the transaction. If you catch the error inside the callback and carry on,
+everything else in the transaction still commits.</li>
+<li>Reads performed outside the transaction, while a transaction is in flight, observe its uncommitted writes.
+Previously they observed the state as of the start of the transaction.</li>
+<li>If SQLite rolls a transaction back on its own initiative, subsequent operations on that transaction now fail with an
+“unexpectedly rolled back” error instead of operating directly on the database without the possibility of rollback.</li>
+</ul>
+</li>
+<li>
+<p>Failures to delete keystore records are now reported. Several cleanup paths — clearing a conversation’s buffered
+messages and commits, discarding superseded encryption keypairs — previously discarded the error and reported success,
+as a consequence of the old behavior where errors only propagated at commit time.</p>
+</li>
+<li>
+<p>When <code>processWelcomeMessage</code> fails to persist the new conversation, the key package the welcome consumed is restored
+reliably. Previously restoration only worked if the key package had been created in an earlier transaction; a key
+package created in the same transaction was lost, along with its private keys.</p>
+</li>
 </ul>
 <h2 id="corecrypto-10"><a class="header" href="#corecrypto-10">CoreCrypto 10</a></h2>
 <h3 id="v1040---2026-08-19"><a class="header" href="#v1040---2026-08-19">v10.4.0 - 2026-08-19</a></h3>

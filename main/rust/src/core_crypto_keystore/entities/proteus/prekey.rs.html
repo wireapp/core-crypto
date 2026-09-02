@@ -1,113 +1,128 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `keystore/src/entities/proteus/prekey.rs`."><title>prekey.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1ed95124.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="core_crypto_keystore" data-themes="" data-resource-suffix="" data-rustdoc-version="1.98.0 (88d9e12ae 2026-08-18)" data-channel="1.98.0" data-search-js="search-9944d736.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core_crypto_keystore/entities/proteus/</div>prekey.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>zeroize::Zeroize;
-<a href=#2 id=2 data-nosnippet>2</a>
-<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use crate</span>::{
-<a href=#4 id=4 data-nosnippet>4</a>    CryptoKeystoreError, CryptoKeystoreResult, Transaction,
-<a href=#5 id=5 data-nosnippet>5</a>    entities::helpers::{count_helper, delete_helper, get_helper, load_all_helper},
-<a href=#6 id=6 data-nosnippet>6</a>    traits::{Entity, EntityDatabaseMutation, PrimaryKey},
-<a href=#7 id=7 data-nosnippet>7</a>};
-<a href=#8 id=8 data-nosnippet>8</a>
-<a href=#9 id=9 data-nosnippet>9</a><span class="doccomment">/// Entity representing a stored Proteus prekey.
-<a href=#10 id=10 data-nosnippet>10</a>///
-<a href=#11 id=11 data-nosnippet>11</a>/// This entity cannot be updated in the DB. A prekey id is published to peers in a prekey bundle,
-<a href=#12 id=12 data-nosnippet>12</a>/// and overwriting the prekey it names would leave those peers holding a bundle no session can be
-<a href=#13 id=13 data-nosnippet>13</a>/// established from. A save under an id which is already taken therefore reports
-<a href=#14 id=14 data-nosnippet>14</a>/// [`CryptoKeystoreError::AlreadyExists`] rather than replacing the stored prekey.
-<a href=#15 id=15 data-nosnippet>15</a></span><span class="attr">#[derive(core_crypto_macros::Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-<a href=#16 id=16 data-nosnippet>16</a>#[zeroize(drop)]
-<a href=#17 id=17 data-nosnippet>17</a></span><span class="kw">pub struct </span>ProteusPrekey {
-<a href=#18 id=18 data-nosnippet>18</a>    <span class="kw">pub </span>id: u16,
-<a href=#19 id=19 data-nosnippet>19</a>    <span class="attr">#[sensitive]
-<a href=#20 id=20 data-nosnippet>20</a>    </span><span class="kw">pub </span>prekey: Vec&lt;u8&gt;,
-<a href=#21 id=21 data-nosnippet>21</a>}
-<a href=#22 id=22 data-nosnippet>22</a>
-<a href=#23 id=23 data-nosnippet>23</a><span class="kw">impl </span>ProteusPrekey {
-<a href=#24 id=24 data-nosnippet>24</a>    <span class="kw">pub fn </span>from_raw(id: u16, prekey: Vec&lt;u8&gt;) -&gt; <span class="self">Self </span>{
-<a href=#25 id=25 data-nosnippet>25</a>        <span class="self">Self </span>{ id, prekey }
-<a href=#26 id=26 data-nosnippet>26</a>    }
-<a href=#27 id=27 data-nosnippet>27</a>
-<a href=#28 id=28 data-nosnippet>28</a>    <span class="doccomment">/// Find the lowest free prekey id greater than `greater_than`.
-<a href=#29 id=29 data-nosnippet>29</a>    ///
-<a href=#30 id=30 data-nosnippet>30</a>    /// Only ids stored in the database are considered, so an id which an open transaction has
-<a href=#31 id=31 data-nosnippet>31</a>    /// claimed but not yet flushed is invisible here, and the caller might need to call this more
-<a href=#32 id=32 data-nosnippet>32</a>    /// than once to determine the true lowest. This is still the right choice given that writing
-<a href=#33 id=33 data-nosnippet>33</a>    /// this to accept the added and deleted lists makes the SQL substantially more complex.
-<a href=#34 id=34 data-nosnippet>34</a>    ///
-<a href=#35 id=35 data-nosnippet>35</a>    /// Returns [`CryptoKeystoreError::NoFreePrekeyId`] if no assignable id is free.
-<a href=#36 id=36 data-nosnippet>36</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>free_id_greater_than(conn: <span class="kw-2">&amp;</span>rusqlite::Connection, greater_than: u16) -&gt; CryptoKeystoreResult&lt;u16&gt; {
-<a href=#37 id=37 data-nosnippet>37</a>        <span class="doccomment">/// Highest prekey id assignable to an ordinary prekey.
-<a href=#38 id=38 data-nosnippet>38</a>        ///
-<a href=#39 id=39 data-nosnippet>39</a>        /// `u16::MAX` is reserved for the last-resort prekey. This crate depends only on
-<a href=#40 id=40 data-nosnippet>40</a>        /// `proteus-traits`, so it can't name `proteus_wasm::keys::MAX_PREKEY_ID` directly;
-<a href=#41 id=41 data-nosnippet>41</a>        /// `ProteusCentral::last_resort_prekey_id` in `core-crypto` is the other half of this
-<a href=#42 id=42 data-nosnippet>42</a>        /// invariant.
-<a href=#43 id=43 data-nosnippet>43</a>        </span><span class="kw">const </span>MAX_ASSIGNABLE_ID: u16 = u16::MAX - <span class="number">1</span>;
-<a href=#44 id=44 data-nosnippet>44</a>
-<a href=#45 id=45 data-nosnippet>45</a>        <span class="kw">let </span><span class="kw-2">mut </span>stmt = conn.prepare_cached(
-<a href=#46 id=46 data-nosnippet>46</a>            <span class="string">"
-<a href=#47 id=47 data-nosnippet>47</a>            SELECT MIN(c.candidate)
-<a href=#48 id=48 data-nosnippet>48</a>            FROM (
-<a href=#49 id=49 data-nosnippet>49</a>                SELECT :greater_than + 1 AS candidate
-<a href=#50 id=50 data-nosnippet>50</a>                UNION ALL
-<a href=#51 id=51 data-nosnippet>51</a>                SELECT id + 1 FROM proteus_prekeys WHERE id &gt; :greater_than
-<a href=#52 id=52 data-nosnippet>52</a>            ) AS c
-<a href=#53 id=53 data-nosnippet>53</a>            WHERE c.candidate &lt;= :max_assignable
-<a href=#54 id=54 data-nosnippet>54</a>                AND NOT EXISTS (SELECT 1 FROM proteus_prekeys p WHERE p.id = c.candidate)
-<a href=#55 id=55 data-nosnippet>55</a>            "</span>,
-<a href=#56 id=56 data-nosnippet>56</a>        )<span class="question-mark">?</span>;
-<a href=#57 id=57 data-nosnippet>57</a>        stmt.query_one(
-<a href=#58 id=58 data-nosnippet>58</a>            <span class="macro">rusqlite::named_params!</span> {
-<a href=#59 id=59 data-nosnippet>59</a>                <span class="string">":greater_than"</span>: greater_than,
-<a href=#60 id=60 data-nosnippet>60</a>                <span class="string">":max_assignable"</span>: MAX_ASSIGNABLE_ID,
-<a href=#61 id=61 data-nosnippet>61</a>            },
-<a href=#62 id=62 data-nosnippet>62</a>            |row| row.get::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;u16&gt;&gt;(<span class="number">0</span>),
-<a href=#63 id=63 data-nosnippet>63</a>        )<span class="question-mark">?
-<a href=#64 id=64 data-nosnippet>64</a>        </span>.ok_or(CryptoKeystoreError::NoFreePrekeyId)
-<a href=#65 id=65 data-nosnippet>65</a>    }
-<a href=#66 id=66 data-nosnippet>66</a>
-<a href=#67 id=67 data-nosnippet>67</a>    <span class="kw">pub async fn </span>get_free_id(tx: <span class="kw-2">&amp;</span>Transaction) -&gt; CryptoKeystoreResult&lt;u16&gt; {
-<a href=#68 id=68 data-nosnippet>68</a>        <span class="comment">// have to check the transaction to see what's stored there first
-<a href=#69 id=69 data-nosnippet>69</a>        </span>tx.free_proteus_prekey_id().<span class="kw">await
-<a href=#70 id=70 data-nosnippet>70</a>    </span>}
-<a href=#71 id=71 data-nosnippet>71</a>}
-<a href=#72 id=72 data-nosnippet>72</a>
-<a href=#73 id=73 data-nosnippet>73</a><span class="kw">impl </span>PrimaryKey <span class="kw">for </span>ProteusPrekey {
-<a href=#74 id=74 data-nosnippet>74</a>    <span class="kw">type </span>PrimaryKey = u16;
-<a href=#75 id=75 data-nosnippet>75</a>
-<a href=#76 id=76 data-nosnippet>76</a>    <span class="kw">fn </span>primary_key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
-<a href=#77 id=77 data-nosnippet>77</a>        <span class="self">self</span>.id
-<a href=#78 id=78 data-nosnippet>78</a>    }
-<a href=#79 id=79 data-nosnippet>79</a>}
-<a href=#80 id=80 data-nosnippet>80</a>
-<a href=#81 id=81 data-nosnippet>81</a><span class="kw">impl </span>Entity <span class="kw">for </span>ProteusPrekey {
-<a href=#82 id=82 data-nosnippet>82</a>    <span class="kw">const </span>TABLE_NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"proteus_prekeys"</span>;
-<a href=#83 id=83 data-nosnippet>83</a>
-<a href=#84 id=84 data-nosnippet>84</a>    <span class="kw">fn </span>get(conn: <span class="kw-2">&amp;</span>rusqlite::Connection, key: <span class="kw-2">&amp;</span>u16) -&gt; CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
-<a href=#85 id=85 data-nosnippet>85</a>        get_helper(conn, <span class="string">"id"</span>, <span class="kw-2">*</span>key, |row| {
-<a href=#86 id=86 data-nosnippet>86</a>            <span class="prelude-val">Ok</span>(<span class="self">Self</span>::from_raw(row.get(<span class="string">"id"</span>)<span class="question-mark">?</span>, row.get(<span class="string">"key"</span>)<span class="question-mark">?</span>))
-<a href=#87 id=87 data-nosnippet>87</a>        })
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `keystore/src/entities/proteus/prekey.rs`."><title>prekey.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-1ed95124.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="core_crypto_keystore" data-themes="" data-resource-suffix="" data-rustdoc-version="1.98.0 (88d9e12ae 2026-08-18)" data-channel="1.98.0" data-search-js="search-9944d736.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core_crypto_keystore/entities/proteus/</div>prekey.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>rusqlite::Connection;
+<a href=#2 id=2 data-nosnippet>2</a><span class="kw">use </span>zeroize::Zeroize;
+<a href=#3 id=3 data-nosnippet>3</a>
+<a href=#4 id=4 data-nosnippet>4</a><span class="kw">use crate</span>::{
+<a href=#5 id=5 data-nosnippet>5</a>    CryptoKeystoreError, CryptoKeystoreResult, Transactionlike,
+<a href=#6 id=6 data-nosnippet>6</a>    entities::helpers::{count_helper, delete_helper, get_helper, load_all_helper},
+<a href=#7 id=7 data-nosnippet>7</a>    traits::{Entity, EntityDatabaseMutation, PrimaryKey},
+<a href=#8 id=8 data-nosnippet>8</a>};
+<a href=#9 id=9 data-nosnippet>9</a>
+<a href=#10 id=10 data-nosnippet>10</a><span class="doccomment">/// Entity representing a stored Proteus prekey.
+<a href=#11 id=11 data-nosnippet>11</a>///
+<a href=#12 id=12 data-nosnippet>12</a>/// This entity cannot be updated in the DB. A prekey id is published to peers in a prekey bundle,
+<a href=#13 id=13 data-nosnippet>13</a>/// and overwriting the prekey it names would leave those peers holding a bundle no session can be
+<a href=#14 id=14 data-nosnippet>14</a>/// established from. A save under an id which is already taken therefore reports
+<a href=#15 id=15 data-nosnippet>15</a>/// [`CryptoKeystoreError::AlreadyExists`] rather than replacing the stored prekey.
+<a href=#16 id=16 data-nosnippet>16</a></span><span class="attr">#[derive(core_crypto_macros::Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+<a href=#17 id=17 data-nosnippet>17</a>#[zeroize(drop)]
+<a href=#18 id=18 data-nosnippet>18</a></span><span class="kw">pub struct </span>ProteusPrekey {
+<a href=#19 id=19 data-nosnippet>19</a>    <span class="kw">pub </span>id: u16,
+<a href=#20 id=20 data-nosnippet>20</a>    <span class="attr">#[sensitive]
+<a href=#21 id=21 data-nosnippet>21</a>    </span><span class="kw">pub </span>prekey: Vec&lt;u8&gt;,
+<a href=#22 id=22 data-nosnippet>22</a>}
+<a href=#23 id=23 data-nosnippet>23</a>
+<a href=#24 id=24 data-nosnippet>24</a><span class="kw">impl </span>ProteusPrekey {
+<a href=#25 id=25 data-nosnippet>25</a>    <span class="kw">pub fn </span>from_raw(id: u16, prekey: Vec&lt;u8&gt;) -&gt; <span class="self">Self </span>{
+<a href=#26 id=26 data-nosnippet>26</a>        <span class="self">Self </span>{ id, prekey }
+<a href=#27 id=27 data-nosnippet>27</a>    }
+<a href=#28 id=28 data-nosnippet>28</a>
+<a href=#29 id=29 data-nosnippet>29</a>    <span class="doccomment">/// Get the lowest free prekey id.
+<a href=#30 id=30 data-nosnippet>30</a>    ///
+<a href=#31 id=31 data-nosnippet>31</a>    /// Ids freed by deletion are handed out before the id space is extended.
+<a href=#32 id=32 data-nosnippet>32</a>    ///
+<a href=#33 id=33 data-nosnippet>33</a>    /// Returns [`CryptoKeystoreError::NoFreePrekeyId`] if every assignable id is taken.
+<a href=#34 id=34 data-nosnippet>34</a>    </span><span class="kw">pub fn </span>get_free_id(conn: <span class="kw-2">&amp;</span>Connection) -&gt; CryptoKeystoreResult&lt;u16&gt; {
+<a href=#35 id=35 data-nosnippet>35</a>        <span class="doccomment">/// Lowest prekey id assignable to an ordinary prekey.
+<a href=#36 id=36 data-nosnippet>36</a>        ///
+<a href=#37 id=37 data-nosnippet>37</a>        /// Id 0 is technically legal in Proteus but has never been auto-assigned here, so it stays reserved.
+<a href=#38 id=38 data-nosnippet>38</a>        </span><span class="kw">const </span>MIN_ASSIGNABLE_ID: u16 = <span class="number">1</span>;
+<a href=#39 id=39 data-nosnippet>39</a>        <span class="doccomment">/// Highest prekey id assignable to an ordinary prekey.
+<a href=#40 id=40 data-nosnippet>40</a>        ///
+<a href=#41 id=41 data-nosnippet>41</a>        /// `u16::MAX` is reserved for the last-resort prekey. This crate depends only on
+<a href=#42 id=42 data-nosnippet>42</a>        /// `proteus-traits`, so it can't name `proteus_wasm::keys::MAX_PREKEY_ID` directly;
+<a href=#43 id=43 data-nosnippet>43</a>        /// `ProteusCentral::last_resort_prekey_id` in `core-crypto` is the other half of this
+<a href=#44 id=44 data-nosnippet>44</a>        /// invariant.
+<a href=#45 id=45 data-nosnippet>45</a>        </span><span class="kw">const </span>MAX_ASSIGNABLE_ID: u16 = u16::MAX - <span class="number">1</span>;
+<a href=#46 id=46 data-nosnippet>46</a>
+<a href=#47 id=47 data-nosnippet>47</a>        <span class="comment">// The scan walks the index on `id` in ascending order and `LIMIT 1` stops it at the first
+<a href=#48 id=48 data-nosnippet>48</a>        // gap, so the cost tracks the position of that gap rather than the size of the table.
+<a href=#49 id=49 data-nosnippet>49</a>        // It can only find gaps above an id which is present, hence the `WHEN`: if the lowest
+<a href=#50 id=50 data-nosnippet>50</a>        // assignable id is itself free, no scan is needed. Bounding `t.id` from above keeps the
+<a href=#51 id=51 data-nosnippet>51</a>        // last-resort prekey out of the scan, so it can neither yield the unassignable candidate
+<a href=#52 id=52 data-nosnippet>52</a>        // `u16::MAX` nor overflow to 65536.
+<a href=#53 id=53 data-nosnippet>53</a>        </span><span class="kw">let </span><span class="kw-2">mut </span>stmt = conn.prepare_cached(
+<a href=#54 id=54 data-nosnippet>54</a>            <span class="string">"
+<a href=#55 id=55 data-nosnippet>55</a>            SELECT CASE
+<a href=#56 id=56 data-nosnippet>56</a>                WHEN NOT EXISTS (SELECT 1 FROM proteus_prekeys WHERE id = :min_assignable)
+<a href=#57 id=57 data-nosnippet>57</a>                    THEN :min_assignable
+<a href=#58 id=58 data-nosnippet>58</a>                ELSE (
+<a href=#59 id=59 data-nosnippet>59</a>                    SELECT t.id + 1
+<a href=#60 id=60 data-nosnippet>60</a>                    FROM proteus_prekeys AS t
+<a href=#61 id=61 data-nosnippet>61</a>                    WHERE t.id &gt;= :min_assignable
+<a href=#62 id=62 data-nosnippet>62</a>                      AND t.id &lt; :max_assignable
+<a href=#63 id=63 data-nosnippet>63</a>                      AND NOT EXISTS (SELECT 1 FROM proteus_prekeys p WHERE p.id = t.id + 1)
+<a href=#64 id=64 data-nosnippet>64</a>                    ORDER BY t.id
+<a href=#65 id=65 data-nosnippet>65</a>                    LIMIT 1
+<a href=#66 id=66 data-nosnippet>66</a>                )
+<a href=#67 id=67 data-nosnippet>67</a>            END
+<a href=#68 id=68 data-nosnippet>68</a>            "</span>,
+<a href=#69 id=69 data-nosnippet>69</a>        )<span class="question-mark">?</span>;
+<a href=#70 id=70 data-nosnippet>70</a>        <span class="comment">// a NULL here is the `ELSE` branch finding no gap below `:max_assignable`, which is
+<a href=#71 id=71 data-nosnippet>71</a>        // the exhausted case: an empty table takes the `WHEN` branch instead.
+<a href=#72 id=72 data-nosnippet>72</a>        </span>stmt.query_one(
+<a href=#73 id=73 data-nosnippet>73</a>            <span class="macro">rusqlite::named_params!</span> {
+<a href=#74 id=74 data-nosnippet>74</a>                <span class="string">":min_assignable"</span>: MIN_ASSIGNABLE_ID,
+<a href=#75 id=75 data-nosnippet>75</a>                <span class="string">":max_assignable"</span>: MAX_ASSIGNABLE_ID,
+<a href=#76 id=76 data-nosnippet>76</a>            },
+<a href=#77 id=77 data-nosnippet>77</a>            |row| row.get::&lt;<span class="kw">_</span>, <span class="prelude-ty">Option</span>&lt;u16&gt;&gt;(<span class="number">0</span>),
+<a href=#78 id=78 data-nosnippet>78</a>        )<span class="question-mark">?
+<a href=#79 id=79 data-nosnippet>79</a>        </span>.ok_or(CryptoKeystoreError::NoFreePrekeyId)
+<a href=#80 id=80 data-nosnippet>80</a>    }
+<a href=#81 id=81 data-nosnippet>81</a>}
+<a href=#82 id=82 data-nosnippet>82</a>
+<a href=#83 id=83 data-nosnippet>83</a><span class="kw">impl </span>PrimaryKey <span class="kw">for </span>ProteusPrekey {
+<a href=#84 id=84 data-nosnippet>84</a>    <span class="kw">type </span>PrimaryKey = u16;
+<a href=#85 id=85 data-nosnippet>85</a>
+<a href=#86 id=86 data-nosnippet>86</a>    <span class="kw">fn </span>primary_key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
+<a href=#87 id=87 data-nosnippet>87</a>        <span class="self">self</span>.id
 <a href=#88 id=88 data-nosnippet>88</a>    }
-<a href=#89 id=89 data-nosnippet>89</a>
-<a href=#90 id=90 data-nosnippet>90</a>    <span class="kw">fn </span>count(conn: <span class="kw-2">&amp;</span>rusqlite::Connection) -&gt; CryptoKeystoreResult&lt;u32&gt; {
-<a href=#91 id=91 data-nosnippet>91</a>        count_helper::&lt;<span class="self">Self</span>&gt;(conn)
-<a href=#92 id=92 data-nosnippet>92</a>    }
+<a href=#89 id=89 data-nosnippet>89</a>}
+<a href=#90 id=90 data-nosnippet>90</a>
+<a href=#91 id=91 data-nosnippet>91</a><span class="kw">impl </span>Entity <span class="kw">for </span>ProteusPrekey {
+<a href=#92 id=92 data-nosnippet>92</a>    <span class="kw">const </span>TABLE_NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"proteus_prekeys"</span>;
 <a href=#93 id=93 data-nosnippet>93</a>
-<a href=#94 id=94 data-nosnippet>94</a>    <span class="kw">fn </span>load_all(conn: <span class="kw-2">&amp;</span>rusqlite::Connection) -&gt; CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
-<a href=#95 id=95 data-nosnippet>95</a>        load_all_helper(conn, |row| <span class="prelude-val">Ok</span>(<span class="self">Self</span>::from_raw(row.get(<span class="string">"id"</span>)<span class="question-mark">?</span>, row.get(<span class="string">"key"</span>)<span class="question-mark">?</span>)))
-<a href=#96 id=96 data-nosnippet>96</a>    }
-<a href=#97 id=97 data-nosnippet>97</a>}
-<a href=#98 id=98 data-nosnippet>98</a>
-<a href=#99 id=99 data-nosnippet>99</a><span class="kw">impl </span>EntityDatabaseMutation <span class="kw">for </span>ProteusPrekey {
-<a href=#100 id=100 data-nosnippet>100</a>    <span class="kw">type </span>AutoGeneratedFields = ();
-<a href=#101 id=101 data-nosnippet>101</a>
-<a href=#102 id=102 data-nosnippet>102</a>    <span class="kw">fn </span>save(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span>rusqlite::Transaction) -&gt; CryptoKeystoreResult&lt;()&gt; {
-<a href=#103 id=103 data-nosnippet>103</a>        <span class="kw">let </span><span class="kw-2">mut </span>stmt = tx.prepare_cached(<span class="string">"INSERT INTO proteus_prekeys (id, key) VALUES (?, ?)"</span>)<span class="question-mark">?</span>;
-<a href=#104 id=104 data-nosnippet>104</a>        stmt.execute(<span class="macro">rusqlite::params!</span>[<span class="self">self</span>.id, <span class="self">self</span>.prekey])
-<a href=#105 id=105 data-nosnippet>105</a>            .map_err(CryptoKeystoreError::map_already_exists(<span class="self">Self</span>::TABLE_NAME))<span class="question-mark">?</span>;
-<a href=#106 id=106 data-nosnippet>106</a>        <span class="prelude-val">Ok</span>(())
-<a href=#107 id=107 data-nosnippet>107</a>    }
+<a href=#94 id=94 data-nosnippet>94</a>    <span class="kw">fn </span>get(conn: <span class="kw-2">&amp;</span>rusqlite::Connection, key: <span class="kw-2">&amp;</span>u16) -&gt; CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
+<a href=#95 id=95 data-nosnippet>95</a>        get_helper(conn, <span class="string">"id"</span>, <span class="kw-2">*</span>key, |row| {
+<a href=#96 id=96 data-nosnippet>96</a>            <span class="prelude-val">Ok</span>(<span class="self">Self</span>::from_raw(row.get(<span class="string">"id"</span>)<span class="question-mark">?</span>, row.get(<span class="string">"key"</span>)<span class="question-mark">?</span>))
+<a href=#97 id=97 data-nosnippet>97</a>        })
+<a href=#98 id=98 data-nosnippet>98</a>    }
+<a href=#99 id=99 data-nosnippet>99</a>
+<a href=#100 id=100 data-nosnippet>100</a>    <span class="kw">fn </span>count(conn: <span class="kw-2">&amp;</span>rusqlite::Connection) -&gt; CryptoKeystoreResult&lt;u32&gt; {
+<a href=#101 id=101 data-nosnippet>101</a>        count_helper::&lt;<span class="self">Self</span>&gt;(conn)
+<a href=#102 id=102 data-nosnippet>102</a>    }
+<a href=#103 id=103 data-nosnippet>103</a>
+<a href=#104 id=104 data-nosnippet>104</a>    <span class="kw">fn </span>load_all(conn: <span class="kw-2">&amp;</span>rusqlite::Connection) -&gt; CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
+<a href=#105 id=105 data-nosnippet>105</a>        load_all_helper(conn, |row| <span class="prelude-val">Ok</span>(<span class="self">Self</span>::from_raw(row.get(<span class="string">"id"</span>)<span class="question-mark">?</span>, row.get(<span class="string">"key"</span>)<span class="question-mark">?</span>)))
+<a href=#106 id=106 data-nosnippet>106</a>    }
+<a href=#107 id=107 data-nosnippet>107</a>}
 <a href=#108 id=108 data-nosnippet>108</a>
-<a href=#109 id=109 data-nosnippet>109</a>    <span class="kw">fn </span>delete(tx: <span class="kw-2">&amp;</span>rusqlite::Transaction, id: <span class="kw-2">&amp;</span>u16) -&gt; CryptoKeystoreResult&lt;bool&gt; {
-<a href=#110 id=110 data-nosnippet>110</a>        delete_helper::&lt;<span class="self">Self</span>&gt;(tx, <span class="string">"id"</span>, <span class="kw-2">*</span>id)
-<a href=#111 id=111 data-nosnippet>111</a>    }
-<a href=#112 id=112 data-nosnippet>112</a>}
+<a href=#109 id=109 data-nosnippet>109</a><span class="kw">impl </span>EntityDatabaseMutation <span class="kw">for </span>ProteusPrekey {
+<a href=#110 id=110 data-nosnippet>110</a>    <span class="kw">fn </span>save&lt;<span class="lifetime">'a</span>, Tx&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tx) -&gt; CryptoKeystoreResult&lt;()&gt;
+<a href=#111 id=111 data-nosnippet>111</a>    <span class="kw">where
+<a href=#112 id=112 data-nosnippet>112</a>        </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tx: Into&lt;Transactionlike&lt;<span class="lifetime">'a</span>&gt;&gt;,
+<a href=#113 id=113 data-nosnippet>113</a>    {
+<a href=#114 id=114 data-nosnippet>114</a>        <span class="kw">let </span>conn = tx.into().conn()<span class="question-mark">?</span>;
+<a href=#115 id=115 data-nosnippet>115</a>        <span class="kw">let </span><span class="kw-2">mut </span>stmt = conn.prepare_cached(<span class="string">"INSERT INTO proteus_prekeys (id, key) VALUES (?, ?)"</span>)<span class="question-mark">?</span>;
+<a href=#116 id=116 data-nosnippet>116</a>        stmt.execute(<span class="macro">rusqlite::params!</span>[<span class="self">self</span>.id, <span class="self">self</span>.prekey])
+<a href=#117 id=117 data-nosnippet>117</a>            .map_err(CryptoKeystoreError::map_already_exists(<span class="self">Self</span>::TABLE_NAME))<span class="question-mark">?</span>;
+<a href=#118 id=118 data-nosnippet>118</a>        <span class="prelude-val">Ok</span>(())
+<a href=#119 id=119 data-nosnippet>119</a>    }
+<a href=#120 id=120 data-nosnippet>120</a>
+<a href=#121 id=121 data-nosnippet>121</a>    <span class="kw">fn </span>delete&lt;<span class="lifetime">'a</span>, Tx&gt;(tx: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tx, id: <span class="kw-2">&amp;</span>u16) -&gt; CryptoKeystoreResult&lt;bool&gt;
+<a href=#122 id=122 data-nosnippet>122</a>    <span class="kw">where
+<a href=#123 id=123 data-nosnippet>123</a>        </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tx: Into&lt;Transactionlike&lt;<span class="lifetime">'a</span>&gt;&gt;,
+<a href=#124 id=124 data-nosnippet>124</a>    {
+<a href=#125 id=125 data-nosnippet>125</a>        delete_helper::&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;(tx, <span class="string">"id"</span>, <span class="kw-2">*</span>id)
+<a href=#126 id=126 data-nosnippet>126</a>    }
+<a href=#127 id=127 data-nosnippet>127</a>}
 </code></pre></div></section></main></body></html>

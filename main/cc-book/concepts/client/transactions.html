@@ -36,7 +36,7 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-b286e215.js";
+            window.path_to_searchindex_js = "../../searchindex-fcca518a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../../toc-1c113b1d.js"></script>
@@ -221,9 +221,13 @@ are persisted.</p>
 <p>The <code>ctx</code> parameter is the <code>CoreCryptoContext</code>: the object through which all mutating operations are performed. It is
 only valid for the lifetime of the callback — using it after the callback returns will produce an
 <code>InvalidTransactionContext</code> error.</p>
-<p>All operations are <strong>buffered in memory</strong> inside the context. Nothing is written to the database until the callback
-returns successfully. This means reads within the same transaction will observe the in-memory state, not the on-disk
-state — if you create a conversation and immediately query it within the same transaction, the query will find it.</p>
+<p>Operations are written to the database as they are performed, inside a real database transaction which is opened when
+the callback starts and committed when it returns. Nothing becomes visible to anyone else until that commit, but reads
+within the same transaction observe the writes that preceded them — if you create a conversation and immediately query
+it within the same transaction, the query will find it.</p>
+<p>Reads performed outside the transaction — on <code>CoreCrypto</code> or <code>Database</code> rather than on <code>ctx</code> — also go through the
+in-flight transaction while one exists, so they too observe its not-yet-committed writes. If the transaction is
+subsequently rolled back, those writes are undone.</p>
 <h2 id="concurrency"><a class="header" href="#concurrency">Concurrency</a></h2>
 <p>Only one transaction may be active at a time. Calling <code>cc.transaction()</code> while another transaction is already running
 will block until the first transaction finishes. This is a consequence of the single-writer constraint in the keystore;
@@ -278,6 +282,15 @@ worrying about cleanup:</p>
 </div>
 </div>
 
+<h3 id="where-errors-surface"><a class="header" href="#where-errors-surface">Where Errors Surface</a></h3>
+<p>A keystore error is raised by the operation which caused it, not by <code>transaction()</code>. A uniqueness or foreign key
+violation, for example, is thrown from the <code>ctx</code> call that attempted the offending write.</p>
+<p>Such a rejected write does not poison the transaction. Nothing was written, but everything that already succeeded is
+still there and the transaction remains usable: if you catch the error inside the callback and carry on, the callback
+can still return successfully and the transaction commits the rest.</p>
+<p>Rarely, SQLite rolls a transaction back on its own initiative. Every subsequent operation on that transaction then fails
+with an “unexpectedly rolled back” keystore error rather than potentially mutating the database directly without the
+opportunity for rollback.</p>
 <h3 id="retry-after-delivery-failure"><a class="header" href="#retry-after-delivery-failure">Retry After Delivery Failure</a></h3>
 <p>Some operations — those that produce a commit — invoke <code>MlsTransport.sendCommitBundle()</code> inside the transaction. If the
 delivery service returns <code>Retry</code>, CoreCrypto propagates this as an <code>MlsError</code> and the transaction is rolled back. The

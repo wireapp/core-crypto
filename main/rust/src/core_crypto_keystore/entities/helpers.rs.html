@@ -1,6 +1,6 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `keystore/src/entities/helpers.rs`."><title>helpers.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1ed95124.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core_crypto_keystore" data-themes="" data-resource-suffix="" data-rustdoc-version="1.98.0 (88d9e12ae 2026-08-18)" data-channel="1.98.0" data-search-js="search-9944d736.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core_crypto_keystore/entities/</div>helpers.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>rusqlite::{Connection, OptionalExtension, Params, Row, ToSql, Transaction};
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `keystore/src/entities/helpers.rs`."><title>helpers.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../static.files/rustdoc-1ed95124.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="core_crypto_keystore" data-themes="" data-resource-suffix="" data-rustdoc-version="1.98.0 (88d9e12ae 2026-08-18)" data-channel="1.98.0" data-search-js="search-9944d736.js" data-stringdex-js="stringdex-2da4960a.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../static.files/src-script-813739b1.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-f7c3ffd8.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core_crypto_keystore/entities/</div>helpers.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>rusqlite::{Connection, OptionalExtension, Params, Row, ToSql};
 <a href=#2 id=2 data-nosnippet>2</a>
-<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use crate</span>::{CryptoKeystoreResult, traits::Entity};
+<a href=#3 id=3 data-nosnippet>3</a><span class="kw">use crate</span>::{CryptoKeystoreResult, Transactionlike, traits::Entity};
 <a href=#4 id=4 data-nosnippet>4</a>
 <a href=#5 id=5 data-nosnippet>5</a><span class="doccomment">/// Helper to perform an SQL query to get an entity by its primary key
 <a href=#6 id=6 data-nosnippet>6</a>///
@@ -111,53 +111,60 @@
 <a href=#111 id=111 data-nosnippet>111</a>/// You need to provide the primary key's column name and the actual primary key.
 <a href=#112 id=112 data-nosnippet>112</a>///
 <a href=#113 id=113 data-nosnippet>113</a>/// Returns `true` if at least one entity was deleted, or `false` if the id was not found in the database.
-<a href=#114 id=114 data-nosnippet>114</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>delete_helper&lt;E: Entity&gt;(
-<a href=#115 id=115 data-nosnippet>115</a>    tx: <span class="kw-2">&amp;</span>Transaction&lt;<span class="lifetime">'_</span>&gt;,
+<a href=#114 id=114 data-nosnippet>114</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>delete_helper&lt;<span class="lifetime">'a</span>, E, Tx&gt;(
+<a href=#115 id=115 data-nosnippet>115</a>    tx: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tx,
 <a href=#116 id=116 data-nosnippet>116</a>    primary_key_column_name: <span class="kw-2">&amp;</span>str,
 <a href=#117 id=117 data-nosnippet>117</a>    primary_key: <span class="kw">impl </span>ToSql,
-<a href=#118 id=118 data-nosnippet>118</a>) -&gt; CryptoKeystoreResult&lt;bool&gt; {
-<a href=#119 id=119 data-nosnippet>119</a>    <span class="kw">let </span><span class="kw-2">mut </span>statement = tx.prepare_cached(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
-<a href=#120 id=120 data-nosnippet>120</a>        <span class="string">"DELETE FROM {table_name} WHERE {primary_key_column_name} = ?"</span>,
-<a href=#121 id=121 data-nosnippet>121</a>        table_name = E::TABLE_NAME,
-<a href=#122 id=122 data-nosnippet>122</a>    ))<span class="question-mark">?</span>;
-<a href=#123 id=123 data-nosnippet>123</a>    <span class="kw">let </span>updated = statement.execute([primary_key])<span class="question-mark">?</span>;
-<a href=#124 id=124 data-nosnippet>124</a>    <span class="prelude-val">Ok</span>(updated &gt; <span class="number">0</span>)
-<a href=#125 id=125 data-nosnippet>125</a>}
-<a href=#126 id=126 data-nosnippet>126</a>
-<a href=#127 id=127 data-nosnippet>127</a><span class="doccomment">/// Helper to delete an entity by its primary key.
-<a href=#128 id=128 data-nosnippet>128</a>///
-<a href=#129 id=129 data-nosnippet>129</a>/// This function prepares and caches a statement of the form `DELETE FROM table_name WHERE key_part_1 = ? AND
-<a href=#130 id=130 data-nosnippet>130</a>/// key_part_2 = ?`. The primary-key column names and corresponding parameter values must be provided in the same order.
-<a href=#131 id=131 data-nosnippet>131</a>/// Both simple and composite primary keys are supported.
-<a href=#132 id=132 data-nosnippet>132</a>///
-<a href=#133 id=133 data-nosnippet>133</a>/// Returns the number of rows affected
-<a href=#134 id=134 data-nosnippet>134</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>delete_helper_composite_key&lt;E&gt;(
-<a href=#135 id=135 data-nosnippet>135</a>    conn: <span class="kw-2">&amp;</span>Connection,
-<a href=#136 id=136 data-nosnippet>136</a>    primary_key_column_names: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>str],
-<a href=#137 id=137 data-nosnippet>137</a>    primary_key: <span class="kw">impl </span>Params,
-<a href=#138 id=138 data-nosnippet>138</a>) -&gt; CryptoKeystoreResult&lt;u32&gt;
-<a href=#139 id=139 data-nosnippet>139</a><span class="kw">where
-<a href=#140 id=140 data-nosnippet>140</a>    </span>E: Entity,
-<a href=#141 id=141 data-nosnippet>141</a>{
-<a href=#142 id=142 data-nosnippet>142</a>    <span class="macro">debug_assert!</span>(
-<a href=#143 id=143 data-nosnippet>143</a>        !primary_key_column_names.is_empty(),
-<a href=#144 id=144 data-nosnippet>144</a>        <span class="string">"a primary key must contain at least one column"
-<a href=#145 id=145 data-nosnippet>145</a>    </span>);
-<a href=#146 id=146 data-nosnippet>146</a>
-<a href=#147 id=147 data-nosnippet>147</a>    <span class="kw">let </span>predicates = primary_key_column_names
-<a href=#148 id=148 data-nosnippet>148</a>        .iter()
-<a href=#149 id=149 data-nosnippet>149</a>        .map(|column| <span class="macro">format!</span>(<span class="string">"{column} = ?"</span>))
-<a href=#150 id=150 data-nosnippet>150</a>        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
-<a href=#151 id=151 data-nosnippet>151</a>        .join(<span class="string">" AND "</span>);
+<a href=#118 id=118 data-nosnippet>118</a>) -&gt; CryptoKeystoreResult&lt;bool&gt;
+<a href=#119 id=119 data-nosnippet>119</a><span class="kw">where
+<a href=#120 id=120 data-nosnippet>120</a>    </span>E: Entity,
+<a href=#121 id=121 data-nosnippet>121</a>    <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tx: Into&lt;Transactionlike&lt;<span class="lifetime">'a</span>&gt;&gt;,
+<a href=#122 id=122 data-nosnippet>122</a>{
+<a href=#123 id=123 data-nosnippet>123</a>    <span class="kw">let </span>conn = tx.into().conn()<span class="question-mark">?</span>;
+<a href=#124 id=124 data-nosnippet>124</a>    <span class="kw">let </span><span class="kw-2">mut </span>statement = conn.prepare_cached(<span class="kw-2">&amp;</span><span class="macro">format!</span>(
+<a href=#125 id=125 data-nosnippet>125</a>        <span class="string">"DELETE FROM {table_name} WHERE {primary_key_column_name} = ?"</span>,
+<a href=#126 id=126 data-nosnippet>126</a>        table_name = E::TABLE_NAME,
+<a href=#127 id=127 data-nosnippet>127</a>    ))<span class="question-mark">?</span>;
+<a href=#128 id=128 data-nosnippet>128</a>    <span class="kw">let </span>updated = statement.execute([primary_key])<span class="question-mark">?</span>;
+<a href=#129 id=129 data-nosnippet>129</a>    <span class="prelude-val">Ok</span>(updated &gt; <span class="number">0</span>)
+<a href=#130 id=130 data-nosnippet>130</a>}
+<a href=#131 id=131 data-nosnippet>131</a>
+<a href=#132 id=132 data-nosnippet>132</a><span class="doccomment">/// Helper to delete an entity by its primary key.
+<a href=#133 id=133 data-nosnippet>133</a>///
+<a href=#134 id=134 data-nosnippet>134</a>/// This function prepares and caches a statement of the form `DELETE FROM table_name WHERE key_part_1 = ? AND
+<a href=#135 id=135 data-nosnippet>135</a>/// key_part_2 = ?`. The primary-key column names and corresponding parameter values must be provided in the same order.
+<a href=#136 id=136 data-nosnippet>136</a>/// Both simple and composite primary keys are supported.
+<a href=#137 id=137 data-nosnippet>137</a>///
+<a href=#138 id=138 data-nosnippet>138</a>/// Returns the number of rows affected
+<a href=#139 id=139 data-nosnippet>139</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>delete_helper_composite_key&lt;<span class="lifetime">'a</span>, E, Tx&gt;(
+<a href=#140 id=140 data-nosnippet>140</a>    tx: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tx,
+<a href=#141 id=141 data-nosnippet>141</a>    primary_key_column_names: <span class="kw-2">&amp;</span>[<span class="kw-2">&amp;</span>str],
+<a href=#142 id=142 data-nosnippet>142</a>    primary_key: <span class="kw">impl </span>Params,
+<a href=#143 id=143 data-nosnippet>143</a>) -&gt; CryptoKeystoreResult&lt;u32&gt;
+<a href=#144 id=144 data-nosnippet>144</a><span class="kw">where
+<a href=#145 id=145 data-nosnippet>145</a>    </span>E: Entity,
+<a href=#146 id=146 data-nosnippet>146</a>    <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tx: Into&lt;Transactionlike&lt;<span class="lifetime">'a</span>&gt;&gt;,
+<a href=#147 id=147 data-nosnippet>147</a>{
+<a href=#148 id=148 data-nosnippet>148</a>    <span class="macro">debug_assert!</span>(
+<a href=#149 id=149 data-nosnippet>149</a>        !primary_key_column_names.is_empty(),
+<a href=#150 id=150 data-nosnippet>150</a>        <span class="string">"a primary key must contain at least one column"
+<a href=#151 id=151 data-nosnippet>151</a>    </span>);
 <a href=#152 id=152 data-nosnippet>152</a>
-<a href=#153 id=153 data-nosnippet>153</a>    <span class="kw">let </span>sql = <span class="macro">format!</span>(
-<a href=#154 id=154 data-nosnippet>154</a>        <span class="string">"DELETE FROM {table_name} WHERE {predicates}"</span>,
-<a href=#155 id=155 data-nosnippet>155</a>        table_name = E::TABLE_NAME,
-<a href=#156 id=156 data-nosnippet>156</a>    );
-<a href=#157 id=157 data-nosnippet>157</a>
-<a href=#158 id=158 data-nosnippet>158</a>    conn.prepare_cached(<span class="kw-2">&amp;</span>sql)<span class="question-mark">?
-<a href=#159 id=159 data-nosnippet>159</a>        </span>.execute(primary_key)
-<a href=#160 id=160 data-nosnippet>160</a>        .map(|count| count.try_into().unwrap_or(u32::MAX))
-<a href=#161 id=161 data-nosnippet>161</a>        .map_err(Into::into)
-<a href=#162 id=162 data-nosnippet>162</a>}
+<a href=#153 id=153 data-nosnippet>153</a>    <span class="kw">let </span>predicates = primary_key_column_names
+<a href=#154 id=154 data-nosnippet>154</a>        .iter()
+<a href=#155 id=155 data-nosnippet>155</a>        .map(|column| <span class="macro">format!</span>(<span class="string">"{column} = ?"</span>))
+<a href=#156 id=156 data-nosnippet>156</a>        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;()
+<a href=#157 id=157 data-nosnippet>157</a>        .join(<span class="string">" AND "</span>);
+<a href=#158 id=158 data-nosnippet>158</a>
+<a href=#159 id=159 data-nosnippet>159</a>    <span class="kw">let </span>sql = <span class="macro">format!</span>(
+<a href=#160 id=160 data-nosnippet>160</a>        <span class="string">"DELETE FROM {table_name} WHERE {predicates}"</span>,
+<a href=#161 id=161 data-nosnippet>161</a>        table_name = E::TABLE_NAME,
+<a href=#162 id=162 data-nosnippet>162</a>    );
+<a href=#163 id=163 data-nosnippet>163</a>
+<a href=#164 id=164 data-nosnippet>164</a>    <span class="kw">let </span>conn = tx.into().conn()<span class="question-mark">?</span>;
+<a href=#165 id=165 data-nosnippet>165</a>    conn.prepare_cached(<span class="kw-2">&amp;</span>sql)<span class="question-mark">?
+<a href=#166 id=166 data-nosnippet>166</a>        </span>.execute(primary_key)
+<a href=#167 id=167 data-nosnippet>167</a>        .map(|count| count.try_into().unwrap_or(u32::MAX))
+<a href=#168 id=168 data-nosnippet>168</a>        .map_err(Into::into)
+<a href=#169 id=169 data-nosnippet>169</a>}
 </code></pre></div></section></main></body></html>
