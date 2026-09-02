@@ -9,8 +9,7 @@ use crate::{
         connection::Database,
         traits::{Entity as _, EntityDatabaseMutation as _},
     },
-    entities::StoredCredential,
-    migrations::{LegacyPersistedMlsGroup, V6Credential, make_ciphersuite_for_signature_scheme},
+    migrations::{LegacyPersistedMlsGroup, StoredCredentialV36, V6Credential, make_ciphersuite_for_signature_scheme},
 };
 
 /// Open IDB once with the new builder and close it, this will apply the update.
@@ -24,7 +23,7 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
     Database::migration_transaction(db_during_migration, async |tx| {
         for v6_credential in v6_credentials {
             if let Some(ciphersuite) = ciphersuite_for_signature_scheme(v6_credential.signature_scheme) {
-                let new_credential = StoredCredential {
+                let new_credential = StoredCredentialV36 {
                     ciphersuite,
                     session_id: v6_credential.session_id.clone(),
                     credential: v6_credential.credential.clone(),
