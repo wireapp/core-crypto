@@ -4,10 +4,8 @@ mod transient;
 
 use core_crypto_keystore::{
     Transaction,
-    entities::{
-        ConversationId as KeystoreConversationId, MessageRxCounterPkRef, TargetedMessageRxCounter,
-        TransientMessageRxCounter,
-    },
+    ancillary::{ConversationId as KeystoreConversationId, MessageRxCounterPkRef},
+    entities::{TargetedMessageRxCounter, TransientMessageRxCounter},
     traits::{EntityDatabaseMutation as _, FetchFromDatabase},
 };
 use openmls::prelude::{
