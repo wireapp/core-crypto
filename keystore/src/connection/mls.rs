@@ -1,6 +1,6 @@
 use openmls_traits::key_store::MlsEntity;
 
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, Database, Transaction};
+use crate::{CryptoKeystoreError, CryptoKeystoreResult, Database, Transaction, transaction::read_mls_entity};
 
 /// convenience methods to modify the in-flight transaction
 impl Database {
@@ -49,7 +49,8 @@ impl openmls_traits::key_store::OpenMlsKeyStore for Database {
     where
         Self: Sized,
     {
-        self.with_transaction(async |tx| tx.read(id).await).await.ok().flatten()
+        let conn = self.conn().await;
+        read_mls_entity(&conn, id)
     }
 
     async fn delete<V: MlsEntity>(&self, id: &[u8]) -> Result<(), Self::Error> {
