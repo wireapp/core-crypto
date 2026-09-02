@@ -1,6 +1,5 @@
 //! This module contains transactional conversation operations that are related to processing welcome messages.
 
-use const_format::formatcp;
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 
 use super::{Error, Result, TransactionContext};
@@ -32,56 +31,19 @@ impl TransactionContext {
             ..Default::default()
         };
 
-        // processing a welcome message deletes some data at the openmls level; we can't avoid it by simply
-        // ordering things better. But what we can do is undelete it with a sql savepoint:
-        // <https://sqlite.org/lang_savepoint.html>.
-        //
-        // we can use a const savepoint because we always either rollback or release the savepoint before exiting this
-        // function (unless something goes wrong with accessing the database)
-        const SAVEPOINT_NAME: &str = "process_welcome_message_savepoint";
+        let inner = self.inner().await?;
+        let conversation = inner
+            .transaction()
+            .with_savepoint(
+                "process_welcome_message_savepoint",
+                async || {
+                    self.persist_conversation_from_welcome_message(welcome, configuration)
+                        .await
+                },
+                |context| Box::new(move |err| KeystoreError::wrap(context)(err).into()),
+            )
+            .await?;
 
-        // we don't want to keep any of these guards around while openmls needs access to the db
-        {
-            let inner = self.inner().await?;
-            let tx = inner.transaction();
-            let conn = tx
-                .conn()
-                .map_err(KeystoreError::wrap("getting raw sql connection to create savepoint"))?;
-            let mut stmt = conn
-                .prepare_cached(formatcp!("SAVEPOINT {SAVEPOINT_NAME}"))
-                .map_err(KeystoreError::wrap("creating savepoint creation stmt"))?;
-            stmt.execute([]).map_err(KeystoreError::wrap("creating savepoint"))?;
-        }
-
-        let conversation_result = self
-            .persist_conversation_from_welcome_message(welcome, configuration)
-            .await;
-
-        // now we pick up the guards again and either release or rollback our savepoint
-        // a consequence of all this is that we can't avoid having keystore problems mask
-        // a failed conversation persistence result.
-        {
-            let inner = self.inner().await?;
-            let tx = inner.transaction();
-            let conn = tx
-                .conn()
-                .map_err(KeystoreError::wrap("getting raw sql connection finalize savepoint"))?;
-
-            if conversation_result.is_ok() {
-                let mut stmt = conn
-                    .prepare_cached(formatcp!("RELEASE SAVEPOINT {SAVEPOINT_NAME}"))
-                    .map_err(KeystoreError::wrap("creating savepoint release stmt"))?;
-                stmt.execute([]).map_err(KeystoreError::wrap("releasing savepoint"))?;
-            } else {
-                let mut stmt = conn
-                    .prepare_cached(formatcp!("ROLLBACK TO SAVEPOINT {SAVEPOINT_NAME}"))
-                    .map_err(KeystoreError::wrap("creating savepoint rollback stmt"))?;
-                stmt.execute([])
-                    .map_err(KeystoreError::wrap("rolling back savepoint"))?;
-            }
-        }
-
-        let conversation = conversation_result?;
         let id = conversation.id().to_owned();
 
         Ok(id)
