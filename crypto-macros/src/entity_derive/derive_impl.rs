@@ -116,11 +116,11 @@ impl Entity {
                 }
 
                 fn count(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<u32> {
-                    crate::entities::helpers::count_helper::<Self>(conn)
+                    crate::ancillary::helpers::count_helper::<Self>(conn)
                 }
 
                 fn load_all(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<Vec<Self>> {
-                    crate::entities::helpers::load_all_helper::<Self, _>(conn, |row| {
+                    crate::ancillary::helpers::load_all_helper::<Self, _>(conn, |row| {
                         Ok(Self {
                             #( #field_assignments, )*
                         })
@@ -158,7 +158,7 @@ impl Entity {
                     // Converting the key here is what once made a string key bind as a `BLOB`,
                     // which silently matched zero rows, since SQLite never compares a `BLOB` equal
                     // to a `TEXT` value and column affinity does not coerce a `BLOB` argument.
-                    crate::entities::helpers::get_helper::<Self, _>(conn, #pk_column_name, key, |row| {
+                    crate::ancillary::helpers::get_helper::<Self, _>(conn, #pk_column_name, key, |row| {
                         Ok(Self {
                             #( #field_assignments, )*
                         })
@@ -214,7 +214,7 @@ impl Entity {
                     &'a Tx: Into<crate::Transactionlike<'a>>
                 {
                     // Bind the borrowed key directly, for the same reason as in `get_borrowed`.
-                    crate::entities::helpers::delete_helper::<Self, _>(tx, #id_column_name, id)
+                    crate::ancillary::helpers::delete_helper::<Self, _>(tx, #id_column_name, id)
                 }
             }
         }
