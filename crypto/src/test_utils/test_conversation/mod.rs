@@ -334,7 +334,7 @@ impl<'a> TestConversation<'a> {
         new_display_name: &str,
         credential_ref: &CredentialRef,
     ) {
-        let new_handle = format!("wireapp://%40{new_handle}@world.com");
+        let new_handle = format!("wireapp://%40{new_handle}@wire.com");
         // verify the identity in..
         // the MLS group
         let cid = self.actor().get_client_id().await;
