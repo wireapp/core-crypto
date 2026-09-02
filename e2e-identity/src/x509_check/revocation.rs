@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use std::time::Duration;
+
 use certval::{
     CertSource, CertVector, CertificationPath, CertificationPathResults, CertificationPathSettings, DeferDecodeSigned,
     EXTS_OF_INTEREST, ExtensionProcessing, PDVTrustAnchorChoice, TaSource, TimeOfInterest, check_revocation,
@@ -297,6 +299,7 @@ impl PkiEnvironment {
 
             if perform_revocation_check {
                 cps.set_check_crls(true);
+                cps.set_revocation_max_age(Duration::from_hours(24));
                 let mut cpr = CertificationPathResults::new();
                 let _ = check_revocation(&self.pe, &cps, &mut path, &mut cpr);
                 let r = check_cpr(cpr);
