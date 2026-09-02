@@ -5,6 +5,7 @@ use wasm_bindgen::JsValue;
 
 use crate::{
     CryptoKeystoreResult,
+    ancillary::ConversationId,
     connection::idb_migration::legacy::{
         connection::{KeystoreDatabaseConnection, TransactionWrapper},
         traits::{
@@ -13,7 +14,7 @@ use crate::{
             EntityDatabaseMutation, SearchableEntity,
         },
     },
-    entities::{ConversationId, MlsPendingMessage},
+    entities::MlsPendingMessage,
 };
 
 impl EntityBase for MlsPendingMessage {

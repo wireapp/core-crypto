@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use crate::{
     Sha256Hash,
-    entities::{ConversationId, ConversationIdRef},
+    ancillary::{ConversationId, ConversationIdRef},
 };
 
 /// A Key Type is a type which can act as a key for a database.
