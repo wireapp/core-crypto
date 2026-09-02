@@ -220,7 +220,7 @@ impl CertificateBundle {
         // here in our tests client_id is generally just "alice" or "bob"
         // so we will use it to augment handle & display_name
         // and not a real client_id, instead we'll generate a random one
-        let domain = "world.com";
+        let domain = "wire.com";
         let (client_id, domain) = client_id
             .cloned()
             .map(|cid| (cid, domain.to_string()))
@@ -247,7 +247,7 @@ impl CertificateBundle {
         signer: &crate::test_utils::x509::X509Certificate,
         expiration: Option<std::time::Duration>,
     ) -> Self {
-        Self::new_with_expiration("alice_wire@world.com", "Alice Smith", None, None, signer, expiration)
+        Self::new_with_expiration("alice_wire@wire.com", "Alice Smith", None, None, signer, expiration)
     }
 
     pub fn from_self_signed_certificate(cert: &X509Certificate) -> Self {

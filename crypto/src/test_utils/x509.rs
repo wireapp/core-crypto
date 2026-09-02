@@ -30,11 +30,11 @@ pub struct CertificateParams {
 impl Default for CertificateParams {
     fn default() -> Self {
         Self {
-            org: "world.com".into(),
+            org: "Wire.com".into(),
             common_name: Some("World Domination".into()),
             handle: None,
             client_id: None,
-            domain: Some("world.com".into()),
+            domain: Some("wire.com".into()),
             cert_keypair: None,
             validity_start: None,
             expiration: std::time::Duration::from_secs(86400),
@@ -286,7 +286,7 @@ impl X509TestChain {
         let handle = format!("{}_wire", name.to_lowercase());
         let user_id = uuid::Uuid::new_v4();
         let device_id = rand::random::<u64>();
-        let client_id = ClientId::new(user_id, device_id, "world.com");
+        let client_id = ClientId::new(user_id, device_id, "wire.com");
         let mut cert_params = CertificateParams {
             common_name: Some(common_name.clone()),
             handle: Some(handle.clone()),
