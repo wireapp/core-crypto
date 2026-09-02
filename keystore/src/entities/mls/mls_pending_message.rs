@@ -2,7 +2,7 @@ use zeroize::Zeroize;
 
 use crate::{
     Sha256Hash, Transactionlike,
-    entities::{
+    ancillary::{
         ConversationId, ConversationIdRef,
         helpers::{count_helper, delete_helper, get_helper, load_all_helper},
     },

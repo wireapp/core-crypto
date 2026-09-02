@@ -41,7 +41,7 @@ impl crate::traits::Entity for StoredPskBundle {
 
     fn get(conn: &rusqlite::Connection, key: &Vec<u8>) -> crate::CryptoKeystoreResult<Option<Self>> {
         let hash = crate::Sha256Hash::hash_from(key);
-        crate::entities::helpers::get_helper(conn, "id_sha256", hash, |row| {
+        crate::ancillary::helpers::get_helper(conn, "id_sha256", hash, |row| {
             Ok(Self {
                 psk_id: row.get("psk_id")?,
                 psk: row.get("psk")?,
@@ -50,11 +50,11 @@ impl crate::traits::Entity for StoredPskBundle {
     }
 
     fn count(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<u32> {
-        crate::entities::helpers::count_helper::<Self>(conn)
+        crate::ancillary::helpers::count_helper::<Self>(conn)
     }
 
     fn load_all(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<Vec<Self>> {
-        crate::entities::helpers::load_all_helper(conn, |row| {
+        crate::ancillary::helpers::load_all_helper(conn, |row| {
             Ok(Self {
                 psk_id: row.get("psk_id")?,
                 psk: row.get("psk")?,
@@ -66,7 +66,7 @@ impl crate::traits::Entity for StoredPskBundle {
 impl crate::traits::EntityGetBorrowed for StoredPskBundle {
     fn get_borrowed(conn: &rusqlite::Connection, key: &[u8]) -> crate::CryptoKeystoreResult<Option<Self>> {
         let hash = crate::Sha256Hash::hash_from(key);
-        crate::entities::helpers::get_helper(conn, "id_sha256", hash, |row| {
+        crate::ancillary::helpers::get_helper(conn, "id_sha256", hash, |row| {
             Ok(Self {
                 psk_id: row.get("psk_id")?,
                 psk: row.get("psk")?,
@@ -94,7 +94,7 @@ impl crate::traits::EntityDatabaseMutation for StoredPskBundle {
         &'a Tx: Into<Transactionlike<'a>>,
     {
         let hash = crate::Sha256Hash::hash_from(id);
-        crate::entities::helpers::delete_helper::<Self, _>(tx, "id_sha256", hash)
+        crate::ancillary::helpers::delete_helper::<Self, _>(tx, "id_sha256", hash)
     }
 }
 
@@ -104,6 +104,6 @@ impl crate::traits::EntityDeleteBorrowed for StoredPskBundle {
         &'a Tx: Into<Transactionlike<'a>>,
     {
         let hash = crate::Sha256Hash::hash_from(id);
-        crate::entities::helpers::delete_helper::<Self, _>(tx, "id_sha256", hash)
+        crate::ancillary::helpers::delete_helper::<Self, _>(tx, "id_sha256", hash)
     }
 }

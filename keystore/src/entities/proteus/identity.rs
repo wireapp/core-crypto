@@ -50,11 +50,11 @@ impl crate::traits::Entity for ProteusIdentity {
     }
 
     fn count(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<u32> {
-        crate::entities::helpers::count_helper::<Self>(conn)
+        crate::ancillary::helpers::count_helper::<Self>(conn)
     }
 
     fn load_all(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<Vec<Self>> {
-        crate::entities::helpers::load_all_helper(conn, |row| {
+        crate::ancillary::helpers::load_all_helper(conn, |row| {
             Ok(Self {
                 sk: row.get("sk")?,
                 pk: row.get("pk")?,

@@ -3,7 +3,7 @@ use zeroize::Zeroize;
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Transactionlike,
-    entities::helpers::{count_helper, delete_helper, get_helper, load_all_helper},
+    ancillary::helpers::{count_helper, delete_helper, get_helper, load_all_helper},
     traits::{Entity, EntityDatabaseMutation, PrimaryKey},
 };
 

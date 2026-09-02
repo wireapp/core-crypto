@@ -2,7 +2,7 @@ use rusqlite::{Connection, OptionalExtension as _, ToSql, params};
 
 use crate::{
     CryptoKeystoreResult, Transaction, Transactionlike,
-    entities::helpers::{count_helper, delete_helper, load_all_helper},
+    ancillary::helpers::{count_helper, delete_helper, load_all_helper},
     traits::{Entity, PrimaryKey, entity_database_mutation::EntityDatabaseMutation},
 };
 

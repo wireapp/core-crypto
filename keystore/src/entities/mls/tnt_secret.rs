@@ -3,7 +3,7 @@ use zeroize::Zeroize;
 
 use crate::{
     CryptoKeystoreResult, Transactionlike,
-    entities::{
+    ancillary::{
         ConversationEpochsOlderThan, ConversationId, ConversationIdRef,
         helpers::{count_helper, get_helper_composite_key, load_all_helper},
     },

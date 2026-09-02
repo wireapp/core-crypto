@@ -2,7 +2,7 @@ use const_format::formatcp;
 
 use crate::{
     CryptoKeystoreResult, Transactionlike,
-    entities::{
+    ancillary::{
         ConversationEpochsOlderThan, ConversationId, MessageRxCounterPk, MessageRxCounterPkRef,
         helpers::{count_helper, get_helper_composite_key, load_all_helper},
     },

@@ -2,7 +2,7 @@ use zeroize::Zeroize;
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Sha256Hash, Transactionlike,
-    entities::helpers::delete_helper_composite_key,
+    ancillary::helpers,
     traits::{Entity, PrimaryKey},
 };
 
@@ -114,7 +114,7 @@ impl crate::traits::Entity for StoredCredential {
     }
 
     fn count(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<u32> {
-        crate::entities::helpers::count_helper::<Self>(conn)
+        crate::ancillary::helpers::count_helper::<Self>(conn)
     }
 
     fn load_all(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<Vec<Self>> {
@@ -161,7 +161,7 @@ impl crate::traits::EntityDatabaseMutation for StoredCredential {
     where
         &'a Tx: Into<Transactionlike<'a>>,
     {
-        delete_helper_composite_key::<Self, _>(
+        helpers::delete_helper_composite_key::<Self, _>(
             tx,
             &Self::PRIMARY_KEY_COLUMN_NAMES,
             rusqlite::params![id.public_key_hash, id.credential_type],
