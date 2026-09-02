@@ -21,10 +21,10 @@ use crate::{
         migrations::MigrationTarget,
     },
     entities::{
-        ConsumerData, MlsPendingMessage, PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential,
-        StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle,
+        ConsumerData, MlsPendingMessage, PersistedMlsPendingGroup, StoredBufferedCommit, StoredEncryptionKeyPair,
+        StoredHpkePrivateKey, StoredPskBundle,
     },
-    migrations::{LegacyPersistedMlsGroup, V33StoredEpochEncryptionKeypair},
+    migrations::{LegacyPersistedMlsGroup, StoredCredentialV36, V33StoredEpochEncryptionKeypair},
     traits::EntityDatabaseMutation as _,
 };
 
@@ -146,7 +146,7 @@ pub(super) async fn maybe_migrate(
         LegacyPersistedMlsGroup,
         PersistedMlsPendingGroup,
         StoredBufferedCommit,
-        StoredCredential,
+        StoredCredentialV36,
         StoredEncryptionKeyPair,
         V33StoredEpochEncryptionKeypair,
         StoredHpkePrivateKey,

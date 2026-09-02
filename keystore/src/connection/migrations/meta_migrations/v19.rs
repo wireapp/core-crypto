@@ -2,8 +2,9 @@ use const_format::formatcp;
 
 use crate::{
     CryptoKeystoreResult,
-    entities::StoredCredential,
-    migrations::{LegacyPersistedMlsGroup, detect_duplicate_credentials, make_least_used_ciphersuite},
+    migrations::{
+        LegacyPersistedMlsGroup, StoredCredentialV36, detect_duplicate_credentials, make_least_used_ciphersuite,
+    },
     traits::Entity as _,
 };
 
@@ -29,12 +30,12 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
 
     let mut credential_stmt = tx.prepare(formatcp!(
         "SELECT ciphersuite, public_key FROM {table}",
-        table = StoredCredential::TABLE_NAME,
+        table = StoredCredentialV36::TABLE_NAME,
     ))?;
 
     let credentials = credential_stmt
         .query_map([], |row| {
-            Ok(StoredCredential {
+            Ok(StoredCredentialV36 {
                 ciphersuite: row.get("ciphersuite")?,
                 public_key: row.get("public_key")?,
                 session_id: Vec::new(),  // not relevant for this application
