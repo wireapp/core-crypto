@@ -1,8 +1,7 @@
 use core_crypto_keystore::{
     Transaction,
-    entities::{
-        ConversationEpochsOlderThan, TargetedMessageRxCounter, TntSecret, TntSecretPkRef, TransientMessageRxCounter,
-    },
+    ancillary::ConversationEpochsOlderThan,
+    entities::{TargetedMessageRxCounter, TntSecret, TntSecretPkRef, TransientMessageRxCounter},
     traits::{DeletableBySearchKey as _, EntityDatabaseMutation as _, FetchFromDatabase as _},
 };
 use openmls::group::InnerState;

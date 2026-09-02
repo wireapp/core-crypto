@@ -63,7 +63,7 @@ impl ConversationIdRef {
         unsafe { &*(bytes.as_ref() as *const [u8] as *const ConversationIdRef) }
     }
 
-    pub(crate) fn keystore(&self) -> &core_crypto_keystore::entities::ConversationIdRef {
+    pub(crate) fn keystore(&self) -> &core_crypto_keystore::ancillary::ConversationIdRef {
         self.into()
     }
 }
@@ -94,15 +94,15 @@ impl<'a> From<&'a ConversationIdRef> for Cow<'a, [u8]> {
     }
 }
 
-impl<'a> From<&'a ConversationIdRef> for &'a core_crypto_keystore::entities::ConversationIdRef {
+impl<'a> From<&'a ConversationIdRef> for &'a core_crypto_keystore::ancillary::ConversationIdRef {
     fn from(value: &'a ConversationIdRef) -> Self {
-        core_crypto_keystore::entities::ConversationIdRef::new(value.as_ref())
+        core_crypto_keystore::ancillary::ConversationIdRef::new(value.as_ref())
     }
 }
 
-impl From<&ConversationIdRef> for core_crypto_keystore::entities::ConversationId {
+impl From<&ConversationIdRef> for core_crypto_keystore::ancillary::ConversationId {
     fn from(value: &ConversationIdRef) -> Self {
-        core_crypto_keystore::entities::ConversationId::from(value.as_ref())
+        core_crypto_keystore::ancillary::ConversationId::from(value.as_ref())
     }
 }
 
