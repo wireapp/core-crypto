@@ -21,7 +21,7 @@ use openmls_traits::{
 };
 // TODO: remove this allow(unused) once the E2EI parts have been coupled.
 #[allow(unused)]
-pub use wire_e2e_identity::pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
+pub use wire_e2e_identity::pki::{CertificateGenerationArgs, PkiKeypair};
 use wire_e2e_identity::pki_env::PkiEnvironment;
 
 /// 32-byte raw entropy seed
