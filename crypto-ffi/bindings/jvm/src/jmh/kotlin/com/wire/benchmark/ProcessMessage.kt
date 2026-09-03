@@ -24,7 +24,7 @@ open class ProcessMessage {
         "5",
         "7"
     )
-    var cipherSuite: UShort = 1u
+    var cipherSuite: Int = 1
 
     @Param("1", "10", "100")
     var messageCount: Int = 0
@@ -39,7 +39,7 @@ open class ProcessMessage {
 
     @Setup(Level.Invocation)
     fun setup() = runBlocking {
-        val cipherSuite = CipherSuite.entries.first { it.value == cipherSuite }
+        val cipherSuite = CipherSuite.entries.first { it.value.toInt() == cipherSuite }
         val options = CcInitOptions.Mode.WithBasicCredential(cipherSuite)
         val aliceCc = ccInit(CcInitOptions(options))
         conversationId = createConversation(aliceCc)

@@ -23,7 +23,7 @@ open class CreateMessage {
         "5",
         "7"
     )
-    var cipherSuite: UShort = 1u
+    var cipherSuite: Int = 1
 
     @Param("1", "10", "100")
     var messageCount: Int = 0
@@ -37,7 +37,7 @@ open class CreateMessage {
 
     @Setup(Level.Iteration)
     fun setup() = runBlocking {
-        val cipherSuite = CipherSuite.entries.first { it.value == cipherSuite }
+        val cipherSuite = CipherSuite.entries.first { it.value.toInt() == cipherSuite }
         cc = ccInit(CcInitOptions(CcInitOptions.Mode.WithBasicCredential(cipherSuite)))
         conversationId = createConversation(cc)
         messages = List(messageCount) {

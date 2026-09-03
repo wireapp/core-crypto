@@ -21,7 +21,7 @@ open class JoinGroup {
         "5",
         "7"
     )
-    var cipherSuite: UShort = 1u
+    var cipherSuite: Int = 1
 
     @Param("1", "10", "100")
     var userCount: Int = 0
@@ -33,7 +33,7 @@ open class JoinGroup {
     @Setup(Level.Invocation)
     fun setup() {
         runBlocking {
-            val cipherSuite = CipherSuite.entries.first { it.value == cipherSuite }
+            val cipherSuite = CipherSuite.entries.first { it.value.toInt() == cipherSuite }
             val options = CcInitOptions(CcInitOptions.Mode.WithBasicCredential(cipherSuite))
             val aliceCc = ccInit(options)
             conversationId = createConversation(aliceCc)
