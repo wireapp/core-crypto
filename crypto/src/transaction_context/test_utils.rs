@@ -1,7 +1,7 @@
 use core_crypto_keystore::{
     entities::{
-        MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit, StoredCredential,
-        StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
+        MlsPendingMessage, PersistedMlsGroup, StoredBufferedCommit, StoredCredential, StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
     },
     traits::FetchFromDatabase as _,
 };
@@ -30,10 +30,13 @@ impl TransactionContext {
         let credential = inner.transaction.count::<StoredCredential>().await.unwrap();
         let encryption_keypair = inner.transaction.count::<StoredEncryptionKeyPair>().await.unwrap();
         let epoch_encryption_keypair = inner.transaction.count::<StoredEpochEncryptionKeypair>().await.unwrap();
-        let group = inner.transaction.count::<PersistedMlsGroup>().await.unwrap();
+        // `mls_groups` now holds both established and pending rows, distinguished by `is_pending`,
+        // so `group` and `pending_group` come from one `load_all` rather than two separate counts.
+        let all_groups = inner.transaction.load_all::<PersistedMlsGroup>().await.unwrap();
+        let group = all_groups.iter().filter(|group| !group.is_pending).count() as u32;
+        let pending_group = all_groups.iter().filter(|group| group.is_pending).count() as u32;
         let hpke_private_key = inner.transaction.count::<StoredHpkePrivateKey>().await.unwrap();
         let key_package = inner.transaction.count::<StoredKeyPackage>().await.unwrap();
-        let pending_group = inner.transaction.count::<PersistedMlsPendingGroup>().await.unwrap();
         let pending_messages = inner.transaction.count::<MlsPendingMessage>().await.unwrap();
         let psk_bundle = inner.transaction.count::<StoredPskBundle>().await.unwrap();
         EntitiesCount {
