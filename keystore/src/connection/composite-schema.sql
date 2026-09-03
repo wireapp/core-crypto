@@ -34,24 +34,6 @@ CREATE TABLE "mls_key_packages" (
 
 CREATE INDEX idx_mls_keypackages_keypackage_ref ON "mls_key_packages"(key_package_ref);
 
-CREATE TABLE "mls_groups" (id BLOB UNIQUE, state BLOB);
-
-CREATE INDEX idx_mls_groups_id ON mls_groups(id);
-
-CREATE TABLE "mls_buffered_commits" (
-  conversation_id BLOB UNIQUE,
-  commit_data BLOB
-);
-
-CREATE INDEX idx_mls_buffered_commits_conversation_id ON mls_buffered_commits(conversation_id);
-
-CREATE TABLE "mls_pending_groups" (
-  id BLOB PRIMARY KEY,
-  state BLOB,
-  cfg BLOB,
-  parent_id BLOB
-);
-
 CREATE TABLE x509_trust_anchor (
   fingerprint TEXT PRIMARY KEY,
   content BLOB NOT NULL
@@ -75,47 +57,12 @@ CREATE TABLE "mls_pending_messages" (
 
 CREATE INDEX idx_mls_pending_messages_conversation_id ON mls_pending_messages(conversation_id);
 
-CREATE TABLE tnt_secrets (
-  conversation_id BLOB NOT NULL,
-  epoch INTEGER NOT NULL,
-  hpke_private_key BLOB NOT NULL,
-  group_context BLOB NOT NULL,
-  targeted_message_psk BLOB NOT NULL,
-  PRIMARY KEY (conversation_id, epoch),
-  FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
-);
-
-CREATE TABLE targeted_message_rx_counters (
-  conversation_id BLOB NOT NULL,
-  sender INTEGER NOT NULL,
-  epoch INTEGER NOT NULL,
-  count INTEGER NOT NULL DEFAULT 0,
-  PRIMARY KEY (conversation_id, sender, epoch),
-  FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
-);
-
 CREATE TABLE epoch_encryption_keypairs (
   conversation_id BLOB NOT NULL,
   own_leaf_index INTEGER NOT NULL,
   epoch INTEGER NOT NULL,
   keypairs BLOB NOT NULL,
   PRIMARY KEY (conversation_id, own_leaf_index, epoch)
-);
-
-CREATE TABLE tnt_message_tx_counters (
-  conversation_id BLOB NOT NULL,
-  count INTEGER NOT NULL DEFAULT 0,
-  PRIMARY KEY (conversation_id),
-  FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
-);
-
-CREATE TABLE transient_message_rx_counters (
-  conversation_id BLOB NOT NULL,
-  sender INTEGER NOT NULL,
-  epoch INTEGER NOT NULL,
-  count INTEGER NOT NULL DEFAULT 0,
-  PRIMARY KEY (conversation_id, sender, epoch),
-  FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
 );
 
 CREATE TABLE "mls_credentials" (
@@ -128,4 +75,61 @@ CREATE TABLE "mls_credentials" (
   ciphersuite INTEGER NOT NULL,
   private_key BLOB NOT NULL,
   PRIMARY KEY (public_key_sha256, credential_type)
+);
+
+CREATE TABLE "mls_groups" (
+  id BLOB NOT NULL PRIMARY KEY,
+  -- we have to keep the whole state in a blob because openmls doesn't expose enough information
+  -- to fully persist a mls group in any other way than via this opaque blob
+  state BLOB,
+  -- but we can store several small fields for our own information and sort/search/filter capabilities
+  epoch INTEGER NOT NULL,
+  ciphersuite INTEGER NOT NULL,
+  credential_id BLOB NOT NULL,
+  credential_type INTEGER NOT NULL,
+  own_leaf_index INTEGER NOT NULL,
+  -- this field distinguishes between proper groups and pending groups
+  is_pending BOOLEAN NOT NULL DEFAULT 0,
+  FOREIGN KEY (credential_id, credential_type) REFERENCES mls_credentials (public_key_sha256, credential_type) ON DELETE RESTRICT
+);
+
+CREATE TABLE "tnt_secrets" (
+  conversation_id BLOB NOT NULL,
+  epoch INTEGER NOT NULL,
+  hpke_private_key BLOB NOT NULL,
+  group_context BLOB NOT NULL,
+  targeted_message_psk BLOB NOT NULL,
+  PRIMARY KEY (conversation_id, epoch),
+  FOREIGN KEY (conversation_id) REFERENCES "mls_groups"(id) ON DELETE CASCADE
+);
+
+CREATE TABLE "targeted_message_rx_counters" (
+  conversation_id BLOB NOT NULL,
+  sender INTEGER NOT NULL,
+  epoch INTEGER NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (conversation_id, sender, epoch),
+  FOREIGN KEY (conversation_id) REFERENCES "mls_groups"(id) ON DELETE CASCADE
+);
+
+CREATE TABLE "tnt_message_tx_counters" (
+  conversation_id BLOB NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (conversation_id),
+  FOREIGN KEY (conversation_id) REFERENCES "mls_groups"(id) ON DELETE CASCADE
+);
+
+CREATE TABLE "transient_message_rx_counters" (
+  conversation_id BLOB NOT NULL,
+  sender INTEGER NOT NULL,
+  epoch INTEGER NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (conversation_id, sender, epoch),
+  FOREIGN KEY (conversation_id) REFERENCES "mls_groups"(id) ON DELETE CASCADE
+);
+
+CREATE TABLE "mls_buffered_commits" (
+  conversation_id BLOB NOT NULL PRIMARY KEY,
+  commit_data BLOB,
+  FOREIGN KEY (conversation_id) REFERENCES "mls_groups"(id) ON DELETE CASCADE
 );
