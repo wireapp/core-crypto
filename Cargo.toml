@@ -90,8 +90,8 @@ certval = { git = "https://github.com/carl-wallace/rust-pki.git", rev = "b6f91a2
 
 const-oid = { version = "0.10", default-features = false, features = ["db"] }
 der = { version = "0.8", default-features = false, features = ["std"] }
-ecdsa = { version = "0.17", default-features = false }
-ed25519-dalek = { version = "3", features = ["alloc", "pkcs8"] }
+ecdsa = { version = "0.17", default-features = false, features = ["der"] }
+ed25519-dalek = { version = "3", features = ["alloc", "pkcs8", "pem"] }
 elliptic-curve = "0.14"
 flagset = { version = "0.4", default-features = false }
 getrandom = { version = "0.4", features = ["wasm_js"] }
