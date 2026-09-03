@@ -14,14 +14,23 @@ use crate::{
 };
 
 impl TransactionContext {
-    /// Issues an external commit and stores the group in a temporary table. This method is
-    /// intended for example when a new client wants to join the user's existing groups.
+    /// Issues an external commit and stores the group as a pending row. This method is intended
+    /// for example when a new client wants to join the user's existing groups, or as a recovery
+    /// mechanism to rejoin a conversation whose local state has desynchronized beyond repair.
     /// On success this function will return the group id and a message to be fanned out to other
     /// clients.
     ///
     /// If the Delivery Service accepts the external commit, you have to ensure the commit is
     /// merged in order to get back a functional MLS group. If it rejects it, you can retry by
     /// calling [Self::join_by_external_commit] again.
+    ///
+    /// **Rejoining an existing conversation overwrites it as soon as anything here reaches the
+    /// keystore.** A pending join shares its row with any established conversation of the same id,
+    /// rather than a separate one, so retrying after a failure (which does persist the attempt, to
+    /// make the retry possible) leaves the previous conversation's state unrecoverable even if this
+    /// call, or the retry, never succeeds. This is fine because the only reason to call this on a
+    /// conversation you already have is that its local state is already considered unusable — that
+    /// is what "rejoin" means here — so there is nothing worth preserving in the row it replaces.
     ///
     /// # Arguments
     /// * `group_info` - a GroupInfo wrapped in a MLS message. it can be obtained by deserializing a TLS serialized
@@ -106,6 +115,7 @@ impl TransactionContext {
         let new_group_id = group.group_id().to_vec();
 
         let pending_conversation = PendingConversation::from_mls_group(group, self.clone())
+            .await
             .map_err(RecursiveError::context("creating pending conversation"))?;
 
         let commit_bundle = CommitBundle {
@@ -132,7 +142,7 @@ impl TransactionContext {
 #[cfg(test)]
 mod tests {
 
-    use core_crypto_keystore::{entities::PersistedMlsPendingGroup, traits::FetchFromDatabase as _};
+    use core_crypto_keystore::{entities::PersistedMlsGroup, traits::FetchFromDatabase as _};
 
     use super::Error;
     use crate::{ConversationConfiguration, test_utils::*};
@@ -165,16 +175,18 @@ mod tests {
             assert_eq!(conversation.member_count().await, 2);
             assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
 
-            // Pending group removed from keystore
+            // The group's row is no longer marked pending: it's the same row, now established.
             let keystore_id = id.as_ref().keystore();
-            let error = bob
+            let group = bob
                 .transaction
                 .database()
                 .await
                 .unwrap()
-                .get_borrowed::<PersistedMlsPendingGroup>(keystore_id)
-                .await;
-            assert!(matches!(error, Ok(None)));
+                .get_borrowed::<PersistedMlsGroup>(keystore_id)
+                .await
+                .unwrap()
+                .unwrap();
+            assert!(!group.is_pending);
 
             // Ensure it's durable i.e. MLS group has been persisted
             bob.transaction

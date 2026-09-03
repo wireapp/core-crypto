@@ -5,8 +5,8 @@
 use std::sync::Arc;
 
 use core_crypto_keystore::{
-    entities::{MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup},
-    traits::{DeletableBySearchKey, EntityDatabaseMutation as _, EntityDeleteBorrowed, FetchFromDatabase as _},
+    entities::{MlsPendingMessage, PersistedMlsGroup},
+    traits::{DeletableBySearchKey, EntityDatabaseMutation as _, FetchFromDatabase as _},
 };
 use log::trace;
 use openmls::{
@@ -15,7 +15,7 @@ use openmls::{
 };
 use tls_codec::Deserialize as _;
 
-use super::{Error, Result};
+use super::{Error, Result, group_metadata};
 use crate::{
     BufferedDecryptedMessage, CommitBundle, ConversationConfiguration, DecryptedMessage, KeystoreError, OpenMlsError,
     RecursiveError,
@@ -31,19 +31,23 @@ use crate::{
 /// locally, while this commit has not yet been approved by the DS.
 #[derive(Debug)]
 pub struct PendingConversation {
-    inner: PersistedMlsPendingGroup,
+    inner: PersistedMlsGroup,
     context: TransactionContext,
 }
 
 impl PendingConversation {
-    pub(crate) fn new(inner: PersistedMlsPendingGroup, context: TransactionContext) -> Self {
+    pub(crate) fn new(inner: PersistedMlsGroup, context: TransactionContext) -> Self {
         Self { inner, context }
     }
 
-    pub(crate) fn from_mls_group(group: MlsGroup, context: TransactionContext) -> Result<Self> {
+    pub(crate) async fn from_mls_group(group: MlsGroup, context: TransactionContext) -> Result<Self> {
         let serialized_group =
             core_crypto_keystore::ser(&group).map_err(KeystoreError::wrap("serializing mls group"))?;
-        let group_id = group.group_id().to_vec();
+        let group_id = group.group_id().as_slice();
+        let database = context
+            .database()
+            .await
+            .map_err(RecursiveError::context("getting database from transaction context"))?;
 
         // A group we have just built by external commit is active, as required by
         // `current_credential`: our leaf is staged in the pending commit, not yet in the tree.
@@ -144,9 +148,10 @@ impl PendingConversation {
         let database = self.keystore().await?;
         // Instantiate the pending group
         let group = database
-            .get_borrowed::<PersistedMlsPendingGroup>(self.id().into())
+            .get_borrowed::<PersistedMlsGroup>(self.id().keystore())
             .await
             .map_err(KeystoreError::wrap("getting mls group"))?
+            .filter(|group| group.is_pending)
             .map(|pending_group| pending_group.state.clone())
             .ok_or(Error::PendingConversationNotFound)?;
         let mut mls_group = core_crypto_keystore::deser::<MlsGroup>(&group)
@@ -235,11 +240,14 @@ impl PendingConversation {
         };
 
         // We have to determine the restore policy before we persist the group, because it depends
-        // on whether the group already exists.
+        // on whether the group already exists. This must check `is_pending`: `self`'s own row may
+        // already be sitting under this id (saved by an earlier retry attempt via
+        // `TransactionContext::join_by_external_commit`'s error-recovery path), and that row is
+        // pending, not an established group, so it must not itself count as "already exists".
         let restore_policy = if database
-            .get_borrowed::<PersistedMlsGroup>(id.as_ref())
+            .get_borrowed::<PersistedMlsGroup>(id.keystore())
             .await
-            .map(|maybe_group| maybe_group.is_some())
+            .map(|maybe_group| maybe_group.is_some_and(|group| !group.is_pending))
             .map_err(KeystoreError::wrap("checking if group exists"))?
         {
             // If the group already exists, it means the external commit is about rejoining the group.
@@ -295,8 +303,8 @@ impl PendingConversation {
             .map_err(RecursiveError::context("getting inner context"))?;
         let tx = context.transaction();
         let group_id = self.id();
-        PersistedMlsPendingGroup::delete_borrowed(tx, group_id.into())
-            .map_err(KeystoreError::wrap("deleting pending groups by id"))?;
+        PersistedMlsGroup::delete_if_pending(tx, group_id.keystore())
+            .map_err(KeystoreError::wrap("deleting pending group by id"))?;
 
         // Messages buffered while this join was pending are unreachable once it is abandoned, so
         // they have to go with it. They survive when this conversation also exists as an
@@ -325,8 +333,8 @@ mod tests {
     /// buffered messages are only ever read on behalf of a conversation, and neither a pending nor an
     /// established one exists under this id.
     ///
-    /// This is the same defect as `wipe_abandons_buffered_messages`, on the other of the two conversation
-    /// tables. Both are worth pinning, because the two deletion paths share no code.
+    /// This is the same defect as `wipe_abandons_buffered_messages`, on the other kind of conversation
+    /// deletion. Both are worth pinning, because the two deletion paths share no code.
     #[apply(all_cred_cipher)]
     async fn abandoning_an_external_join_abandons_buffered_messages(case: TestContext) {
         let [alice, mut bob] = case.sessions().await;

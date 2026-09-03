@@ -7,7 +7,7 @@ pub mod welcome;
 use std::sync::Arc;
 
 use core_crypto_keystore::{
-    entities::{MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredBufferedCommit},
+    entities::{MlsPendingMessage, PersistedMlsGroup, StoredBufferedCommit},
     traits::{DeletableBySearchKey, EntityDeleteBorrowed, FetchFromDatabase as _},
 };
 use openmls::group::MlsGroup;
@@ -62,12 +62,6 @@ impl TransactionContext {
     /// removes the last trace of a conversation has to take its buffers along, and this is that
     /// step.
     ///
-    /// The check is not redundant. One conversation id can name a group in `mls_groups` and a
-    /// pending group in `mls_pending_groups` at the same time — that is what rejoining a
-    /// conversation by external commit looks like — so removing one of the two does not on its own
-    /// make the buffers garbage. Clearing unconditionally would discard messages the surviving
-    /// conversation is still going to replay.
-    ///
     /// Callers must have staged their own deletion before calling this, since that deletion is
     /// exactly what this reads back. It is also the reason this consults the keystore rather than
     /// [`Self::conversation_exists`]: the question is which rows will exist once the transaction
@@ -77,18 +71,11 @@ impl TransactionContext {
         let tx = inner.transaction();
 
         let group_exists = tx
-            .get_borrowed::<PersistedMlsGroup>(id.as_ref())
+            .get_borrowed::<PersistedMlsGroup>(id.keystore())
             .await
             .map_err(KeystoreError::wrap("looking for a group of a removed conversation"))?
             .is_some();
-        let pending_group_exists = tx
-            .get_borrowed::<PersistedMlsPendingGroup>(id.into())
-            .await
-            .map_err(KeystoreError::wrap(
-                "looking for a pending group of a removed conversation",
-            ))?
-            .is_some();
-        if group_exists || pending_group_exists {
+        if group_exists {
             return Ok(());
         }
 
@@ -104,16 +91,17 @@ impl TransactionContext {
 
     pub(crate) async fn pending_conversation(&self, id: &ConversationIdRef) -> Result<PendingConversation> {
         let inner = self.inner().await?;
-        let Some(pending_group) = inner
+        let group = inner
             .transaction
-            .get_borrowed::<PersistedMlsPendingGroup>(id.into())
+            .get_borrowed::<PersistedMlsGroup>(id.keystore())
             .await
-            .map_err(KeystoreError::wrap("finding persisted mls pending group"))?
-        else {
+            .map_err(KeystoreError::wrap("finding persisted mls group"))?
+            .filter(|group| group.is_pending);
+        let Some(group) = group else {
             return Err(Error::ConversationNotFound(id.to_owned()));
         };
-        let pending_group = Arc::unwrap_or_clone(pending_group);
-        Ok(PendingConversation::new(pending_group, self.clone()))
+        let group = Arc::unwrap_or_clone(group);
+        Ok(PendingConversation::new(group, self.clone()))
     }
 
     /// Create a new empty conversation
