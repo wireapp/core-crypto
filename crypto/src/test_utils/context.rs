@@ -129,10 +129,6 @@ impl SessionContext {
             .ok()
     }
 
-    pub async fn find_credential(&self, pk: &SignaturePublicKey) -> Option<Arc<Credential>> {
-        self.session().await.find_credential_by_public_key(pk).await.ok()
-    }
-
     pub async fn add_credential(&self, credential: Credential) -> Option<CredentialRef> {
         self.transaction.add_credential(credential).await.ok()
     }
