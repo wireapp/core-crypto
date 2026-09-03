@@ -1,0 +1,30 @@
+name: benchmarks-pq
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+jobs:
+  benchmark-jvm:
+    uses: ./.github/workflows/benchmark-jvm.yml
+    with:
+      runs_on: '["self-hosted", "benchmark"]'
+      benchmark_cipher_suites: "61441,61442,61443,61444,61445,61446,61447,61448,61449,61450,61451" # 0xF001-0xF00B
+    secrets:
+      METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
+
+  benchmark-ts-browser:
+    uses: ./.github/workflows/benchmark-ts-browser.yml
+    with:
+      runs_on: '["self-hosted", "benchmark"]'
+      benchmark_cipher_suites: "61441,61442,61443,61444,61445,61446,61447,61448,61449,61450,61451" # 0xF001-0xF00B
+    secrets:
+      METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
+
+  benchmark-ts-native:
+    uses: ./.github/workflows/benchmark-ts-native.yml
+    with:
+      runs_on: '["self-hosted", "benchmark"]'
+      benchmark_cipher_suites: "61441,61442,61443,61444,61445,61446,61447,61448,61449,61450,61451" # 0xF001-0xF00B
+    secrets:
+      METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}

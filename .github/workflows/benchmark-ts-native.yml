@@ -45,7 +45,7 @@ on:
         required: false
         type: string
       benchmark_cipher_suites:
-        description: Comma-separated benchmark cipher suite names
+        description: Comma-separated benchmark cipher suite IDs
         required: false
         type: string
       publish:
