@@ -7,13 +7,13 @@ use aes_gcm::{
 use chacha20poly1305::ChaCha20Poly1305;
 use elliptic_curve::Generate as _;
 use hkdf::Hkdf;
-use openmls::prelude::HpkeCiphertext;
 // ML-DSA (FIPS-204). ml-dsa pulls signature 3.x, whose KeyInit collides with the
 // ecdsa/signature 2.x one, hence the alias
 use ml_dsa::{
     B32, KeyInit as MlDsaKeyInit, MlDsa44, MlDsa65, MlDsa87, MlDsaParams, Signature as MlDsaSignature,
     SignatureEncoding, SigningKey, VerifyingKey,
 };
+use openmls::prelude::HpkeCiphertext;
 use openmls_traits::{
     crypto::OpenMlsCrypto,
     random::OpenMlsRand,
@@ -23,7 +23,7 @@ use openmls_traits::{
     },
 };
 use rand::Rng as _;
-use rand_core::SeedableRng as _;
+use rand_core::{SeedableRng as _, TryRng as _};
 use sha2::{Digest, Sha256, Sha384, Sha512};
 use signature::digest::typenum::Unsigned;
 use tls_codec::SecretVLBytes;
@@ -77,7 +77,7 @@ impl RustCrypto {
         ptxt: &[u8],
     ) -> Result<HpkeCiphertext, CryptoError> {
         let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
-        let mut hpke_rng = HpkeRng(&mut rng);
+        let mut hpke_rng = &mut *rng;
 
         match config {
             HpkeConfig(HpkeKemType::DhKem25519, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
@@ -210,30 +210,6 @@ impl RustCrypto {
         }
     }
 }
-
-/// Adapts the provider's rand_core 0.6 ChaCha20Rng to the rand_core 0.10 traits
-/// hpke's *_with_rng APIs want. Without it hpke 0.14 pulls from the OS RNG, which
-/// breaks new_with_seed determinism and panics on wasm.
-struct HpkeRng<'a>(&'a mut rand_chacha::ChaCha20Rng);
-
-impl hpke::rand_core::TryRng for HpkeRng<'_> {
-    type Error = hpke::rand_core::Infallible;
-
-    fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
-        Ok(RngCore::next_u32(self.0))
-    }
-
-    fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
-        Ok(RngCore::next_u64(self.0))
-    }
-
-    fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), Self::Error> {
-        RngCore::fill_bytes(self.0, dst);
-        Ok(())
-    }
-}
-
-impl hpke::rand_core::TryCryptoRng for HpkeRng<'_> {}
 
 /// The 32-byte seed we store as the ML-DSA private key (FIPS-204 xi)
 const MLDSA_SEED_LEN: usize = 32;
@@ -604,7 +580,7 @@ impl OpenMlsCrypto for RustCrypto {
     ) -> Result<types::HpkeCiphertext, CryptoError> {
         // seeded RNG into encap, so seal stays deterministic and avoids the OS RNG
         let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
-        let mut hpke_rng = HpkeRng(&mut rng);
+        let mut hpke_rng = &mut *rng;
 
         match config {
             HpkeConfig(HpkeKemType::DhKem25519, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
@@ -872,7 +848,7 @@ impl OpenMlsCrypto for RustCrypto {
     ) -> Result<(Vec<u8>, ExporterSecret), CryptoError> {
         // same seeded-RNG handling as hpke_seal
         let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
-        let mut hpke_rng = HpkeRng(&mut rng);
+        let mut hpke_rng = &mut *rng;
 
         let (kem_output, export) =
             match config {
