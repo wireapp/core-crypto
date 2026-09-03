@@ -6,11 +6,12 @@ use rusqlite::Connection;
 use crate::{
     CryptoKeystoreError, Sha256Hash, Transaction, deser,
     entities::{
-        PersistedMlsGroup, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
-        StoredEpochEncryptionKeypairPkRef, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
+        CredentialFindFilters, PersistedMlsGroup, StoredCredential, StoredEncryptionKeyPair,
+        StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef, StoredHpkePrivateKey, StoredKeyPackage,
+        StoredPskBundle,
     },
     ser,
-    traits::{Entity as _, EntityDatabaseMutation as _, EntityDeleteBorrowed as _, EntityGetBorrowed as _},
+    traits::{EntityDatabaseMutation as _, EntityDeleteBorrowed as _, EntityGetBorrowed as _, SearchableEntity},
 };
 
 /// Implementation of the `MlsEntity::read` function; we want to share this elsewhere.
@@ -25,8 +26,21 @@ pub(crate) fn read_mls_entity<V: MlsEntity>(conn: &Connection, id: &[u8]) -> Opt
             deser(&v.state).ok()
         }
         MlsEntityId::SignatureKeyPair => {
-            let hash = Sha256Hash::from_existing_hash(id).ok()?;
-            let stored_credential = StoredCredential::get(conn, &hash).ok().flatten()?;
+            let hash = Sha256Hash::hash_from(id);
+
+            // We can just find any credential with the public key hash we're looking for, because that will always have
+            // the correct signature key.
+            let filters = CredentialFindFilters {
+                hash: Some(hash),
+                ..Default::default()
+            };
+
+            // In an ideal world, we'd use find_first_matching(), but that doesn't exist yet.
+            let stored_credential = StoredCredential::find_all_matching(conn, &filters)
+                .map(|mut creds| creds.pop())
+                .ok()
+                .flatten()?;
+
             let ciphersuite = Ciphersuite::try_from(stored_credential.ciphersuite).ok()?;
             let signature_scheme = ciphersuite.signature_algorithm();
 

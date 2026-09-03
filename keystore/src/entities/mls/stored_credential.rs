@@ -2,6 +2,7 @@ use zeroize::Zeroize;
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Sha256Hash, Transactionlike,
+    entities::helpers::delete_helper_composite_key,
     traits::{Entity, PrimaryKey},
 };
 
@@ -13,6 +14,8 @@ use crate::{
 pub struct CredentialFindFilters<'a> {
     /// Hash of public key to search for.
     pub hash: Option<Sha256Hash>,
+    /// Credential type to search for.
+    pub credential_type: Option<u16>,
     /// Public key to search for
     pub public_key: Option<&'a [u8]>,
     /// Session / Client id to search for
@@ -36,11 +39,26 @@ pub struct StoredCredential {
     pub ciphersuite: u16,
     #[sensitive]
     pub public_key: Vec<u8>,
+    pub credential_type: u16,
     #[sensitive]
     pub private_key: Vec<u8>,
 }
 
 impl StoredCredential {
+    const PRIMARY_KEY_COLUMN_NAMES: [&str; 2] = ["public_key_sha256", "credential_type"];
+
+    fn from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Self> {
+        Ok(Self {
+            session_id: row.get("session_id")?,
+            credential: row.get("credential")?,
+            created_at: row.get("created_at")?,
+            ciphersuite: row.get("ciphersuite")?,
+            public_key: row.get("public_key")?,
+            credential_type: row.get("credential_type")?,
+            private_key: row.get("private_key")?,
+        })
+    }
+
     /// Update `self.created_at` to the current time.
     pub fn pre_save(&mut self) -> CryptoKeystoreResult<()> {
         #[cfg(not(target_os = "unknown"))]
@@ -58,33 +76,39 @@ impl StoredCredential {
     }
 }
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq, derive_more::Constructor)]
+pub struct StoredCredentialPk {
+    public_key_hash: Sha256Hash,
+    credential_type: u16,
+}
+
 impl PrimaryKey for StoredCredential {
-    type PrimaryKey = Sha256Hash;
+    type PrimaryKey = StoredCredentialPk;
 
     fn primary_key(&self) -> Self::PrimaryKey {
-        Sha256Hash::hash_from(&self.public_key)
+        let public_key_hash = Sha256Hash::hash_from(&self.public_key);
+        StoredCredentialPk {
+            public_key_hash,
+            credential_type: self.credential_type,
+        }
     }
 }
 
 impl crate::traits::Entity for StoredCredential {
     const TABLE_NAME: &'static str = "mls_credentials";
 
-    fn get(conn: &rusqlite::Connection, key: &crate::Sha256Hash) -> crate::CryptoKeystoreResult<Option<Self>> {
+    fn get(conn: &rusqlite::Connection, key: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<Option<Self>> {
         use rusqlite::OptionalExtension as _;
-        let mut stmt = conn.prepare_cached(
-            "SELECT session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, public_key, private_key \
-             FROM mls_credentials WHERE public_key_sha256 = ?",
-        )?;
-        stmt.query_row([key], |row| {
-            Ok(Self {
-                session_id: row.get("session_id")?,
-                credential: row.get("credential")?,
-                created_at: row.get("created_at")?,
-                ciphersuite: row.get("ciphersuite")?,
-                public_key: row.get("public_key")?,
-                private_key: row.get("private_key")?,
-            })
-        })
+
+        conn.prepare_cached(
+            "SELECT session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, public_key, \
+                    credential_type, private_key \
+             FROM mls_credentials WHERE public_key_sha256 = ? AND credential_type = ?",
+        )?
+        .query_row(
+            rusqlite::params![key.public_key_hash, key.credential_type],
+            Self::from_row,
+        )
         .optional()
         .map_err(Into::into)
     }
@@ -94,22 +118,15 @@ impl crate::traits::Entity for StoredCredential {
     }
 
     fn load_all(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<Vec<Self>> {
-        let mut stmt = conn.prepare_cached(
-            "SELECT session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, public_key, private_key \
+        let mut statement = conn.prepare_cached(
+            "SELECT session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, public_key, \
+                    credential_type, private_key \
              FROM mls_credentials",
         )?;
-        stmt.query_map([], |row| {
-            Ok(Self {
-                session_id: row.get("session_id")?,
-                credential: row.get("credential")?,
-                created_at: row.get("created_at")?,
-                ciphersuite: row.get("ciphersuite")?,
-                public_key: row.get("public_key")?,
-                private_key: row.get("private_key")?,
-            })
-        })?
-        .collect::<Result<_, _>>()
-        .map_err(Into::into)
+        statement
+            .query_map([], Self::from_row)?
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 }
 
@@ -118,17 +135,16 @@ impl crate::traits::EntityDatabaseMutation for StoredCredential {
     where
         &'a Tx: Into<Transactionlike<'a>>,
     {
-        use crate::traits::PrimaryKey as _;
-
         let conn = tx.into().conn()?;
         let mut stmt = conn.prepare_cached(
             "INSERT INTO mls_credentials \
-             (public_key_sha256, public_key, session_id, credential, created_at, ciphersuite, private_key) \
+             (public_key_sha256, credential_type, public_key, session_id, credential, created_at, ciphersuite, private_key) \
              VALUES \
-             (:public_key_sha256, :public_key, :session_id, :credential, datetime(:created_at, 'unixepoch'), :ciphersuite, :private_key)",
+             (:public_key_sha256, :credential_type, :public_key, :session_id, :credential, datetime(:created_at, 'unixepoch'), :ciphersuite, :private_key)",
         )?;
         stmt.execute(rusqlite::named_params![
-            ":public_key_sha256": self.primary_key(),
+            ":public_key_sha256": Sha256Hash::hash_from(&self.public_key),
+            ":credential_type": self.credential_type,
             ":public_key": self.public_key,
             ":session_id": self.session_id,
             ":credential": self.credential,
@@ -141,11 +157,16 @@ impl crate::traits::EntityDatabaseMutation for StoredCredential {
         Ok(())
     }
 
-    fn delete<'a, Tx>(tx: &'a Tx, id: &crate::Sha256Hash) -> crate::CryptoKeystoreResult<bool>
+    fn delete<'a, Tx>(tx: &'a Tx, id: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<bool>
     where
         &'a Tx: Into<Transactionlike<'a>>,
     {
-        crate::entities::helpers::delete_helper::<Self, _>(tx, "public_key_sha256", *id)
+        delete_helper_composite_key::<Self, _>(
+            tx,
+            &Self::PRIMARY_KEY_COLUMN_NAMES,
+            rusqlite::params![id.public_key_hash, id.credential_type],
+        )
+        .map(|count| count > 0)
     }
 }
 
@@ -154,23 +175,31 @@ impl<'a> crate::traits::SearchableEntity<CredentialFindFilters<'a>> for StoredCr
         conn: &rusqlite::Connection,
         filters: &CredentialFindFilters<'a>,
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
-        if let Some(hash) = filters
+        let hash = filters
             .hash
-            .or_else(|| filters.public_key.map(crate::Sha256Hash::hash_from))
-        {
-            return <Self as crate::traits::Entity>::get(conn, &hash).map(|opt| {
-                opt.into_iter()
-                    .filter(|c| <Self as crate::traits::SearchableEntity<_>>::matches(c, filters))
-                    .collect()
-            });
+            .or_else(|| filters.public_key.map(crate::Sha256Hash::hash_from));
+        if let (Some(hash), Some(credential_type)) = (hash, filters.credential_type) {
+            return <Self as crate::traits::Entity>::get(conn, &StoredCredentialPk::new(hash, credential_type)).map(
+                |opt| {
+                    opt.into_iter()
+                        .filter(|c| <Self as crate::traits::SearchableEntity<_>>::matches(c, filters))
+                        .collect()
+                },
+            );
         }
 
         let mut query =
-            "SELECT session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, public_key, private_key \
+            "SELECT session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, public_key, credential_type, private_key \
              FROM mls_credentials \
-             WHERE (true OR :ciphersuite OR :created_at OR :session_id) "
+             WHERE (true OR :hash OR :credential_type OR :ciphersuite OR :created_at OR :session_id) "
                 .to_owned();
 
+        if hash.is_some() {
+            query.push_str("AND public_key_sha256 = :hash ");
+        }
+        if filters.credential_type.is_some() {
+            query.push_str("AND credential_type = :credential_type ");
+        }
         if filters.ciphersuite.is_some() {
             query.push_str("AND ciphersuite = :ciphersuite ");
         }
@@ -184,6 +213,8 @@ impl<'a> crate::traits::SearchableEntity<CredentialFindFilters<'a>> for StoredCr
         let mut stmt = conn.prepare(&query)?;
         stmt.query_map(
             rusqlite::named_params![
+                ":hash": hash,
+                ":credential_type": filters.credential_type,
                 ":ciphersuite": filters.ciphersuite,
                 ":created_at": filters.earliest_validity,
                 ":session_id": filters.session_id,
@@ -195,6 +226,7 @@ impl<'a> crate::traits::SearchableEntity<CredentialFindFilters<'a>> for StoredCr
                     created_at: row.get("created_at")?,
                     ciphersuite: row.get("ciphersuite")?,
                     public_key: row.get("public_key")?,
+                    credential_type: row.get("credential_type")?,
                     private_key: row.get("private_key")?,
                 })
             },
@@ -204,8 +236,12 @@ impl<'a> crate::traits::SearchableEntity<CredentialFindFilters<'a>> for StoredCr
     }
 
     fn matches(&self, filters: &CredentialFindFilters<'a>) -> bool {
-        use crate::traits::PrimaryKey as _;
-        filters.hash.is_none_or(|hash| hash == self.primary_key())
+        filters
+            .hash
+            .is_none_or(|hash| hash == Sha256Hash::hash_from(&self.public_key))
+            && filters
+                .credential_type
+                .is_none_or(|credential_type| credential_type == self.credential_type)
             && filters.public_key.is_none_or(|pk| pk == self.public_key)
             && filters.session_id.is_none_or(|sid| sid == self.session_id)
             && filters.ciphersuite.is_none_or(|cs| cs == self.ciphersuite)

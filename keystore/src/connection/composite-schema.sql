@@ -27,16 +27,6 @@ CREATE TABLE consumer_data (
   content BLOB
 );
 
-CREATE TABLE "mls_credentials" (
-  public_key_sha256 TEXT UNIQUE NOT NULL,
-  public_key BLOB NOT NULL,
-  session_id BLOB NOT NULL,
-  credential BLOB NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  ciphersuite INT NOT NULL,
-  private_key BLOB NOT NULL
-);
-
 CREATE TABLE "mls_key_packages" (
   key_package_ref BLOB UNIQUE,
   key_package BLOB
@@ -126,4 +116,16 @@ CREATE TABLE transient_message_rx_counters (
   count INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (conversation_id, sender, epoch),
   FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
+);
+
+CREATE TABLE "mls_credentials" (
+  public_key_sha256 BLOB NOT NULL,
+  credential_type INTEGER NOT NULL,
+  public_key BLOB NOT NULL,
+  session_id BLOB NOT NULL,
+  credential BLOB NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  ciphersuite INTEGER NOT NULL,
+  private_key BLOB NOT NULL,
+  PRIMARY KEY (public_key_sha256, credential_type)
 );

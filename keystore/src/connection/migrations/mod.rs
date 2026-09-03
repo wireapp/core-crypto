@@ -63,6 +63,7 @@ fn run_meta_migration(sql_migration_version: i32, conn: &mut rusqlite::Connectio
         meta_migrations::v28::VERSION => meta_migrations::v28::meta_migration(conn),
         meta_migrations::v31::VERSION => meta_migrations::v31::meta_migration(conn),
         meta_migrations::v34::VERSION => meta_migrations::v34::meta_migration(conn),
+        meta_migrations::v37::VERSION => meta_migrations::v37::meta_migration(conn),
         _ => Ok(()),
     }
 }
@@ -128,7 +129,7 @@ pub async fn migrate_db_key_type_to_bytes(
 pub(crate) mod test {
     use std::io::Write;
 
-    use openmls::prelude::Ciphersuite;
+    use openmls::prelude::{Ciphersuite, Credential as MlsCredential, TlsSerializeTrait as _};
     use tempfile::NamedTempFile;
     use x509_cert::der::{DecodePem as _, Encode as _};
 
@@ -138,6 +139,7 @@ pub(crate) mod test {
         entities::{
             MlsPendingMessage, StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle,
         },
+        migrations::StoredCredentialV36,
         traits::{Entity, EntityGetBorrowed as _, PrimaryKey as _},
     };
 
@@ -234,7 +236,7 @@ pub(crate) mod test {
 
             let credential = stmt
                 .query_one([], |row| {
-                    Ok(StoredCredential {
+                    Ok(StoredCredentialV36 {
                         session_id: row.get("session_id")?,
                         credential: row.get("credential")?,
                         created_at: row.get("created_at")?,
@@ -288,7 +290,7 @@ pub(crate) mod test {
 
             let db = Database::open(path, &new_key).await.unwrap();
             let deduplicated_credentials =
-                StoredCredential::load_all(&*db.conn().await).expect("deduplicated credentials");
+                StoredCredentialV36::load_all(&*db.conn().await).expect("deduplicated credentials");
 
             let deduplicated_count = deduplicated_credentials.len();
 
@@ -607,6 +609,10 @@ r9IJmL6kDQ==
 
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
+        let credential = MlsCredential::new_basic(b"a session id".to_vec())
+            .tls_serialize_detached()
+            .unwrap();
+        let credential_type = u16::from(MlsCredential::new_basic(Vec::new()).credential_type());
 
         smol::block_on(async {
             let db = seed_then_migrate(path, &key, 19, |conn| {
@@ -615,7 +621,7 @@ r9IJmL6kDQ==
                      VALUES (?, ?, ?, ?, ?)",
                     (
                         b"a session id".as_slice(),
-                        b"the credential".as_slice(),
+                        credential.as_slice(),
                         Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u16,
                         PUBLIC_KEY,
                         b"the private key".as_slice(),
@@ -634,9 +640,12 @@ r9IJmL6kDQ==
 
             let encoding = stored_key_encoding(&conn, "mls_credentials", "public_key_sha256");
             assert!(
-                StoredCredential::get(&conn, &Sha256Hash::hash_from(PUBLIC_KEY))
-                    .unwrap()
-                    .is_some(),
+                StoredCredential::get(
+                    &conn,
+                    &crate::entities::StoredCredentialPk::new(Sha256Hash::hash_from(PUBLIC_KEY), credential_type),
+                )
+                .unwrap()
+                .is_some(),
                 "a migrated credential must be gettable by the hash of its public key, but \
                  `public_key_sha256` is stored as {encoding:?} while `Sha256Hash` binds 32 raw bytes"
             );
