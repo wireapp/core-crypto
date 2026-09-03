@@ -77,3 +77,9 @@ impl rusqlite::ToSql for Sha256Hash {
         self.as_ref().to_sql()
     }
 }
+
+impl rusqlite::types::FromSql for Sha256Hash {
+    fn column_result(value: rusqlite::types::ValueRef<'_>) -> rusqlite::types::FromSqlResult<Self> {
+        <[u8; 32]>::column_result(value).map(Self)
+    }
+}

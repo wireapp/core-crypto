@@ -203,7 +203,7 @@ mod tests_impl {
 
         if let Some(id) = group_id_as_foreign_key {
             let mut group = PersistedMlsGroup::random();
-            group.id = id.into();
+            group.id = id;
             group.save(&*tx).unwrap();
         }
 
@@ -302,7 +302,7 @@ mod tests_impl {
 
         if let Some(id) = group_id_as_foreign_key {
             let mut group = PersistedMlsGroup::random();
-            group.id = id.into();
+            group.id = id;
             group.save(&*tx).unwrap();
         }
 
@@ -462,7 +462,7 @@ mod tests_impl {
 
             if let Some(id) = group_id_as_foreign_key {
                 let mut group = PersistedMlsGroup::random();
-                group.id = id.into();
+                group.id = id;
                 group.save(&*tx).unwrap();
             }
 
@@ -694,7 +694,7 @@ pub mod utils {
     impl_entity_random_update_ext!(StoredHpkePrivateKey, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredPskBundle, blob_fields=[psk,psk_id id_like:true,]);
-    impl_entity_random_update_ext!(PersistedMlsGroup, id_field = id, blob_fields = [state,]);
+    impl_entity_random_update_ext!(PersistedMlsGroup, id_field = id, blob_fields = [state,], additional_fields=[(epoch: u64::from(rand::random::<u32>())),(ciphersuite: rand::random()),(credential_id: None),(credential_type: None),(own_leaf_index: rand::random()),(is_pending: false),]);
     impl_entity_random_update_ext!(TntMessageTxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),]);
     impl_entity_random_update_ext!(TargetedMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);
     impl_entity_random_update_ext!(TransientMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);

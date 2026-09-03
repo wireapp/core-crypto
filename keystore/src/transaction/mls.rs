@@ -2,7 +2,9 @@ use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 use rusqlite::Connection;
 
 use crate::{
-    CryptoKeystoreError, Transaction, deser,
+    CryptoKeystoreError, Transaction,
+    ancillary::ConversationIdRef,
+    deser,
     entities::{
         PersistedMlsGroup, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef,
         StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
@@ -19,7 +21,9 @@ pub(crate) fn read_mls_entity<V: MlsEntity>(conn: &Connection, id: &[u8]) -> Opt
 
     match V::ID {
         MlsEntityId::GroupState => {
-            let v = PersistedMlsGroup::get_borrowed(conn, id).ok().flatten()?;
+            let v = PersistedMlsGroup::get_borrowed(conn, ConversationIdRef::new(id))
+                .ok()
+                .flatten()?;
             deser(&v.state).ok()
         }
         MlsEntityId::SignatureKeyPair => {
@@ -141,7 +145,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for Transaction {
                 "Deleting a signature key pair should not be done through this API, any keypair should be deleted via
                 deleting a credential."
             ),
-            MlsEntityId::GroupState => PersistedMlsGroup::delete_borrowed(self, id)?,
+            MlsEntityId::GroupState => PersistedMlsGroup::delete_borrowed(self, ConversationIdRef::new(id))?,
             MlsEntityId::HpkePrivateKey => StoredHpkePrivateKey::delete_borrowed(self, id)?,
             MlsEntityId::KeyPackage => StoredKeyPackage::delete_borrowed(self, id)?,
             MlsEntityId::PskBundle => StoredPskBundle::delete_borrowed(self, id)?,
