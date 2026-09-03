@@ -7,10 +7,6 @@ use crate::{
     traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, PrimaryKey},
 };
 
-/// This type exists so that we can efficiently search for the children of a given group.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::From, derive_more::Into, derive_more::AsRef)]
-pub struct ParentGroupId<'a>(&'a [u8]);
-
 /// Entity representing a persisted `MlsGroup`
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, ZeroizeOnDrop, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]

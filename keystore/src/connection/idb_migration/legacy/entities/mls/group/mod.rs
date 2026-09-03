@@ -12,9 +12,12 @@ use crate::{
         connection::storage::WasmStorageWrapper,
         traits::{Decryptable, Decrypting, EntityBase, KeyType, SearchableEntity},
     },
-    entities::ParentGroupId,
     migrations::LegacyPersistedMlsGroup,
 };
+
+/// This type exists so that we can efficiently search for the children of a given group.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, derive_more::From, derive_more::Into, derive_more::AsRef)]
+struct ParentGroupId<'a>(&'a [u8]);
 
 impl<'a> KeyType for ParentGroupId<'a> {
     fn bytes(&self) -> std::borrow::Cow<'_, [u8]> {

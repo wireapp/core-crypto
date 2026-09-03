@@ -18,7 +18,7 @@ mod x509_trust_anchor;
 
 pub use e2ei_crl::X509Crl;
 pub use mls_pending_message::MlsPendingMessage;
-pub use persisted_mls_group::{ParentGroupId, PersistedMlsGroup};
+pub use persisted_mls_group::PersistedMlsGroup;
 pub use persisted_mls_pending_group::PersistedMlsPendingGroup;
 pub use stored_buffered_commit::StoredBufferedCommit;
 pub use stored_credential::{CredentialFindFilters, StoredCredential, StoredCredentialPk};
