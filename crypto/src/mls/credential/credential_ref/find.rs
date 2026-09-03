@@ -71,6 +71,7 @@ impl CredentialRef {
         let partial_credentials = database
             .search::<StoredCredential, _>(&KeystoreFindFilters {
                 hash: public_key_hash,
+                credential_type: credential_type.map(Into::into),
                 earliest_validity,
                 session_id: client_id.map(AsRef::as_ref),
                 ciphersuite: cipher_suite.map(Into::into),

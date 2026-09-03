@@ -40,7 +40,7 @@ impl super::Conversation {
                 .ok_or(LeafError::InternalMlsError)?;
         let credential = self
             .session
-            .find_credential_by_public_key(own_leaf.signature_key())
+            .load_credential(own_leaf.signature_key(), own_leaf.credential().credential_type())
             .await
             .map_err(RecursiveError::mls_client("finding current credential"))?;
         Ok(credential)
