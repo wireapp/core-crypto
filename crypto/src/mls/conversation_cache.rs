@@ -62,7 +62,7 @@ impl ConversationCache {
         };
 
         if !conversation.group().await.is_active() {
-            PersistedMlsGroup::delete_borrowed(transaction, id.as_ref())
+            PersistedMlsGroup::delete_borrowed(transaction, id.keystore())
                 .map_err(KeystoreError::wrap("deleting inactive conversation from keystore"))?;
             return Ok(None);
         }
@@ -81,9 +81,9 @@ impl ConversationCache {
             return Ok(true);
         }
         database
-            .get_borrowed::<PersistedMlsGroup>(id.as_ref())
+            .get_borrowed::<PersistedMlsGroup>(id.keystore())
             .await
-            .map(|maybe_entry| maybe_entry.is_some())
+            .map(|maybe_entry| maybe_entry.is_some_and(|entry| !entry.is_pending))
             .map_err(KeystoreError::wrap("checking for existence of mls group"))
             .map_err(Into::into)
     }

@@ -47,7 +47,7 @@ impl ConversationMut {
             .await
             .map_err(RecursiveError::context("getting inner context"))?;
         let tx = context.transaction();
-        PersistedMlsGroup::delete_borrowed(tx, id.as_ref()).map_err(KeystoreError::wrap("deleting mls group"))?;
+        PersistedMlsGroup::delete_borrowed(tx, id.keystore()).map_err(KeystoreError::wrap("deleting mls group"))?;
         let _ = conversation_cache.remove(id);
 
         // Release the cache guard before clearing the buffers: that path reaches back into the
@@ -79,8 +79,9 @@ mod tests {
     /// never be restored, and nothing will ever delete it, so the keystore carries it forever.
     ///
     /// Nothing in the schema prevents this. `mls_pending_messages.conversation_id` has no foreign key —
-    /// V31 dropped the one it used to have, because a buffered message's conversation may live in either
-    /// `mls_groups` or `mls_pending_groups` — so keeping the two in step is this layer's job.
+    /// V31 dropped the one it used to have, because a buffered message's conversation may not have a row
+    /// in `mls_groups` at all yet (it arrived before the conversation's own row was persisted) — so
+    /// keeping buffered messages in step with the conversations they belong to is this layer's job.
     #[apply(all_cred_cipher)]
     async fn wipe_abandons_buffered_messages(case: TestContext) {
         Box::pin(async move {
