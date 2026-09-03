@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788324117884,
+  "lastUpdate": 1788404458317,
   "repoUrl": "https://github.com/wireapp/core-crypto",
   "entries": {
     "JVM Benchmarks": [
@@ -101618,6 +101618,838 @@ window.BENCHMARK_DATA = {
           {
             "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"7\",\"userCount\":\"100\"} )",
             "value": 255.73590921366377,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Peter Goodspeed-Niklaus",
+            "username": "coriolinus",
+            "email": "peter.goodspeed-niklaus@wire.com"
+          },
+          "committer": {
+            "name": "Peter Goodspeed-Niklaus",
+            "username": "coriolinus",
+            "email": "peter.goodspeed-niklaus@wire.com"
+          },
+          "id": "380b3b10d722b171905996c798702106b2abea40",
+          "message": "chore(crypto): replace manual savepoint impl with keystore helper",
+          "timestamp": "2026-09-02T10:40:10Z",
+          "url": "https://github.com/wireapp/core-crypto/commit/380b3b10d722b171905996c798702106b2abea40"
+        },
+        "date": 1788404432624,
+        "tool": "jmh",
+        "benches": [
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"1\",\"userCount\":\"1\"} )",
+            "value": 1662.598199530949,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"1\",\"userCount\":\"10\"} )",
+            "value": 549.440429966754,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"1\",\"userCount\":\"100\"} )",
+            "value": 45.691350654779384,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"2\",\"userCount\":\"1\"} )",
+            "value": 640.5912274917895,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"2\",\"userCount\":\"10\"} )",
+            "value": 132.4421042582183,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"2\",\"userCount\":\"100\"} )",
+            "value": 12.984317100218016,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"3\",\"userCount\":\"1\"} )",
+            "value": 1729.1630758639153,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"3\",\"userCount\":\"10\"} )",
+            "value": 546.4590716098883,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"3\",\"userCount\":\"100\"} )",
+            "value": 46.090138602113775,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"5\",\"userCount\":\"1\"} )",
+            "value": 214.7005910750982,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"5\",\"userCount\":\"10\"} )",
+            "value": 42.801942096671745,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"5\",\"userCount\":\"100\"} )",
+            "value": 4.430998839993929,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"7\",\"userCount\":\"1\"} )",
+            "value": 314.56901064006576,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"7\",\"userCount\":\"10\"} )",
+            "value": 57.999017595052464,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.AddUser.bench ( {\"cipherSuite\":\"7\",\"userCount\":\"100\"} )",
+            "value": 6.097844800668488,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 5888.708553077181,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 5558.546317040937,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 1233.2161791822814,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 1566.6422282007425,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 1344.3227111236563,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 140.9117550913145,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 186.92466043947826,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 158.2921949074013,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 14.167696317160303,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 2881.606594944976,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 2811.178217132588,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 925.4758933234616,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 418.4445308132551,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 400.8698024961376,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 102.01650502797774,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 44.302148839661626,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 42.27171540974712,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 10.270299902690791,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 5977.33910835692,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 5666.812485605773,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 1582.7881211168055,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 1635.595636422253,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 1440.2234437623113,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 186.98148241771833,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 192.87068554224857,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 174.2401142186294,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 19.006101436351535,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 1149.8061499405571,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 1136.2099689296942,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 653.7421686614838,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 131.00249859643532,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 129.10044472936528,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 70.50524415557211,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 13.190075778344184,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 13.09370914875672,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 7.050631324221916,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 1615.0293863841657,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 1590.4840792428927,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 785.7961492523665,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 194.33070839309647,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 191.04141692260697,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 85.69726094115468,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 19.88089345404937,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 19.550137406679095,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.CreateMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 8.629777087074844,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"1\",\"userCount\":\"1\"} )",
+            "value": 1557.0796496069747,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"1\",\"userCount\":\"10\"} )",
+            "value": 798.3728829215164,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"1\",\"userCount\":\"100\"} )",
+            "value": 169.8996708189115,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"2\",\"userCount\":\"1\"} )",
+            "value": 547.6895887162167,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"2\",\"userCount\":\"10\"} )",
+            "value": 183.23639624862014,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"2\",\"userCount\":\"100\"} )",
+            "value": 26.528378977987984,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"3\",\"userCount\":\"1\"} )",
+            "value": 1607.7239413239695,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"3\",\"userCount\":\"10\"} )",
+            "value": 879.4861237022485,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"3\",\"userCount\":\"100\"} )",
+            "value": 171.64056577044903,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"5\",\"userCount\":\"1\"} )",
+            "value": 186.36389465644913,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"5\",\"userCount\":\"10\"} )",
+            "value": 52.793761315108725,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"5\",\"userCount\":\"100\"} )",
+            "value": 7.647696093229794,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"7\",\"userCount\":\"1\"} )",
+            "value": 234.24677130958335,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"7\",\"userCount\":\"10\"} )",
+            "value": 77.69873187751277,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.JoinGroup.bench ( {\"cipherSuite\":\"7\",\"userCount\":\"100\"} )",
+            "value": 10.762327679263475,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 3224.3963958095705,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 2773.5642994293908,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 980.0092988122269,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 1201.3597403837591,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 1044.8974621890166,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 146.51784197077427,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 149.09795558739228,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 130.84999448038957,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"1\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 15.250628226270095,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 1831.766092294051,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 1551.5679549645927,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 790.6987411287876,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 371.7550170766139,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 368.7371765912053,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 102.81076927731746,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 46.10015405283518,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 44.684217035204846,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"2\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 10.300786524485549,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 3070.433550667167,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 3529.4894111981366,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 1199.9993702629893,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 885.59448314436,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 1121.9479622018594,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 202.16896971645943,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 163.7773271036573,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 143.56975596189585,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"3\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 21.040860897052852,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 1147.8952648140107,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 1062.9649629729454,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 614.0554721559477,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 139.86307506678048,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 146.4310957901078,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 74.16327022443545,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 14.931628807772402,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 14.751951649644393,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"5\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 7.46745283382649,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"1\",\"messageSize\":\"16\"} )",
+            "value": 1354.63509119301,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"1\",\"messageSize\":\"1024\"} )",
+            "value": 1381.4185916510723,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"1\",\"messageSize\":\"65536\"} )",
+            "value": 719.1013843845701,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"10\",\"messageSize\":\"16\"} )",
+            "value": 191.89079015363353,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"10\",\"messageSize\":\"1024\"} )",
+            "value": 188.21244896954863,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"10\",\"messageSize\":\"65536\"} )",
+            "value": 85.41277089182488,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"100\",\"messageSize\":\"16\"} )",
+            "value": 20.095748022761498,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"100\",\"messageSize\":\"1024\"} )",
+            "value": 19.729692014697537,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.ProcessMessage.bench ( {\"cipherSuite\":\"7\",\"messageCount\":\"100\",\"messageSize\":\"65536\"} )",
+            "value": 8.547182412466835,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"1\",\"userCount\":\"1\"} )",
+            "value": 2196.032392609054,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"1\",\"userCount\":\"10\"} )",
+            "value": 1733.1934371119896,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"1\",\"userCount\":\"100\"} )",
+            "value": 856.1856576680526,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"2\",\"userCount\":\"1\"} )",
+            "value": 743.4858124956036,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"2\",\"userCount\":\"10\"} )",
+            "value": 706.7178187672611,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"2\",\"userCount\":\"100\"} )",
+            "value": 478.5054035170663,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"3\",\"userCount\":\"1\"} )",
+            "value": 1692.9493009508828,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"3\",\"userCount\":\"10\"} )",
+            "value": 1536.5682471970663,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"3\",\"userCount\":\"100\"} )",
+            "value": 856.4386309021083,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"5\",\"userCount\":\"1\"} )",
+            "value": 259.05802241990085,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"5\",\"userCount\":\"10\"} )",
+            "value": 227.7412983993582,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"5\",\"userCount\":\"100\"} )",
+            "value": 210.41412755072733,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"7\",\"userCount\":\"1\"} )",
+            "value": 373.6949388743893,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"7\",\"userCount\":\"10\"} )",
+            "value": 357.7412332154747,
+            "unit": "ops/s",
+            "extra": "iterations: 5\nforks: 1\nthreads: 1"
+          },
+          {
+            "name": "com.wire.benchmark.RemoveUser.bench ( {\"cipherSuite\":\"7\",\"userCount\":\"100\"} )",
+            "value": 288.7645852080128,
             "unit": "ops/s",
             "extra": "iterations: 5\nforks: 1\nthreads: 1"
           }
