@@ -1,17 +1,14 @@
-use openmls::prelude::Ciphersuite;
-use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 use rusqlite::Connection;
 
 use crate::{
-    CryptoKeystoreError, Sha256Hash, Transaction, deser,
+    CryptoKeystoreError, Transaction, deser,
     entities::{
-        CredentialFindFilters, PersistedMlsGroup, StoredCredential, StoredEncryptionKeyPair,
-        StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef, StoredHpkePrivateKey, StoredKeyPackage,
-        StoredPskBundle,
+        PersistedMlsGroup, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef,
+        StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
     },
     ser,
-    traits::{EntityDatabaseMutation as _, EntityDeleteBorrowed as _, EntityGetBorrowed as _, SearchableEntity},
+    traits::{EntityDatabaseMutation as _, EntityDeleteBorrowed as _, EntityGetBorrowed as _},
 };
 
 /// Implementation of the `MlsEntity::read` function; we want to share this elsewhere.
@@ -26,34 +23,7 @@ pub(crate) fn read_mls_entity<V: MlsEntity>(conn: &Connection, id: &[u8]) -> Opt
             deser(&v.state).ok()
         }
         MlsEntityId::SignatureKeyPair => {
-            let hash = Sha256Hash::hash_from(id);
-
-            // We can just find any credential with the public key hash we're looking for, because that will always have
-            // the correct signature key.
-            let filters = CredentialFindFilters {
-                hash: Some(hash),
-                ..Default::default()
-            };
-
-            // In an ideal world, we'd use find_first_matching(), but that doesn't exist yet.
-            let stored_credential = StoredCredential::find_all_matching(conn, &filters)
-                .map(|mut creds| creds.pop())
-                .ok()
-                .flatten()?;
-
-            let ciphersuite = Ciphersuite::try_from(stored_credential.ciphersuite).ok()?;
-            let signature_scheme = ciphersuite.signature_algorithm();
-
-            let mls_keypair = SignatureKeyPair::from_raw(
-                signature_scheme,
-                stored_credential.private_key.to_vec(),
-                stored_credential.public_key.to_vec(),
-            );
-
-            // In a well designed interface, something like this should not be necessary. However, we don't have
-            // a well-designed interface.
-            let data = ser(&mls_keypair).ok()?;
-            deser(&data).ok()
+            unimplemented!("Don't use this API to load a signature key pair. Load a StoredCredential instead.")
         }
         MlsEntityId::KeyPackage => {
             let v = StoredKeyPackage::get_borrowed(conn, id).ok().flatten()?;
