@@ -45,9 +45,18 @@ impl PendingConversation {
             core_crypto_keystore::ser(&group).map_err(KeystoreError::wrap("serializing mls group"))?;
         let group_id = group.group_id().to_vec();
 
-        let inner = PersistedMlsPendingGroup {
+        // A group we have just built by external commit is active, as required by
+        // `current_credential`: our leaf is staged in the pending commit, not yet in the tree.
+        let current_credential = group_metadata::current_credential_pk(&group, &*database).await?;
+        let inner = PersistedMlsGroup {
             id: group_id.into(),
             state: serialized_group,
+            epoch: group.epoch().as_u64(),
+            ciphersuite: group.ciphersuite() as u16,
+            credential_id: current_credential.as_ref().map(|credential| credential.public_key_hash),
+            credential_type: current_credential.as_ref().map(|credential| credential.credential_type),
+            own_leaf_index: group.own_leaf_index().u32(),
+            is_pending: true,
         };
         Ok(Self::new(inner, context))
     }

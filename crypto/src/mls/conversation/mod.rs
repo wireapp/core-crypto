@@ -15,6 +15,7 @@ mod commit;
 mod config;
 mod error;
 mod group_info;
+mod group_metadata;
 mod id;
 mod immutable;
 mod mutable;

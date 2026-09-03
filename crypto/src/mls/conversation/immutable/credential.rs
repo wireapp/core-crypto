@@ -1,43 +1,18 @@
 use std::{collections::HashMap, sync::Arc};
 
-use openmls::{
-    group::QueuedProposal,
-    prelude::{
-        Credential as MlsCredential, CredentialWithKey, LeafNode, LeafNodeIndex, Proposal, Sender, SignaturePublicKey,
-    },
-};
+use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, SignaturePublicKey};
 
 use super::{Error, Result};
-use crate::{ClientId, Credential, RecursiveError};
+use crate::{ClientId, Credential, RecursiveError, mls::conversation::group_metadata};
 
 impl super::Conversation {
-    fn extract_own_updated_node_from_proposals<'a>(
-        own_index: &LeafNodeIndex,
-        pending_proposals: impl Iterator<Item = &'a QueuedProposal>,
-    ) -> Option<&'a LeafNode> {
-        pending_proposals
-            .filter_map(|proposal| {
-                if let Sender::Member(index) = proposal.sender()
-                    && index == own_index
-                    && let Proposal::Update(update_proposal) = proposal.proposal()
-                {
-                    Some(update_proposal.leaf_node())
-                } else {
-                    None
-                }
-            })
-            .last()
-    }
-
     /// Find the current leaf node, then load it scredential.
     pub(crate) async fn find_current_credential(&self) -> Result<Arc<Credential>> {
         // if the group has pending proposals one of which is an own update proposal, we should take the credential from
         // there.
         let group = self.group().await;
         let own_leaf =
-            Self::extract_own_updated_node_from_proposals(&group.own_leaf_index(), group.pending_proposals())
-                .or_else(|| group.own_leaf())
-                .ok_or(Error::MlsGroupInvalidState("own leaf node not found"))?;
+            group_metadata::current_own_leaf(&group).ok_or(Error::MlsGroupInvalidState("own leaf node not found"))?;
         let credential = self
             .session
             .load_credential(own_leaf.signature_key(), own_leaf.credential().credential_type())

@@ -78,8 +78,8 @@ impl StoredCredential {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq, derive_more::Constructor)]
 pub struct StoredCredentialPk {
-    public_key_hash: Sha256Hash,
-    credential_type: u16,
+    pub public_key_hash: Sha256Hash,
+    pub credential_type: u16,
 }
 
 impl PrimaryKey for StoredCredential {

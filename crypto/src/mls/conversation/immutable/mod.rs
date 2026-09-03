@@ -15,7 +15,7 @@ use core_crypto_keystore::{
 };
 use openmls::group::{InnerState, MlsGroup};
 
-use super::{ConversationIdRef, Error, Result, SecretKey};
+use super::{ConversationIdRef, Error, Result, SecretKey, group_metadata};
 use crate::{
     CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, ExternalSender, KeystoreError, OpenMlsError,
     Session, mls::TntMessageCounter,
@@ -84,11 +84,46 @@ impl MlsGroupState {
         // We must change the mls group persisted state before persisting, otherwise it will never reach the DB.
         self.mls_group_mut().set_state(InnerState::Persisted);
         let id = self.group.group_id();
+        let group = self.mls_group();
+
+        // While we are an active member the group itself tells us which credential we present. Once
+        // we have been evicted it no longer does: our leaf is gone from the ratchet tree, and our
+        // former slot may even have been recycled by a member added in the same commit, in which
+        // case `own_leaf_index` resolves to *their* leaf and we would link this conversation to
+        // their credential. We deliberately keep persisting evicted conversations, so rather than
+        // derive, reuse what the row already records — the credential we held while we were a
+        // member is still the one we used, and being evicted does not change that.
+        let (credential_id, credential_type) = if group.is_active() {
+            let current_credential = group_metadata::current_credential_pk(group, tx).await?;
+            (current_credential.public_key_hash, current_credential.credential_type)
+        } else {
+            let persisted = tx
+                .get_borrowed::<PersistedMlsGroup>(KeystoreConversationIdRef::new(id.as_slice()))
+                .await
+                .map_err(KeystoreError::wrap("finding the existing row of an evicted conversation"))?
+                // We can only have been evicted from a conversation we were a member of, and
+                // joining one always persists it, so the row is always already there: the only
+                // other caller of this function performs the first persist of a group we have just
+                // joined or created, which is necessarily still active.
+                .ok_or(Error::MlsGroupInvalidState(
+                    "an evicted conversation must already have been persisted",
+                ))?;
+            (persisted.credential_id, persisted.credential_type)
+        };
 
         PersistedMlsGroup {
-            id: id.to_vec(),
-            state: core_crypto_keystore::ser(self.mls_group())
-                .map_err(KeystoreError::wrap("serializing group state"))?,
+            id: id.as_slice().into(),
+            state: core_crypto_keystore::ser(group).map_err(KeystoreError::wrap("serializing group state"))?,
+            epoch: group.epoch().as_u64(),
+            ciphersuite: group.ciphersuite() as u16,
+            credential_id: current_credential.as_ref().map(|credential| credential.public_key_hash),
+            credential_type: current_credential.as_ref().map(|credential| credential.credential_type),
+            own_leaf_index: group.own_leaf_index().u32(),
+            // `persist` is reached either by an established conversation persisting a normal
+            // change, or by `persist_conversation_from_mls_group` once an external commit has
+            // already been merged — either way, this group is no longer pending by the time this
+            // runs.
+            is_pending: false,
         }
         .save(tx)
         .map_err(KeystoreError::wrap("persisting mls group"))?;
