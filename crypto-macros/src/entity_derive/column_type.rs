@@ -26,11 +26,35 @@ fn optional_types(ty: &Type) -> [Type; 3] {
     ]
 }
 
+fn u16_types() -> [Type; 3] {
+    [
+        parse_quote!(u16),
+        parse_quote!(std::primitive::u16),
+        parse_quote!(core::primitive::u16),
+    ]
+}
+
 fn u32_types() -> [Type; 3] {
     [
         parse_quote!(u32),
         parse_quote!(std::primitive::u32),
         parse_quote!(core::primitive::u32),
+    ]
+}
+
+fn u64_types() -> [Type; 3] {
+    [
+        parse_quote!(u64),
+        parse_quote!(std::primitive::u64),
+        parse_quote!(core::primitive::u64),
+    ]
+}
+
+fn bool_types() -> [Type; 3] {
+    [
+        parse_quote!(bool),
+        parse_quote!(std::primitive::bool),
+        parse_quote!(core::primitive::bool),
     ]
 }
 
@@ -87,7 +111,10 @@ pub(super) enum ColumnType {
     String,
     Bytes,
     OptionalBytes,
+    U16,
     U32,
+    U64,
+    Bool,
 }
 
 impl TryFrom<Type> for ColumnType {
@@ -100,13 +127,21 @@ impl TryFrom<Type> for ColumnType {
             Ok(Self::Bytes)
         } else if bytes_types().iter().flat_map(optional_types).any(|o_type| o_type == ty) {
             Ok(Self::OptionalBytes)
+        } else if u16_types().contains(&ty) {
+            Ok(Self::U16)
         } else if u32_types().contains(&ty) {
             Ok(Self::U32)
+        } else if u64_types().contains(&ty) {
+            Ok(Self::U64)
+        } else if bool_types().contains(&ty) {
+            Ok(Self::Bool)
         } else {
             let type_string = ty.to_token_stream().to_string();
             Err(syn::Error::new_spanned(
                 ty,
-                format!("Expected `String`, `Vec<u8>`, `Option<Vec<u8>>`, or `u32`, not `{type_string}`"),
+                format!(
+                    "Expected `String`, `Vec<u8>`, `Option<Vec<u8>>`, `u16`, `u32`, `u64`, or `bool`, not `{type_string}`"
+                ),
             ))
         }
     }
@@ -132,7 +167,10 @@ impl EmitGetExpression for ColumnType {
             ColumnType::Bytes => quote!(Vec<u8>),
             ColumnType::String => quote!(String),
             ColumnType::OptionalBytes => quote!(Option<Vec<u8>>),
-            ColumnType::U32 => quote! {u32},
+            ColumnType::U16 => quote!(u16),
+            ColumnType::U32 => quote!(u32),
+            ColumnType::U64 => quote!(u64),
+            ColumnType::Bool => quote!(bool),
         }
     }
 }
