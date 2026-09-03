@@ -19,7 +19,7 @@ pub use mls_pending_message::MlsPendingMessage;
 pub use persisted_mls_group::{ParentGroupId, PersistedMlsGroup};
 pub use persisted_mls_pending_group::PersistedMlsPendingGroup;
 pub use stored_buffered_commit::StoredBufferedCommit;
-pub use stored_credential::{CredentialFindFilters, StoredCredential};
+pub use stored_credential::{CredentialFindFilters, StoredCredential, StoredCredentialPk};
 pub use stored_encryption_key_pair::StoredEncryptionKeyPair;
 pub use stored_epoch_encryption_keypair::{
     StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPk, StoredEpochEncryptionKeypairPkRef,

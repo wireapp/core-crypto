@@ -42,6 +42,7 @@ mod stored_credential {
         let created_at = 0; // updated on pre_save
         let ciphersuite = rng.gen_range(1_u16..=7);
         let public_key = random_bytes(512..=1024);
+        let credential_type = rng.gen_range(1_u16..=2);
         let private_key = random_bytes(128..=256);
 
         let mut entity = StoredCredential {
@@ -50,6 +51,7 @@ mod stored_credential {
             created_at,
             ciphersuite,
             public_key,
+            credential_type,
             private_key,
         };
 
@@ -123,6 +125,64 @@ mod stored_credential {
         let entities = entities.into_iter().map(Arc::new).collect::<Vec<_>>();
 
         assert_eq!(entities, found);
+    }
+
+    #[apply(all_storage_types)]
+    async fn credentials_with_the_same_public_key_and_different_types_can_coexist(context: KeystoreTestContext) {
+        let store = context.store();
+        let first = random_entity();
+        let mut second = first.clone();
+        second.credential_type = first.credential_type.saturating_add(1);
+
+        let tx = store.new_transaction().await.unwrap();
+        first.save(&*tx).unwrap();
+        second.save(&*tx).unwrap();
+        tx.commit().await.unwrap();
+
+        assert_eq!(
+            store
+                .get::<StoredCredential>(&first.primary_key())
+                .await
+                .unwrap()
+                .as_deref(),
+            Some(&first)
+        );
+        assert_eq!(
+            store
+                .get::<StoredCredential>(&second.primary_key())
+                .await
+                .unwrap()
+                .as_deref(),
+            Some(&second)
+        );
+
+        let matches = store
+            .search::<StoredCredential, _>(&CredentialFindFilters {
+                hash: Some(core_crypto_keystore::Sha256Hash::hash_from(&first.public_key)),
+                ..Default::default()
+            })
+            .await
+            .unwrap();
+        assert_eq!(matches.len(), 2);
+
+        let tx = store.new_transaction().await.unwrap();
+        StoredCredential::delete(&*tx, &first.primary_key()).unwrap();
+        tx.commit().await.unwrap();
+        assert!(
+            store
+                .get::<StoredCredential>(&first.primary_key())
+                .await
+                .unwrap()
+                .is_none()
+        );
+        assert_eq!(
+            store
+                .get::<StoredCredential>(&second.primary_key())
+                .await
+                .unwrap()
+                .as_deref(),
+            Some(&second)
+        );
     }
 
     // we don't have a good way to just delay for a second in wasm, so skip this test which relies on that behavior
