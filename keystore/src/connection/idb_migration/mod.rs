@@ -16,6 +16,7 @@ use crate::{
     connection::{
         idb_migration::legacy::entities::mls::{
             e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
+            pending_group::PersistedMlsPendingGroup as LegacyPersistedMlsPendingGroup,
             stored_keypackage::StoredKeypackage,
         },
         migrations::MigrationTarget,
@@ -137,6 +138,27 @@ pub(super) async fn maybe_migrate(
         };
     }
 
+    // the type of `PersistedMlsPendingGroup` changed, so we implement the migration manually
+    {
+        let pending_group =
+            <LegacyPersistedMlsPendingGroup as legacy::traits::Entity>::load_all(&mut legacy_conn).await?;
+        let tx = new_conn.transaction()?;
+        // we don't care about these old fields and in fact are about to drop them.
+        for LegacyPersistedMlsPendingGroup {
+            ref mut id,
+            ref mut state,
+            ..
+        } in pending_group
+        {
+            PersistedMlsPendingGroup {
+                id: std::mem::replace(id, Vec::new().into()),
+                state: std::mem::take(state),
+            }
+            .save(&tx)?;
+        }
+        tx.commit()?;
+    }
+
     migrate_entities!(
         ConsumerData,
         E2eiAcmeCA,
@@ -144,7 +166,6 @@ pub(super) async fn maybe_migrate(
         E2eiIntermediateCert,
         MlsPendingMessage,
         LegacyPersistedMlsGroup,
-        PersistedMlsPendingGroup,
         StoredBufferedCommit,
         StoredCredentialV36,
         StoredEncryptionKeyPair,

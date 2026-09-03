@@ -20,13 +20,17 @@ use crate::{
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct PersistedMlsPendingGroup {
-    #[sensitive]
     pub id: ConversationId,
     #[sensitive]
     pub state: Vec<u8>,
-    #[sensitive]
-    pub parent_id: Option<Vec<u8>>,
-    pub custom_configuration: Vec<u8>,
+}
+
+impl PersistedMlsPendingGroup {
+    fn from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Self> {
+        let id = row.get("id")?;
+        let state = row.get("state")?;
+        Ok(Self { id, state })
+    }
 }
 
 impl PrimaryKey for PersistedMlsPendingGroup {
@@ -49,14 +53,7 @@ impl crate::traits::Entity for PersistedMlsPendingGroup {
     const TABLE_NAME: &'static str = "mls_pending_groups";
 
     fn get(conn: &Connection, key: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<Option<Self>> {
-        helpers::get_helper(conn, "id", key, |row| {
-            Ok(Self {
-                id: row.get("id")?,
-                state: row.get("state")?,
-                parent_id: row.get("parent_id")?,
-                custom_configuration: row.get("cfg")?,
-            })
-        })
+        helpers::get_helper(conn, "id", key, Self::from_row)
     }
 
     fn count(conn: &Connection) -> crate::CryptoKeystoreResult<u32> {
@@ -64,27 +61,13 @@ impl crate::traits::Entity for PersistedMlsPendingGroup {
     }
 
     fn load_all(conn: &Connection) -> crate::CryptoKeystoreResult<Vec<Self>> {
-        helpers::load_all_helper(conn, |row| {
-            Ok(Self {
-                id: row.get("id")?,
-                state: row.get("state")?,
-                parent_id: row.get("parent_id")?,
-                custom_configuration: row.get("cfg")?,
-            })
-        })
+        helpers::load_all_helper(conn, Self::from_row)
     }
 }
 
 impl crate::traits::EntityGetBorrowed for PersistedMlsPendingGroup {
     fn get_borrowed(conn: &Connection, key: Self::BorrowedPrimaryKey<'_>) -> crate::CryptoKeystoreResult<Option<Self>> {
-        helpers::get_helper(conn, "id", key, |row| {
-            Ok(Self {
-                id: row.get("id")?,
-                state: row.get("state")?,
-                parent_id: row.get("parent_id")?,
-                custom_configuration: row.get("cfg")?,
-            })
-        })
+        helpers::get_helper(conn, "id", key, Self::from_row)
     }
 }
 
@@ -94,15 +77,8 @@ impl crate::traits::EntityDatabaseMutation for PersistedMlsPendingGroup {
         &'a Tx: Into<Transactionlike<'a>>,
     {
         let conn = tx.into().conn()?;
-        let mut stmt = conn.prepare_cached(
-            "INSERT OR REPLACE INTO mls_pending_groups (id, state, parent_id, cfg) VALUES (?, ?, ?, ?)",
-        )?;
-        stmt.execute(rusqlite::params![
-            self.id,
-            self.state,
-            self.parent_id,
-            self.custom_configuration
-        ])?;
+        let mut stmt = conn.prepare_cached("INSERT OR REPLACE INTO mls_pending_groups (id, state) VALUES (?, ?)")?;
+        stmt.execute(rusqlite::params![self.id, self.state])?;
         Ok(())
     }
 

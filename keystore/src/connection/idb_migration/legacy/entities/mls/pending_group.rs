@@ -1,8 +1,10 @@
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use zeroize::Zeroize;
 
 use crate::{
     CryptoKeystoreResult,
+    ancillary::{ConversationId, ConversationIdRef},
     connection::idb_migration::legacy::{
         connection::{KeystoreDatabaseConnection, TransactionWrapper},
         traits::{
@@ -10,8 +12,34 @@ use crate::{
             EntityDeleteBorrowed, EntityGetBorrowed, KeyType as _,
         },
     },
-    entities::PersistedMlsPendingGroup,
+    traits::{BorrowPrimaryKey, PrimaryKey},
 };
+
+#[derive(Zeroize, serde::Serialize, serde::Deserialize)]
+#[zeroize(drop)]
+#[expect(unreachable_pub)] // has to be pub for trait impls, but we don't want to actually reach it
+pub struct PersistedMlsPendingGroup {
+    pub id: ConversationId,
+    pub state: Vec<u8>,
+    pub parent_id: Option<Vec<u8>>,
+    pub custom_configuration: Vec<u8>,
+}
+
+impl PrimaryKey for PersistedMlsPendingGroup {
+    type PrimaryKey = ConversationId;
+
+    fn primary_key(&self) -> Self::PrimaryKey {
+        self.id.clone()
+    }
+}
+
+impl BorrowPrimaryKey for PersistedMlsPendingGroup {
+    type BorrowedPrimaryKey<'a> = &'a ConversationIdRef;
+
+    fn borrow_primary_key(&self) -> Self::BorrowedPrimaryKey<'_> {
+        self.id.as_ref()
+    }
+}
 
 impl EntityBase for PersistedMlsPendingGroup {
     type ConnectionType = KeystoreDatabaseConnection;

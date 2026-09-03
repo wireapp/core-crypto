@@ -17,8 +17,8 @@ use tls_codec::Deserialize as _;
 
 use super::{Error, Result};
 use crate::{
-    BufferedDecryptedMessage, CommitBundle, ConversationConfiguration, CustomConfiguration, DecryptedMessage,
-    KeystoreError, OpenMlsError, RecursiveError,
+    BufferedDecryptedMessage, CommitBundle, ConversationConfiguration, DecryptedMessage, KeystoreError, OpenMlsError,
+    RecursiveError,
     mls::{
         conversation::{ConversationIdRef, mutable::decrypt::buffer_messages::MessageRestorePolicy},
         credential::ext::CredentialExt as _,
@@ -41,8 +41,6 @@ impl PendingConversation {
     }
 
     pub(crate) fn from_mls_group(group: MlsGroup, context: TransactionContext) -> Result<Self> {
-        let serialized_cfg = serde_json::to_vec(&CustomConfiguration::default())
-            .map_err(OpenMlsError::wrap("serializing custom config"))?;
         let serialized_group =
             core_crypto_keystore::ser(&group).map_err(KeystoreError::wrap("serializing mls group"))?;
         let group_id = group.group_id().to_vec();
@@ -50,8 +48,6 @@ impl PendingConversation {
         let inner = PersistedMlsPendingGroup {
             id: group_id.into(),
             state: serialized_group,
-            custom_configuration: serialized_cfg,
-            parent_id: None,
         };
         Ok(Self::new(inner, context))
     }
@@ -77,24 +73,16 @@ impl PendingConversation {
     }
 
     pub(crate) async fn save(&self) -> Result<()> {
-        let group_id = self.id();
-        let mls_group: &[u8] = &self.inner.state;
-        let custom_configuration: &[u8] = &self.inner.custom_configuration;
         let context = self
             .context
             .inner()
             .await
             .map_err(RecursiveError::context("getting inner context"))?;
         let tx = context.transaction();
-        PersistedMlsPendingGroup {
-            id: group_id.into(),
-            state: mls_group.into(),
-            custom_configuration: custom_configuration.into(),
-            parent_id: None,
-        }
-        .save(tx)
-        .map_err(KeystoreError::wrap("saving mls pending groups"))
-        .map_err(Into::into)
+        self.inner
+            .save(tx)
+            .map_err(KeystoreError::wrap("saving mls pending groups"))
+            .map_err(Into::into)
     }
 
     /// Send the commit via [crate::MlsTransport] and handle the response.
@@ -221,7 +209,6 @@ impl PendingConversation {
         let database = self.keystore().await?;
         let id = self.id();
         let group = &self.inner.state;
-        let cfg = &self.inner.custom_configuration;
 
         let mut mls_group =
             core_crypto_keystore::deser::<MlsGroup>(group).map_err(KeystoreError::wrap("deserializing mls group"))?;
@@ -232,12 +219,9 @@ impl PendingConversation {
             .await
             .map_err(OpenMlsError::wrap("merging pending commit"))?;
 
-        // Restore the custom configuration and build a conversation from it
-        let custom_cfg =
-            serde_json::from_slice(&cfg).map_err(OpenMlsError::wrap("deserializing mls custom configuration"))?;
+        // Restore the configuration
         let configuration = ConversationConfiguration {
             cipher_suite: mls_group.ciphersuite().into(),
-            custom: custom_cfg,
             ..Default::default()
         };
 

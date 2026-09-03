@@ -10,12 +10,12 @@ use crate::{
         },
         entities::mls::{
             e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
-            stored_keypackage::StoredKeypackage,
+            pending_group::PersistedMlsPendingGroup, stored_keypackage::StoredKeypackage,
         },
     },
     entities::{
-        MlsPendingMessage, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession,
-        StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle,
+        MlsPendingMessage, ProteusIdentity, ProteusPrekey, ProteusSession, StoredCredential, StoredEncryptionKeyPair,
+        StoredHpkePrivateKey, StoredPskBundle,
     },
     migrations::{LegacyPersistedMlsGroup, StoredCredentialV36, V33StoredEpochEncryptionKeypair},
 };
