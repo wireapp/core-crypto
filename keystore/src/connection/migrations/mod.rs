@@ -88,6 +88,7 @@ fn run_meta_migration(sql_migration_version: i32, conn: &mut rusqlite::Connectio
         meta_migrations::v31::VERSION => meta_migrations::v31::meta_migration(conn),
         meta_migrations::v34::VERSION => meta_migrations::v34::meta_migration(conn),
         meta_migrations::v37::VERSION => meta_migrations::v37::meta_migration(conn),
+        meta_migrations::v39::VERSION => meta_migrations::v39::meta_migration(conn),
         _ => Ok(()),
     }
 }
@@ -816,6 +817,99 @@ r9IJmL6kDQ==
             assert!(
                 StoredEncryptionKeyPair::get(&conn, &public_key).unwrap().is_some(),
                 "a keypair from the real legacy database must be gettable by its public key"
+            );
+        });
+    }
+
+    /// V39 unifies `mls_groups`/`mls_pending_groups`, but can't populate `epoch`, `ciphersuite`,
+    /// `own_leaf_index`, `credential_id`, or `credential_type` in SQL: those values only exist
+    /// inside the postcard-serialized `MlsGroup` in `state`. The v39 meta migration backfills them
+    /// by deserializing `state` in Rust; this test pins that backfill against an independent parse
+    /// of the same `state` blob, using the one real group the bundled legacy dump carries.
+    #[test]
+    fn v39_meta_migration_backfills_group_columns_from_state() {
+        let mut db_file = NamedTempFile::new().unwrap();
+        db_file.write_all(DB).unwrap();
+        let path = db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode");
+
+        let new_key = DatabaseKey::generate();
+        smol::block_on(migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key)).unwrap();
+
+        smol::block_on(async {
+            let db = Database::open(path, &new_key).await.unwrap();
+            let conn = db.conn().await;
+
+            struct BackfilledGroupRow {
+                state: Vec<u8>,
+                epoch: Option<i64>,
+                ciphersuite: Option<u16>,
+                own_leaf_index: Option<u32>,
+                credential_id: Option<Vec<u8>>,
+                credential_type: Option<u16>,
+                is_pending: bool,
+            }
+
+            let BackfilledGroupRow {
+                state,
+                epoch,
+                ciphersuite,
+                own_leaf_index,
+                credential_id,
+                credential_type,
+                is_pending,
+            } = conn
+                .query_row(
+                    "SELECT state, epoch, ciphersuite, own_leaf_index, credential_id, credential_type, is_pending FROM mls_groups",
+                    [],
+                    |row| {
+                        Ok(BackfilledGroupRow {
+                            state: row.get(0)?,
+                            epoch: row.get(1)?,
+                            ciphersuite: row.get(2)?,
+                            own_leaf_index: row.get(3)?,
+                            credential_id: row.get(4)?,
+                            credential_type: row.get(5)?,
+                            is_pending: row.get(6)?,
+                        })
+                    },
+                )
+                .expect("the bundled database carries exactly one real mls group");
+
+            assert!(
+                !is_pending,
+                "a row copied from mls_groups, not mls_pending_groups, must not be marked pending"
+            );
+
+            // parsed independently of the meta migration's own implementation, so this pins the
+            // backfill against the state blob rather than against itself
+            let group =
+                crate::deser::<openmls::group::MlsGroup>(&state).expect("the bundled group's state must deserialize");
+
+            assert_eq!(epoch, Some(group.epoch().as_u64() as i64));
+            assert_eq!(ciphersuite, Some(group.ciphersuite() as u16));
+            assert_eq!(own_leaf_index, Some(group.own_leaf_index().u32()));
+
+            let own_leaf = group.own_leaf().expect("the bundled group must have an own leaf node");
+            let expected_credential_id = Sha256Hash::hash_from(own_leaf.signature_key().as_slice());
+            let expected_credential_type: u16 = own_leaf.credential().credential_type().into();
+            assert_eq!(credential_id, Some(expected_credential_id.as_ref().to_vec()));
+            assert_eq!(credential_type, Some(expected_credential_type));
+
+            // and the backfilled (credential_id, credential_type) pair must actually resolve to a
+            // stored credential, since that's the whole point of the columns
+            let credential_exists: bool = conn
+                .query_row(
+                    "SELECT EXISTS(SELECT 1 FROM mls_credentials WHERE public_key_sha256 = ? AND credential_type = ?)",
+                    rusqlite::params![expected_credential_id, expected_credential_type],
+                    |row| row.get(0),
+                )
+                .expect("checking for the credential");
+            assert!(
+                credential_exists,
+                "(credential_id, credential_type) must reference a credential which is actually in mls_credentials"
             );
         });
     }
