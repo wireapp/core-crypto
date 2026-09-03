@@ -6,13 +6,13 @@ use aes_gcm::{
 };
 use chacha20poly1305::ChaCha20Poly1305;
 use hkdf::Hkdf;
-use openmls::prelude::HpkeCiphertext;
 // ML-DSA (FIPS-204). ml-dsa pulls signature 3.x, whose KeyInit collides with the
 // ecdsa/signature 2.x one, hence the alias
 use ml_dsa::{
     B32, KeyInit as MlDsaKeyInit, MlDsa44, MlDsa65, MlDsa87, MlDsaParams, Signature as MlDsaSignature,
     SignatureEncoding, SigningKey, VerifyingKey,
 };
+use openmls::prelude::HpkeCiphertext;
 use openmls_traits::{
     crypto::OpenMlsCrypto,
     random::OpenMlsRand,
