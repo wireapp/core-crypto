@@ -32,6 +32,20 @@ pub struct PersistedMlsGroup {
 }
 
 impl PersistedMlsGroup {
+    /// Delete this group only if it is still marked pending.
+    ///
+    /// A pending group and the established group it eventually becomes share a row.
+    /// Abandoning a pending join must not delete an established group which has since superseded it.
+    /// This accomplishes that while avoiding TOCTOU issues.
+    pub fn delete_if_pending<'a, Tx>(tx: &'a Tx, id: &ConversationIdRef) -> CryptoKeystoreResult<bool>
+    where
+        &'a Tx: Into<Transactionlike<'a>>,
+    {
+        let conn = tx.into().conn()?;
+        let changed = conn.execute("DELETE FROM mls_groups WHERE id = ? AND is_pending = 1", [id])?;
+        Ok(changed > 0)
+    }
+
     fn from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Self> {
         Ok(Self {
             id: row.get("id")?,
