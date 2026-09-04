@@ -57,7 +57,7 @@ const-oid.workspace = true
 base64.workspace = true
 
 [dev-dependencies]
-argon2 = "0.5"
+argon2 = "0.6"
 password-hash = { version = "0.6", features = ["getrandom"] }
 env_logger.workspace = true
 wire-e2e-identity = { version = "0.13.0", path = ".", features = ["builder"] }
