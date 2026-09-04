@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1788411079573,
+  "lastUpdate": 1788491784799,
   "repoUrl": "https://github.com/wireapp/core-crypto",
   "entries": {
     "JVM Benchmarks": [
@@ -147623,6 +147623,973 @@ window.BENCHMARK_DATA = {
             "range": "1.17%",
             "unit": "ops/s",
             "extra": "Average Latency (ns): 17300000 ± 1.19%\nMedian Latency (ns): 17200000 ± 150000\nMedian Throughput (ops/s): 58 ± 1\nSamples: 10"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "name": "Peter Goodspeed-Niklaus",
+            "username": "coriolinus",
+            "email": "peter.goodspeed-niklaus@wire.com"
+          },
+          "committer": {
+            "name": "Peter Goodspeed-Niklaus",
+            "username": "coriolinus",
+            "email": "peter.goodspeed-niklaus@wire.com"
+          },
+          "id": "380b3b10d722b171905996c798702106b2abea40",
+          "message": "chore(crypto): replace manual savepoint impl with keystore helper",
+          "timestamp": "2026-09-02T10:40:10Z",
+          "url": "https://github.com/wireapp/core-crypto/commit/380b3b10d722b171905996c798702106b2abea40"
+        },
+        "date": 1788491760242,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "AddUser - cipherSuite=1 userCount=1",
+            "value": 1077,
+            "range": "0.40%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 932339 ± 0.40%\nMedian Latency (ns): 900000 ± 0.48\nMedian Throughput (ops/s): 1111 ± 0\nSamples: 1073"
+          },
+          {
+            "name": "AddUser - cipherSuite=3 userCount=1",
+            "value": 1108,
+            "range": "0.40%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 906341 ± 0.39%\nMedian Latency (ns): 900000 ± 0.24\nMedian Throughput (ops/s): 1111 ± 0\nSamples: 1104"
+          },
+          {
+            "name": "AddUser - cipherSuite=2 userCount=1",
+            "value": 218,
+            "range": "0.22%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4594954 ± 0.22%\nMedian Latency (ns): 4600000 ± 0.48\nMedian Throughput (ops/s): 217 ± 0\nSamples: 218"
+          },
+          {
+            "name": "AddUser - cipherSuite=7 userCount=1",
+            "value": 67,
+            "range": "0.27%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 14964179 ± 0.27%\nMedian Latency (ns): 15000000 ± 100000\nMedian Throughput (ops/s): 67 ± 0\nSamples: 67"
+          },
+          {
+            "name": "AddUser - cipherSuite=5 userCount=1",
+            "value": 52,
+            "range": "0.29%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 19300000 ± 0.29%\nMedian Latency (ns): 19300000 ± 100000\nMedian Throughput (ops/s): 52 ± 0\nSamples: 52"
+          },
+          {
+            "name": "AddUser - cipherSuite=1 userCount=10",
+            "value": 280,
+            "range": "0.33%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 3569751 ± 0.35%\nMedian Latency (ns): 3600000 ± 100000\nMedian Throughput (ops/s): 278 ± 8\nSamples: 281"
+          },
+          {
+            "name": "AddUser - cipherSuite=3 userCount=10",
+            "value": 290,
+            "range": "0.32%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 3451379 ± 0.35%\nMedian Latency (ns): 3400000 ± 100000\nMedian Throughput (ops/s): 294 ± 8\nSamples: 290"
+          },
+          {
+            "name": "AddUser - cipherSuite=2 userCount=10",
+            "value": 39,
+            "range": "0.32%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 25725641 ± 0.32%\nMedian Latency (ns): 25800000 ± 100000\nMedian Throughput (ops/s): 39 ± 0\nSamples: 39"
+          },
+          {
+            "name": "AddUser - cipherSuite=7 userCount=10",
+            "value": 11,
+            "range": "0.27%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 89908333 ± 0.27%\nMedian Latency (ns): 90000000 ± 200000\nMedian Throughput (ops/s): 11 ± 0\nSamples: 12"
+          },
+          {
+            "name": "AddUser - cipherSuite=5 userCount=10",
+            "value": 9,
+            "range": "0.93%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 117133333 ± 0.93%\nMedian Latency (ns): 116900000 ± 600000\nMedian Throughput (ops/s): 9 ± 0\nSamples: 9"
+          },
+          {
+            "name": "AddUser - cipherSuite=1 userCount=100",
+            "value": 26,
+            "range": "1.10%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 38803846 ± 1.08%\nMedian Latency (ns): 39350000 ± 500000\nMedian Throughput (ops/s): 25 ± 0\nSamples: 26"
+          },
+          {
+            "name": "AddUser - cipherSuite=3 userCount=100",
+            "value": 27,
+            "range": "0.77%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 37085714 ± 0.78%\nMedian Latency (ns): 36700000 ± 200000\nMedian Throughput (ops/s): 27 ± 0\nSamples: 28"
+          },
+          {
+            "name": "AddUser - cipherSuite=2 userCount=100",
+            "value": 4,
+            "range": "0.64%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 254340000 ± 0.64%\nMedian Latency (ns): 254600000 ± 400000\nMedian Throughput (ops/s): 4 ± 0\nSamples: 5"
+          },
+          {
+            "name": "AddUser - cipherSuite=7 userCount=100",
+            "value": 1,
+            "range": "1.01%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 841700000 ± 1.01%\nMedian Latency (ns): 843800000 ± 5600000\nMedian Throughput (ops/s): 1 ± 0\nSamples: 5"
+          },
+          {
+            "name": "AddUser - cipherSuite=5 userCount=100",
+            "value": 1,
+            "range": "0.53%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1082960000 ± 0.53%\nMedian Latency (ns): 1085800000 ± 1200000\nMedian Throughput (ops/s): 1 ± 0\nSamples: 5"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=1 messageSize=16 messageCount=1",
+            "value": 5241,
+            "range": "1.03%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 210347 ± 0.86%\nMedian Latency (ns): 200000 ± 0.48\nMedian Throughput (ops/s): 5000 ± 0\nSamples: 4755"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=3 messageSize=16 messageCount=1",
+            "value": 5317,
+            "range": "1.02%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 207727 ± 0.96%\nMedian Latency (ns): 200000 ± 0.48\nMedian Throughput (ops/s): 5000 ± 0\nSamples: 4814"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=2 messageSize=16 messageCount=1",
+            "value": 1175,
+            "range": "0.40%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 855432 ± 0.39%\nMedian Latency (ns): 900000 ± 0.48\nMedian Throughput (ops/s): 1111 ± 0\nSamples: 1169"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=7 messageSize=16 messageCount=1",
+            "value": 390,
+            "range": "0.23%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2567949 ± 0.24%\nMedian Latency (ns): 2600000 ± 0.48\nMedian Throughput (ops/s): 385 ± 0\nSamples: 390"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=5 messageSize=16 messageCount=1",
+            "value": 301,
+            "range": "0.42%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 3331561 ± 0.51%\nMedian Latency (ns): 3300000 ± 100000\nMedian Throughput (ops/s): 303 ± 9\nSamples: 301"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=1 messageSize=1024 messageCount=1",
+            "value": 4643,
+            "range": "0.94%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 232396 ± 1.00%\nMedian Latency (ns): 200000 ± 0.48\nMedian Throughput (ops/s): 5000 ± 0\nSamples: 4303"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=3 messageSize=1024 messageCount=1",
+            "value": 4929,
+            "range": "1.03%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 222267 ± 0.98%\nMedian Latency (ns): 200000 ± 0.48\nMedian Throughput (ops/s): 5000 ± 0\nSamples: 4500"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=2 messageSize=1024 messageCount=1",
+            "value": 1145,
+            "range": "0.39%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 876862 ± 0.38%\nMedian Latency (ns): 900000 ± 0.00\nMedian Throughput (ops/s): 1111 ± 0\nSamples: 1141"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=7 messageSize=1024 messageCount=1",
+            "value": 387,
+            "range": "0.23%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2587080 ± 0.23%\nMedian Latency (ns): 2600000 ± 0.00\nMedian Throughput (ops/s): 385 ± 0\nSamples: 387"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=5 messageSize=1024 messageCount=1",
+            "value": 298,
+            "range": "0.37%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 3361074 ± 0.38%\nMedian Latency (ns): 3300000 ± 100000\nMedian Throughput (ops/s): 303 ± 9\nSamples: 298"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=1 messageSize=65536 messageCount=1",
+            "value": 626,
+            "range": "0.42%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1604487 ± 0.79%\nMedian Latency (ns): 1600000 ± 0.48\nMedian Throughput (ops/s): 625 ± 0\nSamples: 624"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=3 messageSize=65536 messageCount=1",
+            "value": 883,
+            "range": "0.40%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1138111 ± 0.50%\nMedian Latency (ns): 1100000 ± 0.48\nMedian Throughput (ops/s): 909 ± 0\nSamples: 879"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=2 messageSize=65536 messageCount=1",
+            "value": 450,
+            "range": "0.32%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2223333 ± 0.42%\nMedian Latency (ns): 2200000 ± 0.48\nMedian Throughput (ops/s): 455 ± 0\nSamples: 450"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=7 messageSize=65536 messageCount=1",
+            "value": 252,
+            "range": "0.24%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 3970238 ± 0.25%\nMedian Latency (ns): 4000000 ± 0.00\nMedian Throughput (ops/s): 250 ± 0\nSamples: 252"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=5 messageSize=65536 messageCount=1",
+            "value": 210,
+            "range": "0.45%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4757346 ± 0.53%\nMedian Latency (ns): 4700000 ± 100000\nMedian Throughput (ops/s): 213 ± 4\nSamples: 211"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=1 messageSize=16 messageCount=10",
+            "value": 1212,
+            "range": "0.43%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 831063 ± 0.69%\nMedian Latency (ns): 800000 ± 0.48\nMedian Throughput (ops/s): 1250 ± 0\nSamples: 1204"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=3 messageSize=16 messageCount=10",
+            "value": 1248,
+            "range": "0.42%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 807264 ± 0.73%\nMedian Latency (ns): 800000 ± 0.48\nMedian Throughput (ops/s): 1250 ± 0\nSamples: 1239"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=2 messageSize=16 messageCount=10",
+            "value": 137,
+            "range": "0.13%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 7295652 ± 0.13%\nMedian Latency (ns): 7300000 ± 0.48\nMedian Throughput (ops/s): 137 ± 0\nSamples: 138"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=7 messageSize=16 messageCount=10",
+            "value": 41,
+            "range": "0.12%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 24342857 ± 0.12%\nMedian Latency (ns): 24400000 ± 0.24\nMedian Throughput (ops/s): 41 ± 0\nSamples: 42"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=5 messageSize=16 messageCount=10",
+            "value": 31,
+            "range": "0.52%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 32212500 ± 0.53%\nMedian Latency (ns): 32200000 ± 300000\nMedian Throughput (ops/s): 31 ± 0\nSamples: 32"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=1 messageSize=1024 messageCount=10",
+            "value": 950,
+            "range": "0.39%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1059048 ± 0.82%\nMedian Latency (ns): 1100000 ± 0.48\nMedian Throughput (ops/s): 909 ± 0\nSamples: 945"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=3 messageSize=1024 messageCount=10",
+            "value": 1049,
+            "range": "0.40%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 958773 ± 0.69%\nMedian Latency (ns): 1000000 ± 0.00\nMedian Throughput (ops/s): 1000 ± 0\nSamples: 1043"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=2 messageSize=1024 messageCount=10",
+            "value": 133,
+            "range": "0.14%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 7517164 ± 0.14%\nMedian Latency (ns): 7500000 ± 0.00\nMedian Throughput (ops/s): 133 ± 0\nSamples: 134"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=7 messageSize=1024 messageCount=10",
+            "value": 41,
+            "range": "0.11%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 24536585 ± 0.11%\nMedian Latency (ns): 24500000 ± 100000\nMedian Throughput (ops/s): 41 ± 0\nSamples: 41"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=5 messageSize=1024 messageCount=10",
+            "value": 31,
+            "range": "0.31%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 32240625 ± 0.31%\nMedian Latency (ns): 32250000 ± 250000\nMedian Throughput (ops/s): 31 ± 0\nSamples: 32"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=1 messageSize=65536 messageCount=10",
+            "value": 68,
+            "range": "0.57%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 14738235 ± 0.64%\nMedian Latency (ns): 14700000 ± 99999\nMedian Throughput (ops/s): 68 ± 0\nSamples: 68"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=3 messageSize=65536 messageCount=10",
+            "value": 99,
+            "range": "1.02%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 10165657 ± 1.87%\nMedian Latency (ns): 10000000 ± 0.00\nMedian Throughput (ops/s): 100 ± 0\nSamples: 99"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=2 messageSize=65536 messageCount=10",
+            "value": 48,
+            "range": "0.29%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 20929167 ± 0.30%\nMedian Latency (ns): 20900000 ± 100000\nMedian Throughput (ops/s): 48 ± 0\nSamples: 48"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=7 messageSize=65536 messageCount=10",
+            "value": 26,
+            "range": "0.19%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 38414815 ± 0.19%\nMedian Latency (ns): 38400000 ± 100000\nMedian Throughput (ops/s): 26 ± 0\nSamples: 27"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=5 messageSize=65536 messageCount=10",
+            "value": 22,
+            "range": "0.49%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 46240909 ± 0.50%\nMedian Latency (ns): 46200000 ± 300000\nMedian Throughput (ops/s): 22 ± 0\nSamples: 22"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=1 messageSize=16 messageCount=100",
+            "value": 143,
+            "range": "0.49%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 7021678 ± 0.71%\nMedian Latency (ns): 7000000 ± 0.00\nMedian Throughput (ops/s): 143 ± 0\nSamples: 143"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=3 messageSize=16 messageCount=100",
+            "value": 148,
+            "range": "0.48%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 6778378 ± 0.70%\nMedian Latency (ns): 6800000 ± 99999\nMedian Throughput (ops/s): 147 ± 2\nSamples: 148"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=2 messageSize=16 messageCount=100",
+            "value": 14,
+            "range": "0.09%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 71642857 ± 0.09%\nMedian Latency (ns): 71700000 ± 100000\nMedian Throughput (ops/s): 14 ± 0\nSamples: 14"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=7 messageSize=16 messageCount=100",
+            "value": 4,
+            "range": "0.12%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 240940000 ± 0.12%\nMedian Latency (ns): 240900000 ± 100000\nMedian Throughput (ops/s): 4 ± 0\nSamples: 5"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=5 messageSize=16 messageCount=100",
+            "value": 3,
+            "range": "0.18%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 319040000 ± 0.18%\nMedian Latency (ns): 319000000 ± 300000\nMedian Throughput (ops/s): 3 ± 0\nSamples: 5"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=1 messageSize=1024 messageCount=100",
+            "value": 107,
+            "range": "0.84%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 9342593 ± 1.40%\nMedian Latency (ns): 9300000 ± 0.48\nMedian Throughput (ops/s): 108 ± 0\nSamples: 108"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=3 messageSize=1024 messageCount=100",
+            "value": 120,
+            "range": "0.64%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 8316529 ± 0.94%\nMedian Latency (ns): 8300000 ± 0.48\nMedian Throughput (ops/s): 120 ± 0\nSamples: 121"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=2 messageSize=1024 messageCount=100",
+            "value": 14,
+            "range": "0.10%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 73892857 ± 0.10%\nMedian Latency (ns): 73900000 ± 100000\nMedian Throughput (ops/s): 14 ± 0\nSamples: 14"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=7 messageSize=1024 messageCount=100",
+            "value": 4,
+            "range": "0.30%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 242900000 ± 0.30%\nMedian Latency (ns): 242800000 ± 500000\nMedian Throughput (ops/s): 4 ± 0\nSamples: 5"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=5 messageSize=1024 messageCount=100",
+            "value": 3,
+            "range": "0.61%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 321420000 ± 0.61%\nMedian Latency (ns): 320900000 ± 600000\nMedian Throughput (ops/s): 3 ± 0\nSamples: 5"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=1 messageSize=65536 messageCount=100",
+            "value": 7,
+            "range": "1.95%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 146542857 ± 2.03%\nMedian Latency (ns): 145500000 ± 700000\nMedian Throughput (ops/s): 7 ± 0\nSamples: 7"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=3 messageSize=65536 messageCount=100",
+            "value": 10,
+            "range": "0.41%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 99618182 ± 0.41%\nMedian Latency (ns): 99400000 ± 200000\nMedian Throughput (ops/s): 10 ± 0\nSamples: 11"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=2 messageSize=65536 messageCount=100",
+            "value": 5,
+            "range": "0.27%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 207780000 ± 0.27%\nMedian Latency (ns): 207600000 ± 200000\nMedian Throughput (ops/s): 5 ± 0\nSamples: 5"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=7 messageSize=65536 messageCount=100",
+            "value": 3,
+            "range": "0.90%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 381980000 ± 0.90%\nMedian Latency (ns): 380400000 ± 700000\nMedian Throughput (ops/s): 3 ± 0\nSamples: 5"
+          },
+          {
+            "name": "CreateMessage - cipherSuite=5 messageSize=65536 messageCount=100",
+            "value": 2,
+            "range": "0.33%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 460000000 ± 0.33%\nMedian Latency (ns): 459700000 ± 500000\nMedian Throughput (ops/s): 2 ± 0\nSamples: 5"
+          },
+          {
+            "name": "JoinGroup - cipherSuite=1 userCount=1",
+            "value": 705,
+            "range": "1.14%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1450725 ± 1.12%\nMedian Latency (ns): 1500000 ± 100000\nMedian Throughput (ops/s): 667 ± 48\nSamples: 690"
+          },
+          {
+            "name": "JoinGroup - cipherSuite=3 userCount=1",
+            "value": 644,
+            "range": "1.61%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1611433 ± 1.42%\nMedian Latency (ns): 1700000 ± 100000\nMedian Throughput (ops/s): 588 ± 37\nSamples: 621"
+          },
+          {
+            "name": "JoinGroup - cipherSuite=2 userCount=1",
+            "value": 155,
+            "range": "1.06%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 6488387 ± 1.03%\nMedian Latency (ns): 6600000 ± 300000\nMedian Throughput (ops/s): 152 ± 7\nSamples: 155"
+          },
+          {
+            "name": "JoinGroup - cipherSuite=7 userCount=1",
+            "value": 49,
+            "range": "0.97%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 20276000 ± 0.96%\nMedian Latency (ns): 20250000 ± 650000\nMedian Throughput (ops/s): 49 ± 2\nSamples: 50"
+          },
+          {
+            "name": "JoinGroup - cipherSuite=5 userCount=1",
+            "value": 39,
+            "range": "0.77%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 25917949 ± 0.77%\nMedian Latency (ns): 25900000 ± 600000\nMedian Throughput (ops/s): 39 ± 1\nSamples: 39"
+          },
+          {
+            "name": "JoinGroup - cipherSuite=1 userCount=10",
+            "value": 396,
+            "range": "0.73%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2545547 ± 0.94%\nMedian Latency (ns): 2500000 ± 0.00\nMedian Throughput (ops/s): 400 ± 0\nSamples: 393"
+          },
+          {
+            "name": "JoinGroup - cipherSuite=3 userCount=10",
+            "value": 404,
+            "range": "0.48%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2486849 ± 0.83%\nMedian Latency (ns): 2500000 ± 0.00\nMedian Throughput (ops/s): 400 ± 0\nSamples: 403"
+          },
+          {
+            "name": "JoinGroup - cipherSuite=2 userCount=10",
+            "value": 53,
+            "range": "0.20%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 18945283 ± 0.20%\nMedian Latency (ns): 19000000 ± 100000\nMedian Throughput (ops/s): 53 ± 0\nSamples: 53"
+          },
+          {
+            "name": "JoinGroup - cipherSuite=7 userCount=10",
+            "value": 15,
+            "range": "0.73%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 66766667 ± 0.74%\nMedian Latency (ns): 67000000 ± 200000\nMedian Throughput (ops/s): 15 ± 0\nSamples: 15"
+          },
+          {
+            "name": "JoinGroup - cipherSuite=5 userCount=10",
+            "value": 11,
+            "range": "0.80%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 87041667 ± 0.80%\nMedian Latency (ns): 87100000 ± 550000\nMedian Throughput (ops/s): 11 ± 0\nSamples: 12"
+          },
+          {
+            "name": "JoinGroup - cipherSuite=1 userCount=100",
+            "value": 70,
+            "range": "0.74%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 14321429 ± 0.88%\nMedian Latency (ns): 14200000 ± 100000\nMedian Throughput (ops/s): 70 ± 0\nSamples: 70"
+          },
+          {
+            "name": "JoinGroup - cipherSuite=3 userCount=100",
+            "value": 69,
+            "range": "1.11%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 14488571 ± 1.21%\nMedian Latency (ns): 14200000 ± 200000\nMedian Throughput (ops/s): 70 ± 1\nSamples: 70"
+          },
+          {
+            "name": "JoinGroup - cipherSuite=2 userCount=100",
+            "value": 7,
+            "range": "0.57%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 137237500 ± 0.57%\nMedian Latency (ns): 137450000 ± 250000\nMedian Throughput (ops/s): 7 ± 0\nSamples: 8"
+          },
+          {
+            "name": "JoinGroup - cipherSuite=7 userCount=100",
+            "value": 2,
+            "range": "0.79%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 492020000 ± 0.79%\nMedian Latency (ns): 493700000 ± 1200000\nMedian Throughput (ops/s): 2 ± 0\nSamples: 5"
+          },
+          {
+            "name": "JoinGroup - cipherSuite=5 userCount=100",
+            "value": 2,
+            "range": "1.96%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 644500000 ± 2.00%\nMedian Latency (ns): 640500000 ± 1200000\nMedian Throughput (ops/s): 2 ± 0\nSamples: 5"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=1 messageSize=16 messageCount=1",
+            "value": 4664,
+            "range": "0.95%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 231054 ± 0.75%\nMedian Latency (ns): 200000 ± 0.48\nMedian Throughput (ops/s): 5000 ± 0\nSamples: 4328"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=3 messageSize=16 messageCount=1",
+            "value": 4687,
+            "range": "0.97%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 230597 ± 0.75%\nMedian Latency (ns): 200000 ± 0.48\nMedian Throughput (ops/s): 5000 ± 0\nSamples: 4337"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=2 messageSize=16 messageCount=1",
+            "value": 1251,
+            "range": "0.41%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 803855 ± 0.41%\nMedian Latency (ns): 800000 ± 0.48\nMedian Throughput (ops/s): 1250 ± 0\nSamples: 1245"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=7 messageSize=16 messageCount=1",
+            "value": 400,
+            "range": "0.23%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2501750 ± 0.23%\nMedian Latency (ns): 2500000 ± 0.00\nMedian Throughput (ops/s): 400 ± 0\nSamples: 400"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=5 messageSize=16 messageCount=1",
+            "value": 313,
+            "range": "0.21%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 3196486 ± 0.22%\nMedian Latency (ns): 3200000 ± 0.48\nMedian Throughput (ops/s): 313 ± 0\nSamples: 313"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=1 messageSize=1024 messageCount=1",
+            "value": 4177,
+            "range": "0.87%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 254997 ± 0.88%\nMedian Latency (ns): 300000 ± 0.48\nMedian Throughput (ops/s): 3333 ± 0\nSamples: 3922"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=3 messageSize=1024 messageCount=1",
+            "value": 4415,
+            "range": "0.90%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 242062 ± 0.73%\nMedian Latency (ns): 200000 ± 0.48\nMedian Throughput (ops/s): 5000 ± 0\nSamples: 4132"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=2 messageSize=1024 messageCount=1",
+            "value": 1220,
+            "range": "0.40%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 823806 ± 0.40%\nMedian Latency (ns): 800000 ± 0.48\nMedian Throughput (ops/s): 1250 ± 0\nSamples: 1214"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=7 messageSize=1024 messageCount=1",
+            "value": 397,
+            "range": "0.23%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2522922 ± 0.23%\nMedian Latency (ns): 2500000 ± 0.00\nMedian Throughput (ops/s): 400 ± 0\nSamples: 397"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=5 messageSize=1024 messageCount=1",
+            "value": 311,
+            "range": "0.19%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 3218650 ± 0.19%\nMedian Latency (ns): 3200000 ± 0.48\nMedian Throughput (ops/s): 313 ± 0\nSamples: 311"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=1 messageSize=65536 messageCount=1",
+            "value": 669,
+            "range": "0.37%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1499102 ± 0.48%\nMedian Latency (ns): 1500000 ± 0.00\nMedian Throughput (ops/s): 667 ± 0\nSamples: 668"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=3 messageSize=65536 messageCount=1",
+            "value": 976,
+            "range": "0.44%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1031134 ± 0.62%\nMedian Latency (ns): 1000000 ± 0.00\nMedian Throughput (ops/s): 1000 ± 0\nSamples: 970"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=2 messageSize=65536 messageCount=1",
+            "value": 462,
+            "range": "0.34%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 2167965 ± 0.41%\nMedian Latency (ns): 2200000 ± 0.48\nMedian Throughput (ops/s): 455 ± 0\nSamples: 462"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=7 messageSize=65536 messageCount=1",
+            "value": 257,
+            "range": "0.21%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 3899611 ± 0.21%\nMedian Latency (ns): 3900000 ± 0.00\nMedian Throughput (ops/s): 256 ± 0\nSamples: 257"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=5 messageSize=65536 messageCount=1",
+            "value": 217,
+            "range": "0.35%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4617512 ± 0.47%\nMedian Latency (ns): 4600000 ± 0.48\nMedian Throughput (ops/s): 217 ± 0\nSamples: 217"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=1 messageSize=16 messageCount=10",
+            "value": 955,
+            "range": "0.40%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1053053 ± 0.78%\nMedian Latency (ns): 1000000 ± 100000\nMedian Throughput (ops/s): 1000 ± 91\nSamples: 950"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=3 messageSize=16 messageCount=10",
+            "value": 978,
+            "range": "0.43%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1029969 ± 0.82%\nMedian Latency (ns): 1000000 ± 0.00\nMedian Throughput (ops/s): 1000 ± 0\nSamples: 971"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=2 messageSize=16 messageCount=10",
+            "value": 147,
+            "range": "0.51%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 6798649 ± 0.78%\nMedian Latency (ns): 6800000 ± 0.48\nMedian Throughput (ops/s): 147 ± 0\nSamples: 148"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=7 messageSize=16 messageCount=10",
+            "value": 42,
+            "range": "0.10%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 23720930 ± 0.10%\nMedian Latency (ns): 23700000 ± 99999\nMedian Throughput (ops/s): 42 ± 0\nSamples: 43"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=5 messageSize=16 messageCount=10",
+            "value": 33,
+            "range": "0.06%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 30687879 ± 0.06%\nMedian Latency (ns): 30700000 ± 0.48\nMedian Throughput (ops/s): 33 ± 0\nSamples: 33"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=1 messageSize=1024 messageCount=10",
+            "value": 799,
+            "range": "0.39%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1257663 ± 0.74%\nMedian Latency (ns): 1300000 ± 99999\nMedian Throughput (ops/s): 769 ± 55\nSamples: 796"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=3 messageSize=1024 messageCount=10",
+            "value": 867,
+            "range": "0.40%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1162602 ± 1.23%\nMedian Latency (ns): 1200000 ± 99999\nMedian Throughput (ops/s): 833 ± 64\nSamples: 861"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=2 messageSize=1024 messageCount=10",
+            "value": 143,
+            "range": "0.15%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 7004895 ± 0.15%\nMedian Latency (ns): 7000000 ± 0.00\nMedian Throughput (ops/s): 143 ± 0\nSamples: 143"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=7 messageSize=1024 messageCount=10",
+            "value": 42,
+            "range": "0.08%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 23942857 ± 0.08%\nMedian Latency (ns): 23900000 ± 100000\nMedian Throughput (ops/s): 42 ± 0\nSamples: 42"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=5 messageSize=1024 messageCount=10",
+            "value": 32,
+            "range": "0.08%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 30933333 ± 0.08%\nMedian Latency (ns): 30900000 ± 0.48\nMedian Throughput (ops/s): 32 ± 0\nSamples: 33"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=1 messageSize=65536 messageCount=10",
+            "value": 73,
+            "range": "0.39%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 13682432 ± 0.42%\nMedian Latency (ns): 13600000 ± 0.48\nMedian Throughput (ops/s): 74 ± 0\nSamples: 74"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=3 messageSize=65536 messageCount=10",
+            "value": 110,
+            "range": "0.58%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 9072072 ± 0.65%\nMedian Latency (ns): 9000000 ± 0.00\nMedian Throughput (ops/s): 111 ± 0\nSamples: 111"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=2 messageSize=65536 messageCount=10",
+            "value": 49,
+            "range": "0.30%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 20455102 ± 0.32%\nMedian Latency (ns): 20400000 ± 0.48\nMedian Throughput (ops/s): 49 ± 0\nSamples: 49"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=7 messageSize=65536 messageCount=10",
+            "value": 27,
+            "range": "0.11%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 37688889 ± 0.11%\nMedian Latency (ns): 37700000 ± 100000\nMedian Throughput (ops/s): 27 ± 0\nSamples: 27"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=5 messageSize=65536 messageCount=10",
+            "value": 22,
+            "range": "0.15%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 44804348 ± 0.16%\nMedian Latency (ns): 44800000 ± 100000\nMedian Throughput (ops/s): 22 ± 0\nSamples: 23"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=1 messageSize=16 messageCount=100",
+            "value": 110,
+            "range": "0.55%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 9120909 ± 0.75%\nMedian Latency (ns): 9100000 ± 0.48\nMedian Throughput (ops/s): 110 ± 0\nSamples: 110"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=3 messageSize=16 messageCount=100",
+            "value": 112,
+            "range": "0.75%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 8977679 ± 1.04%\nMedian Latency (ns): 8900000 ± 0.48\nMedian Throughput (ops/s): 112 ± 0\nSamples: 112"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=2 messageSize=16 messageCount=100",
+            "value": 15,
+            "range": "0.11%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 66418750 ± 0.11%\nMedian Latency (ns): 66400000 ± 100000\nMedian Throughput (ops/s): 15 ± 0\nSamples: 16"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=7 messageSize=16 messageCount=100",
+            "value": 4,
+            "range": "0.02%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 235820000 ± 0.02%\nMedian Latency (ns): 235800000 ± 0.00\nMedian Throughput (ops/s): 4 ± 0\nSamples: 5"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=5 messageSize=16 messageCount=100",
+            "value": 3,
+            "range": "0.03%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 305600000 ± 0.03%\nMedian Latency (ns): 305600000 ± 0.00\nMedian Throughput (ops/s): 3 ± 0\nSamples: 5"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=1 messageSize=1024 messageCount=100",
+            "value": 89,
+            "range": "0.76%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 11218889 ± 0.95%\nMedian Latency (ns): 11100000 ± 99999\nMedian Throughput (ops/s): 90 ± 1\nSamples: 90"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=3 messageSize=1024 messageCount=100",
+            "value": 98,
+            "range": "0.58%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 10264286 ± 0.78%\nMedian Latency (ns): 10200000 ± 0.48\nMedian Throughput (ops/s): 98 ± 0\nSamples: 98"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=2 messageSize=1024 messageCount=100",
+            "value": 14,
+            "range": "1.13%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 69160000 ± 1.21%\nMedian Latency (ns): 68800000 ± 100000\nMedian Throughput (ops/s): 15 ± 0\nSamples: 15"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=7 messageSize=1024 messageCount=100",
+            "value": 4,
+            "range": "0.05%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 237960000 ± 0.05%\nMedian Latency (ns): 238000000 ± 0.00\nMedian Throughput (ops/s): 4 ± 0\nSamples: 5"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=5 messageSize=1024 messageCount=100",
+            "value": 3,
+            "range": "0.04%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 308360000 ± 0.04%\nMedian Latency (ns): 308300000 ± 0.00\nMedian Throughput (ops/s): 3 ± 0\nSamples: 5"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=1 messageSize=65536 messageCount=100",
+            "value": 7,
+            "range": "0.41%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 135512500 ± 0.42%\nMedian Latency (ns): 135400000 ± 150000\nMedian Throughput (ops/s): 7 ± 0\nSamples: 8"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=3 messageSize=65536 messageCount=100",
+            "value": 11,
+            "range": "0.10%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 88641667 ± 0.10%\nMedian Latency (ns): 88600000 ± 100000\nMedian Throughput (ops/s): 11 ± 0\nSamples: 12"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=2 messageSize=65536 messageCount=100",
+            "value": 5,
+            "range": "0.14%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 202900000 ± 0.14%\nMedian Latency (ns): 203000000 ± 100000\nMedian Throughput (ops/s): 5 ± 0\nSamples: 5"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=7 messageSize=65536 messageCount=100",
+            "value": 3,
+            "range": "0.11%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 375340000 ± 0.11%\nMedian Latency (ns): 375500000 ± 200000\nMedian Throughput (ops/s): 3 ± 0\nSamples: 5"
+          },
+          {
+            "name": "ProcessMessage - cipherSuite=5 messageSize=65536 messageCount=100",
+            "value": 2,
+            "range": "0.10%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 446220000 ± 0.10%\nMedian Latency (ns): 446300000 ± 300000\nMedian Throughput (ops/s): 2 ± 0\nSamples: 5"
+          },
+          {
+            "name": "RemoveUser - cipherSuite=1 userCount=1",
+            "value": 1421,
+            "range": "6.65%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 710000 ± 7.43%\nMedian Latency (ns): 700000 ± 0.24\nMedian Throughput (ops/s): 1429 ± 0\nSamples: 10"
+          },
+          {
+            "name": "RemoveUser - cipherSuite=3 userCount=1",
+            "value": 1548,
+            "range": "5.80%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 650000 ± 5.80%\nMedian Latency (ns): 650000 ± 50000\nMedian Throughput (ops/s): 1548 ± 119\nSamples: 10"
+          },
+          {
+            "name": "RemoveUser - cipherSuite=2 userCount=1",
+            "value": 261,
+            "range": "1.56%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 3840000 ± 1.57%\nMedian Latency (ns): 3800000 ± 50000\nMedian Throughput (ops/s): 263 ± 3\nSamples: 10"
+          },
+          {
+            "name": "RemoveUser - cipherSuite=7 userCount=1",
+            "value": 81,
+            "range": "0.81%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 12400000 ± 0.82%\nMedian Latency (ns): 12350000 ± 50000\nMedian Throughput (ops/s): 81 ± 0\nSamples: 10"
+          },
+          {
+            "name": "RemoveUser - cipherSuite=5 userCount=1",
+            "value": 62,
+            "range": "1.03%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 16230000 ± 1.04%\nMedian Latency (ns): 16200000 ± 150000\nMedian Throughput (ops/s): 62 ± 1\nSamples: 10"
+          },
+          {
+            "name": "RemoveUser - cipherSuite=1 userCount=10",
+            "value": 1357,
+            "range": "4.86%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 740000 ± 4.99%\nMedian Latency (ns): 700000 ± 0.24\nMedian Throughput (ops/s): 1429 ± 0\nSamples: 10"
+          },
+          {
+            "name": "RemoveUser - cipherSuite=3 userCount=10",
+            "value": 1363,
+            "range": "7.28%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 740000 ± 6.76%\nMedian Latency (ns): 750000 ± 50000\nMedian Throughput (ops/s): 1339 ± 89\nSamples: 10"
+          },
+          {
+            "name": "RemoveUser - cipherSuite=2 userCount=10",
+            "value": 254,
+            "range": "1.28%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 3940000 ± 1.27%\nMedian Latency (ns): 3950000 ± 50000\nMedian Throughput (ops/s): 253 ± 3\nSamples: 10"
+          },
+          {
+            "name": "RemoveUser - cipherSuite=7 userCount=10",
+            "value": 79,
+            "range": "2.77%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 12730000 ± 3.02%\nMedian Latency (ns): 12500000 ± 100000\nMedian Throughput (ops/s): 80 ± 1\nSamples: 10"
+          },
+          {
+            "name": "RemoveUser - cipherSuite=5 userCount=10",
+            "value": 61,
+            "range": "1.07%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 16320000 ± 1.07%\nMedian Latency (ns): 16350000 ± 200000\nMedian Throughput (ops/s): 61 ± 1\nSamples: 10"
+          },
+          {
+            "name": "RemoveUser - cipherSuite=1 userCount=100",
+            "value": 727,
+            "range": "4.03%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1380000 ± 4.09%\nMedian Latency (ns): 1400000 ± 100000\nMedian Throughput (ops/s): 714 ± 48\nSamples: 10"
+          },
+          {
+            "name": "RemoveUser - cipherSuite=3 userCount=100",
+            "value": 747,
+            "range": "2.72%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 1340000 ± 2.76%\nMedian Latency (ns): 1300000 ± 0.48\nMedian Throughput (ops/s): 769 ± 0\nSamples: 10"
+          },
+          {
+            "name": "RemoveUser - cipherSuite=2 userCount=100",
+            "value": 216,
+            "range": "0.79%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 4640000 ± 0.80%\nMedian Latency (ns): 4600000 ± 0.48\nMedian Throughput (ops/s): 217 ± 0\nSamples: 10"
+          },
+          {
+            "name": "RemoveUser - cipherSuite=7 userCount=100",
+            "value": 75,
+            "range": "0.37%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 13360000 ± 0.37%\nMedian Latency (ns): 13350000 ± 50000\nMedian Throughput (ops/s): 75 ± 0\nSamples: 10"
+          },
+          {
+            "name": "RemoveUser - cipherSuite=5 userCount=100",
+            "value": 58,
+            "range": "0.60%",
+            "unit": "ops/s",
+            "extra": "Average Latency (ns): 17190000 ± 0.60%\nMedian Latency (ns): 17200000 ± 50000\nMedian Throughput (ops/s): 58 ± 0\nSamples: 10"
           }
         ]
       }
