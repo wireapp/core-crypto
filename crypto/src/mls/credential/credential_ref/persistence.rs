@@ -6,7 +6,10 @@
 
 use std::sync::Arc;
 
-use core_crypto_keystore::{entities::StoredCredential, traits::FetchFromDatabase};
+use core_crypto_keystore::{
+    entities::{StoredCredential, StoredCredentialPk},
+    traits::FetchFromDatabase,
+};
 
 use super::super::{Error, Result};
 use crate::{Credential, CredentialRef, KeystoreError, RecursiveError};
@@ -17,7 +20,7 @@ impl CredentialRef {
     /// Note that this does not attach the credential to any Session; it just does the data manipulation.
     pub async fn load(&self, database: &impl FetchFromDatabase) -> Result<Credential> {
         database
-            .get::<StoredCredential>(&self.public_key_hash())
+            .get::<StoredCredential>(&StoredCredentialPk::new(self.public_key_hash(), self.r#type().into()))
             .await
             .map_err(KeystoreError::wrap("finding credential"))?
             .ok_or_else(|| Error::CredentialRefNotFound(self.public_key_hash()))
@@ -36,7 +39,7 @@ impl CredentialRef {
     /// actually need the public key. We therefore offer this method to load it dynamically.
     pub async fn public_key(&self, database: &impl FetchFromDatabase) -> Result<Vec<u8>> {
         database
-            .get::<StoredCredential>(&self.public_key_hash())
+            .get::<StoredCredential>(&StoredCredentialPk::new(self.public_key_hash(), self.r#type().into()))
             .await
             .map_err(KeystoreError::wrap("finding credential"))?
             .ok_or_else(|| Error::CredentialRefNotFound(self.public_key_hash()))

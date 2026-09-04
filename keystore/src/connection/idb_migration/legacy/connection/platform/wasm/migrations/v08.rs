@@ -12,8 +12,9 @@ use crate::{
         connection::Database,
         traits::{Entity as _, EntityBase as _},
     },
-    entities::StoredCredential,
-    migrations::{LegacyPersistedMlsGroup, detect_duplicate_credentials, make_least_used_ciphersuite},
+    migrations::{
+        LegacyPersistedMlsGroup, StoredCredentialV36, detect_duplicate_credentials, make_least_used_ciphersuite,
+    },
 };
 
 /// Open IDB once with the new builder and close it, this will apply the update.
@@ -23,7 +24,7 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
     let persisted_mls_groups = LegacyPersistedMlsGroup::load_all(&mut db_during_migration).await?;
 
     let least_used_ciphersuite = make_least_used_ciphersuite(persisted_mls_groups)?;
-    let credentials = StoredCredential::load_all(&mut db_during_migration).await?;
+    let credentials = StoredCredentialV36::load_all(&mut db_during_migration).await?;
     let duplicates = detect_duplicate_credentials(&credentials);
 
     Database::migration_transaction(db_during_migration, async |tx| {
@@ -69,7 +70,7 @@ pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
     super::v07::get_builder(name).version(DB_VERSION_8).add_object_store(
         ObjectStoreBuilder::new(&format!(
             "{collection_name}_new",
-            collection_name = StoredCredential::TABLE_NAME
+            collection_name = StoredCredentialV36::TABLE_NAME
         ))
         .auto_increment(false)
         .add_index(IndexBuilder::new("public_key".into(), KeyPath::new_single("public_key")).unique(true)),

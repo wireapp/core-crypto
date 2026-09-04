@@ -1,16 +1,14 @@
-use openmls::prelude::Ciphersuite;
-use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 use rusqlite::Connection;
 
 use crate::{
-    CryptoKeystoreError, Sha256Hash, Transaction, deser,
+    CryptoKeystoreError, Transaction, deser,
     entities::{
-        PersistedMlsGroup, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
-        StoredEpochEncryptionKeypairPkRef, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
+        PersistedMlsGroup, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef,
+        StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
     },
     ser,
-    traits::{Entity as _, EntityDatabaseMutation as _, EntityDeleteBorrowed as _, EntityGetBorrowed as _},
+    traits::{EntityDatabaseMutation as _, EntityDeleteBorrowed as _, EntityGetBorrowed as _},
 };
 
 /// Implementation of the `MlsEntity::read` function; we want to share this elsewhere.
@@ -25,21 +23,7 @@ pub(crate) fn read_mls_entity<V: MlsEntity>(conn: &Connection, id: &[u8]) -> Opt
             deser(&v.state).ok()
         }
         MlsEntityId::SignatureKeyPair => {
-            let hash = Sha256Hash::from_existing_hash(id).ok()?;
-            let stored_credential = StoredCredential::get(conn, &hash).ok().flatten()?;
-            let ciphersuite = Ciphersuite::try_from(stored_credential.ciphersuite).ok()?;
-            let signature_scheme = ciphersuite.signature_algorithm();
-
-            let mls_keypair = SignatureKeyPair::from_raw(
-                signature_scheme,
-                stored_credential.private_key.to_vec(),
-                stored_credential.public_key.to_vec(),
-            );
-
-            // In a well designed interface, something like this should not be necessary. However, we don't have
-            // a well-designed interface.
-            let data = ser(&mls_keypair).ok()?;
-            deser(&data).ok()
+            unimplemented!("Don't use this API to load a signature key pair. Load a StoredCredential instead.")
         }
         MlsEntityId::KeyPackage => {
             let v = StoredKeyPackage::get_borrowed(conn, id).ok().flatten()?;

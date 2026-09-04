@@ -1,6 +1,6 @@
 use core_crypto_keystore::{
     Sha256Hash, Transaction,
-    entities::StoredCredential,
+    entities::{StoredCredential, StoredCredentialPk},
     traits::{EntityDatabaseMutation as _, FetchFromDatabase},
 };
 use openmls::prelude::SignaturePublicKey;
@@ -13,12 +13,16 @@ impl Credential {
     /// Loads a credential with the given public key from the database.
     ///
     /// Should not be passed over the ffi boundary.
-    pub(crate) async fn find_by_public_key(
+    pub(crate) async fn load(
         database: &impl FetchFromDatabase,
         public_key: &SignaturePublicKey,
+        credential_type: openmls::prelude::CredentialType,
     ) -> Result<Self> {
         let stored_credential = &database
-            .get::<StoredCredential>(&Sha256Hash::hash_from(public_key.as_slice()))
+            .get::<StoredCredential>(&StoredCredentialPk::new(
+                Sha256Hash::hash_from(public_key.as_slice()),
+                credential_type.into(),
+            ))
             .await
             .map_err(KeystoreError::wrap("getting credential by public key"))?
             .ok_or_else(|| Error::CredentialNotFound(public_key.clone()))?;
@@ -55,6 +59,7 @@ impl Credential {
             credential: credential_data,
             created_at: Default::default(), // updated by `.pre_save`
             ciphersuite: u16::from(self.cipher_suite),
+            credential_type: self.credential_type.into(),
             private_key: self.signature_key_pair.private().to_owned(),
             public_key: self.signature_key().public().to_owned(),
         };
@@ -73,8 +78,14 @@ impl Credential {
 
     /// Delete this credential from the database
     pub(crate) async fn delete(self, tx: &Transaction) -> Result<bool> {
-        StoredCredential::delete(tx, &Sha256Hash::hash_from(self.signature_key_pair.public()))
-            .map_err(KeystoreError::wrap("deleting credential"))
-            .map_err(Into::into)
+        StoredCredential::delete(
+            tx,
+            &StoredCredentialPk::new(
+                Sha256Hash::hash_from(self.signature_key_pair.public()),
+                self.credential_type.into(),
+            ),
+        )
+        .map_err(KeystoreError::wrap("deleting credential"))
+        .map_err(Into::into)
     }
 }

@@ -138,7 +138,8 @@ mod tests {
             connection::{ConnectionType, Database, storage::WasmStorageWrapper},
             traits::{Entity, EntityBase as _, EntityDatabaseMutation as _},
         },
-        entities::{ProteusPrekey, StoredCredential},
+        entities::ProteusPrekey,
+        migrations::StoredCredentialV36,
     };
 
     pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(DatabaseKey::generate);
@@ -218,20 +219,19 @@ mod tests {
         Database::migration_transaction(conn, async |tx| {
             use openmls::prelude::Ciphersuite;
 
-            use crate::entities::StoredCredential;
-
             let mut random_vec = || {
                 let len = rng.gen_range(LEN_RANGE);
                 let v: Vec<u8> = (0..len).map(|_| rng.r#gen()).collect();
                 v
             };
 
-            let cred_a = StoredCredential {
+            let public_key = random_vec();
+            let cred_a = StoredCredentialV36 {
                 session_id: random_vec(),
                 credential: random_vec(),
                 created_at: 2025,
                 ciphersuite: Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u16,
-                public_key: random_vec(),
+                public_key,
                 private_key: random_vec(),
             };
 
@@ -254,7 +254,7 @@ mod tests {
             .await
             .expect("DB_VERSION_9");
 
-        let count = <StoredCredential as Entity>::count(&mut conn)
+        let count = <StoredCredentialV36 as Entity>::count(&mut conn)
             .await
             .expect("credential count");
 

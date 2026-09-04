@@ -7,7 +7,9 @@ use openmls_x509_credential::X509Ext as _;
 use x509_cert::der::Decode as _;
 use zeroize::Zeroize;
 
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, deser, entities::StoredCredential};
+#[cfg(target_os = "unknown")]
+use crate::Transactionlike;
+use crate::{CryptoKeystoreError, CryptoKeystoreResult, Sha256Hash, deser, entities::StoredCredential};
 
 /// Entity representing a persisted `Credential` per the schema prior to integrating the signature keypair
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
@@ -87,6 +89,115 @@ pub(crate) fn migrate_to_new_credential(
     };
 
     Ok(Some(new_credential))
+}
+
+pub(crate) fn credential_type_from_serialized(credential: &[u8]) -> CryptoKeystoreResult<u16> {
+    MlsCredential::tls_deserialize_exact(credential)
+        .map(|credential| credential.credential_type().into())
+        .map_err(|e| CryptoKeystoreError::MigrationFailed(format!("deserializing stored credential: {e}")))
+}
+
+/// [`StoredCredential`] as it appeared prior to v37.
+#[derive(Clone)]
+pub(crate) struct StoredCredentialV36 {
+    pub(crate) public_key: Vec<u8>,
+    pub(crate) session_id: Vec<u8>,
+    pub(crate) credential: Vec<u8>,
+    pub(crate) created_at: u64,
+    pub(crate) ciphersuite: u16,
+    pub(crate) private_key: Vec<u8>,
+}
+
+impl crate::traits::PrimaryKey for StoredCredentialV36 {
+    type PrimaryKey = Sha256Hash;
+
+    fn primary_key(&self) -> Self::PrimaryKey {
+        Sha256Hash::hash_from(&self.public_key)
+    }
+}
+
+impl crate::traits::Entity for StoredCredentialV36 {
+    const TABLE_NAME: &'static str = <StoredCredential as crate::traits::Entity>::TABLE_NAME;
+
+    fn get(conn: &rusqlite::Connection, key: &Self::PrimaryKey) -> CryptoKeystoreResult<Option<Self>> {
+        use rusqlite::OptionalExtension as _;
+
+        conn.prepare_cached(
+            "SELECT public_key, session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, private_key \
+             FROM mls_credentials WHERE public_key_sha256 = ?",
+        )?
+        .query_row([key], |row| {
+            Ok(Self {
+                public_key: row.get("public_key")?,
+                session_id: row.get("session_id")?,
+                credential: row.get("credential")?,
+                created_at: row.get("created_at")?,
+                ciphersuite: row.get("ciphersuite")?,
+                private_key: row.get("private_key")?,
+            })
+        })
+        .optional()
+        .map_err(Into::into)
+    }
+
+    fn count(conn: &rusqlite::Connection) -> CryptoKeystoreResult<u32> {
+        crate::entities::helpers::count_helper::<Self>(conn)
+    }
+
+    fn load_all(conn: &rusqlite::Connection) -> CryptoKeystoreResult<Vec<Self>> {
+        let mut statement = conn.prepare_cached(
+            "SELECT public_key, session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, private_key \
+             FROM mls_credentials",
+        )?;
+        statement
+            .query_map([], |row| {
+                Ok(Self {
+                    public_key: row.get("public_key")?,
+                    session_id: row.get("session_id")?,
+                    credential: row.get("credential")?,
+                    created_at: row.get("created_at")?,
+                    ciphersuite: row.get("ciphersuite")?,
+                    private_key: row.get("private_key")?,
+                })
+            })?
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+}
+
+#[cfg(target_os = "unknown")]
+impl crate::traits::EntityDatabaseMutation for StoredCredentialV36 {
+    fn save<'a, Tx>(&self, tx: &'a Tx) -> CryptoKeystoreResult<()>
+    where
+        &'a Tx: Into<Transactionlike<'a>>,
+    {
+        let conn = tx.into().conn()?;
+        conn.prepare_cached(
+            "INSERT INTO mls_credentials \
+             (public_key_sha256, public_key, session_id, credential, created_at, ciphersuite, private_key) \
+             VALUES (?, ?, ?, ?, datetime(?, 'unixepoch'), ?, ?)",
+        )?
+        .execute(rusqlite::params![
+            Sha256Hash::hash_from(&self.public_key),
+            self.public_key,
+            self.session_id,
+            self.credential,
+            self.created_at,
+            self.ciphersuite,
+            self.private_key,
+        ])
+        .map_err(CryptoKeystoreError::map_already_exists(
+            <Self as crate::traits::Entity>::TABLE_NAME,
+        ))?;
+        Ok(())
+    }
+
+    fn delete<'a, Tx>(tx: &'a Tx, id: &Self::PrimaryKey) -> CryptoKeystoreResult<bool>
+    where
+        &'a Tx: Into<Transactionlike<'a>>,
+    {
+        crate::entities::helpers::delete_helper::<Self, _>(tx, "public_key_sha256", id)
+    }
 }
 
 pub(crate) fn v5_credential_matches_signature_key(
@@ -284,7 +395,9 @@ pub(crate) fn make_least_used_ciphersuite(
     Ok(least_used_ciphersuite)
 }
 
-pub(crate) fn detect_duplicate_credentials(creds: &[StoredCredential]) -> Vec<(&StoredCredential, &StoredCredential)> {
+pub(crate) fn detect_duplicate_credentials(
+    creds: &[StoredCredentialV36],
+) -> Vec<(&StoredCredentialV36, &StoredCredentialV36)> {
     let mut duplicates = Vec::new();
 
     for (i, a) in creds.iter().enumerate() {
