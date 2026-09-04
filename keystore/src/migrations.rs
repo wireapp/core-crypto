@@ -141,7 +141,7 @@ impl crate::traits::Entity for StoredCredentialV36 {
     }
 
     fn count(conn: &rusqlite::Connection) -> CryptoKeystoreResult<u32> {
-        crate::entities::helpers::count_helper::<Self>(conn)
+        crate::ancillary::helpers::count_helper::<Self>(conn)
     }
 
     fn load_all(conn: &rusqlite::Connection) -> CryptoKeystoreResult<Vec<Self>> {

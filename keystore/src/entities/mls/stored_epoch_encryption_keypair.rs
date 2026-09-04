@@ -3,7 +3,7 @@ use zeroize::Zeroize;
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, Transactionlike,
-    entities::{ConversationId, ConversationIdRef},
+    ancillary::{ConversationId, ConversationIdRef},
 };
 
 /// Entity representing a list of [StoredEncryptionKeyPair][super::StoredEncryptionKeyPair]
@@ -158,10 +158,10 @@ impl crate::traits::Entity for StoredEpochEncryptionKeypair {
         <Self as crate::traits::EntityGetBorrowed>::get_borrowed(conn, key.into())
     }
     fn count(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<u32> {
-        crate::entities::helpers::count_helper::<Self>(conn)
+        crate::ancillary::helpers::count_helper::<Self>(conn)
     }
     fn load_all(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<Vec<Self>> {
-        crate::entities::helpers::load_all_helper::<Self, _>(conn, Self::from_row)
+        crate::ancillary::helpers::load_all_helper::<Self, _>(conn, Self::from_row)
     }
 }
 
@@ -170,7 +170,7 @@ impl crate::traits::EntityGetBorrowed for StoredEpochEncryptionKeypair {
         conn: &rusqlite::Connection,
         key: Self::BorrowedPrimaryKey<'_>,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
-        crate::entities::helpers::get_helper_composite_key::<Self, _>(
+        crate::ancillary::helpers::get_helper_composite_key::<Self, _>(
             conn,
             Self::PK_COLUMN_NAMES,
             params![key.conversation_id, key.own_leaf_idx, key.epoch],
@@ -222,7 +222,7 @@ impl crate::traits::EntityDeleteBorrowed for StoredEpochEncryptionKeypair {
     where
         &'a Tx: Into<Transactionlike<'a>>,
     {
-        crate::entities::helpers::delete_helper_composite_key::<Self, _>(
+        crate::ancillary::helpers::delete_helper_composite_key::<Self, _>(
             tx,
             Self::PK_COLUMN_NAMES,
             params![key.conversation_id, key.own_leaf_idx, key.epoch],

@@ -557,11 +557,13 @@ mod tests {
 
 #[cfg(test)]
 pub mod utils {
-    use core_crypto_keystore::entities::{
-        ConversationId, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusSession,
-        StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey,
-        StoredKeyPackage, StoredPskBundle, TargetedMessageRxCounter, TntMessageTxCounter, TransientMessageRxCounter,
-        X509TrustAnchor,
+    use core_crypto_keystore::{
+        ancillary::ConversationId,
+        entities::{
+            MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusSession, StoredCredential,
+            StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage,
+            StoredPskBundle, TargetedMessageRxCounter, TntMessageTxCounter, TransientMessageRxCounter, X509TrustAnchor,
+        },
     };
     use rand::Rng as _;
 

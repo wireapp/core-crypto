@@ -4,7 +4,8 @@
 //! group epoch.
 
 use core_crypto_keystore::{
-    entities::{ConversationIdRef, MlsPendingMessage},
+    ancillary::ConversationIdRef,
+    entities::MlsPendingMessage,
     traits::{DeletableBySearchKey, EntityDatabaseMutation as _, FetchFromDatabase},
 };
 use log::{error, info};

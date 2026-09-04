@@ -3,7 +3,7 @@ use zeroize::Zeroize;
 
 use crate::{
     Transactionlike,
-    entities::{ConversationId, ConversationIdRef},
+    ancillary::{ConversationId, ConversationIdRef, helpers},
     traits::{BorrowPrimaryKey, PrimaryKey},
 };
 
@@ -49,7 +49,7 @@ impl crate::traits::Entity for PersistedMlsPendingGroup {
     const TABLE_NAME: &'static str = "mls_pending_groups";
 
     fn get(conn: &Connection, key: &Self::PrimaryKey) -> crate::CryptoKeystoreResult<Option<Self>> {
-        crate::entities::helpers::get_helper(conn, "id", key, |row| {
+        helpers::get_helper(conn, "id", key, |row| {
             Ok(Self {
                 id: row.get("id")?,
                 state: row.get("state")?,
@@ -60,11 +60,11 @@ impl crate::traits::Entity for PersistedMlsPendingGroup {
     }
 
     fn count(conn: &Connection) -> crate::CryptoKeystoreResult<u32> {
-        crate::entities::helpers::count_helper::<Self>(conn)
+        helpers::count_helper::<Self>(conn)
     }
 
     fn load_all(conn: &Connection) -> crate::CryptoKeystoreResult<Vec<Self>> {
-        crate::entities::helpers::load_all_helper(conn, |row| {
+        helpers::load_all_helper(conn, |row| {
             Ok(Self {
                 id: row.get("id")?,
                 state: row.get("state")?,
@@ -77,7 +77,7 @@ impl crate::traits::Entity for PersistedMlsPendingGroup {
 
 impl crate::traits::EntityGetBorrowed for PersistedMlsPendingGroup {
     fn get_borrowed(conn: &Connection, key: Self::BorrowedPrimaryKey<'_>) -> crate::CryptoKeystoreResult<Option<Self>> {
-        crate::entities::helpers::get_helper(conn, "id", key, |row| {
+        helpers::get_helper(conn, "id", key, |row| {
             Ok(Self {
                 id: row.get("id")?,
                 state: row.get("state")?,
@@ -110,7 +110,7 @@ impl crate::traits::EntityDatabaseMutation for PersistedMlsPendingGroup {
     where
         &'a Tx: Into<Transactionlike<'a>>,
     {
-        crate::entities::helpers::delete_helper::<Self, _>(tx, "id", id)
+        helpers::delete_helper::<Self, _>(tx, "id", id)
     }
 }
 
@@ -119,6 +119,6 @@ impl crate::traits::EntityDeleteBorrowed for PersistedMlsPendingGroup {
     where
         &'a Tx: Into<Transactionlike<'a>>,
     {
-        crate::entities::helpers::delete_helper::<Self, _>(tx, "id", id)
+        helpers::delete_helper::<Self, _>(tx, "id", id)
     }
 }

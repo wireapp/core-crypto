@@ -166,13 +166,13 @@ mod tests {
             assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
 
             // Pending group removed from keystore
-            let keystore_id = core_crypto_keystore::entities::ConversationId::from(id.as_ref());
+            let keystore_id = id.as_ref().keystore();
             let error = bob
                 .transaction
                 .database()
                 .await
                 .unwrap()
-                .get::<PersistedMlsPendingGroup>(&keystore_id)
+                .get_borrowed::<PersistedMlsPendingGroup>(keystore_id)
                 .await;
             assert!(matches!(error, Ok(None)));
 

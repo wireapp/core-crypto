@@ -1,3 +1,4 @@
+pub mod ancillary;
 pub mod connection;
 mod database_key;
 pub mod entities;

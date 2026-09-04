@@ -1,8 +1,6 @@
 use core_crypto_keystore::{
-    entities::{
-        ConversationIdRef as KeystoreConversationIdRef, StoredEpochEncryptionKeypair,
-        StoredEpochEncryptionKeypairPkRef, TntSecret, TntSecretPkRef,
-    },
+    ancillary::ConversationIdRef as KeystoreConversationIdRef,
+    entities::{StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef, TntSecret, TntSecretPkRef},
     traits::FetchFromDatabase as _,
 };
 use openmls::{
