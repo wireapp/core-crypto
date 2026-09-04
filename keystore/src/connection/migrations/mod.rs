@@ -37,8 +37,18 @@ pub(super) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationT
     };
 
     for version in 1..=target_version {
+        // This version is known to have an additional newline in some releases, but the actual migration work is
+        // identical
+        if version == 16 {
+            runner = runner.set_abort_divergent(false);
+        }
+
         runner = runner.set_target(Target::Version(version));
         let report = runner.run(conn).map_err(Box::new)?;
+
+        if version == 16 {
+            runner = runner.set_abort_divergent(true);
+        }
 
         let Some(updated_version) = report.applied_migrations().iter().map(|m| m.version()).max() else {
             continue;
