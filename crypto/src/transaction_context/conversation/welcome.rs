@@ -150,7 +150,7 @@ mod tests {
         let join_welcome = bob.transaction.process_welcome_message(welcome).await;
         assert!(innermost_source_matches!(
             join_welcome.unwrap_err(),
-            super::Error::ConversationAlreadyExists(i) if i == &id
+            crate::LeafError::ConversationAlreadyExists(i) if i == &id
         ));
 
         // Every entity the welcome touched must be back where it was: the key package itself,
@@ -183,7 +183,7 @@ mod tests {
         let join_welcome = bob.transaction.process_welcome_message(welcome.clone()).await;
         assert!(innermost_source_matches!(
             join_welcome.unwrap_err(),
-            super::Error::ConversationAlreadyExists(i) if i == &id
+            crate::LeafError::ConversationAlreadyExists(i) if i == &id
         ));
 
         // Bob gets rid of the conversation which was in the way
@@ -208,6 +208,6 @@ mod tests {
             .decrypt_message(&message)
             .await
             .unwrap();
-        assert_eq!(decrypted.as_application_message().unwrap().plaintext, b"hello");
+        assert_eq!(decrypted.as_text().unwrap().plaintext, b"hello");
     }
 }

@@ -3,7 +3,7 @@ use openmls::group::InnerState;
 
 use super::{ConversationMut, Result};
 use crate::{
-    KeystoreError, RecursiveError,
+    RecursiveError,
     mls::conversation::{Conversation, ConversationIdRef, MlsGroupState},
 };
 

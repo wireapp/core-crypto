@@ -1,11 +1,7 @@
-use core_crypto_keystore::entities::PersistedMlsGroup;
-use openmls::{
-    group::{InnerState, MlsGroup},
-    prelude::Welcome,
-};
+use openmls::{group::MlsGroup, prelude::Welcome};
 
 use crate::{
-    ConversationConfiguration, ConversationId, KeystoreError, LeafError, OpenMlsError, RecursiveError,
+    ConversationConfiguration, ConversationId, LeafError, OpenMlsError, RecursiveError,
     mls::{
         TntMessageCounter,
         conversation::{Conversation, ConversationMut, Error as ConversationError, MlsGroupState},
@@ -28,36 +24,26 @@ impl TransactionContext {
     /// Note that this does not check whether or not the conversation already exists.
     pub(crate) async fn persist_conversation_from_mls_group(
         &self,
-        mut group: MlsGroup,
+        group: MlsGroup,
         configuration: ConversationConfiguration,
         tnt_message_counter: TntMessageCounter,
     ) -> Result<ConversationMut> {
         let id = ConversationId::from(group.group_id().as_slice());
+        let mut group_state = MlsGroupState::new(group, tnt_message_counter);
+
+        let context_inner = self.inner().await?;
+        group_state
+            .persist(&context_inner.transaction)
+            .await
+            .map_err(RecursiveError::mls_conversation(
+                "persisting group state for new group",
+            ))?;
+
+        // now that we're persisted, construct a conversation
         let session = self.session().await.map_err(RecursiveError::transaction(
             "getting session from tx context to persist",
         ))?;
-
-        // we're actually out of order from the docs, because this leads to a better data flow
-        let group_state = core_crypto_keystore::ser(&group).map_err(KeystoreError::wrap("serializing group state"))?;
-
-        let context_inner = self.inner().await?;
-        context_inner
-            .transaction
-            .save(PersistedMlsGroup {
-                id: id.to_bytes(),
-                state: group_state,
-            })
-            .await
-            .map_err(KeystoreError::wrap("persisting mls group"))?;
-        group.set_state(InnerState::Persisted);
-
-        // now that we're persisted, construct a conversation
-        let conversation = Conversation::new(
-            id,
-            MlsGroupState::new(group, tnt_message_counter).into(),
-            configuration,
-            session,
-        );
+        let conversation = Conversation::new(id, group_state.into(), configuration, session);
         let mut group_store = self.mls_groups().await?;
 
         let inner = group_store.insert(conversation);
