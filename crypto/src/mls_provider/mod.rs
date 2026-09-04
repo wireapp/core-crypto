@@ -21,7 +21,7 @@ use openmls_traits::{
 };
 // TODO: remove this allow(unused) once the E2EI parts have been coupled.
 #[allow(unused)]
-pub use wire_e2e_identity::pki::{CertProfile, CertificateGenerationArgs, PkiKeypair};
+pub use wire_e2e_identity::pki::{CertificateGenerationArgs, PkiKeypair};
 use wire_e2e_identity::pki_env::PkiEnvironment;
 
 /// 32-byte raw entropy seed
@@ -102,7 +102,16 @@ impl openmls_traits::authentication_service::AuthenticationServiceDelegate for A
                     log::warn!("unable to validate X509 credentials: PKI environment is unset");
                     CredentialAuthenticationStatus::Unknown
                 }
-                Some(pki_env) => pki_env.validate_credential(credential).await,
+                Some(pki_env) => {
+                    use CredentialAuthenticationStatus::*;
+                    // ? Revoked and expired credentials are A-OK. They still degrade conversations though.
+                    // TODO: update this after WPB-25524
+                    match pki_env.validate_credential(credential).await {
+                        Revoked => Valid,
+                        Expired => Valid,
+                        status => status,
+                    }
+                }
             },
         }
     }

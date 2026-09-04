@@ -563,7 +563,7 @@ pub mod utils {
         StoredKeyPackage, StoredPskBundle, TargetedMessageRxCounter, TntMessageTxCounter, TransientMessageRxCounter,
         X509TrustAnchor,
     };
-    use rand::Rng as _;
+    use rand::{RngExt as _, distr::SampleString};
 
     const MAX_BLOB_SIZE: std::ops::Range<usize> = 1024..8192;
 
@@ -572,8 +572,8 @@ pub mod utils {
     }
 
     fn random_blob() -> Vec<u8> {
-        let mut rng = rand::thread_rng();
-        let mut blob = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+        let mut rng = rand::rng();
+        let mut blob = vec![0; rng.random_range(MAX_BLOB_SIZE)];
         rng.fill(&mut blob[..]);
         blob
     }
@@ -703,16 +703,12 @@ pub mod utils {
 
     impl EntityRandomExt for core_crypto_keystore::entities::X509IntermediateCert {
         fn random() -> Self {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
 
-            let ski_aki_pair = rng
-                .clone()
-                .sample_iter(rand::distributions::Alphanumeric)
-                .take(rng.gen_range(MAX_BLOB_SIZE))
-                .map(char::from)
-                .collect::<String>();
+            let len = rng.random_range(MAX_BLOB_SIZE);
+            let ski_aki_pair = rand::distr::Alphanumeric.sample_string(&mut rng, len);
 
-            let mut content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+            let mut content = vec![0; rng.random_range(MAX_BLOB_SIZE)];
             rng.fill(&mut content[..]);
 
             Self { ski_aki_pair, content }
@@ -721,25 +717,21 @@ pub mod utils {
 
     impl EntityRandomUpdateExt for core_crypto_keystore::entities::X509IntermediateCert {
         fn random_update(&mut self) {
-            let mut rng = rand::thread_rng();
-            self.content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+            let mut rng = rand::rng();
+            self.content = vec![0; rng.random_range(MAX_BLOB_SIZE)];
             rng.fill(&mut self.content[..]);
         }
     }
 
     impl EntityRandomExt for core_crypto_keystore::entities::X509Crl {
         fn random() -> Self {
-            let mut rng = rand::thread_rng();
+            let mut rng = rand::rng();
 
-            let host = rng
-                .clone()
-                .sample_iter(rand::distributions::Alphanumeric)
-                .take(rng.gen_range(10..20))
-                .map(char::from)
-                .collect::<String>();
+            let len = rng.random_range(10..20);
+            let host = rand::distr::Alphanumeric.sample_string(&mut rng, len);
             let distribution_point = format!("https://{host}.com");
 
-            let mut content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+            let mut content = vec![0; rng.random_range(MAX_BLOB_SIZE)];
             rng.fill(&mut content[..]);
 
             Self {
@@ -751,8 +743,8 @@ pub mod utils {
 
     impl EntityRandomUpdateExt for core_crypto_keystore::entities::X509Crl {
         fn random_update(&mut self) {
-            let mut rng = rand::thread_rng();
-            self.content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+            let mut rng = rand::rng();
+            self.content = vec![0; rng.random_range(MAX_BLOB_SIZE)];
             rng.fill(&mut self.content[..]);
         }
     }
@@ -763,8 +755,7 @@ pub mod utils {
 
         impl EntityRandomExt for core_crypto_keystore::entities::ProteusPrekey {
             fn random() -> Self {
-                use rand::Rng as _;
-                let mut rng = rand::thread_rng();
+                let mut rng = rand::rng();
 
                 // Counted rather than drawn at random. A prekey id is only 16 bits wide and this
                 // entity does not upsert, so random ids would collide across the dozen prekeys a
@@ -773,7 +764,7 @@ pub mod utils {
                 static NEXT_ID: std::sync::atomic::AtomicU16 = std::sync::atomic::AtomicU16::new(1);
                 let id = NEXT_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
 
-                let mut prekey = vec![0u8; rng.gen_range(MAX_BLOB_SIZE)];
+                let mut prekey = vec![0u8; rng.random_range(MAX_BLOB_SIZE)];
                 rng.fill(&mut prekey[..]);
 
                 Self::from_raw(id, prekey)
@@ -782,16 +773,15 @@ pub mod utils {
 
         impl EntityRandomUpdateExt for core_crypto_keystore::entities::ProteusPrekey {
             fn random_update(&mut self) {
-                let mut rng = rand::thread_rng();
-                self.prekey = vec![0u8; rng.gen_range(MAX_BLOB_SIZE)];
+                let mut rng = rand::rng();
+                self.prekey = vec![0u8; rng.random_range(MAX_BLOB_SIZE)];
                 rng.fill(&mut self.prekey[..]);
             }
         }
 
         impl EntityRandomExt for core_crypto_keystore::entities::ProteusIdentity {
             fn random() -> Self {
-                use rand::Rng as _;
-                let mut rng = rand::thread_rng();
+                let mut rng = rand::rng();
 
                 let mut sk = vec![0u8; Self::SK_KEY_SIZE];
                 rng.fill(&mut sk[..]);
@@ -804,7 +794,7 @@ pub mod utils {
 
         impl EntityRandomUpdateExt for core_crypto_keystore::entities::ProteusIdentity {
             fn random_update(&mut self) {
-                let mut rng = rand::thread_rng();
+                let mut rng = rand::rng();
                 self.sk = vec![0u8; Self::SK_KEY_SIZE];
                 rng.fill(&mut self.sk[..]);
 
@@ -815,18 +805,17 @@ pub mod utils {
 
         impl EntityRandomExt for StoredEpochEncryptionKeypair {
             fn random() -> Self {
-                use rand::Rng as _;
-                let mut rng = rand::thread_rng();
+                let mut rng = rand::rng();
                 let conversation_id = uuid::Uuid::new_v4().into_bytes();
                 let conversation_id = conversation_id.as_slice().into();
-                let own_leaf_idx = rng.r#gen();
+                let own_leaf_idx = rng.random();
                 // sqlite stores all its integer fields as i64, so if the leftmost bit
                 // of an epoch is ever set, the DB will start erroring out.
                 // in practice 63 bits is still a big number, so we expect nobody to ever get
                 // an epoch that high.
                 // here, we just zero out that bit regardless.
-                let epoch = rng.r#gen::<u64>() & !(1 << 63);
-                let mut keypairs = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                let epoch = rng.random::<u64>() & !(1 << 63);
+                let mut keypairs = vec![0; rng.random_range(MAX_BLOB_SIZE)];
                 rng.fill(keypairs.as_mut_slice());
 
                 Self {
@@ -840,10 +829,10 @@ pub mod utils {
 
         impl EntityRandomUpdateExt for StoredEpochEncryptionKeypair {
             fn random_update(&mut self) {
-                let mut rng = rand::thread_rng();
+                let mut rng = rand::rng();
                 let include_in_update = !false;
                 if include_in_update {
-                    self.keypairs = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    self.keypairs = vec![0; rng.random_range(MAX_BLOB_SIZE)];
                     rng.fill(self.keypairs.as_mut_slice());
                 }
             }

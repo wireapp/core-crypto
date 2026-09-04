@@ -261,10 +261,14 @@ mod tests {
 
             let commit_serialized = &mut add_bob_message.to_bytes().unwrap();
 
-            // Tamper with the commit; this is the signature region, however,
-            // the membership tag covers the signature, so this will result in an
+            // Tamper with the commit's membership tag; this will result in an
             // invalid membership tag error emitted by openmls.
-            commit_serialized[300] = commit_serialized[300].wrapping_add(1);
+            //
+            // The membership tag is located right at the end of PublicMessage,
+            // see https://www.rfc-editor.org/rfc/rfc9420.html#section-6.2.
+            // Here we modify the last byte of the membership tag.
+            let offset = commit_serialized.len() - 1;
+            commit_serialized[offset] ^= 0xff;
 
             let decryption_result = conversation.guard().await.decrypt_message(commit_serialized).await;
             let error = decryption_result.unwrap_err();

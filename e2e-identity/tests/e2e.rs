@@ -46,6 +46,7 @@ use wire_e2e_identity::{
     x509_check::extract_crl_uris,
 };
 use x509_cert::{
+    certificate::Raw,
     crl::CertificateList,
     der::{Decode as _, DecodePem as _},
 };
@@ -301,7 +302,7 @@ async fn fetching_crls_works(test_env: TestEnvironment, #[case] sign_alg: JwsAlg
 
     for crl_der in result.values() {
         assert!(!crl_der.is_empty(), "fetched CRL should not be empty");
-        let _ = CertificateList::from_der(crl_der).expect("fetched body is a valid DER CRL");
+        let _: CertificateList<Raw> = CertificateList::from_der(crl_der).expect("fetched body is a valid DER CRL");
     }
 }
 
@@ -318,8 +319,8 @@ async fn should_fail_without_trust_anchor(test_env: TestEnvironment) {
         .remove_trust_anchor(
             &tx,
             &certs[0]
-                .tbs_certificate
-                .subject_public_key_info
+                .tbs_certificate()
+                .subject_public_key_info()
                 .fingerprint_bytes()
                 .expect("Getting fingerprint of subject plublic key info"),
         )

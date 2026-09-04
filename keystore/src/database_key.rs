@@ -27,6 +27,12 @@ impl fmt::Debug for DatabaseKey {
     }
 }
 
+impl AsRef<[u8; DatabaseKey::LEN]> for DatabaseKey {
+    fn as_ref(&self) -> &[u8; DatabaseKey::LEN] {
+        &self.0
+    }
+}
+
 impl AsRef<[u8]> for DatabaseKey {
     fn as_ref(&self) -> &[u8] {
         &self.0

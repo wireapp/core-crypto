@@ -1,7 +1,11 @@
-use base64::Engine;
+use std::str::FromStr as _;
+
+use base64::Engine as _;
 use jwt_simple::prelude::*;
 use rusty_jwt_tools::prelude::{JwsAlgorithm, Pem};
-use x509_cert::der::Encode;
+use signature::Signer as _;
+use spki::SignatureBitStringEncoding as _;
+use x509_cert::der::Encode as _;
 
 use crate::acme::{
     AcmeAccount, AcmeJws, AcmeOrder, RustyAcme, RustyAcmeError, RustyAcmeResult,
@@ -39,7 +43,7 @@ impl RustyAcme {
         let algorithm = Self::csr_alg(alg)?;
         let cert_info = x509_cert::request::CertReqInfo {
             version: x509_cert::request::Version::V1,
-            subject: Self::csr_subject(&identifier)?,
+            subject: x509_cert::name::Name::hazmat_from_rdn_sequence(Self::csr_subject(&identifier)?),
             public_key: Self::csr_spki(alg, kp)?,
             attributes: Self::csr_attributes(identifier)?,
         };
@@ -85,8 +89,8 @@ impl RustyAcme {
             value: dn_display_name_value,
         };
 
-        let domain = x509_cert::name::RelativeDistinguishedName(vec![dn_domain].try_into()?);
-        let display_name = x509_cert::name::RelativeDistinguishedName(vec![dn_display_name].try_into()?);
+        let domain = x509_cert::name::RelativeDistinguishedName::try_from(vec![dn_domain])?;
+        let display_name = x509_cert::name::RelativeDistinguishedName::try_from(vec![dn_display_name])?;
         let subject = x509_cert::name::DistinguishedName::from(vec![domain, display_name]);
         Ok(subject)
     }
@@ -169,34 +173,29 @@ impl RustyAcme {
         kp: &Pem,
         cert_info: &x509_cert::request::CertReqInfo,
     ) -> RustyAcmeResult<x509_cert::der::asn1::BitString> {
-        use signature::Signer as _;
         let cert_data = cert_info.to_der()?;
 
         let signature = match alg {
             JwsAlgorithm::Ed25519 => {
-                let kp = Ed25519KeyPair::from_pem(kp.as_str())?;
-                let signature = kp.key_pair().as_ref().sign(&cert_data);
-                x509_cert::der::asn1::BitString::new(0, signature.to_vec())?
+                let kp_bytes = ed25519_dalek::pkcs8::KeypairBytes::from_str(kp.as_ref()).unwrap();
+                let signing_key = ed25519_dalek::SigningKey::try_from(kp_bytes).unwrap();
+                let signature = signing_key.sign(&cert_data);
+                signature.to_bitstring()?
             }
             JwsAlgorithm::P256 => {
-                let kp = ES256KeyPair::from_pem(kp.as_str())?;
-                let sk: &p256::ecdsa::SigningKey = kp.key_pair().as_ref();
-                let signature: p256::ecdsa::DerSignature = sk.try_sign(&cert_data)?;
-                x509_cert::der::asn1::BitString::new(0, signature.to_der()?)?
+                let sk = p256::ecdsa::SigningKey::from_str(kp)?;
+                let signature: p256::ecdsa::Signature = sk.sign(&cert_data);
+                signature.to_der().to_bitstring()?
             }
             JwsAlgorithm::P384 => {
-                let kp = ES384KeyPair::from_pem(kp.as_str())?;
-                let sk: &p384::ecdsa::SigningKey = kp.key_pair().as_ref();
-                let signature: p384::ecdsa::DerSignature = sk.try_sign(&cert_data)?;
-                x509_cert::der::asn1::BitString::new(0, signature.to_der()?)?
+                let sk = p384::ecdsa::SigningKey::from_str(kp)?;
+                let signature: p384::ecdsa::Signature = sk.sign(&cert_data);
+                signature.to_der().to_bitstring()?
             }
             JwsAlgorithm::P521 => {
-                let kp = ES512KeyPair::from_pem(kp.as_str())?;
-                let sk: ecdsa::SigningKey<p521::NistP521> = kp.key_pair().as_ref().clone();
-                let sk = p521::ecdsa::SigningKey::from(sk);
-
-                let signature: p521::ecdsa::DerSignature = sk.try_sign(&cert_data)?.to_der();
-                x509_cert::der::asn1::BitString::new(0, signature.to_der()?)?
+                let sk = p521::ecdsa::SigningKey::from_str(kp)?;
+                let signature: p521::ecdsa::Signature = sk.sign(&cert_data);
+                signature.to_der().to_bitstring()?
             }
         };
         Ok(signature)

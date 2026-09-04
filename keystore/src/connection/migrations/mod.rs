@@ -369,8 +369,8 @@ r9IJmL6kDQ==
             assert_eq!(migrated_content, content);
 
             let expected = cert
-                .tbs_certificate
-                .subject_public_key_info
+                .tbs_certificate()
+                .subject_public_key_info()
                 .fingerprint_bytes()
                 .unwrap();
 

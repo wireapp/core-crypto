@@ -1,13 +1,10 @@
 use std::{fmt::Display, time::Duration};
 
 use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
+use wire_e2e_identity::pki::{CertificateGenerationArgs, PkiKeypair};
 use x509_cert::der::EncodePem;
 
-use crate::{
-    CertificateBundle, ClientId,
-    mls_provider::{CRYPTO, CertProfile, CertificateGenerationArgs, PkiKeypair},
-    transaction_context::TransactionContext,
-};
+use crate::{CertificateBundle, ClientId, mls_provider::CRYPTO, transaction_context::TransactionContext};
 
 const DEFAULT_CRL_DOMAIN: &str = "localhost";
 
@@ -30,11 +27,11 @@ pub struct CertificateParams {
 impl Default for CertificateParams {
     fn default() -> Self {
         Self {
-            org: "world.com".into(),
+            org: "Wire.com".into(),
             common_name: Some("World Domination".into()),
             handle: None,
             client_id: None,
-            domain: Some("world.com".into()),
+            domain: Some("wire.com".into()),
             cert_keypair: None,
             validity_start: None,
             expiration: std::time::Duration::from_secs(86400),
@@ -221,8 +218,8 @@ impl X509TestChain {
                 actor
                     .certificate
                     .certificate
-                    .tbs_certificate
-                    .serial_number
+                    .tbs_certificate()
+                    .serial_number()
                     .as_bytes()
                     .into()
             })
@@ -286,7 +283,7 @@ impl X509TestChain {
         let handle = format!("{}_wire", name.to_lowercase());
         let user_id = uuid::Uuid::new_v4();
         let device_id = rand::random::<u64>();
-        let client_id = ClientId::new(user_id, device_id, "world.com");
+        let client_id = ClientId::new(user_id, device_id, "wire.com");
         let mut cert_params = CertificateParams {
             common_name: Some(common_name.clone()),
             handle: Some(handle.clone()),
@@ -344,8 +341,8 @@ impl X509Certificate {
 
         let certificate = pki_keypair
             .generate_cert(CertificateGenerationArgs {
+                issuer: None,
                 signature_scheme,
-                profile: CertProfile::Root,
                 serial: serial as _,
                 validity_start: None,
                 validity_from_start: params.expiration,
@@ -380,13 +377,12 @@ impl X509Certificate {
             PkiKeypair::new(signature_scheme, sk).unwrap()
         });
 
+        let issuer = self.certificate.tbs_certificate().subject().to_string();
+
         let certificate = pki_keypair
             .generate_cert(CertificateGenerationArgs {
+                issuer: Some(issuer),
                 signature_scheme,
-                profile: CertProfile::SubCA {
-                    issuer: self.certificate.tbs_certificate.subject.clone(),
-                    path_len_constraint: Some(1),
-                },
                 serial: serial as _,
                 validity_start: None,
                 validity_from_start: params.expiration,
@@ -441,15 +437,12 @@ impl X509Certificate {
 
         let alternative_names_ref: Vec<_> = alternative_names.iter().map(String::as_str).collect();
 
+        let issuer = self.certificate.tbs_certificate().subject().to_string();
+
         let certificate = pki_keypair
             .generate_cert(CertificateGenerationArgs {
+                issuer: Some(issuer),
                 signature_scheme,
-                profile: CertProfile::Leaf {
-                    issuer: self.certificate.tbs_certificate.subject.clone(),
-                    enable_key_agreement: false,
-                    enable_key_encipherment: false,
-                    include_subject_key_identifier: true,
-                },
                 serial: serial as _,
                 validity_start: params.validity_start,
                 validity_from_start: params.expiration,

@@ -4,7 +4,7 @@
 //!   - putting `random_entity` and `get_search_key` into a trait
 //!   - writing a macro which generates the inner tests
 
-use rand::{Rng, RngCore, distributions::uniform::SampleRange};
+use rand::{Rng, distr::uniform::SampleRange};
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 use wasm_bindgen_test::*;
@@ -13,9 +13,9 @@ mod common;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
-fn random_bytes(len: impl SampleRange<usize>) -> Vec<u8> {
-    let mut rng = rand::thread_rng();
-    let len = rng.gen_range(len);
+fn random_bytes(range: impl SampleRange<usize>) -> Vec<u8> {
+    let mut rng = rand::rng();
+    let len = rand::random_range(range);
     let mut value = vec![0; len];
     rng.fill_bytes(&mut value);
     value
@@ -29,18 +29,15 @@ mod stored_credential {
         entities::{CredentialFindFilters, StoredCredential},
         traits::{EntityDatabaseMutation as _, FetchFromDatabase as _, PrimaryKey as _},
     };
-    use rand::Rng;
     use rstest_reuse::apply;
 
     use crate::{common::*, random_bytes};
 
     fn random_entity() -> StoredCredential {
-        let mut rng = rand::thread_rng();
-
         let session_id = random_bytes(32..=32);
         let credential = random_bytes(128..=256);
         let created_at = 0; // updated on pre_save
-        let ciphersuite = rng.gen_range(1_u16..=7);
+        let ciphersuite = rand::random_range(1_u16..=7);
         let public_key = random_bytes(512..=1024);
         let credential_type = rng.gen_range(1_u16..=2);
         let private_key = random_bytes(128..=256);

@@ -23,13 +23,13 @@ serde = []
 dummy-entity = []
 
 [dependencies]
-aes-gcm = "0.10"
+aes-gcm = "0.11"
 async-lock.workspace = true
 async-trait.workspace = true
 const_format.workspace = true
 core-crypto-macros.workspace = true
 derive_more.workspace = true
-getrandom = { workspace = true, features = ["js"] }
+getrandom.workspace = true
 hex.workspace = true
 itertools.workspace = true
 log = { workspace = true }
@@ -40,7 +40,7 @@ openmls_traits = { workspace = true }
 openmls_x509_credential = { workspace = true }
 postcard = { version = "1.1", default-features = false, features = ["use-std"] }
 proteus-traits = { workspace = true, optional = true }
-rand = { workspace = true, features = ["getrandom"] }
+rand.workspace = true
 refinery = { version = "0.9.1", default-features = false, features = [
   "rusqlite",
 ] }
@@ -56,7 +56,7 @@ serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true
 thiserror.workspace = true
-x509-cert = { workspace = true }
+x509-cert = { workspace = true, features = ["fingerprint"] }
 spki.workspace = true
 zeroize = { workspace = true, features = ["zeroize_derive"] }
 parking_lot = { version = "0.12.5", features = ["arc_lock"] }

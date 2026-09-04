@@ -5,7 +5,7 @@ use core_crypto_keystore::{Transaction, entities::X509Crl, traits::EntityDatabas
 use super::{Error, Result};
 use crate::{
     pki_env::{PkiEnvironment, hooks::HttpMethod},
-    x509_check::revocation::{CrlStore, PkiEnvironment as RjtPkiEnvironment, now},
+    x509_check::revocation::PkiEnvironment as RjtPkiEnvironment,
 };
 
 impl PkiEnvironment {
@@ -36,13 +36,10 @@ impl PkiEnvironment {
     /// Validate the CRL (trust anchors must be configured prior to this) and
     /// save it to the database.
     pub async fn save_crl(&self, tx: &Transaction, crl_dp: &str, crl_der: &[u8]) -> Result<()> {
-        let mut guard = self.rjt_pki_env.lock().await;
+        let guard = self.rjt_pki_env.lock().await;
+
         let crl = guard.validate_crl_with_raw(crl_der)?;
-
-        let crl_source = CrlStore::from([crl.clone()].as_slice());
-        crl_source.index_crls(now()?)?;
-
-        guard.add_crl_source(Box::new(crl_source));
+        guard.add_crl(crl_der, &crl, crl_dp).unwrap();
 
         let crl_data = X509Crl {
             content: RjtPkiEnvironment::encode_crl_to_der(&crl)?,

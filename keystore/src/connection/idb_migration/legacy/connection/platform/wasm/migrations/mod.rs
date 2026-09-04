@@ -125,7 +125,7 @@ mod tests {
     use idb::builder::{DatabaseBuilder, ObjectStoreBuilder};
     use rand::{
         Rng as _,
-        distributions::{Alphanumeric, DistString as _},
+        distr::{Alphanumeric, SampleString as _},
     };
     use serde::Serialize as _;
     use wasm_bindgen::JsValue;
@@ -147,8 +147,7 @@ mod tests {
     wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
 
     fn store_name() -> String {
-        let mut rng = rand::thread_rng();
-        format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rng, 12))
+        format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12))
     }
 
     #[wasm_bindgen_test]
@@ -209,7 +208,7 @@ mod tests {
     pub(crate) async fn v9_schema_allows_multiple_creds_per_session() {
         let name = store_name();
         const LEN_RANGE: std::ops::Range<usize> = 1024..8192;
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         let builder = v09::get_builder(&name);
         let conn = Database::migration_connection(builder, &TEST_ENCRYPTION_KEY)
@@ -218,10 +217,11 @@ mod tests {
 
         Database::migration_transaction(conn, async |tx| {
             use openmls::prelude::Ciphersuite;
+            use rand::RngExt as _;
 
             let mut random_vec = || {
-                let len = rng.gen_range(LEN_RANGE);
-                let v: Vec<u8> = (0..len).map(|_| rng.r#gen()).collect();
+                let len = rng.random_range(LEN_RANGE);
+                let v: Vec<u8> = (0..len).map(|_| rng.random()).collect();
                 v
             };
 

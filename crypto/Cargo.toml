@@ -60,27 +60,25 @@ obfuscate = { workspace = true, features = [
   "openmls",
   "openmls_basic_credential",
 ] }
-aes-gcm = "0.10"
+aes-gcm = "0.11"
 sha2 = { workspace = true, features = ["oid"] }
-chacha20poly1305 = "0.10"
+chacha20poly1305 = "0.11"
 hmac = "0.13"
 ed25519-dalek = { workspace = true, features = ["pkcs8"] }
 signature.workspace = true
+elliptic-curve = "0.14"
 ecdsa = { workspace = true, features = ["der", "pkcs8"] }
 p256 = { workspace = true, features = ["pkcs8"] }
 p384 = { workspace = true, features = ["pkcs8"] }
 p521 = { workspace = true, features = ["pkcs8"] }
-hkdf = "0.12"
+hkdf = "0.13"
+hpke = { version = "0.14", features = ["x25519", "nistp", "aes"] }
 x509-cert = { workspace = true, features = ["builder", "hazmat"] }
 web-time.workspace = true
-rand = { workspace = true, features = ["getrandom"] }
-getrandom = { workspace = true, features = ["js"] }
-rand_core = "0.6"
-rand_chacha = "0.3"
-
-[dependencies.hpke]
-version = "0.12"
-features = ["x25519", "p256", "p384", "p521"]
+rand.workspace = true
+getrandom.workspace = true
+rand_core = "0.10"
+rand_chacha = "0.10"
 
 [target.'cfg(target_os = "unknown")'.dependencies]
 serde-wasm-bindgen.workspace = true
@@ -107,6 +105,7 @@ macro_rules_attribute.workspace = true
 wasm-bindgen-test.workspace = true
 openmls.workspace = true
 hex-literal = "1.1"
+der.workspace = true
 
 [target.'cfg(not(target_os = "unknown"))'.dev-dependencies]
 smol-macros.workspace = true

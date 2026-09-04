@@ -1,104 +1,22 @@
-// TODO: we're allowing unused code here because the E2EI parts haven't been
-// coupled yet; once they are, remove this.
-#![allow(unused)]
-use std::sync::Arc;
+use std::str::FromStr as _;
 
-use async_lock::{RwLock, RwLockReadGuard};
-use openmls_traits::{
-    authentication_service::{CredentialAuthenticationStatus, CredentialRef},
-    crypto::OpenMlsCrypto,
-    types::SignatureScheme,
-};
+use ecdsa::SignatureEncoding as _;
+use openmls_traits::{crypto::OpenMlsCrypto, types::SignatureScheme};
 use spki::{SignatureAlgorithmIdentifier, der::referenced::RefToOwned};
+use x509_cert::{
+    builder::{Builder as _, CertificateBuilder, profile::BuilderProfile},
+    name::Name,
+    time::Validity,
+};
 
 use crate::error::{E2eIdentityError, E2eIdentityResult};
-
-pub struct Ed25519PkiSignature(ed25519_dalek::Signature);
-impl spki::SignatureBitStringEncoding for Ed25519PkiSignature {
-    fn to_bitstring(&self) -> spki::der::Result<spki::der::asn1::BitString> {
-        spki::der::asn1::BitString::new(0, self.0.to_vec())
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Ed25519PkiKeypair(ed25519_dalek::SigningKey);
-
-impl Ed25519PkiKeypair {
-    pub fn keypair_bytes(&self) -> Vec<u8> {
-        self.0.to_keypair_bytes().to_vec()
-    }
-}
-
-impl spki::SignatureAlgorithmIdentifier for Ed25519PkiKeypair {
-    type Params = spki::der::AnyRef<'static>;
-    const SIGNATURE_ALGORITHM_IDENTIFIER: spki::AlgorithmIdentifier<Self::Params> = ed25519_dalek::pkcs8::ALGORITHM_ID;
-}
-
-impl signature::Keypair for Ed25519PkiKeypair {
-    type VerifyingKey = <ed25519_dalek::SigningKey as signature::Keypair>::VerifyingKey;
-    fn verifying_key(&self) -> Self::VerifyingKey {
-        self.0.verifying_key()
-    }
-}
-
-impl signature::Signer<Ed25519PkiSignature> for Ed25519PkiKeypair {
-    fn try_sign(&self, message: &[u8]) -> Result<Ed25519PkiSignature, ed25519_dalek::SignatureError> {
-        self.0.try_sign(message).map(Ed25519PkiSignature)
-    }
-}
-
-#[derive(Clone)]
-pub struct P521PkiVerifyingKey(ecdsa::VerifyingKey<p521::NistP521>);
-impl From<ecdsa::VerifyingKey<p521::NistP521>> for P521PkiVerifyingKey {
-    fn from(k: ecdsa::VerifyingKey<p521::NistP521>) -> Self {
-        Self(k)
-    }
-}
-
-impl std::ops::Deref for P521PkiVerifyingKey {
-    type Target = ecdsa::VerifyingKey<p521::NistP521>;
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl p521::pkcs8::EncodePublicKey for P521PkiVerifyingKey {
-    fn to_public_key_der(&self) -> spki::Result<spki::Document> {
-        self.0.to_public_key_der()
-    }
-}
-
-#[derive(Clone)]
-pub struct P521PkiKeypair(ecdsa::SigningKey<p521::NistP521>);
-
-impl spki::SignatureAlgorithmIdentifier for P521PkiKeypair {
-    type Params = spki::ObjectIdentifier;
-    const SIGNATURE_ALGORITHM_IDENTIFIER: spki::AlgorithmIdentifier<Self::Params> = spki::AlgorithmIdentifier {
-        oid: ecdsa::ECDSA_SHA512_OID,
-        parameters: None,
-    };
-}
-
-impl signature::Keypair for P521PkiKeypair {
-    type VerifyingKey = P521PkiVerifyingKey;
-    fn verifying_key(&self) -> Self::VerifyingKey {
-        (*self.0.verifying_key()).into()
-    }
-}
-
-impl signature::Signer<p521::ecdsa::DerSignature> for P521PkiKeypair {
-    fn try_sign(&self, message: &[u8]) -> Result<p521::ecdsa::DerSignature, p521::ecdsa::Error> {
-        let sk = p521::ecdsa::SigningKey::from(self.0.clone());
-        Ok(sk.try_sign(message)?.to_der())
-    }
-}
 
 #[derive(Clone)]
 pub enum PkiKeypair {
     P256(p256::ecdsa::SigningKey),
     P384(p384::ecdsa::SigningKey),
-    P521(P521PkiKeypair),
-    Ed25519(Ed25519PkiKeypair),
+    P521(p521::ecdsa::SigningKey),
+    Ed25519(ed25519_dalek::SigningKey),
 }
 
 impl std::fmt::Debug for PkiKeypair {
@@ -123,8 +41,8 @@ impl PkiKeypair {
         match self {
             Self::P256(sk) => sk.to_bytes().to_vec(),
             Self::P384(sk) => sk.to_bytes().to_vec(),
-            Self::P521(sk) => sk.0.to_bytes().to_vec(),
-            Self::Ed25519(sk) => sk.0.to_bytes().to_vec(),
+            Self::P521(sk) => sk.to_bytes().to_vec(),
+            Self::Ed25519(sk) => sk.to_bytes().to_vec(),
         }
     }
 
@@ -132,8 +50,8 @@ impl PkiKeypair {
         match self {
             Self::P256(sk) => sk.verifying_key().to_sec1_bytes().to_vec(),
             Self::P384(sk) => sk.verifying_key().to_sec1_bytes().to_vec(),
-            Self::P521(sk) => sk.0.verifying_key().to_sec1_bytes().to_vec(),
-            Self::Ed25519(sk) => sk.0.verifying_key().to_bytes().to_vec(),
+            Self::P521(sk) => sk.verifying_key().to_sec1_bytes().to_vec(),
+            Self::Ed25519(sk) => sk.verifying_key().to_bytes().to_vec(),
         }
     }
 
@@ -143,11 +61,10 @@ impl PkiKeypair {
     }
 }
 
-pub use x509_cert::builder::Profile as CertProfile;
-
+#[derive(Debug)]
 pub struct CertificateGenerationArgs<'a> {
     pub signature_scheme: SignatureScheme,
-    pub profile: CertProfile,
+    pub issuer: Option<String>,
     pub serial: u64,
     /// Duration since UNIX EPOCH
     pub validity_start: Option<std::time::Duration>,
@@ -172,130 +89,295 @@ fn get_extended_keyusage(is_ca: bool) -> x509_cert::ext::pkix::ExtendedKeyUsage 
     x509_cert::ext::pkix::ExtendedKeyUsage(ext_keyusages)
 }
 
-macro_rules! impl_certgen {
-    (
-        $signer:expr, $signer_keypair:expr, $sig_type:path,
-        $profile:expr, $own_spki:expr, $serial:expr,
-        $subject:expr, $org:expr, $domain:expr, $validity:expr, $alt_names:expr,
-        $crl_dps:expr, $is_ca:expr, $is_root:expr
-    ) => {{
-        let add_akid = $is_ca && $profile == x509_cert::builder::Profile::Root;
+fn subject(args: &CertificateGenerationArgs) -> E2eIdentityResult<Name> {
+    let mut subject_fmt = String::new();
+    if let Some(cn) = args.common_name {
+        subject_fmt.push_str(&format!("CN={cn},"));
+    }
+    subject_fmt.push_str(&format!("O={},C=DE", args.org));
+    Name::from_str(&subject_fmt).map_err(|_| E2eIdentityError::CertificateGenerationError)
+}
 
-        let mut builder = x509_cert::builder::CertificateBuilder::new(
-            $profile,
-            $serial,
-            $validity,
-            $subject,
-            $own_spki,
-            $signer_keypair,
-        )
-        .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
+fn validity(args: &CertificateGenerationArgs) -> E2eIdentityResult<Validity> {
+    let validity_start = if let Some(validity_start) = args.validity_start {
+        validity_start
+    } else {
+        web_time::SystemTime::now()
+            .duration_since(web_time::UNIX_EPOCH)
+            .map_err(|_| E2eIdentityError::CertificateGenerationError)?
+    } - std::time::Duration::from_secs(1); // to prevent time clipping
 
-        if add_akid {
-            builder
-                .add_extension(&$signer.akid()?)
-                .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
-        }
+    let not_before = x509_cert::der::asn1::GeneralizedTime::from_unix_duration(validity_start)
+        .map_err(|_| E2eIdentityError::CertificateGenerationError)?
+        .into();
+    let not_after =
+        x509_cert::der::asn1::GeneralizedTime::from_unix_duration(validity_start + args.validity_from_start)
+            .map_err(|_| E2eIdentityError::CertificateGenerationError)?
+            .into();
+    Ok(Validity::new(not_before, not_after))
+}
 
-        builder
-            .add_extension(&get_extended_keyusage($is_ca))
-            .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
-
-        if !$is_ca {
-            if let Some(alt_names) = $alt_names {
-                let mut alt_names_list = vec![];
-                for alt_name in alt_names {
-                    alt_names_list.push(x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
-                        alt_name
-                            .to_string()
+fn add_crl_distribution_points<P: BuilderProfile>(
+    builder: &mut CertificateBuilder<P>,
+    args: &CertificateGenerationArgs,
+) -> E2eIdentityResult<()> {
+    if let Some(crl_dps) = args.crl_dps {
+        let mut crl_distribution_points = vec![];
+        for dp in crl_dps {
+            crl_distribution_points.push(x509_cert::ext::pkix::crl::dp::DistributionPoint {
+                distribution_point: Some(x509_cert::ext::pkix::name::DistributionPointName::FullName(vec![
+                    x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
+                        dp.to_string()
                             .try_into()
                             .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
-                    ));
-                }
+                    ),
+                ])),
+                crl_issuer: None,
+                reasons: None,
+            });
+        }
+        builder
+            .add_extension(&x509_cert::ext::pkix::CrlDistributionPoints(crl_distribution_points))
+            .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
+    }
+    Ok(())
+}
 
-                builder
-                    .add_extension(&x509_cert::ext::pkix::SubjectAltName(alt_names_list))
-                    .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
-            }
-        } else {
-            let mut permitted_subtrees = vec![
-                x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
-                    format!(".{}", $org)
-                        .try_into()
-                        .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
-                ),
-                x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
-                    format!("{}", $org)
-                        .try_into()
-                        .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
-                ),
-            ];
+fn generate_cert_root<Signature: spki::SignatureBitStringEncoding, S>(
+    args: &CertificateGenerationArgs,
+    issuer_spki: spki::SubjectPublicKeyInfoOwned,
+    keypair: S,
+) -> E2eIdentityResult<x509_cert::Certificate>
+where
+    S: signature::Signer<Signature> + spki::SignatureAlgorithmIdentifier + signature::KeypairRef,
+    S::VerifyingKey: spki::EncodePublicKey,
+{
+    let subject = subject(args)?;
+    let validity = validity(args)?;
+    let serial_number = x509_cert::serial_number::SerialNumber::from(args.serial);
 
-            if let Some(domain) = $domain {
-                // Add Domain DNS SAN
-                builder
-                    .add_extension(&x509_cert::ext::pkix::SubjectAltName(vec![
-                        x509_cert::ext::pkix::name::GeneralName::DnsName(
-                            domain
-                                .to_string()
-                                .try_into()
-                                .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
-                        ),
-                    ]))
-                    .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
+    let profile = x509_cert::builder::profile::cabf::Root::new(false, subject).expect("create root profile");
+    let mut builder = CertificateBuilder::new(profile, serial_number, validity, issuer_spki)
+        .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
 
-                permitted_subtrees.push(x509_cert::ext::pkix::name::GeneralName::DnsName(
+    builder
+        .add_extension(&args.signer.unwrap().akid()?)
+        .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
+    builder
+        .add_extension(&get_extended_keyusage(true))
+        .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
+
+    let mut permitted_subtrees = vec![
+        x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
+            args.org
+                .to_string()
+                .try_into()
+                .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
+        ),
+        x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
+            args.org
+                .to_string()
+                .try_into()
+                .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
+        ),
+    ];
+
+    if let Some(domain) = args.domain {
+        // Add Domain DNS SAN
+        builder
+            .add_extension(&x509_cert::ext::pkix::SubjectAltName(vec![
+                x509_cert::ext::pkix::name::GeneralName::DnsName(
                     domain
                         .to_string()
                         .try_into()
                         .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
-                ));
-            }
+                ),
+            ]))
+            .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
 
-            if !$is_root {
-                builder
-                    .add_extension(&x509_cert::ext::pkix::NameConstraints {
-                        permitted_subtrees: Some(
-                            permitted_subtrees
-                                .into_iter()
-                                .map(|base| x509_cert::ext::pkix::constraints::name::GeneralSubtree {
-                                    base,
-                                    minimum: 0,
-                                    maximum: None,
-                                })
-                                .collect(),
-                        ),
+        permitted_subtrees.push(x509_cert::ext::pkix::name::GeneralName::DnsName(
+            domain
+                .to_string()
+                .try_into()
+                .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
+        ));
+    }
 
-                        excluded_subtrees: None,
+    add_crl_distribution_points(&mut builder, args)?;
+
+    builder
+        .build::<_, Signature>(&keypair)
+        .map_err(|_| E2eIdentityError::CertificateGenerationError)
+}
+
+fn generate_cert_intermediate<Signature: spki::SignatureBitStringEncoding, S>(
+    args: &CertificateGenerationArgs,
+    issuer: Name,
+    issuer_spki: spki::SubjectPublicKeyInfoOwned,
+    keypair: S,
+) -> E2eIdentityResult<x509_cert::Certificate>
+where
+    S: signature::Signer<Signature> + spki::SignatureAlgorithmIdentifier + signature::KeypairRef,
+    S::VerifyingKey: spki::EncodePublicKey,
+{
+    let subject = subject(args)?;
+    let validity = validity(args)?;
+    let serial_number = x509_cert::serial_number::SerialNumber::from(args.serial);
+
+    let profile = x509_cert::builder::profile::cabf::tls::Subordinate {
+        issuer,
+        subject,
+        path_len_constraint: Some(1),
+        emits_ocsp_response: false,
+        client_auth: false,
+    };
+    let mut builder = CertificateBuilder::new(profile, serial_number, validity, issuer_spki)
+        .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
+
+    builder
+        .add_extension(&get_extended_keyusage(true))
+        .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
+
+    let mut permitted_subtrees = vec![
+        x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
+            args.org
+                .to_string()
+                .try_into()
+                .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
+        ),
+        x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
+            args.org
+                .to_string()
+                .try_into()
+                .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
+        ),
+    ];
+
+    if let Some(domain) = args.domain {
+        // Add Domain DNS SAN
+        builder
+            .add_extension(&x509_cert::ext::pkix::SubjectAltName(vec![
+                x509_cert::ext::pkix::name::GeneralName::DnsName(
+                    domain
+                        .to_string()
+                        .try_into()
+                        .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
+                ),
+            ]))
+            .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
+
+        permitted_subtrees.push(x509_cert::ext::pkix::name::GeneralName::DnsName(
+            domain
+                .to_string()
+                .try_into()
+                .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
+        ));
+    }
+
+    builder
+        .add_extension(&x509_cert::ext::pkix::NameConstraints {
+            permitted_subtrees: Some(
+                permitted_subtrees
+                    .into_iter()
+                    .map(|base| x509_cert::ext::pkix::constraints::name::GeneralSubtree {
+                        base,
+                        minimum: 0,
+                        maximum: None,
                     })
-                    .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
-            }
-        }
+                    .collect(),
+            ),
 
-        if let Some(crl_dps) = $crl_dps {
-            let mut crl_distribution_points = vec![];
-            for dp in crl_dps {
-                crl_distribution_points.push(x509_cert::ext::pkix::crl::dp::DistributionPoint {
-                    distribution_point: Some(x509_cert::ext::pkix::name::DistributionPointName::FullName(vec![
-                        x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
-                            dp.to_string()
-                                .try_into()
-                                .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
-                        ),
-                    ])),
-                    crl_issuer: None,
-                    reasons: None,
-                });
-            }
-            builder
-                .add_extension(&x509_cert::ext::pkix::CrlDistributionPoints(crl_distribution_points))
-                .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
+            excluded_subtrees: None,
+        })
+        .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
+
+    add_crl_distribution_points(&mut builder, args)?;
+
+    builder
+        .build::<_, Signature>(&keypair)
+        .map_err(|_| E2eIdentityError::CertificateGenerationError)
+}
+
+struct EndEntity {
+    pub issuer: Name,
+    pub subject: Name,
+}
+
+use x509_cert::ext::{
+    Extension, ToExtension,
+    pkix::{AuthorityKeyIdentifier, KeyUsage, KeyUsages},
+};
+
+impl BuilderProfile for EndEntity {
+    fn get_issuer(&self, _subject: &Name) -> Name {
+        self.issuer.clone()
+    }
+
+    fn get_subject(&self) -> Name {
+        self.subject.clone()
+    }
+
+    fn build_extensions(
+        &self,
+        _spk: spki::SubjectPublicKeyInfoRef<'_>,
+        issuer_spk: spki::SubjectPublicKeyInfoRef<'_>,
+        tbs: &x509_cert::TbsCertificate,
+    ) -> x509_cert::builder::Result<Vec<Extension>> {
+        let mut extensions: Vec<Extension> = vec![];
+
+        let akid = AuthorityKeyIdentifier::try_from(issuer_spk.clone())?;
+        extensions.push(akid.to_extension(tbs.subject(), &extensions)?);
+
+        let key_usage = KeyUsage(KeyUsages::DigitalSignature.into());
+        extensions.push(key_usage.to_extension(tbs.subject(), &extensions)?);
+
+        Ok(extensions)
+    }
+}
+
+fn generate_cert_end_entity<Signature: spki::SignatureBitStringEncoding, S>(
+    args: &CertificateGenerationArgs,
+    issuer: Name,
+    issuer_spki: spki::SubjectPublicKeyInfoOwned,
+    keypair: S,
+) -> E2eIdentityResult<x509_cert::Certificate>
+where
+    S: signature::Signer<Signature> + spki::SignatureAlgorithmIdentifier + signature::KeypairRef,
+    S::VerifyingKey: spki::EncodePublicKey,
+{
+    let subject = subject(args)?;
+    let validity = validity(args)?;
+    let serial_number = x509_cert::serial_number::SerialNumber::from(args.serial);
+
+    let profile = EndEntity { subject, issuer };
+    let mut builder = CertificateBuilder::new(profile, serial_number, validity, issuer_spki)
+        .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
+
+    builder
+        .add_extension(&get_extended_keyusage(false))
+        .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
+
+    if let Some(alt_names) = args.alternative_names {
+        let mut alt_names_list = vec![];
+        for alt_name in alt_names {
+            alt_names_list.push(x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
+                alt_name
+                    .to_string()
+                    .try_into()
+                    .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
+            ));
         }
 
         builder
-            .build::<$sig_type>()
-            .map_err(|_| E2eIdentityError::CertificateGenerationError)?
-    }};
+            .add_extension(&x509_cert::ext::pkix::SubjectAltName(alt_names_list))
+            .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
+    }
+
+    add_crl_distribution_points(&mut builder, args)?;
+
+    builder
+        .build::<_, Signature>(&keypair)
+        .map_err(|_| E2eIdentityError::CertificateGenerationError)
 }
 
 impl PkiKeypair {
@@ -309,16 +391,14 @@ impl PkiKeypair {
                 p384::ecdsa::SigningKey::from_slice(sk.as_slice())
                     .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
             )),
-            SignatureScheme::ECDSA_SECP521R1_SHA512 => Ok(PkiKeypair::P521(P521PkiKeypair(
-                ecdsa::SigningKey::<p521::NistP521>::from_slice(sk.as_slice())
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => Ok(PkiKeypair::P521(
+                p521::ecdsa::SigningKey::from_slice(sk.as_slice())
                     .map_err(|_| E2eIdentityError::CertificateGenerationError)?,
-            ))),
-            SignatureScheme::ED25519 => Ok(PkiKeypair::Ed25519(Ed25519PkiKeypair(
-                ed25519_dalek::SigningKey::from_bytes(
-                    sk.as_slice()
-                        .try_into()
-                        .expect("private key must be exactly {ed25519_dalek::SECRET_KEY_LENGTH} bytes"),
-                ),
+            )),
+            SignatureScheme::ED25519 => Ok(PkiKeypair::Ed25519(ed25519_dalek::SigningKey::from_bytes(
+                sk.as_slice()
+                    .try_into()
+                    .expect("private key must be exactly {ed25519_dalek::SECRET_KEY_LENGTH} bytes"),
             ))),
             _ => Err(E2eIdentityError::UnsupportedSignatureScheme),
         }
@@ -338,13 +418,13 @@ impl PkiKeypair {
 
     pub fn spki(&self) -> E2eIdentityResult<spki::SubjectPublicKeyInfoOwned> {
         match self {
-            Self::P256(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(*sk.verifying_key())
+            Self::P256(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(sk.verifying_key())
                 .map_err(|_| E2eIdentityError::CertificateGenerationError)?),
-            Self::P384(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(*sk.verifying_key())
+            Self::P384(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(sk.verifying_key())
                 .map_err(|_| E2eIdentityError::CertificateGenerationError)?),
-            Self::P521(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(*sk.0.verifying_key())
+            Self::P521(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(sk.verifying_key())
                 .map_err(|_| E2eIdentityError::CertificateGenerationError)?),
-            Self::Ed25519(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(sk.0.verifying_key())
+            Self::Ed25519(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(&sk.verifying_key())
                 .map_err(|_| E2eIdentityError::CertificateGenerationError)?),
         }
     }
@@ -386,7 +466,7 @@ impl PkiKeypair {
         let tbs_cert_list = x509_cert::crl::TbsCertList {
             version: x509_cert::Version::V3,
             signature: signature_algorithm.ref_to_owned(),
-            issuer: issuer_cert.tbs_certificate.subject.clone(),
+            issuer: issuer_cert.tbs_certificate().subject().clone(),
             this_update: now,
             next_update: None,
             revoked_certificates: Some(revoked_certificates),
@@ -400,24 +480,24 @@ impl PkiKeypair {
             .map_err(|_| E2eIdentityError::CertificateGenerationError)?;
 
         use signature::Signer as _;
-
         let signature: Vec<u8> = match self {
-            PkiKeypair::P256(sk) => signature::Signer::<p256::ecdsa::DerSignature>::try_sign(sk, &tbs)?
-                .to_der()
-                .map_err(|_| E2eIdentityError::CertificateGenerationError),
-            PkiKeypair::P384(sk) => signature::Signer::<p384::ecdsa::DerSignature>::try_sign(sk, &tbs)?
-                .to_der()
-                .map_err(|_| E2eIdentityError::CertificateGenerationError),
-            PkiKeypair::P521(sk) => {
-                let sk = p521::ecdsa::SigningKey::from(sk.0.clone());
-                let signature: p521::ecdsa::DerSignature = sk.try_sign(&tbs)?.to_der();
-
-                signature
-                    .to_der()
-                    .map_err(|_| E2eIdentityError::CertificateGenerationError)
+            PkiKeypair::P256(sk) => {
+                let signature: p256::ecdsa::Signature = sk.sign(&tbs);
+                signature.to_der().to_vec()
             }
-            PkiKeypair::Ed25519(sk) => Ok(sk.try_sign(&tbs)?.0.to_vec()),
-        }?;
+            PkiKeypair::P384(sk) => {
+                let signature: p384::ecdsa::Signature = sk.sign(&tbs);
+                signature.to_der().to_vec()
+            }
+            PkiKeypair::P521(sk) => {
+                let signature: p521::ecdsa::Signature = sk.sign(&tbs);
+                signature.to_der().to_vec()
+            }
+            PkiKeypair::Ed25519(sk) => {
+                let signature = sk.sign(&tbs);
+                signature.to_vec()
+            }
+        };
 
         let signature =
             spki::der::asn1::BitString::new(0, signature).map_err(|_| E2eIdentityError::CertificateGenerationError)?;
@@ -429,114 +509,69 @@ impl PkiKeypair {
         })
     }
 
-    pub fn generate_cert(&self, args: CertificateGenerationArgs) -> E2eIdentityResult<x509_cert::Certificate> {
-        use std::str::FromStr as _;
-
-        use x509_cert::builder::Builder as _;
-        let mut subject_fmt = format!("O={}", args.org);
-        if let Some(cn) = args.common_name {
-            subject_fmt.push_str(&format!(",CN={cn}"));
+    pub fn generate_cert<'a>(
+        &'a self,
+        mut args: CertificateGenerationArgs<'a>,
+    ) -> E2eIdentityResult<x509_cert::Certificate> {
+        if args.signer.is_none() {
+            args.signer = Some(self)
         }
+        let signer = args.signer.unwrap();
 
-        let subject =
-            x509_cert::name::Name::from_str(&subject_fmt).map_err(|_| E2eIdentityError::CertificateGenerationError)?;
-
-        let validity_start = if let Some(validity_start) = args.validity_start {
-            validity_start
+        let spki = self.spki()?;
+        let issuer = if let Some(ref issuer) = args.issuer {
+            Name::from_str(issuer.as_ref()).unwrap()
         } else {
-            web_time::SystemTime::now()
-                .duration_since(web_time::UNIX_EPOCH)
-                .map_err(|_| E2eIdentityError::CertificateGenerationError)?
-        } - std::time::Duration::from_secs(1); // to prevent time clipping
-
-        let validity = {
-            let not_before = x509_cert::der::asn1::GeneralizedTime::from_unix_duration(validity_start)
-                .map_err(|_| E2eIdentityError::CertificateGenerationError)?
-                .into();
-            let not_after =
-                x509_cert::der::asn1::GeneralizedTime::from_unix_duration(validity_start + args.validity_from_start)
-                    .map_err(|_| E2eIdentityError::CertificateGenerationError)?
-                    .into();
-            x509_cert::time::Validity { not_before, not_after }
+            Name::default()
         };
 
-        let serial_number = x509_cert::serial_number::SerialNumber::from(args.serial);
-        let spki = self.spki()?;
-
-        let signer = args.signer.unwrap_or(self);
-
-        let cert = match signer {
-            PkiKeypair::P256(kp) => {
-                impl_certgen!(
-                    signer,
-                    kp,
-                    p256::ecdsa::DerSignature,
-                    args.profile,
-                    spki,
-                    serial_number,
-                    subject,
-                    args.org,
-                    args.domain,
-                    validity,
-                    args.alternative_names,
-                    args.crl_dps,
-                    args.is_ca,
-                    args.is_root
-                )
+        let cert = match (args.is_root, args.is_ca) {
+            (true, false) => unreachable!("cannot be a root CA without being a CA"),
+            (true, true) => match signer {
+                PkiKeypair::Ed25519(kp) => generate_cert_root(&args, spki, kp.clone())?,
+                PkiKeypair::P256(kp) => {
+                    generate_cert_root::<p256::ecdsa::DerSignature, p256::ecdsa::SigningKey>(&args, spki, kp.clone())?
+                }
+                PkiKeypair::P384(kp) => {
+                    generate_cert_root::<p384::ecdsa::DerSignature, p384::ecdsa::SigningKey>(&args, spki, kp.clone())?
+                }
+                PkiKeypair::P521(kp) => {
+                    generate_cert_root::<p521::ecdsa::DerSignature, p521::ecdsa::SigningKey>(&args, spki, kp.clone())?
+                }
+            },
+            (false, true) => {
+                match signer {
+                    PkiKeypair::Ed25519(kp) => generate_cert_intermediate(&args, issuer, spki, kp.clone())?,
+                    PkiKeypair::P256(kp) => generate_cert_intermediate::<
+                        p256::ecdsa::DerSignature,
+                        p256::ecdsa::SigningKey,
+                    >(&args, issuer, spki, kp.clone())?,
+                    PkiKeypair::P384(kp) => generate_cert_intermediate::<
+                        p384::ecdsa::DerSignature,
+                        p384::ecdsa::SigningKey,
+                    >(&args, issuer, spki, kp.clone())?,
+                    PkiKeypair::P521(kp) => generate_cert_intermediate::<
+                        p521::ecdsa::DerSignature,
+                        p521::ecdsa::SigningKey,
+                    >(&args, issuer, spki, kp.clone())?,
+                }
             }
-            PkiKeypair::P384(kp) => {
-                impl_certgen!(
-                    signer,
-                    kp,
-                    p384::ecdsa::DerSignature,
-                    args.profile,
-                    spki,
-                    serial_number,
-                    subject,
-                    args.org,
-                    args.domain,
-                    validity,
-                    args.alternative_names,
-                    args.crl_dps,
-                    args.is_ca,
-                    args.is_root
-                )
-            }
-            PkiKeypair::P521(kp) => {
-                impl_certgen!(
-                    signer,
-                    kp,
-                    p521::ecdsa::DerSignature,
-                    args.profile,
-                    spki,
-                    serial_number,
-                    subject,
-                    args.org,
-                    args.domain,
-                    validity,
-                    args.alternative_names,
-                    args.crl_dps,
-                    args.is_ca,
-                    args.is_root
-                )
-            }
-            PkiKeypair::Ed25519(kp) => {
-                impl_certgen!(
-                    signer,
-                    kp,
-                    Ed25519PkiSignature,
-                    args.profile,
-                    spki,
-                    serial_number,
-                    subject,
-                    args.org,
-                    args.domain,
-                    validity,
-                    args.alternative_names,
-                    args.crl_dps,
-                    args.is_ca,
-                    args.is_root
-                )
+            (false, false) => {
+                match signer {
+                    PkiKeypair::Ed25519(kp) => generate_cert_end_entity(&args, issuer, spki, kp.clone())?,
+                    PkiKeypair::P256(kp) => generate_cert_end_entity::<
+                        p256::ecdsa::DerSignature,
+                        p256::ecdsa::SigningKey,
+                    >(&args, issuer, spki, kp.clone())?,
+                    PkiKeypair::P384(kp) => generate_cert_end_entity::<
+                        p384::ecdsa::DerSignature,
+                        p384::ecdsa::SigningKey,
+                    >(&args, issuer, spki, kp.clone())?,
+                    PkiKeypair::P521(kp) => generate_cert_end_entity::<
+                        p521::ecdsa::DerSignature,
+                        p521::ecdsa::SigningKey,
+                    >(&args, issuer, spki, kp.clone())?,
+                }
             }
         };
 
