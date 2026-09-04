@@ -71,9 +71,7 @@ mod tests_impl {
 
     use core_crypto_keystore::{
         CryptoKeystoreError,
-        entities::{
-            ConversationIdRef, MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential,
-        },
+        entities::{ConversationIdRef, MlsPendingMessage, PersistedMlsPendingGroup, StoredCredential},
         traits::{
             Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase as _,
             PrimaryKey as _,

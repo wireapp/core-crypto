@@ -41,11 +41,9 @@ impl ConversationMut {
     }
 
     async fn clear_pending_messages(&self) -> Result<()> {
-        let tx = self
-            .tx_context
-            .inner()
-            .await
-            .map_err(RecursiveError::transaction("getting tx context to clear pending messages"))?;
+        let tx = self.tx_context.inner().await.map_err(RecursiveError::transaction(
+            "getting tx context to clear pending messages",
+        ))?;
         MlsPendingMessage::delete_all_matching(tx.transaction(), ConversationIdRef::new(self.id().as_ref()))
             .map_err(KeystoreError::wrap("clearing pending messages"))?;
         Ok(())

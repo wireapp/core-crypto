@@ -35,9 +35,7 @@ impl TransactionContext {
         group_state
             .persist(&context_inner.transaction)
             .await
-            .map_err(RecursiveError::mls_conversation(
-                "persisting group state for new group",
-            ))?;
+            .map_err(RecursiveError::mls_conversation("persisting group state for new group"))?;
 
         // now that we're persisted, construct a conversation
         let session = self.session().await.map_err(RecursiveError::transaction(

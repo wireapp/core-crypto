@@ -12,8 +12,8 @@ use openmls::group::{InnerState, MlsGroup};
 
 use super::{ConversationIdRef, Error, Result, SecretKey};
 use crate::{
-    CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, ExternalSender, KeystoreError,
-    OpenMlsError, Session, mls::TntMessageCounter,
+    CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, ExternalSender, KeystoreError, OpenMlsError,
+    Session, mls::TntMessageCounter,
 };
 
 #[derive(derive_more::Constructor, derive_more::Deref, derive_more::DerefMut, derive_more::Debug)]
