@@ -37,10 +37,6 @@ CREATE TABLE "mls_credentials" (
   private_key BLOB NOT NULL
 );
 
-CREATE TABLE "mls_epoch_encryption_keypairs" (id BLOB UNIQUE, keypairs BLOB);
-
-CREATE INDEX idx_mls_epoch_encryption_keypairs_id ON mls_epoch_encryption_keypairs(id);
-
 CREATE TABLE "mls_key_packages" (
   key_package_ref BLOB UNIQUE,
   key_package BLOB
@@ -48,11 +44,7 @@ CREATE TABLE "mls_key_packages" (
 
 CREATE INDEX idx_mls_keypackages_keypackage_ref ON "mls_key_packages"(key_package_ref);
 
-CREATE TABLE "mls_groups" (
-  id BLOB UNIQUE,
-  state BLOB,
-  sender_nonce INTEGER NOT NULL DEFAULT 0
-);
+CREATE TABLE "mls_groups" (id BLOB UNIQUE, state BLOB);
 
 CREATE INDEX idx_mls_groups_id ON mls_groups(id);
 
@@ -92,3 +84,46 @@ CREATE TABLE "mls_pending_messages" (
 );
 
 CREATE INDEX idx_mls_pending_messages_conversation_id ON mls_pending_messages(conversation_id);
+
+CREATE TABLE tnt_secrets (
+  conversation_id BLOB NOT NULL,
+  epoch INTEGER NOT NULL,
+  hpke_private_key BLOB NOT NULL,
+  group_context BLOB NOT NULL,
+  targeted_message_psk BLOB NOT NULL,
+  PRIMARY KEY (conversation_id, epoch),
+  FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
+);
+
+CREATE TABLE targeted_message_rx_counters (
+  conversation_id BLOB NOT NULL,
+  sender INTEGER NOT NULL,
+  epoch INTEGER NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (conversation_id, sender, epoch),
+  FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
+);
+
+CREATE TABLE epoch_encryption_keypairs (
+  conversation_id BLOB NOT NULL,
+  own_leaf_index INTEGER NOT NULL,
+  epoch INTEGER NOT NULL,
+  keypairs BLOB NOT NULL,
+  PRIMARY KEY (conversation_id, own_leaf_index, epoch)
+);
+
+CREATE TABLE tnt_message_tx_counters (
+  conversation_id BLOB NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (conversation_id),
+  FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
+);
+
+CREATE TABLE transient_message_rx_counters (
+  conversation_id BLOB NOT NULL,
+  sender INTEGER NOT NULL,
+  epoch INTEGER NOT NULL,
+  count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (conversation_id, sender, epoch),
+  FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
+);
