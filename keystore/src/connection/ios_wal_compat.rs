@@ -8,8 +8,8 @@ use security_framework_sys::{
     base::errSecSuccess,
     item::{kSecAttrAccount, kSecAttrService, kSecClass, kSecClassGenericPassword},
 };
-use sha2::Digest as _;
 
+use super::ios_salt_id::{legacy_salt_keychain_key, stable_salt_keychain_key};
 use crate::CryptoKeystoreResult;
 
 const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
@@ -47,19 +47,29 @@ macro_rules! wrap_under_get_rule {
 // when doing background work
 // See more: https://github.com/sqlcipher/sqlcipher/issues/255
 pub(crate) fn handle_ios_wal_compat(conn: &rusqlite::Connection, path: &str) -> CryptoKeystoreResult<()> {
-    let digest = sha2::Sha256::digest(path);
-    let keychain_key = format!("keystore_salt_{}", hex::encode(digest));
+    let keychain_key = stable_salt_keychain_key(path)?;
 
     match ios_keychain::get_generic_password(WIRE_SERVICE_NAME, &keychain_key) {
         Ok(salt) => {
             conn.pragma_update(None, "cipher_salt", format!("x'{}'", hex::encode(salt)))?;
         }
         Err(e) if e.code() == ERR_SEC_ITEM_NOT_FOUND => {
-            let salt = conn.pragma_query_value(None, "cipher_salt", |r| r.get::<_, String>(0))?;
-            let mut bytes = [0u8; 16];
-            hex::decode_to_slice(salt, &mut bytes).map_err(|e| crate::CryptoKeystoreError::HexSaltDecodeError(e))?;
-
-            ios_keychain::set_generic_password(WIRE_SERVICE_NAME, &keychain_key, &bytes)?;
+            // Fall back to the legacy path-derived key for pre-existing installs; never delete it.
+            let legacy_key = legacy_salt_keychain_key(path);
+            match ios_keychain::get_generic_password(WIRE_SERVICE_NAME, &legacy_key) {
+                Ok(salt) => {
+                    conn.pragma_update(None, "cipher_salt", format!("x'{}'", hex::encode(&salt)))?;
+                    ios_keychain::set_generic_password(WIRE_SERVICE_NAME, &keychain_key, &salt)?;
+                }
+                Err(e) if e.code() == ERR_SEC_ITEM_NOT_FOUND => {
+                    // Brand-new keystore: persist SQLCipher's freshly generated (already active) salt.
+                    let salt = conn.pragma_query_value(None, "cipher_salt", |r| r.get::<_, String>(0))?;
+                    let mut bytes = [0u8; 16];
+                    hex::decode_to_slice(salt, &mut bytes).map_err(crate::CryptoKeystoreError::HexSaltDecodeError)?;
+                    ios_keychain::set_generic_password(WIRE_SERVICE_NAME, &keychain_key, &bytes)?;
+                }
+                Err(e) => return Err(e.into()),
+            }
         }
         Err(e) => return Err(e.into()),
     }
@@ -95,7 +105,7 @@ fn mark_password_as_accessible(key: &str) -> security_framework::base::Result<()
             wrap_under_get_rule!(kSecAttrService),
             CFString::from(WIRE_SERVICE_NAME).as_CFType(),
         ),
-        // Holding account name = `key` (in the following form: `keystore_salt_[sha256(file_path)]`)
+        // Holding account name = `key` (in the following form: `keystore_salt_v2_[stable_id]`)
         (wrap_under_get_rule!(kSecAttrAccount), CFString::from(key).as_CFType()),
     ]);
 

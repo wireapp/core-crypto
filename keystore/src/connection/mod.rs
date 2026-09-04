@@ -5,6 +5,8 @@ mod file_lock;
 mod filesystem;
 #[cfg(target_os = "unknown")]
 mod idb_migration;
+#[cfg(any(target_os = "ios", all(test, not(target_os = "unknown"))))]
+mod ios_salt_id;
 #[cfg(target_os = "ios")]
 mod ios_wal_compat;
 mod migrations;
@@ -83,10 +85,9 @@ impl Database {
                 encryption::key(&mut conn, database_key)?;
             }
 
-            // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
-            // Use the caller-provided path here rather than `Connection::path()`, which SQLite
-            // canonicalizes. The iOS WAL compatibility salt is keyed by the path, so changing a
-            // relative path into an absolute one would make existing databases use the wrong salt.
+            // ? iOS WAL journaling fix; see https://github.com/sqlcipher/sqlcipher/issues/255
+            // Pass the caller path, not `Connection::path()` (SQLite canonicalizes it): the salt
+            // sidecar and legacy keychain key are resolved from it.
             #[cfg(target_os = "ios")]
             if !path.is_empty() {
                 ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
