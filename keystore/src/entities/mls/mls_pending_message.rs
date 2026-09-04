@@ -13,9 +13,9 @@ use crate::{
 ///
 /// A message is buffered when it cannot be decrypted yet, which happens in two unrelated situations: the
 /// conversation was joined by external commit and that join has not been merged, or the conversation is
-/// fully established but the message belongs to epoch `n + 1` while we are still in epoch `n`. The first
-/// kind of conversation is stored in `mls_pending_groups` and the second in `mls_groups`, so
-/// `conversation_id` carries no foreign key — there is no single parent table for it to reference.
+/// fully established but the message belongs to epoch `n + 1` while we are still in epoch `n`. Both kinds
+/// of conversation are rows in `mls_groups`, but a message can arrive and be buffered before its
+/// conversation is persisted, so `conversation_id` holds no foreign key.
 ///
 /// This entity cannot be updated in the DB: the primary key is formed of a hash of all the rest
 /// of the data, so duplicate save attempts silently succeed without changing anything.
@@ -170,19 +170,18 @@ mod tests {
         }
     }
 
-    /// A buffered message can be committed for a conversation which is not a pending group.
+    /// A buffered message can be committed for a conversation with no row in `mls_groups` at all yet.
     ///
     /// This table serves two unrelated callers. One is a conversation joined by external commit and not
-    /// yet merged, which lives in `mls_pending_groups`; the other is a fully established conversation
-    /// buffering a message from epoch `n + 1`, which lives in `mls_groups` and has no pending group row at
-    /// all. Up to and including V30 the table carried a foreign key onto `mls_pending_groups`, which the
-    /// second caller could never satisfy, so its saves failed at commit with `FOREIGN KEY constraint
-    /// failed`. V31 drops that constraint, and its comment explains why at length.
+    /// yet merged; the other is a fully established conversation buffering a message from epoch `n + 1`.
+    /// Up to and including V30 the table carried a foreign key onto the then-separate `mls_pending_groups`,
+    /// which the second caller could never satisfy, so its saves failed at commit with `FOREIGN KEY
+    /// constraint failed`. V31 drops that constraint, and its comment explains why at length.
     ///
     /// Every other test here now exercises the same conversation shape, so this property is covered
     /// several times over. It gets a test of its own regardless: nothing in the schema records the
     /// relationship between a buffered message and its conversation any more, so this is the only place
-    /// which states that a conversation absent from `mls_pending_groups` is legitimate.
+    /// which states that a conversation absent from `mls_groups` is legitimate.
     #[test]
     fn can_save_a_pending_message_for_a_conversation_which_is_not_a_pending_group() {
         future::block_on(async {
