@@ -98,21 +98,20 @@ async fn main() -> anyhow::Result<()> {
         .collect::<postcard::Result<_>>()?;
     json_map.serialize_entry("mls_keypackages", &keypackages)?;
 
-    let pgroups: Vec<openmls::prelude::MlsGroup> = keystore
-        .load_all::<PersistedMlsGroup>()
-        .await?
-        .into_iter()
-        .map(|pgroup| core_crypto_keystore::deser::<openmls::prelude::MlsGroup>(&pgroup.state))
-        .collect::<core_crypto_keystore::CryptoKeystoreResult<_>>()?;
-    json_map.serialize_entry("mls_groups", &pgroups)?;
+    let all_groups = keystore.load_all::<PersistedMlsGroup>().await?;
+    let (pending_groups, groups) = all_groups.into_iter().partition::<Vec<_>, _>(|group| group.is_pending);
 
-    let pegroups: Vec<openmls::prelude::MlsGroup> = keystore
-        .load_all::<PersistedMlsPendingGroup>()
-        .await?
+    let groups = groups
         .into_iter()
-        .map(|pgroup| core_crypto_keystore::deser::<openmls::prelude::MlsGroup>(&pgroup.state))
-        .collect::<core_crypto_keystore::CryptoKeystoreResult<_>>()?;
-    json_map.serialize_entry("mls_pending_groups", &pegroups)?;
+        .map(|group| core_crypto_keystore::deser::<openmls::prelude::MlsGroup>(&group.state))
+        .collect::<Result<Vec<_>, _>>()?;
+    json_map.serialize_entry("mls_groups", &groups)?;
+
+    let pending_groups = pending_groups
+        .into_iter()
+        .map(|group| core_crypto_keystore::deser::<openmls::prelude::MlsGroup>(&group.state))
+        .collect::<Result<Vec<_>, _>>()?;
+    json_map.serialize_entry("mls_pending_groups", &pending_groups)?;
 
     if let Some(proteus_identity) = keystore.get_unique::<ProteusIdentity>().await? {
         let identity = {
