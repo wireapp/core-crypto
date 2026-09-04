@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-fcca518a.js";
+            window.path_to_searchindex_js = "searchindex-ed9162d1.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1c113b1d.js"></script>
@@ -188,6 +188,10 @@ distributed only to currently online group members.</p>
 group member specifically. This enables the long-awaited read receipts feature for MLS. Regular MLS messages aren’t a
 good fit for read receipts because of the massive amount of irrelevant messages that would need to be distributed.</p>
 </li>
+</ul>
+<h2 id="corecrypto-10"><a class="header" href="#corecrypto-10">CoreCrypto 10</a></h2>
+<h3 id="v1050---2026-09-04"><a class="header" href="#v1050---2026-09-04">v10.5.0 - 2026-09-04</a></h3>
+<ul>
 <li>
 <p>Operations in a CoreCrypto transaction now write to the database as they happen, within a real database transaction,
 instead of being buffered in memory and replayed at commit time. Atomicity is unchanged: nothing is visible to another
@@ -212,8 +216,13 @@ as a consequence of the old behavior where errors only propagated at commit time
 reliably. Previously restoration only worked if the key package had been created in an earlier transaction; a key
 package created in the same transaction was lost, along with its private keys.</p>
 </li>
+<li>
+<p>Relax a DB primary key constraint that caused migration from basic to x509 credentials to break.</p>
+</li>
+<li>
+<p>Fix a DB migration issue that surfaced during client initialization.</p>
+</li>
 </ul>
-<h2 id="corecrypto-10"><a class="header" href="#corecrypto-10">CoreCrypto 10</a></h2>
 <h3 id="v1040---2026-08-19"><a class="header" href="#v1040---2026-08-19">v10.4.0 - 2026-08-19</a></h3>
 <ul>
 <li>
