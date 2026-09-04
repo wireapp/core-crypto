@@ -56,7 +56,7 @@ when (decryptedMessage) {
 
 <!-- langtabs-end -->
 
-# Migrating from v9.x to v10.0
+## Migrating from v9.x to v10.0
 
 This page covers breaking changes that are identical across all platforms. For platform-specific migration steps, see
 the sub-pages:
