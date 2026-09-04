@@ -6,3 +6,4 @@ CREATE TABLE mls_credentials_new (
     public_key BLOB NOT NULL,
     private_key BLOB NOT NULL
 );
+
