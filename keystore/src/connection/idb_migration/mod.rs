@@ -16,14 +16,15 @@ use crate::{
     connection::{
         idb_migration::legacy::entities::mls::{
             e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
-            pending_group::PersistedMlsPendingGroup as LegacyPersistedMlsPendingGroup,
+            group::legacy_persisted_mls_pending_group::LegacyPersistedMlsPendingGroup,
+            pending_group::PersistedMlsPendingGroup as IdbPersistedMlsPendingGroup,
             stored_keypackage::StoredKeypackage,
         },
         migrations::MigrationTarget,
     },
     entities::{
-        ConsumerData, MlsPendingMessage, PersistedMlsPendingGroup, StoredBufferedCommit, StoredEncryptionKeyPair,
-        StoredHpkePrivateKey, StoredPskBundle,
+        ConsumerData, MlsPendingMessage, StoredBufferedCommit, StoredEncryptionKeyPair, StoredHpkePrivateKey,
+        StoredPskBundle,
     },
     migrations::{LegacyPersistedMlsGroup, StoredCredentialV36, V33StoredEpochEncryptionKeypair},
     traits::EntityDatabaseMutation as _,
@@ -140,21 +141,19 @@ pub(super) async fn maybe_migrate(
 
     // the type of `PersistedMlsPendingGroup` changed, so we implement the migration manually
     {
-        let pending_group =
-            <LegacyPersistedMlsPendingGroup as legacy::traits::Entity>::load_all(&mut legacy_conn).await?;
+        let pending_group = <IdbPersistedMlsPendingGroup as legacy::traits::Entity>::load_all(&mut legacy_conn).await?;
         let tx = new_conn.transaction()?;
-        // we don't care about these old fields and in fact are about to drop them.
-        for LegacyPersistedMlsPendingGroup {
+        // we don't care about `parent_id`/`custom_configuration`; both are both nullable and already dropped
+        // at the end of the current migration chain.
+        for IdbPersistedMlsPendingGroup {
             ref mut id,
             ref mut state,
             ..
         } in pending_group
         {
-            PersistedMlsPendingGroup {
-                id: std::mem::replace(id, Vec::new().into()),
-                state: std::mem::take(state),
-            }
-            .save(&tx)?;
+            let id = std::mem::replace(id, Vec::new().into()).into();
+            let state = std::mem::take(state);
+            LegacyPersistedMlsPendingGroup { id, state }.save(&tx)?;
         }
         tx.commit()?;
     }

@@ -1,5 +1,6 @@
 mod expanded_derive;
 pub(crate) mod legacy_persisted_mls_group;
+pub(crate) mod legacy_persisted_mls_pending_group;
 
 use async_trait::async_trait;
 use idb::TransactionMode;
