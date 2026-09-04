@@ -135,8 +135,8 @@ mod tests_impl {
     use core_crypto_keystore::{
         CryptoKeystoreError,
         entities::{
-            MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, StoredCredential, TargetedMessageRxCounter,
-            TntMessageTxCounter, TransientMessageRxCounter,
+            MlsPendingMessage, PersistedMlsGroup, StoredCredential, TargetedMessageRxCounter, TntMessageTxCounter,
+            TransientMessageRxCounter,
         },
         traits::{
             Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase as _,
@@ -179,15 +179,6 @@ mod tests_impl {
         let any_e: &dyn Any = &entity;
 
         let group_id_as_foreign_key = match_heterogenous!(any_e => {
-            // pending messages have a foreign key constraint which must be satisfied
-            pending_message @ MlsPendingMessage { .. } => {
-                let mut pending_group = PersistedMlsPendingGroup::random();
-                pending_group.id = pending_message.conversation_id.clone();
-
-                pending_group.save(&*tx).unwrap();
-                None
-            },
-
             // tnt message counters also have a foreign key constraint which must be satisfied
             counter @ TntMessageTxCounter { .. } => {
                 Some(counter.conversation_id.clone())
@@ -498,7 +489,6 @@ mod tests {
     test_for_entity!(test_transient_message_tx_counter, TntMessageTxCounter);
     test_for_entity!(test_targeted_message_rx_counter, TargetedMessageRxCounter);
     test_for_entity!(test_transient_message_rx_counter, TransientMessageRxCounter);
-    test_for_entity!(test_persisted_mls_pending_group, PersistedMlsPendingGroup);
     test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_entity_count: true ignore_update:true ignore_remove:true ignore_find_many:true no_borrowed_key:true);
     test_for_entity!(test_mls_credential, StoredCredential ignore_update:true no_borrowed_key:true);
     test_for_entity!(test_mls_keypackage, StoredKeyPackage no_upsert:true);
@@ -560,9 +550,9 @@ pub mod utils {
     use core_crypto_keystore::{
         ancillary::ConversationId,
         entities::{
-            MlsPendingMessage, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusSession, StoredCredential,
-            StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage,
-            StoredPskBundle, TargetedMessageRxCounter, TntMessageTxCounter, TransientMessageRxCounter, X509TrustAnchor,
+            MlsPendingMessage, PersistedMlsGroup, ProteusSession, StoredCredential, StoredEncryptionKeyPair,
+            StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
+            TargetedMessageRxCounter, TntMessageTxCounter, TransientMessageRxCounter, X509TrustAnchor,
         },
     };
     use rand::{RngExt as _, distr::SampleString};
@@ -699,7 +689,6 @@ pub mod utils {
     impl_entity_random_update_ext!(TargetedMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);
     impl_entity_random_update_ext!(TransientMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);
 
-    impl_entity_random_update_ext!(PersistedMlsPendingGroup, id_field = id, blob_fields = [state,]);
     impl_entity_random_update_ext!(MlsPendingMessage, id_field = conversation_id, blob_fields = [message,]);
     impl_entity_random_update_ext!(X509TrustAnchor, id_field = fingerprint, blob_fields = [content,]);
 
