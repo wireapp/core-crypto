@@ -10,6 +10,10 @@
   group member specifically. This enables the long-awaited read receipts feature for MLS. Regular MLS messages aren't a
   good fit for read receipts because of the massive amount of irrelevant messages that would need to be distributed.
 
+## CoreCrypto 10
+
+### v10.5.0 - 2026-09-04
+
 - Operations in a CoreCrypto transaction now write to the database as they happen, within a real database transaction,
   instead of being buffered in memory and replayed at commit time. Atomicity is unchanged: nothing is visible to another
   process until the transaction commits, and a rollback still undoes everything. The observable differences are:
@@ -30,7 +34,9 @@
   reliably. Previously restoration only worked if the key package had been created in an earlier transaction; a key
   package created in the same transaction was lost, along with its private keys.
 
-## CoreCrypto 10
+- Relax a DB primary key constraint that caused migration from basic to x509 credentials to break.
+
+- Fix a DB migration issue that surfaced during client initialization.
 
 ### v10.4.0 - 2026-08-19
 
