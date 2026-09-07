@@ -196,6 +196,40 @@ pub(crate) mod test {
         (NamedTempFile::new().unwrap(), DatabaseKey::generate())
     }
 
+    #[test]
+    fn repairs_divergent_v16_checksum_before_running_migrations() {
+        let (db_file, key) = temp_db();
+        let path = db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode");
+
+        smol::block_on(async {
+            let db = Database::open_at_schema_version(path, &key, MigrationTarget::Version(16))
+                .await
+                .expect("opening the database at V16");
+            let conn = db.conn().await;
+            let expected_checksum: String = conn
+                .query_row(
+                    "SELECT checksum FROM refinery_schema_history WHERE version = 16",
+                    [],
+                    |row| row.get(0),
+                )
+                .expect("reading the V16 checksum");
+            let divergent_checksum = (expected_checksum.parse::<u64>().unwrap().wrapping_add(1)).to_string();
+
+            conn.execute(
+                "UPDATE refinery_schema_history SET checksum = ?1 WHERE version = 16",
+                [&divergent_checksum],
+            )
+            .expect("replacing the V16 checksum");
+
+            Database::open(path, &key)
+                .await
+                .expect("reopening and migrating the database");
+        });
+    }
+
     // a close replica of the JVM test in `GeneralTest.kt`, but way more debuggable
     #[test]
     fn can_migrate_key_type_to_bytes() {
