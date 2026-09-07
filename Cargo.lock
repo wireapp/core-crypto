@@ -620,7 +620,7 @@ dependencies = [
  "log",
  "num",
  "pin-project-lite",
- "rand 0.10.1",
+ "rand 0.10.2",
  "rustls",
  "rustls-native-certs",
  "rustls-pki-types",
@@ -1150,7 +1150,7 @@ dependencies = [
  "pem",
  "proteus-traits",
  "proteus-wasm",
- "rand 0.10.1",
+ "rand 0.10.2",
  "rand_chacha 0.10.0",
  "rand_core 0.10.1",
  "rmp-serde",
@@ -1251,7 +1251,7 @@ dependencies = [
  "postcard",
  "proteus-traits",
  "proteus-wasm",
- "rand 0.10.1",
+ "rand 0.10.2",
  "refinery",
  "rstest",
  "rstest_reuse",
@@ -2041,7 +2041,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ee93edf3c501f0035bbeffeccfed0b79e14c311f12195ec0e661e114a0f60da4"
 dependencies = [
  "portable-atomic",
- "rand 0.10.1",
+ "rand 0.10.2",
  "web-time",
 ]
 
@@ -3081,7 +3081,7 @@ dependencies = [
  "log",
  "openmls",
  "proteus-wasm",
- "rand 0.10.1",
+ "rand 0.10.2",
  "serde",
  "serde_json",
  "sha2 0.11.0",
@@ -3746,7 +3746,7 @@ dependencies = [
  "log",
  "openmls",
  "openmls_basic_credential",
- "rand 0.10.1",
+ "rand 0.10.2",
  "rusty-jwt-tools",
  "sha2 0.11.0",
 ]
@@ -4560,9 +4560,9 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.10.1"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2e8e8bcc7961af1fdac401278c6a831614941f6164ee3bf4ce61b7edb162207"
+checksum = "c7f5fa3a058cd35567ef9bfa5e75732bee0f9e4c55fa90477bef2dfcdbc4be80"
 dependencies = [
  "chacha20 0.10.2",
  "getrandom 0.4.1",
@@ -5944,7 +5944,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.1",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix 1.1.4",
  "windows-sys 0.52.0",
@@ -7564,7 +7564,7 @@ dependencies = [
  "p521 0.14.0",
  "password-hash 0.6.1",
  "pem",
- "rand 0.10.1",
+ "rand 0.10.2",
  "reqwest",
  "rstest",
  "rusty-jwt-tools",
