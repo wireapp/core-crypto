@@ -36,19 +36,33 @@ pub(super) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationT
         MigrationTarget::Version(target_argument) => (latest_migration_version).min(target_argument as i32),
     };
 
-    for version in 1..=target_version {
-        // This version is known to have an additional newline in some releases, but the actual migration work is
-        // identical
-        if version == 16 {
-            runner = runner.set_abort_divergent(false);
-        }
+    // This version is known to have an additional newline in some releases, but the actual migration work is
+    // identical. Ensure Refinery sees the checksum of the embedded migration when it validates the history.
+    const BROKEN_MIGRATION_FILE_VERSION: i32 = 16;
+    let expected_checksum = runner
+        .get_migrations()
+        .iter()
+        .find(|migration| migration.version() == BROKEN_MIGRATION_FILE_VERSION)
+        .expect("V16 is embedded")
+        .checksum()
+        .to_string();
 
+    // Adjust the schema history only if it already exists.
+    let has_refinery_schema_history = conn.query_row(
+        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'refinery_schema_history')",
+        [],
+        |row| row.get::<_, bool>(0),
+    )?;
+    if has_refinery_schema_history {
+        conn.execute(
+            "UPDATE refinery_schema_history SET checksum = ?1 WHERE version = ?2",
+            (expected_checksum, BROKEN_MIGRATION_FILE_VERSION),
+        )?;
+    }
+
+    for version in 1..=target_version {
         runner = runner.set_target(Target::Version(version));
         let report = runner.run(conn).map_err(Box::new)?;
-
-        if version == 16 {
-            runner = runner.set_abort_divergent(true);
-        }
 
         let Some(updated_version) = report.applied_migrations().iter().map(|m| m.version()).max() else {
             continue;
