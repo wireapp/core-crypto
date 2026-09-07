@@ -40,7 +40,7 @@ fn find_js_functions(source: &str) -> HashMap<String, String> {
     let mut matches = cursor.matches(&query, tree.root_node(), source.as_bytes());
     // QueryMatches doesn't implement Iterator for Reasons
     while let Some(matched_fn) = matches.next() {
-        let [name, body] = matched_fn.captures else {
+        let [name, body] = matched_fn.captures() else {
             unreachable!("our query will always produce exactly 2 captures");
         };
 
