@@ -41,7 +41,7 @@
 <a href=#41 id=41 data-nosnippet>41</a>
 <a href=#42 id=42 data-nosnippet>42</a>    <span class="kw">fn </span>get(conn: <span class="kw-2">&amp;</span>rusqlite::Connection, key: <span class="kw-2">&amp;</span>Vec&lt;u8&gt;) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
 <a href=#43 id=43 data-nosnippet>43</a>        <span class="kw">let </span>hash = <span class="kw">crate</span>::Sha256Hash::hash_from(key);
-<a href=#44 id=44 data-nosnippet>44</a>        <span class="kw">crate</span>::entities::helpers::get_helper(conn, <span class="string">"id_sha256"</span>, hash, |row| {
+<a href=#44 id=44 data-nosnippet>44</a>        <span class="kw">crate</span>::ancillary::helpers::get_helper(conn, <span class="string">"id_sha256"</span>, hash, |row| {
 <a href=#45 id=45 data-nosnippet>45</a>            <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
 <a href=#46 id=46 data-nosnippet>46</a>                psk_id: row.get(<span class="string">"psk_id"</span>)<span class="question-mark">?</span>,
 <a href=#47 id=47 data-nosnippet>47</a>                psk: row.get(<span class="string">"psk"</span>)<span class="question-mark">?</span>,
@@ -50,11 +50,11 @@
 <a href=#50 id=50 data-nosnippet>50</a>    }
 <a href=#51 id=51 data-nosnippet>51</a>
 <a href=#52 id=52 data-nosnippet>52</a>    <span class="kw">fn </span>count(conn: <span class="kw-2">&amp;</span>rusqlite::Connection) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;u32&gt; {
-<a href=#53 id=53 data-nosnippet>53</a>        <span class="kw">crate</span>::entities::helpers::count_helper::&lt;<span class="self">Self</span>&gt;(conn)
+<a href=#53 id=53 data-nosnippet>53</a>        <span class="kw">crate</span>::ancillary::helpers::count_helper::&lt;<span class="self">Self</span>&gt;(conn)
 <a href=#54 id=54 data-nosnippet>54</a>    }
 <a href=#55 id=55 data-nosnippet>55</a>
 <a href=#56 id=56 data-nosnippet>56</a>    <span class="kw">fn </span>load_all(conn: <span class="kw-2">&amp;</span>rusqlite::Connection) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
-<a href=#57 id=57 data-nosnippet>57</a>        <span class="kw">crate</span>::entities::helpers::load_all_helper(conn, |row| {
+<a href=#57 id=57 data-nosnippet>57</a>        <span class="kw">crate</span>::ancillary::helpers::load_all_helper(conn, |row| {
 <a href=#58 id=58 data-nosnippet>58</a>            <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
 <a href=#59 id=59 data-nosnippet>59</a>                psk_id: row.get(<span class="string">"psk_id"</span>)<span class="question-mark">?</span>,
 <a href=#60 id=60 data-nosnippet>60</a>                psk: row.get(<span class="string">"psk"</span>)<span class="question-mark">?</span>,
@@ -66,7 +66,7 @@
 <a href=#66 id=66 data-nosnippet>66</a><span class="kw">impl </span><span class="kw">crate</span>::traits::EntityGetBorrowed <span class="kw">for </span>StoredPskBundle {
 <a href=#67 id=67 data-nosnippet>67</a>    <span class="kw">fn </span>get_borrowed(conn: <span class="kw-2">&amp;</span>rusqlite::Connection, key: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
 <a href=#68 id=68 data-nosnippet>68</a>        <span class="kw">let </span>hash = <span class="kw">crate</span>::Sha256Hash::hash_from(key);
-<a href=#69 id=69 data-nosnippet>69</a>        <span class="kw">crate</span>::entities::helpers::get_helper(conn, <span class="string">"id_sha256"</span>, hash, |row| {
+<a href=#69 id=69 data-nosnippet>69</a>        <span class="kw">crate</span>::ancillary::helpers::get_helper(conn, <span class="string">"id_sha256"</span>, hash, |row| {
 <a href=#70 id=70 data-nosnippet>70</a>            <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
 <a href=#71 id=71 data-nosnippet>71</a>                psk_id: row.get(<span class="string">"psk_id"</span>)<span class="question-mark">?</span>,
 <a href=#72 id=72 data-nosnippet>72</a>                psk: row.get(<span class="string">"psk"</span>)<span class="question-mark">?</span>,
@@ -94,7 +94,7 @@
 <a href=#94 id=94 data-nosnippet>94</a>        </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tx: Into&lt;Transactionlike&lt;<span class="lifetime">'a</span>&gt;&gt;,
 <a href=#95 id=95 data-nosnippet>95</a>    {
 <a href=#96 id=96 data-nosnippet>96</a>        <span class="kw">let </span>hash = <span class="kw">crate</span>::Sha256Hash::hash_from(id);
-<a href=#97 id=97 data-nosnippet>97</a>        <span class="kw">crate</span>::entities::helpers::delete_helper::&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;(tx, <span class="string">"id_sha256"</span>, hash)
+<a href=#97 id=97 data-nosnippet>97</a>        <span class="kw">crate</span>::ancillary::helpers::delete_helper::&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;(tx, <span class="string">"id_sha256"</span>, hash)
 <a href=#98 id=98 data-nosnippet>98</a>    }
 <a href=#99 id=99 data-nosnippet>99</a>}
 <a href=#100 id=100 data-nosnippet>100</a>
@@ -104,7 +104,7 @@
 <a href=#104 id=104 data-nosnippet>104</a>        </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tx: Into&lt;Transactionlike&lt;<span class="lifetime">'a</span>&gt;&gt;,
 <a href=#105 id=105 data-nosnippet>105</a>    {
 <a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span>hash = <span class="kw">crate</span>::Sha256Hash::hash_from(id);
-<a href=#107 id=107 data-nosnippet>107</a>        <span class="kw">crate</span>::entities::helpers::delete_helper::&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;(tx, <span class="string">"id_sha256"</span>, hash)
+<a href=#107 id=107 data-nosnippet>107</a>        <span class="kw">crate</span>::ancillary::helpers::delete_helper::&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;(tx, <span class="string">"id_sha256"</span>, hash)
 <a href=#108 id=108 data-nosnippet>108</a>    }
 <a href=#109 id=109 data-nosnippet>109</a>}
 </code></pre></div></section></main></body></html>

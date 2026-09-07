@@ -50,11 +50,11 @@
 <a href=#50 id=50 data-nosnippet>50</a>    }
 <a href=#51 id=51 data-nosnippet>51</a>
 <a href=#52 id=52 data-nosnippet>52</a>    <span class="kw">fn </span>count(conn: <span class="kw-2">&amp;</span>rusqlite::Connection) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;u32&gt; {
-<a href=#53 id=53 data-nosnippet>53</a>        <span class="kw">crate</span>::entities::helpers::count_helper::&lt;<span class="self">Self</span>&gt;(conn)
+<a href=#53 id=53 data-nosnippet>53</a>        <span class="kw">crate</span>::ancillary::helpers::count_helper::&lt;<span class="self">Self</span>&gt;(conn)
 <a href=#54 id=54 data-nosnippet>54</a>    }
 <a href=#55 id=55 data-nosnippet>55</a>
 <a href=#56 id=56 data-nosnippet>56</a>    <span class="kw">fn </span>load_all(conn: <span class="kw-2">&amp;</span>rusqlite::Connection) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
-<a href=#57 id=57 data-nosnippet>57</a>        <span class="kw">crate</span>::entities::helpers::load_all_helper(conn, |row| {
+<a href=#57 id=57 data-nosnippet>57</a>        <span class="kw">crate</span>::ancillary::helpers::load_all_helper(conn, |row| {
 <a href=#58 id=58 data-nosnippet>58</a>            <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
 <a href=#59 id=59 data-nosnippet>59</a>                sk: row.get(<span class="string">"sk"</span>)<span class="question-mark">?</span>,
 <a href=#60 id=60 data-nosnippet>60</a>                pk: row.get(<span class="string">"pk"</span>)<span class="question-mark">?</span>,

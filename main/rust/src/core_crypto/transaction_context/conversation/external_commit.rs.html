@@ -166,13 +166,13 @@
 <a href=#166 id=166 data-nosnippet>166</a>            <span class="macro">assert!</span>(conversation.is_functional_and_contains([<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>bob]).<span class="kw">await</span>);
 <a href=#167 id=167 data-nosnippet>167</a>
 <a href=#168 id=168 data-nosnippet>168</a>            <span class="comment">// Pending group removed from keystore
-<a href=#169 id=169 data-nosnippet>169</a>            </span><span class="kw">let </span>keystore_id = core_crypto_keystore::entities::ConversationId::from(id.as_ref());
+<a href=#169 id=169 data-nosnippet>169</a>            </span><span class="kw">let </span>keystore_id = id.as_ref().keystore();
 <a href=#170 id=170 data-nosnippet>170</a>            <span class="kw">let </span>error = bob
 <a href=#171 id=171 data-nosnippet>171</a>                .transaction
 <a href=#172 id=172 data-nosnippet>172</a>                .database()
 <a href=#173 id=173 data-nosnippet>173</a>                .<span class="kw">await
 <a href=#174 id=174 data-nosnippet>174</a>                </span>.unwrap()
-<a href=#175 id=175 data-nosnippet>175</a>                .get::&lt;PersistedMlsPendingGroup&gt;(<span class="kw-2">&amp;</span>keystore_id)
+<a href=#175 id=175 data-nosnippet>175</a>                .get_borrowed::&lt;PersistedMlsPendingGroup&gt;(keystore_id)
 <a href=#176 id=176 data-nosnippet>176</a>                .<span class="kw">await</span>;
 <a href=#177 id=177 data-nosnippet>177</a>            <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)));
 <a href=#178 id=178 data-nosnippet>178</a>

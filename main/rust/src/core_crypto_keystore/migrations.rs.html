@@ -141,7 +141,7 @@
 <a href=#141 id=141 data-nosnippet>141</a>    }
 <a href=#142 id=142 data-nosnippet>142</a>
 <a href=#143 id=143 data-nosnippet>143</a>    <span class="kw">fn </span>count(conn: <span class="kw-2">&amp;</span>rusqlite::Connection) -&gt; CryptoKeystoreResult&lt;u32&gt; {
-<a href=#144 id=144 data-nosnippet>144</a>        <span class="kw">crate</span>::entities::helpers::count_helper::&lt;<span class="self">Self</span>&gt;(conn)
+<a href=#144 id=144 data-nosnippet>144</a>        <span class="kw">crate</span>::ancillary::helpers::count_helper::&lt;<span class="self">Self</span>&gt;(conn)
 <a href=#145 id=145 data-nosnippet>145</a>    }
 <a href=#146 id=146 data-nosnippet>146</a>
 <a href=#147 id=147 data-nosnippet>147</a>    <span class="kw">fn </span>load_all(conn: <span class="kw-2">&amp;</span>rusqlite::Connection) -&gt; CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
@@ -196,7 +196,7 @@
 <a href=#196 id=196 data-nosnippet>196</a>    <span class="kw">where
 <a href=#197 id=197 data-nosnippet>197</a>        </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tx: Into&lt;Transactionlike&lt;<span class="lifetime">'a</span>&gt;&gt;,
 <a href=#198 id=198 data-nosnippet>198</a>    {
-<a href=#199 id=199 data-nosnippet>199</a>        <span class="kw">crate</span>::entities::helpers::delete_helper::&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;(tx, <span class="string">"public_key_sha256"</span>, id)
+<a href=#199 id=199 data-nosnippet>199</a>        <span class="kw">crate</span>::ancillary::helpers::delete_helper::&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;(tx, <span class="string">"public_key_sha256"</span>, id)
 <a href=#200 id=200 data-nosnippet>200</a>    }
 <a href=#201 id=201 data-nosnippet>201</a>}
 <a href=#202 id=202 data-nosnippet>202</a>

@@ -116,11 +116,11 @@
 <a href=#116 id=116 data-nosnippet>116</a>                }
 <a href=#117 id=117 data-nosnippet>117</a>
 <a href=#118 id=118 data-nosnippet>118</a>                <span class="kw">fn </span>count(conn: <span class="kw-2">&amp;</span>rusqlite::Connection) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;u32&gt; {
-<a href=#119 id=119 data-nosnippet>119</a>                    <span class="kw">crate</span>::entities::helpers::count_helper::&lt;<span class="self">Self</span>&gt;(conn)
+<a href=#119 id=119 data-nosnippet>119</a>                    <span class="kw">crate</span>::ancillary::helpers::count_helper::&lt;<span class="self">Self</span>&gt;(conn)
 <a href=#120 id=120 data-nosnippet>120</a>                }
 <a href=#121 id=121 data-nosnippet>121</a>
 <a href=#122 id=122 data-nosnippet>122</a>                <span class="kw">fn </span>load_all(conn: <span class="kw-2">&amp;</span>rusqlite::Connection) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
-<a href=#123 id=123 data-nosnippet>123</a>                    <span class="kw">crate</span>::entities::helpers::load_all_helper::&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;(conn, |row| {
+<a href=#123 id=123 data-nosnippet>123</a>                    <span class="kw">crate</span>::ancillary::helpers::load_all_helper::&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;(conn, |row| {
 <a href=#124 id=124 data-nosnippet>124</a>                        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
 <a href=#125 id=125 data-nosnippet>125</a>                            #( #field_assignments, )*
 <a href=#126 id=126 data-nosnippet>126</a>                        })
@@ -158,7 +158,7 @@
 <a href=#158 id=158 data-nosnippet>158</a>                    // Converting the key here is what once made a string key bind as a `BLOB`,
 <a href=#159 id=159 data-nosnippet>159</a>                    // which silently matched zero rows, since SQLite never compares a `BLOB` equal
 <a href=#160 id=160 data-nosnippet>160</a>                    // to a `TEXT` value and column affinity does not coerce a `BLOB` argument.
-<a href=#161 id=161 data-nosnippet>161</a>                    </span><span class="kw">crate</span>::entities::helpers::get_helper::&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;(conn, #pk_column_name, key, |row| {
+<a href=#161 id=161 data-nosnippet>161</a>                    </span><span class="kw">crate</span>::ancillary::helpers::get_helper::&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;(conn, #pk_column_name, key, |row| {
 <a href=#162 id=162 data-nosnippet>162</a>                        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
 <a href=#163 id=163 data-nosnippet>163</a>                            #( #field_assignments, )*
 <a href=#164 id=164 data-nosnippet>164</a>                        })
@@ -214,7 +214,7 @@
 <a href=#214 id=214 data-nosnippet>214</a>                    </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tx: Into&lt;<span class="kw">crate</span>::Transactionlike&lt;<span class="lifetime">'a</span>&gt;&gt;
 <a href=#215 id=215 data-nosnippet>215</a>                {
 <a href=#216 id=216 data-nosnippet>216</a>                    <span class="comment">// Bind the borrowed key directly, for the same reason as in `get_borrowed`.
-<a href=#217 id=217 data-nosnippet>217</a>                    </span><span class="kw">crate</span>::entities::helpers::delete_helper::&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;(tx, #id_column_name, id)
+<a href=#217 id=217 data-nosnippet>217</a>                    </span><span class="kw">crate</span>::ancillary::helpers::delete_helper::&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;(tx, #id_column_name, id)
 <a href=#218 id=218 data-nosnippet>218</a>                }
 <a href=#219 id=219 data-nosnippet>219</a>            }
 <a href=#220 id=220 data-nosnippet>220</a>        }
