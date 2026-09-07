@@ -36,6 +36,9 @@ pub(crate) fn sha256(data: &[u8]) -> String {
 pub struct Sha256Hash([u8; 32]);
 
 impl Sha256Hash {
+    /// How many bytes are in this hash.
+    pub const BYTES: usize = 32;
+
     /// Create an instance by hashing a single input value.
     pub fn hash_from(input: impl AsRef<[u8]>) -> Self {
         Self::hash_from_many([input])

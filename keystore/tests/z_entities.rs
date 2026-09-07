@@ -133,7 +133,7 @@ mod tests_impl {
     use std::{any::Any, sync::Arc};
 
     use core_crypto_keystore::{
-        CryptoKeystoreError,
+        CryptoKeystoreError, Transactionlike,
         entities::{
             MlsPendingMessage, PersistedMlsGroup, StoredCredential, TargetedMessageRxCounter, TntMessageTxCounter,
             TransientMessageRxCounter,
@@ -170,13 +170,35 @@ mod tests_impl {
         );
     }
 
+    /// Save a fresh credential and point `group` at it.
+    ///
+    /// `mls_groups.(credential_id, credential_type)` is a foreign key onto `mls_credentials`, so any
+    /// group saved for this suite's purposes — whether the entity under test or merely a dependency
+    /// satisfying some other entity's foreign key onto `mls_groups` — needs a real credential behind it.
+    fn attach_valid_credential<'a, Tx>(tx: &'a Tx, group: &mut PersistedMlsGroup)
+    where
+        &'a Tx: Into<Transactionlike<'a>>,
+    {
+        let credential = StoredCredential::random();
+        credential.save(tx).unwrap();
+        assert_eq!(
+            credential.credential_type, 1,
+            "credentials should always generate as basic for the purpose of this test"
+        );
+        assert_eq!(
+            group.credential_type, 1,
+            "groups should always generate with basic credential refs for the purpose of this test"
+        );
+        group.credential_id = credential.primary_key().public_key_hash;
+    }
+
     pub(crate) async fn can_save_entity<E>(store: &Arc<CryptoKeystore>) -> E
     where
         E: 'static + Clone + EntityRandomUpdateExt + Entity + EntityDatabaseMutation + Send + Sync,
     {
-        let entity = E::random();
+        let mut entity = E::random();
         let tx = store.new_transaction().await.unwrap();
-        let any_e: &dyn Any = &entity;
+        let any_e: &mut dyn Any = &mut entity;
 
         let group_id_as_foreign_key = match_heterogenous!(any_e => {
             // tnt message counters also have a foreign key constraint which must be satisfied
@@ -195,7 +217,13 @@ mod tests_impl {
         if let Some(id) = group_id_as_foreign_key {
             let mut group = PersistedMlsGroup::random();
             group.id = id;
+            attach_valid_credential(&*tx, &mut group);
             group.save(&*tx).unwrap();
+        }
+
+        if let Some(group) = any_e.downcast_mut::<PersistedMlsGroup>() {
+            // normally we'd avoid mutating the entity under test, but reversing sha256 is out of scope for this test
+            attach_valid_credential(&*tx, group);
         }
 
         entity.save(&*tx).unwrap();
@@ -271,11 +299,17 @@ mod tests_impl {
             + Sync,
         E::PrimaryKey: Eq,
     {
-        let entity = E::random();
+        let mut entity = E::random();
+
+        let tx = store.new_transaction().await.unwrap();
+
+        if let Some(group) = (&mut entity as &mut dyn Any).downcast_mut::<PersistedMlsGroup>() {
+            attach_valid_credential(&*tx, group);
+        }
+
         let primary_key = entity.primary_key();
         let borrowed_primary_key = entity.borrow_primary_key();
 
-        let tx = store.new_transaction().await.unwrap();
         let any_e = &entity as &dyn Any;
 
         let group_id_as_foreign_key = match_heterogenous!(any_e => {
@@ -294,6 +328,7 @@ mod tests_impl {
         if let Some(id) = group_id_as_foreign_key {
             let mut group = PersistedMlsGroup::random();
             group.id = id;
+            attach_valid_credential(&*tx, &mut group);
             group.save(&*tx).unwrap();
         }
 
@@ -436,8 +471,8 @@ mod tests_impl {
         let tx = store.new_transaction().await.unwrap();
         for _ in 0..ENTITY_COUNT {
             // tnt message counters also have a foreign key constraint which must be satisfied
-            let entity = E::random();
-            let any_e: &dyn Any = &entity;
+            let mut entity = E::random();
+            let any_e: &mut dyn Any = &mut entity;
             let group_id_as_foreign_key = match_heterogenous!(any_e => {
                 counter @ TntMessageTxCounter { .. } => {
                     Some(counter.conversation_id.clone())
@@ -454,7 +489,12 @@ mod tests_impl {
             if let Some(id) = group_id_as_foreign_key {
                 let mut group = PersistedMlsGroup::random();
                 group.id = id;
+                attach_valid_credential(&*tx, &mut group);
                 group.save(&*tx).unwrap();
+            }
+
+            if let Some(group) = any_e.downcast_mut::<PersistedMlsGroup>() {
+                attach_valid_credential(&*tx, group);
             }
 
             entity.save(&*tx).unwrap();
@@ -680,11 +720,10 @@ pub mod utils {
             }
 
     impl_entity_random_update_ext!(StoredKeyPackage, blob_fields=[key_package,], additional_fields=[(key_package_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
-    impl_entity_random_update_ext!(StoredCredential, blob_fields=[credential,public_key,private_key,], additional_fields=[(session_id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),(ciphersuite: rand::random()),(credential_type: rand::random()),]);
+    impl_entity_random_update_ext!(StoredCredential, blob_fields=[credential,public_key,private_key,], additional_fields=[(session_id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),(ciphersuite: rand::random()),(credential_type: 1),]);
     impl_entity_random_update_ext!(StoredHpkePrivateKey, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredPskBundle, blob_fields=[psk,psk_id id_like:true,]);
-    impl_entity_random_update_ext!(PersistedMlsGroup, id_field = id, blob_fields = [state,], additional_fields=[(epoch: u64::from(rand::random::<u32>())),(ciphersuite: rand::random()),(credential_id: None),(credential_type: None),(own_leaf_index: rand::random()),(is_pending: false),]);
     impl_entity_random_update_ext!(TntMessageTxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),]);
     impl_entity_random_update_ext!(TargetedMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);
     impl_entity_random_update_ext!(TransientMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);
@@ -793,40 +832,68 @@ pub mod utils {
                 rng.fill(&mut self.pk[..]);
             }
         }
-
-        impl EntityRandomExt for StoredEpochEncryptionKeypair {
-            fn random() -> Self {
-                let mut rng = rand::rng();
-                let conversation_id = uuid::Uuid::new_v4().into_bytes();
-                let conversation_id = conversation_id.as_slice().into();
-                let own_leaf_idx = rng.random();
-                // sqlite stores all its integer fields as i64, so if the leftmost bit
-                // of an epoch is ever set, the DB will start erroring out.
-                // in practice 63 bits is still a big number, so we expect nobody to ever get
-                // an epoch that high.
-                // here, we just zero out that bit regardless.
-                let epoch = rng.random::<u64>() & !(1 << 63);
-                let mut keypairs = vec![0; rng.random_range(MAX_BLOB_SIZE)];
-                rng.fill(keypairs.as_mut_slice());
-
-                Self {
-                    conversation_id,
-                    own_leaf_idx,
-                    epoch,
-                    keypairs,
-                }
-            }
-        }
-
-        impl EntityRandomUpdateExt for StoredEpochEncryptionKeypair {
-            fn random_update(&mut self) {
-                let mut rng = rand::rng();
-                let include_in_update = !false;
-                if include_in_update {
-                    self.keypairs = vec![0; rng.random_range(MAX_BLOB_SIZE)];
-                    rng.fill(self.keypairs.as_mut_slice());
-                }
-            }
-        }
     };
+
+    impl EntityRandomExt for StoredEpochEncryptionKeypair {
+        fn random() -> Self {
+            let mut rng = rand::rng();
+            let conversation_id = uuid::Uuid::new_v4().into_bytes();
+            let conversation_id = conversation_id.as_slice().into();
+            let own_leaf_idx = rng.random();
+            // sqlite stores all its integer fields as i64, so if the leftmost bit
+            // of an epoch is ever set, the DB will start erroring out.
+            // in practice 63 bits is still a big number, so we expect nobody to ever get
+            // an epoch that high.
+            // here, we just zero out that bit regardless.
+            let epoch = rng.random::<u64>() & !(1 << 63);
+            let mut keypairs = vec![0; rng.random_range(MAX_BLOB_SIZE)];
+            rng.fill(keypairs.as_mut_slice());
+
+            Self {
+                conversation_id,
+                own_leaf_idx,
+                epoch,
+                keypairs,
+            }
+        }
+    }
+
+    impl EntityRandomUpdateExt for StoredEpochEncryptionKeypair {
+        fn random_update(&mut self) {
+            let mut rng = rand::rng();
+            let include_in_update = !false;
+            if include_in_update {
+                self.keypairs = vec![0; rng.random_range(MAX_BLOB_SIZE)];
+                rng.fill(self.keypairs.as_mut_slice());
+            }
+        }
+    }
+
+    impl EntityRandomExt for PersistedMlsGroup {
+        fn random() -> Self {
+            let uuid = uuid::Uuid::new_v4();
+            let id: [u8; 16] = uuid.into_bytes();
+            let state = random_blob();
+            Self {
+                id: id.as_slice().into(),
+                state,
+                epoch: (u64::from(rand::random::<u32>())),
+                ciphersuite: (rand::random()),
+                credential_id: {
+                    let mut id = [0; core_crypto_keystore::Sha256Hash::BYTES];
+                    rand::fill(&mut id);
+                    id.into()
+                },
+                credential_type: 1, // type of basic credential
+                own_leaf_index: (rand::random()),
+                is_pending: false,
+            }
+        }
+    }
+
+    impl EntityRandomUpdateExt for PersistedMlsGroup {
+        fn random_update(&mut self) {
+            self.state = random_blob();
+        }
+    }
 }
