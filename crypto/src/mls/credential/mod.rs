@@ -14,7 +14,7 @@ pub(crate) mod x509;
 use std::sync::Arc;
 
 use core_crypto_keystore::entities::StoredCredential;
-use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, SignatureScheme};
+use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, KeyPackage, SignatureScheme};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::crypto::OpenMlsCrypto;
 use tls_codec::Deserialize as _;
@@ -99,6 +99,32 @@ impl Credential {
             cipher_suite,
             credential_type: CredentialType::Basic,
             mls_credential: MlsCredential::new_basic(client_id.into_inner()),
+            signature_key_pair,
+            earliest_validity: 0,
+        })
+    }
+
+    /// Recover the public half of the credential which produced a key package.
+    ///
+    /// The result carries no private signature key, so it can be persisted and it identifies its
+    /// client, but it can never sign. That is all a history client ever has: the private key of its
+    /// credential is discarded as soon as the history secret is generated, which is what makes
+    /// such a client incapable of producing messages of its own.
+    pub(crate) fn public_only(key_package: &KeyPackage) -> Result<Self> {
+        let cipher_suite = CipherSuite::from(key_package.ciphersuite());
+        let leaf_node = key_package.leaf_node();
+        let mls_credential = leaf_node.credential().clone();
+        let credential_type = mls_credential.credential_type().try_into()?;
+        let signature_key_pair = SignatureKeyPair::from_raw(
+            cipher_suite.signature_algorithm(),
+            Vec::new(),
+            leaf_node.signature_key().as_slice().to_vec(),
+        );
+
+        Ok(Self {
+            cipher_suite,
+            credential_type,
+            mls_credential,
             signature_key_pair,
             earliest_validity: 0,
         })

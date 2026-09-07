@@ -16,7 +16,7 @@ pub use history_observer::HistoryObserver;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::{
-    ClientId, HistorySecret, ImmutableDatabase, MlsTransport, OpenMlsError, RecursiveError,
+    ClientId, Credential, HistorySecret, ImmutableDatabase, MlsTransport, OpenMlsError, RecursiveError,
     mls::{
         conversation::{Conversation, ConversationIdRef},
         conversation_cache::ConversationCache,
@@ -114,15 +114,21 @@ impl Session {
     }
 
     /// Restore from an external [`HistorySecret`].
-    pub(crate) async fn restore_from_history_secret(&self, history_secret: HistorySecret) -> Result<()> {
+    ///
+    /// Returns the public half of the credential this history client was created with. Persisting it
+    /// is the caller's job, and has to happen before this client joins a conversation: a persisted
+    /// conversation refers to the credential of the client which persisted it.
+    pub(crate) async fn restore_from_history_secret(&self, history_secret: HistorySecret) -> Result<Credential> {
         // store the key package
-        history_secret
+        let key_package = history_secret
             .key_package
             .store(&self.crypto_provider)
             .await
             .map_err(OpenMlsError::wrap("storing key package encapsulation"))?;
 
-        Ok(())
+        Credential::public_only(&key_package)
+            .map_err(RecursiveError::context("recovering credential from key package"))
+            .map_err(Into::into)
     }
 
     /// Retrieves the client's client id. This is free-form and not inspected.

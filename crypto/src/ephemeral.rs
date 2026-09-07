@@ -148,7 +148,7 @@ impl CoreCrypto {
             transport,
         );
 
-        session
+        let credential = session
             .restore_from_history_secret(history_secret)
             .await
             .map_err(RecursiveError::context(
@@ -158,6 +158,13 @@ impl CoreCrypto {
         tx.set_mls_session(session)
             .await
             .map_err(RecursiveError::context("Setting mls session"))?;
+
+        // Every conversation this client persists refers to the credential it holds in that
+        // conversation, so that credential has to be in the keystore before the client can join
+        // anything. This is only ever the public half; see `Credential::public_only`.
+        tx.add_credential(credential)
+            .await
+            .map_err(RecursiveError::context("adding credential to history client"))?;
 
         tx.finish()
             .await
