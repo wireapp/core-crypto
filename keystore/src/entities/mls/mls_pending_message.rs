@@ -22,6 +22,11 @@ use crate::{
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct MlsPendingMessage {
+    /// Note that in SQL we do not have a foreign key constraint from `conversation_id` to the group table.
+    /// This is because we can't avoid the possibility of out-of-order delivery from the DS.
+    /// If we receive a pending message from a group that we haven't joined yet, followed by the commit which
+    /// adds us to that group, then we need to still store that message, and that means that a foreign key
+    /// would be inappropriate here.
     pub conversation_id: ConversationId,
     #[sensitive]
     pub message: Vec<u8>,
