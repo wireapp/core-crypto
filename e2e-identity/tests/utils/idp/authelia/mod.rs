@@ -1,9 +1,6 @@
 use std::net::SocketAddr;
 
-use argon2::{
-    Algorithm, Argon2, ParamsBuilder, Version,
-    password_hash::{PasswordHasher, SaltString, rand_core::OsRng},
-};
+use argon2::{Algorithm, Argon2, ParamsBuilder, Version, password_hash::PasswordHasher as _};
 use http::header;
 use oauth2::{CsrfToken, PkceCodeChallenge, RedirectUrl, Scope};
 use openidconnect::{
@@ -31,11 +28,10 @@ fn compute_password_hash(password: &str) -> String {
     let params = ParamsBuilder::new().m_cost(65536).p_cost(4).t_cost(3).build().unwrap();
 
     let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
-    let salt = SaltString::generate(&mut OsRng);
 
     // Return the digest as a PHC string ($argon2id$v=19$...).
     // https://github.com/P-H-C/phc-string-format/blob/master/phc-sf-spec.md
-    argon2.hash_password(password.as_bytes(), &salt).unwrap().to_string()
+    argon2.hash_password(password.as_bytes()).unwrap().to_string()
 }
 
 fn authelia_users(user: &User) -> String {
