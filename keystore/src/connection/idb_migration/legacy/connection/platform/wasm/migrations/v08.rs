@@ -65,14 +65,24 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
     Ok(version)
 }
 
+/// The credentials store as it looks from v9 onward: keyed externally by the credential's public
+/// key, with a unique index on that key.
+///
+/// v8 creates it under a temporary name and v9 renames it over the old `mls_credentials`. Every
+/// version from v9 on therefore has to describe the same store under its final name, so the
+/// definition lives here rather than being spelled out at each site.
+pub(super) fn credentials_store(store_name: &str) -> ObjectStoreBuilder {
+    ObjectStoreBuilder::new(store_name)
+        .auto_increment(false)
+        .add_index(IndexBuilder::new("public_key".into(), KeyPath::new_single("public_key")).unique(true))
+}
+
 /// Set up the builder for v8.
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
-    super::v07::get_builder(name).version(DB_VERSION_8).add_object_store(
-        ObjectStoreBuilder::new(&format!(
+    super::v07::get_builder(name)
+        .version(DB_VERSION_8)
+        .add_object_store(credentials_store(&format!(
             "{collection_name}_new",
             collection_name = StoredCredentialV36::TABLE_NAME
-        ))
-        .auto_increment(false)
-        .add_index(IndexBuilder::new("public_key".into(), KeyPath::new_single("public_key")).unique(true)),
-    )
+        )))
 }
