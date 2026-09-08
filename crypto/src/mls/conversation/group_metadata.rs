@@ -15,6 +15,9 @@ use openmls::{
     prelude::{LeafNode, LeafNodeIndex, Proposal, Sender},
 };
 
+use super::{Error, Result};
+use crate::KeystoreError;
+
 /// The leaf node whose credential should be treated as "current": the target of a pending own
 /// update proposal if one exists, otherwise the actually-committed own leaf, otherwise the leaf we
 /// are about to occupy according to our own pending commit.

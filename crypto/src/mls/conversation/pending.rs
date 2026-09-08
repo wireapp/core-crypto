@@ -57,8 +57,8 @@ impl PendingConversation {
             state: serialized_group,
             epoch: group.epoch().as_u64(),
             ciphersuite: group.ciphersuite() as u16,
-            credential_id: current_credential.as_ref().map(|credential| credential.public_key_hash),
-            credential_type: current_credential.as_ref().map(|credential| credential.credential_type),
+            credential_id: current_credential.public_key_hash,
+            credential_type: current_credential.credential_type,
             own_leaf_index: group.own_leaf_index().u32(),
             is_pending: true,
         };
