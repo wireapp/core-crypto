@@ -191,10 +191,25 @@ ts-native-linux: ## Build the native TypeScript wrapper for x86_64-unknown-linux
 .PHONY: ts-native
 ts-native: $(TS_NATIVE_OUT) ## Build the native TypeScript wrapper (automatically select the target based on the host machine)
 
+# Puppeteer fetches the Chrome build it is pinned to from its own postinstall script, but bun only
+# runs postinstall for packages listed in `trustedDependencies`. Nothing else installs it locally,
+# so the browser is simply absent and every browser test fails in the root hook. CI installs it as
+# a separate step; do the same here so the make targets are self-contained.
+#
+# Deliberately unstamped: `browsers install` is already idempotent, and once the browser is present
+# it returns in about the time it takes bun to start, which is also what any check of the installed
+# version would cost. Caching that behind a stamp would buy nothing and would go stale whenever the
+# cache in `~/.cache/puppeteer` is cleared behind make's back.
+.PHONY: chrome-headless-shell
+chrome-headless-shell: $(NODE_MODULES) ## Install the chrome-headless-shell build matching the pinned puppeteer version
+	@cd $(JS_DIR) && bun puppeteer browsers install chrome-headless-shell
+
 ts-browser-test-deps := $(BROWSER_OUT) $(TS_BROWSER_TEST_FILES)
 
 # run browser-oriented TypeScript tests (WebDriver + Bun wasm)
-$(STAMPS)/ts-browser-test: $(ts-browser-test-deps)
+# `chrome-headless-shell` is order-only: it has to be satisfied before the tests run, but being
+# phony it would otherwise count as perpetually newer than the stamp and defeat `LAZY_MAKE`.
+$(STAMPS)/ts-browser-test: $(ts-browser-test-deps) | chrome-headless-shell
 	@set -euo pipefail; \
 	cd $(JS_DIR) && \
 	if [ -n "$(TEST)" ]; then \
@@ -235,7 +250,7 @@ define run-ts-benches
 endef
 
 .PHONY: ts-browser-bench
-ts-browser-bench: $(BROWSER_OUT)
+ts-browser-bench: $(BROWSER_OUT) | chrome-headless-shell
 	$(call run-ts-benches,cc-browser)
 
 .PHONY: ts-native-bench
