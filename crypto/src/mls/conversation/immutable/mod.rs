@@ -90,9 +90,11 @@ impl MlsGroupState {
         // we have been evicted it no longer does: our leaf is gone from the ratchet tree, and our
         // former slot may even have been recycled by a member added in the same commit, in which
         // case `own_leaf_index` resolves to *their* leaf and we would link this conversation to
-        // their credential. We deliberately keep persisting evicted conversations, so rather than
-        // derive, reuse what the row already records — the credential we held while we were a
-        // member is still the one we used, and being evicted does not change that.
+        // their credential. So rather than derive, reuse what the row already records: the
+        // credential we held while we were a member is the one we used, and being evicted does not
+        // change that. Handling our own eviction wipes the conversation immediately afterwards, so
+        // this value is seldom durable — but `persist` still has to produce a valid one, because
+        // every mutation of a group reaches the keystore through here.
         let (credential_id, credential_type) = if group.is_active() {
             let current_credential = group_metadata::current_credential_pk(group, tx).await?;
             (current_credential.public_key_hash, current_credential.credential_type)
