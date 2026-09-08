@@ -1139,6 +1139,7 @@ dependencies = [
  "js-sys",
  "log",
  "macro_rules_attribute",
+ "ml-dsa",
  "obfuscate",
  "openmls",
  "openmls_basic_credential",
@@ -1177,6 +1178,7 @@ dependencies = [
  "wasm-bindgen-test",
  "web-time",
  "wire-e2e-identity",
+ "x-wing",
  "x509-cert",
  "zeroize",
 ]
@@ -1937,7 +1939,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "33d852cb9b869c2a9b3df2f71a3074817f01e1844f839a144f5fcef059a4eb5d"
 dependencies = [
  "libc",
- "windows-sys 0.52.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -3554,6 +3556,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "ml-dsa"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "add6b9d92e496f16f4526d68ff29da1483aba4b119baeab8bed3b9e3544a6f3d"
+dependencies = [
+ "const-oid 0.10.2",
+ "crypto-common 0.2.2",
+ "ctutils",
+ "hybrid-array",
+ "module-lattice",
+ "pkcs8 0.11.0",
+ "shake",
+ "signature 3.0.0",
+ "zeroize",
+]
+
+[[package]]
 name = "ml-kem"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3723,7 +3742,7 @@ version = "5.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51e219e79014df21a225b1860a479e2dcd7cbd9130f4defd4bd0e191ea31d67d"
 dependencies = [
- "base64 0.21.7",
+ "base64 0.22.1",
  "chrono",
  "getrandom 0.2.15",
  "http 1.5.0",
@@ -3806,7 +3825,7 @@ dependencies = [
 [[package]]
 name = "openmls"
 version = "1.0.0"
-source = "git+https://github.com/wireapp/openmls?rev=9252caa031d874b2e6e2157db6b8024882eb72f3#9252caa031d874b2e6e2157db6b8024882eb72f3"
+source = "git+https://github.com/wireapp/openmls?rev=199b4293296ff751e7dbd71688deb462fe26aa1e#199b4293296ff751e7dbd71688deb462fe26aa1e"
 dependencies = [
  "async-trait",
  "backtrace",
@@ -3828,12 +3847,13 @@ dependencies = [
 [[package]]
 name = "openmls_basic_credential"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=9252caa031d874b2e6e2157db6b8024882eb72f3#9252caa031d874b2e6e2157db6b8024882eb72f3"
+source = "git+https://github.com/wireapp/openmls?rev=199b4293296ff751e7dbd71688deb462fe26aa1e#199b4293296ff751e7dbd71688deb462fe26aa1e"
 dependencies = [
  "async-trait",
  "ed25519-dalek 3.0.0",
  "elliptic-curve 0.14.1",
  "getrandom 0.4.1",
+ "ml-dsa",
  "openmls_traits",
  "p256 0.14.0",
  "p384 0.14.0",
@@ -3842,15 +3862,17 @@ dependencies = [
  "secrecy",
  "serde",
  "tls_codec",
+ "zeroize",
 ]
 
 [[package]]
 name = "openmls_traits"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=9252caa031d874b2e6e2157db6b8024882eb72f3#9252caa031d874b2e6e2157db6b8024882eb72f3"
+source = "git+https://github.com/wireapp/openmls?rev=199b4293296ff751e7dbd71688deb462fe26aa1e#199b4293296ff751e7dbd71688deb462fe26aa1e"
 dependencies = [
  "async-trait",
  "ed25519-dalek 3.0.0",
+ "ml-dsa",
  "p256 0.14.0",
  "p384 0.14.0",
  "p521 0.14.0",
@@ -3864,7 +3886,7 @@ dependencies = [
 [[package]]
 name = "openmls_x509_credential"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=9252caa031d874b2e6e2157db6b8024882eb72f3#9252caa031d874b2e6e2157db6b8024882eb72f3"
+source = "git+https://github.com/wireapp/openmls?rev=199b4293296ff751e7dbd71688deb462fe26aa1e#199b4293296ff751e7dbd71688deb462fe26aa1e"
 dependencies = [
  "async-trait",
  "base64 0.21.7",
@@ -4959,7 +4981,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -5947,7 +5969,7 @@ dependencies = [
  "getrandom 0.3.4",
  "once_cell",
  "rustix 1.1.4",
- "windows-sys 0.52.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -7182,7 +7204,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.48.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -7711,6 +7733,7 @@ dependencies = [
  "sha3 0.12.0",
  "shake",
  "x25519-dalek 3.0.0",
+ "zeroize",
 ]
 
 [[package]]
@@ -7733,6 +7756,7 @@ checksum = "e7e8131a03190127fb2263afc72b322ecadae46b6ff8c6f399ff5d02f5559af6"
 dependencies = [
  "curve25519-dalek 5.0.0",
  "rand_core 0.10.1",
+ "zeroize",
 ]
 
 [[package]]

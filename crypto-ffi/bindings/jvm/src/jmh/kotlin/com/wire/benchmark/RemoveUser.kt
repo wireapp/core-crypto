@@ -23,7 +23,7 @@ open class RemoveUser {
         "5",
         "7"
     )
-    var cipherSuite: UShort = 1u
+    var cipherSuite: Int = 1
 
     @Param("1", "10", "100")
     var userCount: Int = 0
@@ -35,7 +35,7 @@ open class RemoveUser {
     @Setup(Level.Invocation)
     fun setup() {
         runBlocking {
-            val cipherSuite = CipherSuite.entries.first { it.value == cipherSuite }
+            val cipherSuite = CipherSuite.entries.first { it.value.toInt() == cipherSuite }
             aliceCc = ccInit(CcInitOptions(CcInitOptions.Mode.WithBasicCredential(cipherSuite)))
             conversationId = createConversation(aliceCc)
 
