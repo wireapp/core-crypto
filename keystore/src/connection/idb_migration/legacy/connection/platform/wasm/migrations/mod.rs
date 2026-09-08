@@ -269,6 +269,75 @@ mod tests {
         factory.delete(&name).expect("delete request").await.expect("wiping db");
     }
 
+    /// v9 swaps a staging store over `mls_credentials`, and the deletion of the old store is part
+    /// of that swap. A deletion recorded on a `DatabaseBuilder` is replayed on every later upgrade
+    /// which inherits that builder, so v10 -- built on v9's -- used to delete `mls_credentials`
+    /// again, this time the renamed store holding every credential, and then recreate it empty.
+    ///
+    /// Nothing caught it: the loss was silent, and the store still existed afterwards with the
+    /// right shape. It only surfaced downstream, as conversations whose credential could no longer
+    /// be resolved. v9's swap is the chain's only remove-then-rename-onto-the-same-name pair, so
+    /// credentials are the only store this could have hit.
+    #[wasm_bindgen_test]
+    pub(crate) async fn credentials_survive_the_upgrades_after_v9() {
+        use openmls::prelude::Ciphersuite;
+
+        let name = store_name();
+        let factory = Factory::new().expect("factory");
+        factory.delete(&name).expect("delete request").await.expect("wiping db");
+
+        let public_key = b"this is a credential public key".to_vec();
+
+        // write a credential into the store v9 has just swapped into place
+        let conn = Database::migration_connection(v09::get_builder(&name), &TEST_ENCRYPTION_KEY)
+            .await
+            .expect("DB_VERSION_9");
+        let credential = StoredCredentialV36 {
+            session_id: b"session id".to_vec(),
+            credential: b"serialized credential".to_vec(),
+            created_at: 2025,
+            ciphersuite: Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u16,
+            public_key: public_key.clone(),
+            private_key: b"private key".to_vec(),
+        };
+        Database::migration_transaction(conn, async |tx| credential.save(tx).await)
+            .await
+            .expect("saving a credential at v9");
+
+        // guard against the test passing vacuously: the credential has to be there to be lost
+        let mut conn = Database::migration_connection(v09::get_builder(&name), &TEST_ENCRYPTION_KEY)
+            .await
+            .expect("DB_VERSION_9");
+        assert_eq!(
+            <StoredCredentialV36 as Entity>::count(&mut conn)
+                .await
+                .expect("counting"),
+            1,
+            "the credential must be present at v9 for its survival past v9 to mean anything"
+        );
+        conn.close().await.expect("closing connection");
+
+        // run the rest of the chain exactly as production does
+        open_and_migrate(&name, &TEST_ENCRYPTION_KEY)
+            .await
+            .expect("migrating to the target version")
+            .close();
+
+        let mut conn = Database::migration_connection(v11::get_builder(&name), &TEST_ENCRYPTION_KEY)
+            .await
+            .expect("TARGET_VERSION");
+        let surviving = <StoredCredentialV36 as Entity>::load_all(&mut conn)
+            .await
+            .expect("loading credentials");
+        conn.close().await.expect("closing connection");
+
+        assert_eq!(surviving.len(), 1, "exactly one credential must survive {survived}");
+        assert_eq!(surviving[0].public_key, public_key);
+
+        let factory = Factory::new().expect("factory");
+        factory.delete(&name).expect("delete request").await.expect("wiping db");
+    }
+
     #[wasm_bindgen_test]
     pub(crate) async fn data_is_preserved_through_migrations() {
         let db_name = store_name();
