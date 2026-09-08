@@ -280,16 +280,50 @@ mod tests {
     /// credentials are the only store this could have hit.
     #[wasm_bindgen_test]
     pub(crate) async fn credentials_survive_the_upgrades_after_v9() {
+        let name = store_name();
+        let public_key = seed_credential_at_v9(&name).await;
+
+        // run the rest of the chain exactly as production does
+        open_and_migrate(&name, &TEST_ENCRYPTION_KEY)
+            .await
+            .expect("migrating to the target version")
+            .close();
+
+        assert_surviving_credential(&name, &public_key, "the upgrade past v9").await;
+    }
+
+    /// A crash between two steps leaves the database at an intermediate version, so v10's builder
+    /// also has to be correct when it runs against a database whose credentials store is *already*
+    /// in its post-rename form, rather than only as the step straight after v9's swap.
+    #[wasm_bindgen_test]
+    pub(crate) async fn credentials_survive_a_resumed_migration() {
+        let name = store_name();
+        let public_key = seed_credential_at_v9(&name).await;
+
+        // stop partway, as an interrupted upgrade would
+        open_at(&name, &TEST_ENCRYPTION_KEY, DB_VERSION_10).await.close();
+        // then resume
+        open_and_migrate(&name, &TEST_ENCRYPTION_KEY)
+            .await
+            .expect("resuming the migration")
+            .close();
+
+        assert_surviving_credential(&name, &public_key, "a migration resumed at v10").await;
+    }
+
+    /// Put one credential into a fresh database migrated up to v9, and hand back its public key.
+    ///
+    /// Asserts the credential is really there, so that a caller checking it survived some later
+    /// step cannot pass vacuously.
+    async fn seed_credential_at_v9(name: &str) -> Vec<u8> {
         use openmls::prelude::Ciphersuite;
 
-        let name = store_name();
         let factory = Factory::new().expect("factory");
-        factory.delete(&name).expect("delete request").await.expect("wiping db");
+        factory.delete(name).expect("delete request").await.expect("wiping db");
 
         let public_key = b"this is a credential public key".to_vec();
 
-        // write a credential into the store v9 has just swapped into place
-        let conn = Database::migration_connection(v09::get_builder(&name), &TEST_ENCRYPTION_KEY)
+        let conn = Database::migration_connection(v09::get_builder(name), &TEST_ENCRYPTION_KEY)
             .await
             .expect("DB_VERSION_9");
         let credential = StoredCredentialV36 {
@@ -304,8 +338,7 @@ mod tests {
             .await
             .expect("saving a credential at v9");
 
-        // guard against the test passing vacuously: the credential has to be there to be lost
-        let mut conn = Database::migration_connection(v09::get_builder(&name), &TEST_ENCRYPTION_KEY)
+        let mut conn = Database::migration_connection(v09::get_builder(name), &TEST_ENCRYPTION_KEY)
             .await
             .expect("DB_VERSION_9");
         assert_eq!(
@@ -317,13 +350,13 @@ mod tests {
         );
         conn.close().await.expect("closing connection");
 
-        // run the rest of the chain exactly as production does
-        open_and_migrate(&name, &TEST_ENCRYPTION_KEY)
-            .await
-            .expect("migrating to the target version")
-            .close();
+        public_key
+    }
 
-        let mut conn = Database::migration_connection(v11::get_builder(&name), &TEST_ENCRYPTION_KEY)
+    /// Assert that the database at the target version still holds exactly the seeded credential,
+    /// then wipe it.
+    async fn assert_surviving_credential(name: &str, public_key: &[u8], survived: &str) {
+        let mut conn = Database::migration_connection(v11::get_builder(name), &TEST_ENCRYPTION_KEY)
             .await
             .expect("TARGET_VERSION");
         let surviving = <StoredCredentialV36 as Entity>::load_all(&mut conn)
@@ -335,7 +368,7 @@ mod tests {
         assert_eq!(surviving[0].public_key, public_key);
 
         let factory = Factory::new().expect("factory");
-        factory.delete(&name).expect("delete request").await.expect("wiping db");
+        factory.delete(name).expect("delete request").await.expect("wiping db");
     }
 
     #[wasm_bindgen_test]
