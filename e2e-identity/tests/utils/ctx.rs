@@ -22,7 +22,7 @@ pub(crate) async fn custom_oauth_client(
     key: &'static str,
     client: reqwest::Client,
     request: oauth2::HttpRequest,
-) -> Result<oauth2::HttpResponse, oauth2::reqwest::Error> {
+) -> Result<oauth2::HttpResponse, reqwest::Error> {
     ctx_store_request(key, &request);
     let resp = proxy_http_client(client, request).await;
     if let Ok(resp) = resp.as_ref() {
@@ -42,7 +42,7 @@ pub(crate) async fn custom_oauth_client(
 pub(crate) async fn proxy_http_client(
     client: reqwest::Client,
     req: oauth2::HttpRequest,
-) -> Result<oauth2::HttpResponse, oauth2::reqwest::Error> {
+) -> Result<oauth2::HttpResponse, reqwest::Error> {
     // Now use the reqwest client
     let request = client
         .request(Method::from_str(req.method().as_str()).unwrap(), req.uri().to_string())
