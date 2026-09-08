@@ -4,6 +4,11 @@
 
 ## CoreCrypto 10
 
+### v10.5.1 - 2026-09-08
+
+- The 10.5.0 release fixed a migration issue for clients that had never run a CoreCrypto version in the range from
+  10.2.0 to 10.4.0. This release fixes it for clients coming from that version range.
+
 ### v10.5.0 - 2026-09-04
 
 - Operations in a CoreCrypto transaction now write to the database as they happen, within a real database transaction,
