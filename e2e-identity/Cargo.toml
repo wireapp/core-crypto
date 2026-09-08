@@ -86,7 +86,7 @@ rstest.workspace = true
 reqwest = { workspace = true, features = ["json", "cookies"] }
 hyper = { workspace = true, features = ["server"] }
 native-tls = { workspace = true, features = ["vendored"] }
-oauth2 = { workspace = true, features = ["reqwest"] }
+oauth2.workspace = true
 http.workspace = true
 keycloak.workspace = true
 http-body-util = "0.1"

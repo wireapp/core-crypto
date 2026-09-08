@@ -119,7 +119,7 @@ hyper = { version = "1.10", default-features = false }
 keycloak = { version = "26.6.1", default-features = false, features = [
   "tags-all",
   "resource-builder",
-  "reqwest12",
+  "reqwest13",
 ] }
 native-tls = { version = "0.2", default-features = false }
 oauth2 = { version = "5", default-features = false }
