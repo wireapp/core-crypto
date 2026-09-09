@@ -119,7 +119,7 @@ endef
 $(WASM_FILE): $(RUST_MODULES_CARGO_LOCK) $(RUST_MODULES_STAMP) $(JS_DIR)/Cargo.rust-modules.toml
 	$(check-wasm-cc)
 	cd $(RUST_MODULES_WASM) && \
-	RUSTFLAGS="$(WASM_BUILD_RUSTFLAGS)" cargo build --target $(WASM_TARGET_TRIPLE) $(CARGO_BUILD_ARGS)
+	CARGO_PROFILE_RELEASE_OPT_LEVEL=s RUSTFLAGS="$(WASM_BUILD_RUSTFLAGS)" cargo build --target $(WASM_TARGET_TRIPLE) $(CARGO_BUILD_ARGS)
 
 BROWSER_WASM := $(BROWSER_GEN_DIR)/wasm-bindgen/index_bg.wasm
 

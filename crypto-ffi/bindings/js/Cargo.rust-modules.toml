@@ -1,6 +1,3 @@
-[profile.release]
-opt-level = "s"
-
 # We require a pre-release version of x509-ocsp because certval depends on it.
 # Once x509-ocsp 0.3 is released and certval moves to it, drop the patch.
 [patch.crates-io]
