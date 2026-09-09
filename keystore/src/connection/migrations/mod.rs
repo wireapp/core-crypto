@@ -7,11 +7,18 @@ use crate::{CryptoKeystoreResult, DatabaseKey};
 
 refinery::embed_migrations!("src/connection/migrations");
 
+const COMPOSITE_SCHEMA: &str = include_str!("../composite-schema.sql");
+
 #[derive(Default)]
 pub(crate) enum MigrationTarget {
+    /// Perform all migrations
     #[default]
     Latest,
+    /// Perform all migrations up to the specified version
     Version(u16),
+    /// Execute the composite schema, producing the final form of the database without going through each individual
+    /// migration.
+    Composite,
 }
 
 pub(super) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationTarget) -> CryptoKeystoreResult<()> {
@@ -34,6 +41,11 @@ pub(super) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationT
     let target_version = match target {
         MigrationTarget::Latest => latest_migration_version,
         MigrationTarget::Version(target_argument) => (latest_migration_version).min(target_argument as i32),
+        MigrationTarget::Composite => {
+            conn.execute_batch(COMPOSITE_SCHEMA)?;
+            conn.pragma_update(None, "user_version", latest_migration_version)?;
+            return Ok(());
+        }
     };
 
     // This version is known to have an additional newline in some releases, but the actual migration work is

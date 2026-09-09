@@ -151,7 +151,7 @@ impl Database {
     /// In-memory databases are never encrypted.
     pub fn open_in_memory() -> CryptoKeystoreResult<Arc<Self>> {
         let connection = Connection::open_in_memory()?;
-        Self::init(connection, Box::new(filesystem::Nop), MigrationTarget::Latest).map(Into::into)
+        Self::init(connection, Box::new(filesystem::Nop), MigrationTarget::Composite).map(Into::into)
     }
 
     /// Open an encrypted `Database` at the provided location.
