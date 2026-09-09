@@ -101,7 +101,9 @@ jobs:
         run: |
           cd crypto-ffi/bindings/js/packages/core-crypto
           gh release download "$GH_REF_NAME" --pattern "*.tgz" --dir . 2>/dev/null || true
-          filename=$(ls *.tgz 2>/dev/null | head -n 1)
+          shopt -s nullglob
+          tarballs=(*.tgz)
+          filename="${tarballs[0]-}"
           if [[ -z "$filename" ]]; then
             echo "::error ::No npm tarball found in release '$GH_REF_NAME'"
             exit 1

@@ -280,7 +280,9 @@ jobs:
         id: download
         run: |
           gh release download "$TAG" --pattern "*.tgz" --dir . 2>/dev/null || true
-          filename=$(ls *.tgz 2>/dev/null | head -n 1)
+          shopt -s nullglob
+          tarballs=(*.tgz)
+          filename="${tarballs[0]-}"
           if [[ -z "$filename" ]]; then
             echo "No npm tarball found in release '$TAG' — already published or never uploaded"
             echo "found=false" >> "$GITHUB_OUTPUT"
