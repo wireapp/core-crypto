@@ -5,8 +5,10 @@ package com.wire.crypto
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlin.ByteArray
+import kotlin.coroutines.resumeWithException
 
 /** Wrap a [CoreCryptoFfi] instance in a [CoreCrypto] instance. Should largely be invisible to end-users. */
 fun CoreCryptoFfi.lift() = CoreCrypto(this)
@@ -52,12 +54,9 @@ class CoreCrypto(private val cc: CoreCryptoFfi) : CoreCryptoFfiInterface by cc {
     }
 
     /**
-     * Starts a [NonCancellable] transaction in Core Crypto. If the callback succeeds, it will be committed,
+     * Starts a transaction in Core Crypto. If the callback succeeds, it will be committed,
      * otherwise, every operation performed with the context will be discarded.
      *
-     * Check [Uniffi's documentation](https://mozilla.github.io/uniffi-rs/latest/futures.html#cancelling-async-code)
-     * about async code, that mentions that it does not support cancellation. So we go around it by not cancelling
-     * it either.
      * @param R the type returned by the transaction block
      * @param block the function to be executed within the transaction context.
      *              A [CoreCryptoContext] will be given as parameter to this function.
@@ -65,33 +64,51 @@ class CoreCrypto(private val cc: CoreCryptoFfi) : CoreCryptoFfiInterface by cc {
      * @return the return of the function passed as parameter
      */
     @Suppress("unchecked_cast")
-    suspend fun <R> transaction(block: suspend (context: CoreCryptoContext) -> R): R = withContext(NonCancellable) {
-        var result: R? = null
-        var error: Throwable? = null
-        try {
-            this@CoreCrypto.cc.transactionFfi(object : CoreCryptoCommand {
-                override suspend fun execute(context: CoreCryptoContext) {
-                    try {
-                        result = block(context)
-                    } catch (e: Throwable) {
-                        // We want to catch the error before it gets wrapped by core crypto.
-                        error = e
-                        // This is to tell core crypto that there was an error inside the transaction.
-                        throw e
-                    }
-                }
-            })
-        } catch (e: Throwable) {
-            // We prefer the closure error if it's available since the transaction won't include it
-            error = error ?: e
-        }
-        if (error != null) {
-            throw error
-        }
+    suspend fun <R> transaction(block: suspend (context: CoreCryptoContext) -> R): R =
+        suspendCancellableCoroutine { continuation ->
+            val cancellationToken = CoreCryptoCancellationToken()
 
-        // Since we know that the transaction will either succeed or throw it's safe to do an unchecked cast here
-        return@withContext result as R
-    }
+            // This coroutine must not be canceled, otherwise the uniffi async driver stops progressing, and the
+            // transaction may never release its lock. The transaction must only be canceled via the cancellation token
+            // and be allowed to run until its completion.
+            CoroutineScope(continuation.context + NonCancellable).launch {
+                var result: R? = null
+                var error: Throwable? = null
+
+                try {
+                    this@CoreCrypto.cc.transactionFfiCancellable(
+                        object : CoreCryptoCommand {
+                            override suspend fun execute(context: CoreCryptoContext) {
+                                try {
+                                    result = block(context)
+                                } catch (e: Throwable) {
+                                    // We want to catch the error before it gets wrapped by core crypto.
+                                    error = e
+                                    // This is to tell core crypto that there was an error inside the transaction.
+                                    throw e
+                                }
+                            }
+                        },
+                        cancellationToken
+                    )
+                } catch (e: Throwable) {
+                    // We prefer the closure error if it's available since the transaction won't include it
+                    error = error ?: e
+                }
+
+                if (error != null) {
+                    continuation.resumeWithException(error)
+                } else {
+                    // Since we know that the transaction will either succeed or throw, it's safe to do an unchecked
+                    // cast here
+                    continuation.resumeWith(Result.success(result as R))
+                }
+            }
+
+            continuation.invokeOnCancellation {
+                cancellationToken.cancel()
+            }
+        }
 
     @Deprecated("Use transaction(block) instead", level = DeprecationLevel.HIDDEN)
     override suspend fun transactionFfi(command: CoreCryptoCommand) = cc.transactionFfi(command)
