@@ -17,9 +17,10 @@ on:
           - npm
           - jvm
           - android
+          - kmp
       sonatype-action:
         description: >
-          For JVM/Android: 'release' promotes an existing closed staging repository.
+          For JVM/Android/KMP: 'release' promotes an existing closed staging repository.
           'prepare-and-release' re-stages from scratch first (requires workflow
           artifacts from the original run to still be available).
         required: false
@@ -36,6 +37,13 @@ on:
         type: string
         default: ""
       android-staging-repository-id:
+        description: >
+          Required when 'sonatype-action' is 'release'.
+          In that case, you must manually specify the sonatype repository id which will be promoted.
+        required: false
+        type: string
+        default: ""
+      kmp-staging-repository-id:
         description: >
           Required when 'sonatype-action' is 'release'.
           In that case, you must manually specify the sonatype repository id which will be promoted.
