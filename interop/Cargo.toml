@@ -1,6 +1,6 @@
 [package]
 name = "interop"
-version = "10.5.1"
+version = "10.5.2"
 edition = "2024"
 license = "GPL-3.0-only"
 

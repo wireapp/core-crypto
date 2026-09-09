@@ -1,6 +1,6 @@
 {
     "name": "@wireapp/core-crypto-browser",
-    "version": "10.5.1",
+    "version": "10.5.2",
     "license": "GPL-3.0",
     "type": "module"
 }
