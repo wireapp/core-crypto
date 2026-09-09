@@ -62,7 +62,7 @@
 <a href=#62 id=62 data-nosnippet>62</a>        };
 <a href=#63 id=63 data-nosnippet>63</a>
 <a href=#64 id=64 data-nosnippet>64</a>        <span class="kw">if </span>!conversation.group().<span class="kw">await</span>.is_active() {
-<a href=#65 id=65 data-nosnippet>65</a>            PersistedMlsGroup::delete_borrowed(transaction, id.as_ref())
+<a href=#65 id=65 data-nosnippet>65</a>            PersistedMlsGroup::delete_borrowed(transaction, id.keystore())
 <a href=#66 id=66 data-nosnippet>66</a>                .map_err(KeystoreError::wrap(<span class="string">"deleting inactive conversation from keystore"</span>))<span class="question-mark">?</span>;
 <a href=#67 id=67 data-nosnippet>67</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
 <a href=#68 id=68 data-nosnippet>68</a>        }
@@ -81,9 +81,9 @@
 <a href=#81 id=81 data-nosnippet>81</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">true</span>);
 <a href=#82 id=82 data-nosnippet>82</a>        }
 <a href=#83 id=83 data-nosnippet>83</a>        database
-<a href=#84 id=84 data-nosnippet>84</a>            .get_borrowed::&lt;PersistedMlsGroup&gt;(id.as_ref())
+<a href=#84 id=84 data-nosnippet>84</a>            .get_borrowed::&lt;PersistedMlsGroup&gt;(id.keystore())
 <a href=#85 id=85 data-nosnippet>85</a>            .<span class="kw">await
-<a href=#86 id=86 data-nosnippet>86</a>            </span>.map(|maybe_entry| maybe_entry.is_some())
+<a href=#86 id=86 data-nosnippet>86</a>            </span>.map(|maybe_entry| maybe_entry.is_some_and(|entry| !entry.is_pending))
 <a href=#87 id=87 data-nosnippet>87</a>            .map_err(KeystoreError::wrap(<span class="string">"checking for existence of mls group"</span>))
 <a href=#88 id=88 data-nosnippet>88</a>            .map_err(Into::into)
 <a href=#89 id=89 data-nosnippet>89</a>    }

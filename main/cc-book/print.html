@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-6a96096b.js";
+            window.path_to_searchindex_js = "searchindex-960838f4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1c113b1d.js"></script>
@@ -1562,6 +1562,13 @@ distributed only to currently online group members.</p>
 <p>CoreCrypto now also supports encrypting and decrypting targeted messages. A Targeted message is encrypted for a single
 group member specifically. This enables the long-awaited read receipts feature for MLS. Regular MLS messages aren’t a
 good fit for read receipts because of the massive amount of irrelevant messages that would need to be distributed.</p>
+</li>
+<li>
+<p>Fixed a migration issue impacting Web only. Web clients who had previously upgraded to a version between 10.0.0 and
+10.5.1 silently lost all their credentials, and the absence of these credentials caused their conversation state to be
+deleted, essentially forcing the client to recreate itself and rejoin every conversation.</p>
+<p>This fix cannot restore the lost credentials, but clients newly upgrading from a pre-10.x DB to 10.x after this fix no
+longer lose their credentials or conversations.</p>
 </li>
 </ul>
 <h2 id="corecrypto-10"><a class="header" href="#corecrypto-10">CoreCrypto 10</a></h2>
