@@ -452,6 +452,7 @@ mod tests {
             return;
         }
 
+        case.sessions_in_memory = true;
         let [external_0, new_member, member_27, observer, member_114, member_115] = case.sessions().await;
         Box::pin(async move {
             // set up external_0 as the backend / delivery service

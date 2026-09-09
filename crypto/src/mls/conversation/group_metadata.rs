@@ -210,7 +210,8 @@ mod tests {
     /// conversation, so it is gone by the time `decrypt_message` returns. What is observable, and
     /// what this shape used to break, is that the eviction goes through at all.
     #[apply(all_cred_cipher)]
-    async fn eviction_succeeds_when_our_leaf_slot_is_recycled(case: TestContext) {
+    async fn eviction_succeeds_when_our_leaf_slot_is_recycled(mut case: TestContext) {
+        case.sessions_in_memory = true;
         const ALL_MEMBERS_COUNT: usize = 7;
         const INITIAL_MEMBERS_COUNT: usize = 6;
         const REMAINING_MEMBERS_COUNT: usize = 4;

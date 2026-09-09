@@ -79,7 +79,8 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    pub async fn create_many_people_conversation(case: TestContext) {
+    pub async fn create_many_people_conversation(mut case: TestContext) {
+        case.sessions_in_memory = true;
         const SIZE_PLUS_1: usize = GROUP_SAMPLE_SIZE + 1;
         let alice_and_friends = case.sessions::<SIZE_PLUS_1>().await;
         Box::pin(async move {

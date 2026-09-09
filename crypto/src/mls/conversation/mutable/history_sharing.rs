@@ -300,7 +300,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     /// In this test, we're testing our mls library. However, our current mls fork doesn't have this test, and we
     /// require this behavior for history sharing, that's why this test lives here, for now.
-    async fn can_remove_two_and_add_one_member_in_commit(case: TestContext) {
+    async fn can_remove_two_and_add_one_member_in_commit(mut case: TestContext) {
+        case.sessions_in_memory = true;
         // This many members are initially in the conversation.
         const INITIAL_MEMBERS_COUNT: usize = 6;
         // This many members are removed from the conversation.
