@@ -78,6 +78,10 @@ pub struct TestContext {
     pub transport: Arc<dyn MlsTransportTestExt>,
     pub db: Option<(Arc<Database>, Option<Arc<tempfile::TempDir>>)>,
     pub chain: Arc<RwLock<Option<X509TestChain>>>,
+    /// When `true`, sessions created by this test context will use in-memory databases.
+    ///
+    /// This can substantially speed up initialization of multiple sessions.
+    pub sessions_in_memory: bool,
 }
 
 impl TestContext {
@@ -295,7 +299,11 @@ impl TestContext {
         };
         let mut sessions = Vec::with_capacity(N);
         for credential in credentials {
-            sessions.push(SessionContext::new_with_credential(self, credential).await.unwrap());
+            sessions.push(
+                SessionContext::new_with_credential(self, credential, self.sessions_in_memory)
+                    .await
+                    .unwrap(),
+            );
         }
         sessions.try_into().expect("Vector should be of length N.")
     }
@@ -378,6 +386,7 @@ impl Default for TestContext {
             transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
             db: None,
             chain: Arc::default(),
+            sessions_in_memory: false,
         }
     }
 }

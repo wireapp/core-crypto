@@ -339,8 +339,12 @@ mod tests {
             let alice_cred = Credential::x509(case.cipher_suite(), alice_cert).unwrap();
             let bob_cert = x509_test_chain.issue_simple_certificate_bundle("bob", Some(expiration_time));
             let bob_cred = Credential::x509(case.cipher_suite(), bob_cert).unwrap();
-            let alice = SessionContext::new_with_credential(&case, alice_cred).await.unwrap();
-            let bob = SessionContext::new_with_credential(&case, bob_cred).await.unwrap();
+            let alice = SessionContext::new_with_credential(&case, alice_cred, case.sessions_in_memory)
+                .await
+                .unwrap();
+            let bob = SessionContext::new_with_credential(&case, bob_cred, case.sessions_in_memory)
+                .await
+                .unwrap();
 
             let conversation = case.create_conversation([&alice, &bob]).await;
             // this should work since the certificate is not yet expired

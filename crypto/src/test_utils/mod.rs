@@ -97,17 +97,28 @@ pub struct SessionContext {
     core_crypto: Arc<CoreCrypto>,
     // We need to store the `TempDir` struct for the duration of the test session,
     // because its drop implementation takes care of the directory deletion.
-    _db: Option<(Arc<Database>, Arc<tempfile::TempDir>)>,
+    _db_dir: Option<Arc<tempfile::TempDir>>,
 }
 
 impl SessionContext {
     /// Use this if you want to instantiate a session with a credential different from
     /// the default one of the test context
-    pub async fn new_with_credential(context: &TestContext, credential: Credential) -> crate::Result<Self> {
-        // We need to store the `TempDir` struct for the duration of the test session,
-        // because its drop implementation takes care of the directory deletion.
-        let (db_path, db_dir) = tmp_db_file();
-        let db = Database::open(&db_path, &DatabaseKey::generate()).await.unwrap();
+    ///
+    /// `in_memory` controls whether the database is a "real" one on disc, or a transient one in memory.
+    pub async fn new_with_credential(
+        context: &TestContext,
+        credential: Credential,
+        in_memory: bool,
+    ) -> crate::Result<Self> {
+        let (db_dir, db) = if in_memory {
+            (None, Database::open_in_memory().unwrap())
+        } else {
+            // We need to store the `TempDir` struct for the duration of the test session,
+            // because its drop implementation takes care of the directory deletion.
+            let (db_path, db_dir) = tmp_db_file();
+            let db = Database::open(&db_path, &DatabaseKey::generate()).await.unwrap();
+            (Some(Arc::new(db_dir)), db)
+        };
 
         let core_crypto = CoreCrypto::new(db.clone());
         let transaction = core_crypto.new_transaction().await.unwrap();
@@ -141,7 +152,7 @@ impl SessionContext {
             x509_test_chain: Arc::new(maybe_chain),
             history_observer: Default::default(),
             core_crypto,
-            _db: Some((db, db_dir.into())),
+            _db_dir: db_dir,
         };
         Ok(session_context)
     }
@@ -173,7 +184,7 @@ impl SessionContext {
             x509_test_chain: Arc::new(maybe_chain),
             history_observer: Default::default(),
             core_crypto,
-            _db: None,
+            _db_dir: None,
         }
     }
 
