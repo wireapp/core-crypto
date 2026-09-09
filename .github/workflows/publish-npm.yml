@@ -147,6 +147,6 @@ jobs:
 
       - name: delete package from gh release
         if: ${{ inputs.release == true }}
-        run: gh release delete-asset $GITHUB_REF_NAME "${{ steps.tarball.outputs.filename }}" --yes
+        run: gh release delete-asset "$GITHUB_REF_NAME" "${{ steps.tarball.outputs.filename }}" --yes
         env:
           GH_TOKEN: ${{ github.token }}

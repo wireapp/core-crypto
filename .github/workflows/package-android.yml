@@ -40,7 +40,7 @@ jobs:
         run: |
           ndk_version=$(cat crypto-ffi/bindings/android/ndk.version)
           echo "y" | sdkmanager --install "ndk;$ndk_version"
-          echo ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$ndk_version >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$ndk_version" >> "$GITHUB_ENV"
       - uses: ./.github/actions/make/android/package
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}

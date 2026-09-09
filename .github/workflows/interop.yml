@@ -47,8 +47,8 @@ jobs:
         run: |
           ndk_version=$(cat crypto-ffi/bindings/android/ndk.version)
           echo "y" | sdkmanager --install "ndk;$ndk_version"
-          echo ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$ndk_version >> $GITHUB_ENV
-          echo ANDROID_NDK_ROOT=$ANDROID_NDK_HOME >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$ndk_version" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_ROOT=$ANDROID_NDK_HOME" >> "$GITHUB_ENV"
 
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
@@ -59,13 +59,13 @@ jobs:
           bun-version: 1.3.12
       - name: Install chrome-headless-shell
         run: |
-          bun x @puppeteer/browsers install chrome-headless-shell@latest --path $PWD
-          echo "CHROME_PATH=$(echo $PWD/chrome-headless-shell/*/*/chrome-headless-shell)" >> $GITHUB_ENV
+          bun x @puppeteer/browsers install chrome-headless-shell@latest --path "$PWD"
+          echo "CHROME_PATH=$(echo "$PWD"/chrome-headless-shell/*/*/chrome-headless-shell)" >> "$GITHUB_ENV"
 
       - name: Install chromedriver
         run: |
-          bun x @puppeteer/browsers install chromedriver@latest --path $PWD
-          echo "CHROMEDRIVER_PATH=$(echo $PWD/chromedriver/*/*/chromedriver)" >> $GITHUB_ENV
+          bun x @puppeteer/browsers install chromedriver@latest --path "$PWD"
+          echo "CHROMEDRIVER_PATH=$(echo "$PWD"/chromedriver/*/*/chromedriver)" >> "$GITHUB_ENV"
 
       - name: Run e2e interop test
         uses: ./.github/actions/make/interop/test

@@ -45,7 +45,7 @@ jobs:
 
       - name: Set tag name
         id: set-tag
-        run: echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        run: echo "tag_name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
 
       - name: Force fetch the tag
         run: git fetch -f origin "$GITHUB_REF:$GITHUB_REF"

@@ -28,7 +28,7 @@ jobs:
           tool: cargo-deny@0.19
       - name: "check licenses / supply chain"
         run: |
-          cargo deny --all-features check >> $GITHUB_STEP_SUMMARY
+          cargo deny --all-features check >> "$GITHUB_STEP_SUMMARY"
       - name: "build a dependency licenses inventory and post it to summary"
         run: |
-          cargo deny --all-features list --layout crate --format json | jq -r 'to_entries[] | "* \(.key)", "    * \(.value.licenses[])"' >> $GITHUB_STEP_SUMMARY
+          cargo deny --all-features list --layout crate --format json | jq -r 'to_entries[] | "* \(.key)", "    * \(.value.licenses[])"' >> "$GITHUB_STEP_SUMMARY"

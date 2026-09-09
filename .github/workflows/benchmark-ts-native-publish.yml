@@ -33,8 +33,8 @@ jobs:
           COMMIT_HASH=$(git rev-parse --short HEAD)
           curl -sS --fail-with-body -u "ci-writer:$VM_PASSWORD" --data-binary @metrics.txt \
                --url-query extra_label=job=core-crypto-benchmark \
-               --url-query extra_label=repo=$GITHUB_REPOSITORY \
-               --url-query extra_label=commit=$COMMIT_HASH \
+               --url-query "extra_label=repo=$GITHUB_REPOSITORY" \
+               --url-query "extra_label=commit=$COMMIT_HASH" \
                --url-query extra_label=target=ts-native \
               "https://monitoring.zinfra.io/prometheus/api/v1/import/prometheus?"
 

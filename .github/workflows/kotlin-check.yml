@@ -34,7 +34,7 @@ jobs:
         run: |
           curl -sSLO https://github.com/pinterest/ktlint/releases/download/1.7.0/ktlint
           chmod a+x ktlint
-          echo "$PWD" >> $GITHUB_PATH
+          echo "$PWD" >> "$GITHUB_PATH"
       - name: gradle setup
         uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
         with:
