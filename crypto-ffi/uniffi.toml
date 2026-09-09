@@ -4,9 +4,9 @@ cdylib_name = "core_crypto_ffi"
 
 [bindings.kotlin.custom_types.Timestamp]
 imports = [
-  "kotlinx.datetime.Instant",
-  "kotlinx.datetime.toKotlinInstant",
-  "kotlinx.datetime.toJavaInstant",
+  "kotlin.time.Instant",
+  "kotlin.time.toKotlinInstant",
+  "kotlin.time.toJavaInstant",
 ]
 type_name = "Instant"
 lift = "{}.toKotlinInstant()"

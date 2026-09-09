@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.3.10"
 coroutines = "1.7.3"
-kotlinx-datetime = "0.6.1"
+kotlinx-datetime = "0.7.1"
 jna = "5.17.0"
 assertj = "3.24.2"
 espresso = "3.6.1"

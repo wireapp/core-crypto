@@ -4,9 +4,9 @@ android_cleaner = true
 
 [bindings.kotlin.custom_types.KotlinInstant]
 imports = [
-  "kotlinx.datetime.Instant",
-  "kotlinx.datetime.toKotlinInstant",
-  "kotlinx.datetime.toJavaInstant",
+  "kotlin.time.Instant",
+  "kotlin.time.toKotlinInstant",
+  "kotlin.time.toJavaInstant",
 ]
 type_name = "Instant"
 lift = "{}.toKotlinInstant()"
