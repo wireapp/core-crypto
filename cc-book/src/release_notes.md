@@ -15,6 +15,11 @@
   group member specifically. This enables the long-awaited read receipts feature for MLS. Regular MLS messages aren't a
   good fit for read receipts because of the massive amount of irrelevant messages that would need to be distributed.
 
+- The documentation for `addCredential` previously stated that credentials registered with a single client must be
+  distinct in credential type, signature scheme, and creation timestamp, and that you therefore had to wait a full
+  second between registrations. This was never true of any released version; we fixed it before releasing 10.0.0. If you
+  added a delay between `addCredential` calls to comply, you can remove it.
+
 ## CoreCrypto 10
 
 ### v10.5.2 - 2026-09-09
