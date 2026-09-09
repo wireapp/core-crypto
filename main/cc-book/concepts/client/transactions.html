@@ -36,7 +36,7 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-927cb012.js";
+            window.path_to_searchindex_js = "../../searchindex-3763520d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../../toc-1c113b1d.js"></script>
@@ -327,9 +327,9 @@ val bytes = ctx.getData()
 
 <p>These were implemented for the purpose of checkpointing during initial sync / batch decryption, but are not limited to
 that use.</p>
-<h2 id="transaction-cancellation-swift"><a class="header" href="#transaction-cancellation-swift">Transaction Cancellation (Swift)</a></h2>
+<h2 id="transaction-cancellation-swift-kotlin"><a class="header" href="#transaction-cancellation-swift-kotlin">Transaction Cancellation (Swift, Kotlin)</a></h2>
 <p>The foreign-language wrappers can associate a <code>CoreCryptoCancellationToken</code> with a transaction, i.e., this is invisible
-to users of the wrappers. However, currently <strong>only the Swift wrapper</strong> supports cancellable transactions. The
+to users of the wrappers. However, currently only <strong>Swift and Kotlin bindings</strong> support cancellable transactions. The
 <code>CoreCryptoCancellationToken</code> is created through FFI but lives on the Rust side. Once the transaction owns the
 transaction semaphore, Rust publishes the token in the <code>CoreCrypto</code> cancellation slot and, when a PKI environment
 exists, in its separate slot. The returned guards keep the slots filled for exactly the lifetime of the transaction.</p>
