@@ -164,10 +164,10 @@ val bytes = ctx.getData()
 These were implemented for the purpose of checkpointing during initial sync / batch decryption, but are not limited to
 that use.
 
-## Transaction Cancellation (Swift)
+## Transaction Cancellation (Swift, Kotlin)
 
 The foreign-language wrappers can associate a `CoreCryptoCancellationToken` with a transaction, i.e., this is invisible
-to users of the wrappers. However, currently **only the Swift wrapper** supports cancellable transactions. The
+to users of the wrappers. However, currently only **Swift and Kotlin bindings** support cancellable transactions. The
 `CoreCryptoCancellationToken` is created through FFI but lives on the Rust side. Once the transaction owns the
 transaction semaphore, Rust publishes the token in the `CoreCrypto` cancellation slot and, when a PKI environment
 exists, in its separate slot. The returned guards keep the slots filled for exactly the lifetime of the transaction.
