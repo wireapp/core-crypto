@@ -2,6 +2,12 @@ config:
   validation: true
   warningsAsErrors: true
 
+coroutines:
+  active: true
+  InjectDispatcher:
+    active: true
+    ignoreAnnotated: ['Test'] # Prevents the rule from running on @Test functions
+
 comments:
   active: true
   excludes: &testBenchSources ['**/commonTest/**', '**/src/jmh/**']
