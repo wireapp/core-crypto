@@ -158,7 +158,9 @@ mod tests {
         Box::pin(async move {
             let conversation = case.create_conversation([&alice, &bob]).await;
 
-            let expiration_time = core::time::Duration::from_secs(14);
+            // on my local machine this passes with values as low as 2 seconds,
+            // but this also needs to pass on a presumably-congested CI machine
+            let expiration_time = core::time::Duration::from_secs(5);
             let start = web_time::Instant::now();
 
             let intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();

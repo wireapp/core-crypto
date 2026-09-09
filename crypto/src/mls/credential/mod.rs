@@ -332,7 +332,7 @@ mod tests {
         }
         Box::pin(async move {
             let mut x509_test_chain = case.set_test_chain(&[], &[], None).await;
-            let expiration_time = core::time::Duration::from_secs(14);
+            let expiration_time = core::time::Duration::from_secs(5);
             let start = web_time::Instant::now();
 
             let alice_cert = x509_test_chain.issue_simple_certificate_bundle("alice", None);
@@ -354,7 +354,7 @@ mod tests {
             let elapsed = start.elapsed();
             // Give time to the certificate to expire
             if expiration_time > elapsed {
-                smol::Timer::after(expiration_time - elapsed + core::time::Duration::from_secs(2)).await;
+                smol::Timer::after(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
             }
 
             assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
