@@ -1,0 +1,60 @@
+name: actionlint
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+# Only the workflows and the actions they call are linted, so only changes to those can
+# break this. Note that actionlint validates workflows against action metadata, so editing
+# an action alone is enough to invalidate a workflow that calls it.
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/**"
+      - ".github/actions/**"
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+env:
+  ACTIONLINT_VERSION: 1.7.12
+
+jobs:
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # actionlint shells out to shellcheck for `run:` blocks when it is on PATH and silently
+      # skips those checks when it is not. Install it explicitly rather than relying on the
+      # runner image, so that a script which fails locally cannot pass here.
+      - name: install shellcheck
+        uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
+        with:
+          tool: shellcheck
+
+      # taiki-e/install-action does not package actionlint, so fetch the pinned release
+      # directly and check it against the published checksums, as we do for binaryen.
+      - name: install actionlint
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tarball="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          checksums="actionlint_${ACTIONLINT_VERSION}_checksums.txt"
+          cd "$RUNNER_TEMP"
+          gh release download "v${ACTIONLINT_VERSION}" --repo rhysd/actionlint \
+            --pattern "$tarball" --pattern "$checksums"
+          # the checksums file covers every platform's asset; we only downloaded one
+          sha256sum --ignore-missing --check "$checksums"
+          tar -xzf "$tarball" actionlint
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+
+      - name: lint workflows and actions
+        run: |
+          shellcheck --version | head -2
+          actionlint --version | head -1
+          actionlint -color
