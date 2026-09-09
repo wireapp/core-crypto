@@ -1,4 +1,5 @@
 name: Fetch or make kotlin bindings for jvm
+description: Fetch or build the Kotlin bindings for the JVM, along with the ffi library and uniffi-bindgen they are generated from
 inputs:
   gh-token:
     required: true

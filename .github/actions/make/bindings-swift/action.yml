@@ -1,4 +1,5 @@
 name: Fetch or make swift bindings
+description: Fetch or build the Swift ffi library, the generated bindings, and the hand-written wrapper around them
 inputs:
   gh-token:
     required: true

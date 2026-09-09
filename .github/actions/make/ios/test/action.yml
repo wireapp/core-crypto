@@ -1,4 +1,5 @@
 name: Run ios test via make
+description: Run the Swift test suite on iOS, fetching or building the libraries and bindings it needs first
 inputs:
   gh-token:
     required: true

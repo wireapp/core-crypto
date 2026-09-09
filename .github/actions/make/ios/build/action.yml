@@ -1,4 +1,5 @@
 name: Fetch or make ffi lib for ios
+description: Fetch or build the ffi static library for a single iOS target
 
 inputs:
   task:

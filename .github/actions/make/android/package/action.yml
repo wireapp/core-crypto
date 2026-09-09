@@ -1,4 +1,5 @@
 name: Fetch or make android package
+description: Fetch or build the Android AAR, along with the ffi libraries for all three Android targets
 inputs:
   gh-token:
     required: true

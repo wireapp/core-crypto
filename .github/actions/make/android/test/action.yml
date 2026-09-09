@@ -1,4 +1,5 @@
 name: Test kotlin bindings for android via make
+description: Run the Kotlin bindings test suite on Android, fetching or building the libraries and bindings it needs first
 inputs:
   gh-token:
     required: true

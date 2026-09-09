@@ -1,4 +1,5 @@
 name: Fetch or make interop test binary
+description: Fetch or build the interop test binary
 inputs:
   gh-token:
     required: true

@@ -1,4 +1,5 @@
-name: Fetch or make the web bindings files and wrappers
+name: Fetch or make the native bindings files and wrappers
+description: Fetch or build the native TypeScript bindings for whichever platform the runner is
 inputs:
   gh-token:
     required: true

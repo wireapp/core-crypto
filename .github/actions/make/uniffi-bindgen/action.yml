@@ -1,4 +1,5 @@
 name: Fetch or make uniffi-bindgen binary
+description: Fetch or build the uniffi-bindgen binary that generates the language bindings
 inputs:
   gh-token:
     required: true

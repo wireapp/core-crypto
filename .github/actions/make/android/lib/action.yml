@@ -1,4 +1,5 @@
 name: Fetch or make ffi lib for android
+description: Fetch or build the ffi static and shared libraries for a single Android target
 
 inputs:
   task:

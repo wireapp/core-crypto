@@ -1,4 +1,5 @@
 name: Run e2e interop test via make
+description: Run the end-to-end interop test, fetching or building the web, iOS, Android and interop artifacts it drives
 inputs:
   gh-token:
     required: true

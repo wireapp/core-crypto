@@ -1,4 +1,5 @@
 name: Fetch or make the ffi lib for jvm
+description: Fetch or build the ffi shared library for the JVM, for whichever platform the runner is
 inputs:
   gh-token:
     required: true

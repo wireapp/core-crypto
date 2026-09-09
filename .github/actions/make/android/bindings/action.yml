@@ -1,4 +1,5 @@
 name: Fetch or make kotlin bindings for android
+description: Fetch or build the Kotlin bindings for Android, along with the ffi library and uniffi-bindgen they are generated from
 inputs:
   gh-token:
     required: true
