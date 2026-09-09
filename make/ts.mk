@@ -72,7 +72,52 @@ $(WASM_FFI_LIB) $(BROWSER_TS_IMPL) $(RUST_MODULES_STAMP) &: $(ubrn-deps)
 $(RUST_MODULES_CARGO_LOCK): Cargo.lock $(RUST_MODULES_STAMP)
 	cp Cargo.lock $(RUST_MODULES_CARGO_LOCK)
 
+# The wasm build compiles a C shim (sqlite-wasm-rs), so it needs a clang whose WebAssembly
+# backend was compiled in. Apple clang's was not, which is why CI restores $(WASM_GEN) from an
+# artifact on macOS rather than building it there. When that restore misses, the build used to
+# spend minutes compiling Rust before dying deep inside a cc-rs invocation, naming neither the
+# real constraint nor the missed artifact. Probe the compiler up front instead.
+#
+# Resolve the compiler the way cc-rs does, so we probe what the build would really use. `CC` needs
+# the `origin` guard because make defines it whether or not anyone asked for it.
+WASM_CC := $(firstword \
+	$(CC_wasm32_unknown_unknown) \
+	$(CC_wasm32-unknown-unknown) \
+	$(TARGET_CC) \
+	$(if $(filter-out default,$(origin CC)),$(CC)) \
+	clang)
+
+define check-wasm-cc
+@if ! probe=$$($(WASM_CC) --target=$(WASM_TARGET_TRIPLE) -c -x c /dev/null -o /dev/null 2>&1); then \
+	printf '%s\n' \
+	  '' \
+	  "cannot build $(WASM_TARGET_TRIPLE): '$(WASM_CC)' has no usable WebAssembly backend" \
+	  '' \
+	  "$$probe" \
+	  '' \
+	  'This build compiles a C shim (sqlite-wasm-rs) for wasm, so it needs a clang built with' \
+	  'the WebAssembly backend. Apple clang lacks it, so macOS cannot build wasm by default.' \
+	  '' \
+	  'In CI, getting here means the wasm-build artifact was not restored, so the fetch-or-build' \
+	  'fallback tried to build wasm on a runner that cannot. Check the "Download artifact" step' \
+	  'of the make/ts/browser action: the job that produces the artifact must have run in this' \
+	  'workflow run, under the same artifact generation.' \
+	  '' \
+	  'Locally, install a wasm-capable clang and point the build at it:' \
+	  '  brew install llvm' \
+	  '  export CC_wasm32_unknown_unknown="$$(brew --prefix llvm)/bin/clang"' \
+	  '' \
+	  >&2; \
+	if [ -n "$${GITHUB_ACTIONS:-}" ]; then \
+	  printf '::error title=cannot build wasm here::%s\n' \
+	    "'$(WASM_CC)' cannot target $(WASM_TARGET_TRIPLE); the wasm-build artifact was not restored, see the job log"; \
+	fi; \
+	exit 1; \
+fi
+endef
+
 $(WASM_FILE): $(RUST_MODULES_CARGO_LOCK) $(RUST_MODULES_STAMP) $(JS_DIR)/Cargo.rust-modules.toml
+	$(check-wasm-cc)
 	cd $(RUST_MODULES_WASM) && \
 	RUSTFLAGS="$(WASM_BUILD_RUSTFLAGS)" cargo build --target $(WASM_TARGET_TRIPLE) $(CARGO_BUILD_ARGS)
 
@@ -103,6 +148,7 @@ $(WASM_GEN) &: $(wasm-build-deps)
 # With Rust 1.97's v0 mangling, wasm-bindgen's demangler can map distinct symbols to
 # the same generated export name. Stable Rust cannot opt back into legacy mangling.
 # See https://blog.rust-lang.org/2026/07/09/Rust-1.97.0/#symbol-mangling-v0-enabled-by-default
+	$(check-wasm-cc)
 	$(MAKE) $(WASM_FILE)
 	cd $(JS_DIR) && \
 	wasm-bindgen --target web \
