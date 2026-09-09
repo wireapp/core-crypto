@@ -143,6 +143,18 @@ $dokka.location:com.wire.crypto/CoreCrypto/close/#/PointingToDeclaration/-core-
 $dokka.location:com.wire.crypto/CoreCrypto/registerEpochObserver/#kotlinx.coroutines.CoroutineScope#com.wire.crypto.EpochObserver/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto/register-epoch-observer.html
 $dokka.location:com.wire.crypto/CoreCrypto/registerHistoryObserver/#kotlinx.coroutines.CoroutineScope#com.wire.crypto.HistoryObserver/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto/register-history-observer.html
 $dokka.location:com.wire.crypto/CoreCrypto/transaction/#kotlin.coroutines.SuspendFunction1[com.wire.crypto.CoreCryptoContext,TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto/transaction.html
+$dokka.location:com.wire.crypto/CoreCryptoCancellationToken.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-cancellation-token/-companion/index.html
+$dokka.location:com.wire.crypto/CoreCryptoCancellationToken///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-cancellation-token/index.html
+$dokka.location:com.wire.crypto/CoreCryptoCancellationToken/CoreCryptoCancellationToken/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-cancellation-token/-core-crypto-cancellation-token.html
+$dokka.location:com.wire.crypto/CoreCryptoCancellationToken/CoreCryptoCancellationToken/#com.sun.jna.Pointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-cancellation-token/-core-crypto-cancellation-token.html
+$dokka.location:com.wire.crypto/CoreCryptoCancellationToken/CoreCryptoCancellationToken/#com.wire.crypto.NoPointer/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-cancellation-token/-core-crypto-cancellation-token.html
+$dokka.location:com.wire.crypto/CoreCryptoCancellationToken/cancel/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-cancellation-token/cancel.html
+$dokka.location:com.wire.crypto/CoreCryptoCancellationToken/close/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-cancellation-token/close.html
+$dokka.location:com.wire.crypto/CoreCryptoCancellationToken/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-cancellation-token/destroy.html
+$dokka.location:com.wire.crypto/CoreCryptoCancellationToken/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-cancellation-token/uniffi-clone-pointer.html
+$dokka.location:com.wire.crypto/CoreCryptoCancellationTokenInterface.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-cancellation-token-interface/-companion/index.html
+$dokka.location:com.wire.crypto/CoreCryptoCancellationTokenInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-cancellation-token-interface/index.html
+$dokka.location:com.wire.crypto/CoreCryptoCancellationTokenInterface/cancel/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-cancellation-token-interface/cancel.html
 $dokka.location:com.wire.crypto/CoreCryptoCommand.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-command/-companion/index.html
 $dokka.location:com.wire.crypto/CoreCryptoCommand///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-command/index.html
 $dokka.location:com.wire.crypto/CoreCryptoCommand/execute/#com.wire.crypto.CoreCryptoContext/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-command/execute.html
@@ -287,6 +299,9 @@ $dokka.location:com.wire.crypto/CoreCryptoException.Proteus///PointingToDeclarat
 $dokka.location:com.wire.crypto/CoreCryptoException.Proteus/Proteus/#com.wire.crypto.ProteusException/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-proteus/-proteus.html
 $dokka.location:com.wire.crypto/CoreCryptoException.Proteus/exception/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-proteus/exception.html
 $dokka.location:com.wire.crypto/CoreCryptoException.Proteus/message/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-proteus/message.html
+$dokka.location:com.wire.crypto/CoreCryptoException.TransactionCanceled///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-transaction-canceled/index.html
+$dokka.location:com.wire.crypto/CoreCryptoException.TransactionCanceled/TransactionCanceled/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-transaction-canceled/-transaction-canceled.html
+$dokka.location:com.wire.crypto/CoreCryptoException.TransactionCanceled/message/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-transaction-canceled/message.html
 $dokka.location:com.wire.crypto/CoreCryptoException.TransactionFailed///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-transaction-failed/index.html
 $dokka.location:com.wire.crypto/CoreCryptoException.TransactionFailed/TransactionFailed/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-transaction-failed/-transaction-failed.html
 $dokka.location:com.wire.crypto/CoreCryptoException.TransactionFailed/error/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-transaction-failed/error.html
@@ -323,6 +338,7 @@ $dokka.location:com.wire.crypto/CoreCryptoFfi/registerEpochObserver/#com.wire.cr
 $dokka.location:com.wire.crypto/CoreCryptoFfi/registerHistoryObserver/#com.wire.crypto.HistoryObserver/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/register-history-observer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/setPkiEnvironment/#com.wire.crypto.PkiEnvironment?/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/set-pki-environment.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/transactionFfi/#com.wire.crypto.CoreCryptoCommand/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/transaction-ffi.html
+$dokka.location:com.wire.crypto/CoreCryptoFfi/transactionFfiCancellable/#com.wire.crypto.CoreCryptoCommand#com.wire.crypto.CoreCryptoCancellationToken/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/transaction-ffi-cancellable.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/uniffiClonePointer/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/uniffi-clone-pointer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/-companion/index.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/index.html
@@ -351,6 +367,7 @@ $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/registerEpochObserver/#co
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/registerHistoryObserver/#com.wire.crypto.HistoryObserver/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/register-history-observer.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/setPkiEnvironment/#com.wire.crypto.PkiEnvironment?/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/set-pki-environment.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/transactionFfi/#com.wire.crypto.CoreCryptoCommand/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/transaction-ffi.html
+$dokka.location:com.wire.crypto/CoreCryptoFfiInterface/transactionFfiCancellable/#com.wire.crypto.CoreCryptoCommand#com.wire.crypto.CoreCryptoCancellationToken/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/transaction-ffi-cancellable.html
 $dokka.location:com.wire.crypto/CoreCryptoLogLevel.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-log-level/-companion/index.html
 $dokka.location:com.wire.crypto/CoreCryptoLogLevel.DEBUG///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto/-core-crypto-log-level/-d-e-b-u-g/index.html
 $dokka.location:com.wire.crypto/CoreCryptoLogLevel.ERROR///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}-core-crypto/com.wire.crypto/-core-crypto-log-level/-e-r-r-o-r/index.html
