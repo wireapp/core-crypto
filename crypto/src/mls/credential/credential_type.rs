@@ -3,7 +3,7 @@ use openmls::prelude::CredentialType as MlsCredentialType;
 use super::Error;
 
 /// All supported Credential types.
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Ord, PartialOrd, Hash, serde::Serialize, serde::Deserialize)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum CredentialType {
     /// Basic credential i.e. a KeyPair
     #[default]
