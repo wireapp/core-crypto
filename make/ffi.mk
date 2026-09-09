@@ -29,7 +29,7 @@ $(UNIFFI_BINDGEN): $(uniffi-bindgen-deps)
 FFI_LIBRARY := $(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
 ffi-library-deps := $(RUST_SOURCES)
 $(FFI_LIBRARY): $(ffi-library-deps)
-	cargo build $(CARGO_BUILD_ARGS) \
+	cargo build $(NATIVE_CARGO_BUILD_ARGS) \
 		--locked \
 		--package core-crypto-ffi \
 		--lib
@@ -39,7 +39,7 @@ SWIFT_FFI_TARGET_DIR := target/swift-bindgen
 SWIFT_FFI_LIBRARY := $(SWIFT_FFI_TARGET_DIR)/$(RELEASE_MODE)/libcore_crypto_ffi.dylib
 swift-ffi-library-deps := $(RUST_SOURCES)
 $(SWIFT_FFI_LIBRARY): $(swift-ffi-library-deps)
-	cargo build $(SWIFT_CARGO_BUILD_ARGS) \
+	cargo build $(DARWIN_CARGO_BUILD_ARGS) \
 		--target-dir $(SWIFT_FFI_TARGET_DIR) \
 		--locked \
 		--package core-crypto-ffi \
