@@ -13,6 +13,7 @@ import kotlin.collections.toList
 import kotlin.test.*
 import kotlin.time.Duration.Companion.milliseconds
 
+@Suppress("LargeClass")
 class MLSTest {
     @Test
     fun set_client_data_persists() = runTest {
@@ -117,6 +118,59 @@ class MLSTest {
 
             assertEquals(token.repeat(transactionCount), result, "Expected all transactions to complete")
         }
+    }
+
+    @Test
+    fun cancelling_transaction_stops_waiting_for_long_running_callbacks() = runTest {
+        val database = newDatabase()
+        val callbacks = LongRunningCallbacks()
+        val clientId = genClientId()
+        val coreCrypto = CoreCrypto(database)
+        val conversationId = genConversationId()
+        val credential = Credential.basic(CIPHERSUITE_DEFAULT, clientId)
+
+        coreCrypto.transaction { context ->
+            context.mlsInit(clientId, callbacks)
+            val credentialRef = context.addCredential(credential)
+            context.createConversation(conversationId, credentialRef)
+        }
+
+        val transaction = backgroundScope.async(Dispatchers.Default) {
+            coreCrypto.transaction { context ->
+                context.setData("This data should not be committed.".encodeToByteArray())
+
+                coroutineScope {
+                    val update = async { context.updateKeyingMaterial(conversationId) }
+                    update.await()
+                }
+            }
+        }
+
+        callbacks.sendCommitStarted.await()
+        transaction.cancel()
+
+        withContext(Dispatchers.Default) {
+            delay(1_000.milliseconds)
+        }
+        if (!transaction.isCompleted) {
+            callbacks.release()
+            fail("Expected the transaction to be cancelled without waiting for long-running callbacks")
+        }
+        assertFailsWith<CancellationException> {
+            transaction.await()
+        }
+
+        withContext(Dispatchers.Default) {
+            delay(1_000.milliseconds)
+        }
+
+        if (!callbacks.sendCommitExited.isCompleted) {
+            callbacks.release()
+            fail("Expected long-running callbacks to be cancelled")
+        }
+
+        val data = coreCrypto.transaction { context -> context.getData() }
+        assertThat(data).isNull()
     }
 
     @Test

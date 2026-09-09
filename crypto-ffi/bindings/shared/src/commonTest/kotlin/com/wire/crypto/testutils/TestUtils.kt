@@ -3,6 +3,8 @@
 package testutils
 
 import com.wire.crypto.*
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
 import java.nio.ByteBuffer
 import java.nio.file.Files
@@ -35,6 +37,30 @@ fun genClientId(): ClientId {
 
 fun genConversationId(): ConversationId {
     return ConversationId(uuidBytes())
+}
+
+class LongRunningCallbacks : MlsTransport {
+    val sendCommitStarted = CompletableDeferred<Unit>()
+    val sendCommitExited = CompletableDeferred<Unit>()
+    private val releaseCallbacks = CompletableDeferred<Unit>()
+
+    fun release() {
+        releaseCallbacks.complete(Unit)
+    }
+
+    override suspend fun sendCommitBundle(commitBundle: CommitBundle) {
+        sendCommitStarted.complete(Unit)
+        try {
+            releaseCallbacks.await()
+            fail("Expected sendCommitBundle to be cancelled")
+        } catch (_: CancellationException) {
+            sendCommitExited.complete(Unit)
+        }
+    }
+
+    override suspend fun prepareForTransport(historySecret: HistorySecret): MlsTransportData {
+        return "secret".encodeToByteArray()
+    }
 }
 
 interface MockDeliveryService : MlsTransport {
