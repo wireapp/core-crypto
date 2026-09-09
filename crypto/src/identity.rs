@@ -6,7 +6,7 @@ use crate::{ClientId, CredentialType, RecursiveError};
 
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct WireIdentity {
     /// Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
     pub client_id: Option<ClientId>,
@@ -24,7 +24,7 @@ pub struct WireIdentity {
 ///
 /// We don't use an enum here since the sole purpose of this is to be exposed through the FFI (and
 /// union types are impossible to carry over the FFI boundary)
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct X509Identity {
     /// user handle e.g. `john_wire`
     pub handle: String,

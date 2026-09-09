@@ -250,41 +250,37 @@ mod tests {
         #[macro_rules_attribute::apply(smol_macros::test)]
         async fn should_not_fail_when_basic() {
             let case = TestContext::default();
-
             let [alice_android, alice_ios] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case.create_conversation([&alice_android, &alice_ios]).await;
+            let conversation = case.create_conversation([&alice_android, &alice_ios]).await;
 
-                let (android_id, ios_id) = (alice_android.get_client_id().await, alice_ios.get_client_id().await);
+            let (android_id, ios_id) = (alice_android.get_client_id().await, alice_ios.get_client_id().await);
 
-                let mut android_ids = conversation
-                    .guard()
-                    .await
-                    .get_device_identities(&[android_id.clone(), ios_id.clone()])
-                    .await
-                    .unwrap();
-                android_ids.sort();
+            let mut android_ids = conversation
+                .guard()
+                .await
+                .get_device_identities(&[android_id.clone(), ios_id.clone()])
+                .await
+                .unwrap();
+            android_ids.sort_by_key(|id| id.client_id.clone());
 
-                let mut ios_ids = conversation
-                    .guard_of(&alice_ios)
-                    .await
-                    .get_device_identities(&[android_id, ios_id])
-                    .await
-                    .unwrap();
-                ios_ids.sort();
+            let mut ios_ids = conversation
+                .guard_of(&alice_ios)
+                .await
+                .get_device_identities(&[android_id, ios_id])
+                .await
+                .unwrap();
+            ios_ids.sort_by_key(|id| id.client_id.clone());
 
-                assert_eq!(ios_ids.len(), 2);
-                assert_eq!(ios_ids, android_ids);
+            assert_eq!(ios_ids.len(), 2);
+            assert_eq!(ios_ids, android_ids);
 
-                assert!(ios_ids.iter().all(|i| {
-                    matches!(i.credential_type, CredentialType::Basic)
-                        && matches!(i.status, IdentityStatus::Valid)
-                        && i.x509_identity.is_none()
-                        && !i.thumbprint.is_empty()
-                        && i.client_id.is_some()
-                }));
-            })
-            .await
+            assert!(ios_ids.iter().all(|i| {
+                matches!(i.credential_type, CredentialType::Basic)
+                    && matches!(i.status, IdentityStatus::Valid)
+                    && i.x509_identity.is_none()
+                    && !i.thumbprint.is_empty()
+                    && i.client_id.is_some()
+            }));
         }
 
         #[macro_rules_attribute::apply(smol_macros::test)]
