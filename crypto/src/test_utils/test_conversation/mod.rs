@@ -158,7 +158,7 @@ impl<'a> TestConversation<'a> {
         let result_futures = self.members().enumerate().flat_map(|(idx, member)| {
             self.members()
                 .enumerate()
-                .filter(move |(other_idx, _)| idx != *other_idx)
+                .filter(move |(other_idx, _)| idx < *other_idx)
                 .map(async move |(_, other_member)| self.can_talk(member, other_member).await)
         });
 
