@@ -161,9 +161,6 @@ mod tests {
             let expiration_time = core::time::Duration::from_secs(14);
             let start = web_time::Instant::now();
 
-            // delay a bit so we don't get a credential conflict when adding this credential to alice
-            smol::Timer::after(std::time::Duration::from_secs(1)).await;
-
             let intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();
             // this completely invents a new client id for alice, which gets propagated into the credential
             let cert = CertificateBundle::new_with_default_values(intermediate_ca, Some(expiration_time));

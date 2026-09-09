@@ -182,8 +182,6 @@ mod stored_credential {
         );
     }
 
-    // we don't have a good way to just delay for a second in wasm, so skip this test which relies on that behavior
-    #[cfg(not(target_os = "unknown"))]
     #[apply(all_storage_types)]
     async fn search_finds_only_entities_with_matching_search_key(context: KeystoreTestContext) {
         let store = context.store();
@@ -195,11 +193,10 @@ mod stored_credential {
         irrelevant_entity.ciphersuite = relevant_entity.ciphersuite + 1;
 
         let tx = store.new_transaction().await.unwrap();
-        for entity in [&mut relevant_entity, &mut irrelevant_entity] {
-            entity.pre_save().unwrap();
+        for (idx, entity) in [&mut relevant_entity, &mut irrelevant_entity].into_iter().enumerate() {
+            // we don't care about real creation times for the purpose of this test, just that we can search effectively
+            entity.created_at = idx as _;
             entity.save(&*tx).unwrap();
-            // ensure the entities are created in different seconds so they don't accidentally match
-            smol::Timer::after(std::time::Duration::from_secs(1)).await;
         }
         tx.commit().await.unwrap();
 
