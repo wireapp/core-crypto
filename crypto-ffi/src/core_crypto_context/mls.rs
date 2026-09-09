@@ -361,12 +361,6 @@ impl CoreCryptoContext {
     }
 
     /// Adds a `Credential` to this client.
-    ///
-    /// Note that while an arbitrary number of credentials can be generated,
-    /// those which are added to a CoreCrypto instance must be distinct in credential type,
-    /// signature scheme, and the timestamp of creation. This timestamp has only
-    /// 1 second of resolution, limiting the number of credentials which
-    /// can be added. This is a known limitation and will be relaxed in the future.
     pub async fn add_credential(&self, credential: Arc<Credential>) -> CoreCryptoResult<CredentialRef> {
         let credential = std::sync::Arc::unwrap_or_clone(credential);
         let credential_ref = self.inner.add_credential(credential.0).await?;

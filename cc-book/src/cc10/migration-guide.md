@@ -87,11 +87,6 @@ recent credential of a given type and cipher suite, clients can simply choose th
 1. Register the credential with `transactionContext.addCredential(credential)`. This persists it and returns a
    `CredentialRef`: a compact, stable handle you pass to the rest of the API in place of the old selector pair.
 
-   - Credentials registered with a single client must be distinct on the
-     `(credentialType, signatureScheme, creation timestamp)` tuple, where the timestamp has one-second resolution. If
-     you need several credentials sharing a type and signature scheme, wait one full second between registering each. We
-     expect to relax this limitation in the future.
-
 1. On MLS initialization, previously stored credentials are loaded automatically. Enumerate them with
    `getCredentials()`, or filter with `findCredentials(...)`, to recover their `CredentialRef`s.
 
