@@ -1,6 +1,8 @@
 # Release Notes
 
-## Unreleased
+## CoreCrypto 10
+
+### v10.5.2 - 2026-09-09
 
 - Fixed a migration issue impacting Web only. Web clients who had previously upgraded to a version between 10.0.0 and
   10.5.1 silently lost all their credentials, and the absence of these credentials caused their conversation state to be
@@ -8,8 +10,6 @@
 
   This fix cannot restore the lost credentials, but clients newly upgrading from a pre-10.x DB to 10.x after this fix no
   longer lose their credentials or conversations.
-
-## CoreCrypto 10
 
 ### v10.5.1 - 2026-09-08
 
