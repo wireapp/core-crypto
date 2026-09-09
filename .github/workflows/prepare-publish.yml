@@ -2,6 +2,14 @@ name: prepare publish
 
 on:
   workflow_call:
+    inputs:
+      artifact_generation:
+        description: >
+          Artifact key generation suffix, pinned by the caller so that every job in a run
+          agrees on it. Falls back to `vars.ARTIFACT_GENERATION` when this workflow is
+          invoked directly.
+        required: false
+        type: string
     outputs:
       jvm_staging_repository_id:
         description: "Sonatype staging repository id staged for the jvm packages."
@@ -86,6 +94,8 @@ jobs:
   jvm:
     needs: verify-tag
     uses: ./.github/workflows/prepare-publish-jvm.yml
+    with:
+      artifact_generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
@@ -96,6 +106,8 @@ jobs:
   android:
     needs: verify-tag
     uses: ./.github/workflows/prepare-publish-android.yml
+    with:
+      artifact_generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
@@ -106,6 +118,8 @@ jobs:
   kmp:
     needs: verify-tag
     uses: ./.github/workflows/prepare-publish-kmp.yml
+    with:
+      artifact_generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
@@ -118,3 +132,4 @@ jobs:
     uses: ./.github/workflows/publish-npm.yml
     with:
       prepare: true
+      artifact_generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}

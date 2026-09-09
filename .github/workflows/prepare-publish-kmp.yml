@@ -5,6 +5,14 @@ concurrency:
 
 on:
   workflow_call:
+    inputs:
+      artifact_generation:
+        description: >
+          Artifact key generation suffix, pinned by the caller so that every job in a run
+          agrees on it. Falls back to `vars.ARTIFACT_GENERATION` when this workflow is
+          invoked directly.
+        required: false
+        type: string
     secrets:
       SONATYPE_USERNAME:
         required: true
@@ -50,48 +58,48 @@ jobs:
         uses: ./.github/actions/make/ffi-library
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       - name: download armv7-linux-androideabi binaries
         uses: ./.github/actions/make/android/lib
         with:
           task: android-armv7
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       - name: download aarch64-linux-android binaries
         uses: ./.github/actions/make/android/lib
         with:
           task: android-armv8
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       - name: download x86_64-linux-android binaries
         uses: ./.github/actions/make/android/lib
         with:
           task: android-x86
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       - name: download artifacts for ios device
         uses: ./.github/actions/make/ios/build
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           task: ios-device
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       - name: download artifacts for ios simulator
         uses: ./.github/actions/make/ios/build
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           task: ios-simulator-arm
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       - name: download aarch64 apple darwin artifact
         uses: ./.github/actions/make/jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       # The specific jvm action uses `uname -s` to determine which `jvm` make rule to call.
       # Because this workflow runs on macOS, we're using the generic action
@@ -102,7 +110,7 @@ jobs:
           make-rule: jvm-linux
           target-path: target/x86_64-unknown-linux-gnu/release/libcore_crypto_ffi.a
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       - name: stage artifact in sonatype
         id: stage

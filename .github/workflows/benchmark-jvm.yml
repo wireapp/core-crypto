@@ -5,6 +5,13 @@ concurrency:
 on:
   workflow_call:
     inputs:
+      artifact_generation:
+        description: >
+          Artifact key generation suffix, pinned by the caller so that every job in a run
+          agrees on it. Falls back to `vars.ARTIFACT_GENERATION` when this workflow is
+          invoked directly.
+        required: false
+        type: string
       benchmark_message_counts:
         required: false
         type: string
@@ -98,7 +105,7 @@ jobs:
           make-rule: jvm-linux
           target-path: target/x86_64-unknown-linux-gnu/release/libcore_crypto_ffi.so
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       # The specific jvm action uses `uname -s` to determine which `jvm` make rule to call.
       # Because this workflow runs on ubuntu, we're using the generic action
@@ -109,13 +116,13 @@ jobs:
           make-rule: jvm-darwin
           target-path: target/aarch64-apple-darwin/release/libcore_crypto_ffi.dylib
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       - name: download kotlin bindings
         uses: ./.github/actions/make/bindings-kotlin-jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       - name: Run benchmark
         run: make jvm-bench

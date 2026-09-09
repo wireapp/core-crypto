@@ -4,6 +4,14 @@ concurrency:
 
 on:
   workflow_call:
+    inputs:
+      artifact_generation:
+        description: >
+          Artifact key generation suffix, pinned by the caller so that every job in a run
+          agrees on it. Falls back to `vars.ARTIFACT_GENERATION` when this workflow is
+          invoked directly.
+        required: false
+        type: string
 
 env:
   RELEASE: 1
@@ -27,13 +35,13 @@ jobs:
       uses: ./.github/actions/make/ts/browser
       with:
         gh-token: ${{ secrets.GITHUB_TOKEN }}
-        artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+        artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
     - name: download native files
       uses: ./.github/actions/make/ts/native
       with:
         gh-token: ${{ secrets.GITHUB_TOKEN }}
-        artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+        artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
     - name: make ts docs
       run: make docs-ts

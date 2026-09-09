@@ -1,0 +1,43 @@
+name: artifact generation
+
+# `vars.ARTIFACT_GENERATION` is the cache-busting suffix appended to every `make` artifact key.
+# GitHub re-reads the `vars` context whenever a job starts, so a workflow whose jobs each read the
+# variable directly can end up with producers and consumers on different generations:
+#
+#   - bumping the variable mid-run separates the jobs that started before the bump from those that
+#     started after, and
+#   - re-running only the failed jobs of a run that predates a bump leaves those jobs hunting for
+#     keys that no producer in the run ever uploaded, because the producers are green and so are
+#     not re-run.
+#
+# A consumer that misses its artifact falls back to building it locally, which for some jobs is
+# merely slow and for others impossible: the self-hosted macOS interop runner cannot build
+# wasm32-unknown-unknown at all, so the fallback fails with an unrelated-looking clang error.
+#
+# Resolving the variable exactly once per run and threading it through `needs` avoids both cases: a
+# `needs` output is fixed for the life of the run, and re-running failed jobs preserves the outputs
+# of the jobs it does not re-run.
+on:
+  workflow_call:
+    outputs:
+      generation:
+        description: Artifact key generation suffix, pinned for the whole workflow run
+        value: ${{ jobs.resolve.outputs.generation }}
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      generation: ${{ steps.resolve.outputs.generation }}
+    steps:
+      - name: resolve ARTIFACT_GENERATION
+        id: resolve
+        shell: bash -euo pipefail {0}
+        env:
+          ARTIFACT_GENERATION: ${{ vars.ARTIFACT_GENERATION }}
+        run: |
+          if [[ -z "$ARTIFACT_GENERATION" ]]; then
+            echo "::warning::ARTIFACT_GENERATION repository variable is unset; artifact keys are not generation-scoped"
+          fi
+          echo "Artifact generation for this run: '${ARTIFACT_GENERATION}'"
+          echo "generation=${ARTIFACT_GENERATION}" >> "$GITHUB_OUTPUT"

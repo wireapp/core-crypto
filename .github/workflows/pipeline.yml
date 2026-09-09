@@ -19,10 +19,17 @@ env:
   RELEASE: 1
 
 jobs:
+  # Every `make` artifact key is suffixed with `vars.ARTIFACT_GENERATION`. Resolve that variable
+  # once per run and hand the value to every other job through `needs`, so that producers and
+  # consumers can never disagree about it. See `artifact-generation.yml` for why that matters.
+  artifact-generation:
+    uses: ./.github/workflows/artifact-generation.yml
+
   #################
   # Shared between JVM Linux and Android
 
   uniffi-bindgen-linux:
+    needs: artifact-generation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -30,9 +37,10 @@ jobs:
       - uses: ./.github/actions/make/uniffi-bindgen
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
   ffi-library-linux:
+    needs: artifact-generation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -40,9 +48,10 @@ jobs:
       - uses: ./.github/actions/make/ffi-library
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
   ffi-library-macos:
+    needs: artifact-generation
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -50,17 +59,21 @@ jobs:
       - uses: ./.github/actions/make/ffi-library
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
   #################
   # Android
 
   build-android:
+    needs: artifact-generation
     uses: ./.github/workflows/build-android.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   bindings-android:
     runs-on: ubuntu-latest
     needs:
+      - artifact-generation
       - uniffi-bindgen-linux
       - ffi-library-linux
     steps:
@@ -69,24 +82,31 @@ jobs:
       - uses: ./.github/actions/make/android/bindings
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
   package-android:
     needs:
+      - artifact-generation
       - bindings-android
       - build-android
     uses: ./.github/workflows/package-android.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   test-android:
     needs:
+      - artifact-generation
       - bindings-android
       - build-android
     uses: ./.github/workflows/test-android.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   #################
   # JVM Darwin
 
   build-jvm-darwin:
+    needs: artifact-generation
     if: github.repository == 'wireapp/core-crypto'
     runs-on: self-hosted
     steps:
@@ -95,12 +115,13 @@ jobs:
       - uses: ./.github/actions/make/jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
   #################
   # JVM Linux
 
   build-jvm-linux:
+    needs: artifact-generation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -108,10 +129,11 @@ jobs:
       - uses: ./.github/actions/make/jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
   bindings-jvm:
     needs:
+      - artifact-generation
       - uniffi-bindgen-linux
       - ffi-library-linux
     runs-on: ubuntu-latest
@@ -121,35 +143,46 @@ jobs:
       - uses: ./.github/actions/make/bindings-kotlin-jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
   test-jvm:
     needs:
+      - artifact-generation
       - bindings-jvm
       - build-jvm-linux
       - build-jvm-darwin
     uses: ./.github/workflows/test-jvm.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   check-kotlin:
     needs:
+      - artifact-generation
       - bindings-jvm
       - build-jvm-linux
       - build-jvm-darwin
     uses: ./.github/workflows/kotlin-check.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   docs-jvm:
     needs:
+      - artifact-generation
       - bindings-jvm
       - build-jvm-linux
     uses: ./.github/workflows/docs-jvm.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   check-benchmark-jvm:
     needs:
+      - artifact-generation
       - bindings-jvm
       - build-jvm-linux
       - build-jvm-darwin
     uses: ./.github/workflows/benchmark-jvm.yml
     with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
       publish: false
       benchmark_message_counts: "1"
       benchmark_message_sizes: "16"
@@ -161,19 +194,26 @@ jobs:
 
   test-kmp:
     needs:
+      - artifact-generation
       - ffi-library-linux
       - ffi-library-macos
       - build-jvm-linux
       - build-jvm-darwin
     uses: ./.github/workflows/test-kmp.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   #################
   # iOS/Swift
 
   build-ios:
+    needs: artifact-generation
     uses: ./.github/workflows/build-ios.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   bindings-swift:
+    needs: artifact-generation
     if: github.repository == 'wireapp/core-crypto'
     runs-on: self-hosted
     steps:
@@ -182,30 +222,40 @@ jobs:
       - uses: ./.github/actions/make/bindings-swift
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
   package-ios:
     needs:
+      - artifact-generation
       - build-ios
       - bindings-swift
     uses: ./.github/workflows/package-ios.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   test-ios:
     needs:
+      - artifact-generation
       - build-ios
       - bindings-swift
     uses: ./.github/workflows/test-ios.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   docs-swift:
     needs:
+      - artifact-generation
       - build-ios
       - bindings-swift
     uses: ./.github/workflows/docs-swift.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   #################
   # Web
 
   bindings-ts-browser:
+    needs: artifact-generation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -217,9 +267,10 @@ jobs:
         uses: ./.github/actions/make/ts/browser
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
   bindings-ts-native-linux:
+    needs: artifact-generation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -231,9 +282,10 @@ jobs:
         uses: ./.github/actions/make/ts/native
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
   bindings-ts-native-darwin:
+    needs: artifact-generation
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -245,35 +297,49 @@ jobs:
         uses: ./.github/actions/make/ts/native
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
   test-ts-browser:
     needs:
+      - artifact-generation
       - bindings-ts-browser
     uses: ./.github/workflows/test-ts-browser.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   test-ts-native:
     needs:
+      - artifact-generation
       - bindings-ts-native-linux
     uses: ./.github/workflows/test-ts-native.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   check-ts:
     needs:
+      - artifact-generation
       - bindings-ts-browser
       - bindings-ts-native-linux
     uses: ./.github/workflows/check-ts.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   docs-ts:
     needs:
+      - artifact-generation
       - bindings-ts-browser
       - bindings-ts-native-linux
     uses: ./.github/workflows/docs-ts.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   check-benchmark-ts-browser:
     needs:
+      - artifact-generation
       - bindings-ts-browser
     uses: ./.github/workflows/benchmark-ts-browser.yml
     with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
       publish: false
       benchmark_message_counts: "1"
       benchmark_message_sizes: "16"
@@ -282,9 +348,11 @@ jobs:
 
   check-benchmark-ts-native:
     needs:
+      - artifact-generation
       - bindings-ts-native-linux
     uses: ./.github/workflows/benchmark-ts-native.yml
     with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
       publish: false
       benchmark_message_counts: "1"
       benchmark_message_sizes: "16"
@@ -323,6 +391,7 @@ jobs:
   # Cross-platform jobs
 
   build-interop:
+    needs: artifact-generation
     if: github.repository == 'wireapp/core-crypto'
     runs-on: macos-latest
     steps:
@@ -333,10 +402,11 @@ jobs:
       - uses: ./.github/actions/make/interop/build
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
   e2e-interop-test:
     needs:
+      - artifact-generation
       - build-ios
       - bindings-swift
       - bindings-ts-browser
@@ -344,6 +414,8 @@ jobs:
       - build-android
       - build-interop
     uses: ./.github/workflows/interop.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   deploy-docs:
     needs:
@@ -359,6 +431,7 @@ jobs:
 
   prepare-publish:
     needs:
+      - artifact-generation
       - package-ios
       - package-android
       - bindings-ts-browser
@@ -369,6 +442,8 @@ jobs:
       - bindings-jvm
     if: github.ref_type == 'tag'
     uses: ./.github/workflows/prepare-publish.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
@@ -425,14 +500,21 @@ jobs:
           pgp-passphrase: ${{ secrets.PGP_PASSPHRASE }}
 
   publish-ios:
-    needs: prepare-publish
+    needs:
+      - prepare-publish
+      - artifact-generation
     uses: ./.github/workflows/publish-swift.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   publish-npm:
-    needs: prepare-publish
+    needs:
+      - prepare-publish
+      - artifact-generation
     uses: ./.github/workflows/publish-npm.yml
     permissions:
       id-token: write
       contents: write
     with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
       release: true

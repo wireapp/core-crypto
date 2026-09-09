@@ -4,6 +4,14 @@ concurrency:
 
 on:
   workflow_call:
+    inputs:
+      artifact_generation:
+        description: >
+          Artifact key generation suffix, pinned by the caller so that every job in a run
+          agrees on it. Falls back to `vars.ARTIFACT_GENERATION` when this workflow is
+          invoked directly.
+        required: false
+        type: string
   workflow_dispatch:
 
 env:
@@ -64,7 +72,7 @@ jobs:
         with:
           always-run: ${{ github.event_name == 'workflow_dispatch' || github.ref_name == 'main' }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
         # we separate shutdown from deletion to make sure the device is always removed, even when shutdown failed
       - name: delete ios simulator and kill android emulator

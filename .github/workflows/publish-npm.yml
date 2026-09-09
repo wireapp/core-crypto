@@ -10,6 +10,13 @@ permissions:
 on:
   workflow_call:
     inputs:
+        artifact_generation:
+          description: >
+            Artifact key generation suffix, pinned by the caller so that every job in a run
+            agrees on it. Falls back to `vars.ARTIFACT_GENERATION` when this workflow is
+            invoked directly.
+          required: false
+          type: string
         prepare:
           description: "If true, stage and validate artifacts."
           required: false
@@ -50,7 +57,7 @@ jobs:
         uses: ./.github/actions/make/ts/browser
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       # Note that for make/mtime reasons, we _must_ download native apple artifacts before
       # downloading native linux artifacts, otherwise the "package" step will trigger
@@ -64,14 +71,14 @@ jobs:
           target-path: |
             crypto-ffi/bindings/js/packages/core-crypto/dist/native/libcore_crypto_ffi.dylib
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       - name: download ts native linux artifacts
         if: ${{ inputs.prepare == true }}
         uses: ./.github/actions/make/ts/native
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       - name: package tarball
         if: ${{ inputs.prepare == true }}

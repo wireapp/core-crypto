@@ -4,6 +4,14 @@ concurrency:
 
 on:
   workflow_call:
+    inputs:
+      artifact_generation:
+        description: >
+          Artifact key generation suffix, pinned by the caller so that every job in a run
+          agrees on it. Falls back to `vars.ARTIFACT_GENERATION` when this workflow is
+          invoked directly.
+        required: false
+        type: string
   workflow_dispatch:
 
 env:
@@ -35,13 +43,13 @@ jobs:
         uses: ./.github/actions/make/ffi-library
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       - name: download platform jvm library
         uses: ./.github/actions/make/jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       - name: build and test kmp package
         uses: ./.github/actions/make
@@ -50,4 +58,4 @@ jobs:
           make-rule: kmp-jvm-test
           always-run: ${{ github.event_name == 'workflow_dispatch' || github.ref_name == 'main' }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ vars.ARTIFACT_GENERATION }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}

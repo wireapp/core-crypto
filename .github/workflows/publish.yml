@@ -47,6 +47,10 @@ env:
   RELEASE: 1
 
 jobs:
+  # Pin the artifact key generation for the whole run; see `artifact-generation.yml`.
+  artifact-generation:
+    uses: ./.github/workflows/artifact-generation.yml
+
   # For JVM/Android we use Sonatype's two-phase staging model.
   # 'prepare' uploads to a staging repo and closes it (validation happens here).
   # 'release' finds the closed staging repo and promotes it to Maven Central.
@@ -56,7 +60,10 @@ jobs:
     if: >
       (inputs.registry == 'all' || inputs.registry == 'jvm') &&
       inputs.sonatype-action == 'prepare-and-release'
+    needs: artifact-generation
     uses: ./.github/workflows/prepare-publish-jvm.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
@@ -120,7 +127,10 @@ jobs:
     if: >
       (inputs.registry == 'all' || inputs.registry == 'android') &&
       inputs.sonatype-action == 'prepare-and-release'
+    needs: artifact-generation
     uses: ./.github/workflows/prepare-publish-android.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
@@ -184,7 +194,10 @@ jobs:
     if: >
       (inputs.registry == 'all' || inputs.registry == 'kmp') &&
       inputs.sonatype-action == 'prepare-and-release'
+    needs: artifact-generation
     uses: ./.github/workflows/prepare-publish-kmp.yml
+    with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
     secrets:
       SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
       SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}

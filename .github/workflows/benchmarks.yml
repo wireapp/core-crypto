@@ -5,23 +5,33 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Pin the artifact key generation for the whole run; see `artifact-generation.yml`.
+  artifact-generation:
+    uses: ./.github/workflows/artifact-generation.yml
+
   benchmark-jvm:
+    needs: artifact-generation
     uses: ./.github/workflows/benchmark-jvm.yml
     with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
       runs_on: '["self-hosted", "benchmark"]'
     secrets:
       METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
 
   benchmark-ts-browser:
+    needs: artifact-generation
     uses: ./.github/workflows/benchmark-ts-browser.yml
     with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
       runs_on: '["self-hosted", "benchmark"]'
     secrets:
       METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
 
   benchmark-ts-native:
+    needs: artifact-generation
     uses: ./.github/workflows/benchmark-ts-native.yml
     with:
+      artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
       runs_on: '["self-hosted", "benchmark"]'
     secrets:
       METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
