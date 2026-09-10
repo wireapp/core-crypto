@@ -407,7 +407,7 @@ impl PkiKeypair {
         }
     }
 
-    pub fn signature_algorithm(&self) -> spki::AlgorithmIdentifierRef<'_> {
+    fn signature_algorithm(&self) -> spki::AlgorithmIdentifierRef<'_> {
         match self {
             Self::P256(_) => p256::ecdsa::SigningKey::SIGNATURE_ALGORITHM_IDENTIFIER,
             Self::P384(_) => p384::ecdsa::SigningKey::SIGNATURE_ALGORITHM_IDENTIFIER,
@@ -419,7 +419,7 @@ impl PkiKeypair {
         }
     }
 
-    pub fn spki(&self) -> E2eIdentityResult<spki::SubjectPublicKeyInfoOwned> {
+    fn spki(&self) -> E2eIdentityResult<spki::SubjectPublicKeyInfoOwned> {
         match self {
             Self::P256(sk) => Ok(spki::SubjectPublicKeyInfoOwned::from_key(sk.verifying_key())
                 .map_err(|_| E2eIdentityError::CertificateGenerationError)?),
@@ -432,7 +432,7 @@ impl PkiKeypair {
         }
     }
 
-    pub fn akid(&self) -> E2eIdentityResult<x509_cert::ext::pkix::AuthorityKeyIdentifier> {
+    fn akid(&self) -> E2eIdentityResult<x509_cert::ext::pkix::AuthorityKeyIdentifier> {
         Ok(x509_cert::ext::pkix::AuthorityKeyIdentifier {
             key_identifier: Some(
                 spki::der::asn1::OctetString::new(self.public_key_identifier())
