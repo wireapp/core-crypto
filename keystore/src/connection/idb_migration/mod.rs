@@ -4,6 +4,8 @@
 //! to detect and migrate legacy data before the new connection is initialised.
 
 mod legacy;
+#[cfg(test)]
+mod tests;
 
 use idb::Factory;
 use rusqlite::{Connection, OptionalExtension as _};
@@ -29,6 +31,43 @@ use crate::{
     migrations::{LegacyPersistedMlsGroup, StoredCredentialV36, V33StoredEpochEncryptionKeypair},
     traits::EntityDatabaseMutation as _,
 };
+
+/// Every legacy object store which [`maybe_migrate`] copies verbatim, named by the entity type it is read as.
+///
+/// Invoke with the name of a macro which accepts the list; that macro is expanded with the entities as its input.
+/// Both the import itself and its tests expand this list, so an entity added here is seeded and checked by the tests,
+/// and an entity added to the tests alone does not compile.
+///
+/// `PersistedMlsPendingGroup` is deliberately absent: its type changed shape, so the import copies it by hand.
+macro_rules! for_each_imported_legacy_entity {
+    ($callback:ident) => {
+        $callback! {
+            ConsumerData,
+            E2eiAcmeCA,
+            E2eiCrl,
+            E2eiIntermediateCert,
+            MlsPendingMessage,
+            LegacyPersistedMlsGroup,
+            StoredBufferedCommit,
+            StoredCredentialV36,
+            StoredEncryptionKeyPair,
+            V33StoredEpochEncryptionKeypair,
+            StoredHpkePrivateKey,
+            StoredKeypackage,
+            StoredPskBundle,
+            #[cfg(feature = "proteus-keystore")]
+            ProteusIdentity,
+            #[cfg(feature = "proteus-keystore")]
+            ProteusPrekey,
+            #[cfg(feature = "proteus-keystore")]
+            ProteusSession,
+        }
+    };
+}
+
+/// This only needs reexport for use in the test module when we are testing.
+#[cfg(test)]
+pub(crate) use for_each_imported_legacy_entity;
 
 /// Returns `true` if a legacy IndexedDB database with the given name exists and contains data.
 ///
@@ -158,27 +197,7 @@ pub(super) async fn maybe_migrate(
         tx.commit()?;
     }
 
-    migrate_entities!(
-        ConsumerData,
-        E2eiAcmeCA,
-        E2eiCrl,
-        E2eiIntermediateCert,
-        MlsPendingMessage,
-        LegacyPersistedMlsGroup,
-        StoredBufferedCommit,
-        StoredCredentialV36,
-        StoredEncryptionKeyPair,
-        V33StoredEpochEncryptionKeypair,
-        StoredHpkePrivateKey,
-        StoredKeypackage,
-        StoredPskBundle,
-        #[cfg(feature = "proteus-keystore")]
-        ProteusIdentity,
-        #[cfg(feature = "proteus-keystore")]
-        ProteusPrekey,
-        #[cfg(feature = "proteus-keystore")]
-        ProteusSession,
-    );
+    for_each_imported_legacy_entity!(migrate_entities);
 
     // clients can recover independently from this; the migrations all succeeded, so no need to
     // propagate an error
