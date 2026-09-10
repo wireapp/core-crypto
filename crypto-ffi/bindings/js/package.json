@@ -54,6 +54,9 @@
         "uniffi-bindgen-react-native": "^0.31.0-5",
         "yarn": "^1.22.22"
     },
+    "mocha": {
+        "timeout": 5000
+    },
     "trustedDependencies": [
         "uniffi-bindgen-react-native"
     ]
