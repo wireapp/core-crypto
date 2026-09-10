@@ -4,6 +4,9 @@
 
 - Kotlin: transactions are now cancellable. This applies to all Kotlin bindings: jvm, android and kmp.
 
+- Kotlin(iOS): The macos/ios targets now have a file lock guarding against concurrent access from separate CoreCrypto
+  instances.
+
 - CoreCrypto now supports encrypting and decrypting transient messages. Transient messages are encrypted and decrypted
   for/from group members without affecting the cryptographic state of the group, which enables their use case: to be
   distributed only to currently online group members.
