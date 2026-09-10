@@ -27,8 +27,8 @@ use crate::{
         os_unknown,
     },
     entities::{
-        StoredCredential, StoredCredentialPk, StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef,
-        StoredKeyPackage, X509Crl, X509IntermediateCert, X509TrustAnchor,
+        MlsPendingMessage, StoredCredential, StoredCredentialPk, StoredEpochEncryptionKeypair,
+        StoredEpochEncryptionKeypairPkRef, StoredKeyPackage, X509Crl, X509IntermediateCert, X509TrustAnchor,
     },
     traits::FetchFromDatabase as _,
 };
@@ -172,10 +172,10 @@ impl Seed for E2eiIntermediateCert {
     }
 }
 
-impl Seed for MlsPendingMessage {
+impl Seed for LegacyMlsPendingMessage {
     fn seed() -> Self {
         Self {
-            conversation_id: seed::PENDING_GROUP_ID.into(),
+            conversation_id: seed::PENDING_GROUP_ID.to_vec(),
             message: seed::PENDING_MESSAGE.to_vec(),
         }
     }

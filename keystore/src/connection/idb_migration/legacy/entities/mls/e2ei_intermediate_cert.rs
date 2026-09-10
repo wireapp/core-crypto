@@ -575,9 +575,8 @@ impl BorrowPrimaryKey for E2eiIntermediateCert {
 
 impl E2eiIntermediateCert {
     pub(crate) fn save(&self, tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()> {
-        let mut stmt = tx.prepare_cached(
-            "INSERT OR REPLACE INTO e2ei_intermediate_certs (ski_aki_pair , content) VALUES (?, ?, ?)",
-        )?;
+        let mut stmt =
+            tx.prepare_cached("INSERT OR REPLACE INTO e2ei_intermediate_certs (ski_aki_pair, content) VALUES (?, ?)")?;
         stmt.execute((&self.ski_aki_pair, &self.content))?;
         Ok(())
     }
