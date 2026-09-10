@@ -919,7 +919,7 @@ $dokka.location:com.wire.crypto/X509CredentialAcquisitionInterface///PointingToD
 $dokka.location:com.wire.crypto/X509CredentialAcquisitionInterface/finalize/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-credential-acquisition-interface/finalize.html
 $dokka.location:com.wire.crypto/X509Identity.Companion///PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-identity/-companion/index.html
 $dokka.location:com.wire.crypto/X509Identity///PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-identity/index.html
-$dokka.location:com.wire.crypto/X509Identity/X509Identity/#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlinx.datetime.Instant#kotlinx.datetime.Instant/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-identity/-x509-identity.html
+$dokka.location:com.wire.crypto/X509Identity/X509Identity/#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlin.String#kotlin.time.Instant#kotlin.time.Instant/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-identity/-x509-identity.html
 $dokka.location:com.wire.crypto/X509Identity/certificate/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-identity/certificate.html
 $dokka.location:com.wire.crypto/X509Identity/displayName/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-identity/display-name.html
 $dokka.location:com.wire.crypto/X509Identity/domain/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-x509-identity/domain.html
