@@ -181,6 +181,7 @@ async fn dump_legacy_fixture() {
     let dump: js_sys::Function = js_sys::eval(DUMP_JS).unwrap().into();
     let promise: js_sys::Promise = dump.call1(&JsValue::NULL, &JsValue::from_str(name)).unwrap().into();
     let json = JsFuture::from(promise).await.unwrap().as_string().unwrap();
+    // panic here to expose the data to be copied/pasted into the fixture
     panic!(
         "FIXTURE_BEGIN\n{{\"generated_by\": \"v10.1.0\", \"database_key\": \"{DATABASE_KEY_HEX}\",{}\nFIXTURE_END",
         &json[1..]

@@ -12,7 +12,9 @@ use rusqlite::{Connection, OptionalExtension as _};
 
 use self::legacy::connection::{DatabaseConnection as _, KeystoreDatabaseConnection};
 #[cfg(feature = "proteus-keystore")]
-use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
+use self::legacy::entities::proteus::identity::LegacyProteusIdentity;
+#[cfg(feature = "proteus-keystore")]
+use crate::entities::{ProteusPrekey, ProteusSession};
 use crate::{
     CryptoKeystoreResult, DatabaseKey,
     connection::{
@@ -53,7 +55,7 @@ macro_rules! for_each_imported_legacy_entity {
             StoredKeypackage,
             StoredPskBundle,
             #[cfg(feature = "proteus-keystore")]
-            ProteusIdentity,
+            LegacyProteusIdentity,
             #[cfg(feature = "proteus-keystore")]
             ProteusPrekey,
             #[cfg(feature = "proteus-keystore")]

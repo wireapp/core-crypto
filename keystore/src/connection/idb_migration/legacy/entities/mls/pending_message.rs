@@ -94,9 +94,14 @@ impl EncryptionKey for LegacyMlsPendingMessage {
     }
 }
 
+/// The stored form of a pending message.
+///
+/// The conversation id is stored under the property name `foreign_id`: that is what every IndexedDB-writing
+/// release called it, and rows in the field carry that name. The Rust-side field was renamed later, but the
+/// serialized shape must stay as it was written.
 #[derive(Serialize)]
 pub(crate) struct MlsPendingMessageEncrypt<'a> {
-    conversation_id: &'a [u8],
+    foreign_id: &'a [u8],
     message: Vec<u8>,
 }
 
@@ -106,15 +111,16 @@ impl<'a> Encrypting<'a> for LegacyMlsPendingMessage {
     fn encrypt(&'a self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::EncryptedForm> {
         let message = self.encrypt_data_with_encryption_key(cipher, &self.message)?;
         Ok(MlsPendingMessageEncrypt {
-            conversation_id: &self.conversation_id,
+            foreign_id: &self.conversation_id,
             message,
         })
     }
 }
 
+/// The stored form of a pending message, as read back; see [`MlsPendingMessageEncrypt`] for the property name.
 #[derive(Deserialize)]
 pub(crate) struct MlsPendingMessageDecrypt {
-    conversation_id: Vec<u8>,
+    foreign_id: Vec<u8>,
     message: Vec<u8>,
 }
 
@@ -123,9 +129,9 @@ impl Decrypting<'static> for MlsPendingMessageDecrypt {
 
     fn decrypt(self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<Self::DecryptedForm> {
         let message =
-            LegacyMlsPendingMessage::decrypt_data_with_encryption_key(cipher, &self.conversation_id, &self.message)?;
+            LegacyMlsPendingMessage::decrypt_data_with_encryption_key(cipher, &self.foreign_id, &self.message)?;
         Ok(LegacyMlsPendingMessage {
-            conversation_id: self.conversation_id,
+            conversation_id: self.foreign_id,
             message,
         })
     }

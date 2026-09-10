@@ -16,6 +16,8 @@ use wasm_bindgen_test::wasm_bindgen_test;
 use x509_cert::der::{DecodePem as _, Encode as _};
 
 use super::*;
+#[cfg(feature = "proteus-keystore")]
+use crate::entities::ProteusIdentity;
 use crate::{
     Sha256Hash,
     ancillary::ConversationIdRef,
@@ -258,7 +260,7 @@ impl Seed for StoredPskBundle {
 }
 
 #[cfg(feature = "proteus-keystore")]
-impl Seed for ProteusIdentity {
+impl Seed for LegacyProteusIdentity {
     fn seed() -> Self {
         Self {
             sk: seed::PROTEUS_IDENTITY_SK.to_vec(),

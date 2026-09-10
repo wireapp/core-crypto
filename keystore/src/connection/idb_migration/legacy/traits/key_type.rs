@@ -72,3 +72,6 @@ impl KeyType for Sha256Hash {
         self.as_ref().into()
     }
 }
+
+// the legacy proteus identity is keyed by a single byte
+impl_keytype!([u8; 1], |self| self.as_slice());
