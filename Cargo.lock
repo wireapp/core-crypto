@@ -3825,7 +3825,7 @@ dependencies = [
 [[package]]
 name = "openmls"
 version = "1.0.0"
-source = "git+https://github.com/wireapp/openmls?rev=199b4293296ff751e7dbd71688deb462fe26aa1e#199b4293296ff751e7dbd71688deb462fe26aa1e"
+source = "git+https://github.com/wireapp/openmls?rev=16333576c482120aefda439e99f58c6d4be04372#16333576c482120aefda439e99f58c6d4be04372"
 dependencies = [
  "async-trait",
  "backtrace",
@@ -3847,7 +3847,7 @@ dependencies = [
 [[package]]
 name = "openmls_basic_credential"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=199b4293296ff751e7dbd71688deb462fe26aa1e#199b4293296ff751e7dbd71688deb462fe26aa1e"
+source = "git+https://github.com/wireapp/openmls?rev=16333576c482120aefda439e99f58c6d4be04372#16333576c482120aefda439e99f58c6d4be04372"
 dependencies = [
  "async-trait",
  "ed25519-dalek 3.0.0",
@@ -3862,13 +3862,12 @@ dependencies = [
  "secrecy",
  "serde",
  "tls_codec",
- "zeroize",
 ]
 
 [[package]]
 name = "openmls_traits"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=199b4293296ff751e7dbd71688deb462fe26aa1e#199b4293296ff751e7dbd71688deb462fe26aa1e"
+source = "git+https://github.com/wireapp/openmls?rev=16333576c482120aefda439e99f58c6d4be04372#16333576c482120aefda439e99f58c6d4be04372"
 dependencies = [
  "async-trait",
  "ed25519-dalek 3.0.0",
@@ -3886,7 +3885,7 @@ dependencies = [
 [[package]]
 name = "openmls_x509_credential"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=199b4293296ff751e7dbd71688deb462fe26aa1e#199b4293296ff751e7dbd71688deb462fe26aa1e"
+source = "git+https://github.com/wireapp/openmls?rev=16333576c482120aefda439e99f58c6d4be04372#16333576c482120aefda439e99f58c6d4be04372"
 dependencies = [
  "async-trait",
  "base64 0.21.7",
@@ -5966,7 +5965,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.1",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix 1.1.4",
  "windows-sys 0.61.2",
