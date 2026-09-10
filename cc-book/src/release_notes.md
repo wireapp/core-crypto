@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Kotlin: Timestamps (Instant) are now using `kotlin.time` instead of `kotlinx.datetime`.
+
 - Kotlin: transactions are now cancellable. This applies to all Kotlin bindings: jvm, android and kmp.
 
 - Kotlin(iOS): The macos/ios targets now have a file lock guarding against concurrent access from separate CoreCrypto
