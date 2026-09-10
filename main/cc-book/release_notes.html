@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-64f9c5ad.js";
+            window.path_to_searchindex_js = "searchindex-98a3850a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1c113b1d.js"></script>
@@ -194,6 +194,12 @@ distributed only to currently online group members.</p>
 <p>CoreCrypto now also supports encrypting and decrypting targeted messages. A Targeted message is encrypted for a single
 group member specifically. This enables the long-awaited read receipts feature for MLS. Regular MLS messages aren’t a
 good fit for read receipts because of the massive amount of irrelevant messages that would need to be distributed.</p>
+</li>
+<li>
+<p>The documentation for <code>addCredential</code> previously stated that credentials registered with a single client must be
+distinct in credential type, signature scheme, and creation timestamp, and that you therefore had to wait a full
+second between registrations. This was never true of any released version; we fixed it before releasing 10.0.0. If you
+added a delay between <code>addCredential</code> calls to comply, you can remove it.</p>
 </li>
 </ul>
 <h2 id="corecrypto-10"><a class="header" href="#corecrypto-10">CoreCrypto 10</a></h2>

@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-64f9c5ad.js";
+            window.path_to_searchindex_js = "searchindex-98a3850a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1c113b1d.js"></script>
@@ -1118,12 +1118,6 @@ credential, use the acquisition flow described in <a href="#x509-credential-acqu
 <li>
 <p>Register the credential with <code>transactionContext.addCredential(credential)</code>. This persists it and returns a
 <code>CredentialRef</code>: a compact, stable handle you pass to the rest of the API in place of the old selector pair.</p>
-<ul>
-<li>Credentials registered with a single client must be distinct on the
-<code>(credentialType, signatureScheme, creation timestamp)</code> tuple, where the timestamp has one-second resolution. If
-you need several credentials sharing a type and signature scheme, wait one full second between registering each. We
-expect to relax this limitation in the future.</li>
-</ul>
 </li>
 <li>
 <p>On MLS initialization, previously stored credentials are loaded automatically. Enumerate them with
@@ -1569,6 +1563,12 @@ distributed only to currently online group members.</p>
 <p>CoreCrypto now also supports encrypting and decrypting targeted messages. A Targeted message is encrypted for a single
 group member specifically. This enables the long-awaited read receipts feature for MLS. Regular MLS messages aren’t a
 good fit for read receipts because of the massive amount of irrelevant messages that would need to be distributed.</p>
+</li>
+<li>
+<p>The documentation for <code>addCredential</code> previously stated that credentials registered with a single client must be
+distinct in credential type, signature scheme, and creation timestamp, and that you therefore had to wait a full
+second between registrations. This was never true of any released version; we fixed it before releasing 10.0.0. If you
+added a delay between <code>addCredential</code> calls to comply, you can remove it.</p>
 </li>
 </ul>
 <h2 id="corecrypto-10"><a class="header" href="#corecrypto-10">CoreCrypto 10</a></h2>

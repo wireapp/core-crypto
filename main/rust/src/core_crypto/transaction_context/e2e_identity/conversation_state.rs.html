@@ -158,49 +158,48 @@
 <a href=#158 id=158 data-nosnippet>158</a>        Box::pin(<span class="kw">async move </span>{
 <a href=#159 id=159 data-nosnippet>159</a>            <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>bob]).<span class="kw">await</span>;
 <a href=#160 id=160 data-nosnippet>160</a>
-<a href=#161 id=161 data-nosnippet>161</a>            <span class="kw">let </span>expiration_time = core::time::Duration::from_secs(<span class="number">14</span>);
-<a href=#162 id=162 data-nosnippet>162</a>            <span class="kw">let </span>start = web_time::Instant::now();
-<a href=#163 id=163 data-nosnippet>163</a>
-<a href=#164 id=164 data-nosnippet>164</a>            <span class="comment">// delay a bit so we don't get a credential conflict when adding this credential to alice
-<a href=#165 id=165 data-nosnippet>165</a>            </span>smol::Timer::after(std::time::Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
-<a href=#166 id=166 data-nosnippet>166</a>
-<a href=#167 id=167 data-nosnippet>167</a>            <span class="kw">let </span>intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();
-<a href=#168 id=168 data-nosnippet>168</a>            <span class="comment">// this completely invents a new client id for alice, which gets propagated into the credential
-<a href=#169 id=169 data-nosnippet>169</a>            </span><span class="kw">let </span>cert = CertificateBundle::new_with_default_values(intermediate_ca, <span class="prelude-val">Some</span>(expiration_time));
-<a href=#170 id=170 data-nosnippet>170</a>            <span class="kw">let </span>cb = Credential::x509(case.cipher_suite(), cert.clone()).unwrap();
-<a href=#171 id=171 data-nosnippet>171</a>
-<a href=#172 id=172 data-nosnippet>172</a>            <span class="kw">let </span>credential = Credential::x509(case.cipher_suite(), cert).unwrap();
-<a href=#173 id=173 data-nosnippet>173</a>            alice
-<a href=#174 id=174 data-nosnippet>174</a>                .transaction
-<a href=#175 id=175 data-nosnippet>175</a>                .add_credential_without_clientid_check(credential)
-<a href=#176 id=176 data-nosnippet>176</a>                .<span class="kw">await
-<a href=#177 id=177 data-nosnippet>177</a>                </span>.unwrap();
-<a href=#178 id=178 data-nosnippet>178</a>
-<a href=#179 id=179 data-nosnippet>179</a>            <span class="kw">let </span>credential_ref = CredentialRef::from_credential(<span class="kw-2">&amp;</span>cb);
-<a href=#180 id=180 data-nosnippet>180</a>            <span class="kw">let </span>conversation = conversation.set_credential_by_ref_notify(<span class="kw-2">&amp;</span>credential_ref).<span class="kw">await</span>;
-<a href=#181 id=181 data-nosnippet>181</a>
-<a href=#182 id=182 data-nosnippet>182</a>            <span class="comment">// Need to fetch it before it becomes invalid &amp; expires
-<a href=#183 id=183 data-nosnippet>183</a>            </span><span class="kw">let </span>gi = conversation.export_group_info().<span class="kw">await</span>;
-<a href=#184 id=184 data-nosnippet>184</a>
-<a href=#185 id=185 data-nosnippet>185</a>            <span class="kw">let </span>elapsed = start.elapsed();
-<a href=#186 id=186 data-nosnippet>186</a>            <span class="comment">// Give time to the certificate to expire
-<a href=#187 id=187 data-nosnippet>187</a>            </span><span class="kw">if </span>expiration_time &gt; elapsed {
-<a href=#188 id=188 data-nosnippet>188</a>                smol::Timer::after(expiration_time - elapsed + core::time::Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
-<a href=#189 id=189 data-nosnippet>189</a>            }
-<a href=#190 id=190 data-nosnippet>190</a>
-<a href=#191 id=191 data-nosnippet>191</a>            <span class="kw">let </span>alice_state = conversation.e2ei_state().<span class="kw">await</span>;
-<a href=#192 id=192 data-nosnippet>192</a>            <span class="kw">let </span>bob_state = conversation.e2ei_state_of(<span class="kw-2">&amp;</span>bob).<span class="kw">await</span>;
-<a href=#193 id=193 data-nosnippet>193</a>            <span class="macro">assert_eq!</span>(alice_state, E2eiConversationState::NotVerified);
-<a href=#194 id=194 data-nosnippet>194</a>            <span class="macro">assert_eq!</span>(bob_state, E2eiConversationState::NotVerified);
-<a href=#195 id=195 data-nosnippet>195</a>
-<a href=#196 id=196 data-nosnippet>196</a>            <span class="kw">let </span>state = alice
-<a href=#197 id=197 data-nosnippet>197</a>                .transaction
-<a href=#198 id=198 data-nosnippet>198</a>                .get_credential_in_use(gi, CredentialType::X509)
-<a href=#199 id=199 data-nosnippet>199</a>                .<span class="kw">await
-<a href=#200 id=200 data-nosnippet>200</a>                </span>.unwrap();
-<a href=#201 id=201 data-nosnippet>201</a>            <span class="macro">assert_eq!</span>(state, E2eiConversationState::NotVerified);
-<a href=#202 id=202 data-nosnippet>202</a>        })
-<a href=#203 id=203 data-nosnippet>203</a>        .<span class="kw">await
-<a href=#204 id=204 data-nosnippet>204</a>    </span>}
-<a href=#205 id=205 data-nosnippet>205</a>}
+<a href=#161 id=161 data-nosnippet>161</a>            <span class="comment">// on my local machine this passes with values as low as 2 seconds,
+<a href=#162 id=162 data-nosnippet>162</a>            // but this also needs to pass on a presumably-congested CI machine
+<a href=#163 id=163 data-nosnippet>163</a>            </span><span class="kw">let </span>expiration_time = core::time::Duration::from_secs(<span class="number">5</span>);
+<a href=#164 id=164 data-nosnippet>164</a>            <span class="kw">let </span>start = web_time::Instant::now();
+<a href=#165 id=165 data-nosnippet>165</a>
+<a href=#166 id=166 data-nosnippet>166</a>            <span class="kw">let </span>intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();
+<a href=#167 id=167 data-nosnippet>167</a>            <span class="comment">// this completely invents a new client id for alice, which gets propagated into the credential
+<a href=#168 id=168 data-nosnippet>168</a>            </span><span class="kw">let </span>cert = CertificateBundle::new_with_default_values(intermediate_ca, <span class="prelude-val">Some</span>(expiration_time));
+<a href=#169 id=169 data-nosnippet>169</a>            <span class="kw">let </span>cb = Credential::x509(case.cipher_suite(), cert.clone()).unwrap();
+<a href=#170 id=170 data-nosnippet>170</a>
+<a href=#171 id=171 data-nosnippet>171</a>            <span class="kw">let </span>credential = Credential::x509(case.cipher_suite(), cert).unwrap();
+<a href=#172 id=172 data-nosnippet>172</a>            alice
+<a href=#173 id=173 data-nosnippet>173</a>                .transaction
+<a href=#174 id=174 data-nosnippet>174</a>                .add_credential_without_clientid_check(credential)
+<a href=#175 id=175 data-nosnippet>175</a>                .<span class="kw">await
+<a href=#176 id=176 data-nosnippet>176</a>                </span>.unwrap();
+<a href=#177 id=177 data-nosnippet>177</a>
+<a href=#178 id=178 data-nosnippet>178</a>            <span class="kw">let </span>credential_ref = CredentialRef::from_credential(<span class="kw-2">&amp;</span>cb);
+<a href=#179 id=179 data-nosnippet>179</a>            <span class="kw">let </span>conversation = conversation.set_credential_by_ref_notify(<span class="kw-2">&amp;</span>credential_ref).<span class="kw">await</span>;
+<a href=#180 id=180 data-nosnippet>180</a>
+<a href=#181 id=181 data-nosnippet>181</a>            <span class="comment">// Need to fetch it before it becomes invalid &amp; expires
+<a href=#182 id=182 data-nosnippet>182</a>            </span><span class="kw">let </span>gi = conversation.export_group_info().<span class="kw">await</span>;
+<a href=#183 id=183 data-nosnippet>183</a>
+<a href=#184 id=184 data-nosnippet>184</a>            <span class="kw">let </span>elapsed = start.elapsed();
+<a href=#185 id=185 data-nosnippet>185</a>            <span class="comment">// Give time to the certificate to expire
+<a href=#186 id=186 data-nosnippet>186</a>            </span><span class="kw">if </span>expiration_time &gt; elapsed {
+<a href=#187 id=187 data-nosnippet>187</a>                smol::Timer::after(expiration_time - elapsed + core::time::Duration::from_secs(<span class="number">1</span>)).<span class="kw">await</span>;
+<a href=#188 id=188 data-nosnippet>188</a>            }
+<a href=#189 id=189 data-nosnippet>189</a>
+<a href=#190 id=190 data-nosnippet>190</a>            <span class="kw">let </span>alice_state = conversation.e2ei_state().<span class="kw">await</span>;
+<a href=#191 id=191 data-nosnippet>191</a>            <span class="kw">let </span>bob_state = conversation.e2ei_state_of(<span class="kw-2">&amp;</span>bob).<span class="kw">await</span>;
+<a href=#192 id=192 data-nosnippet>192</a>            <span class="macro">assert_eq!</span>(alice_state, E2eiConversationState::NotVerified);
+<a href=#193 id=193 data-nosnippet>193</a>            <span class="macro">assert_eq!</span>(bob_state, E2eiConversationState::NotVerified);
+<a href=#194 id=194 data-nosnippet>194</a>
+<a href=#195 id=195 data-nosnippet>195</a>            <span class="kw">let </span>state = alice
+<a href=#196 id=196 data-nosnippet>196</a>                .transaction
+<a href=#197 id=197 data-nosnippet>197</a>                .get_credential_in_use(gi, CredentialType::X509)
+<a href=#198 id=198 data-nosnippet>198</a>                .<span class="kw">await
+<a href=#199 id=199 data-nosnippet>199</a>                </span>.unwrap();
+<a href=#200 id=200 data-nosnippet>200</a>            <span class="macro">assert_eq!</span>(state, E2eiConversationState::NotVerified);
+<a href=#201 id=201 data-nosnippet>201</a>        })
+<a href=#202 id=202 data-nosnippet>202</a>        .<span class="kw">await
+<a href=#203 id=203 data-nosnippet>203</a>    </span>}
+<a href=#204 id=204 data-nosnippet>204</a>}
 </code></pre></div></section></main></body></html>

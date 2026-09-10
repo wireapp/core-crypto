@@ -151,7 +151,7 @@
 <a href=#151 id=151 data-nosnippet>151</a>    /// In-memory databases are never encrypted.
 <a href=#152 id=152 data-nosnippet>152</a>    </span><span class="kw">pub fn </span>open_in_memory() -&gt; CryptoKeystoreResult&lt;Arc&lt;<span class="self">Self</span>&gt;&gt; {
 <a href=#153 id=153 data-nosnippet>153</a>        <span class="kw">let </span>connection = Connection::open_in_memory()<span class="question-mark">?</span>;
-<a href=#154 id=154 data-nosnippet>154</a>        <span class="self">Self</span>::init(connection, Box::new(filesystem::Nop), MigrationTarget::Latest).map(Into::into)
+<a href=#154 id=154 data-nosnippet>154</a>        <span class="self">Self</span>::init(connection, Box::new(filesystem::Nop), MigrationTarget::Composite).map(Into::into)
 <a href=#155 id=155 data-nosnippet>155</a>    }
 <a href=#156 id=156 data-nosnippet>156</a>
 <a href=#157 id=157 data-nosnippet>157</a>    <span class="doccomment">/// Open an encrypted `Database` at the provided location.

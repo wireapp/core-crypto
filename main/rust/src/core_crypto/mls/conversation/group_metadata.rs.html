@@ -210,96 +210,97 @@
 <a href=#210 id=210 data-nosnippet>210</a>    /// conversation, so it is gone by the time `decrypt_message` returns. What is observable, and
 <a href=#211 id=211 data-nosnippet>211</a>    /// what this shape used to break, is that the eviction goes through at all.
 <a href=#212 id=212 data-nosnippet>212</a>    </span><span class="attr">#[apply(all_cred_cipher)]
-<a href=#213 id=213 data-nosnippet>213</a>    </span><span class="kw">async fn </span>eviction_succeeds_when_our_leaf_slot_is_recycled(case: TestContext) {
-<a href=#214 id=214 data-nosnippet>214</a>        <span class="kw">const </span>ALL_MEMBERS_COUNT: usize = <span class="number">7</span>;
-<a href=#215 id=215 data-nosnippet>215</a>        <span class="kw">const </span>INITIAL_MEMBERS_COUNT: usize = <span class="number">6</span>;
-<a href=#216 id=216 data-nosnippet>216</a>        <span class="kw">const </span>REMAINING_MEMBERS_COUNT: usize = <span class="number">4</span>;
-<a href=#217 id=217 data-nosnippet>217</a>
-<a href=#218 id=218 data-nosnippet>218</a>        <span class="kw">let </span>all_members = case.sessions::&lt;ALL_MEMBERS_COUNT&gt;().<span class="kw">await</span>;
-<a href=#219 id=219 data-nosnippet>219</a>        <span class="kw">let </span>initial_members = <span class="kw-2">&amp;</span>all_members[..INITIAL_MEMBERS_COUNT];
-<a href=#220 id=220 data-nosnippet>220</a>        <span class="kw">let </span>removed_members = <span class="kw-2">&amp;</span>all_members[REMAINING_MEMBERS_COUNT..INITIAL_MEMBERS_COUNT];
-<a href=#221 id=221 data-nosnippet>221</a>        <span class="kw">let </span>joiner = <span class="kw-2">&amp;</span>all_members[INITIAL_MEMBERS_COUNT];
-<a href=#222 id=222 data-nosnippet>222</a>
-<a href=#223 id=223 data-nosnippet>223</a>        <span class="kw">let </span><span class="kw-2">mut </span>conversation = case.create_conversation(initial_members).<span class="kw">await</span>;
-<a href=#224 id=224 data-nosnippet>224</a>        <span class="kw">let </span>id = conversation.id().clone();
-<a href=#225 id=225 data-nosnippet>225</a>
-<a href=#226 id=226 data-nosnippet>226</a>        <span class="kw">for </span>member <span class="kw">in </span>removed_members {
-<a href=#227 id=227 data-nosnippet>227</a>            conversation = conversation
-<a href=#228 id=228 data-nosnippet>228</a>                .acting_as(<span class="kw-2">&amp;</span>all_members[<span class="number">1</span>])
-<a href=#229 id=229 data-nosnippet>229</a>                .<span class="kw">await
-<a href=#230 id=230 data-nosnippet>230</a>                </span>.remove_proposal_notify(member)
-<a href=#231 id=231 data-nosnippet>231</a>                .<span class="kw">await</span>;
-<a href=#232 id=232 data-nosnippet>232</a>        }
-<a href=#233 id=233 data-nosnippet>233</a>        conversation = conversation.invite_proposal_notify(joiner).<span class="kw">await</span>;
-<a href=#234 id=234 data-nosnippet>234</a>        <span class="kw">let </span><span class="kw-2">mut </span>commit_guard = conversation.commit_pending_proposals().<span class="kw">await</span>;
-<a href=#235 id=235 data-nosnippet>235</a>
-<a href=#236 id=236 data-nosnippet>236</a>        <span class="kw">let </span><span class="kw-2">mut </span>vacated_leaf_indices = Vec::with_capacity(removed_members.len());
-<a href=#237 id=237 data-nosnippet>237</a>        <span class="kw">for </span>member <span class="kw">in </span>removed_members {
-<a href=#238 id=238 data-nosnippet>238</a>            <span class="comment">// while this member is still in the group, note the slot it is about to vacate
-<a href=#239 id=239 data-nosnippet>239</a>            </span>vacated_leaf_indices.push(persisted_group(member, <span class="kw-2">&amp;</span>id).<span class="kw">await</span>.own_leaf_index);
-<a href=#240 id=240 data-nosnippet>240</a>
-<a href=#241 id=241 data-nosnippet>241</a>            <span class="kw">let </span>(guard, result) = commit_guard.notify_member_fallible(member).<span class="kw">await</span>;
-<a href=#242 id=242 data-nosnippet>242</a>            commit_guard = guard;
-<a href=#243 id=243 data-nosnippet>243</a>
-<a href=#244 id=244 data-nosnippet>244</a>            <span class="comment">// deriving a credential from the recycled slot used to make this fail
-<a href=#245 id=245 data-nosnippet>245</a>            </span><span class="kw">let </span>decrypted = result.expect(<span class="string">"a member must be able to process its own eviction"</span>);
-<a href=#246 id=246 data-nosnippet>246</a>            <span class="macro">assert!</span>(
-<a href=#247 id=247 data-nosnippet>247</a>                decrypted.as_commit().is_some_and(|commit| !commit.is_active),
-<a href=#248 id=248 data-nosnippet>248</a>                <span class="string">"the commit must report the conversation as no longer active"
-<a href=#249 id=249 data-nosnippet>249</a>            </span>);
-<a href=#250 id=250 data-nosnippet>250</a>            <span class="macro">assert!</span>(
-<a href=#251 id=251 data-nosnippet>251</a>                member.transaction.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_err(),
-<a href=#252 id=252 data-nosnippet>252</a>                <span class="string">"handling our own eviction must leave the conversation wiped"
-<a href=#253 id=253 data-nosnippet>253</a>            </span>);
-<a href=#254 id=254 data-nosnippet>254</a>        }
-<a href=#255 id=255 data-nosnippet>255</a>
-<a href=#256 id=256 data-nosnippet>256</a>        <span class="comment">// Confirm we really did reproduce the recycled slot, so this test cannot quietly stop
-<a href=#257 id=257 data-nosnippet>257</a>        // exercising the interesting case: the joiner sits where a removed member used to.
-<a href=#258 id=258 data-nosnippet>258</a>        </span><span class="kw">let </span>conversation = commit_guard.notify_members().<span class="kw">await</span>;
-<a href=#259 id=259 data-nosnippet>259</a>        <span class="kw">let </span>recycled_leaf_index = leaf_index_of(<span class="kw-2">&amp;</span>conversation, <span class="kw-2">&amp;</span>all_members[<span class="number">0</span>], joiner).<span class="kw">await</span>;
-<a href=#260 id=260 data-nosnippet>260</a>        <span class="macro">assert!</span>(
-<a href=#261 id=261 data-nosnippet>261</a>            vacated_leaf_indices.contains(<span class="kw-2">&amp;</span>recycled_leaf_index),
-<a href=#262 id=262 data-nosnippet>262</a>            <span class="string">"expected the joiner to take a slot vacated by one of the removed members, \
-<a href=#263 id=263 data-nosnippet>263</a>                 but it took {recycled_leaf_index} and they vacated {vacated_leaf_indices:?}"
-<a href=#264 id=264 data-nosnippet>264</a>        </span>);
-<a href=#265 id=265 data-nosnippet>265</a>    }
-<a href=#266 id=266 data-nosnippet>266</a>
-<a href=#267 id=267 data-nosnippet>267</a>    <span class="doccomment">/// Rotating our credential has to be reflected in the column, which is the reason this
-<a href=#268 id=268 data-nosnippet>268</a>    /// derivation exists at all: nothing carries the new credential to `persist` explicitly.
-<a href=#269 id=269 data-nosnippet>269</a>    </span><span class="attr">#[apply(all_cred_cipher)]
-<a href=#270 id=270 data-nosnippet>270</a>    </span><span class="kw">async fn </span>rotating_the_credential_updates_the_recorded_one(case: TestContext) {
-<a href=#271 id=271 data-nosnippet>271</a>        <span class="comment">// A basic credential is just our client id, so a "new" one for the same client compares
-<a href=#272 id=272 data-nosnippet>272</a>        // equal to the old one and openmls declines to rotate anything. Only x509 can rotate here.
-<a href=#273 id=273 data-nosnippet>273</a>        </span><span class="kw">if </span>!case.is_x509() {
-<a href=#274 id=274 data-nosnippet>274</a>            <span class="kw">return</span>;
-<a href=#275 id=275 data-nosnippet>275</a>        }
-<a href=#276 id=276 data-nosnippet>276</a>
-<a href=#277 id=277 data-nosnippet>277</a>        <span class="kw">let </span>[alice] = case.sessions().<span class="kw">await</span>;
-<a href=#278 id=278 data-nosnippet>278</a>
-<a href=#279 id=279 data-nosnippet>279</a>        <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice]).<span class="kw">await</span>;
-<a href=#280 id=280 data-nosnippet>280</a>        <span class="kw">let </span>id = conversation.id().clone();
-<a href=#281 id=281 data-nosnippet>281</a>        <span class="macro">assert_eq!</span>(
-<a href=#282 id=282 data-nosnippet>282</a>            persisted_credential(<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>id).<span class="kw">await</span>,
-<a href=#283 id=283 data-nosnippet>283</a>            expected_credential(<span class="kw-2">&amp;</span>alice.initial_credential)
-<a href=#284 id=284 data-nosnippet>284</a>        );
-<a href=#285 id=285 data-nosnippet>285</a>
-<a href=#286 id=286 data-nosnippet>286</a>        <span class="kw">let </span>intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();
-<a href=#287 id=287 data-nosnippet>287</a>        <span class="kw">let </span>certificate = CertificateBundle::new_with_default_values(intermediate_ca, <span class="prelude-val">None</span>);
-<a href=#288 id=288 data-nosnippet>288</a>        <span class="kw">let </span>new_credential = Credential::x509(case.cipher_suite(), certificate).unwrap();
-<a href=#289 id=289 data-nosnippet>289</a>        alice
-<a href=#290 id=290 data-nosnippet>290</a>            .transaction
-<a href=#291 id=291 data-nosnippet>291</a>            .add_credential_without_clientid_check(new_credential.clone())
-<a href=#292 id=292 data-nosnippet>292</a>            .<span class="kw">await
-<a href=#293 id=293 data-nosnippet>293</a>            </span>.unwrap();
-<a href=#294 id=294 data-nosnippet>294</a>        <span class="kw">let </span>new_credential = CredentialRef::from_credential(<span class="kw-2">&amp;</span>new_credential);
-<a href=#295 id=295 data-nosnippet>295</a>
-<a href=#296 id=296 data-nosnippet>296</a>        conversation.set_credential_by_ref_notify(<span class="kw-2">&amp;</span>new_credential).<span class="kw">await</span>;
-<a href=#297 id=297 data-nosnippet>297</a>
-<a href=#298 id=298 data-nosnippet>298</a>        <span class="macro">assert_eq!</span>(
-<a href=#299 id=299 data-nosnippet>299</a>            persisted_credential(<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>id).<span class="kw">await</span>,
-<a href=#300 id=300 data-nosnippet>300</a>            expected_credential(<span class="kw-2">&amp;</span>new_credential),
-<a href=#301 id=301 data-nosnippet>301</a>            <span class="string">"the recorded credential must follow a rotation"
-<a href=#302 id=302 data-nosnippet>302</a>        </span>);
-<a href=#303 id=303 data-nosnippet>303</a>    }
-<a href=#304 id=304 data-nosnippet>304</a>}
+<a href=#213 id=213 data-nosnippet>213</a>    </span><span class="kw">async fn </span>eviction_succeeds_when_our_leaf_slot_is_recycled(<span class="kw-2">mut </span>case: TestContext) {
+<a href=#214 id=214 data-nosnippet>214</a>        case.sessions_in_memory = <span class="bool-val">true</span>;
+<a href=#215 id=215 data-nosnippet>215</a>        <span class="kw">const </span>ALL_MEMBERS_COUNT: usize = <span class="number">7</span>;
+<a href=#216 id=216 data-nosnippet>216</a>        <span class="kw">const </span>INITIAL_MEMBERS_COUNT: usize = <span class="number">6</span>;
+<a href=#217 id=217 data-nosnippet>217</a>        <span class="kw">const </span>REMAINING_MEMBERS_COUNT: usize = <span class="number">4</span>;
+<a href=#218 id=218 data-nosnippet>218</a>
+<a href=#219 id=219 data-nosnippet>219</a>        <span class="kw">let </span>all_members = case.sessions::&lt;ALL_MEMBERS_COUNT&gt;().<span class="kw">await</span>;
+<a href=#220 id=220 data-nosnippet>220</a>        <span class="kw">let </span>initial_members = <span class="kw-2">&amp;</span>all_members[..INITIAL_MEMBERS_COUNT];
+<a href=#221 id=221 data-nosnippet>221</a>        <span class="kw">let </span>removed_members = <span class="kw-2">&amp;</span>all_members[REMAINING_MEMBERS_COUNT..INITIAL_MEMBERS_COUNT];
+<a href=#222 id=222 data-nosnippet>222</a>        <span class="kw">let </span>joiner = <span class="kw-2">&amp;</span>all_members[INITIAL_MEMBERS_COUNT];
+<a href=#223 id=223 data-nosnippet>223</a>
+<a href=#224 id=224 data-nosnippet>224</a>        <span class="kw">let </span><span class="kw-2">mut </span>conversation = case.create_conversation(initial_members).<span class="kw">await</span>;
+<a href=#225 id=225 data-nosnippet>225</a>        <span class="kw">let </span>id = conversation.id().clone();
+<a href=#226 id=226 data-nosnippet>226</a>
+<a href=#227 id=227 data-nosnippet>227</a>        <span class="kw">for </span>member <span class="kw">in </span>removed_members {
+<a href=#228 id=228 data-nosnippet>228</a>            conversation = conversation
+<a href=#229 id=229 data-nosnippet>229</a>                .acting_as(<span class="kw-2">&amp;</span>all_members[<span class="number">1</span>])
+<a href=#230 id=230 data-nosnippet>230</a>                .<span class="kw">await
+<a href=#231 id=231 data-nosnippet>231</a>                </span>.remove_proposal_notify(member)
+<a href=#232 id=232 data-nosnippet>232</a>                .<span class="kw">await</span>;
+<a href=#233 id=233 data-nosnippet>233</a>        }
+<a href=#234 id=234 data-nosnippet>234</a>        conversation = conversation.invite_proposal_notify(joiner).<span class="kw">await</span>;
+<a href=#235 id=235 data-nosnippet>235</a>        <span class="kw">let </span><span class="kw-2">mut </span>commit_guard = conversation.commit_pending_proposals().<span class="kw">await</span>;
+<a href=#236 id=236 data-nosnippet>236</a>
+<a href=#237 id=237 data-nosnippet>237</a>        <span class="kw">let </span><span class="kw-2">mut </span>vacated_leaf_indices = Vec::with_capacity(removed_members.len());
+<a href=#238 id=238 data-nosnippet>238</a>        <span class="kw">for </span>member <span class="kw">in </span>removed_members {
+<a href=#239 id=239 data-nosnippet>239</a>            <span class="comment">// while this member is still in the group, note the slot it is about to vacate
+<a href=#240 id=240 data-nosnippet>240</a>            </span>vacated_leaf_indices.push(persisted_group(member, <span class="kw-2">&amp;</span>id).<span class="kw">await</span>.own_leaf_index);
+<a href=#241 id=241 data-nosnippet>241</a>
+<a href=#242 id=242 data-nosnippet>242</a>            <span class="kw">let </span>(guard, result) = commit_guard.notify_member_fallible(member).<span class="kw">await</span>;
+<a href=#243 id=243 data-nosnippet>243</a>            commit_guard = guard;
+<a href=#244 id=244 data-nosnippet>244</a>
+<a href=#245 id=245 data-nosnippet>245</a>            <span class="comment">// deriving a credential from the recycled slot used to make this fail
+<a href=#246 id=246 data-nosnippet>246</a>            </span><span class="kw">let </span>decrypted = result.expect(<span class="string">"a member must be able to process its own eviction"</span>);
+<a href=#247 id=247 data-nosnippet>247</a>            <span class="macro">assert!</span>(
+<a href=#248 id=248 data-nosnippet>248</a>                decrypted.as_commit().is_some_and(|commit| !commit.is_active),
+<a href=#249 id=249 data-nosnippet>249</a>                <span class="string">"the commit must report the conversation as no longer active"
+<a href=#250 id=250 data-nosnippet>250</a>            </span>);
+<a href=#251 id=251 data-nosnippet>251</a>            <span class="macro">assert!</span>(
+<a href=#252 id=252 data-nosnippet>252</a>                member.transaction.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_err(),
+<a href=#253 id=253 data-nosnippet>253</a>                <span class="string">"handling our own eviction must leave the conversation wiped"
+<a href=#254 id=254 data-nosnippet>254</a>            </span>);
+<a href=#255 id=255 data-nosnippet>255</a>        }
+<a href=#256 id=256 data-nosnippet>256</a>
+<a href=#257 id=257 data-nosnippet>257</a>        <span class="comment">// Confirm we really did reproduce the recycled slot, so this test cannot quietly stop
+<a href=#258 id=258 data-nosnippet>258</a>        // exercising the interesting case: the joiner sits where a removed member used to.
+<a href=#259 id=259 data-nosnippet>259</a>        </span><span class="kw">let </span>conversation = commit_guard.notify_members().<span class="kw">await</span>;
+<a href=#260 id=260 data-nosnippet>260</a>        <span class="kw">let </span>recycled_leaf_index = leaf_index_of(<span class="kw-2">&amp;</span>conversation, <span class="kw-2">&amp;</span>all_members[<span class="number">0</span>], joiner).<span class="kw">await</span>;
+<a href=#261 id=261 data-nosnippet>261</a>        <span class="macro">assert!</span>(
+<a href=#262 id=262 data-nosnippet>262</a>            vacated_leaf_indices.contains(<span class="kw-2">&amp;</span>recycled_leaf_index),
+<a href=#263 id=263 data-nosnippet>263</a>            <span class="string">"expected the joiner to take a slot vacated by one of the removed members, \
+<a href=#264 id=264 data-nosnippet>264</a>                 but it took {recycled_leaf_index} and they vacated {vacated_leaf_indices:?}"
+<a href=#265 id=265 data-nosnippet>265</a>        </span>);
+<a href=#266 id=266 data-nosnippet>266</a>    }
+<a href=#267 id=267 data-nosnippet>267</a>
+<a href=#268 id=268 data-nosnippet>268</a>    <span class="doccomment">/// Rotating our credential has to be reflected in the column, which is the reason this
+<a href=#269 id=269 data-nosnippet>269</a>    /// derivation exists at all: nothing carries the new credential to `persist` explicitly.
+<a href=#270 id=270 data-nosnippet>270</a>    </span><span class="attr">#[apply(all_cred_cipher)]
+<a href=#271 id=271 data-nosnippet>271</a>    </span><span class="kw">async fn </span>rotating_the_credential_updates_the_recorded_one(case: TestContext) {
+<a href=#272 id=272 data-nosnippet>272</a>        <span class="comment">// A basic credential is just our client id, so a "new" one for the same client compares
+<a href=#273 id=273 data-nosnippet>273</a>        // equal to the old one and openmls declines to rotate anything. Only x509 can rotate here.
+<a href=#274 id=274 data-nosnippet>274</a>        </span><span class="kw">if </span>!case.is_x509() {
+<a href=#275 id=275 data-nosnippet>275</a>            <span class="kw">return</span>;
+<a href=#276 id=276 data-nosnippet>276</a>        }
+<a href=#277 id=277 data-nosnippet>277</a>
+<a href=#278 id=278 data-nosnippet>278</a>        <span class="kw">let </span>[alice] = case.sessions().<span class="kw">await</span>;
+<a href=#279 id=279 data-nosnippet>279</a>
+<a href=#280 id=280 data-nosnippet>280</a>        <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice]).<span class="kw">await</span>;
+<a href=#281 id=281 data-nosnippet>281</a>        <span class="kw">let </span>id = conversation.id().clone();
+<a href=#282 id=282 data-nosnippet>282</a>        <span class="macro">assert_eq!</span>(
+<a href=#283 id=283 data-nosnippet>283</a>            persisted_credential(<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>id).<span class="kw">await</span>,
+<a href=#284 id=284 data-nosnippet>284</a>            expected_credential(<span class="kw-2">&amp;</span>alice.initial_credential)
+<a href=#285 id=285 data-nosnippet>285</a>        );
+<a href=#286 id=286 data-nosnippet>286</a>
+<a href=#287 id=287 data-nosnippet>287</a>        <span class="kw">let </span>intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();
+<a href=#288 id=288 data-nosnippet>288</a>        <span class="kw">let </span>certificate = CertificateBundle::new_with_default_values(intermediate_ca, <span class="prelude-val">None</span>);
+<a href=#289 id=289 data-nosnippet>289</a>        <span class="kw">let </span>new_credential = Credential::x509(case.cipher_suite(), certificate).unwrap();
+<a href=#290 id=290 data-nosnippet>290</a>        alice
+<a href=#291 id=291 data-nosnippet>291</a>            .transaction
+<a href=#292 id=292 data-nosnippet>292</a>            .add_credential_without_clientid_check(new_credential.clone())
+<a href=#293 id=293 data-nosnippet>293</a>            .<span class="kw">await
+<a href=#294 id=294 data-nosnippet>294</a>            </span>.unwrap();
+<a href=#295 id=295 data-nosnippet>295</a>        <span class="kw">let </span>new_credential = CredentialRef::from_credential(<span class="kw-2">&amp;</span>new_credential);
+<a href=#296 id=296 data-nosnippet>296</a>
+<a href=#297 id=297 data-nosnippet>297</a>        conversation.set_credential_by_ref_notify(<span class="kw-2">&amp;</span>new_credential).<span class="kw">await</span>;
+<a href=#298 id=298 data-nosnippet>298</a>
+<a href=#299 id=299 data-nosnippet>299</a>        <span class="macro">assert_eq!</span>(
+<a href=#300 id=300 data-nosnippet>300</a>            persisted_credential(<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>id).<span class="kw">await</span>,
+<a href=#301 id=301 data-nosnippet>301</a>            expected_credential(<span class="kw-2">&amp;</span>new_credential),
+<a href=#302 id=302 data-nosnippet>302</a>            <span class="string">"the recorded credential must follow a rotation"
+<a href=#303 id=303 data-nosnippet>303</a>        </span>);
+<a href=#304 id=304 data-nosnippet>304</a>    }
+<a href=#305 id=305 data-nosnippet>305</a>}
 </code></pre></div></section></main></body></html>
