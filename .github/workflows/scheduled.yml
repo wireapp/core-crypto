@@ -20,7 +20,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-and-cache-rust
-      - uses: taiki-e/install-action@nextest
+      - name: install nextest
+        uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
+        with:
+          tool: nextest
       - run: cargo nextest run --locked --all-features --no-fail-fast --retries 5
         # certain tests are flaky when run in parallel like this, but
         # experiments suggest 5 is enough retries that they'll generally pass eventually

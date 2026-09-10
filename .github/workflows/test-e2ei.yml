@@ -31,5 +31,8 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           rustflags: ''
-      - uses: taiki-e/install-action@nextest
+      - name: install nextest
+        uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
+        with:
+          tool: nextest
       - run: TEST_IDP=${{ matrix.idp }} sh scripts/run-e2ei-tests.sh

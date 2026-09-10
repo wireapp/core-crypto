@@ -51,7 +51,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-and-cache-rust
-      - uses: taiki-e/install-action@nextest
+      - name: install nextest
+        uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
+        with:
+          tool: nextest
       - name: "test corecrypto"
         run: cargo nextest run --verbose --locked
       - name: "test corecrypto documentation"
@@ -68,7 +71,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-and-cache-rust
-      - uses: taiki-e/install-action@nextest
+      - name: install nextest
+        uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
+        with:
+          tool: nextest
       - name: "test corecrypto's proteus implementation"
         run: cargo nextest run --locked --verbose --features proteus,proteus-keystore proteus
 
@@ -81,7 +87,10 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: wasm32-unknown-unknown
-      - uses: taiki-e/install-action@wasm-pack
+      - name: install wasm-pack
+        uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
+        with:
+          tool: wasm-pack
         # With Rust 1.97's v0 mangling, wasm-bindgen's demangler can map distinct symbols to
         # the same generated export name. Stable Rust cannot opt back into legacy mangling.
         # See https://blog.rust-lang.org/2026/07/09/Rust-1.97.0/#symbol-mangling-v0-enabled-by-default
@@ -96,7 +105,10 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: wasm32-unknown-unknown
-      - uses: taiki-e/install-action@wasm-pack
+      - name: install wasm-pack
+        uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
+        with:
+          tool: wasm-pack
       # With Rust 1.97's v0 mangling, wasm-bindgen's demangler can map distinct symbols to
       # the same generated export name. Stable Rust cannot opt back into legacy mangling.
       # See https://blog.rust-lang.org/2026/07/09/Rust-1.97.0/#symbol-mangling-v0-enabled-by-default
@@ -112,6 +124,9 @@ jobs:
         # an empty set of rustflags.
         with:
           rustflags: ''
-      - uses: taiki-e/install-action@cargo-hack
+      - name: install cargo-hack
+        uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
+        with:
+          tool: cargo-hack
       - name: cargo/hack (verify features compile in isolation)
         run: cargo hack check --each-feature --no-dev-deps
