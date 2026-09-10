@@ -213,7 +213,9 @@ jobs:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
 
   bindings-swift:
-    needs: artifact-generation
+    needs:
+      - artifact-generation
+      - ffi-library-macos
     if: github.repository == 'wireapp/core-crypto'
     runs-on: self-hosted
     steps:

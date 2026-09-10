@@ -1,5 +1,5 @@
 name: Fetch or make swift bindings
-description: Fetch or build the Swift ffi library, the generated bindings, and the hand-written wrapper around them
+description: Fetch or build the ffi library, the generated bindings, and the hand-written wrapper around them
 inputs:
   gh-token:
     required: true
@@ -16,14 +16,10 @@ runs:
           gh-token: ${{ inputs.gh-token }}
           artifact-generation: ${{ inputs.artifact-generation }}
 
-      - name: fetch or make Swift FFI library
-        uses: ./.github/actions/make
+      - name: fetch or make FFI library
+        uses: ./.github/actions/make/ffi-library
         with:
-          key: swift-ffi-library
-          make-rule: swift-ffi-library
-          target-path: target/swift-bindgen/release/libcore_crypto_ffi.dylib
           gh-token: ${{ inputs.gh-token }}
-          uses-rust: true
           artifact-generation: ${{ inputs.artifact-generation }}
 
       - uses: ./.github/actions/make

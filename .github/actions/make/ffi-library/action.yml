@@ -1,7 +1,5 @@
 name: Fetch or make the ffi library
-description: >
-  Fetch or build the host ffi shared library. Do not use this for Swift;
-  use make/bindings-swift instead.
+description: Fetch or build the host ffi shared library.
 
 inputs:
   gh-token:
