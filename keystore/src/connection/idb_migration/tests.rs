@@ -804,3 +804,126 @@ async fn imports_a_database_captured_from_v10_1_0() {
         .await
         .expect("wiping the new database");
 }
+
+/// The key under which [`plant_corrupt_pending_message`] stores its row.
+const CORRUPT_ROW_KEY: &[u8] = b"a row the import cannot read";
+
+/// Put a pending message whose ciphertext does not authenticate into an existing legacy database.
+///
+/// This is the failure a real database can present: the row is well formed, so it is only when the import
+/// tries to decrypt it that anything goes wrong. It is written with the raw IndexedDB API rather than through
+/// a legacy entity, since the legacy write path cannot produce a row it would not itself accept.
+async fn plant_corrupt_pending_message(name: &str) {
+    let idb = Factory::new()
+        .unwrap()
+        .open(name, None)
+        .unwrap()
+        .await
+        .expect("the legacy database exists");
+    let transaction = idb
+        .transaction(&["mls_pending_messages"], TransactionMode::ReadWrite)
+        .unwrap();
+    let store = transaction.object_store("mls_pending_messages").unwrap();
+
+    let row = Object::new();
+    Reflect::set(
+        &row,
+        &JsValue::from_str("foreign_id"),
+        &Uint8Array::from(seed::PENDING_GROUP_ID).into(),
+    )
+    .unwrap();
+    // long enough to carry a nonce, so that this fails on authentication rather than on length
+    Reflect::set(
+        &row,
+        &JsValue::from_str("message"),
+        &Uint8Array::from([0xff; 48].as_slice()).into(),
+    )
+    .unwrap();
+
+    store
+        .put(&row.into(), Some(&Uint8Array::from(CORRUPT_ROW_KEY).into()))
+        .unwrap()
+        .await
+        .expect("planting the corrupt row");
+    transaction.commit().unwrap().await.unwrap();
+    idb.close();
+}
+
+/// Remove the row planted by [`plant_corrupt_pending_message`], as a user or a support tool might.
+async fn remove_corrupt_pending_message(name: &str) {
+    let idb = Factory::new()
+        .unwrap()
+        .open(name, None)
+        .unwrap()
+        .await
+        .expect("the legacy database exists");
+    let transaction = idb
+        .transaction(&["mls_pending_messages"], TransactionMode::ReadWrite)
+        .unwrap();
+    transaction
+        .object_store("mls_pending_messages")
+        .unwrap()
+        .delete(JsValue::from(Uint8Array::from(CORRUPT_ROW_KEY)))
+        .unwrap()
+        .await
+        .expect("removing the corrupt row");
+    transaction.commit().unwrap().await.unwrap();
+    idb.close();
+}
+
+/// A failed import leaves the legacy database in place and is attempted again on the next open.
+///
+/// Opening over a legacy database creates the new database and then imports into it. If the import fails
+/// partway, what must not happen is for the next open to find the new database, conclude that the import
+/// already ran, and hand back an empty keystore while the legacy data sits unread. The import has to be
+/// retried until it succeeds, and once the cause of the failure is gone it has to succeed.
+#[wasm_bindgen_test]
+async fn a_failed_import_is_retried_on_the_next_open() {
+    let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
+    let key = DatabaseKey::generate();
+    let factory = Factory::new().expect("factory");
+    factory.delete(&name).expect("delete request").await.expect("wiping db");
+
+    seed_legacy_database(&name, &key).await;
+    plant_corrupt_pending_message(&name).await;
+
+    let first = Database::open(&name, &key).await;
+    assert!(
+        first.is_err(),
+        "an import which cannot read a row must fail rather than skip it"
+    );
+    drop(first);
+    assert!(
+        legacy_idb_exists(&name).await,
+        "the legacy database must survive a failed import"
+    );
+
+    // nothing has changed, so the import must fail again rather than be skipped
+    let second = Database::open(&name, &key).await;
+    assert!(
+        second.is_err(),
+        "a retry must attempt the import again, not open the half-created database as if the import had run"
+    );
+    drop(second);
+    assert!(
+        legacy_idb_exists(&name).await,
+        "the legacy database must survive a second failed import"
+    );
+
+    // with the cause gone, the retry imports everything
+    remove_corrupt_pending_message(&name).await;
+    let db = Database::open(&name, &key)
+        .await
+        .expect("once the import can read every row, opening succeeds");
+    assert_imported_and_migrated(&db, seed::CREDENTIAL_CREATED_AT).await;
+    assert!(
+        !legacy_idb_exists(&name).await,
+        "the legacy database must be deleted once its data has been imported"
+    );
+
+    Arc::into_inner(db)
+        .expect("no other reference to the database")
+        .wipe()
+        .await
+        .expect("wiping the new database");
+}
