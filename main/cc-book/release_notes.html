@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-3763520d.js";
+            window.path_to_searchindex_js = "searchindex-64f9c5ad.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1c113b1d.js"></script>
@@ -180,6 +180,10 @@
 <ul>
 <li>
 <p>Kotlin: transactions are now cancellable. This applies to all Kotlin bindings: jvm, android and kmp.</p>
+</li>
+<li>
+<p>Kotlin(iOS): The macos/ios targets now have a file lock guarding against concurrent access from separate CoreCrypto
+instances.</p>
 </li>
 <li>
 <p>CoreCrypto now supports encrypting and decrypting transient messages. Transient messages are encrypted and decrypted

@@ -6,7 +6,7 @@
 <a href=#6 id=6 data-nosnippet>6</a>
 <a href=#7 id=7 data-nosnippet>7</a><span class="doccomment">/// Represents the identity claims identifying a client
 <a href=#8 id=8 data-nosnippet>8</a>/// Those claims are verifiable by any member in the group
-<a href=#9 id=9 data-nosnippet>9</a></span><span class="attr">#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+<a href=#9 id=9 data-nosnippet>9</a></span><span class="attr">#[derive(Debug, Clone, PartialEq, Eq)]
 <a href=#10 id=10 data-nosnippet>10</a></span><span class="kw">pub struct </span>WireIdentity {
 <a href=#11 id=11 data-nosnippet>11</a>    <span class="doccomment">/// Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
 <a href=#12 id=12 data-nosnippet>12</a>    </span><span class="kw">pub </span>client_id: <span class="prelude-ty">Option</span>&lt;ClientId&gt;,
@@ -24,7 +24,7 @@
 <a href=#24 id=24 data-nosnippet>24</a>///
 <a href=#25 id=25 data-nosnippet>25</a>/// We don't use an enum here since the sole purpose of this is to be exposed through the FFI (and
 <a href=#26 id=26 data-nosnippet>26</a>/// union types are impossible to carry over the FFI boundary)
-<a href=#27 id=27 data-nosnippet>27</a></span><span class="attr">#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+<a href=#27 id=27 data-nosnippet>27</a></span><span class="attr">#[derive(Debug, Clone, Eq, PartialEq)]
 <a href=#28 id=28 data-nosnippet>28</a></span><span class="kw">pub struct </span>X509Identity {
 <a href=#29 id=29 data-nosnippet>29</a>    <span class="doccomment">/// user handle e.g. `john_wire`
 <a href=#30 id=30 data-nosnippet>30</a>    </span><span class="kw">pub </span>handle: String,
