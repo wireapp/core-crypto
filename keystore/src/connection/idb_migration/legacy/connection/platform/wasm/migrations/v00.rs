@@ -8,13 +8,13 @@ use crate::{
     connection::idb_migration::legacy::{
         entities::mls::{
             e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
-            pending_group::PersistedMlsPendingGroup, stored_keypackage::StoredKeypackage,
+            pending_group::PersistedMlsPendingGroup, pending_message::LegacyMlsPendingMessage,
+            stored_keypackage::StoredKeypackage,
         },
         traits::EntityBase as _,
     },
     entities::{
-        MlsPendingMessage, ProteusIdentity, ProteusPrekey, ProteusSession, StoredEncryptionKeyPair,
-        StoredHpkePrivateKey, StoredPskBundle,
+        ProteusIdentity, ProteusPrekey, ProteusSession, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle,
     },
     migrations::{LegacyPersistedMlsGroup, StoredSignatureKeypair, V5Credential, V33StoredEpochEncryptionKeypair},
 };
@@ -75,7 +75,7 @@ pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
                 .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
         )
         .add_object_store(
-            ObjectStoreBuilder::new(MlsPendingMessage::TABLE_NAME)
+            ObjectStoreBuilder::new(LegacyMlsPendingMessage::TABLE_NAME)
                 .auto_increment(false)
                 .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id"))),
         )

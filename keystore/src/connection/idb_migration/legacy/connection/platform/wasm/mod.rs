@@ -10,11 +10,12 @@ use crate::{
         },
         entities::mls::{
             e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
-            pending_group::PersistedMlsPendingGroup, stored_keypackage::StoredKeypackage,
+            pending_group::PersistedMlsPendingGroup, pending_message::LegacyMlsPendingMessage,
+            stored_keypackage::StoredKeypackage,
         },
     },
     entities::{
-        MlsPendingMessage, ProteusIdentity, ProteusPrekey, ProteusSession, StoredCredential, StoredEncryptionKeyPair,
+        ProteusIdentity, ProteusPrekey, ProteusSession, StoredCredential, StoredEncryptionKeyPair,
         StoredHpkePrivateKey, StoredPskBundle,
     },
     migrations::{LegacyPersistedMlsGroup, StoredCredentialV36, V33StoredEpochEncryptionKeypair},
@@ -119,7 +120,7 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
                         StoredKeypackage,
                         LegacyPersistedMlsGroup,
                         PersistedMlsPendingGroup,
-                        MlsPendingMessage,
+                        LegacyMlsPendingMessage,
                         E2eiAcmeCA,
                         E2eiIntermediateCert,
                         E2eiCrl,
