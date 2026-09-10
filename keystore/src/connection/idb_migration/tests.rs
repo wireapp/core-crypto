@@ -6,10 +6,12 @@
 
 use std::sync::Arc;
 
-use idb::Factory;
+use idb::{Factory, TransactionMode};
+use js_sys::{Array, Object, Reflect, Uint8Array};
 use openmls::prelude::{Credential as MlsCredential, TlsSerializeTrait as _};
 use rand::distr::{Alphanumeric, SampleString as _};
 use rusqlite::Connection;
+use wasm_bindgen::JsValue;
 use wasm_bindgen_test::wasm_bindgen_test;
 use x509_cert::der::{DecodePem as _, Encode as _};
 
@@ -508,7 +510,7 @@ fn assert_imported_at_v22(conn: &Connection) {
 ///
 /// The V22 checkpoint proves the import wrote what it should; this proves what it wrote is what the rest of
 /// the crate expects to find, after every migration between V22 and the present has had its say.
-async fn assert_imported_and_migrated(db: &Database) {
+async fn assert_imported_and_migrated(db: &Database, credential_created_at: u64) {
     let consumer_data = db
         .get_unique::<ConsumerData>()
         .await
@@ -551,7 +553,7 @@ async fn assert_imported_and_migrated(db: &Database) {
         .expect("the credential survives the import and is reachable by its post-V37 key");
     assert_eq!(credential.session_id, seed::CREDENTIAL_SESSION_ID);
     assert_eq!(credential.credential, basic_credential());
-    assert_eq!(credential.created_at, seed::CREDENTIAL_CREATED_AT);
+    assert_eq!(credential.created_at, credential_created_at);
     assert_eq!(credential.ciphersuite, seed::CREDENTIAL_CIPHERSUITE);
     assert_eq!(credential.public_key, seed::CREDENTIAL_PUBLIC_KEY);
     assert_eq!(credential.private_key, seed::CREDENTIAL_PRIVATE_KEY);
@@ -648,7 +650,7 @@ async fn imports_every_legacy_entity() {
 
     // and this is the rest of `Database::open`
     let db = Database::init(conn, Box::new(fs), MigrationTarget::Latest).expect("migrating the imported data");
-    assert_imported_and_migrated(&db).await;
+    assert_imported_and_migrated(&db, seed::CREDENTIAL_CREATED_AT).await;
 
     assert!(
         !legacy_idb_exists(&name).await,
@@ -680,7 +682,119 @@ async fn a_second_open_after_import_is_a_no_op() {
     let db = Database::open(&name, &key)
         .await
         .expect("the second open finds an already-migrated database");
-    assert_imported_and_migrated(&db).await;
+    assert_imported_and_migrated(&db, seed::CREDENTIAL_CREATED_AT).await;
+
+    Arc::into_inner(db)
+        .expect("no other reference to the database")
+        .wipe()
+        .await
+        .expect("wiping the new database");
+}
+
+/// The IndexedDB contents of a keystore written by v10.1.0, the last release whose wasm keystore wrote IndexedDB.
+///
+/// Captured once, by saving the same rows as [`seed`] through that release's public API and dumping every
+/// object store with its keys. Bytes are tagged as `{"$u8": "<hex>"}`, since JSON cannot otherwise tell a
+/// `Uint8Array` from an array of numbers, and IndexedDB keys of the two kinds do not compare equal.
+///
+/// This is the only thing which pins what old clients actually wrote: the legacy entities in this crate both
+/// write and read, so they always agree with themselves, and [`imports_every_legacy_entity`] cannot notice
+/// when their serialized shape drifts away from the data in the field.
+const LEGACY_FIXTURE: &str = include_str!("fixtures/legacy-idb-v10.1.0.json");
+
+/// Rebuild a JavaScript value from its tagged JSON encoding.
+fn fixture_value_to_js(value: &serde_json::Value) -> JsValue {
+    match value {
+        serde_json::Value::Null => JsValue::NULL,
+        serde_json::Value::Bool(b) => JsValue::from_bool(*b),
+        serde_json::Value::Number(n) => JsValue::from_f64(n.as_f64().expect("fixture numbers are finite")),
+        serde_json::Value::String(s) => JsValue::from_str(s),
+        serde_json::Value::Array(items) => items.iter().map(fixture_value_to_js).collect::<Array>().into(),
+        serde_json::Value::Object(fields) => {
+            if let Some(serde_json::Value::String(hex)) = fields.get("$u8")
+                && fields.len() == 1
+            {
+                let bytes = hex::decode(hex).expect("fixture bytes are hex");
+                return Uint8Array::from(bytes.as_slice()).into();
+            }
+            let object = Object::new();
+            for (name, field) in fields {
+                Reflect::set(&object, &JsValue::from_str(name), &fixture_value_to_js(field))
+                    .expect("setting a property on a fresh object");
+            }
+            object.into()
+        }
+    }
+}
+
+/// Recreate the captured legacy database under `name`, returning its encryption key and the credential's
+/// `created_at`, which the capturing release stamped at save time.
+async fn restore_legacy_fixture(name: &str) -> (DatabaseKey, u64) {
+    let fixture: serde_json::Value = serde_json::from_str(LEGACY_FIXTURE).expect("the fixture is valid JSON");
+    let key = DatabaseKey::try_from(
+        hex::decode(fixture["database_key"].as_str().expect("fixture records its key")).expect("key is hex"),
+    )
+    .expect("key has the right length");
+    let version = fixture["version"].as_u64().expect("fixture records its version") as u32;
+    let stores = fixture["stores"].as_object().expect("fixture records its stores");
+
+    let created_at = stores["mls_credentials"][0]["value"]["created_at"]
+        .as_u64()
+        .expect("the captured credential carries its creation time in the clear");
+
+    // the current legacy builders create the object stores; only the rows come from the capture
+    let idb = open_at(name, &key, version).await;
+    for (store_name, rows) in stores {
+        let rows = rows.as_array().expect("a store is a list of rows");
+        if rows.is_empty() {
+            continue;
+        }
+        let transaction = idb
+            .transaction(&[store_name.as_str()], TransactionMode::ReadWrite)
+            .unwrap_or_else(|err| panic!("the current legacy schema has no object store {store_name}: {err}"));
+        let store = transaction.object_store(store_name).unwrap();
+        for row in rows {
+            let key = fixture_value_to_js(&row["key"]);
+            let value = fixture_value_to_js(&row["value"]);
+            store
+                .put(&value, Some(&key))
+                .unwrap()
+                .await
+                .unwrap_or_else(|err| panic!("restoring a row into {store_name}: {err}"));
+        }
+        transaction.commit().unwrap().await.unwrap();
+    }
+    idb.close();
+
+    (key, created_at)
+}
+
+/// A database captured from the last IndexedDB-writing release is imported in full.
+///
+/// [`imports_every_legacy_entity`] proves the import handles what the legacy entities write today. This proves
+/// it handles what old clients wrote, which is the thing that actually matters and which nothing in the code
+/// can vouch for.
+#[wasm_bindgen_test]
+async fn imports_a_database_captured_from_v10_1_0() {
+    let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
+    let factory = Factory::new().expect("factory");
+    factory.delete(&name).expect("delete request").await.expect("wiping db");
+
+    let (key, credential_created_at) = restore_legacy_fixture(&name).await;
+    assert!(
+        legacy_idb_exists(&name).await,
+        "the restored legacy database must exist for this test to mean anything"
+    );
+
+    let db = Database::open(&name, &key)
+        .await
+        .expect("opening the new database over the captured legacy database imports it");
+    assert_imported_and_migrated(&db, credential_created_at).await;
+
+    assert!(
+        !legacy_idb_exists(&name).await,
+        "the legacy database must be deleted once its data has been imported"
+    );
 
     Arc::into_inner(db)
         .expect("no other reference to the database")
