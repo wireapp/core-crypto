@@ -46,7 +46,7 @@
         "oxfmt": "^0.66.0",
         "oxlint": "^1.81.0",
         "oxlint-tsgolint": "^7.0.2001",
-        "puppeteer": "^25.9.0",
+        "puppeteer": "^25.10.0",
         "tinybench": "^6.1.4",
         "ts-loader": "^9.6.2",
         "typedoc": "0.28.20",
