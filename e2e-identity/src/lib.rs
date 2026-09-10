@@ -129,6 +129,7 @@ mod error;
 mod types;
 
 pub mod acme;
+#[cfg(feature = "builder")]
 pub mod pki;
 pub mod pki_env;
 pub mod utils;
