@@ -31,8 +31,8 @@ async fn get_vfs_util() -> CryptoKeystoreResult<RelaxedIdbUtil> {
 /// Encryption: if the database exists, it is assumed to be already encrypted, and decrypted with the provided key.
 /// If it does not yet exist, the provided key is set.
 ///
-/// Migration: might partially migrate the database, if it detects that a legacy IDB database exists.
-/// A final migration to latest version will be necessary!
+/// Migration: might partially migrate the database, if it detects that a legacy IDB database exists whose
+/// data has not yet been imported. A final migration to latest version will be necessary!
 pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<(Connection, FsAbstraction)> {
     let vfs_util = FsAbstraction(get_vfs_util().await?);
     let already_exists = vfs_util.exists(name);
@@ -50,8 +50,11 @@ pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<
         super::encryption::decrypt(&mut conn, key)?;
     } else {
         super::encryption::rekey(&mut conn, key)?;
-        super::idb_migration::maybe_migrate(name, key, &mut conn).await?;
     }
+
+    // Not gated on `already_exists`: the file also exists after an import which failed or was interrupted,
+    // and the import must run again in that case. `maybe_migrate` decides from the database's own state.
+    super::idb_migration::maybe_migrate(name, key, &mut conn).await?;
 
     Ok((conn, vfs_util))
 }

@@ -8,7 +8,7 @@ mod legacy;
 mod tests;
 
 use idb::Factory;
-use rusqlite::{Connection, OptionalExtension as _};
+use rusqlite::Connection;
 
 use self::legacy::connection::{DatabaseConnection as _, KeystoreDatabaseConnection};
 #[cfg(feature = "proteus-keystore")]
@@ -109,19 +109,29 @@ pub(super) async fn migrate_legacy_idb_key_type_to_bytes(
     self::legacy::connection::platform::wasm::migrations::migrate_db_key_type_to_bytes(name, old_key, new_key).await
 }
 
-/// If a legacy IDB database exists at `name`, migrate all its data into the new connection
-/// stored in the VFS identified by `vfs_name`, then delete the legacy IDB.
+/// If a legacy IDB database exists at `name` and its data has not yet been imported, copy all of it into
+/// `new_conn`, then delete the legacy IDB.
 ///
-/// Precondition: `new_conn` has not yet had migrations applied, but has been decrypted.
+/// Precondition: `new_conn` has been decrypted. It may be empty, or it may be left over from an earlier attempt
+/// at this import which failed or was interrupted at any point.
 ///
-/// Postconditions:
-/// - all data from the legacy IDB database is moved to `new_conn`
-/// - the legacy IDB database is deleted
+/// Postconditions, when the import runs:
+/// - `new_conn` is at the schema version matching the final IDB version, and holds exactly the legacy data
+/// - the legacy IDB database is deleted, on a best-effort basis
 /// - `new_conn` is _not_ fully migrated and requires a further migration to the latest version
 ///
+/// Whether the import has already happened is judged by `new_conn`'s schema version. Creating the file and
+/// importing into it are separate steps, and the file survives a failure between them; judging by the file
+/// would take such a failure for a completed import and open an empty keystore over the user's unread data.
+/// Judged by the schema version instead, a database at or below the import's version is one the import has not
+/// finished, so the import runs again. To make that safe the copy is a single transaction which first clears
+/// everything it is about to write, so partial state from an earlier attempt is replaced rather than duplicated.
+/// The legacy database is only deleted after that transaction commits, so it remains the source of truth until
+/// the copy is complete.
+///
 /// This is a no-op when:
-/// - the unified rusqlite database already exists (already migrated or native platform), or
-/// - no legacy IDB database exists at `name` (fresh install).
+/// - `new_conn` is past the import's schema version, which means the import finished on an earlier open, or
+/// - no legacy IDB database exists at `name`, as on a fresh install.
 pub(super) async fn maybe_migrate(
     name: &str,
     database_key: &DatabaseKey,
@@ -131,14 +141,17 @@ pub(super) async fn maybe_migrate(
     /// so is what we need to perform the migration from IDB.
     const SQL_DATABASE_VERSION_AS_OF_FINAL_IDB_VERSION: u16 = 22;
 
-    if !legacy_idb_exists(name).await {
+    // Checked first because it is cheap: an already-imported database never touches IndexedDB again.
+    let version = new_conn.pragma_query_value(None, "user_version", |row| row.get::<_, i32>(0))?;
+    // Strictly greater, not equal: the schema reaches the import's version before the rows are copied, so a
+    // database at exactly that version may hold nothing yet. Only the migrations which follow a successful
+    // import move it past, so being past it is the earliest state which implies the copy committed.
+    if version > i32::from(SQL_DATABASE_VERSION_AS_OF_FINAL_IDB_VERSION) {
+        // the import finished on an earlier open and the database has moved on since
         return Ok(());
     }
-    let version = new_conn
-        .query_row("PRAGMA user_version;", [], |row| row.get::<_, i32>(0))
-        .optional()?;
-    if version.is_some_and(|version| version != 0) {
-        // a migration has been applied, so the rusqlite database exists, so we're done
+
+    if !legacy_idb_exists(name).await {
         return Ok(());
     }
 
@@ -150,6 +163,9 @@ pub(super) async fn maybe_migrate(
         new_conn,
         MigrationTarget::Version(SQL_DATABASE_VERSION_AS_OF_FINAL_IDB_VERSION),
     )?;
+
+    // the type of `PersistedMlsPendingGroup` changed, so it is copied by hand below rather than via the macro
+    let pending_groups = <IdbPersistedMlsPendingGroup as legacy::traits::Entity>::load_all(&mut legacy_conn).await?;
 
     macro_rules! migrate_entities {
         ($( $(#[$attribute:meta])* $entity:ty ),* $(,)?) => {
@@ -163,8 +179,39 @@ pub(super) async fn maybe_migrate(
                 )*
                 drop(legacy_conn);
 
-                // write all entities into the rusqlite database
+                // Everything below is one transaction, so that an interrupted import leaves either all of the
+                // legacy data in place or none of it, and a retry finds a state it knows how to handle.
                 let tx = new_conn.transaction()?;
+
+                // Clear whatever an earlier, unfinished attempt may have copied. At this schema version the legacy
+                // table names are the SQL table names. Messages go before the pending groups they may reference.
+                tx.execute("DELETE FROM mls_pending_messages", [])?;
+                tx.execute("DELETE FROM mls_pending_groups", [])?;
+                $(
+                    $(#[$attribute])*
+                    tx.execute(
+                        &format!(
+                            "DELETE FROM {}",
+                            <$entity as $crate::connection::idb_migration::legacy::traits::EntityBase>::TABLE_NAME
+                        ),
+                        [],
+                    )?;
+                )*
+
+                // we don't care about `parent_id`/`custom_configuration`; both are nullable and already dropped
+                // at the end of the current migration chain.
+                for IdbPersistedMlsPendingGroup {
+                    ref mut id,
+                    ref mut state,
+                    ..
+                } in pending_groups
+                {
+                    let id = std::mem::replace(id, Vec::new().into()).into();
+                    let state = std::mem::take(state);
+                    LegacyPersistedMlsPendingGroup { id, state }.save(&tx)?;
+                }
+
+                // write all entities into the rusqlite database
                 $(
                     $(#[$attribute])*
                     for row in [<$entity:lower>] {
@@ -175,25 +222,6 @@ pub(super) async fn maybe_migrate(
                 tx.commit()?;
             }
         };
-    }
-
-    // the type of `PersistedMlsPendingGroup` changed, so we implement the migration manually
-    {
-        let pending_group = <IdbPersistedMlsPendingGroup as legacy::traits::Entity>::load_all(&mut legacy_conn).await?;
-        let tx = new_conn.transaction()?;
-        // we don't care about `parent_id`/`custom_configuration`; both are both nullable and already dropped
-        // at the end of the current migration chain.
-        for IdbPersistedMlsPendingGroup {
-            ref mut id,
-            ref mut state,
-            ..
-        } in pending_group
-        {
-            let id = std::mem::replace(id, Vec::new().into()).into();
-            let state = std::mem::take(state);
-            LegacyPersistedMlsPendingGroup { id, state }.save(&tx)?;
-        }
-        tx.commit()?;
     }
 
     for_each_imported_legacy_entity!(migrate_entities);
