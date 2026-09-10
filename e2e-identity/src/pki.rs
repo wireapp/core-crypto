@@ -1,7 +1,7 @@
 use std::str::FromStr as _;
 
 use ecdsa::SignatureEncoding as _;
-use openmls_traits::{crypto::OpenMlsCrypto, types::SignatureScheme};
+use openmls_traits::types::SignatureScheme;
 use spki::{SignatureAlgorithmIdentifier, der::referenced::RefToOwned};
 use x509_cert::{
     builder::{Builder as _, CertificateBuilder, profile::BuilderProfile},
@@ -579,15 +579,5 @@ impl PkiKeypair {
         };
 
         Ok(cert)
-    }
-
-    pub fn rand(alg: SignatureScheme, crypto: &impl OpenMlsCrypto) -> super::E2eIdentityResult<Self> {
-        Self::new(
-            alg,
-            crypto
-                .signature_key_gen(alg)
-                .map_err(|_| super::E2eIdentityError::SignatureKeyGenerationFailed)?
-                .0,
-        )
     }
 }
