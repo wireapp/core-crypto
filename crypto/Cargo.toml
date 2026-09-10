@@ -82,7 +82,7 @@ rand_core = "0.10"
 rand_chacha = "0.10"
 
 [dependencies.hpke]
-version = "0.14"
+version = "0.14.1"
 default-features = false
 # nistp covers p256/p384/p521, mlkem pulls the X-Wing and ML-KEM hybrid KEMs
 features = ["alloc", "getrandom", "x25519", "nistp", "aes", "chacha", "mlkem"]
