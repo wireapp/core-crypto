@@ -6,7 +6,10 @@
 #
 # We need to build this binary if it does not exist, or if the uniffi version
 # has changed (see https://github.com/mozilla/uniffi-rs/issues/2622).
-GET_UNIFFI_VERSION = perl -ne 'print "$1\n" if /^uniffi\s=\s"([^"]+)"/' Cargo.toml
+#
+# Avoid `cargo metadata` to get uniffi version. If we used that, the `cargo metadata` call would trigger a toolchain
+# installation in any workflow/step that depends on the uniffi lib.
+GET_UNIFFI_VERSION = perl -ne 'print "$$1\n" if /^uniffi\s=\s"([^"]+)"/' Cargo.toml
 UNIFFI_VERSION_FILE := $(STAMPS)/uniffi-version
 
 # Version file: only rewrite if version changed
