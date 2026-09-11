@@ -224,6 +224,84 @@ pub(crate) mod test {
     }
 
     #[test]
+    fn released_migration_checksums_are_unchanged() {
+        // Refinery hashes the migration name, version, and SQL, including whitespace and comments.
+        // Don't update existing, already released entries to accommodate an edit: add a new migration instead. Append a
+        // checksum whenever a migration is added. Running this test after addiing a new migration file will
+        // output the expected tuple.
+        const RELEASED_CHECKSUMS: &[(i32, u64)] = &[
+            (1, 13981446244764045850),
+            (2, 10014296231349852013),
+            (3, 10809117100344207944),
+            (4, 14920516941281032742),
+            (5, 12966312308626130346),
+            (6, 8044509004432369903),
+            (7, 17729748238669772100),
+            (8, 3048540027269991615),
+            (9, 7039584946400084759),
+            (10, 16156164571533126355),
+            (11, 13404488064808444530),
+            (12, 6597288508644970480),
+            (13, 5731883127003238395),
+            (14, 10748374302670893447),
+            (15, 2169875193630311763),
+            (16, 2746928252018864774),
+            (17, 12233330215929448823),
+            (18, 7775189113825083442),
+            (19, 7443032372885862401),
+            (20, 9998984195998664656),
+            (21, 7013639425315607404),
+            (22, 3158904360480291309),
+            (23, 17323643733849745028),
+            (24, 17262053458201743073),
+            (25, 9314203443172137842),
+            (26, 3313040238731256416),
+            (27, 9023891923424599773),
+            (28, 9800077133815304595),
+            (29, 4026373323163068147),
+            (30, 4359295101874567444),
+            (31, 11037059044990136413),
+            (32, 8623467557464580542),
+            (33, 4190965026202622936),
+            (34, 6226054801151536100),
+            (35, 9726380046663748763),
+            (36, 10350838762062966646),
+            (37, 18095597181196471627),
+            (38, 15137075953368231210),
+            (39, 6765673326148585052),
+            (40, 313685348854489679),
+        ];
+
+        let runner = super::migrations::runner();
+        for migration in runner.get_migrations() {
+            assert!(
+                RELEASED_CHECKSUMS
+                    .iter()
+                    .any(|&(version, _)| version == migration.version()),
+                "migration V{}__{} has no pinned checksum; add this checksum tuple: ({}, {}),",
+                migration.version(),
+                migration.name(),
+                migration.version(),
+                migration.checksum(),
+            );
+        }
+
+        for &(version, expected_checksum) in RELEASED_CHECKSUMS {
+            let migration = runner
+                .get_migrations()
+                .iter()
+                .find(|migration| migration.version() == version)
+                .unwrap();
+            assert_eq!(
+                migration.checksum(),
+                expected_checksum,
+                "released migration V{version}__{} changed; add a new migration instead",
+                migration.name(),
+            );
+        }
+    }
+
+    #[test]
     fn repairs_divergent_v16_checksum_before_running_migrations() {
         let (db_file, key) = temp_db();
         let path = db_file
