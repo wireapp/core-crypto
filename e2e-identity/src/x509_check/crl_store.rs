@@ -50,7 +50,6 @@ impl CrlStore {
             return Ok(());
         }
 
-        let mut is_dp = false;
         crl_info.push(info);
         let index = crl_info.len() - 1;
 
@@ -63,24 +62,25 @@ impl CrlStore {
                 .entry(dp)
                 .or_default()
                 .push(index);
-            is_dp = true;
-        } else if let Some(akid) = info.skid.clone() {
-            self.sk_ids
-                .lock()
-                .map_err(|_| RustyX509CheckError::LockPoisonError)?
-                .entry(akid)
-                .or_default()
-                .push(index);
-        }
+        } else {
+            if let Some(akid) = info.skid.clone() {
+                self.sk_ids
+                    .lock()
+                    .map_err(|_| RustyX509CheckError::LockPoisonError)?
+                    .entry(akid)
+                    .or_default()
+                    .push(index);
+            }
 
-        if !is_dp && info.type_info.scope == CrlScope::Complete {
-            let issuer_name = name_to_string(&crl.tbs_cert_list.issuer);
-            self.issuers
-                .lock()
-                .map_err(|_| RustyX509CheckError::LockPoisonError)?
-                .entry(issuer_name)
-                .or_default()
-                .push(index);
+            if info.type_info.scope == CrlScope::Complete {
+                let issuer_name = name_to_string(&crl.tbs_cert_list.issuer);
+                self.issuers
+                    .lock()
+                    .map_err(|_| RustyX509CheckError::LockPoisonError)?
+                    .entry(issuer_name)
+                    .or_default()
+                    .push(index);
+            }
         }
 
         Ok(())
