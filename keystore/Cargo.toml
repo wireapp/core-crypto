@@ -69,8 +69,20 @@ async-fs = "2.2"
 # runtime-agnostic thread pool, used to wait on the cross-process file lock without blocking the
 # executor; already in the tree as a dependency of `async-fs`
 blocking = { version = "1.6", optional = true }
+
+[target.'cfg(any(target_os = "android", target_os = "ios"))'.dependencies]
 rusqlite = { version = "0.38", default-features = false, features = [
   "bundled-sqlcipher-vendored-openssl",
+] }
+
+# The other native targets use sqlite3mc in sqlcipher's format instead of sqlcipher and a vendored
+# OpenSSL. The feature comes from the vendored libsqlite3-sys, see vendor/libsqlite3-sys/sqlite3mc/README.md.
+[target.'cfg(not(any(target_os = "unknown", target_os = "android", target_os = "ios")))'.dependencies]
+rusqlite = { version = "0.38", default-features = false, features = [
+  "bundled",
+] }
+libsqlite3-sys = { version = "0.36", default-features = false, features = [
+  "bundled-sqlite3mc",
 ] }
 
 [target.'cfg(target_os = "unknown")'.dependencies]

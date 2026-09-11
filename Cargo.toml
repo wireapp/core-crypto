@@ -10,6 +10,7 @@ members = [
   "obfuscate",
   "test-wire-server",
 ]
+exclude = ["vendor"]
 resolver = "2"
 
 [workspace.lints.clippy]
@@ -155,3 +156,6 @@ opt-level = 3
 # Once x509-ocsp 0.3 is released and certval moves to it, drop the patch.
 [patch.crates-io]
 x509-ocsp = { git = "https://github.com/RustCrypto/formats.git", package = "x509-ocsp", version = "0.3.0-pre" }
+# libsqlite3-sys with the `bundled-sqlite3mc` feature for the keystore's native targets, see
+# vendor/libsqlite3-sys/sqlite3mc/README.md.
+libsqlite3-sys = { path = "vendor/libsqlite3-sys" }

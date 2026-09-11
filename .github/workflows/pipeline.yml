@@ -131,6 +131,38 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
+  build-jvm-linux-arm64:
+    needs: artifact-generation
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/make/setup
+      - uses: ./.github/actions/make/jvm
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
+
+  #################
+  # JVM Windows
+
+  build-jvm-windows:
+    needs: artifact-generation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/make/setup
+      - name: install the MinGW cross compiler
+        run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends gcc-mingw-w64-x86-64
+      - uses: ./.github/actions/make
+        with:
+          key: jvm-windows
+          make-rule: jvm-windows
+          target-path: target/x86_64-pc-windows-gnu/release/core_crypto_ffi.dll
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          uses-rust: true
+          rust-target: x86_64-pc-windows-gnu
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
+
   bindings-jvm:
     needs:
       - artifact-generation
@@ -150,6 +182,8 @@ jobs:
       - artifact-generation
       - bindings-jvm
       - build-jvm-linux
+      - build-jvm-linux-arm64
+      - build-jvm-windows
       - build-jvm-darwin
     uses: ./.github/workflows/test-jvm.yml
     with:
@@ -160,6 +194,8 @@ jobs:
       - artifact-generation
       - bindings-jvm
       - build-jvm-linux
+      - build-jvm-linux-arm64
+      - build-jvm-windows
       - build-jvm-darwin
     uses: ./.github/workflows/kotlin-check.yml
     with:
@@ -179,6 +215,8 @@ jobs:
       - artifact-generation
       - bindings-jvm
       - build-jvm-linux
+      - build-jvm-linux-arm64
+      - build-jvm-windows
       - build-jvm-darwin
     uses: ./.github/workflows/benchmark-jvm.yml
     with:
@@ -440,6 +478,8 @@ jobs:
       - bindings-ts-native-linux
       - bindings-ts-native-darwin
       - build-jvm-linux
+      - build-jvm-linux-arm64
+      - build-jvm-windows
       - build-jvm-darwin
       - bindings-jvm
     if: github.ref_type == 'tag'

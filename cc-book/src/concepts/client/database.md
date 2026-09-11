@@ -22,9 +22,11 @@ All entries are encrypted at rest using the `DatabaseKey` provided at open time.
 
 ## Backing Storage
 
-On non-browser platforms the database is backed by [SQLCipher](https://www.zetetic.net/sqlcipher/), an encrypted SQLite
-variant. On the browser, the database sits atop IndexedDB and uses item-level encryption managed by CoreCrypto. In both
-cases, data is encrypted at rest.
+On Android and iOS the database is backed by [SQLCipher](https://www.zetetic.net/sqlcipher/), an encrypted SQLite
+variant. On Linux, macOS and Windows it is backed by
+[SQLite3 Multiple Ciphers](https://utelle.github.io/SQLite3MultipleCiphers/), which reads and writes the same format. On
+the browser, the database sits atop IndexedDB and uses item-level encryption managed by CoreCrypto. In all cases, data
+is encrypted at rest.
 
 Future work on the database is intended to unify the backing storages, such that CoreCrypto will internally see an
 encrypted SQLite connection for all platforms. That work will be part of CC 11, but not CC 10. This change should be

@@ -1,0 +1,3 @@
+# The vendored libsqlite3-sys stays as published on crates.io, so fd-based checks and
+# formatters leave it alone. make/sources.mk still hashes it for the artifact keys.
+vendor/
