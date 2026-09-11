@@ -37,13 +37,3 @@ jobs:
                --url-query "extra_label=commit=$COMMIT_HASH" \
                --url-query extra_label=target=ts-native \
               "https://monitoring.zinfra.io/prometheus/api/v1/import/prometheus?"
-
-      - name: Publish benchmark result to GitHub pages
-        uses: benchmark-action/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
-        with:
-          name: "TS Native Benchmarks"
-          tool: 'customBiggerIsBetter'
-          output-file-path: benches_result.json
-          fail-on-alert: true
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          auto-push: true
