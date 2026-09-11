@@ -87,9 +87,8 @@ default-features = false
 # nistp covers p256/p384/p521, mlkem pulls the X-Wing and ML-KEM hybrid KEMs
 features = ["alloc", "getrandom", "x25519", "nistp", "aes", "chacha", "mlkem"]
 
-# direct dep only to unify the zeroize feature onto the x-wing and, through it,
-# x25519-dalek instances that hpke uses. hpke 0.14 pulls x-wing with just
-# hazmat, so zeroize-on-drop for the KEM and X25519 secrets is compiled out
+# not used directly: declared so feature unification turns zeroize on for the x-wing hpke uses, which pulls it with hazmat only
+# drop once hpke exposes a zeroize passthrough; must stay on hpke's x-wing version or the unification stops applying (deny.toml guards)
 [dependencies.x-wing]
 version = "0.1.0"
 default-features = false

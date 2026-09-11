@@ -35,6 +35,8 @@ ignore = [
 
 [bans]
 multiple-versions = "allow"
+# a second x-wing version would leave the copy hpke uses without zeroize
+deny = [{ crate = "x-wing", deny-multiple-versions = true }]
 
 [licenses]
 version = 2
