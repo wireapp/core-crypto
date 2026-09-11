@@ -271,7 +271,7 @@ docker kill authelia.local &amp;&amp; docker rm authelia.local</code></pre></div
 <p>We’re using <a href="https://taplo.tamasfe.dev/">taplo</a> to format .toml files.</p>
 <h3 id="benchmarks"><a class="doc-anchor" href="#benchmarks">§</a>Benchmarks<a name="benchmarks"></a></h3><h4 id="nightly-run"><a class="doc-anchor" href="#nightly-run">§</a>Nightly run<a name="nightly-run"></a></h4>
 <p>Every night we run benchmarks on the <code>main</code> branch and publish the results on the
-<a href="https://wireapp.github.io/core-crypto/dev/bench/">CoreCrypto Benchmarks page</a>.</p>
+<a href="https://grafana.zinfra.io/d/ja65pzb/corecrypto-benchmarks">CoreCrypto Benchmarks dashboard</a> (restricted read access).</p>
 <h4 id="ffi-bindings"><a class="doc-anchor" href="#ffi-bindings">§</a>FFI Bindings<a name="ffi-bindings"></a></h4>
 <p>There are benchmarks for jvm, browser, and ts-native bindings run via the corresponding make rule. You can filter
 Benchmarks by setting <code>BENCH</code>.</p>
