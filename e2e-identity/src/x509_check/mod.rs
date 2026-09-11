@@ -177,54 +177,55 @@ pub(crate) fn now() -> RustyX509CheckResult<u64> {
         .as_secs())
 }
 
-impl PkiEnvironment {
-    /// Initializes a certval PkiEnvironment using the provided params
-    pub fn init(params: PkiEnvironmentParams) -> RustyX509CheckResult<PkiEnvironment> {
-        let toi = TimeOfInterest::from_unix_secs(now()?)?;
+/// Initializes a certval PkiEnvironment using the provided params
+pub(crate) fn prepare_environment(
+    intermediates: &[x509_cert::Certificate],
+    trust_roots: &[x509_cert::anchor::TrustAnchorChoice],
+    crls: &[x509_cert::crl::CertificateList<Raw>],
+) -> RustyX509CheckResult<certval::environment::PkiEnvironment> {
+    let toi = TimeOfInterest::from_unix_secs(now()?)?;
 
-        let mut cps = CertificationPathSettings::new();
-        cps.set_time_of_interest(toi);
+    let mut cps = CertificationPathSettings::new();
+    cps.set_time_of_interest(toi);
 
-        // Make a Certificate source for intermediate CA certs
-        let mut cert_source = CertSource::new();
-        for (i, cert) in params.intermediates.iter().enumerate() {
-            cert_source.push(certval::CertFile {
-                filename: format!("Intermediate CA #{i} [{}]", cert.tbs_certificate().subject()),
-                bytes: cert.to_der()?,
-            });
-        }
-
-        cert_source.initialize(&cps)?;
-
-        // Make a TrustAnchor source
-        let mut trust_anchors = TaSource::new();
-        for (i, root) in params.trust_roots.iter().enumerate() {
-            trust_anchors.push(certval::CertFile {
-                filename: format!("TrustAnchor #{i}"),
-                bytes: root.to_der()?,
-            });
-        }
-
-        trust_anchors.initialize()?;
-
-        let revocation_cache = RevocationCache::default();
-
-        // Make a CRL source
-        let crl_source = CrlStore::from(params.crls);
-        crl_source.index_crls(toi)?;
-
-        let mut pe = certval::environment::PkiEnvironment::default();
-        pe.populate_5280_pki_environment();
-        pe.add_trust_anchor_source(Box::new(trust_anchors));
-        pe.add_crl_source(Box::new(crl_source));
-        pe.add_revocation_cache(Box::new(revocation_cache));
-
-        cert_source.find_all_partial_paths(&pe, &cps);
-
-        pe.add_certificate_source(Box::new(cert_source));
-
-        Ok(Self { pe })
+    // Make a Certificate source for intermediate CA certs
+    let mut cert_source = CertSource::new();
+    for (i, cert) in intermediates.iter().enumerate() {
+        cert_source.push(certval::CertFile {
+            filename: format!("Intermediate CA #{i} [{}]", cert.tbs_certificate().subject()),
+            bytes: cert.to_der()?,
+        });
     }
+
+    cert_source.initialize(&cps)?;
+
+    // Make a TrustAnchor source
+    let mut trust_anchors = TaSource::new();
+    for (i, root) in trust_roots.iter().enumerate() {
+        trust_anchors.push(certval::CertFile {
+            filename: format!("TrustAnchor #{i}"),
+            bytes: root.to_der()?,
+        });
+    }
+
+    trust_anchors.initialize()?;
+
+    let revocation_cache = RevocationCache::default();
+
+    // Make a CRL source
+    let crl_source = CrlStore::from(crls);
+    crl_source.index_crls(toi)?;
+
+    let mut pe = certval::environment::PkiEnvironment::default();
+    pe.populate_5280_pki_environment();
+    pe.add_trust_anchor_source(Box::new(trust_anchors));
+    pe.add_crl_source(Box::new(crl_source));
+    pe.add_revocation_cache(Box::new(revocation_cache));
+
+    cert_source.find_all_partial_paths(&pe, &cps);
+
+    pe.add_certificate_source(Box::new(cert_source));
+    Ok(pe)
 }
 
 pub(crate) fn validate_trust_anchor_cert(
