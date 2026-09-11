@@ -26,7 +26,7 @@ end
 
 STORAGE["Storage"]
 block:database
-    Native["SQLite + SQLCipher"]
+    Native["SQLite + SQLCipher or SQLite3 Multiple Ciphers"]
     Browser["IndexedDB"]
 end
 
@@ -78,10 +78,11 @@ application-level entities rather than protocol-specific concepts.
 
 ## Database
 
-Encrypted Keystore powered by SQLCipher on native platforms. WASM uses an IndexedDB-backed, encrypted store with
-AES256-GCM. It provides a persistent data storage layer with encryption at-rest.
+Encrypted Keystore powered by SQLCipher on Android and iOS, and by SQLite3 Multiple Ciphers in SQLCipher's format on
+Linux, macOS and Windows. WASM uses an IndexedDB-backed, encrypted store with AES256-GCM. It provides a persistent data
+storage layer with encryption at-rest.
 
-### Native (iOS, Android, Ts-Native)
+### Native on Android and iOS
 
 Pretty much everything is handed off to SQLCipher:
 
@@ -119,6 +120,13 @@ Summary:
   This IV is appended at the end of each page.
 - Page ciphertexts are authenticated using an authentication tag using HMAC-SHA512. This tag is also appended at the
   each of the page.
+
+### Native on Linux, macOS and Windows (JVM, Kotlin/Native, Ts-Native)
+
+- Backing store: Encrypted SQLite database (with
+  [SQLite3 Multiple Ciphers](https://utelle.github.io/SQLite3MultipleCiphers/))
+- Encryption: SQLCipher's scheme, version 4, so the files are the same as with SQLCipher (see above)
+- Crypto primitives and PRNG provider: SQLite3 Multiple Ciphers itself; no crypto library is linked
 
 ### WASM
 

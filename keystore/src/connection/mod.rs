@@ -140,8 +140,9 @@ impl Database {
     /// sqlite3-multiple-ciphers using its default encryption mechanism, stored in IndexedDB
     /// via the `relaxed-idb` shim.
     ///
-    /// When compiled normally, this database is encrypted via sqlcipher at a path in the
-    /// local filesystem.
+    /// When compiled normally, this database is encrypted at a path in the local filesystem, in
+    /// sqlcipher's format: by sqlcipher on Android and iOS, and by sqlite3-multiple-ciphers on the
+    /// other targets.
     pub async fn open(path: &str, database_key: &DatabaseKey) -> CryptoKeystoreResult<Arc<Self>> {
         let (conn, filesystem) = Self::open_internal(path, database_key).await?;
         Self::init(conn, filesystem, MigrationTarget::Latest).map(Into::into)
@@ -259,6 +260,143 @@ impl Database {
     pub async fn export_copy(&self, destination_path: &str) -> CryptoKeystoreResult<()> {
         self.conn().await.execute("VACUUM INTO ?1", [destination_path])?;
         Ok(())
+    }
+}
+
+#[cfg(all(test, not(target_os = "unknown")))]
+mod file_database_test {
+    use futures_lite::future;
+
+    use crate::connection::{Database, DatabaseKey};
+
+    const MARKER: &[u8] = b"plaintext marker 4711";
+
+    async fn journal_mode(db: &Database) -> String {
+        db.conn()
+            .await
+            .pragma_query_value(None, "journal_mode", |row| row.get(0))
+            .unwrap()
+    }
+
+    async fn insert_marker(db: &Database) {
+        let conn = db.conn().await;
+        conn.execute("CREATE TABLE marker (data BLOB)", []).unwrap();
+        conn.execute("INSERT INTO marker (data) VALUES (?1)", [MARKER]).unwrap();
+    }
+
+    async fn read_marker(db: &Database) -> Vec<u8> {
+        db.conn()
+            .await
+            .query_row("SELECT data FROM marker", [], |row| row.get(0))
+            .unwrap()
+    }
+
+    /// Neither the SQLite header nor the marker may be readable in the file. On iOS, the header stays
+    /// in plaintext on purpose, see `ios_wal_compat`.
+    fn assert_encrypted(path: &std::path::Path) {
+        let bytes = std::fs::read(path).unwrap();
+        if cfg!(not(target_os = "ios")) {
+            assert!(
+                !bytes.starts_with(b"SQLite format 3\0"),
+                "{} has a plaintext header",
+                path.display()
+            );
+        }
+        assert!(
+            !bytes.windows(MARKER.len()).any(|window| window == MARKER),
+            "{} contains the plaintext marker",
+            path.display()
+        );
+    }
+
+    #[test]
+    fn update_key_reencrypts_a_database_in_wal_mode() {
+        future::block_on(async {
+            let temp_dir = tempfile::tempdir().unwrap();
+            let path = temp_dir.path().join("rekey.db");
+            let path = path.to_str().unwrap();
+            let old_key = DatabaseKey::generate();
+            let new_key = DatabaseKey::generate();
+
+            let db = Database::open(path, &old_key).await.unwrap();
+            insert_marker(&db).await;
+            assert_eq!(journal_mode(&db).await, "wal");
+
+            db.update_key(&new_key).await.unwrap();
+
+            assert_eq!(journal_mode(&db).await, "wal", "update_key left WAL mode");
+            assert_encrypted(std::path::Path::new(path));
+            drop(db);
+            assert!(
+                Database::open(path, &old_key).await.is_err(),
+                "the old key still opens the database"
+            );
+            let db = Database::open(path, &new_key).await.unwrap();
+            assert_eq!(read_marker(&db).await, MARKER);
+        });
+    }
+
+    /// The fixture is a keystore that `Database::open` of a sqlcipher build wrote with `FIXTURE_KEY`, in
+    /// WAL mode. The marker table went in after a checkpoint, so it is only in the WAL file.
+    #[cfg(not(target_os = "ios"))]
+    #[test]
+    fn a_keystore_written_by_a_sqlcipher_build_opens_and_keeps_its_format() {
+        const FIXTURE_DB: &[u8] = include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/sqlcipher-v4-wal.sqlite"
+        ));
+        const FIXTURE_WAL: &[u8] = include_bytes!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/sqlcipher-v4-wal.sqlite-wal"
+        ));
+        const FIXTURE_KEY: [u8; 32] = [0x42; 32];
+
+        future::block_on(async {
+            let temp_dir = tempfile::tempdir().unwrap();
+            let path = temp_dir.path().join("keystore.db");
+            std::fs::write(&path, FIXTURE_DB).unwrap();
+            std::fs::write(temp_dir.path().join("keystore.db-wal"), FIXTURE_WAL).unwrap();
+            let key = DatabaseKey::try_from(FIXTURE_KEY.as_slice()).unwrap();
+
+            let db = Database::open(path.to_str().unwrap(), &key).await.unwrap();
+            assert_eq!(
+                read_marker(&db).await,
+                MARKER,
+                "the marker from the WAL file is missing"
+            );
+            assert_eq!(journal_mode(&db).await, "wal");
+            drop(db);
+
+            // The file keeps its salt, stays encrypted, and opens again.
+            assert_eq!(
+                std::fs::read(&path).unwrap()[..16],
+                FIXTURE_DB[..16],
+                "the salt changed"
+            );
+            assert_encrypted(&path);
+            let db = Database::open(path.to_str().unwrap(), &key).await.unwrap();
+            assert_eq!(read_marker(&db).await, MARKER);
+        });
+    }
+
+    #[test]
+    fn exported_copy_is_encrypted_with_the_same_key() {
+        future::block_on(async {
+            let temp_dir = tempfile::tempdir().unwrap();
+            let source = temp_dir.path().join("source.db");
+            let copy = temp_dir.path().join("copy.db");
+            let key = DatabaseKey::generate();
+
+            let db = Database::open(source.to_str().unwrap(), &key).await.unwrap();
+            insert_marker(&db).await;
+            db.export_copy(copy.to_str().unwrap()).await.unwrap();
+            drop(db);
+
+            assert_encrypted(&source);
+            assert_encrypted(&copy);
+            let exported = Database::open(copy.to_str().unwrap(), &key).await.unwrap();
+            assert_eq!(read_marker(&exported).await, MARKER);
+        });
     }
 }
 

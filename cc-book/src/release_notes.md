@@ -27,6 +27,10 @@
   second between registrations. This was never true of any released version; we fixed it before releasing 10.0.0. If you
   added a delay between `addCredential` calls to comply, you can remove it.
 
+- JVM, Kotlin/Native on macOS and Linux, and native TypeScript: the keystore now uses SQLite3 Multiple Ciphers instead
+  of SQLCipher with a vendored OpenSSL. It reads and writes SQLCipher's format, so existing keystores open as before,
+  and earlier CoreCrypto versions can still open keystores written by this one. Android and iOS keep SQLCipher.
+
 ## CoreCrypto 10
 
 ### v10.5.2 - 2026-09-09
