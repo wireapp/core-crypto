@@ -2,6 +2,10 @@ use certval::{ExtensionProcessing as _, PathValidationStatus};
 
 use crate::pki_env::PkiEnvironment;
 
+mod cache;
+mod crl_info;
+mod crl_store;
+mod misc;
 pub mod revocation;
 
 #[derive(Debug, thiserror::Error)]
