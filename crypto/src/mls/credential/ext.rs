@@ -42,7 +42,12 @@ impl CredentialExt for CredentialWithKey {
                     })
                     .ok();
 
-                let thumbprint = compute_thumbprint(cs, self.signature_key.as_slice())?;
+                let thumbprint = match compute_thumbprint(cs, self.signature_key.as_slice()) {
+                    // no JWK key type for ML-DSA yet, so no thumbprint here; the MLS credential check covers validity instead
+                    Err(Error::UnsupportedAlgorithm) => String::new(),
+                    Err(e) => return Err(e),
+                    Ok(t) => t,
+                };
 
                 Ok(WireIdentity {
                     client_id,
@@ -141,8 +146,10 @@ fn compute_thumbprint(cs: CipherSuite, raw_key: &[u8]) -> Result<String> {
         SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::P384,
         SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::P521,
         SignatureScheme::ED448 => return Err(Error::UnsupportedAlgorithm),
-        // no JWS algorithm for ML-DSA, and the thumbprint is only informative
-        SignatureScheme::MLDSA44 | SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87 => return Ok(String::new()),
+        // no JOSE key type for ML-DSA yet
+        SignatureScheme::MLDSA44 | SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87 => {
+            return Err(Error::UnsupportedAlgorithm);
+        }
     };
     let hash_alg = match cs.hash_algorithm() {
         HashType::Sha2_256 => HashAlgorithm::SHA256,

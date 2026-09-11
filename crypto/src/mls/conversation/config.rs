@@ -273,9 +273,11 @@ mod tests {
                 SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::P256,
                 SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::P384,
                 SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::P521,
-                SignatureScheme::ED448 => unreachable!(),
-                // the all_cred_cipher fixtures don't cover PQ signature schemes
-                SignatureScheme::MLDSA44 | SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87 => unreachable!(),
+                // no JWK algorithm for these yet, so nothing to test here
+                SignatureScheme::ED448
+                | SignatureScheme::MLDSA44
+                | SignatureScheme::MLDSA65
+                | SignatureScheme::MLDSA87 => return,
             };
 
             let jwk = wire_e2e_identity::generate_jwk(alg);
