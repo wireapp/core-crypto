@@ -35,7 +35,7 @@ impl PkiEnvironment {
     pub async fn save_crl(&self, tx: &Transaction, crl_dp: &str, crl_der: &[u8]) -> Result<()> {
         let guard = self.rjt_pki_env.lock().await;
 
-        let crl = guard.validate_crl_with_raw(crl_der)?;
+        let crl = crate::x509_check::validate_crl(&guard, crl_der)?;
         guard.add_crl(crl_der, &crl, crl_dp).map_err(Error::Certval)?;
 
         let crl_data = X509Crl {
