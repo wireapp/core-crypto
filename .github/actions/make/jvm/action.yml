@@ -14,7 +14,11 @@ runs:
         id: platform-specs
         run: |
           os="$(uname -s)"
-          if [ "$os" = "Linux" ]; then
+          if [ "$os" = "Linux" ] && [ "$(uname -m)" = "aarch64" ]; then
+            library_extension="so"
+            target="aarch64-unknown-linux-gnu"
+            rule="jvm-linux-arm64"
+          elif [ "$os" = "Linux" ]; then
             library_extension="so"
             target="x86_64-unknown-linux-gnu"
             rule="jvm-linux"
@@ -23,7 +27,7 @@ runs:
             target="aarch64-apple-darwin"
             rule="jvm-darwin"
           fi
-          # The jvm-darwin/jvm-linux make rules build both a dynamic library (dylib/so) and a
+          # The jvm-darwin/jvm-linux/jvm-linux-arm64 make rules build both a dynamic library (dylib/so) and a
           # static library (.a); upload both so consumers that link statically can use the .a.
           {
             echo "target-path<<EOF"
