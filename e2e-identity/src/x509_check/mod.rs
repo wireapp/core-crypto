@@ -226,37 +226,6 @@ impl PkiEnvironment {
         Ok(Self { pe })
     }
 
-    pub fn validate_trust_anchor_cert(&self, cert: &x509_cert::Certificate) -> RustyX509CheckResult<()> {
-        let toi = TimeOfInterest::from_unix_secs(now()?)?;
-
-        let mut cps = CertificationPathSettings::default();
-        cps.set_time_of_interest(toi);
-
-        let mut cert = PDVCertificate::try_from(cert.clone())?;
-        cert.parse_extensions(EXTS_OF_INTEREST);
-
-        let ta = PDVTrustAnchorChoice::try_from(x509_cert::anchor::TrustAnchorChoice::Certificate(
-            cert.decoded().clone(),
-        ))?;
-        let mut certification_path = CertificationPath::new(ta, vec![], cert);
-
-        check_validity(
-            &self.pe,
-            &cps,
-            &mut certification_path,
-            &mut CertificationPathResults::new(),
-        )?;
-
-        verify_signatures(
-            &self.pe,
-            &cps,
-            &mut certification_path,
-            &mut CertificationPathResults::new(),
-        )?;
-
-        Ok(())
-    }
-
     pub fn validate_crl_with_raw(&self, crl_raw: &[u8]) -> RustyX509CheckResult<x509_cert::crl::CertificateList<Raw>> {
         let crl = x509_cert::crl::CertificateList::from_der(crl_raw)?;
 
@@ -370,4 +339,27 @@ impl PkiEnvironment {
 
         if any_path_validates { Ok(()) } else { result }
     }
+}
+
+pub(crate) fn validate_trust_anchor_cert(
+    pe: &certval::environment::PkiEnvironment,
+    cert: &x509_cert::Certificate,
+) -> RustyX509CheckResult<()> {
+    let toi = TimeOfInterest::from_unix_secs(now()?)?;
+
+    let mut cps = CertificationPathSettings::default();
+    cps.set_time_of_interest(toi);
+
+    let mut cert = PDVCertificate::try_from(cert.clone())?;
+    cert.parse_extensions(EXTS_OF_INTEREST);
+
+    let ta = PDVTrustAnchorChoice::try_from(x509_cert::anchor::TrustAnchorChoice::Certificate(
+        cert.decoded().clone(),
+    ))?;
+    let mut certification_path = CertificationPath::new(ta, vec![], cert);
+
+    check_validity(pe, &cps, &mut certification_path, &mut CertificationPathResults::new())?;
+    verify_signatures(pe, &cps, &mut certification_path, &mut CertificationPathResults::new())?;
+
+    Ok(())
 }
