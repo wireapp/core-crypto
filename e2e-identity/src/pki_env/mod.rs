@@ -28,7 +28,7 @@ use crate::{
     pki_env::hooks::PkiEnvironmentHooks,
     x509_check::{
         PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams, RustyX509CheckError, RustyX509CheckResult,
-        extract_crl_uris, now, validate_trust_anchor_cert,
+        extract_crl_uris, now, validate_cert, validate_trust_anchor_cert,
     },
 };
 
@@ -281,7 +281,7 @@ impl PkiEnvironment {
     /// contained in this PKI environment. Revocation check is performed
     /// and time of interest is set to the time of the call.
     pub async fn validate_cert(&self, cert: &x509_cert::Certificate) -> RustyX509CheckResult<()> {
-        self.rjt_pki_env.lock().await.validate_cert(cert, true)
+        validate_cert(&*self.rjt_pki_env.lock().await, cert, true)
     }
 
     /// Validate an X509 credential.
@@ -301,7 +301,7 @@ impl PkiEnvironment {
             return CredentialAuthenticationStatus::Invalid;
         };
 
-        match self.rjt_pki_env.lock().await.validate_cert(&cert, true) {
+        match validate_cert(&*self.rjt_pki_env.lock().await, &cert, true) {
             Err(RustyX509CheckError::CertValError(CertvalError::PathValidation(
                 PathValidationStatus::CertificateRevoked
                 | PathValidationStatus::CertificateRevokedEndEntity

@@ -5,7 +5,7 @@ use super::X509CredentialConfiguration;
 use crate::{
     acquisition::{error::CertificateError, identity::WireIdentityReader as _},
     pki_env::PkiEnvironment,
-    x509_check::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams},
+    x509_check::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams, validate_cert},
 };
 
 pub(crate) async fn verify_cert_chain(
@@ -48,7 +48,7 @@ async fn verify_leaf_certificate(
     sign_kp: &Pem,
     cert: &Certificate,
 ) -> Result<(), CertificateError> {
-    pki_env.validate_cert(cert, false)?;
+    validate_cert(pki_env, cert, false)?;
 
     // Make sure that the algorithm specified by the certificate matches the one of the signing
     // keypair.
