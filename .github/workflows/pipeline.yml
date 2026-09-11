@@ -131,6 +131,17 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
+  build-jvm-linux-arm64:
+    needs: artifact-generation
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/make/setup
+      - uses: ./.github/actions/make/jvm
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
+
   bindings-jvm:
     needs:
       - artifact-generation
@@ -150,6 +161,7 @@ jobs:
       - artifact-generation
       - bindings-jvm
       - build-jvm-linux
+      - build-jvm-linux-arm64
       - build-jvm-darwin
     uses: ./.github/workflows/test-jvm.yml
     with:
@@ -160,6 +172,7 @@ jobs:
       - artifact-generation
       - bindings-jvm
       - build-jvm-linux
+      - build-jvm-linux-arm64
       - build-jvm-darwin
     uses: ./.github/workflows/kotlin-check.yml
     with:
@@ -179,6 +192,7 @@ jobs:
       - artifact-generation
       - bindings-jvm
       - build-jvm-linux
+      - build-jvm-linux-arm64
       - build-jvm-darwin
     uses: ./.github/workflows/benchmark-jvm.yml
     with:
@@ -440,6 +454,7 @@ jobs:
       - bindings-ts-native-linux
       - bindings-ts-native-darwin
       - build-jvm-linux
+      - build-jvm-linux-arm64
       - build-jvm-darwin
       - bindings-jvm
     if: github.ref_type == 'tag'

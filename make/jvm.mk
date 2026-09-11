@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# JVM native builds (Darwin + Linux)
+# JVM native builds (Darwin + Linux x86_64 and arm64)
 #-------------------------------------------------------------------------------
 
 # darwin build
@@ -50,11 +50,30 @@ $(JVM_LINUX_LIB): $(jvm-linux-deps)
 .PHONY: jvm-linux
 jvm-linux: $(JVM_LINUX_LIB) ## Build core-crypto-ffi for JVM on x86_64-unknown-linux-gnu
 
+JVM_LINUX_ARM64_LIB := target/aarch64-unknown-linux-gnu/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+jvm-linux-arm64-deps := $(jvm-linux-deps)
+$(JVM_LINUX_ARM64_LIB): $(jvm-linux-arm64-deps)
+	$(call jvm-linux-cargo,aarch64) rustc --locked \
+	  --target aarch64-unknown-linux-gnu \
+	  --package core-crypto-ffi \
+	  --crate-type=cdylib --crate-type=staticlib \
+	  $(NATIVE_CARGO_BUILD_ARGS) -- $(RUST_STRIP_FLAGS)
+	$(call jvm-linux-finish,aarch64,aarch64-unknown-linux-gnu,$@)
+
+.PHONY: jvm-linux-arm64
+jvm-linux-arm64: $(JVM_LINUX_ARM64_LIB) ## Build core-crypto-ffi for JVM on aarch64-unknown-linux-gnu
+
 .PHONY: jvm
 ifeq ($(UNAME_S),Linux)
+ifeq ($(shell uname -m),aarch64)
+JVM_LIB := $(JVM_LINUX_ARM64_LIB)
+jvm-deps := $(jvm-linux-arm64-deps)
+jvm: jvm-linux-arm64
+else
 JVM_LIB := $(JVM_LINUX_LIB)
 jvm-deps := $(jvm-linux-deps)
 jvm: jvm-linux ## Build core-crypto-ffi for JVM (automatically select the target based on the host machine)
+endif
 else ifeq ($(UNAME_S),Darwin)
 JVM_LIB := $(JVM_DARWIN_LIB)
 jvm-deps := $(jvm-darwin-deps)

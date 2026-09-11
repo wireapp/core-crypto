@@ -101,7 +101,7 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
-      # The specific jvm action uses `uname -s` to determine which `jvm` make rule to call.
+      # The specific jvm action uses `uname -s` and `uname -m` to determine which `jvm` make rule to call.
       # Because this workflow runs on macOS, we're using the generic action
       - name: download x86_64 linux artifact
         uses: ./.github/actions/make

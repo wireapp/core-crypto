@@ -34,6 +34,8 @@
 - JVM: the Linux library now needs glibc 2.28 or newer instead of 2.38, so it also loads on RHEL 8 and 9, SLES 15 SP3 to
   SP5, Debian 11 and 12, and Ubuntu 20.04 and 22.04.
 
+- JVM: the package now also contains a native library for Linux on arm64 (`linux-aarch64`).
+
 ## CoreCrypto 10
 
 ### v10.5.2 - 2026-09-09
