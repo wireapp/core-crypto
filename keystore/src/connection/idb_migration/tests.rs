@@ -4,7 +4,7 @@
 //! every other test of the new connection starts from an empty database. This is the only place the two halves
 //! meet, and so the only place which can notice that an importer writes a shape the target schema does not have.
 
-use std::sync::Arc;
+use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 use idb::{Factory, TransactionMode};
 use js_sys::{Array, Object, Reflect, Uint8Array};
@@ -19,7 +19,7 @@ use super::*;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::ProteusIdentity;
 use crate::{
-    Sha256Hash,
+    CryptoKeystoreResult, Sha256Hash,
     ancillary::ConversationIdRef,
     connection::{
         Database,
@@ -1112,6 +1112,159 @@ async fn a_failed_import_is_retried_on_the_next_open() {
     assert!(
         !legacy_idb_exists(&name).await,
         "the legacy database must be deleted once its data has been imported"
+    );
+
+    Arc::into_inner(db)
+        .expect("no other reference to the database")
+        .wipe()
+        .await
+        .expect("wiping the new database");
+}
+
+/// The IndexedDB database in which the relaxed-idb VFS persists every SQLite database's pages.
+///
+/// This is the VFS name; relaxed-idb reuses it for its IndexedDB database, and keeps the pages of every file in a
+/// single object store named `blocks`.
+const VFS_INDEXEDDB_NAME: &str = "core-crypto";
+
+/// Hold a readwrite transaction on the VFS's block store open until released.
+///
+/// IndexedDB runs readwrite transactions with overlapping scope one at a time, in creation order, so for as long
+/// as this one is alive nothing the VFS queues can reach IndexedDB. An idle transaction commits on its own, so
+/// this keeps it alive by issuing one request after another until released.
+///
+/// Returns `{ release, finished }`: a function which lets the transaction end, and a promise for its end.
+const HOLD_BLOCK_STORE_JS: &str = r#"(function (name) {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(name);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => {
+      const db = req.result;
+      const tx = db.transaction("blocks", "readwrite");
+      const store = tx.objectStore("blocks");
+      let held = true;
+      const spin = () => {
+        if (!held) return;
+        store.count().onsuccess = spin;
+      };
+      spin();
+      const finished = new Promise((done) => {
+        tx.oncomplete = () => { db.close(); done(null); };
+        tx.onabort = () => { db.close(); done(null); };
+      });
+      resolve({ release: () => { held = false; }, finished });
+    };
+  });
+})"#;
+
+const SLEEP_JS: &str = "(ms) => new Promise((resolve) => setTimeout(resolve, ms))";
+
+async fn sleep_ms(ms: u32) {
+    let sleep: js_sys::Function = js_sys::eval(SLEEP_JS).unwrap().into();
+    let promise: js_sys::Promise = sleep
+        .call1(&JsValue::NULL, &JsValue::from_f64(ms.into()))
+        .unwrap()
+        .into();
+    wasm_bindgen_futures::JsFuture::from(promise).await.unwrap();
+}
+
+/// A held write transaction on the VFS's block store; see [`HOLD_BLOCK_STORE_JS`].
+struct BlockStoreHold {
+    release: js_sys::Function,
+    finished: js_sys::Promise,
+}
+
+impl BlockStoreHold {
+    async fn take() -> Self {
+        let hold: js_sys::Function = js_sys::eval(HOLD_BLOCK_STORE_JS).unwrap().into();
+        let promise: js_sys::Promise = hold
+            .call1(&JsValue::NULL, &JsValue::from_str(VFS_INDEXEDDB_NAME))
+            .unwrap()
+            .into();
+        let handle = wasm_bindgen_futures::JsFuture::from(promise)
+            .await
+            .expect("holding the block store");
+        Self {
+            release: Reflect::get(&handle, &JsValue::from_str("release")).unwrap().into(),
+            finished: Reflect::get(&handle, &JsValue::from_str("finished")).unwrap().into(),
+        }
+    }
+
+    async fn release(self) {
+        self.release.call0(&JsValue::NULL).unwrap();
+        wasm_bindgen_futures::JsFuture::from(self.finished)
+            .await
+            .expect("the held transaction ends");
+    }
+}
+
+/// The legacy database is only deleted once the imported data has reached IndexedDB.
+///
+/// The VFS is relaxed about durability: a SQLite commit only queues the write of its pages to IndexedDB, and the
+/// commit returns before that write lands. The import deletes the legacy database right after its commit. If the
+/// page is unloaded in between, the new database has not been persisted and the legacy one is gone, and the user
+/// has lost everything. So an open which imports must not finish, and must not delete the legacy database, until
+/// the pages it wrote are durable.
+///
+/// This test makes IndexedDB unable to accept the pages for a while, by holding a write transaction on the VFS's
+/// block store, and checks that the open waits. No crash is needed: the window is a matter of ordering, and the
+/// hold makes the ordering observable.
+#[wasm_bindgen_test]
+async fn the_legacy_database_outlives_the_import_until_the_import_is_durable() {
+    let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
+    let key = DatabaseKey::generate();
+    let factory = Factory::new().expect("factory");
+    factory.delete(&name).expect("delete request").await.expect("wiping db");
+
+    seed_legacy_database(&name, &key).await;
+    // make sure the VFS, and so its IndexedDB database, exists before anything is held on it
+    Arc::into_inner(
+        Database::open(&format!("{name}-warmup"), &key)
+            .await
+            .expect("installing the vfs"),
+    )
+    .unwrap()
+    .wipe()
+    .await
+    .expect("wiping the warmup database");
+
+    let hold = BlockStoreHold::take().await;
+
+    // run the open in the background, so that its progress can be observed rather than awaited
+    let outcome: Rc<RefCell<Option<CryptoKeystoreResult<Arc<Database>>>>> = Rc::new(RefCell::new(None));
+    wasm_bindgen_futures::spawn_local({
+        let (name, key, outcome) = (name.clone(), key.clone(), outcome.clone());
+        async move {
+            let result = Database::open(&name, &key).await;
+            *outcome.borrow_mut() = Some(result);
+        }
+    });
+
+    // long enough that an open which does not wait for durability has certainly finished
+    sleep_ms(1_500).await;
+    assert!(
+        outcome.borrow().is_none(),
+        "the open finished while its pages could not have reached IndexedDB, so it did not wait for durability"
+    );
+    assert!(
+        legacy_idb_exists(&name).await,
+        "the legacy database must not be deleted before the imported data is durable"
+    );
+
+    hold.release().await;
+    while outcome.borrow().is_none() {
+        sleep_ms(50).await;
+    }
+    let db = outcome
+        .borrow_mut()
+        .take()
+        .unwrap()
+        .expect("once IndexedDB accepts writes again, the open completes");
+
+    assert_imported_and_migrated(&db, seed::CREDENTIAL_CREATED_AT).await;
+    assert!(
+        !legacy_idb_exists(&name).await,
+        "the legacy database is deleted once its data has been imported durably"
     );
 
     Arc::into_inner(db)
