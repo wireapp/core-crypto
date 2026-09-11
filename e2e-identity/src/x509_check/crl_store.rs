@@ -3,13 +3,15 @@ use std::{
     sync::{Arc, Mutex, MutexGuard},
 };
 
-use certval::{CrlScope, CrlSource, ExtensionProcessing, PDVCertificate, PDVExtension, TimeOfInterest, name_to_string};
+use certval::{
+    CrlInfo, CrlScope, CrlSource, ExtensionProcessing, PDVCertificate, PDVExtension, TimeOfInterest, get_crl_info,
+    name_to_string,
+};
 use const_oid::db::rfc5912::ID_CE_AUTHORITY_KEY_IDENTIFIER;
 use x509_cert::{certificate::Raw, crl::CertificateList, der::Encode};
 
 use super::{
     RustyX509CheckError, RustyX509CheckResult,
-    crl_info::CrlInfo,
     misc::{check_crl_valid_at_toi, get_dp_from_crl, get_dps_from_cert},
 };
 
@@ -97,7 +99,7 @@ impl CrlStore {
         let crls = self.crls.lock().map_err(|_| RustyX509CheckError::LockPoisonError)?;
         let mut crl_info = self.crl_info.lock().map_err(|_| RustyX509CheckError::LockPoisonError)?;
         for crl in crls.iter() {
-            match CrlInfo::try_from(crl) {
+            match get_crl_info(crl) {
                 Ok(info) if check_crl_valid_at_toi(toi, crl) => {
                     self.add_crl_info_with_guard(crl, info, &mut crl_info)?;
                 }
@@ -176,7 +178,7 @@ impl CrlSource for CrlStore {
             .map_err(|_| certval::Error::Unrecognized)?
             .push(crl.clone());
 
-        if let Ok(info) = CrlInfo::try_from(crl) {
+        if let Ok(info) = get_crl_info(crl) {
             self.add_crl_info(crl, info).map_err(|_| certval::Error::Unrecognized)?;
         }
 
