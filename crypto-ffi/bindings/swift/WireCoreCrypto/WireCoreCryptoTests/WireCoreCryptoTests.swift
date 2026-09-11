@@ -147,48 +147,31 @@ final class WireCoreCryptoTests: XCTestCase {
         let databaseName = "migrating-key-types-to-bytes-test-E4D08634-D1AE-40C8-ADF4-34CCC472AC38"
         let databaseFile = "\(databaseName).sqlite"
 
-        // Store salt in keychain
-        let digest = SHA256.hash(data: Data(databaseFile.utf8))
-        let keychainAccount = "keystore_salt_\(digest.map { String(format: "%02x", $0) }.joined())"
-        let saltHex = "d94268ec2a83415b40702a14bb50e2c3"
-        let saltData = Data(hex: saltHex)!
-
-        let keychainQuery: [String: Any] = [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "wire.com",
-            kSecAttrAccount as String: keychainAccount,
-            kSecValueData as String: saltData,
-        ]
-        SecItemDelete(keychainQuery as CFDictionary)
-        SecItemAdd(keychainQuery as CFDictionary, nil)
-
         // Copy test database with the old key format to a temporary directory
         let tmpdir = FileManager.default.temporaryDirectory.appendingPathComponent(
             "cc-test-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: tmpdir, withIntermediateDirectories: true)
-        let resourceURL = Bundle(for: type(of: self))
-            .url(
-                forResource: databaseName,
-                withExtension: "sqlite"
-            )!
-        let targetPath = tmpdir.appendingPathComponent(resourceURL.lastPathComponent)
-        try FileManager.default.copyItem(at: resourceURL, to: targetPath)
+        let keystorePath = tmpdir.appendingPathComponent(databaseFile).path()
 
-        // The keystore path has to be the same over different instances of the test,
-        // because of handle_ios_wal_compat().
-        // Change the working directory so that we can use a relative path for the keystore path.
-        let oldWorkingDirectory = FileManager.default.currentDirectoryPath
-        FileManager.default.changeCurrentDirectoryPath(tmpdir.path())
+        // Copy database file & salt
+        let files = try FileManager.default.contentsOfDirectory(
+            at: Bundle(for: type(of: self)).resourceURL!,
+            includingPropertiesForKeys: nil
+        )
+        for file in files where file.lastPathComponent.hasPrefix(databaseName) {
+            let targetPath = tmpdir.appendingPathComponent(file.lastPathComponent)
+            try FileManager.default.copyItem(at: file, to: targetPath)
+        }
 
         // Now migrate the database to the new key format
         let oldKey = "secret"
         let newKey = genDatabaseKey()
         try await migrateDatabaseKeyTypeToBytes(
-            path: targetPath.lastPathComponent, oldKey: oldKey, newKey: newKey
+            path: keystorePath, oldKey: oldKey, newKey: newKey
         )
 
         let database = try await Database.open(
-            location: targetPath.lastPathComponent, key: newKey)
+            location: keystorePath, key: newKey)
 
         // Check if we can read the conversation from the migrated database
         let bob = try CoreCrypto(database: database)
@@ -200,8 +183,6 @@ final class WireCoreCryptoTests: XCTestCase {
         }
         XCTAssertEqual(1, epoch)
 
-        // The file manager is a singleton used for the entire process, so we better switch back
-        FileManager.default.changeCurrentDirectoryPath(oldWorkingDirectory)
         try FileManager.default.removeItem(at: tmpdir)
     }
 
