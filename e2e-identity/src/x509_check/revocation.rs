@@ -238,7 +238,7 @@ impl PkiEnvironment {
         }
     }
 
-    fn validate_cert_internal(
+    pub(crate) fn validate_cert(
         &self,
         end_identity_cert: &x509_cert::Certificate,
         perform_revocation_check: bool,
@@ -289,15 +289,5 @@ impl PkiEnvironment {
         });
 
         if any_path_validates { Ok(()) } else { result }
-    }
-
-    #[inline]
-    pub fn validate_cert(&self, end_identity_cert: &x509_cert::Certificate) -> RustyX509CheckResult<()> {
-        self.validate_cert_internal(end_identity_cert, false)
-    }
-
-    #[inline]
-    pub fn validate_cert_and_revocation(&self, end_identity_cert: &x509_cert::Certificate) -> RustyX509CheckResult<()> {
-        self.validate_cert_internal(end_identity_cert, true)
     }
 }

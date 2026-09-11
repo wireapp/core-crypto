@@ -48,7 +48,7 @@ async fn verify_leaf_certificate(
     sign_kp: &Pem,
     cert: &Certificate,
 ) -> Result<(), CertificateError> {
-    pki_env.validate_cert(cert)?;
+    pki_env.validate_cert(cert, false)?;
 
     // Make sure that the algorithm specified by the certificate matches the one of the signing
     // keypair.
