@@ -205,6 +205,42 @@ final class WireCoreCryptoTests: XCTestCase {
         try FileManager.default.removeItem(at: tmpdir)
     }
 
+    func testNewDatabaseStoresItsSaltInAFileAndNotInTheKeychain() async throws {
+        let keystore = try newKeystorePath()
+
+        _ = try await Database.open(location: keystore, key: genDatabaseKey())
+
+        let salt = try Data(contentsOf: saltFile(ofDatabaseAt: keystore))
+        XCTAssertEqual(salt.count, 16)
+        XCTAssertNil(legacySalt(ofDatabaseAt: keystore))
+    }
+
+    func testOpeningDatabaseMigratesSaltFromKeychainToFile() async throws {
+        let keystorePath = try newKeystorePath()
+        let key = genDatabaseKey()
+        let data = Data("written before the salt migration".utf8)
+
+        // A database as left behind by a core crypto version keeping the salt in the keychain.
+        try await withDatabase(at: keystorePath, key: key) { context in
+            try await context.setData(data: data)
+        }
+        let salt = try moveSaltToKeychain(ofDatabaseAt: keystorePath)
+
+        // Opening it moves the salt out of the keychain and into a file next to the database...
+        let database = try await Database.open(location: keystorePath, key: key)
+        let migratedSalt = try Data(contentsOf: saltFile(ofDatabaseAt: keystorePath))
+        XCTAssertEqual(migratedSalt, salt)
+        XCTAssertNil(legacySalt(ofDatabaseAt: keystorePath))
+
+        // ...and it is still the salt the database is encrypted with, otherwise what we wrote
+        // before the migration would not decrypt.
+        let coreCrypto = try CoreCrypto(database: database)
+        let migratedData = try await coreCrypto.transaction { context in
+            try await context.getData()
+        }
+        XCTAssertEqual(migratedData, data)
+    }
+
     func testInteractionWithInvalidContextThrowsError() async throws {
         let aliceId = genClientId()
         let database = try await newDatabase()
@@ -1143,10 +1179,84 @@ final class WireCoreCryptoTests: XCTestCase {
     }
 
     private func newDatabase() async throws -> Database {
+        let keystore = try newKeystorePath()
+        return try await Database.open(location: keystore, key: genDatabaseKey())
+    }
+
+    /// A path in a temporary directory at which no database exists yet.
+    private func newKeystorePath() throws -> String {
         let root = FileManager.default.temporaryDirectory.appending(path: "mls")
-        let keystore = root.appending(path: "keystore-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        return try await Database.open(location: keystore.path, key: genDatabaseKey())
+        return root.appending(path: "keystore-\(UUID().uuidString)").path
+    }
+
+    /// Open the database at `location`, run `block` in a transaction against it and drop it again.
+    private func withDatabase(
+        at location: String,
+        key: DatabaseKey,
+        _ block: @escaping (CoreCryptoContextProtocol) async throws -> Void
+    ) async throws {
+        let database = try await Database.open(location: location, key: key)
+        let coreCrypto = try CoreCrypto(database: database)
+        try await coreCrypto.transaction { context in
+            try await block(context)
+        }
+    }
+
+    /// The file in which the database at `path` keeps the salt it is encrypted with.
+    ///
+    /// See `handle_ios_wal_compat()`: on iOS the database header is left unencrypted so that the
+    /// OS recognizes the file as a SQLite database, which means the salt cannot live in it.
+    private func saltFile(ofDatabaseAt path: String) -> URL {
+        // A relative path is resolved against the working directory, just like the database path
+        // itself is by core crypto.
+        URL(fileURLWithPath: "\(path).salt")
+    }
+
+    /// Query matching the keychain item in which core crypto used to keep the salt of the database
+    /// at `path`, before it moved into a file next to the database.
+    private func legacySaltQuery(ofDatabaseAt path: String) -> [String: Any] {
+        let digest = SHA256.hash(data: Data(path.utf8))
+        let account = "keystore_salt_\(digest.map { String(format: "%02x", $0) }.joined())"
+        return [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: "wire.com",
+            kSecAttrAccount as String: account,
+        ]
+    }
+
+    /// The salt of the database at `path` as kept in the keychain, if there is one.
+    private func legacySalt(ofDatabaseAt path: String) -> Data? {
+        var query = legacySaltQuery(ofDatabaseAt: path)
+        query[kSecReturnData as String] = true
+        var item: CFTypeRef?
+        guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess else {
+            return nil
+        }
+        return item as? Data
+    }
+
+    /// Put `salt` into the keychain as the salt of the database at `path`.
+    private func setLegacySalt(_ salt: Data, ofDatabaseAt path: String) {
+        let query = legacySaltQuery(ofDatabaseAt: path)
+        SecItemDelete(query as CFDictionary)
+        var item = query
+        item[kSecValueData as String] = salt
+        XCTAssertEqual(SecItemAdd(item as CFDictionary, nil), errSecSuccess)
+        // Keychain items outlive the process, so don't leave ours behind for the next run.
+        addTeardownBlock {
+            SecItemDelete(query as CFDictionary)
+        }
+    }
+
+    /// Bring the database at `path` into the state a core crypto version keeping the salt in the
+    /// keychain would have left it in, and return that salt.
+    private func moveSaltToKeychain(ofDatabaseAt path: String) throws -> Data {
+        let file = saltFile(ofDatabaseAt: path)
+        let salt = try Data(contentsOf: file)
+        setLegacySalt(salt, ofDatabaseAt: path)
+        try FileManager.default.removeItem(at: file)
+        return salt
     }
 
     func ccInit(
