@@ -225,59 +225,6 @@ impl PkiEnvironment {
 
         Ok(Self { pe })
     }
-
-    pub(crate) fn validate_cert(
-        &self,
-        end_identity_cert: &x509_cert::Certificate,
-        perform_revocation_check: bool,
-    ) -> RustyX509CheckResult<()> {
-        let toi = TimeOfInterest::from_unix_secs(now()?)?;
-
-        let mut cps = CertificationPathSettings::default();
-        cps.set_time_of_interest(toi);
-        cps.set_require_ta_store(true);
-        cps.set_forbid_self_signed_ee(true);
-
-        let mut end_identity_cert = PDVCertificate::try_from(end_identity_cert.clone())?;
-        end_identity_cert.parse_extensions(EXTS_OF_INTEREST);
-
-        let mut paths = vec![];
-        self.pe.get_paths_for_target(&end_identity_cert, &mut paths, 0, toi)?;
-
-        if paths.is_empty() {
-            return Err(RustyX509CheckError::CertValError(certval::Error::PathValidation(
-                certval::PathValidationStatus::NoPathsFound,
-            )));
-        }
-
-        let mut result = Ok(());
-
-        let any_path_validates = paths.into_iter().any(|mut path| {
-            let mut cpr = CertificationPathResults::new();
-            let _ = validate_path_rfc5280(&self.pe, &cps, &mut path, &mut cpr);
-            let r = check_cpr(cpr);
-            if r.is_err() {
-                result = r;
-                return false;
-            }
-
-            if perform_revocation_check {
-                cps.set_check_crls(true);
-                cps.set_revocation_max_age(Duration::from_hours(24));
-                let mut cpr = CertificationPathResults::new();
-                let _ = check_revocation(&self.pe, &cps, &mut path, &mut cpr);
-                let r = check_cpr(cpr);
-                if r.is_err() {
-                    result = r;
-                    return false;
-                }
-            }
-
-            true
-        });
-
-        if any_path_validates { Ok(()) } else { result }
-    }
 }
 
 pub(crate) fn validate_trust_anchor_cert(
@@ -301,6 +248,59 @@ pub(crate) fn validate_trust_anchor_cert(
     verify_signatures(pe, &cps, &mut certification_path, &mut CertificationPathResults::new())?;
 
     Ok(())
+}
+
+pub(crate) fn validate_cert(
+    pe: &certval::environment::PkiEnvironment,
+    end_identity_cert: &x509_cert::Certificate,
+    perform_revocation_check: bool,
+) -> RustyX509CheckResult<()> {
+    let toi = TimeOfInterest::from_unix_secs(now()?)?;
+
+    let mut cps = CertificationPathSettings::default();
+    cps.set_time_of_interest(toi);
+    cps.set_require_ta_store(true);
+    cps.set_forbid_self_signed_ee(true);
+
+    let mut end_identity_cert = PDVCertificate::try_from(end_identity_cert.clone())?;
+    end_identity_cert.parse_extensions(EXTS_OF_INTEREST);
+
+    let mut paths = vec![];
+    pe.get_paths_for_target(&end_identity_cert, &mut paths, 0, toi)?;
+
+    if paths.is_empty() {
+        return Err(RustyX509CheckError::CertValError(certval::Error::PathValidation(
+            certval::PathValidationStatus::NoPathsFound,
+        )));
+    }
+
+    let mut result = Ok(());
+
+    let any_path_validates = paths.into_iter().any(|mut path| {
+        let mut cpr = CertificationPathResults::new();
+        let _ = validate_path_rfc5280(pe, &cps, &mut path, &mut cpr);
+        let r = check_cpr(cpr);
+        if r.is_err() {
+            result = r;
+            return false;
+        }
+
+        if perform_revocation_check {
+            cps.set_check_crls(true);
+            cps.set_revocation_max_age(Duration::from_hours(24));
+            let mut cpr = CertificationPathResults::new();
+            let _ = check_revocation(pe, &cps, &mut path, &mut cpr);
+            let r = check_cpr(cpr);
+            if r.is_err() {
+                result = r;
+                return false;
+            }
+        }
+
+        true
+    });
+
+    if any_path_validates { Ok(()) } else { result }
 }
 
 pub(crate) fn validate_crl(
