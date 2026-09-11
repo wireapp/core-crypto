@@ -1,7 +1,5 @@
 use std::time::Duration;
 
-use crate::pki_env::PkiEnvironment;
-
 use certval::{
     CertSource, CertVector, CertificationPath, CertificationPathResults, CertificationPathSettings, DeferDecodeSigned,
     EXTS_OF_INTEREST, ExtensionProcessing as _, PDVTrustAnchorChoice, PathValidationStatus, TaSource, TimeOfInterest,
@@ -76,7 +74,7 @@ pub enum IdentityStatus {
 }
 
 impl IdentityStatus {
-    pub async fn from_cert(cert: &x509_cert::Certificate, env: &PkiEnvironment) -> Self {
+    pub async fn from_cert(cert: &x509_cert::Certificate, env: &crate::pki_env::PkiEnvironment) -> Self {
         match env.validate_cert(cert).await {
             Err(RustyX509CheckError::CertValError(certval::Error::PathValidation(e))) => match e {
                 PathValidationStatus::InvalidNotAfterDate => IdentityStatus::Expired,
