@@ -15,9 +15,7 @@ use crate::{CryptoKeystoreResult, Sha256Hash, deser};
 
 pub(crate) const VERSION: i32 = 39;
 
-pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
-    let tx = conn.transaction()?;
-
+pub(crate) fn meta_migration(tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()> {
     let rows: Vec<(Vec<u8>, Vec<u8>)> = {
         let mut stmt = tx.prepare("SELECT id, state FROM mls_groups")?;
         stmt.query_map([], |row| Ok((row.get("id")?, row.get("state")?)))?
@@ -106,8 +104,6 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
             })?;
         }
     }
-
-    tx.commit()?;
 
     Ok(())
 }

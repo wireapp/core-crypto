@@ -10,9 +10,7 @@ use crate::{
 
 pub(crate) const VERSION: i32 = 19;
 
-pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
-    let tx = conn.transaction()?;
-
+pub(crate) fn meta_migration(tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()> {
     let mut group_stmt = tx.prepare(formatcp!(
         "SELECT state FROM {mls_group_table}",
         mls_group_table = "mls_groups",
@@ -74,11 +72,6 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
             }
         };
     }
-
-    drop(least_used_ciphersuite);
-    drop(group_stmt);
-    drop(credential_stmt);
-    tx.commit()?;
 
     Ok(())
 }
