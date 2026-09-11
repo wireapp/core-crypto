@@ -31,6 +31,9 @@
   of SQLCipher with a vendored OpenSSL. It reads and writes SQLCipher's format, so existing keystores open as before,
   and earlier CoreCrypto versions can still open keystores written by this one. Android and iOS keep SQLCipher.
 
+- JVM: the Linux library now needs glibc 2.28 or newer instead of 2.38, so it also loads on RHEL 8 and 9, SLES 15 SP3 to
+  SP5, Debian 11 and 12, and Ubuntu 20.04 and 22.04.
+
 ## CoreCrypto 10
 
 ### v10.5.2 - 2026-09-09
