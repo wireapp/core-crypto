@@ -1,9 +1,5 @@
 use certval::{ExtensionProcessing as _, PathValidationStatus};
 
-pub mod reexports {
-    pub use certval;
-}
-
 use crate::pki_env::PkiEnvironment;
 
 pub mod revocation;
