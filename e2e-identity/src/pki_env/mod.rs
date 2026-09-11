@@ -107,13 +107,22 @@ async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<certv
 }
 
 /// The PKI environment which can be initialized independently from a CoreCrypto session.
-#[derive(Debug)]
 pub struct PkiEnvironment {
     /// Implemented by the clients and used by us to make external calls during e2e flow
     hooks: Arc<dyn PkiEnvironmentHooks>,
     /// The database in which X509 Credentials are stored.
     database: Arc<Database>,
     env: Mutex<certval::environment::PkiEnvironment>,
+}
+
+impl std::fmt::Debug for PkiEnvironment {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PkiEnvironment")
+            .field("hooks", &self.hooks)
+            .field("database", &self.database)
+            .field("env", &format!("{:p}", &self.env))
+            .finish()
+    }
 }
 
 impl PkiEnvironment {
