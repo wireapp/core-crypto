@@ -239,7 +239,7 @@ impl PkiEnvironment {
         let toi = TimeOfInterest::from_unix_secs(now()?)?;
 
         // Save cert's DER representation to the database
-        let (ski, aki) = RjtPkiEnvironment::extract_ski_aki_from_cert(&cert)?;
+        let (ski, aki) = crate::utils::extract_ski_aki_from_cert(&cert)?;
         let ski_aki_pair = format!("{ski}:{}", aki.unwrap_or_default());
         let cert_der = cert.to_der()?;
         let intermediate_cert = X509IntermediateCert {
