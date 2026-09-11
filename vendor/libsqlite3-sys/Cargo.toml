@@ -48,6 +48,8 @@ bundled-sqlcipher-vendored-openssl = [
     "bundled-sqlcipher",
     "openssl-sys/vendored",
 ]
+# SQLite3 Multiple Ciphers instead of SQLite, see sqlite3mc/README.md
+bundled-sqlite3mc = ["bundled"]
 bundled-windows = [
     "cc",
     "bundled_bindings",

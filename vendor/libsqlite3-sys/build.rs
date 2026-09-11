@@ -4,6 +4,9 @@ use std::path::Path;
 #[cfg(all(feature = "loadable_extension", feature = "preupdate_hook"))]
 compile_error!("feature \"loadable_extension\" and feature \"preupdate_hook\" cannot be enabled at the same time");
 
+#[cfg(all(feature = "bundled-sqlite3mc", any(feature = "sqlcipher", feature = "bundled-sqlcipher", feature = "loadable_extension")))]
+compile_error!("feature \"bundled-sqlite3mc\" cannot be enabled together with feature \"sqlcipher\", \"bundled-sqlcipher\" or \"loadable_extension\"");
+
 /// Tells whether we're building for Windows. This is more suitable than a plain
 /// `cfg!(windows)`, since the latter does not properly handle cross-compilation
 ///
@@ -50,6 +53,9 @@ fn main() {
     }
 
     println!("cargo:rerun-if-env-changed=LIBSQLITE3_SYS_USE_PKG_CONFIG");
+    if cfg!(feature = "bundled-sqlite3mc") && env::var_os("LIBSQLITE3_SYS_USE_PKG_CONFIG").is_some_and(|s| s != "0") {
+        panic!("feature \"bundled-sqlite3mc\" builds SQLite3 Multiple Ciphers itself and can't be used with LIBSQLITE3_SYS_USE_PKG_CONFIG");
+    }
     if env::var_os("LIBSQLITE3_SYS_USE_PKG_CONFIG").is_some_and(|s| s != "0")
         || cfg!(feature = "loadable_extension")
     {
@@ -118,11 +124,17 @@ mod build_bundled {
         {
             super::copy_bindings(lib_name, "bindgen_bundled_version", out_path);
         }
+        // SQLite3 Multiple Ciphers ships its amalgamation under its own name.
+        let source = if cfg!(feature = "bundled-sqlite3mc") {
+            format!("{lib_name}/sqlite3mc_amalgamation.c")
+        } else {
+            format!("{lib_name}/sqlite3.c")
+        };
         println!("cargo:include={}/{lib_name}", env!("CARGO_MANIFEST_DIR"));
-        println!("cargo:rerun-if-changed={lib_name}/sqlite3.c");
+        println!("cargo:rerun-if-changed={source}");
         println!("cargo:rerun-if-changed=sqlite3/wasm32-wasi-vfs.c");
         let mut cfg = cc::Build::new();
-        cfg.file(format!("{lib_name}/sqlite3.c"))
+        cfg.file(&source)
             .flag("-DSQLITE_CORE")
             .flag("-DSQLITE_DEFAULT_FOREIGN_KEYS=1")
             .flag("-DSQLITE_ENABLE_API_ARMOR")
@@ -224,6 +236,27 @@ mod build_bundled {
             } else {
                 // branch not taken on Windows, just `crypto` is fine.
                 println!("cargo:rustc-link-lib=dylib=crypto");
+            }
+        }
+
+        if cfg!(feature = "bundled-sqlite3mc") {
+            // The default cipher scheme is SQLCipher's, version 4 in legacy mode: databases are read and
+            // written in the format of the SQLCipher builds. The other schemes are left out, except
+            // ChaCha20-Poly1305: the value-level encryption of SQLite3 Multiple Ciphers doesn't build
+            // without ChaCha20 or Ascon. No crypto library is linked. Temporary files stay in memory,
+            // as in the SQLCipher build.
+            cfg.flag("-DSQLITE_TEMP_STORE=2")
+                .flag("-DCODEC_TYPE=CODEC_TYPE_SQLCIPHER")
+                .flag("-DSQLITE3MC_USE_SQLCIPHER_LEGACY")
+                .flag("-DHAVE_CIPHER_AES_128_CBC=0")
+                .flag("-DHAVE_CIPHER_AES_256_CBC=0")
+                .flag("-DHAVE_CIPHER_RC4=0")
+                .flag("-DHAVE_CIPHER_ASCON128=0")
+                .flag("-DHAVE_CIPHER_AEGIS=0");
+            if win_target() {
+                // The random number generator calls RtlGenRandom. MSVC links advapi32 through a
+                // `#pragma comment`, MinGW doesn't.
+                println!("cargo:rustc-link-lib=advapi32");
             }
         }
 
@@ -336,7 +369,9 @@ fn env_prefix() -> &'static str {
 }
 
 fn lib_name() -> &'static str {
-    if cfg!(any(feature = "sqlcipher", feature = "bundled-sqlcipher")) {
+    if cfg!(feature = "bundled-sqlite3mc") {
+        "sqlite3mc"
+    } else if cfg!(any(feature = "sqlcipher", feature = "bundled-sqlcipher")) {
         "sqlcipher"
     } else {
         "sqlite3"
