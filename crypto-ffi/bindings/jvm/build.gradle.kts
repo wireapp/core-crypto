@@ -45,6 +45,7 @@ val copyFfiLibrary by tasks.registering {
     doLast {
         val libs = listOf(
             Triple("x86_64-unknown-linux-gnu", "linux-x86-64", "so"),
+            Triple("aarch64-unknown-linux-gnu", "linux-aarch64", "so"),
             Triple("aarch64-apple-darwin", "darwin-aarch64", "dylib")
         )
         libs.forEach { (rustTarget, jvmTarget, ext) ->

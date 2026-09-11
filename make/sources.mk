@@ -23,8 +23,11 @@ INTEROP_TS_FILES := $(shell fd --type f --extension ts . interop | LC_ALL=C sort
 INTEROP_MANIFEST := interop/Cargo.toml
 INTEROP_SOURCES := $(INTEROP_RS_FILES) $(INTEROP_TS_FILES) $(INTEROP_MANIFEST)
 
+# The vendored libsqlite3-sys, C sources included: the files git tracks. fd skips it, see .fdignore.
+VENDORED_SOURCES := $(shell git ls-files vendor | LC_ALL=C sort)
+
 # Complete dependency set for FFI-related Cargo builds
-RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES)
+RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES) $(VENDORED_SOURCES)
 
 # Used by CI to calculate a hash of prerequisite files of a make rule
 %-hash-deps:
