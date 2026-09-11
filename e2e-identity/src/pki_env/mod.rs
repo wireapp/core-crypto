@@ -28,7 +28,7 @@ use crate::{
     pki_env::hooks::PkiEnvironmentHooks,
     x509_check::{
         PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams, RustyX509CheckError, RustyX509CheckResult,
-        extract_crl_uris, now,
+        extract_crl_uris, now, validate_trust_anchor_cert,
     },
 };
 
@@ -167,7 +167,7 @@ impl PkiEnvironment {
     /// future validation.
     pub async fn add_trust_anchor(&self, tx: &Transaction, cert: Certificate) -> Result<()> {
         // Validate it (expiration & signature only)
-        self.rjt_pki_env.lock().await.validate_trust_anchor_cert(&cert)?;
+        validate_trust_anchor_cert(&*self.rjt_pki_env.lock().await, &cert)?;
 
         let fingerprint = cert
             .tbs_certificate()
