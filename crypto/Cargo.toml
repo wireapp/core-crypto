@@ -95,7 +95,6 @@ rstest_reuse.workspace = true
 env_logger.workspace = true
 futures-util = { workspace = true, features = ["std", "alloc"] }
 async-trait.workspace = true
-wire-e2e-identity = { workspace = true, features = ["builder"] }
 time = { workspace = true, features = ["wasm-bindgen"] }
 core-crypto-keystore = { workspace = true, features = ["dummy-entity"] }
 rmp-serde.workspace = true
