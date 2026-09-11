@@ -62,9 +62,7 @@ zeroize = { workspace = true, features = ["zeroize_derive"] }
 parking_lot = { version = "0.12.5", features = ["arc_lock"] }
 
 [target.'cfg(target_os = "ios")'.dependencies]
-core-foundation = "0.10"
 security-framework = "3.7"
-security-framework-sys = "2.16"
 
 [target.'cfg(not(target_os = "unknown"))'.dependencies]
 async-fs = "2.2"
