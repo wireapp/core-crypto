@@ -10,7 +10,7 @@ use certval::{
 use const_oid::AssociatedOid;
 use x509_cert::{
     certificate::Raw,
-    der::{Decode, DecodePem, Encode},
+    der::{Decode, Encode},
     ext::pkix::AuthorityKeyIdentifier,
 };
 
@@ -74,10 +74,6 @@ pub(crate) fn now() -> RustyX509CheckResult<u64> {
 }
 
 impl PkiEnvironment {
-    pub fn decode_pem_cert(pem: String) -> RustyX509CheckResult<x509_cert::Certificate> {
-        Ok(x509_cert::Certificate::from_pem(pem)?)
-    }
-
     pub fn decode_der_crl(crl_der: Vec<u8>) -> RustyX509CheckResult<x509_cert::crl::CertificateList<Raw>> {
         Ok(x509_cert::crl::CertificateList::from_der(&crl_der)?)
     }
