@@ -120,40 +120,6 @@ pub fn extract_crl_uris(
         }))
 }
 
-#[derive(Default)]
-pub struct PkiEnvironmentParams<'a> {
-    /// Intermediate CAs and cross-signed CAs
-    pub intermediates: &'a [x509_cert::Certificate],
-    /// Trust Anchor roots
-    pub trust_roots: &'a [x509_cert::anchor::TrustAnchorChoice],
-    /// CRLs to add to the revocation check
-    pub crls: &'a [x509_cert::crl::CertificateList<Raw>],
-}
-
-pub struct PkiEnvironment {
-    pe: certval::environment::PkiEnvironment,
-}
-
-impl std::ops::Deref for PkiEnvironment {
-    type Target = certval::environment::PkiEnvironment;
-
-    fn deref(&self) -> &Self::Target {
-        &self.pe
-    }
-}
-
-impl std::ops::DerefMut for PkiEnvironment {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.pe
-    }
-}
-
-impl std::fmt::Debug for PkiEnvironment {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("PkiEnvironment").field("pe", &"[OPAQUE]").finish()
-    }
-}
-
 fn check_cpr(cpr: CertificationPathResults) -> RustyX509CheckResult<()> {
     if let Some(validation_status) = cpr.get_validation_status() {
         match validation_status {
