@@ -31,8 +31,8 @@ async fn get_vfs_util() -> CryptoKeystoreResult<RelaxedIdbUtil> {
 /// Encryption: if the database exists, it is assumed to be already encrypted, and decrypted with the provided key.
 /// If it does not yet exist, the provided key is set.
 ///
-/// Migration: might partially migrate the database, if it detects that a legacy IDB database exists.
-/// A final migration to latest version will be necessary!
+/// Migration: might partially migrate the database, if it detects that a legacy IDB database exists whose
+/// data has not yet been imported. A final migration to latest version will be necessary!
 pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<(Connection, FsAbstraction)> {
     let vfs_util = FsAbstraction(get_vfs_util().await?);
     let already_exists = vfs_util.exists(name);
@@ -50,8 +50,11 @@ pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<
         super::encryption::decrypt(&mut conn, key)?;
     } else {
         super::encryption::rekey(&mut conn, key)?;
-        super::idb_migration::maybe_migrate(name, key, &mut conn).await?;
     }
+
+    // Not gated on `already_exists`: the file also exists after an import which failed or was interrupted,
+    // and the import must run again in that case. `maybe_migrate` decides from the database's own state.
+    super::idb_migration::maybe_migrate(name, key, &mut conn, &vfs_util).await?;
 
     Ok((conn, vfs_util))
 }
@@ -59,6 +62,32 @@ pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<
 #[derive(derive_more::Debug, derive_more::Deref, derive_more::DerefMut)]
 #[debug("RelaxedIdbUtil")]
 pub(super) struct FsAbstraction(RelaxedIdbUtil);
+
+/// A file name no keystore is ever opened under, used only as the target of the no-op deletion in
+/// [`FsAbstraction::flush`].
+const DURABILITY_BARRIER_FILE: &str = ".core-crypto-durability-barrier";
+
+impl FsAbstraction {
+    /// Wait until every write the VFS has queued so far has reached IndexedDB.
+    ///
+    /// relaxed-idb is relaxed about durability: when SQLite commits, the VFS queues the write of the changed pages
+    /// and returns at once, and a worker drains the queue into IndexedDB later. Most of the time that is an
+    /// acceptable trade. It is not acceptable at the one point where we are about to destroy the only other copy of
+    /// the data, so the import calls this between committing the copy and deleting the legacy database.
+    ///
+    /// The VFS offers no flush operation, but its queue is strictly ordered and a deletion goes through the same
+    /// queue with a completion signal. Deleting a file which does not exist is a no-op, so awaiting one is a
+    /// barrier: it resolves only once everything queued before it has landed.
+    pub(super) async fn flush(&self) -> CryptoKeystoreResult<()> {
+        self.delete_db(DURABILITY_BARRIER_FILE)
+            .map_err(CryptoKeystoreError::relaxed_idb("queueing the durability barrier"))?
+            .await
+            .map_err(CryptoKeystoreError::relaxed_idb(
+                "waiting for queued writes to reach IndexedDB",
+            ))?;
+        Ok(())
+    }
+}
 
 // SAFETY: so this is a lie, it's not safe.
 // But on the other hand we only ever compile this where `target_os = "unknown"`,

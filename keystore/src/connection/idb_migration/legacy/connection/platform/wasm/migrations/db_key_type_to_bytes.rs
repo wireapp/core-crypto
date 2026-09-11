@@ -7,15 +7,16 @@ use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
     connection::idb_migration::legacy::{
         connection::wasm::rekey::rekey_entities,
-        entities::mls::{
-            e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
-            pending_group::PersistedMlsPendingGroup, stored_keypackage::StoredKeypackage,
+        entities::{
+            mls::{
+                e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
+                pending_group::PersistedMlsPendingGroup, pending_message::LegacyMlsPendingMessage,
+                stored_keypackage::StoredKeypackage,
+            },
+            proteus::identity::LegacyProteusIdentity,
         },
     },
-    entities::{
-        MlsPendingMessage, ProteusIdentity, ProteusPrekey, ProteusSession, StoredEncryptionKeyPair,
-        StoredHpkePrivateKey, StoredPskBundle,
-    },
+    entities::{ProteusPrekey, ProteusSession, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle},
     migrations::{LegacyPersistedMlsGroup, StoredSignatureKeypair, V5Credential, V33StoredEpochEncryptionKeypair},
 };
 
@@ -55,12 +56,12 @@ pub(crate) async fn migrate_db_key_type_to_bytes(
             StoredKeypackage,
             LegacyPersistedMlsGroup,
             PersistedMlsPendingGroup,
-            MlsPendingMessage,
+            LegacyMlsPendingMessage,
             E2eiAcmeCA,
             E2eiIntermediateCert,
             E2eiCrl,
             ProteusPrekey,
-            ProteusIdentity,
+            LegacyProteusIdentity,
             ProteusSession
         ]
     );

@@ -8,14 +8,17 @@ use crate::{
             DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey,
             platform::wasm::migrations::open_and_migrate,
         },
-        entities::mls::{
-            e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
-            pending_group::PersistedMlsPendingGroup, stored_keypackage::StoredKeypackage,
+        entities::{
+            mls::{
+                e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
+                pending_group::PersistedMlsPendingGroup, pending_message::LegacyMlsPendingMessage,
+                stored_keypackage::StoredKeypackage,
+            },
+            proteus::identity::LegacyProteusIdentity,
         },
     },
     entities::{
-        MlsPendingMessage, ProteusIdentity, ProteusPrekey, ProteusSession, StoredCredential, StoredEncryptionKeyPair,
-        StoredHpkePrivateKey, StoredPskBundle,
+        ProteusPrekey, ProteusSession, StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle,
     },
     migrations::{LegacyPersistedMlsGroup, StoredCredentialV36, V33StoredEpochEncryptionKeypair},
 };
@@ -119,12 +122,12 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
                         StoredKeypackage,
                         LegacyPersistedMlsGroup,
                         PersistedMlsPendingGroup,
-                        MlsPendingMessage,
+                        LegacyMlsPendingMessage,
                         E2eiAcmeCA,
                         E2eiIntermediateCert,
                         E2eiCrl,
                         ProteusPrekey,
-                        ProteusIdentity,
+                        LegacyProteusIdentity,
                         ProteusSession
                     ]
                 );

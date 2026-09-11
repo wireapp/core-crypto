@@ -15,4 +15,6 @@ pub(crate) use item_encryption::{
 };
 pub(in crate::connection::idb_migration) use key_type::KeyType;
 pub(crate) use searchable_entity::{DeletableBySearchKey, SearchableEntity};
-pub(crate) use unique_entity::{UniqueEntity, UniqueEntityImplementationHelper};
+pub(crate) use unique_entity::{
+    UNIQUE_ENTITY_KEY, UniqueEntity, UniqueEntityImplementationHelper, decrypt_unique_entity_data,
+};

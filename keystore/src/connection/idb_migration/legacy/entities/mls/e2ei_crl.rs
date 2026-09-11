@@ -576,7 +576,7 @@ impl BorrowPrimaryKey for E2eiCrl {
 impl E2eiCrl {
     pub(crate) fn save(&self, tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()> {
         let mut stmt =
-            tx.prepare_cached("INSERT OR REPLACE INTO e2ei_crls (distribution_point, content) VALUES (?, ?, ?)")?;
+            tx.prepare_cached("INSERT OR REPLACE INTO e2ei_crls (distribution_point, content) VALUES (?, ?)")?;
         stmt.execute((&self.distribution_point, &self.content))?;
         Ok(())
     }
