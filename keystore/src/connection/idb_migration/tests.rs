@@ -13,7 +13,7 @@ use rand::distr::{Alphanumeric, SampleString as _};
 use rusqlite::Connection;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_test::wasm_bindgen_test;
-use x509_cert::der::{DecodePem as _, Encode as _};
+use x509_cert::der::{Decode as _, DecodePem as _, Encode as _};
 
 use super::*;
 #[cfg(feature = "proteus-keystore")]
@@ -31,7 +31,7 @@ use crate::{
         os_unknown,
     },
     entities::{
-        MlsPendingMessage, StoredCredential, StoredCredentialPk, StoredEpochEncryptionKeypair,
+        MlsPendingMessage, PersistedMlsGroup, StoredCredential, StoredCredentialPk, StoredEpochEncryptionKeypair,
         StoredEpochEncryptionKeypairPkRef, StoredKeyPackage, X509Crl, X509IntermediateCert, X509TrustAnchor,
     },
     traits::FetchFromDatabase as _,
@@ -693,16 +693,52 @@ async fn a_second_open_after_import_is_a_no_op() {
         .expect("wiping the new database");
 }
 
-/// The IndexedDB contents of a keystore written by v10.1.0, the last release whose wasm keystore wrote IndexedDB.
+/// The IndexedDB contents of a keystore written by v9.3.4.
 ///
-/// Captured once, by saving the same rows as [`seed`] through that release's public API and dumping every
-/// object store with its keys. Bytes are tagged as `{"$u8": "<hex>"}`, since JSON cannot otherwise tell a
-/// `Uint8Array` from an array of numbers, and IndexedDB keys of the two kinds do not compare equal.
+/// The v9 series wrote IndexedDB schema version 5, so restoring this exercises the legacy chain's v6 to v11 steps
+/// on real rows before the import runs. The keystore was populated through that release's public API, so every row
+/// is one a real client could have written; see `fixtures/README.md` and the constants in
+/// `fixtures/generate-legacy-idb-v9.3.4.rs`, which [`captured`] mirrors. Bytes are tagged as `{"$u8": "<hex>"}`,
+/// since JSON cannot otherwise tell a `Uint8Array` from an array of numbers, and IndexedDB keys of the two kinds do
+/// not compare equal.
 ///
 /// This is the only thing which pins what old clients actually wrote: the legacy entities in this crate both
 /// write and read, so they always agree with themselves, and [`imports_every_legacy_entity`] cannot notice
 /// when their serialized shape drifts away from the data in the field.
-const LEGACY_FIXTURE: &str = include_str!("fixtures/legacy-idb-v10.1.0.json");
+const LEGACY_FIXTURE_V9_3_4: &str = include_str!("fixtures/legacy-idb-v9.3.4.json");
+
+/// The IndexedDB contents of a keystore written by v10.1.0, the last release whose wasm keystore wrote IndexedDB.
+///
+/// Captured by saving the same rows as [`seed`] through that release's public API; see `fixtures/README.md`. It is
+/// kept alongside the v9.3.4 capture because the two generations keyed some rows differently, and each capture
+/// catches what the other cannot.
+const LEGACY_FIXTURE_V10_1_0: &str = include_str!("fixtures/legacy-idb-v10.1.0.json");
+
+/// What the generator put into the captured keystore; these must match `fixtures/generate-legacy-idb-v9.3.4.rs`.
+mod captured {
+    pub(super) const CLIENT_ID: &[u8] = b"alice-legacy-fixture@wire.com:0a1b2c3d";
+    pub(super) const ESTABLISHED_CONVERSATION_ID: &[u8] = b"legacy-fixture-established-conversation";
+    pub(super) const PENDING_CONVERSATION_ID: &[u8] = b"legacy-fixture-pending-conversation";
+    pub(super) const CIPHERSUITE: u16 = 1;
+    pub(super) const PROTEUS_PREKEY_ID: u16 = 7;
+    pub(super) const PROTEUS_SESSION_ID: &str = "legacy-fixture-proteus-session-with-bob";
+    pub(super) const CONSUMER_DATA: &[u8] = b"consumer data kept across the import";
+    pub(super) const CRL_DISTRIBUTION_POINT: &str = "https://example.com/legacy-fixture.crl";
+    pub(super) const ROOT_CA_COMMON_NAME: &str = "Legacy Fixture Root CA";
+    pub(super) const INTERMEDIATE_CA_COMMON_NAME: &str = "Legacy Fixture Intermediate CA";
+}
+
+fn fixture(json: &str) -> serde_json::Value {
+    serde_json::from_str(json).expect("the fixture is valid JSON")
+}
+
+/// How many rows the capture holds in `store`, for stores whose rows the import must carry across one for one.
+fn captured_row_count(json: &str, store: &str) -> usize {
+    fixture(json)["stores"][store]
+        .as_array()
+        .unwrap_or_else(|| panic!("the fixture has a store named {store}"))
+        .len()
+}
 
 /// Rebuild a JavaScript value from its tagged JSON encoding.
 fn fixture_value_to_js(value: &serde_json::Value) -> JsValue {
@@ -729,20 +765,16 @@ fn fixture_value_to_js(value: &serde_json::Value) -> JsValue {
     }
 }
 
-/// Recreate the captured legacy database under `name`, returning its encryption key and the credential's
-/// `created_at`, which the capturing release stamped at save time.
-async fn restore_legacy_fixture(name: &str) -> (DatabaseKey, u64) {
-    let fixture: serde_json::Value = serde_json::from_str(LEGACY_FIXTURE).expect("the fixture is valid JSON");
+/// Recreate the captured legacy database under `name`, at the schema version it was captured at, and return its
+/// encryption key.
+async fn restore_legacy_fixture(name: &str, json: &str) -> DatabaseKey {
+    let fixture = fixture(json);
     let key = DatabaseKey::try_from(
         hex::decode(fixture["database_key"].as_str().expect("fixture records its key")).expect("key is hex"),
     )
     .expect("key has the right length");
     let version = fixture["version"].as_u64().expect("fixture records its version") as u32;
     let stores = fixture["stores"].as_object().expect("fixture records its stores");
-
-    let created_at = stores["mls_credentials"][0]["value"]["created_at"]
-        .as_u64()
-        .expect("the captured credential carries its creation time in the clear");
 
     // the current legacy builders create the object stores; only the rows come from the capture
     let idb = open_at(name, &key, version).await;
@@ -768,25 +800,185 @@ async fn restore_legacy_fixture(name: &str) -> (DatabaseKey, u64) {
     }
     idb.close();
 
-    (key, created_at)
+    key
 }
 
-/// A database captured from the last IndexedDB-writing release is imported in full.
+/// The common name of a DER certificate, so that a certificate can be recognised without embedding its bytes.
+fn certificate_common_name(der: &[u8]) -> String {
+    let certificate = x509_cert::Certificate::from_der(der).expect("the stored certificate is DER");
+    certificate.tbs_certificate().subject().to_string()
+}
+
+/// A database captured from a v9.3.4 client is upgraded through the legacy chain and imported in full.
 ///
 /// [`imports_every_legacy_entity`] proves the import handles what the legacy entities write today. This proves
-/// it handles what old clients wrote, which is the thing that actually matters and which nothing in the code
-/// can vouch for.
+/// the whole path handles what an old client actually wrote, from IndexedDB schema version 5 through the legacy
+/// upgrade steps, the import, and every SQL migration after it. Because the rows are real, the group family can
+/// be checked through the fully migrated database here, which the seeded tests cannot do.
+#[wasm_bindgen_test]
+async fn imports_a_database_captured_from_v9_3_4() {
+    let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
+    let factory = Factory::new().expect("factory");
+    factory.delete(&name).expect("delete request").await.expect("wiping db");
+
+    let key = restore_legacy_fixture(&name, LEGACY_FIXTURE_V9_3_4).await;
+    assert!(
+        legacy_idb_exists(&name).await,
+        "the restored legacy database must exist for this test to mean anything"
+    );
+
+    let db = Database::open(&name, &key)
+        .await
+        .expect("opening the new database over the captured legacy database upgrades and imports it");
+
+    // the credential and its keypair, merged by the v6 step and given a ciphersuite by the v7 step
+    let credentials = db.load_all::<StoredCredential>().await.unwrap();
+    assert_eq!(
+        credentials.len(),
+        1,
+        "the one credential survives the v6 and v7 credential steps"
+    );
+    let credential = &credentials[0];
+    assert_eq!(credential.session_id, captured::CLIENT_ID);
+    assert_eq!(credential.ciphersuite, captured::CIPHERSUITE);
+    assert_eq!(credential.credential_type, basic_credential_type());
+    assert!(
+        !credential.private_key.is_empty(),
+        "the private key comes from the merged signature keypair"
+    );
+
+    // the established conversation, with its columns backfilled from real state by V39
+    let established = db
+        .get_borrowed::<PersistedMlsGroup>(ConversationIdRef::new(captured::ESTABLISHED_CONVERSATION_ID))
+        .await
+        .unwrap()
+        .expect("the established conversation survives every migration");
+    assert!(!established.is_pending);
+    assert!(established.epoch >= 1, "adding a member advanced the epoch");
+    assert_eq!(established.ciphersuite, captured::CIPHERSUITE);
+    assert_eq!(established.credential_id, Sha256Hash::hash_from(&credential.public_key));
+    assert_eq!(established.credential_type, credential.credential_type);
+
+    // the conversation being joined by external commit, which V39 keeps so that the join can be recovered
+    let pending = db
+        .get_borrowed::<PersistedMlsGroup>(ConversationIdRef::new(captured::PENDING_CONVERSATION_ID))
+        .await
+        .unwrap()
+        .expect("the pending external join survives every migration");
+    assert!(pending.is_pending);
+    assert_eq!(pending.credential_id, Sha256Hash::hash_from(&credential.public_key));
+
+    let pending_messages = db
+        .search::<MlsPendingMessage, _>(ConversationIdRef::new(captured::PENDING_CONVERSATION_ID))
+        .await
+        .unwrap();
+    assert_eq!(
+        pending_messages.len(),
+        1,
+        "the message buffered for the pending join survives"
+    );
+
+    // keying material, copied one for one
+    let epoch_keypairs = db.load_all::<StoredEpochEncryptionKeypair>().await.unwrap();
+    assert_eq!(
+        epoch_keypairs.len(),
+        captured_row_count(LEGACY_FIXTURE_V9_3_4, "mls_epoch_encryption_keypairs")
+    );
+    // the client generated epoch keypairs both for the conversation it created and for the one it is joining
+    assert!(
+        epoch_keypairs.iter().all(|keypair| {
+            [captured::ESTABLISHED_CONVERSATION_ID, captured::PENDING_CONVERSATION_ID]
+                .contains(&keypair.conversation_id.bytes())
+        }),
+        "V34 splits each epoch keypair's key into the conversation it belongs to"
+    );
+    assert!(
+        epoch_keypairs
+            .iter()
+            .any(|keypair| keypair.conversation_id.bytes() == captured::ESTABLISHED_CONVERSATION_ID),
+        "the established conversation has an epoch keypair"
+    );
+    assert_eq!(
+        db.count::<StoredEncryptionKeyPair>().await.unwrap() as usize,
+        captured_row_count(LEGACY_FIXTURE_V9_3_4, "mls_encryption_keypairs")
+    );
+    assert_eq!(
+        db.count::<StoredHpkePrivateKey>().await.unwrap() as usize,
+        captured_row_count(LEGACY_FIXTURE_V9_3_4, "mls_hpke_private_keys")
+    );
+    assert_eq!(
+        db.count::<StoredKeyPackage>().await.unwrap() as usize,
+        captured_row_count(LEGACY_FIXTURE_V9_3_4, "mls_keypackages")
+    );
+
+    // the PKI environment
+    let trust_anchors = db.load_all::<X509TrustAnchor>().await.unwrap();
+    assert_eq!(trust_anchors.len(), 1);
+    assert!(certificate_common_name(&trust_anchors[0].content).contains(captured::ROOT_CA_COMMON_NAME));
+    let intermediates = db.load_all::<X509IntermediateCert>().await.unwrap();
+    assert_eq!(intermediates.len(), 1);
+    assert!(certificate_common_name(&intermediates[0].content).contains(captured::INTERMEDIATE_CA_COMMON_NAME));
+    let crl = db
+        .get_borrowed::<X509Crl>(captured::CRL_DISTRIBUTION_POINT)
+        .await
+        .unwrap()
+        .expect("the crl survives the import");
+    x509_cert::crl::CertificateList::<x509_cert::certificate::Rfc5280>::from_der(&crl.content)
+        .expect("the stored crl is DER");
+
+    let consumer_data = db
+        .get_unique::<ConsumerData>()
+        .await
+        .unwrap()
+        .expect("consumer data survives the import");
+    assert_eq!(consumer_data.content, captured::CONSUMER_DATA);
+
+    #[cfg(feature = "proteus-keystore")]
+    {
+        db.get::<ProteusIdentity>(&())
+            .await
+            .unwrap()
+            .expect("the proteus identity survives the import");
+        assert_eq!(
+            db.count::<ProteusPrekey>().await.unwrap() as usize,
+            captured_row_count(LEGACY_FIXTURE_V9_3_4, "proteus_prekeys")
+        );
+        db.get::<ProteusPrekey>(&captured::PROTEUS_PREKEY_ID)
+            .await
+            .unwrap()
+            .expect("the proteus prekey survives the import");
+        db.get_borrowed::<ProteusSession>(captured::PROTEUS_SESSION_ID)
+            .await
+            .unwrap()
+            .expect("the proteus session survives the import");
+    }
+
+    assert!(
+        !legacy_idb_exists(&name).await,
+        "the legacy database must be deleted once its data has been imported"
+    );
+
+    Arc::into_inner(db)
+        .expect("no other reference to the database")
+        .wipe()
+        .await
+        .expect("wiping the new database");
+}
+
+/// A database captured from v10.1.0, the last IndexedDB-writing release, is imported in full.
+///
+/// Its rows are the ones [`seed`] describes, so the shared assertions apply; the credential's `created_at` is
+/// read from the capture because that release stamped it at save time.
 #[wasm_bindgen_test]
 async fn imports_a_database_captured_from_v10_1_0() {
     let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
     let factory = Factory::new().expect("factory");
     factory.delete(&name).expect("delete request").await.expect("wiping db");
 
-    let (key, credential_created_at) = restore_legacy_fixture(&name).await;
-    assert!(
-        legacy_idb_exists(&name).await,
-        "the restored legacy database must exist for this test to mean anything"
-    );
+    let key = restore_legacy_fixture(&name, LEGACY_FIXTURE_V10_1_0).await;
+    let credential_created_at = fixture(LEGACY_FIXTURE_V10_1_0)["stores"]["mls_credentials"][0]["value"]["created_at"]
+        .as_u64()
+        .expect("the captured credential carries its creation time in the clear");
 
     let db = Database::open(&name, &key)
         .await
