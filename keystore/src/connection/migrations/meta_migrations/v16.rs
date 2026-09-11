@@ -9,8 +9,7 @@ use crate::{
 
 pub(crate) const VERSION: i32 = 16;
 
-pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
-    let tx = conn.transaction()?;
+pub(crate) fn meta_migration(tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()> {
     let mut stmt = tx.prepare(formatcp!(
         "SELECT
             {credential_table}.rowid AS cred_rowid,
@@ -74,11 +73,6 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
             )?;
         }
     }
-
-    drop(rows);
-    drop(stmt);
-
-    tx.commit()?;
 
     Ok(())
 }

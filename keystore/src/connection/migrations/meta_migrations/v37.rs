@@ -6,8 +6,7 @@ use crate::{
 
 pub(crate) const VERSION: i32 = 37;
 
-pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
-    let tx = conn.transaction()?;
+pub(crate) fn meta_migration(tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()> {
     let credentials = {
         let mut statement = tx.prepare(
             "SELECT public_key, session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, private_key \
@@ -63,6 +62,5 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
         )?;
     }
 
-    tx.commit()?;
     Ok(())
 }

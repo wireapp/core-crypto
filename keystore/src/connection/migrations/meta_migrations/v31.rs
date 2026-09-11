@@ -30,14 +30,10 @@ const HEX_BACKFILLED_KEY_COLUMNS: &[(&str, &str)] = &[
     ("mls_credentials", "public_key_sha256"),
 ];
 
-pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
-    let tx = conn.transaction()?;
-
+pub(crate) fn meta_migration(tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()> {
     for (table, column) in HEX_BACKFILLED_KEY_COLUMNS {
-        rewrite_hex_keys_as_bytes(&tx, table, column)?;
+        rewrite_hex_keys_as_bytes(tx, table, column)?;
     }
-
-    tx.commit()?;
 
     Ok(())
 }

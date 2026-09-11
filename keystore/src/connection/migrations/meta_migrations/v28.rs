@@ -5,9 +5,7 @@ use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 
 pub(crate) const VERSION: i32 = 28;
 
-pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
-    let tx = conn.transaction()?;
-
+pub(crate) fn meta_migration(tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()> {
     // This used to be a unique entity so we only get the first entry if it exists
     let content: Option<Vec<u8>> = tx
         .query_row("SELECT content FROM e2ei_acme_ca", [], |row| row.get(0))
@@ -30,7 +28,6 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
             rusqlite::params![fingerprint, content,],
         )?;
     }
-    tx.commit()?;
 
     Ok(())
 }
