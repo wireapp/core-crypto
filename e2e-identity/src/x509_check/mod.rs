@@ -106,8 +106,3 @@ pub fn extract_crl_uris(
             ))
         }))
 }
-
-/// Extracts the expiration date from a parsed CRL
-pub fn extract_expiration_from_crl(crl: &x509_cert::crl::CertificateList) -> Option<u64> {
-    crl.tbs_cert_list.next_update.map(|t| t.to_unix_duration().as_secs())
-}
