@@ -7,15 +7,11 @@ use aes_gcm::{
 use chacha20poly1305::ChaCha20Poly1305;
 use elliptic_curve::Generate as _;
 use hkdf::Hkdf;
-// ML-DSA (FIPS-204). ml-dsa pulls signature 3.x, whose KeyInit collides with the
-// ecdsa/signature 2.x one, hence the alias
-use ml_dsa::{
-    B32, KeyInit as MlDsaKeyInit, MlDsa44, MlDsa65, MlDsa87, MlDsaParams, Signature as MlDsaSignature,
-    SignatureEncoding, SigningKey, VerifyingKey,
-};
+use ml_dsa::{MlDsa44, MlDsa65, MlDsa87};
 use openmls::prelude::HpkeCiphertext;
 use openmls_traits::{
     crypto::OpenMlsCrypto,
+    mldsa,
     random::OpenMlsRand,
     types::{
         self, AeadType, Ciphersuite, CryptoError, ExporterSecret, HashType, HpkeAeadType, HpkeConfig, HpkeKdfType,
@@ -23,7 +19,7 @@ use openmls_traits::{
     },
 };
 use rand::Rng as _;
-use rand_core::{SeedableRng as _, TryRng as _};
+use rand_core::SeedableRng as _;
 use sha2::{Digest, Sha256, Sha384, Sha512};
 use signature::digest::typenum::Unsigned;
 use tls_codec::SecretVLBytes;
@@ -156,56 +152,6 @@ impl RustCrypto {
             input.ciphertext.as_slice(),
         )
     }
-}
-
-/// The 32-byte seed we store as the ML-DSA private key (FIPS-204 xi)
-const MLDSA_SEED_LEN: usize = 32;
-
-/// Generate an ML-DSA key pair. Returns (32-byte FIPS-204 seed, raw public key),
-/// the signing key is rebuilt from the seed when signing.
-fn mldsa_key_gen<P: MlDsaParams>(rng: &mut rand_chacha::ChaCha20Rng) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
-    let mut seed = zeroize::Zeroizing::new(B32::default());
-    rng.try_fill_bytes(&mut seed)
-        .map_err(|_| CryptoError::InsufficientRandomness)?;
-    let signing_key = SigningKey::<P>::from_seed(&seed);
-    let public_key = signing_key.expanded_key().verifying_key().encode().to_vec();
-    let private_seed = seed.to_vec();
-    Ok((private_seed, public_key))
-}
-
-/// Sign data with ML-DSA parameter set P using the deterministic, empty-context
-/// FIPS-204 variant required by MLS. key is the 32-byte seed produced by keygen.
-fn mldsa_sign<P: MlDsaParams>(data: &[u8], key: &[u8]) -> Result<Vec<u8>, CryptoError> {
-    if key.len() != MLDSA_SEED_LEN {
-        return Err(CryptoError::CryptoLibraryError);
-    }
-    // secret key material, scrub on drop
-    let seed = zeroize::Zeroizing::new(B32::try_from(key).map_err(|_| CryptoError::CryptoLibraryError)?);
-    let signing_key = SigningKey::<P>::from_seed(&seed);
-    let signature = signing_key
-        .expanded_key()
-        .sign_deterministic(data, b"")
-        .map_err(|_| CryptoError::CryptoLibraryError)?;
-    Ok(signature.to_vec())
-}
-
-/// Verify a raw FIPS-204 ML-DSA signature, empty context. Fails closed: parse
-/// failures and false verifications both return Err.
-fn mldsa_verify<P: MlDsaParams>(data: &[u8], pk: &[u8], signature: &[u8]) -> Result<(), CryptoError> {
-    let verifying_key =
-        <VerifyingKey<P> as MlDsaKeyInit>::new_from_slice(pk).map_err(|_| CryptoError::CryptoLibraryError)?;
-    let signature = MlDsaSignature::<P>::try_from(signature).map_err(|_| CryptoError::InvalidSignature)?;
-    if verifying_key.verify_with_context(data, b"", &signature) {
-        Ok(())
-    } else {
-        Err(CryptoError::InvalidSignature)
-    }
-}
-
-/// Validate a raw FIPS-204 ML-DSA public key: it must decode as a VerifyingKey.
-fn mldsa_validate_key<P: MlDsaParams>(key: &[u8]) -> Result<(), CryptoError> {
-    <VerifyingKey<P> as MlDsaKeyInit>::new_from_slice(key).map_err(|_| CryptoError::InvalidKey)?;
-    Ok(())
 }
 
 impl OpenMlsCrypto for RustCrypto {
@@ -429,9 +375,9 @@ impl OpenMlsCrypto for RustCrypto {
                 let pk = k.verifying_key();
                 Ok((k.to_bytes().into(), pk.to_bytes().into()))
             }
-            SignatureScheme::MLDSA44 => mldsa_key_gen::<MlDsa44>(&mut rng),
-            SignatureScheme::MLDSA65 => mldsa_key_gen::<MlDsa65>(&mut rng),
-            SignatureScheme::MLDSA87 => mldsa_key_gen::<MlDsa87>(&mut rng),
+            SignatureScheme::MLDSA44 => mldsa::key_gen::<MlDsa44>(&mut *rng).map(|(sk, pk)| (sk.to_vec(), pk)),
+            SignatureScheme::MLDSA65 => mldsa::key_gen::<MlDsa65>(&mut *rng).map(|(sk, pk)| (sk.to_vec(), pk)),
+            SignatureScheme::MLDSA87 => mldsa::key_gen::<MlDsa87>(&mut *rng).map(|(sk, pk)| (sk.to_vec(), pk)),
             _ => Err(CryptoError::UnsupportedSignatureScheme),
         }
     }
@@ -453,9 +399,9 @@ impl OpenMlsCrypto for RustCrypto {
             SignatureScheme::ED448 => {
                 return Err(CryptoError::UnsupportedSignatureScheme);
             }
-            SignatureScheme::MLDSA44 => mldsa_validate_key::<MlDsa44>(key)?,
-            SignatureScheme::MLDSA65 => mldsa_validate_key::<MlDsa65>(key)?,
-            SignatureScheme::MLDSA87 => mldsa_validate_key::<MlDsa87>(key)?,
+            SignatureScheme::MLDSA44 => mldsa::validate_key::<MlDsa44>(key)?,
+            SignatureScheme::MLDSA65 => mldsa::validate_key::<MlDsa65>(key)?,
+            SignatureScheme::MLDSA87 => mldsa::validate_key::<MlDsa87>(key)?,
         }
         Ok(())
     }
@@ -500,18 +446,18 @@ impl OpenMlsCrypto for RustCrypto {
 
                 k.verify_strict(data, &sig).map_err(|_| CryptoError::InvalidSignature)
             }
-            SignatureScheme::MLDSA44 => mldsa_verify::<MlDsa44>(data, pk, signature),
-            SignatureScheme::MLDSA65 => mldsa_verify::<MlDsa65>(data, pk, signature),
-            SignatureScheme::MLDSA87 => mldsa_verify::<MlDsa87>(data, pk, signature),
+            SignatureScheme::MLDSA44 => mldsa::verify::<MlDsa44>(data, pk, signature),
+            SignatureScheme::MLDSA65 => mldsa::verify::<MlDsa65>(data, pk, signature),
+            SignatureScheme::MLDSA87 => mldsa::verify::<MlDsa87>(data, pk, signature),
             _ => Err(CryptoError::UnsupportedSignatureScheme),
         }
     }
 
     fn sign(&self, alg: SignatureScheme, data: &[u8], key: &[u8]) -> Result<Vec<u8>, CryptoError> {
         match alg {
-            SignatureScheme::MLDSA44 => mldsa_sign::<MlDsa44>(data, key),
-            SignatureScheme::MLDSA65 => mldsa_sign::<MlDsa65>(data, key),
-            SignatureScheme::MLDSA87 => mldsa_sign::<MlDsa87>(data, key),
+            SignatureScheme::MLDSA44 => mldsa::sign::<MlDsa44>(data, key),
+            SignatureScheme::MLDSA65 => mldsa::sign::<MlDsa65>(data, key),
+            SignatureScheme::MLDSA87 => mldsa::sign::<MlDsa87>(data, key),
             // classical schemes are signed via the basic-credential crate, not here
             _ => Err(CryptoError::UnsupportedSignatureScheme),
         }
