@@ -98,10 +98,6 @@ impl PkiEnvironment {
         Ok((ski, aki))
     }
 
-    pub fn encode_cert_to_der(cert: &x509_cert::Certificate) -> RustyX509CheckResult<Vec<u8>> {
-        Ok(cert.to_der()?)
-    }
-
     pub fn encode_crl_to_der(crl: &x509_cert::crl::CertificateList<Raw>) -> RustyX509CheckResult<Vec<u8>> {
         Ok(crl.to_der()?)
     }
