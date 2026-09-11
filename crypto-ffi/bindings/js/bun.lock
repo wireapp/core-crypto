@@ -17,7 +17,7 @@
         "oxlint": "^1.81.0",
         "oxlint-tsgolint": "^7.0.2001",
         "puppeteer": "^25.10.0",
-        "tinybench": "^6.1.4",
+        "tinybench": "^6.1.5",
         "ts-loader": "^9.6.2",
         "typedoc": "0.28.20",
         "typescript": "^7.0.2",
@@ -484,7 +484,7 @@
 
     "terser-webpack-plugin": ["terser-webpack-plugin@5.3.14", "", { "dependencies": { "@jridgewell/trace-mapping": "^0.3.25", "jest-worker": "^27.4.5", "schema-utils": "^4.3.0", "serialize-javascript": "^6.0.2", "terser": "^5.31.1" }, "peerDependencies": { "webpack": "^5.1.0" } }, "sha512-vkZjpUjb6OMS7dhV+tILUW6BhpDR7P2L/aQSAv+Uwk+m8KATX9EccViHTJR2qDtACKPIYndLGCyl3FMo+r2LMw=="],
 
-    "tinybench": ["tinybench@6.1.4", "", {}, "sha512-9APumHG7r4yOk4X4WlkmE71aZcv1gvin1czO3OQ1U9iJcFA5Ja/ygyb0vPOVHTthFozUYs8CLoLUlM8grb2lTQ=="],
+    "tinybench": ["tinybench@6.1.5", "", {}, "sha512-2qZgfd7wV+won5vCJhafUvAL/8p7wzhsh/OJwJI2Eo5J68U7rJwMUD9gdwdIMl2Z9tAYXBzGNhP0sFhifwQ9iQ=="],
 
     "tinypool": ["tinypool@2.1.0", "", {}, "sha512-Pugqs6M0m7Lv1I7FtxN4aoyToKg1C4tu+/381vH35y8oENM/Ai7f7C4StcoK4/+BSw9ebcS8jRiVrORFKCALLw=="],
 
