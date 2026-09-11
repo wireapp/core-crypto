@@ -5,7 +5,7 @@ use super::X509CredentialConfiguration;
 use crate::{
     acquisition::{error::CertificateError, identity::WireIdentityReader as _},
     pki_env::PkiEnvironment,
-    x509_check::revocation::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams},
+    x509_check::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams},
 };
 
 pub(crate) async fn verify_cert_chain(

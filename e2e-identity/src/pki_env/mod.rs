@@ -27,8 +27,8 @@ use x509_cert::{
 use crate::{
     pki_env::hooks::PkiEnvironmentHooks,
     x509_check::{
-        RustyX509CheckError, RustyX509CheckResult, extract_crl_uris,
-        revocation::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams, now},
+        PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams, RustyX509CheckError, RustyX509CheckResult,
+        extract_crl_uris, now,
     },
 };
 
