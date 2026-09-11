@@ -31,8 +31,9 @@ use crate::{
         os_unknown,
     },
     entities::{
-        MlsPendingMessage, PersistedMlsGroup, StoredCredential, StoredCredentialPk, StoredEpochEncryptionKeypair,
-        StoredEpochEncryptionKeypairPkRef, StoredKeyPackage, X509Crl, X509IntermediateCert, X509TrustAnchor,
+        ConsumerData, MlsPendingMessage, PersistedMlsGroup, StoredCredential, StoredCredentialPk,
+        StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef, StoredKeyPackage, X509Crl,
+        X509IntermediateCert, X509TrustAnchor,
     },
     traits::FetchFromDatabase as _,
 };
@@ -142,7 +143,7 @@ trait Seed {
     fn seed() -> Self;
 }
 
-impl Seed for ConsumerData {
+impl Seed for LegacyConsumerData {
     fn seed() -> Self {
         Self {
             content: seed::CONSUMER_DATA.to_vec(),

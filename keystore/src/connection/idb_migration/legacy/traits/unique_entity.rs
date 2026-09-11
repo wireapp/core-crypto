@@ -15,6 +15,29 @@ use crate::{
     traits::PrimaryKey,
 };
 
+/// The object store key, and so the additional authenticated data, of a unique entity's single row.
+///
+/// Two generations of writers disagree. Up to and including the v9 series it was this single byte; v10.0 and
+/// v10.1 keyed the row by a `u32` zero instead, four bytes on the wire. New rows written by the legacy module use
+/// the older form, which is also the form the pre-v4 key-type migration rewrites, and reads accept both; see
+/// [`decrypt_unique_entity_data`].
+pub(crate) const UNIQUE_ENTITY_KEY: [u8; 1] = [0];
+
+/// The object store key v10.0 and v10.1 used for a unique entity's single row.
+const V10_UNIQUE_ENTITY_KEY: [u8; 4] = 0u32.to_le_bytes();
+
+/// Decrypt a field of a unique entity's row, whichever generation of writer produced it.
+///
+/// The row's own object store key is not available when the row is read, so the two candidate keys are tried in
+/// turn; a wrong key fails authentication rather than yielding wrong bytes, so trying both is safe.
+pub(crate) fn decrypt_unique_entity_data<E>(cipher: &aes_gcm::Aes256Gcm, data: &[u8]) -> CryptoKeystoreResult<Vec<u8>>
+where
+    E: super::DecryptWithExplicitEncryptionKey,
+{
+    E::decrypt_data_with_encryption_key(cipher, &UNIQUE_ENTITY_KEY, data)
+        .or_else(|_| E::decrypt_data_with_encryption_key(cipher, &V10_UNIQUE_ENTITY_KEY, data))
+}
+
 /// A unique entity can appear either 0 or 1 times in the database.
 pub(crate) trait UniqueEntity: EntityBase<ConnectionType = KeystoreDatabaseConnection> + PrimaryKey {
     /// The id used as they key when storing this entity in a KV store.

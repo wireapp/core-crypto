@@ -10,9 +10,12 @@ mod tests;
 use idb::Factory;
 use rusqlite::Connection;
 
-use self::legacy::connection::{DatabaseConnection as _, KeystoreDatabaseConnection};
 #[cfg(feature = "proteus-keystore")]
 use self::legacy::entities::proteus::identity::LegacyProteusIdentity;
+use self::legacy::{
+    connection::{DatabaseConnection as _, KeystoreDatabaseConnection},
+    entities::consumer_data::LegacyConsumerData,
+};
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::{ProteusPrekey, ProteusSession};
 use crate::{
@@ -26,7 +29,7 @@ use crate::{
         },
         migrations::MigrationTarget,
     },
-    entities::{ConsumerData, StoredBufferedCommit, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle},
+    entities::{StoredBufferedCommit, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle},
     migrations::{LegacyPersistedMlsGroup, StoredCredentialV36, V33StoredEpochEncryptionKeypair},
     traits::EntityDatabaseMutation as _,
 };
@@ -41,7 +44,7 @@ use crate::{
 macro_rules! for_each_imported_legacy_entity {
     ($callback:ident) => {
         $callback! {
-            ConsumerData,
+            LegacyConsumerData,
             E2eiAcmeCA,
             E2eiCrl,
             E2eiIntermediateCert,
