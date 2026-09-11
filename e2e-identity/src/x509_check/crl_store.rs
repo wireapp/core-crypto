@@ -19,7 +19,7 @@ type IssuerMap = BTreeMap<String, Vec<usize>>;
 type SkidMap = BTreeMap<Vec<u8>, Vec<usize>>;
 type DpMap = BTreeMap<Vec<u8>, Vec<usize>>;
 
-pub(crate) struct CrlStore {
+pub(super) struct CrlStore {
     crls: Arc<Mutex<Vec<CertificateList<Raw>>>>,
     crl_info: Arc<Mutex<Vec<CrlInfo>>>,
     issuers: Arc<Mutex<IssuerMap>>,
