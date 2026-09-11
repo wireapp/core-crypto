@@ -98,10 +98,6 @@ impl PkiEnvironment {
         Ok((ski, aki))
     }
 
-    pub fn encode_crl_to_der(crl: &x509_cert::crl::CertificateList<Raw>) -> RustyX509CheckResult<Vec<u8>> {
-        Ok(crl.to_der()?)
-    }
-
     /// Initializes a certval PkiEnvironment using the provided params
     pub fn init(params: PkiEnvironmentParams) -> RustyX509CheckResult<PkiEnvironment> {
         let toi = TimeOfInterest::from_unix_secs(now()?)?;
