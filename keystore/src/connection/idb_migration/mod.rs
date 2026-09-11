@@ -6,7 +6,7 @@
 mod legacy;
 
 use idb::Factory;
-use rusqlite::{Connection, OptionalExtension as _};
+use rusqlite::Connection;
 
 use self::legacy::connection::{DatabaseConnection as _, KeystoreDatabaseConnection};
 #[cfg(feature = "proteus-keystore")]
@@ -96,10 +96,8 @@ pub(super) async fn maybe_migrate(
     if !legacy_idb_exists(name).await {
         return Ok(());
     }
-    let version = new_conn
-        .query_row("PRAGMA user_version;", [], |row| row.get::<_, i32>(0))
-        .optional()?;
-    if version.is_some_and(|version| version != 0) {
+    let version = new_conn.query_row("PRAGMA user_version;", [], |row| row.get::<_, i32>(0))?;
+    if version != 0 {
         // a migration has been applied, so the rusqlite database exists, so we're done
         return Ok(());
     }
