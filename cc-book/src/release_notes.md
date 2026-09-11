@@ -36,6 +36,8 @@
 
 - JVM: the package now also contains a native library for Linux on arm64 (`linux-aarch64`).
 
+- JVM: the package now also contains a native library for Windows on x86_64 (`win32-x86-64`).
+
 ## CoreCrypto 10
 
 ### v10.5.2 - 2026-09-09

@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# JVM native builds (Darwin + Linux x86_64 and arm64)
+# JVM native builds (Darwin + Linux x86_64 and arm64 + Windows x86_64)
 #-------------------------------------------------------------------------------
 
 # darwin build
@@ -62,6 +62,23 @@ $(JVM_LINUX_ARM64_LIB): $(jvm-linux-arm64-deps)
 
 .PHONY: jvm-linux-arm64
 jvm-linux-arm64: $(JVM_LINUX_ARM64_LIB) ## Build core-crypto-ffi for JVM on aarch64-unknown-linux-gnu
+
+# windows build
+#
+# Cross-compiled with MinGW (gcc-mingw-w64-x86-64) on Linux. scripts/check-dll-imports.sh makes sure
+# the DLL imports only Windows system DLLs and no MinGW runtime library.
+JVM_WINDOWS_LIB := target/x86_64-pc-windows-gnu/$(RELEASE_MODE)/core_crypto_ffi.dll
+jvm-windows-deps := $(RUST_SOURCES) make/jvm.mk scripts/check-dll-imports.sh
+$(JVM_WINDOWS_LIB): $(jvm-windows-deps)
+	cargo rustc --locked \
+	  --target x86_64-pc-windows-gnu \
+	  --package core-crypto-ffi \
+	  --crate-type=cdylib \
+	  $(NATIVE_CARGO_BUILD_ARGS) -- $(RUST_STRIP_FLAGS)
+	scripts/check-dll-imports.sh $@ || { rm -f $@; exit 1; }
+
+.PHONY: jvm-windows
+jvm-windows: $(JVM_WINDOWS_LIB) ## Build core-crypto-ffi for JVM on x86_64-pc-windows-gnu, cross-compiled with MinGW
 
 .PHONY: jvm
 ifeq ($(UNAME_S),Linux)

@@ -9,8 +9,8 @@ Typescript releases are published [on NPM](https://www.npmjs.com/package/@wireap
 ## JVM / KMP
 
 Java bindings are published [on Sonatype](https://central.sonatype.com/artifact/com.wire/core-crypto-jvm). They include
-native libraries for macOS on Apple silicon, and for Linux on x86_64 and arm64 with glibc 2.28 or newer (RHEL 8, SLES 15
-SP3, Debian 11, Ubuntu 20.04 and later).
+native libraries for macOS on Apple silicon, for Windows 10 and later on x86_64, and for Linux on x86_64 and arm64 with
+glibc 2.28 or newer (RHEL 8, SLES 15 SP3, Debian 11, Ubuntu 20.04 and later).
 
 ## Android
 
