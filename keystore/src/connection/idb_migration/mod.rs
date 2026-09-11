@@ -28,6 +28,7 @@ use crate::{
             pending_message::LegacyMlsPendingMessage, stored_keypackage::StoredKeypackage,
         },
         migrations::MigrationTarget,
+        os_unknown::FsAbstraction,
     },
     entities::{StoredBufferedCommit, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle},
     migrations::{LegacyPersistedMlsGroup, StoredCredentialV36, V33StoredEpochEncryptionKeypair},
@@ -120,7 +121,7 @@ pub(super) async fn migrate_legacy_idb_key_type_to_bytes(
 ///
 /// Postconditions, when the import runs:
 /// - `new_conn` is at the schema version matching the final IDB version, and holds exactly the legacy data
-/// - the legacy IDB database is deleted, on a best-effort basis
+/// - that data has reached IndexedDB, and only then is the legacy IDB database deleted, on a best-effort basis
 /// - `new_conn` is _not_ fully migrated and requires a further migration to the latest version
 ///
 /// Whether the import has already happened is judged by `new_conn`'s schema version. Creating the file and
@@ -129,8 +130,8 @@ pub(super) async fn migrate_legacy_idb_key_type_to_bytes(
 /// Judged by the schema version instead, a database at or below the import's version is one the import has not
 /// finished, so the import runs again. To make that safe the copy is a single transaction which first clears
 /// everything it is about to write, so partial state from an earlier attempt is replaced rather than duplicated.
-/// The legacy database is only deleted after that transaction commits, so it remains the source of truth until
-/// the copy is complete.
+/// The legacy database is only deleted after that transaction has committed and its pages have reached IndexedDB
+/// (see [`FsAbstraction::flush`]), so it remains the source of truth until the copy is complete and durable.
 ///
 /// This is a no-op when:
 /// - `new_conn` is past the import's schema version, which means the import finished on an earlier open, or
@@ -139,6 +140,7 @@ pub(super) async fn maybe_migrate(
     name: &str,
     database_key: &DatabaseKey,
     new_conn: &mut Connection,
+    fs: &FsAbstraction,
 ) -> CryptoKeystoreResult<()> {
     /// This SQL database version corresponds to the final IDB version,
     /// so is what we need to perform the migration from IDB.
@@ -228,6 +230,10 @@ pub(super) async fn maybe_migrate(
     }
 
     for_each_imported_legacy_entity!(migrate_entities);
+
+    // The commit above only queued the write of the copied data to IndexedDB. Until that write has landed, the
+    // legacy database is the only durable copy, so it must not be deleted yet.
+    fs.flush().await?;
 
     // clients can recover independently from this; the migrations all succeeded, so no need to
     // propagate an error
