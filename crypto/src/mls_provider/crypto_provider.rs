@@ -1725,4 +1725,50 @@ mod pq_hpke_tests {
             );
         }
     }
+
+    #[test]
+    fn every_supported_ciphersuite_reaches_every_hpke_entry_point() {
+        let provider = RustCrypto::default();
+        for ciphersuite in provider.supported_ciphersuites() {
+            let kp = provider
+                .derive_hpke_keypair(ciphersuite.hpke_config(), &[0x42u8; 64])
+                .unwrap_or_else(|e| panic!("derive_hpke_keypair({ciphersuite:?}): {e:?}"));
+            let sealed = provider
+                .hpke_seal(ciphersuite.hpke_config(), &kp.public, b"info", b"aad", b"message")
+                .unwrap_or_else(|e| panic!("hpke_seal({ciphersuite:?}): {e:?}"));
+            provider
+                .hpke_open(ciphersuite.hpke_config(), &sealed, &kp.private, b"info", b"aad")
+                .unwrap_or_else(|e| panic!("hpke_open({ciphersuite:?}): {e:?}"));
+            let (enc, _) = provider
+                .hpke_setup_sender_and_export(ciphersuite.hpke_config(), &kp.public, b"info", b"exporter", 32)
+                .unwrap_or_else(|e| panic!("hpke_setup_sender_and_export({ciphersuite:?}): {e:?}"));
+            provider
+                .hpke_setup_receiver_and_export(ciphersuite.hpke_config(), &enc, &kp.private, b"info", b"exporter", 32)
+                .unwrap_or_else(|e| panic!("hpke_setup_receiver_and_export({ciphersuite:?}): {e:?}"));
+            let psk = [0x11u8; 32];
+            let psk_id = b"psk-id";
+            let sealed_psk = provider
+                .hpke_seal_psk(
+                    ciphersuite.hpke_config(),
+                    &kp.public,
+                    b"info",
+                    b"aad",
+                    &psk,
+                    psk_id,
+                    b"message",
+                )
+                .unwrap_or_else(|e| panic!("hpke_seal_psk({ciphersuite:?}): {e:?}"));
+            provider
+                .hpke_open_psk(
+                    ciphersuite.hpke_config(),
+                    &sealed_psk,
+                    &kp.private,
+                    b"info",
+                    b"aad",
+                    &psk,
+                    psk_id,
+                )
+                .unwrap_or_else(|e| panic!("hpke_open_psk({ciphersuite:?}): {e:?}"));
+        }
+    }
 }
