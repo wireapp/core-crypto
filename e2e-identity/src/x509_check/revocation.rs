@@ -74,10 +74,6 @@ pub(crate) fn now() -> RustyX509CheckResult<u64> {
 }
 
 impl PkiEnvironment {
-    pub fn decode_der_crl(crl_der: Vec<u8>) -> RustyX509CheckResult<x509_cert::crl::CertificateList<Raw>> {
-        Ok(x509_cert::crl::CertificateList::from_der(&crl_der)?)
-    }
-
     pub fn extract_ski_aki_from_cert(cert: &x509_cert::Certificate) -> RustyX509CheckResult<(String, Option<String>)> {
         let cert = PDVCertificate::try_from(cert.clone())?;
 
