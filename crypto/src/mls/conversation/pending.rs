@@ -5,6 +5,7 @@
 use std::sync::Arc;
 
 use core_crypto_keystore::{
+    Database,
     entities::{MlsPendingMessage, PersistedMlsGroup},
     traits::{DeletableBySearchKey, EntityDatabaseMutation as _, FetchFromDatabase as _},
 };
@@ -23,7 +24,7 @@ use crate::{
         conversation::{ConversationIdRef, mutable::decrypt::buffer_messages::MessageRestorePolicy},
         credential::ext::CredentialExt as _,
     },
-    mls_provider::{CryptoProvider, Database},
+    mls_provider::CryptoProvider,
     transaction_context::TransactionContext,
 };
 

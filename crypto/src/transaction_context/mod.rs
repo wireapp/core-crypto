@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use async_lock::{Mutex, MutexGuardArc, RwLock};
 use core_crypto_keystore::{
-    CryptoKeystoreError, UniqueArc,
+    CryptoKeystoreError, Database, UniqueArc,
     entities::ConsumerData,
     traits::{EntityDatabaseMutation as _, FetchFromDatabase as _},
 };
@@ -16,7 +16,7 @@ use wire_e2e_identity::pki_env::PkiEnvironment;
 use crate::{
     ClientId, ConversationId, CoreCrypto, KeystoreError, MlsTransport, OpenMlsError, RecursiveError, Session,
     mls::{self, conversation_cache::ConversationCache},
-    mls_provider::{CryptoProvider, Database},
+    mls_provider::CryptoProvider,
 };
 pub mod conversation;
 mod credential;
