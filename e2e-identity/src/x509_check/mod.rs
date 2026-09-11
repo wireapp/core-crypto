@@ -226,67 +226,6 @@ impl PkiEnvironment {
         Ok(Self { pe })
     }
 
-    pub fn validate_crl_with_raw(&self, crl_raw: &[u8]) -> RustyX509CheckResult<x509_cert::crl::CertificateList<Raw>> {
-        let crl = x509_cert::crl::CertificateList::from_der(crl_raw)?;
-
-        let mut spki_list = vec![];
-        if let Some(aki) = crl.tbs_cert_list.crl_extensions.as_ref().and_then(|extensions| {
-            extensions
-                .iter()
-                .find(|ext| ext.extn_id == x509_cert::ext::pkix::AuthorityKeyIdentifier::OID)
-        }) {
-            let akid = aki.extn_value.as_bytes();
-            if let Ok(ta) = self.pe.get_trust_anchor(akid) {
-                spki_list
-                    .push(certval::source::ta_source::get_subject_public_key_info_from_trust_anchor(&ta.decoded_ta));
-            } else if let Ok(intermediates) = self.pe.get_intermediates_by_skid(akid) {
-                spki_list.extend(
-                    intermediates
-                        .into_iter()
-                        .map(|c| c.decoded().tbs_certificate().subject_public_key_info()),
-                );
-            }
-        }
-
-        if let Ok(ta) = self.pe.get_trust_anchor_by_name(&crl.tbs_cert_list.issuer) {
-            let spki = certval::source::ta_source::get_subject_public_key_info_from_trust_anchor(&ta.decoded_ta);
-            if !spki_list.contains(&spki) {
-                spki_list.push(spki);
-            }
-        }
-
-        spki_list.extend(
-            self.pe
-                .get_cert_by_name(&crl.tbs_cert_list.issuer)
-                .into_iter()
-                .map(|c| c.decoded().tbs_certificate().subject_public_key_info()),
-        );
-
-        spki_list.dedup();
-
-        let crl_defer = DeferDecodeSigned::from_der(crl_raw)?;
-
-        let any_spki_verifies = spki_list.into_iter().any(|spki| {
-            self.pe
-                .verify_signature_message(
-                    &self.pe,
-                    &crl_defer.tbs_field,
-                    crl.signature.raw_bytes(),
-                    &crl.signature_algorithm,
-                    spki,
-                )
-                .is_ok()
-        });
-
-        if any_spki_verifies {
-            Ok(crl)
-        } else {
-            Err(RustyX509CheckError::CertValError(certval::Error::PathValidation(
-                certval::PathValidationStatus::SignatureVerificationFailure,
-            )))
-        }
-    }
-
     pub(crate) fn validate_cert(
         &self,
         end_identity_cert: &x509_cert::Certificate,
@@ -362,4 +301,65 @@ pub(crate) fn validate_trust_anchor_cert(
     verify_signatures(pe, &cps, &mut certification_path, &mut CertificationPathResults::new())?;
 
     Ok(())
+}
+
+pub(crate) fn validate_crl(
+    pe: &certval::environment::PkiEnvironment,
+    crl_raw: &[u8],
+) -> RustyX509CheckResult<x509_cert::crl::CertificateList<Raw>> {
+    let crl = x509_cert::crl::CertificateList::from_der(crl_raw)?;
+
+    let mut spki_list = vec![];
+    if let Some(aki) = crl.tbs_cert_list.crl_extensions.as_ref().and_then(|extensions| {
+        extensions
+            .iter()
+            .find(|ext| ext.extn_id == x509_cert::ext::pkix::AuthorityKeyIdentifier::OID)
+    }) {
+        let akid = aki.extn_value.as_bytes();
+        if let Ok(ta) = pe.get_trust_anchor(akid) {
+            spki_list.push(certval::source::ta_source::get_subject_public_key_info_from_trust_anchor(&ta.decoded_ta));
+        } else if let Ok(intermediates) = pe.get_intermediates_by_skid(akid) {
+            spki_list.extend(
+                intermediates
+                    .into_iter()
+                    .map(|c| c.decoded().tbs_certificate().subject_public_key_info()),
+            );
+        }
+    }
+
+    if let Ok(ta) = pe.get_trust_anchor_by_name(&crl.tbs_cert_list.issuer) {
+        let spki = certval::source::ta_source::get_subject_public_key_info_from_trust_anchor(&ta.decoded_ta);
+        if !spki_list.contains(&spki) {
+            spki_list.push(spki);
+        }
+    }
+
+    spki_list.extend(
+        pe.get_cert_by_name(&crl.tbs_cert_list.issuer)
+            .into_iter()
+            .map(|c| c.decoded().tbs_certificate().subject_public_key_info()),
+    );
+
+    spki_list.dedup();
+
+    let crl_defer = DeferDecodeSigned::from_der(crl_raw)?;
+
+    let any_spki_verifies = spki_list.into_iter().any(|spki| {
+        pe.verify_signature_message(
+            pe,
+            &crl_defer.tbs_field,
+            crl.signature.raw_bytes(),
+            &crl.signature_algorithm,
+            spki,
+        )
+        .is_ok()
+    });
+
+    if any_spki_verifies {
+        Ok(crl)
+    } else {
+        Err(RustyX509CheckError::CertValError(certval::Error::PathValidation(
+            certval::PathValidationStatus::SignatureVerificationFailure,
+        )))
+    }
 }
