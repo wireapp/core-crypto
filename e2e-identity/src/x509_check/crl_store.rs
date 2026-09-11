@@ -86,15 +86,6 @@ impl CrlStore {
         Ok(())
     }
 
-    #[inline]
-    fn add_crl_info(&self, crl: &CertificateList<Raw>, info: CrlInfo) -> RustyX509CheckResult<()> {
-        self.add_crl_info_with_guard(
-            crl,
-            info,
-            &mut self.crl_info.lock().map_err(|_| RustyX509CheckError::LockPoisonError)?,
-        )
-    }
-
     pub(crate) fn index_crls(&self, toi: TimeOfInterest) -> RustyX509CheckResult<()> {
         let crls = self.crls.lock().map_err(|_| RustyX509CheckError::LockPoisonError)?;
         let mut crl_info = self.crl_info.lock().map_err(|_| RustyX509CheckError::LockPoisonError)?;
@@ -179,7 +170,9 @@ impl CrlSource for CrlStore {
             .push(crl.clone());
 
         if let Ok(info) = get_crl_info(crl) {
-            self.add_crl_info(crl, info).map_err(|_| certval::Error::Unrecognized)?;
+            let guard = &mut self.crl_info.lock().map_err(|_| certval::Error::Unrecognized)?;
+            self.add_crl_info_with_guard(crl, info, guard)
+                .map_err(|_| certval::Error::Unrecognized)?;
         }
 
         Ok(())
