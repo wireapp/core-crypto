@@ -1,16 +1,14 @@
-// TODO: remove this expect(unreachable_pub) once the E2EI parts have been coupled.
-#![expect(unreachable_pub)]
 use std::sync::Arc;
 
 use async_lock::RwLock;
-pub use core_crypto_keystore::Database;
+use core_crypto_keystore::Database;
 
 mod crypto_provider;
 mod error;
 
 pub(crate) use crypto_provider::CRYPTO;
 pub use crypto_provider::RustCrypto;
-pub use error::{Error, MlsProviderResult};
+pub(crate) use error::{Error, MlsProviderResult};
 use openmls_traits::{
     authentication_service::{CredentialAuthenticationStatus, CredentialRef},
     crypto::OpenMlsCrypto,

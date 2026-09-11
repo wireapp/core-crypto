@@ -19,4 +19,4 @@ impl Into<String> for Error {
     }
 }
 
-pub type MlsProviderResult<T> = Result<T, Error>;
+pub(crate) type MlsProviderResult<T> = Result<T, Error>;
