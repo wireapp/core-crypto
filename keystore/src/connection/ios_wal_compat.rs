@@ -70,9 +70,13 @@ pub(crate) fn handle_ios_wal_compat(conn: &rusqlite::Connection, path: &str) -> 
     // Do not encrypt first 32 bytes of the database, so the header can be read by iOS.
     conn.pragma_update(None, "cipher_plaintext_header_size", 32)?;
 
-    // This is needed to trigger a write of the first database page, which is necessary due
-    // to us changing cipher_plaintext_header_size.
-    conn.pragma_update(None, "user_version", 2u32)?;
+    // cipher_plaintext_header_size operates in-memory only, until the first DB page is rewritten.
+    // We can trigger such a rewrite by setting the user version, which is specified by sqlite
+    // to be used for arbitrary user purposes. The write still goes through if we set it to the
+    // same value it already had, which is useful, because we set it elsewhere to the value of
+    // the currently-applied migration.
+    let current_user_version = conn.pragma_query_value(None, "user_version", |row| row.get::<_, i32>(0))?;
+    conn.pragma_update(None, "user_version", current_user_version)?;
 
     Ok(())
 }
