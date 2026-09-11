@@ -7,12 +7,10 @@ use certval::{CrlScope, CrlSource, ExtensionProcessing, PDVCertificate, PDVExten
 use const_oid::db::rfc5912::ID_CE_AUTHORITY_KEY_IDENTIFIER;
 use x509_cert::{certificate::Raw, crl::CertificateList, der::Encode};
 
-use crate::x509_check::{
+use super::{
     RustyX509CheckError, RustyX509CheckResult,
-    revocation::{
-        crl_info::CrlInfo,
-        misc::{check_crl_valid_at_toi, get_dp_from_crl, get_dps_from_cert},
-    },
+    crl_info::CrlInfo,
+    misc::{check_crl_valid_at_toi, get_dp_from_crl, get_dps_from_cert},
 };
 
 type IssuerMap = BTreeMap<String, Vec<usize>>;
