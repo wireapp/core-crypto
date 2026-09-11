@@ -103,6 +103,8 @@ pub enum CryptoKeystoreError {
         #[source]
         error: sqlite_wasm_vfs::relaxed_idb::RelaxedIdbError,
     },
+    #[error("The database includes migrations newer than this version of CC knows about")]
+    DatabaseFromTheFuture,
 }
 
 impl CryptoKeystoreError {
