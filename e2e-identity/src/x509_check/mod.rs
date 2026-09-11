@@ -179,8 +179,8 @@ pub(crate) fn now() -> RustyX509CheckResult<u64> {
 
 /// Initializes a certval PkiEnvironment using the provided params
 pub(crate) fn prepare_environment(
-    intermediates: &[x509_cert::Certificate],
     trust_roots: &[x509_cert::anchor::TrustAnchorChoice],
+    intermediates: &[x509_cert::Certificate],
     crls: &[x509_cert::crl::CertificateList<Raw>],
 ) -> RustyX509CheckResult<certval::environment::PkiEnvironment> {
     let toi = TimeOfInterest::from_unix_secs(now()?)?;

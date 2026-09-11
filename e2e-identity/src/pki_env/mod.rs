@@ -27,8 +27,8 @@ use x509_cert::{
 use crate::{
     pki_env::hooks::PkiEnvironmentHooks,
     x509_check::{
-        PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams, RustyX509CheckError, RustyX509CheckResult,
-        extract_crl_uris, now, validate_cert, validate_trust_anchor_cert,
+        RustyX509CheckError, RustyX509CheckResult, extract_crl_uris, now, prepare_environment, validate_cert,
+        validate_trust_anchor_cert,
     },
 };
 
@@ -81,7 +81,7 @@ impl IntoIterator for NewCrlDistributionPoints {
     }
 }
 
-async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<RjtPkiEnvironment> {
+async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<certval::environment::PkiEnvironment> {
     let mut trust_roots = vec![];
     for ta_raw in data_provider.load_all::<X509TrustAnchor>().await? {
         trust_roots.push(
@@ -103,13 +103,7 @@ async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<RjtPk
         .map(|crl| x509_cert::crl::CertificateList::from_der(&crl.content))
         .collect::<core::result::Result<Vec<_>, _>>()?;
 
-    let params = PkiEnvironmentParams {
-        trust_roots: &trust_roots,
-        intermediates: &intermediates,
-        crls: &crls,
-    };
-
-    Ok(RjtPkiEnvironment::init(params)?)
+    Ok(prepare_environment(&trust_roots, &intermediates, &crls)?)
 }
 
 /// The PKI environment which can be initialized independently from a CoreCrypto session.
@@ -119,23 +113,23 @@ pub struct PkiEnvironment {
     hooks: Arc<dyn PkiEnvironmentHooks>,
     /// The database in which X509 Credentials are stored.
     database: Arc<Database>,
-    rjt_pki_env: Mutex<RjtPkiEnvironment>,
+    env: Mutex<certval::environment::PkiEnvironment>,
 }
 
 impl PkiEnvironment {
     /// Create a new PKI Environment
     pub async fn new(hooks: Arc<dyn PkiEnvironmentHooks>, database: Arc<Database>) -> Result<PkiEnvironment> {
-        let rjt_pki_env = restore_pki_env(&*database).await?;
+        let env = restore_pki_env(&*database).await?;
         Ok(Self {
             hooks,
             database,
-            rjt_pki_env: Mutex::new(rjt_pki_env),
+            env: Mutex::new(env),
         })
     }
 
     /// Return certificates that are used as trust anchors.
     pub async fn get_trust_anchors(&self) -> Vec<Certificate> {
-        self.rjt_pki_env
+        self.env
             .lock()
             .await
             .get_trust_anchors()
@@ -167,7 +161,7 @@ impl PkiEnvironment {
     /// future validation.
     pub async fn add_trust_anchor(&self, tx: &Transaction, cert: Certificate) -> Result<()> {
         // Validate it (expiration & signature only)
-        validate_trust_anchor_cert(&*self.rjt_pki_env.lock().await, &cert)?;
+        validate_trust_anchor_cert(&*self.env.lock().await, &cert)?;
 
         let fingerprint = cert
             .tbs_certificate()
@@ -194,10 +188,7 @@ impl PkiEnvironment {
             bytes: cert.to_der()?,
         });
         trust_anchors.initialize().map_err(Error::Certval)?;
-        self.rjt_pki_env
-            .lock()
-            .await
-            .add_trust_anchor_source(Box::new(trust_anchors));
+        self.env.lock().await.add_trust_anchor_source(Box::new(trust_anchors));
         Ok(())
     }
 
@@ -210,7 +201,7 @@ impl PkiEnvironment {
 
         let anchors = tx.load_all::<X509TrustAnchor>().await?;
 
-        let mut guard = self.rjt_pki_env.lock().await;
+        let mut guard = self.env.lock().await;
         guard.clear_trust_anchor_sources();
 
         let mut source = TaSource::new();
@@ -266,7 +257,7 @@ impl PkiEnvironment {
             bytes: cert.to_der()?,
         });
 
-        let mut guard = self.rjt_pki_env.lock().await;
+        let mut guard = self.env.lock().await;
         cert_source.initialize(&cps).map_err(Error::Certval)?;
         cert_source.find_all_partial_paths(&guard, &cps);
         guard.add_certificate_source(Box::new(cert_source));
@@ -281,7 +272,7 @@ impl PkiEnvironment {
     /// contained in this PKI environment. Revocation check is performed
     /// and time of interest is set to the time of the call.
     pub async fn validate_cert(&self, cert: &x509_cert::Certificate) -> RustyX509CheckResult<()> {
-        validate_cert(&*self.rjt_pki_env.lock().await, cert, true)
+        validate_cert(&*self.env.lock().await, cert, true)
     }
 
     /// Validate an X509 credential.
@@ -301,7 +292,7 @@ impl PkiEnvironment {
             return CredentialAuthenticationStatus::Invalid;
         };
 
-        match validate_cert(&*self.rjt_pki_env.lock().await, &cert, true) {
+        match validate_cert(&*self.env.lock().await, &cert, true) {
             Err(RustyX509CheckError::CertValError(CertvalError::PathValidation(
                 PathValidationStatus::CertificateRevoked
                 | PathValidationStatus::CertificateRevokedEndEntity

@@ -33,7 +33,7 @@ impl PkiEnvironment {
     /// Validate the CRL (trust anchors must be configured prior to this) and
     /// save it to the database.
     pub async fn save_crl(&self, tx: &Transaction, crl_dp: &str, crl_der: &[u8]) -> Result<()> {
-        let guard = self.rjt_pki_env.lock().await;
+        let guard = self.env.lock().await;
 
         let crl = crate::x509_check::validate_crl(&guard, crl_der)?;
         guard.add_crl(crl_der, &crl, crl_dp).map_err(Error::Certval)?;

@@ -5,7 +5,7 @@ use super::X509CredentialConfiguration;
 use crate::{
     acquisition::{error::CertificateError, identity::WireIdentityReader as _},
     pki_env::PkiEnvironment,
-    x509_check::{PkiEnvironment as RjtPkiEnvironment, PkiEnvironmentParams, validate_cert},
+    x509_check::{prepare_environment, validate_cert},
 };
 
 pub(crate) async fn verify_cert_chain(
@@ -25,12 +25,7 @@ pub(crate) async fn verify_cert_chain(
         .map(TrustAnchorChoice::Certificate)
         .collect();
 
-    let env = RjtPkiEnvironment::init(PkiEnvironmentParams {
-        trust_roots: trust_anchors.as_slice(),
-        intermediates,
-        crls: &[],
-    })?;
-
+    let env = prepare_environment(&trust_anchors, intermediates, &[])?;
     verify_leaf_certificate(config, &env, pki_env, sign_kp, leaf).await?;
 
     // see https://datatracker.ietf.org/doc/html/rfc8555#section-11.4
@@ -43,7 +38,7 @@ pub(crate) async fn verify_cert_chain(
 /// certificate match configuration values.
 async fn verify_leaf_certificate(
     config: &X509CredentialConfiguration,
-    pki_env: &RjtPkiEnvironment,
+    pki_env: &certval::environment::PkiEnvironment,
     outer_pki_env: &PkiEnvironment,
     sign_kp: &Pem,
     cert: &Certificate,
