@@ -3,10 +3,7 @@ use std::collections::HashMap;
 use core_crypto_keystore::{Transaction, entities::X509Crl, traits::EntityDatabaseMutation as _};
 
 use super::{Error, Result};
-use crate::{
-    pki_env::{PkiEnvironment, hooks::HttpMethod},
-    x509_check::revocation::PkiEnvironment as RjtPkiEnvironment,
-};
+use crate::pki_env::{PkiEnvironment, hooks::HttpMethod};
 
 impl PkiEnvironment {
     /// Fetch certificate revocation lists from the given URIs, return a map from the URLs to a DER-encoded certificate
@@ -42,7 +39,7 @@ impl PkiEnvironment {
         guard.add_crl(crl_der, &crl, crl_dp).map_err(Error::Certval)?;
 
         let crl_data = X509Crl {
-            content: RjtPkiEnvironment::encode_crl_to_der(&crl)?,
+            content: crl_der.to_owned(),
             distribution_point: crl_dp.to_owned(),
         };
 
