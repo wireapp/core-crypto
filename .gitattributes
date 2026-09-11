@@ -1,0 +1,5 @@
+# The vendored libsqlite3-sys: GitHub leaves it out of the language statistics and folds its
+# generated C sources and bindings in diffs.
+vendor/** linguist-vendored
+vendor/libsqlite3-sys/*/sqlite3*.[ch] linguist-generated
+vendor/libsqlite3-sys/*/bindgen_*.rs linguist-generated
