@@ -44,12 +44,12 @@ val ffiLibsBase = layout.buildDirectory.dir("ffiLibs").get().asFile
 val copyFfiLibrary by tasks.registering {
     doLast {
         val libs = listOf(
-            Triple("x86_64-unknown-linux-gnu", "linux-x86-64", "so"),
-            Triple("aarch64-unknown-linux-gnu", "linux-aarch64", "so"),
-            Triple("aarch64-apple-darwin", "darwin-aarch64", "dylib")
+            Triple("x86_64-unknown-linux-gnu", "linux-x86-64", "libcore_crypto_ffi.so"),
+            Triple("aarch64-unknown-linux-gnu", "linux-aarch64", "libcore_crypto_ffi.so"),
+            Triple("aarch64-apple-darwin", "darwin-aarch64", "libcore_crypto_ffi.dylib"),
+            Triple("x86_64-pc-windows-gnu", "win32-x86-64", "core_crypto_ffi.dll")
         )
-        libs.forEach { (rustTarget, jvmTarget, ext) ->
-            val libName = "libcore_crypto_ffi.$ext"
+        libs.forEach { (rustTarget, jvmTarget, libName) ->
             val src = projectDir.resolve("../../../target/$rustTarget/$buildType/$libName")
             val dest = ffiLibsBase.resolve("$buildType/$jvmTarget/$libName")
             // We try to copy all libraries. If a library does not exist and

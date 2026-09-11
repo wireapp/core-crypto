@@ -53,6 +53,15 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
+      - name: download x86_64 windows artifact
+        uses: ./.github/actions/make
+        with:
+          key: jvm-windows
+          make-rule: jvm-windows
+          target-path: target/x86_64-pc-windows-gnu/release/core_crypto_ffi.dll
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
+
       - name: download aarch64 apple darwin artifact
         uses: ./.github/actions/make
         with:
