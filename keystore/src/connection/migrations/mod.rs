@@ -1,13 +1,25 @@
 mod meta_migrations;
 
 use refinery::Target;
-use rusqlite::functions::FunctionFlags;
+use rusqlite::{Connection, functions::FunctionFlags};
 
-use crate::{CryptoKeystoreResult, DatabaseKey};
+use crate::{CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey};
 
 refinery::embed_migrations!("src/connection/migrations");
 
 const COMPOSITE_SCHEMA: &str = include_str!("../composite-schema.sql");
+
+/// The `user_version` pragma; CONST here to guard against typos
+const USER_VERSION: &str = "user_version";
+
+fn get_user_version(conn: &Connection) -> CryptoKeystoreResult<i32> {
+    conn.pragma_query_value(None, USER_VERSION, |row| row.get(0))
+        .map_err(Into::into)
+}
+
+fn set_user_version(conn: &Connection, version: i32) -> CryptoKeystoreResult<()> {
+    conn.pragma_update(None, USER_VERSION, version).map_err(Into::into)
+}
 
 #[derive(Default)]
 pub(crate) enum MigrationTarget {
@@ -43,7 +55,7 @@ pub(super) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationT
         MigrationTarget::Version(target_argument) => (latest_migration_version).min(target_argument as i32),
         MigrationTarget::Composite => {
             conn.execute_batch(COMPOSITE_SCHEMA)?;
-            conn.pragma_update(None, "user_version", latest_migration_version)?;
+            set_user_version(conn, latest_migration_version)?;
             return Ok(());
         }
     };
@@ -72,37 +84,90 @@ pub(super) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationT
         )?;
     }
 
-    for version in 1..=target_version {
+    // Contrary to its documentation, `get_last_applied_migration` errors out when there are no applied migrations.
+    let newest_applied_version = has_refinery_schema_history
+        .then(|| runner.get_last_applied_migration(conn))
+        .transpose()
+        .map_err(Box::new)?
+        .flatten()
+        .map(|migration| migration.version())
+        .unwrap_or_default();
+
+    // Where to resume. `user_version` names the version whose SQL migration and meta migration both
+    // completed, so normally we pick up just after it.
+    //
+    // However, we used to have ios unconditionally setting `user_version` to 2.
+    // In that case, `newest_applied_version` will probably be substantially higher than `user_version + 1`.
+    // We still don't want to redo work, but we have to account for the possibility that
+    // there's a meta-migration which hasn't yet applied, so we re-apply that version; refinery ensures
+    // that the actual migration is a noop, and we get to try for a meta-migration.
+    //
+    // This is a specific instance of a more general rule: it's only ever safe to apply a meta-migration if
+    // we have just now completed the migration previous to it. We need to take care not to ever attempt it in
+    // any other case.
+    let resume_from = (get_user_version(conn)? + 1).max(newest_applied_version);
+    if resume_from > target_version {
+        return Err(CryptoKeystoreError::DatabaseFromTheFuture);
+    }
+    for version in resume_from..=target_version {
         runner = runner.set_target(Target::Version(version));
+
         let report = runner.run(conn).map_err(Box::new)?;
 
-        let Some(updated_version) = report.applied_migrations().iter().map(|m| m.version()).max() else {
-            continue;
-        };
+        debug_assert!(
+            report.applied_migrations().len() < 2,
+            "either 0 or 1 migration was applied per iteration in this loop"
+        );
+        // There are two cases where we apply 0 migrations:
+        //
+        // 1. The sql migration succeeded, but the following meta-migration failed for some reason, causing
+        //    `user_version` not to be set for that migration.
+        // 2. We iterated based on `newest_applied_version` instead of `user_version`, repeating the
+        //    final previously applied migration, just in case there's a meta-migration waiting for us.
+        debug_assert!(
+            report
+                .applied_migrations()
+                .first()
+                .is_none_or(|migration| migration.version() == version),
+            "the applied migration version matches the current version step"
+        );
 
-        // If the version has been updated by the runner, first run the meta migration, then update the schema
-        // version.
-        run_meta_migration(updated_version, conn)?;
-        conn.pragma_update(None, "user_version", updated_version)?;
+        // Run the meta migration, then advance `user_version`, atomically. This runs whether or not the
+        // runner applied anything just now: a SQL migration which is applied while `user_version` still
+        // lags behind it is one whose meta migration was interrupted, and it has to be retried.
+        run_meta_migration(version, conn)?;
     }
 
     Ok(())
 }
 
-/// Add a new match arm here if you want to run a meta migration (i.e., addtional work implemented in rust)
-/// after a regular SQL migration.
-fn run_meta_migration(sql_migration_version: i32, conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
-    match sql_migration_version {
-        meta_migrations::v16::VERSION => meta_migrations::v16::meta_migration(conn),
-        meta_migrations::v18::VERSION => meta_migrations::v18::meta_migration(conn),
-        meta_migrations::v19::VERSION => meta_migrations::v19::meta_migration(conn),
-        meta_migrations::v28::VERSION => meta_migrations::v28::meta_migration(conn),
-        meta_migrations::v31::VERSION => meta_migrations::v31::meta_migration(conn),
-        meta_migrations::v34::VERSION => meta_migrations::v34::meta_migration(conn),
-        meta_migrations::v37::VERSION => meta_migrations::v37::meta_migration(conn),
-        meta_migrations::v39::VERSION => meta_migrations::v39::meta_migration(conn),
-        _ => Ok(()),
+/// Run a meta-migration (i.e., additional work implemented in rust) after a regular SQL migration.
+///
+/// This is the dispatch for a meta-migration; every meta-migration must have a match arm here, or it will not run.
+///
+/// This also manages the transaction each meta-migration runs within. If a meta-migration exists, it happens within
+/// the transaction defined here.
+///
+/// This _also_ manages setting the user version on every migration whether or not a meta-migration exists.
+/// That doesn't feel like great factoring, but this is where the transaction is, and we depend on the property that
+/// we only set `user_version` when _both_ a sql migration and its subsequent meta-migration (if any) have both
+/// successfully completed.
+fn run_meta_migration(version: i32, conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
+    let tx = conn.transaction()?;
+    match version {
+        meta_migrations::v16::VERSION => meta_migrations::v16::meta_migration(&tx)?,
+        meta_migrations::v18::VERSION => meta_migrations::v18::meta_migration(&tx)?,
+        meta_migrations::v19::VERSION => meta_migrations::v19::meta_migration(&tx)?,
+        meta_migrations::v28::VERSION => meta_migrations::v28::meta_migration(&tx)?,
+        meta_migrations::v31::VERSION => meta_migrations::v31::meta_migration(&tx)?,
+        meta_migrations::v34::VERSION => meta_migrations::v34::meta_migration(&tx)?,
+        meta_migrations::v37::VERSION => meta_migrations::v37::meta_migration(&tx)?,
+        meta_migrations::v39::VERSION => meta_migrations::v39::meta_migration(&tx)?,
+        _ => {}
     }
+
+    set_user_version(&tx, version)?;
+    tx.commit().map_err(Into::into)
 }
 
 /// Migrate a database encrypted with a string key to the new raw-bytes [`DatabaseKey`].

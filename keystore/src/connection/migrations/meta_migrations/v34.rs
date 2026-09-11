@@ -10,9 +10,7 @@ use crate::{
 
 pub(crate) const VERSION: i32 = 34;
 
-pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
-    let tx = conn.transaction()?;
-
+pub(crate) fn meta_migration(tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()> {
     let mut stmt = tx.prepare(
         "INSERT INTO epoch_encryption_keypairs (
         conversation_id,
@@ -27,7 +25,7 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
     )",
     )?;
 
-    let keypairs = V33StoredEpochEncryptionKeypair::load_all(&tx)?;
+    let keypairs = V33StoredEpochEncryptionKeypair::load_all(tx)?;
     for keypair in keypairs {
         let Ok(pk) = StoredEpochEncryptionKeypairPkRef::parse_bytes(&keypair.id) else {
             warn!(
@@ -43,9 +41,6 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
             ":keypairs": keypair.keypairs,
         })?;
     }
-    drop(stmt);
-
-    tx.commit()?;
 
     Ok(())
 }
