@@ -94,9 +94,25 @@ mod tests {
     #[case::f009(openmls::prelude::Ciphersuite::MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87)]
     #[case::f00a(openmls::prelude::Ciphersuite::MLS_128_MLKEM768_AES256GCM_SHA384_Ed25519)]
     #[case::f00b(openmls::prelude::Ciphersuite::MLS_128_MLKEM768X25519_CHACHA20POLY1305_SHA384_MLDSA44)]
+    #[cfg_attr(not(feature = "test-all-cipher"), ignore)]
     #[test_attr(macro_rules_attribute::apply(smol_macros::test))]
     async fn pq_suite_full_conversation_roundtrip(#[case] ciphersuite: openmls::prelude::Ciphersuite) {
         let case = TestContext::new(CredentialType::Basic, ciphersuite);
+        let [alice, bob] = case.sessions().await;
+        Box::pin(async move {
+            let conversation = case.create_conversation([&alice, &bob]).await;
+            assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
+        })
+        .await
+    }
+
+    /// Runs on every `cargo test`; the other ten suites need `test-all-cipher`
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn pq_suite_full_conversation_roundtrip_default() {
+        let case = TestContext::new(
+            CredentialType::Basic,
+            openmls::prelude::Ciphersuite::MLS_128_MLKEM768P256_AES128GCM_SHA256_P256,
+        );
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice, &bob]).await;
