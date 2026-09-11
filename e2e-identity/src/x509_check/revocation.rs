@@ -11,7 +11,6 @@ use const_oid::AssociatedOid;
 use x509_cert::{
     certificate::Raw,
     der::{Decode, Encode},
-    ext::pkix::AuthorityKeyIdentifier,
 };
 
 use super::{RustyX509CheckError, RustyX509CheckResult, cache::RevocationCache, crl_store::CrlStore};
@@ -74,30 +73,6 @@ pub(crate) fn now() -> RustyX509CheckResult<u64> {
 }
 
 impl PkiEnvironment {
-    pub fn extract_ski_aki_from_cert(cert: &x509_cert::Certificate) -> RustyX509CheckResult<(String, Option<String>)> {
-        let cert = PDVCertificate::try_from(cert.clone())?;
-
-        let ski = cert
-            .get_extension(&const_oid::db::rfc5912::ID_CE_SUBJECT_KEY_IDENTIFIER)?
-            .ok_or(RustyX509CheckError::MissingSki)?;
-        let ski = match ski {
-            certval::PDVExtension::SubjectKeyIdentifier(ski) => hex::encode(ski.0.as_bytes()),
-            _ => return Err(RustyX509CheckError::ImplementationError),
-        };
-
-        let aki = cert
-            .get_extension(&const_oid::db::rfc5912::ID_CE_AUTHORITY_KEY_IDENTIFIER)?
-            .and_then(|ext| match ext {
-                certval::PDVExtension::AuthorityKeyIdentifier(AuthorityKeyIdentifier { key_identifier, .. }) => {
-                    key_identifier.as_ref()
-                }
-                _ => None,
-            })
-            .map(|ki| hex::encode(ki.as_bytes()));
-
-        Ok((ski, aki))
-    }
-
     /// Initializes a certval PkiEnvironment using the provided params
     pub fn init(params: PkiEnvironmentParams) -> RustyX509CheckResult<PkiEnvironment> {
         let toi = TimeOfInterest::from_unix_secs(now()?)?;

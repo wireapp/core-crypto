@@ -34,7 +34,7 @@ pub(crate) async fn verify_cert_chain(
     verify_leaf_certificate(config, &env, pki_env, sign_kp, leaf).await?;
 
     // see https://datatracker.ietf.org/doc/html/rfc8555#section-11.4
-    RjtPkiEnvironment::extract_ski_aki_from_cert(leaf)?;
+    crate::utils::extract_ski_aki_from_cert(leaf)?;
 
     Ok(())
 }
