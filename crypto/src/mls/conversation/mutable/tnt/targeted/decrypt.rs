@@ -117,7 +117,7 @@ impl ConversationMut {
             return Ok((context_data, decryption_key));
         }
 
-        let epoch_distance = mls_group.epoch().as_u64() - message.epoch.as_u64();
+        let epoch_distance = mls_group.epoch().as_u64().saturating_sub(message.epoch.as_u64());
         if epoch_distance > MAX_PAST_EPOCHS as u64 {
             return Err(Error::MessageEpochTooOld);
         }
