@@ -60,6 +60,7 @@ uniffi.workspace = true
 uniffi_ubrn = { package = "uniffi", version = "0.31", optional = true, features = [
   "wasm-unstable-single-threaded",
 ] }
+tokio-util = { version = "0.7", optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom.workspace = true

@@ -1209,6 +1209,7 @@ dependencies = [
  "testing_logger",
  "thiserror 2.0.20",
  "tls_codec",
+ "tokio-util",
  "uniffi 0.29.5",
  "uniffi 0.31.0",
  "uuid",
@@ -6170,13 +6171,14 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.11"
+version = "0.7.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9cf6b47b3771c49ac75ad09a6162f53ad4b8088b76ac60e8ec1455b31a189fe1"
+checksum = "494815d09bf52b5548659851081238f0ca39ff638363907596da739561c62c52"
 dependencies = [
  "bytes",
  "futures-core",
  "futures-sink",
+ "libc",
  "pin-project-lite",
  "tokio",
 ]
