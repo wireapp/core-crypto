@@ -1192,7 +1192,6 @@ dependencies = [
  "core-crypto-keystore",
  "core-crypto-macros",
  "derive_more",
- "futures-channel",
  "futures-util",
  "getrandom 0.4.3",
  "hex",

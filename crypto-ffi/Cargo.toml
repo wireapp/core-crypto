@@ -21,7 +21,7 @@ workspace = true
 
 [features]
 default = ["proteus"]
-cancellable-transactions = ["dep:futures-channel"]
+cancellable-transactions = ["dep:tokio-util"]
 # Guard keystore transactions across processes, not just within one. Intended for targets where
 # more than one process shares a keystore, such as iOS apps with extensions.
 # Not supported on `target_os = "unknown"`; see the keystore feature of the same name.
@@ -39,7 +39,6 @@ core-crypto.workspace = true
 wire-e2e-identity.workspace = true
 derive_more.workspace = true
 futures-util.workspace = true
-futures-channel = { version = "0.3", optional = true }
 hex.workspace = true
 jwt-simple.workspace = true
 log-reload.workspace = true
