@@ -7464,7 +7464,6 @@ dependencies = [
  "ed25519-dalek 3.0.0",
  "elliptic-curve 0.14.1",
  "env_logger",
- "flagset",
  "getrandom 0.4.3",
  "hex",
  "http 1.5.0",

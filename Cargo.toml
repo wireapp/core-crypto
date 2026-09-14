@@ -93,7 +93,6 @@ der = { version = "0.8", default-features = false, features = ["std"] }
 ecdsa = { version = "0.17", default-features = false, features = ["der"] }
 ed25519-dalek = { version = "3", features = ["alloc", "pkcs8", "pem"] }
 elliptic-curve = "0.14"
-flagset = { version = "0.4", default-features = false }
 getrandom = { version = "0.4", features = ["wasm_js"] }
 jwt-simple = { version = "0.13", git = "https://github.com/wireapp/rust-jwt-simple", tag = "v0.13.0-pre.core-crypto-1.0.0", default-features = false }
 p256 = { version = "0.14", default-features = false }

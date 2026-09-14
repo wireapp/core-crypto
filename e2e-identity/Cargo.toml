@@ -51,7 +51,6 @@ pem.workspace = true
 getrandom.workspace = true
 web-time.workspace = true
 hex.workspace = true
-flagset.workspace = true
 certval.workspace = true
 # We require a pre-release version of x509-ocsp because certval depends on it.
 # Once x509-ocsp 0.3 is released and certval moves to it, remove this explicit
