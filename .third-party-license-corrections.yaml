@@ -1,0 +1,285 @@
+# This file is parsed by the third-party notices generator
+# see https://github.com/wireapp/notices-generator
+    
+overrides:
+  - name: pkiprocmacros
+    license: Apache-2.0
+    comment: "This is detected as GPL 3.0, but the project page at https://github.com/carl-wallace/rust-pki specifies this is dual licensed under Apache-2.0 and MIT. For this project we elect to use Apache-2.0."
+
+  - name: activity
+    license: Apache-2.0
+    author: The Android Open Source Project
+
+  - name: jna
+    license: Apache-2.0
+    author: Java Native Access contributors
+
+  - name: kotlinx-coroutines-core
+    license: Apache-2.0
+    author: JetBrains s.r.o. and contributors
+
+  - name: kotlinx-datetime
+    license: Apache-2.0
+    author: JetBrains s.r.o. and contributors
+
+  - name: kotlinx-serialization-json
+    license: Apache-2.0
+    author: JetBrains s.r.o. and contributors
+    
+subfolders:
+  - crypto-ffi
+  - crypto-ffi/bindings
+  - crypto-macros
+  - e2e-identity
+  - interop
+  - interop/src/clients/gradle
+  - keystore
+  - obfuscate
+
+manual_dependency_entries:
+  - name: "@ubjs/core"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node-darwin-arm64"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node-darwin-x64"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node-linux-arm64-gnu"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node-linux-arm64-musl"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node-linux-x64-gnu"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node-linux-x64-musl"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node-win32-arm64-msvc"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+  - name: "@ubjs/node-win32-x64-msvc"
+    version: "0.31.0-3"
+    license: MPL-2.0
+    author: James Hugman
+
+ignore.proc-macros:
+  comment: it runs inside the compiler and is not linked into the shipped artifacts
+  entries:
+    - accessory
+    - askama_derive
+    - async-recursion
+    - async-trait
+    - clap_derive
+    - const_format_proc_macros
+    - curve25519-dalek-derive
+    - darling_macro
+    - delegate-display
+    - der_derive
+    - derive_more-impl
+    - displaydoc
+    - enum-as-inner
+    - fancy_constructor
+    - futures-macro
+    - icu_provider_macros
+    - impartial-ord
+    - indexed_db_futures_macros_internal
+    - jiff-static
+    - macro_rules_attribute-proc_macro
+    - macroific_macro
+    - openssl-macros
+    - paste
+    - pastey
+    - pin-project-internal
+    - pkiprocmacros
+    - readonly
+    - refinery-macros
+    - scroll_derive
+    - sealed
+    - serde_derive
+    - thiserror-impl
+    - time-macros
+    - tls_codec_derive
+    - tokio-macros
+    - tracing-attributes
+    - typed-builder-macro
+    - uniffi_internal_macros
+    - uniffi_macros
+    - wasm-bindgen-macro
+    - windows-implement
+    - windows-interface
+    - wit-bindgen-rust-macro
+    - yoke-derive
+    - zerocopy-derive
+    - zerofrom-derive
+    - zeroize_derive
+    - zerovec-derive
+    - askama_parser
+    - basic-toml
+    - bumpalo
+    - convert_case
+    - darling
+    - darling_core
+    - id-arena
+    - ident_case
+    - leb128fmt
+    - macroific
+    - macroific_attr_parse
+    - macroific_core
+    - prettyplease
+    - proc-macro2
+    - quote
+    - rustc-hash
+    - syn
+    - synstructure
+    - unicode-segmentation
+    - unicode-xid
+    - wasm-bindgen-macro-support
+    - wasm-encoder
+    - wasm-metadata
+    - wasmparser
+    - wit-bindgen-core
+    - wit-bindgen-rust
+    - wit-component
+    - wit-parser
+
+ignore.uniffi-bindgen:
+  comment: compile-time only - uniffi's binding generator
+  entries:
+    - askama
+    - camino
+    - cargo-platform
+    - cargo_metadata
+    - fs-err
+    - glob
+    - goblin
+    - heck
+    - minimal-lexical
+    - nom
+    - plain
+    - scroll
+    - semver
+    - serde_spanned
+    - smawk
+    - textwrap
+    - toml
+    - toml_datetime
+    - toml_parser
+    - toml_writer
+    - uniffi_bindgen
+    - uniffi_build
+    - uniffi_meta
+    - uniffi_pipeline
+    - uniffi_udl
+    - weedle2
+    - winnow
+
+ignore.windows-unused-abis:
+  comment: import library for a Windows ABI this project does not target (see deny.toml [graph].targets); only windows_x86_64_msvc is ever linked
+  entries:
+    - windows_aarch64_gnullvm
+    - windows_aarch64_msvc
+    - windows_i686_gnu
+    - windows_i686_gnullvm
+    - windows_i686_msvc
+    - windows_x86_64_gnu
+    - windows_x86_64_gnullvm
+
+ignore.build-time-only:
+  comment: compile, publish or test-time only
+  entries:
+    - kotlin-gradle-plugin
+    - dev.*
+    - assertj-core
+    - org.jetbrains.kotlin.plugin.*
+    - io.github.gradle-nexus.publish-plugin
+    - gradle
+    - com.android.library
+    - com.android.application
+    - espresso-core
+    - org.jetbrains.dokka
+    - org.jetbrains.kotlin.android
+    - "*-test"
+    - "*-bom"
+
+
+ignore.jvm-test-and-benchmark:
+  comment: test and benchmark harnesses, and what they pull in
+  entries:
+    - "jmh-*"
+    - "junit-jupiter-*"
+    - "junit-platform-*"
+    - "kotlin-test*"
+    - "kotlinx-coroutines-test*"
+    - opentest4j
+    - byte-buddy
+    - jopt-simple
+    - commons-math3
+
+ignore.kotlin-toolchain:
+  comment: the Kotlin compiler, its build daemon and the native/swift export tooling
+  entries:
+    - "kotlin-build-tools-*"
+    - "kotlin-compiler*"
+    - "kotlin-daemon-*"
+    - "kotlin-scripting-*"
+    - kotlin-script-runtime
+    - kotlin-native-prebuilt
+    - kotlin-tooling-core
+    - kotlin-reflect
+    - swift-export-embeddable
+    - asm
+
+ignore.dokka:
+  comment: the API documentation generator, and what it pulls in
+  entries:
+    - "dokka-*"
+    - "analysis-*"
+    - templating-plugin
+    - "markdown*"
+    - kotlinx-html-jvm
+    - freemarker
+    - jsoup
+    - "jackson-*"
+    - woodstox-core
+    - stax2-api
+
+ignore.detekt:
+  comment: the static analysis pass, and what it pulls in
+  entries:
+    - "detekt-*"
+    - "sarif4k*"
+    - "poko-annotations*"
+    - snakeyaml-engine
+    - caffeine
+    - jcommander
+    - "opentelemetry-*"
+
+ignore.artifact-signing:
+  comment: the crypto provider of the Gradle signing plugin - it signs the artifacts, it is not part of them
+  entries:
+    - "bc*-jdk18on"
+
+ignore.cdxgen-version-catalog-misparse:
+  comment: >-
+    cdxgen mis-reads `version = { prefer = ... }` in a Gradle version catalog and emits
+    the component with the literal version `{prefer`; the same components are read
+    correctly from the catalog itself
+  entries:
+    - name: "*"
+      version: "{prefer"
