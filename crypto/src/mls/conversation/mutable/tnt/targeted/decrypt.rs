@@ -40,10 +40,15 @@ impl ConversationMut {
         let message_epoch = message.epoch.as_u64();
         let group_epoch = mls_group.epoch().as_u64();
         let max_future_epoch = group_epoch.saturating_add(MAX_FUTURE_EPOCHS);
+        let epochs_in_past = group_epoch.checked_sub(message_epoch);
         if message_epoch > group_epoch && message_epoch <= max_future_epoch {
             return Err(Error::BufferedFutureMessage { message_epoch });
         } else if message_epoch > max_future_epoch {
             return Err(Error::UnbufferedFarFutureMessage);
+        } else if epochs_in_past.expect("if we're in this branch, the message is from the present or past.")
+            > MAX_PAST_EPOCHS as u64
+        {
+            return Err(Error::MessageEpochTooOld);
         }
 
         let message_type = match policy {
@@ -115,11 +120,6 @@ impl ConversationMut {
             let context_data = extract_hpke_context_data(crypto_provider, &context, mls_group)?;
             let decryption_key = self.load_decryption_key(mls_group).await?;
             return Ok((context_data, decryption_key));
-        }
-
-        let epoch_distance = mls_group.epoch().as_u64().saturating_sub(message.epoch.as_u64());
-        if epoch_distance > MAX_PAST_EPOCHS as u64 {
-            return Err(Error::MessageEpochTooOld);
         }
 
         let database = self.database().await?;
