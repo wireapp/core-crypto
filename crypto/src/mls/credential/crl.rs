@@ -4,7 +4,7 @@ use openmls::{
     group::MlsGroup,
     prelude::{Certificate, MlsCredentialType},
 };
-use wire_e2e_identity::x509_check::extract_crl_uris;
+use wire_e2e_identity::validation::extract_crl_uris;
 
 use super::{Error, Result};
 use crate::RecursiveError;

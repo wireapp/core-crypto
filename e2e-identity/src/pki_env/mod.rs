@@ -26,7 +26,7 @@ use x509_cert::{
 
 use crate::{
     pki_env::hooks::PkiEnvironmentHooks,
-    x509_check::{
+    validation::{
         RustyX509CheckError, RustyX509CheckResult, extract_crl_uris, now, prepare_environment, validate_cert,
         validate_trust_anchor_cert,
     },

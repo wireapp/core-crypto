@@ -2,7 +2,7 @@ use openmls::{
     extensions::ExternalSender as MlsExternalSender,
     prelude::{Credential as MlsCredential, OpenMlsCrypto as _, OpenMlsSignaturePublicKey, SignatureScheme},
 };
-use wire_e2e_identity::parse_json_jwk;
+use rusty_jwt_tools::prelude::parse_json_jwk;
 
 use crate::{Error, OpenMlsError, RecursiveError, Result, mls_provider::CRYPTO};
 

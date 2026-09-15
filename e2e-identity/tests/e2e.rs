@@ -43,7 +43,7 @@ use utils::{
 };
 use wire_e2e_identity::{
     X509CredentialAcquisition, acquisition::X509CredentialConfiguration, pki_env::PkiEnvironment,
-    x509_check::extract_crl_uris,
+    validation::extract_crl_uris,
 };
 use x509_cert::{
     certificate::Raw,
