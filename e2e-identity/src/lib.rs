@@ -132,7 +132,7 @@ pub mod acme;
 pub mod pki;
 pub mod pki_env;
 pub mod utils;
-pub mod x509_check;
+pub mod validation;
 
 pub use acme::{AcmeDirectory, RustyAcme, RustyAcmeError};
 pub use acquisition::{
