@@ -36,6 +36,7 @@ openmls_basic_credential = { workspace = true, features = ["clonable"] }
 openmls_x509_credential.workspace = true
 openmls_traits.workspace = true
 
+rusty-jwt-tools.workspace = true
 tls_codec.workspace = true
 serde.workspace = true
 serde_json.workspace = true

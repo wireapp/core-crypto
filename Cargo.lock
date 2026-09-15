@@ -1156,6 +1156,7 @@ dependencies = [
  "rmp-serde",
  "rstest",
  "rstest_reuse",
+ "rusty-jwt-tools",
  "schnellru",
  "serde",
  "serde-wasm-bindgen",
