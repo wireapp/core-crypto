@@ -117,7 +117,7 @@
 <a href=#117 id=117 data-nosnippet>117</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>((context_data, decryption_key));
 <a href=#118 id=118 data-nosnippet>118</a>        }
 <a href=#119 id=119 data-nosnippet>119</a>
-<a href=#120 id=120 data-nosnippet>120</a>        <span class="kw">let </span>epoch_distance = mls_group.epoch().as_u64() - message.epoch.as_u64();
+<a href=#120 id=120 data-nosnippet>120</a>        <span class="kw">let </span>epoch_distance = mls_group.epoch().as_u64().saturating_sub(message.epoch.as_u64());
 <a href=#121 id=121 data-nosnippet>121</a>        <span class="kw">if </span>epoch_distance &gt; MAX_PAST_EPOCHS <span class="kw">as </span>u64 {
 <a href=#122 id=122 data-nosnippet>122</a>            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::MessageEpochTooOld);
 <a href=#123 id=123 data-nosnippet>123</a>        }
