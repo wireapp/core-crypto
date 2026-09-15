@@ -63,7 +63,7 @@ pub enum CertificateError {
     UnsupportedPublicKey,
     /// X509Check error
     #[error("transparent")]
-    X509Check(#[from] crate::x509_check::RustyX509CheckError),
+    X509Check(#[from] crate::validation::RustyX509CheckError),
     /// DER error
     #[error(transparent)]
     Der(#[from] spki::der::Error),

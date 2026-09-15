@@ -132,7 +132,7 @@ pub mod acme;
 pub mod pki;
 pub mod pki_env;
 pub mod utils;
-pub mod x509_check;
+pub mod validation;
 
 pub use acme::{AcmeDirectory, RustyAcme, RustyAcmeError};
 pub use acquisition::{
@@ -144,4 +144,4 @@ pub use error::{E2eIdentityError, E2eIdentityResult};
 #[cfg(feature = "builder")]
 pub use rusty_jwt_tools::prelude::generate_jwk;
 pub use rusty_jwt_tools::prelude::{ClientId as E2eiClientId, Handle, HashAlgorithm, JwsAlgorithm};
-pub use x509_check::IdentityStatus;
+pub use validation::IdentityStatus;
