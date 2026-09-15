@@ -2,7 +2,7 @@ use core_crypto_keystore::{
     entities::X509Crl,
     traits::{EntityDatabaseMutation, FetchFromDatabase},
 };
-use wire_e2e_identity::x509_check::extract_crl_uris;
+use wire_e2e_identity::validation::extract_crl_uris;
 use x509_cert::Certificate;
 
 use super::{Error, Result};

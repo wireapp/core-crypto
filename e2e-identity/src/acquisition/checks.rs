@@ -5,7 +5,7 @@ use super::X509CredentialConfiguration;
 use crate::{
     acquisition::{error::CertificateError, identity::WireIdentityReader as _},
     pki_env::PkiEnvironment,
-    x509_check::{prepare_environment, validate_cert},
+    validation::{prepare_environment, validate_cert},
 };
 
 pub(crate) async fn verify_cert_chain(

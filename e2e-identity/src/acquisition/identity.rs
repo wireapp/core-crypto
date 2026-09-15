@@ -4,7 +4,7 @@ use x509_cert::der::Decode as _;
 use crate::{
     acquisition::{error::CertificateError, thumbprint::try_compute_jwk_canonicalized_thumbprint},
     pki_env::PkiEnvironment,
-    x509_check::IdentityStatus,
+    validation::IdentityStatus,
 };
 
 type Result<T> = std::result::Result<T, CertificateError>;

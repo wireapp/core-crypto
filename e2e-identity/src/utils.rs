@@ -12,7 +12,7 @@ use x509_cert::ext::pkix::AuthorityKeyIdentifier;
 
 use crate::{
     error::E2eIdentityResult,
-    x509_check::{RustyX509CheckError, RustyX509CheckResult},
+    validation::{RustyX509CheckError, RustyX509CheckResult},
 };
 
 pub fn generate_key(sign_alg: JwsAlgorithm) -> E2eIdentityResult<Pem> {
