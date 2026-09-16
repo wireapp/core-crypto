@@ -2,7 +2,6 @@
 # TypeScript / JS tasks
 #-------------------------------------------------------------------------------
 
-TS_OUT_DIR := $(JS_DIR)/packages/core-crypto/dist
 WASM_TARGET_DIR := $(abspath target/wasm)
 WASM_BUILD_ENV := CARGO_TARGET_DIR=$(WASM_TARGET_DIR)
 WASM_TARGET_TRIPLE := wasm32-unknown-unknown
@@ -14,8 +13,8 @@ RUST_MODULES_STAMP := $(RUST_MODULES_WASM)/Cargo.toml
 RUST_MODULES_CARGO_LOCK := $(RUST_MODULES_WASM)/Cargo.lock
 WASM_FILE := $(RUST_MODULES_WASM)/target/$(WASM_TARGET_TRIPLE)/$(RELEASE_MODE)/core_crypto_ffi_wasm.wasm
 BROWSER_TS_IMPL := $(BROWSER_GEN_DIR)/core_crypto_ffi.ts
-BROWSER_OUT_DIR := $(TS_OUT_DIR)/browser
-TS_NATIVE_OUT_DIR := $(TS_OUT_DIR)/native
+BROWSER_OUT_DIR := $(TS_BROWSER_DIR)/dist
+TS_NATIVE_OUT_DIR := $(TS_NATIVE_DIR)/dist
 BROWSER_OUT := $(BROWSER_OUT_DIR)/corecrypto.d.ts $(BROWSER_OUT_DIR)/corecrypto.js
 TS_NATIVE_TARGET_DIR := $(abspath target/napi)
 TS_NATIVE_BUILD_ENV := CARGO_TARGET_DIR=$(TS_NATIVE_TARGET_DIR)
@@ -58,7 +57,7 @@ bun-deps: $(BUN_LOCK) $(NODE_MODULES) ## Install JS dependencies using bun
 # always remove old outputs
 .PHONY: ts-clean
 ts-clean: ## Cleanup old TypeScript build outputs
-	@rm -rf $(TS_OUT_DIR) \
+	@rm -rf $(BROWSER_OUT_DIR) $(TS_NATIVE_OUT_DIR) \
 	&& rm -rf $(BROWSER_GEN_DIR) \
 	&& rm -rf $(TS_NATIVE_GEN_DIR) \
 	&& rm -rf $(WASM_TARGET_DIR) \
@@ -303,7 +302,13 @@ ts-browser-bench: $(BROWSER_OUT) | chrome-headless-shell
 ts-native-bench: $(TS_NATIVE_OUT)
 	$(call run-ts-benches,cc-native)
 
-.PHONY: ts-package
-ts-package: $(TS_OUT)  ## Package the ready-to-release tarball
-	@cd $(JS_DIR)/packages/core-crypto && \
+.PHONY: ts-package ts-browser-package ts-native-package
+ts-package: ts-browser-package ts-native-package ## Package both ready-to-release tarballs
+
+ts-browser-package: $(BROWSER_OUT) ## Package the browser tarball
+	@cd $(TS_BROWSER_DIR) && \
+	bun pm pack --quiet
+
+ts-native-package: $(TS_NATIVE_OUT) ## Package the native tarball
+	@cd $(TS_NATIVE_DIR) && \
 	bun pm pack --quiet
