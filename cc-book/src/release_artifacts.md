@@ -4,7 +4,11 @@ Core-Crypto publishes releases to a variety of platforms.
 
 ## Typescript
 
-Typescript releases are published [on NPM](https://www.npmjs.com/package/@wireapp/core-crypto).
+TypeScript releases are published on NPM as separate packages:
+
+- [@wireapp/core-crypto](https://www.npmjs.com/package/@wireapp/core-crypto) for browsers.
+- [@wireapp/core-crypto-native](https://www.npmjs.com/package/@wireapp/core-crypto-native) for native javascript
+  runtimes.
 
 ## JVM / KMP
 
