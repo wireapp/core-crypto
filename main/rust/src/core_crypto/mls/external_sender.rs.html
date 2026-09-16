@@ -2,7 +2,7 @@
 <a href=#2 id=2 data-nosnippet>2</a>    extensions::ExternalSender <span class="kw">as </span>MlsExternalSender,
 <a href=#3 id=3 data-nosnippet>3</a>    prelude::{Credential <span class="kw">as </span>MlsCredential, OpenMlsCrypto <span class="kw">as _</span>, OpenMlsSignaturePublicKey, SignatureScheme},
 <a href=#4 id=4 data-nosnippet>4</a>};
-<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>wire_e2e_identity::parse_json_jwk;
+<a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>rusty_jwt_tools::prelude::parse_json_jwk;
 <a href=#6 id=6 data-nosnippet>6</a>
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use crate</span>::{Error, OpenMlsError, RecursiveError, <span class="prelude-ty">Result</span>, mls_provider::CRYPTO};
 <a href=#8 id=8 data-nosnippet>8</a>

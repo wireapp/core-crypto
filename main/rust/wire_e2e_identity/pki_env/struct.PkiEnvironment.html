@@ -46,7 +46,7 @@ an attempt is made to fetch a CRL from each one.</p>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.validate_cert" class="method"><a class="src rightside" href="../../src/wire_e2e_identity/pki_env/mod.rs.html#283-285">Source</a><h4 class="code-header">pub async fn <a href="#method.validate_cert" class="fn">validate_cert</a>(
     &amp;self,
     cert: &amp;Certificate,
-) -&gt; <a class="type" href="../x509_check/type.RustyX509CheckResult.html" title="type wire_e2e_identity::x509_check::RustyX509CheckResult">RustyX509CheckResult</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.98.0/std/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Validate an end-entity X509 certificate.</p>
+) -&gt; <a class="type" href="../validation/type.RustyX509CheckResult.html" title="type wire_e2e_identity::validation::RustyX509CheckResult">RustyX509CheckResult</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.98.0/std/primitive.unit.html">()</a>&gt;</h4></section></summary><div class="docblock"><p>Validate an end-entity X509 certificate.</p>
 <p>Performs validation of the provided certificate in the context
 defined by the set of trust anchors and intermediate certificates
 contained in this PKI environment. Revocation check is performed
