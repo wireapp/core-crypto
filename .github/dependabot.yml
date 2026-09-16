@@ -14,6 +14,11 @@ updates:
     directory: "crypto-ffi/bindings/js"
     schedule:
       interval: "daily"
+    ignore:
+      - dependency-name: "@types/bun"
+        versions:
+          # This bun version shipped the full rust rewrite
+          - ">=1.4.0"
     groups:
       js-dependencies:
         patterns:
