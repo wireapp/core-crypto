@@ -1,8 +1,40 @@
 {
     "name": "@wireapp/core-crypto-native",
     "version": "10.3.0",
+    "description": "CoreCrypto bindings for native JavaScript runtimes",
+    "keywords": [
+        "corecrypto",
+        "e2ee",
+        "mls",
+        "proteus",
+        "wire"
+    ],
+    "homepage": "https://github.com/wireapp/core-crypto",
+    "bugs": {
+        "url": "https://github.com/wireapp/core-crypto/issues"
+    },
     "license": "GPL-3.0",
+    "author": "Wire CoreCrypto team <team.corecrypto@wire.com>",
+    "repository": {
+        "type": "git",
+        "url": "git@github.com:wireapp/core-crypto.git"
+    },
+    "files": [
+        "dist/corecrypto.js",
+        "dist/corecrypto.d.ts",
+        "dist/libcore_crypto_ffi.*"
+    ],
     "type": "module",
+    "types": "./dist/corecrypto.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/corecrypto.d.ts",
+            "import": "./dist/corecrypto.js"
+        }
+    },
+    "publishConfig": {
+        "access": "public"
+    },
     "dependencies": {
         "@ubjs/core": "0.31.0-5",
         "@ubjs/node": "0.31.0-5"

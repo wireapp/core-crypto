@@ -3,13 +3,14 @@
   "configVersion": 0,
   "workspaces": {
     "": {
-      "name": "@wireapp/core-crypto",
+      "name": "core-crypto",
       "devDependencies": {
         "@types/bun": "~1.3",
         "@types/chai": "^5.2.3",
         "@types/mocha": "^10.0.10",
         "@types/node": "^26.5.0",
         "@wireapp/core-crypto": "workspace:*",
+        "@wireapp/core-crypto-native": "workspace:*",
         "chai": "^6.2.2",
         "dts-bundle-generator": "^9.5.1",
         "mocha": "^12.0.0",
@@ -26,10 +27,6 @@
       },
     },
     "packages/browser": {
-      "name": "@wireapp/core-crypto-browser",
-      "version": "10.3.0",
-    },
-    "packages/core-crypto": {
       "name": "@wireapp/core-crypto",
       "version": "10.3.0",
     },
@@ -272,9 +269,7 @@
 
     "@webassemblyjs/wast-printer": ["@webassemblyjs/wast-printer@1.14.1", "", { "dependencies": { "@webassemblyjs/ast": "1.14.1", "@xtuc/long": "4.2.2" } }, "sha512-kPSSXE6De1XOR820C90RIo2ogvZG+c3KiHzqUoO/F34Y2shGzesfqv7o57xrxovZJH/MetF5UjroJ/R/3isoiw=="],
 
-    "@wireapp/core-crypto": ["@wireapp/core-crypto@workspace:packages/core-crypto"],
-
-    "@wireapp/core-crypto-browser": ["@wireapp/core-crypto-browser@workspace:packages/browser"],
+    "@wireapp/core-crypto": ["@wireapp/core-crypto@workspace:packages/browser"],
 
     "@wireapp/core-crypto-native": ["@wireapp/core-crypto-native@workspace:packages/native"],
 
