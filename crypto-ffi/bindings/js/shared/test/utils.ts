@@ -1,4 +1,4 @@
-import { HttpMethod, HttpHeader } from "@wireapp/core-crypto/browser";
+import { HttpMethod, HttpHeader } from "@wireapp/core-crypto";
 import { sharedSetup, runOnPlatform } from "../shared/utils";
 export { runOnPlatform } from "../shared/utils";
 export { sharedTeardown as teardown } from "../shared/utils";

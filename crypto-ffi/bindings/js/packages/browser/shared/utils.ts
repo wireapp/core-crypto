@@ -1,5 +1,5 @@
 import { logLevel, type PlatformHelpers } from "../../../shared/shared/utils";
-import { type Database, DatabaseKey } from "@wireapp/core-crypto/browser";
+import { type Database, DatabaseKey } from "@wireapp/core-crypto";
 import { serve } from "bun";
 
 import { Browser, Page, launch } from "puppeteer";
@@ -73,7 +73,7 @@ export async function setupBrowser(protocolTimeout?: number) {
                 return new Response(null, { status: 204 });
             }
 
-            const roots = ["./packages/core-crypto/dist/browser", "."];
+            const roots = ["./packages/browser/dist", "."];
 
             for (const root of roots) {
                 const file = Bun.file(`${root}${url.pathname}`);

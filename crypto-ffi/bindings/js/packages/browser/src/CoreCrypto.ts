@@ -34,8 +34,8 @@ export async function initWasmModule(path?: string) {
         }
     } else {
         throw Error(
-            "initializing the wasm module of `@wireapp/core-crypto/browser` package outside the browser\
-            isn't currently supported. Consider using the `@wireapp/core-crypto/native` package."
+            "initializing the wasm module of `@wireapp/core-crypto` package outside the browser\
+            isn't currently supported. Consider using the `@wireapp/core-crypto-native` package."
         );
     }
     // UBRN initialization

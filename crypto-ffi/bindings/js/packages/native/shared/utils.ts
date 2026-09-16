@@ -1,6 +1,6 @@
 import { rm } from "node:fs/promises";
 import assert from "node:assert";
-import { DatabaseKey, Database } from "@wireapp/core-crypto/native";
+import { DatabaseKey, Database } from "@wireapp/core-crypto-native";
 
 import { type PlatformHelpers } from "../../../shared/shared/utils";
 
@@ -8,7 +8,7 @@ const SQLITE_SIDE_CAR_SUFFIXES = ["", "-journal", "-shm", "-wal"] as const;
 export const DATABASE_LOCATIONS = new Set<string>();
 
 export async function sharedSetup() {
-    globalThis.ccModule = await import("@wireapp/core-crypto/native");
+    globalThis.ccModule = await import("@wireapp/core-crypto-native");
 }
 
 export async function sharedTeardown() {
