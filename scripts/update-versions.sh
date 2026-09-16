@@ -18,7 +18,7 @@ cargo update -w
 # Update the NPM packages version. Be careful not to overwrite the same
 # file we're reading from.
 js_path=crypto-ffi/bindings/js/packages
-packages=(browser native core-crypto)
+packages=(browser native)
 
 for pkg in "${packages[@]}"; do
   file="${js_path}/${pkg}/package.json"
