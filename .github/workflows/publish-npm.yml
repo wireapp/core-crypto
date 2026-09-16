@@ -34,6 +34,9 @@ jobs:
   publish:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [browser, native]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -53,7 +56,7 @@ jobs:
       # We're just using the make action in these next few steps to download
       # previously produced artifacts.
       - name: download ts browser artifacts
-        if: ${{ inputs.prepare == true }}
+        if: ${{ inputs.prepare == true && matrix.package == 'browser' }}
         uses: ./.github/actions/make/ts/browser
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
@@ -63,18 +66,18 @@ jobs:
       # downloading native linux artifacts, otherwise the "package" step will trigger
       # a rebuild of the linux artifacts.
       - name: download ts native aarch64 apple darwin artifacts
-        if: ${{ inputs.prepare == true }}
+        if: ${{ inputs.prepare == true && matrix.package == 'native' }}
         uses: ./.github/actions/make
         with:
           key: ts-native-darwin-arm64
           make-rule: ts-native
           target-path: |
-            crypto-ffi/bindings/js/packages/core-crypto/dist/native/libcore_crypto_ffi.dylib
+            crypto-ffi/bindings/js/packages/native/dist/libcore_crypto_ffi.dylib
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       - name: download ts native linux artifacts
-        if: ${{ inputs.prepare == true }}
+        if: ${{ inputs.prepare == true && matrix.package == 'native' }}
         uses: ./.github/actions/make/ts/native
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
@@ -84,9 +87,9 @@ jobs:
         if: ${{ inputs.prepare == true }}
         id: package
         run: |
-          filename=$(make ts-package | tail -n 1)
+          filename=$(make ts-${{ matrix.package }}-package | tail -n 1)
           echo "filename=$filename" >> "$GITHUB_OUTPUT"
-          echo "path=crypto-ffi/bindings/js/packages/core-crypto/$filename" >> "$GITHUB_OUTPUT"
+          echo "path=crypto-ffi/bindings/js/packages/${{ matrix.package }}/$filename" >> "$GITHUB_OUTPUT"
 
       - name: upload artifacts
         if: ${{ inputs.prepare == true }}
@@ -99,15 +102,16 @@ jobs:
         id: download
         if: ${{ inputs.prepare == false && inputs.release == true }}
         run: |
-          cd crypto-ffi/bindings/js/packages/core-crypto
-          gh release download "$GH_REF_NAME" --pattern "*.tgz" --dir . 2>/dev/null || true
-          shopt -s nullglob
-          tarballs=(*.tgz)
-          filename="${tarballs[0]-}"
-          if [[ -z "$filename" ]]; then
-            echo "::error ::No npm tarball found in release '$GH_REF_NAME'"
-            exit 1
+          cd crypto-ffi/bindings/js/packages/${{ matrix.package }}
+          # Concatenate org name with package name
+          name=$(jq -r '.name | ltrimstr("@") | gsub("/"; "-")' package.json)
+          version=$(jq -r '.version' package.json)
+          filename="$name-$version.tgz"
+          assets=$(gh release view "$GH_REF_NAME" --json assets --jq '.assets[].name')
+          if ! grep -Fxq "$filename" <<< "$assets"; then
+            echo "No tarball '$filename' in release '$GH_REF_NAME' — already published or never uploaded"
           else
+            gh release download "$GH_REF_NAME" --pattern "$filename" --dir .
             echo "filename=$filename" >> "$GITHUB_OUTPUT"
           fi
         env:
@@ -144,7 +148,7 @@ jobs:
             tag="${label%%.*}"              # e.g. `pre`
             echo "::notice ::publishing prerelease '$GITHUB_REF_NAME' under npm dist-tag '$tag'"
           fi
-          cd crypto-ffi/bindings/js/packages/core-crypto
+          cd crypto-ffi/bindings/js/packages/${{ matrix.package }}
           npm publish "./${{ steps.tarball.outputs.filename }}" --provenance --tag "$tag"
 
       - name: delete package from gh release

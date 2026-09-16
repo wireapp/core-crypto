@@ -266,29 +266,28 @@ jobs:
           pgp-passphrase: ${{ secrets.PGP_PASSPHRASE }}
 
   publish-npm:
-    # The npm tarball is uploaded to the GH release during the automatic pipeline run.
-    # Its presence means "not yet published"; we publish then delete it.
-    # If it is absent the version was already published to npm — skip silently.
+    # The npm tarballs are uploaded to the GH release during the automatic pipeline run.
+    # Each present tarball means "not yet published"; we publish then delete it.
+    # Absent tarballs were already published or never uploaded — skip them.
     if: inputs.registry == 'all' || inputs.registry == 'npm'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
+      contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: download npm tarball from release
+      - name: download npm tarballs from release
         id: download
         run: |
-          gh release download "$TAG" --pattern "*.tgz" --dir . 2>/dev/null || true
-          shopt -s nullglob
-          tarballs=(*.tgz)
-          filename="${tarballs[0]-}"
-          if [[ -z "$filename" ]]; then
+          mkdir -p npm-tarballs
+          assets=$(gh release view "$TAG" --json assets --jq '.assets[].name')
+          if ! grep -Eq '^wireapp-core-crypto(-native)?-.*\.tgz$' <<< "$assets"; then
             echo "No npm tarball found in release '$TAG' — already published or never uploaded"
             echo "found=false" >> "$GITHUB_OUTPUT"
           else
             echo "found=true" >> "$GITHUB_OUTPUT"
-            echo "filename=$filename" >> "$GITHUB_OUTPUT"
+            gh release download "$TAG" --pattern "wireapp-core-crypto-*.tgz" --dir npm-tarballs
           fi
         env:
           TAG: ${{ inputs.tag }}
@@ -300,11 +299,17 @@ jobs:
 
       - name: publish to npm (Trusted Publishers)
         if: steps.download.outputs.found == 'true'
-        run: npm publish "./${{ steps.download.outputs.filename }}"
-
-      - name: delete tarball from release
-        if: steps.download.outputs.found == 'true'
-        run: gh release delete-asset "$TAG" "${{ steps.download.outputs.filename }}" --yes
+        run: |
+          tag='latest'
+          # Special handling of pre-releases
+          if [[ "$TAG" == v*-* ]]; then
+            label="${TAG#*-}"
+            tag="${label%%.*}"
+          fi
+          for tarball in npm-tarballs/*.tgz; do
+            npm publish "$tarball" --tag "$tag"
+            gh release delete-asset "$TAG" "${tarball##*/}" --yes
+          done
         env:
           TAG: ${{ inputs.tag }}
           GH_TOKEN: ${{ github.token }}

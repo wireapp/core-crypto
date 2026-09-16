@@ -70,7 +70,6 @@ jobs:
 
           CARGO_VERSION=$(sed -n 's/^version = "\([^"]*\)"/\1/p' crypto-ffi/Cargo.toml)
           GRADLE_VERSION=$(sed -n 's/^VERSION_NAME=//p' crypto-ffi/bindings/gradle.properties)
-          NPM_VERSION=$(jq -er '.version' crypto-ffi/bindings/js/packages/core-crypto/package.json)
 
           exitcode=0
 
@@ -84,10 +83,15 @@ jobs:
             exitcode=1
           fi
 
-          if [[ "$NPM_VERSION" != "$EXPECTED_VERSION" ]]; then
-            echo "npm package @wireapp/core-crypto version '$NPM_VERSION' does not match release tag '$TAG_NAME'"
-            exitcode=1
-          fi
+          for package in browser native; do
+            manifest="crypto-ffi/bindings/js/packages/$package/package.json"
+            NPM_VERSION=$(jq -er '.version' "$manifest")
+            NPM_NAME=$(jq -er '.name' "$manifest")
+            if [[ "$NPM_VERSION" != "$EXPECTED_VERSION" ]]; then
+              echo "npm package $NPM_NAME version '$NPM_VERSION' does not match release tag '$TAG_NAME'"
+              exitcode=1
+            fi
+          done
 
           exit "$exitcode"
 
