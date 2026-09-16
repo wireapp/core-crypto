@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-af4f7147.js";
+            window.path_to_searchindex_js = "searchindex-a2a6d7c7.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1c113b1d.js"></script>
@@ -1558,6 +1558,10 @@ log level, use the free function <code>setMaxLogLevel(level: CoreCryptoLogLevel)
 <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
 <h2 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h2>
 <ul>
+<li>
+<p>TypeScript: browser and native packages are now released separately under <code>@wireapp/core-crypto</code> and
+<code>@wireapp/core-crypto-native</code>, respectively.</p>
+</li>
 <li>
 <p>iOS/macOS: The keystore path is no longer required to stay the same across CoreCrypto instances. In previous versions
 of CoreCrypto, the keystore path was used to look up salt values for the database encryption. This is no longer the
