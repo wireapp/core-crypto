@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- TypeScript: browser and native packages are now released separately under `@wireapp/core-crypto` and
+  `@wireapp/core-crypto-native`, respectively.
+
 - iOS/macOS: The keystore path is no longer required to stay the same across CoreCrypto instances. In previous versions
   of CoreCrypto, the keystore path was used to look up salt values for the database encryption. This is no longer the
   case, and the salt values are now stored in a file in the same directory as the CoreCrypto database. For existing
