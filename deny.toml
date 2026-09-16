@@ -19,6 +19,7 @@ targets = [
 
 [advisories]
 version = 2
+yanked = "deny"
 
 # Fail if ignored advisories don't exist (anymore).
 unused-ignored-advisory = "deny"
