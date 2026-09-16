@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-a07e6f3d.js";
+            window.path_to_searchindex_js = "searchindex-af4f7147.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1c113b1d.js"></script>
@@ -936,6 +936,17 @@ case let .persistedTargeted(plaintext, senderClientId, identity):
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="migrating-to-unreleased-typescript"><a class="header" href="#migrating-to-unreleased-typescript">Migrating to Unreleased: TypeScript</a></h1>
 <p>See the <a href="unreleased/migration-guide.html">common migration guide</a> for changes that apply to all platforms.</p>
+<h2 id="browser-and-native-packages"><a class="header" href="#browser-and-native-packages">Browser and Native Packages</a></h2>
+<p>Browser bindings are published as <code>@wireapp/core-crypto</code>. The <code>@wireapp/core-crypto/browser</code> import remains available as
+an alias. Native bindings are published separately as <code>@wireapp/core-crypto-native</code>, which automatically installs its
+<code>@ubjs/core</code> and <code>@ubjs/node</code> runtime dependencies.</p>
+<p>If you previously used the native subpath, install <code>@wireapp/core-crypto-native</code> and update your imports:</p>
+<pre><code class="language-typescript">// before
+import { ... } from "@wireapp/core-crypto/native";
+
+// after
+import { ... } from "@wireapp/core-crypto-native";
+</code></pre>
 <h2 id="database"><a class="header" href="#database">Database</a></h2>
 <p>Deprecated <code>Database.close()</code>. Database references are now automatically destroyed when the garbage collector cleans up
 the object. If you need to explicitly close the database, you can call <code>uniffiDestroy()</code> on the <code>Database</code> instance.</p>
@@ -2386,7 +2397,12 @@ pub enum MlsError {
 <h1 id="release-artifacts"><a class="header" href="#release-artifacts">Release Artifacts</a></h1>
 <p>Core-Crypto publishes releases to a variety of platforms.</p>
 <h2 id="typescript-1"><a class="header" href="#typescript-1">Typescript</a></h2>
-<p>Typescript releases are published <a href="https://www.npmjs.com/package/@wireapp/core-crypto">on NPM</a>.</p>
+<p>TypeScript releases are published on NPM as separate packages:</p>
+<ul>
+<li><a href="https://www.npmjs.com/package/@wireapp/core-crypto">@wireapp/core-crypto</a> for browsers.</li>
+<li><a href="https://www.npmjs.com/package/@wireapp/core-crypto-native">@wireapp/core-crypto-native</a> for native javascript
+runtimes.</li>
+</ul>
 <h2 id="jvm--kmp"><a class="header" href="#jvm--kmp">JVM / KMP</a></h2>
 <p>Java bindings are published <a href="https://central.sonatype.com/artifact/com.wire/core-crypto-jvm">on Sonatype</a>.</p>
 <h2 id="android"><a class="header" href="#android">Android</a></h2>

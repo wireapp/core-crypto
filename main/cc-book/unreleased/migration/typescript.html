@@ -36,7 +36,7 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-a07e6f3d.js";
+            window.path_to_searchindex_js = "../../searchindex-af4f7147.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../../toc-1c113b1d.js"></script>
@@ -177,6 +177,17 @@
                     <main>
                         <h1 id="migrating-to-unreleased-typescript"><a class="header" href="#migrating-to-unreleased-typescript">Migrating to Unreleased: TypeScript</a></h1>
 <p>See the <a href="../migration-guide.html">common migration guide</a> for changes that apply to all platforms.</p>
+<h2 id="browser-and-native-packages"><a class="header" href="#browser-and-native-packages">Browser and Native Packages</a></h2>
+<p>Browser bindings are published as <code>@wireapp/core-crypto</code>. The <code>@wireapp/core-crypto/browser</code> import remains available as
+an alias. Native bindings are published separately as <code>@wireapp/core-crypto-native</code>, which automatically installs its
+<code>@ubjs/core</code> and <code>@ubjs/node</code> runtime dependencies.</p>
+<p>If you previously used the native subpath, install <code>@wireapp/core-crypto-native</code> and update your imports:</p>
+<pre><code class="language-typescript">// before
+import { ... } from "@wireapp/core-crypto/native";
+
+// after
+import { ... } from "@wireapp/core-crypto-native";
+</code></pre>
 <h2 id="database"><a class="header" href="#database">Database</a></h2>
 <p>Deprecated <code>Database.close()</code>. Database references are now automatically destroyed when the garbage collector cleans up
 the object. If you need to explicitly close the database, you can call <code>uniffiDestroy()</code> on the <code>Database</code> instance.</p>
