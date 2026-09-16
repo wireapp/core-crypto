@@ -1,0 +1,340 @@
+name: third party notices
+
+concurrency:
+  # One run per tag, and one per pull request (`github.ref_name` is `<number>/merge`
+  # there). A tag push and a release created on that same tag would otherwise race to
+  # upload the same asset.
+  group: "${{ github.workflow }}-${{ github.event.inputs.tag || github.event.release.tag_name || github.ref_name }}"
+  cancel-in-progress: true
+
+# Releases cut by the pipeline are created with `GITHUB_TOKEN`, and GitHub fires no
+# workflow events for those, so the `release` trigger alone would never run for them:
+# the tag push is what covers the normal release path. `workflow_dispatch` is for
+# regenerating the notices of a release that already exists.
+#
+# A pull request builds the notices too, but keeps them: it uploads them as a workflow
+# artifact and never touches a release. That is what makes a change to
+# `.third-party-license-corrections.yaml` reviewable before it is merged.
+on:
+  pull_request:
+    # `Cargo.lock` is the only real lockfile here: neither the Gradle nor the npm side has
+    # one, so their declarations stand in for it. That makes this filter sensitive to
+    # *declared* changes only -- a Gradle build with no dependency locking can resolve
+    # different transitive versions without any file moving. Acceptable, because a release
+    # always regenerates from scratch: a miss here costs a stale pull request artifact,
+    # never a stale release asset.
+    paths:
+      - "Cargo.lock"
+      # Manifests as well as the lock: `crate-type` and `[[bin]]` decide whether a crate
+      # counts as embedded or linked, which changes the notice without moving the lock.
+      - "**/Cargo.toml"
+      - "crypto-ffi/bindings/**/*.versions.toml"
+      - "interop/src/clients/gradle/*.versions.toml"
+      - "crypto-ffi/bindings/**/build.gradle.kts"
+      - "crypto-ffi/bindings/settings.gradle.kts"
+      - "crypto-ffi/bindings/**/gradle.properties"
+      # No npm lockfile is committed, so the manifests are all there is.
+      - "crypto-ffi/bindings/js/**/package.json"
+      # The corrections themselves, and the pins this workflow applies.
+      - ".third-party-license-corrections.yaml"
+      - ".github/workflows/third-party-notices.yml"
+  # `published` alone covers both ways a release appears: published straight away, or
+  # published from a draft. `created` would add nothing but a duplicate run -- it fires
+  # alongside `published` for a direct publish, and otherwise only for a saved draft,
+  # which has no tag to build from.
+  release:
+    types:
+      - published
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: tag of the release to attach the notices to
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+env:
+  # Pinned past v1.0.0, which cannot yet write the collated `sbom.cdx.json`.
+  NOTICES_GENERATOR_REF: ae763744f093276405e174b771430b7cd408500f
+  # cdxgen resolves the Gradle dependency graph, and what it makes of a version catalog
+  # changes between its releases, so the corrections written against it are pinned too.
+  CDXGEN_VERSION: 12.8.4
+
+jobs:
+  third-party-notices:
+    # Generating anything needs the app private key, and GitHub withholds secrets from fork
+    # pull requests and from anything Dependabot triggers. Skip those rather than fail them:
+    # a skipped job leaves the run green. A secret missing on any other run is a
+    # misconfiguration, and that should stay loud.
+    if: >-
+      ${{
+        !(github.event_name == 'pull_request' &&
+          (
+            github.event.pull_request.head.repo.full_name != github.repository ||
+            github.actor == 'dependabot[bot]'
+          )
+        )
+      }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: resolve the tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          case "$EVENT_NAME" in
+            workflow_dispatch) tag="$INPUT_TAG" ;;
+            release) tag="$RELEASE_TAG" ;;
+            push) tag="$GITHUB_REF_NAME" ;;
+            # A pull request has no tag. It builds from the ref that triggered it, which is
+            # what `actions/checkout` does when `ref` is empty.
+            pull_request) tag="" ;;
+            *) echo "::error ::unexpected event: $EVENT_NAME"; exit 1 ;;
+          esac
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            if [ -z "$tag" ]; then
+              echo "::error ::could not determine which tag to build the notices from"
+              exit 1
+            fi
+            # Everything below describes the sources this tag points at, so it has to
+            # exist. `git/ref` matches exactly, unlike `git/matching-refs`.
+            if ! gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" >/dev/null 2>&1; then
+              echo "::error ::no such tag: $tag"
+              exit 1
+            fi
+            echo "::notice ::generating third party notices for $tag"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      # This workflow only ever edits a release, it never creates one, so a missing
+      # release is an error. On a tag push the pipeline is still in the middle of
+      # creating it, which the wait before the upload handles instead.
+      - name: check the release exists
+        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: |
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error ::no release for tag $TAG; this workflow attaches to releases, it does not create them"
+            exit 1
+          fi
+
+      - name: check out the repository at the tag
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+
+      # The corrections are reviewed and fixed up on `main` as licenses are misdetected;
+      # the tag carries whatever was known when it was cut, mistakes included.
+      # Also, for many existing releases the corrections file did not yet exist. A pull
+      # request is the exception: it uses its own copy, since reviewing a change to that
+      # file is the point of building the notices there.
+      - name: take the license corrections from main
+        if: github.event_name != 'pull_request'
+        env:
+          CORRECTIONS: .third-party-license-corrections.yaml
+        run: |
+          git fetch --depth 1 origin main
+          git checkout FETCH_HEAD -- "$CORRECTIONS"
+          # HEAD is the tag: show what `main` corrects on top of it
+          git --no-pager diff --stat HEAD -- "$CORRECTIONS"
+
+      # `notices-generator` is an internal repository, so this repository's `GITHUB_TOKEN`
+      # cannot read it. A GitHub App mints one that can, good for an hour and revoked when
+      # the job ends. Only the checkout below uses it, and that runs before the slow steps,
+      # so the lifetime is never in question.
+      #
+      # A pull request run has this key, and a pull request can edit the workflow that
+      # reads it, so anyone with push access here can print it. That is inherent to
+      # generating notices on pull requests; the blast radius is read-only access to one
+      # internal repository, and the app is not installed on this one. Close it with an
+      # `environment:` and required reviewers if that ever stops being acceptable.
+      - name: mint a token for the notices generator
+        id: generator-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.NOTICES_GENERATOR_APP_CLIENT_ID }}
+          private-key: ${{ secrets.NOTICES_GENERATOR_APP_PRIVATE_KEY }}
+          # Without these the token would be scoped to this repository, which is not the
+          # one being read. Narrowed to what a clone needs, below whatever the app itself
+          # was granted.
+          owner: wireapp
+          repositories: notices-generator
+          permission-contents: read
+
+      - name: check out the notices generator
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: wireapp/notices-generator
+          ref: ${{ env.NOTICES_GENERATOR_REF }}
+          token: ${{ steps.generator-token.outputs.token }}
+          path: notices-generator
+          persist-credentials: false
+
+      - name: set up python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: "3.13"
+
+      - name: install the generator's dependencies
+        working-directory: notices-generator
+        run: pip install -r requirements.txt
+
+      # One tool per ecosystem the generator detects here: Rust at the workspace root and
+      # in every crate, Node under `crypto-ffi/bindings/js`, and Gradle for the Kotlin
+      # bindings. The Gradle version catalogs and the hand-declared entries need no tool.
+      # This job runs `cargo sbom`, which reads metadata and compiles nothing. Without a
+      # prefix the cache key would be the one every compiling job shares, and this job
+      # would race them to save a near-empty `target/` under it.
+      - name: set up rust
+        uses: ./.github/actions/setup-and-cache-rust
+        with:
+          cache-key-prefix: third-party-notices
+
+      - name: install cargo-sbom
+        uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
+        with:
+          # Pinned like cdxgen and the generator itself: the notice has to be reproducible
+          # from pinned inputs.
+          tool: cargo-sbom@0.10.0
+
+      - name: install cdxgen
+        run: |
+          OS=linux
+          ARCH=amd64
+          BINARY_NAME=cdxgen-$OS-$ARCH-slim
+
+          curl -LO "https://github.com/cdxgen/cdxgen/releases/latest/download/$BINARY_NAME"
+          curl -LO "https://github.com/cdxgen/cdxgen/releases/latest/download/$BINARY_NAME.sha256"
+
+          sha256sum -c "$BINARY_NAME.sha256"
+
+          chmod +x "$BINARY_NAME"
+          ./"$BINARY_NAME" --version
+
+          path="$(mktemp -d)"
+          mv "$BINARY_NAME" "$path/cdxgen"
+          echo "$path" >> "$GITHUB_PATH"
+
+      - name: set up jdk 25
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          java-version: 25
+          distribution: temurin
+
+      - name: gradle setup
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-provider: basic
+
+      # Run from the generator's own folder: its `sbom-config.yaml` carries the license
+      # whitelist and the first-party Wire overrides, and is picked up from the working
+      # directory. The corrections file in the scanned repository is merged on top of it.
+      - name: generate the third party notices
+        working-directory: notices-generator
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          NOTICES_DIR: ${{ runner.temp }}/notices
+        run: |
+          log="$RUNNER_TEMP/generate_sbom.log"
+          set +e
+          python3 generate_sbom.py "$GITHUB_WORKSPACE" --output-dir "$NOTICES_DIR" 2>&1 | tee "$log"
+          status="${PIPESTATUS[0]}"
+          set -e
+          if [ "$status" -eq 0 ]; then
+            exit 0
+          fi
+
+          # The generator writes what it can and tags every failure it reports with the
+          # folder and the ecosystem it came from: `error: [<folder>: <ecosystem>] ...`.
+          # Only those tagged lines are ours to classify; a failed tool's own stderr is
+          # quoted underneath, `error:` lines and all.
+          #
+          # Resolving the Gradle graph means cdxgen running the bindings' Gradle build,
+          # the one step here that can fail for reasons having nothing to do with
+          # licenses. Everything else is fatal, a license outside the whitelist above all.
+          # That includes `gradle-catalog`, which is parsed in-process and does not depend
+          # on a working Gradle build.
+          tagged="$(grep -E '^error: \[' "$log" || true)"
+          if [ -z "$tagged" ]; then
+            echo "::error ::the notices generator failed before reporting a per-ecosystem error"
+            exit 1
+          fi
+          fatal="$(printf '%s\n' "$tagged" | grep -vE '^error: \[([^]]*: )?gradle\] ' || true)"
+          if [ -n "$fatal" ]; then
+            echo "::error ::the notices generator failed:"
+            printf '%s\n' "$fatal"
+            exit 1
+          fi
+          # A pull request builds the notices to be read, so the other ecosystems' output
+          # is still worth having. A release attaches them for license compliance, where a
+          # notice silently missing every JVM dependency is worse than no notice at all.
+          if [ "$EVENT_NAME" != "pull_request" ]; then
+            echo "::error ::the Gradle dependency scan failed, so the notices would list no JVM dependencies; refusing to attach them:"
+            printf '%s\n' "$tagged"
+            exit 1
+          fi
+          echo "::warning ::the Gradle dependency scan failed; the notices were generated without it"
+
+      - name: upload the notices as an artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: third-party-notices
+          path: |
+            ${{ runner.temp }}/notices/THIRD_PARTY_NOTICES.txt
+            ${{ runner.temp }}/notices/sbom.cdx.json
+          if-no-files-found: error
+
+      # The pipeline creates the release as a side effect of uploading its first artifact,
+      # which can land well after the notices are ready.
+      - name: wait for the release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+          # The release appears only once the pipeline's first artifact upload creates it,
+          # and the earliest of those waits on the full test suite.
+          WAIT_MINUTES: 45
+        run: |
+          # deadline is WAIT_MINUTES after this step starts.
+          # SECONDS is a bash intrinsic containing the number of seconds since the shell started
+          # The shell starts anew each time a step runs.
+          deadline=$(( SECONDS + WAIT_MINUTES * 60 ))
+          until gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; do
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "::error ::no release for tag $TAG after $WAIT_MINUTES minutes; this workflow attaches to releases, it does not create them"
+              exit 1
+            fi
+            echo "no release for $TAG after $SECONDS seconds, waiting for the pipeline to create it"
+            sleep 30
+          done
+
+      # `gh release upload` fails on a release that does not exist, so this can only ever
+      # edit one. `--clobber` makes a re-run replace what a previous one attached.
+      - name: attach the notices to the release
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+          NOTICES_DIR: ${{ runner.temp }}/notices
+        run: |
+          gh release upload "$TAG" \
+            "$NOTICES_DIR/THIRD_PARTY_NOTICES.txt" \
+            "$NOTICES_DIR/sbom.cdx.json" \
+            --repo "$GITHUB_REPOSITORY" --clobber
