@@ -506,7 +506,7 @@ impl ConversationMut {
                             }
                         } else if msg_epoch < group_epoch {
                             match content_type {
-                                ContentType::Application => Error::StaleMessage,
+                                ContentType::Application => Error::MessageEpochTooOld,
                                 ContentType::Commit => Error::StaleCommit,
                                 ContentType::Proposal => Error::StaleProposal,
                             }
