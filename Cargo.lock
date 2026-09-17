@@ -7505,7 +7505,6 @@ dependencies = [
  "uuid",
  "wasm-bindgen-test",
  "web-time",
- "wire-e2e-identity",
  "x509-cert",
  "x509-ocsp",
  "zeroize",

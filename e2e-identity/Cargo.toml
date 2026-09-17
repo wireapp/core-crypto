@@ -63,7 +63,6 @@ base64.workspace = true
 argon2 = "0.6"
 password-hash = { version = "0.6", features = ["getrandom"] }
 env_logger.workspace = true
-wire-e2e-identity = { version = "0.13.0", path = ".", features = ["builder"] }
 rusty-jwt-tools = { workspace = true, features = ["test-utils", "rsa"] }
 url.workspace = true
 itertools.workspace = true
@@ -96,4 +95,3 @@ features = ["std", "js"]
 
 [features]
 default = []
-builder = ["rusty-jwt-tools/test-utils"]
