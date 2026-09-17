@@ -8,7 +8,7 @@ publish = false
 
 [target.'cfg(not(target_os = "unknown"))'.dependencies]
 base64 = { workspace = true }
-hyper = { workspace = true, features = ["server"] }
+hyper = { workspace = true, features = ["server", "http1"] }
 http = { workspace = true }
 http-body-util = "0.1"
 rusty-jwt-tools = { workspace = true }
