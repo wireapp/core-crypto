@@ -29,9 +29,7 @@ async-trait.workspace = true
 const_format.workspace = true
 core-crypto-macros.workspace = true
 derive_more.workspace = true
-getrandom.workspace = true
 hex.workspace = true
-itertools.workspace = true
 log = { workspace = true }
 obfuscate = { workspace = true, features = ["openmls"] }
 openmls = { workspace = true }
@@ -57,7 +55,6 @@ serde_json.workspace = true
 sha2.workspace = true
 thiserror.workspace = true
 x509-cert = { workspace = true, features = ["fingerprint"] }
-spki.workspace = true
 zeroize = { workspace = true, features = ["zeroize_derive"] }
 parking_lot = { version = "0.12.5", features = ["arc_lock"] }
 
@@ -83,7 +80,6 @@ time = { version = "0.3.5", features = ["wasm-bindgen"] }
 serde-wasm-bindgen.workspace = true
 wasm-bindgen.workspace = true
 wasm-bindgen-futures.workspace = true
-web-sys = { version = "0.3", features = ["console"] }
 web-time.workspace = true
 
 [dev-dependencies]
