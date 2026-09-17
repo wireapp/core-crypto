@@ -108,6 +108,7 @@ hex-literal = "1.1"
 der.workspace = true
 spki.workspace = true
 sha1.workspace = true
+rusty-jwt-tools = { workspace = true, features = ["test-utils"] }
 
 [target.'cfg(not(target_os = "unknown"))'.dev-dependencies]
 smol-macros.workspace = true
