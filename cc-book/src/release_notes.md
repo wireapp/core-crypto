@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `proteusNewPrekey` is deprecated; use `proteusNewPrekeyAuto` instead.
+
 - TypeScript: browser and native packages are now released separately under `@wireapp/core-crypto` and
   `@wireapp/core-crypto-native`, respectively.
 
