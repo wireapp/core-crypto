@@ -29,8 +29,6 @@ pub enum Error {
     DuplicateMessage,
     #[error("The epoch in which message was encrypted is older than {MAX_PAST_EPOCHS}")]
     MessageEpochTooOld,
-    #[error("Incoming message is from a prior epoch")]
-    StaleMessage,
     #[error(
         "Incoming message is a commit for which we have not yet received all the proposals. Buffering until all proposals have arrived."
     )]
