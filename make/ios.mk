@@ -46,7 +46,7 @@ SWIFT_WRAPPER_GENERATED := $(SWIFT_WRAPPER_DIR)/CoreCrypto.generated.swift
 .PHONY: swift-generate-wrapper
 swift-generate-wrapper: $(SWIFT_WRAPPER_GENERATED) $(SOURCERY_TEMPLATE)
 
-swift-generate-wrapper-deps := $(UNIFFI_SWIFT_OUTPUT) $(SOURCERY_CONFIG)
+swift-generate-wrapper-deps := $(UNIFFI_SWIFT_OUTPUT) $(SOURCERY_CONFIG) $(SOURCERY_TEMPLATE)
 
 $(SWIFT_WRAPPER_GENERATED): $(swift-generate-wrapper-deps)
 	sourcery --config $(SOURCERY_CONFIG)
