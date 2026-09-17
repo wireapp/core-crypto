@@ -40,7 +40,6 @@ rusty-jwt-tools.workspace = true
 tls_codec.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-url.workspace = true
 async-trait.workspace = true
 async-lock.workspace = true
 schnellru.workspace = true
@@ -64,7 +63,6 @@ obfuscate = { workspace = true, features = [
 aes-gcm = "0.11"
 sha2 = { workspace = true, features = ["oid"] }
 chacha20poly1305 = "0.11"
-hmac = "0.13"
 ed25519-dalek = { workspace = true, features = ["pkcs8"] }
 signature.workspace = true
 elliptic-curve.workspace = true
@@ -89,11 +87,8 @@ itertools.workspace = true
 uuid = { workspace = true, features = ["v4", "js"] }
 tempfile.workspace = true
 wasm-bindgen.workspace = true
-wasm-bindgen-futures.workspace = true
-js-sys.workspace = true
 rstest.workspace = true
 rstest_reuse.workspace = true
-env_logger.workspace = true
 futures-util = { workspace = true, features = ["std", "alloc"] }
 async-trait.workspace = true
 time = { workspace = true, features = ["wasm-bindgen"] }
