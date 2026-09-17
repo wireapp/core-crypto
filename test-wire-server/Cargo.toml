@@ -18,7 +18,5 @@ smol-hyper = { workspace = true }
 url = { workspace = true }
 uuid = { workspace = true }
 
-[target.'cfg(target_os = "unknown")'.dependencies]
-
 [lints]
 workspace = true
