@@ -7487,7 +7487,6 @@ dependencies = [
 name = "wire-e2e-identity"
 version = "0.13.0"
 dependencies = [
- "anyhow",
  "argon2",
  "async-lock",
  "async-trait",
@@ -7498,20 +7497,15 @@ dependencies = [
  "core-crypto-macros",
  "der 0.8.2",
  "derive_more",
- "ecdsa 0.17.0",
  "ed25519-dalek 3.0.0",
  "elliptic-curve 0.14.1",
  "env_logger",
- "getrandom 0.4.3",
  "hex",
  "http 1.5.0",
- "http-body-util",
- "hyper",
  "itertools 0.15.0",
  "jwt-simple",
  "keycloak",
  "log",
- "native-tls",
  "oauth2",
  "obfuscate",
  "openidconnect",

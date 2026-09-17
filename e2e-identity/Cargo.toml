@@ -41,13 +41,11 @@ time = { workspace = true, features = [
 ed25519-dalek.workspace = true
 signature.workspace = true
 log.workspace = true
-ecdsa.workspace = true
 elliptic-curve.workspace = true
 p256.workspace = true
 p384.workspace = true
 p521.workspace = true
 pem.workspace = true
-getrandom.workspace = true
 web-time.workspace = true
 hex.workspace = true
 certval.workspace = true
@@ -73,7 +71,6 @@ shlex = "2"
 
 openidconnect.workspace = true
 scraper.workspace = true
-anyhow.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 pem.workspace = true
 rand.workspace = true
@@ -81,12 +78,9 @@ rstest.workspace = true
 
 [target.'cfg(not(target_os = "unknown"))'.dev-dependencies]
 reqwest = { workspace = true, features = ["json", "cookies"] }
-hyper = { workspace = true, features = ["server"] }
-native-tls = { workspace = true, features = ["vendored"] }
 oauth2.workspace = true
 http.workspace = true
 keycloak.workspace = true
-http-body-util = "0.1"
 testcontainers = { workspace = true, features = ["reusable-containers"] }
 
 [target.'cfg(target_os = "unknown")'.dependencies.uuid]
