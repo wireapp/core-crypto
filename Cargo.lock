@@ -1202,7 +1202,6 @@ dependencies = [
  "core-crypto-macros",
  "derive_more",
  "futures-util",
- "getrandom 0.4.3",
  "hex",
  "js-sys",
  "jwt-simple",
