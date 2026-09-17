@@ -211,14 +211,12 @@ impl PartialEq for Credential {
 
 #[cfg(test)]
 mod tests {
-    use wire_e2e_identity::pki::PkiKeypair;
-
     use super::{x509::CertificateBundle, *};
     use crate::{
         CredentialType, E2eiConversationState,
         mls::credential::x509::CertificatePrivateKey,
         test_utils::{
-            x509::{CertificateParams, X509TestChain},
+            x509::{CertificateParams, PkiKeypair, X509TestChain},
             *,
         },
     };

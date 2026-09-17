@@ -4,8 +4,6 @@ use derive_more::derive;
 use openmls::prelude::Credential as MlsCredential;
 use openmls_traits::types::SignatureScheme;
 use openmls_x509_credential::CertificateKeyPair;
-#[cfg(test)]
-use wire_e2e_identity::pki::PkiKeypair;
 use wire_e2e_identity::{HashAlgorithm, WireIdentityReader, pki_env::PkiEnvironment};
 #[cfg(test)]
 use x509_cert::der::Encode;
@@ -13,7 +11,7 @@ use zeroize::Zeroize;
 
 use super::{Error, Result};
 #[cfg(test)]
-use crate::test_utils::x509::X509Certificate;
+use crate::test_utils::x509::{PkiKeypair, X509Certificate};
 use crate::{
     CipherSuite, ClientId, Credential, CredentialType, OpenMlsError, RecursiveError,
     mls::credential::ext::CredentialExt as _,
