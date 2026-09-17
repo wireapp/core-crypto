@@ -1,0 +1,44 @@
+name: third party notices ubrn specialization
+
+concurrency:
+  # One run per pull request.
+  group: "${{ github.workflow }}-${{ github.ref_name }}"
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    paths:
+      - "crypto-ffi/bindings/js/package.json"
+      - ".third-party-license-corrections.yaml"
+      - ".github/workflows/third-party-notices-ubrn-specialization.yml"
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+env:
+  CORRECTIONS: ".third-party-license-corrections.yaml"
+  PACKAGE_JSON: "crypto-ffi/bindings/js/package.json"
+
+jobs:
+  ensure-ubrn-version-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: all ubrn versions in corrections file must match version in package.json
+        run: |
+          ubrn_version="$(
+            jq -r '.devDependencies."uniffi-bindgen-react-native"' "$PACKAGE_JSON" |
+            sed -e 's/^[\^~]//'
+          )"
+
+          yq -r '.manual_dependency_entries[] | select(.name | test("^@ubjs")) | .version' "$CORRECTIONS" |
+          while read -r dep_ubrn_version ; do
+            if [ "$dep_ubrn_version" != "$ubrn_version" ] ; then
+              echo "$CORRECTIONS contains a UBRN entry at $dep_ubrn_version but you must use $ubrn_version"
+              exit 1
+            fi
+          done
