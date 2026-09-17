@@ -139,7 +139,5 @@ pub use acquisition::{
     thumbprint::compute_raw_key_thumbprint,
 };
 pub use error::{E2eIdentityError, E2eIdentityResult};
-#[cfg(feature = "builder")]
-pub use rusty_jwt_tools::prelude::generate_jwk;
 pub use rusty_jwt_tools::prelude::{ClientId as E2eiClientId, Handle, HashAlgorithm, JwsAlgorithm};
 pub use validation::IdentityStatus;
