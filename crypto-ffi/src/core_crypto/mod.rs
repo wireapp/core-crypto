@@ -33,7 +33,7 @@ pub struct CoreCryptoFfi {
 /// Construct a new `CoreCryptoFfi` instance.
 ///
 /// MLS or Proteus can be initialized via `mls_init` or `proteus_init` on a
-/// `CoreCryptoContext` obtained through a transaction.
+/// `CoreCryptoContextFfi` obtained through a transaction.
 #[uniffi::export]
 pub fn core_crypto_new(database: &Arc<Database>) -> CoreCryptoResult<CoreCryptoFfi> {
     #[cfg(target_os = "unknown")]

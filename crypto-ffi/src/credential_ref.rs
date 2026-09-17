@@ -7,7 +7,7 @@ use crate::{CipherSuite, ClientId, CredentialType, SignatureScheme};
 /// Credentials can be quite large; this type avoids passing them back and forth across the FFI
 /// boundary more than strictly required.
 ///
-/// Created by calling `add_credential` on a `CoreCryptoContext`.
+/// Created by calling `add_credential` on a `CoreCryptoContextFfi`.
 ///
 /// This reference is not a literal in-memory reference.
 /// It is instead the key from which a credential can be retrieved,

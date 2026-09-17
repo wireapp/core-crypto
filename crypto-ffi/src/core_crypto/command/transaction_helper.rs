@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_lock::{Mutex, OnceCell};
 
 use super::CoreCryptoCommand;
-use crate::{CoreCryptoContext, CoreCryptoResult};
+use crate::{CoreCryptoContextFfi, CoreCryptoResult};
 
 /// Helper for working with the new transaction interface.
 ///
@@ -42,7 +42,7 @@ pub struct TransactionHelper<T, F> {
 
 impl<T, F, Fut> TransactionHelper<T, F>
 where
-    F: FnOnce(Arc<CoreCryptoContext>) -> Fut + Send + Sync,
+    F: FnOnce(Arc<CoreCryptoContextFfi>) -> Fut + Send + Sync,
     Fut: Future<Output = CoreCryptoResult<T>> + Send,
     T: Send + Sync,
 {
@@ -90,11 +90,11 @@ where
 #[async_trait::async_trait]
 impl<T, F, Fut> CoreCryptoCommand for TransactionHelper<T, F>
 where
-    F: FnOnce(Arc<CoreCryptoContext>) -> Fut + Send + Sync,
+    F: FnOnce(Arc<CoreCryptoContextFfi>) -> Fut + Send + Sync,
     Fut: Future<Output = CoreCryptoResult<T>> + Send,
     T: Send + Sync,
 {
-    async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()> {
+    async fn execute(&self, context: Arc<CoreCryptoContextFfi>) -> CoreCryptoResult<()> {
         let func = self
             .func
             .lock()

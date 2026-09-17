@@ -10,20 +10,20 @@ use crate::CoreCryptoResult;
 #[cfg(feature = "cancellable-transactions")]
 use crate::cancellation::CancellationSlot;
 
-/// The `CoreCryptoContext` holds the primary `CoreCrypto` APIs.
+/// The `CoreCryptoContextFfi` holds the primary `CoreCrypto` APIs.
 ///
 /// An instance of this struct is provided to the closure passed to `CoreCryptoFfi::transaction`.
 ///
 /// Every mutable operation is done through this struct. Operations are buffered in memory
 /// and persisted to the keystore when the transaction completes.
 #[derive(Debug, uniffi::Object)]
-pub struct CoreCryptoContext {
+pub struct CoreCryptoContextFfi {
     pub(crate) inner: Arc<TransactionContext>,
     #[cfg(feature = "cancellable-transactions")]
     pub(crate) cancellation_slot: Arc<CancellationSlot>,
 }
 
-impl Deref for CoreCryptoContext {
+impl Deref for CoreCryptoContextFfi {
     type Target = TransactionContext;
 
     fn deref(&self) -> &Self::Target {
@@ -32,7 +32,7 @@ impl Deref for CoreCryptoContext {
 }
 
 #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::export)]
-impl CoreCryptoContext {
+impl CoreCryptoContextFfi {
     /// This is only needed to allow TS inheritance and should be hidden from library consumers.
     #[uniffi::constructor]
     pub fn new(instance: Arc<Self>) -> Arc<Self> {
@@ -41,7 +41,7 @@ impl CoreCryptoContext {
 }
 
 #[uniffi::export]
-impl CoreCryptoContext {
+impl CoreCryptoContextFfi {
     /// Stores arbitrary data to be used as a transaction checkpoint.
     ///
     /// The stored data can be retrieved via `get_data`. Keep the data size reasonable;

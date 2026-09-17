@@ -9,7 +9,7 @@ use crate::{CipherSuite, CoreCryptoResult, CredentialType, SignatureScheme, clie
 /// This is tied to a particular client via either its client id or certificate bundle,
 /// depending on its credential type, but is independent of any client instance or storage.
 ///
-/// To attach a credential to a client instance and store it, call `add_credential` on a `CoreCryptoContext`.
+/// To attach a credential to a client instance and store it, call `add_credential` on a `CoreCryptoContextFfi`.
 #[derive(Debug, Clone, derive_more::From, derive_more::Into, uniffi::Object)]
 pub struct Credential(pub(crate) CryptoCredential);
 

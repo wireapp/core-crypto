@@ -1,12 +1,12 @@
 use std::{collections::HashMap, sync::Arc};
 
 use crate::{
-    CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoResult, E2eiConversationState, UserIdentities,
-    Uuid, WireIdentity,
+    CipherSuite, ClientId, ConversationId, CoreCryptoContextFfi, CoreCryptoResult, E2eiConversationState,
+    UserIdentities, Uuid, WireIdentity,
 };
 
 #[uniffi::export]
-impl CoreCryptoContext {
+impl CoreCryptoContextFfi {
     /// Returns the end-to-end identity verification state of the given conversation.
     pub async fn e2ei_conversation_state(
         &self,

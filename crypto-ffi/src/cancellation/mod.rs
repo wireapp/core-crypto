@@ -24,8 +24,8 @@
 //! The slot instance is cloned to instances of this crate's structs implementing foreign traits, currently
 //! [crate::MlsTransport] and [crate::PkiEnvironmentHooks]. Trait method implementations can then use the token from the
 //! slot to race against its cancellation as described [above](#how-cancellation-works).
-//! The [crate::MlsTransport] struct receives its [CancellationSlot] clone directly from [crate::CoreCryptoContext]
-//! during [crate::CoreCryptoContext::mls_init].
+//! The [crate::MlsTransport] struct receives its [CancellationSlot] clone directly from [crate::CoreCryptoContextFfi]
+//! during [crate::CoreCryptoContextFfi::mls_init].
 //! In case of [crate::PkiEnvironmentHooks] it is simpler to provide it with its own cancellation slot that is
 //! explicitly filled with the same token during the transaction. That is because of the undetermined initialization
 //! order (it may be initialized before or after [crate::CoreCryptoFfi]).

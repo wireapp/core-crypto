@@ -8,9 +8,9 @@ use futures_util::FutureExt;
 
 #[cfg(feature = "cancellable-transactions")]
 use crate::{CoreCryptoCancellationToken, CoreCryptoError};
-use crate::{CoreCryptoContext, CoreCryptoFfi, CoreCryptoResult};
+use crate::{CoreCryptoContextFfi, CoreCryptoFfi, CoreCryptoResult};
 
-/// A `CoreCryptoCommand` has an `execute` method which accepts a `CoreCryptoContext` and returns nothing.
+/// A `CoreCryptoCommand` has an `execute` method which accepts a `CoreCryptoContextFfi` and returns nothing.
 ///
 /// It is the argument to a `CoreCrypto::transaction` call.
 #[uniffi::export(with_foreign)]
@@ -18,7 +18,7 @@ use crate::{CoreCryptoContext, CoreCryptoFfi, CoreCryptoResult};
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 pub trait CoreCryptoCommand: Send + Sync {
     /// Will be called inside a transaction in CoreCrypto
-    async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()>;
+    async fn execute(&self, context: Arc<CoreCryptoContextFfi>) -> CoreCryptoResult<()>;
 }
 
 /// When building outside WASM, any async function of appropriate signature is a `CoreCryptoCommand`.
@@ -27,10 +27,10 @@ pub trait CoreCryptoCommand: Send + Sync {
 #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
 impl<F, Fut> CoreCryptoCommand for F
 where
-    F: Fn(Arc<CoreCryptoContext>) -> Fut + Send + Sync,
+    F: Fn(Arc<CoreCryptoContextFfi>) -> Fut + Send + Sync,
     Fut: Future<Output = CoreCryptoResult<()>> + Send,
 {
-    async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()> {
+    async fn execute(&self, context: Arc<CoreCryptoContextFfi>) -> CoreCryptoResult<()> {
         self(context).await
     }
 }
@@ -57,7 +57,7 @@ impl CoreCryptoFfi {
         let inner_context = Arc::new(self.inner.new_transaction().await?);
         log::info!(scope = "CoreCryptoFfi::transaction_ffi", stage = 2; "acquired semaphore; creating context");
 
-        let context = CoreCryptoContext {
+        let context = CoreCryptoContextFfi {
             inner: inner_context.clone(),
             #[cfg(feature = "cancellable-transactions")]
             cancellation_slot: self.cancellation_slot.clone(),
@@ -131,7 +131,7 @@ impl CoreCryptoFfi {
                 .map(|slot| slot.enter(cancellation.clone()))
                 .transpose()?;
 
-            let context = Arc::new(CoreCryptoContext {
+            let context = Arc::new(CoreCryptoContextFfi {
                 inner: inner_context.clone(),
                 cancellation_slot: self.cancellation_slot.clone(),
             });
@@ -170,7 +170,7 @@ mod tests {
     use core_crypto::{CipherSuite as CryptoCipherSuite, Credential as CryptoCredential};
 
     use crate::{
-        ClientId, CommitBundle, ConversationId, CoreCryptoCancellationToken, CoreCryptoCommand, CoreCryptoContext,
+        ClientId, CommitBundle, ConversationId, CoreCryptoCancellationToken, CoreCryptoCommand, CoreCryptoContextFfi,
         CoreCryptoResult, Credential, Database, DeviceId, EpochObserver, HistorySecret, MlsTransport, MlsTransportData,
         MlsTransportResult, Uuid, cipher_suite_default, core_crypto::epoch_observer::EpochChangedReportingError,
         core_crypto_new,
@@ -223,7 +223,7 @@ mod tests {
 
     #[async_trait::async_trait]
     impl CoreCryptoCommand for Setup {
-        async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()> {
+        async fn execute(&self, context: Arc<CoreCryptoContextFfi>) -> CoreCryptoResult<()> {
             context.mls_init(&self.client_id, Arc::new(AcceptingTransport)).await?;
 
             let credential = CryptoCredential::basic(
@@ -245,7 +245,7 @@ mod tests {
 
     #[async_trait::async_trait]
     impl CoreCryptoCommand for ChangeEpoch {
-        async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()> {
+        async fn execute(&self, context: Arc<CoreCryptoContextFfi>) -> CoreCryptoResult<()> {
             context.update_keying_material(&self.conversation_id).await
         }
     }
@@ -261,7 +261,7 @@ mod tests {
 
     #[async_trait::async_trait]
     impl CoreCryptoCommand for ReleaseObserver {
-        async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()> {
+        async fn execute(&self, context: Arc<CoreCryptoContextFfi>) -> CoreCryptoResult<()> {
             self.release.add_permits(1);
             context.set_data(b"the second transaction ran".to_vec()).await
         }

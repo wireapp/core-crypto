@@ -3,7 +3,7 @@ use std::{fmt, sync::Arc, time::Duration};
 use core_crypto::{ConversationConfiguration, transaction_context::Error as TransactionError};
 
 use crate::{
-    CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, Credential,
+    CipherSuite, ClientId, ConversationId, CoreCryptoContextFfi, CoreCryptoError, CoreCryptoResult, Credential,
     CredentialRef, DecryptedMessage, ExternalSender, KeyPackage, KeyPackageRef, MlsTransport,
     bytes_wrapper::bytes_wrapper, core_crypto::mls_transport::callback_shim,
 };
@@ -89,7 +89,7 @@ impl Welcome {
 }
 
 #[uniffi::export]
-impl CoreCryptoContext {
+impl CoreCryptoContextFfi {
     /// Initializes the MLS client with the given client ID and message transport.
     ///
     /// In general this method should be called at most once per core-crypto instance.

@@ -53,7 +53,7 @@ pub use core_crypto::{
     logger::{CoreCryptoLogLevel, CoreCryptoLogger, set_logger, set_max_log_level},
     mls_transport::{MlsTransport, MlsTransportData},
 };
-pub use core_crypto_context::CoreCryptoContext;
+pub use core_crypto_context::CoreCryptoContextFfi;
 pub use credential::Credential;
 pub use credential_ref::CredentialRef;
 pub use credential_type::CredentialType;
