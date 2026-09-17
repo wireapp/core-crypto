@@ -346,32 +346,71 @@ pub(crate) mod test {
         ];
 
         let runner = super::migrations::runner();
-        for migration in runner.get_migrations() {
-            assert!(
-                RELEASED_CHECKSUMS
-                    .iter()
-                    .any(|&(version, _)| version == migration.version()),
-                "migration V{}__{} has no pinned checksum; add this checksum tuple: ({}, {}),",
-                migration.version(),
-                migration.name(),
-                migration.version(),
-                migration.checksum(),
-            );
+
+        let migrations = {
+            let mut m = runner.get_migrations().clone();
+            m.sort_by_key(refinery::Migration::version);
+            m
+        };
+
+        // sanity checks on the migrations
+        assert_eq!(
+            migrations.first().map(|migration| migration.version()),
+            Some(1),
+            "first migration is version 1"
+        );
+        assert!(
+            migrations
+                .array_windows()
+                .all(|[left, right]| right.version() == left.version() + 1),
+            "migration versions must be sequential"
+        );
+
+        // from this point we collect and display as many failures as possible before aborting
+        let mut pending_failure = false;
+        match RELEASED_CHECKSUMS.len().cmp(&migrations.len()) {
+            std::cmp::Ordering::Greater => {
+                pending_failure = true;
+                for &(version, _) in &RELEASED_CHECKSUMS[migrations.len()..] {
+                    eprintln!("expected version {version} but it was not found by the migrations runner");
+                }
+            }
+            std::cmp::Ordering::Less => {
+                pending_failure = true;
+                for migration in &migrations[RELEASED_CHECKSUMS.len()..] {
+                    let version = migration.version();
+                    let name = migration.name();
+                    let checksum = migration.checksum();
+                    eprintln!("migration V{version}__{name} not pinned; add `({version}, {checksum})`");
+                }
+            }
+            std::cmp::Ordering::Equal => {}
         }
 
-        for &(version, expected_checksum) in RELEASED_CHECKSUMS {
-            let migration = runner
-                .get_migrations()
-                .iter()
-                .find(|migration| migration.version() == version)
-                .unwrap();
-            assert_eq!(
-                migration.checksum(),
-                expected_checksum,
-                "released migration V{version}__{} changed; add a new migration instead",
-                migration.name(),
-            );
+        // in addition to extra migrations we check for version mismatch
+        for ((expect_version, expect_checksum), migration) in RELEASED_CHECKSUMS.iter().copied().zip(migrations.iter())
+        {
+            if expect_version != migration.version() {
+                pending_failure = true;
+                eprintln!(
+                    "{expect_version} != {}; ensure pinned checksum versions increase sequentially",
+                    migration.version()
+                );
+            }
+            if expect_checksum != migration.checksum() {
+                pending_failure = true;
+                eprintln!(
+                    "V{expect_version}: checksum {expect_checksum} (expected) != {} (found)",
+                    migration.checksum()
+                );
+                eprintln!("  instead of changing the old migration, add a new one");
+            }
         }
+
+        assert!(
+            !pending_failure,
+            "pinned RELEASED_CHECKSUMS did not match the discovered migrations"
+        );
     }
 
     #[test]
