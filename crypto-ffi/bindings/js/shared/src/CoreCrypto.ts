@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-export { CoreCryptoContext } from "./CoreCryptoContext";
-
 export { CoreCrypto, type CredentialFindFilters } from "./CoreCryptoInstance";
 
 export { X509CredentialAcquisition } from "./X509CredentialAcquisition";
@@ -30,6 +28,7 @@ export {
     WireIdentity,
     X509Identity,
     CipherSuite,
+    CoreCryptoContext,
     CoreCryptoError,
     CoreCryptoError_Tags,
     MlsError,

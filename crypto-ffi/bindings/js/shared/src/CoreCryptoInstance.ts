@@ -18,6 +18,7 @@ import * as CoreCryptoFfiTypes from "#core-crypto-ffi";
 import {
     CipherSuite,
     ClientId,
+    CoreCryptoContext,
     CoreCryptoError,
     CoreCryptoFfi,
     CredentialRef,
@@ -27,8 +28,6 @@ import {
     HistorySecret,
     CredentialType,
 } from "#core-crypto-ffi";
-
-import { CoreCryptoContext } from "./CoreCryptoContext";
 
 export interface CredentialFindFilters {
     clientId?: ClientId;
@@ -90,9 +89,9 @@ export class CoreCrypto extends CoreCryptoFfi {
         let needOuterRethrow = false;
         try {
             await super.transactionFfi({
-                execute: async (ctx: CoreCryptoFfiTypes.CoreCryptoContext) => {
+                execute: async (ctx) => {
                     try {
-                        result = await callback(new CoreCryptoContext(ctx));
+                        result = await callback(ctx);
                     } catch (e) {
                         // We want to catch the error before it gets wrapped by core crypto.
                         if (CoreCryptoError.instanceOf(e)) {
