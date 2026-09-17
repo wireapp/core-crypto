@@ -1,6 +1,6 @@
 # This file is parsed by the third-party notices generator
 # see https://github.com/wireapp/notices-generator
-    
+
 overrides:
   - name: pkiprocmacros
     license: Apache-2.0
@@ -25,7 +25,7 @@ overrides:
   - name: kotlinx-serialization-json
     license: Apache-2.0
     author: JetBrains s.r.o. and contributors
-    
+
 subfolders:
   - crypto-ffi
   - crypto-ffi/bindings
@@ -38,43 +38,43 @@ subfolders:
 
 manual_dependency_entries:
   - name: "@ubjs/core"
-    version: "0.31.0-3"
+    version: "0.31.0-5"
     license: MPL-2.0
     author: James Hugman
   - name: "@ubjs/node"
-    version: "0.31.0-3"
+    version: "0.31.0-5"
     license: MPL-2.0
     author: James Hugman
   - name: "@ubjs/node-darwin-arm64"
-    version: "0.31.0-3"
+    version: "0.31.0-5"
     license: MPL-2.0
     author: James Hugman
   - name: "@ubjs/node-darwin-x64"
-    version: "0.31.0-3"
+    version: "0.31.0-5"
     license: MPL-2.0
     author: James Hugman
   - name: "@ubjs/node-linux-arm64-gnu"
-    version: "0.31.0-3"
+    version: "0.31.0-5"
     license: MPL-2.0
     author: James Hugman
   - name: "@ubjs/node-linux-arm64-musl"
-    version: "0.31.0-3"
+    version: "0.31.0-5"
     license: MPL-2.0
     author: James Hugman
   - name: "@ubjs/node-linux-x64-gnu"
-    version: "0.31.0-3"
+    version: "0.31.0-5"
     license: MPL-2.0
     author: James Hugman
   - name: "@ubjs/node-linux-x64-musl"
-    version: "0.31.0-3"
+    version: "0.31.0-5"
     license: MPL-2.0
     author: James Hugman
   - name: "@ubjs/node-win32-arm64-msvc"
-    version: "0.31.0-3"
+    version: "0.31.0-5"
     license: MPL-2.0
     author: James Hugman
   - name: "@ubjs/node-win32-x64-msvc"
-    version: "0.31.0-3"
+    version: "0.31.0-5"
     license: MPL-2.0
     author: James Hugman
 
