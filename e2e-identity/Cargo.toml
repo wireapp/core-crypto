@@ -21,7 +21,6 @@ obfuscate.workspace = true
 core-crypto-macros.workspace = true
 async-trait.workspace = true
 async-lock.workspace = true
-sha1.workspace = true
 spki.workspace = true
 openmls_traits.workspace = true
 rusty-jwt-tools.workspace = true
