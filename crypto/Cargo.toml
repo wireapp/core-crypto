@@ -107,6 +107,8 @@ wasm-bindgen-test.workspace = true
 openmls.workspace = true
 hex-literal = "1.1"
 der.workspace = true
+spki.workspace = true
+sha1.workspace = true
 
 [target.'cfg(not(target_os = "unknown"))'.dev-dependencies]
 smol-macros.workspace = true
