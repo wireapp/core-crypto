@@ -1,4 +1,4 @@
-import { CoreCryptoContext as CoreCryptoContextFfi } from "#core-crypto-ffi";
+import { CoreCryptoContextFfi } from "#core-crypto-ffi";
 export class CoreCryptoContext extends CoreCryptoContextFfi {
     /** @internal */
     constructor(ctx: CoreCryptoContextFfi) {

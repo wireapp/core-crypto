@@ -151,9 +151,9 @@ final actor TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand 
         self.block = block
     }
 
-    func execute(context: WireCoreCryptoUniffi.CoreCryptoContext) async throws {
+    func execute(context: WireCoreCryptoUniffi.CoreCryptoContextFfi) async throws {
         do {
-            result = try await block(context)
+            result = try await block(CoreCryptoContext(context))
         } catch {
             innerError = error
             throw error

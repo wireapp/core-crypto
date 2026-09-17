@@ -78,9 +78,9 @@ class CoreCrypto(private val cc: CoreCryptoFfi) : CoreCryptoFfiInterface by cc {
                 try {
                     this@CoreCrypto.cc.transactionFfiCancellable(
                         object : CoreCryptoCommand {
-                            override suspend fun execute(context: CoreCryptoContext) {
+                            override suspend fun execute(context: CoreCryptoContextFfi) {
                                 try {
-                                    result = block(context)
+                                    result = block(context.lift())
                                 } catch (e: Throwable) {
                                     // We want to catch the error before it gets wrapped by core crypto.
                                     error = e

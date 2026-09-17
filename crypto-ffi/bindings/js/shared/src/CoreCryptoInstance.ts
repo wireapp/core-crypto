@@ -90,7 +90,7 @@ export class CoreCrypto extends CoreCryptoFfi {
         let needOuterRethrow = false;
         try {
             await super.transactionFfi({
-                execute: async (ctx: CoreCryptoFfiTypes.CoreCryptoContext) => {
+                execute: async (ctx: CoreCryptoFfiTypes.CoreCryptoContextFfi) => {
                     try {
                         result = await callback(new CoreCryptoContext(ctx));
                     } catch (e) {
