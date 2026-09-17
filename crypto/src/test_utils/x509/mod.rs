@@ -1,7 +1,9 @@
+mod pki;
+
 use std::{fmt::Display, time::Duration};
 
 use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
-use wire_e2e_identity::pki::{CertificateGenerationArgs, PkiKeypair};
+pub(crate) use pki::{CertificateGenerationArgs, PkiKeypair};
 use x509_cert::der::EncodePem;
 
 use crate::{CertificateBundle, ClientId, mls_provider::CRYPTO, transaction_context::TransactionContext};

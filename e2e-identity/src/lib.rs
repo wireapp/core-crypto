@@ -128,8 +128,6 @@ pub mod acquisition;
 mod error;
 
 pub mod acme;
-#[cfg(feature = "builder")]
-pub mod pki;
 pub mod pki_env;
 pub mod utils;
 pub mod validation;
