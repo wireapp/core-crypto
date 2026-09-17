@@ -264,7 +264,7 @@
 <a href=#264 id=264 data-nosnippet>264</a>                SignatureScheme::ED448 =&gt; <span class="macro">unreachable!</span>(),
 <a href=#265 id=265 data-nosnippet>265</a>            };
 <a href=#266 id=266 data-nosnippet>266</a>
-<a href=#267 id=267 data-nosnippet>267</a>            <span class="kw">let </span>jwk = wire_e2e_identity::generate_jwk(alg);
+<a href=#267 id=267 data-nosnippet>267</a>            <span class="kw">let </span>jwk = rusty_jwt_tools::prelude::generate_jwk(alg);
 <a href=#268 id=268 data-nosnippet>268</a>            <span class="kw">let </span>external_sender = ExternalSender::parse_jwk(<span class="kw-2">&amp;</span>jwk).unwrap();
 <a href=#269 id=269 data-nosnippet>269</a>            <span class="macro">assert!</span>(case.cfg.clone().set_external_senders([external_sender]).<span class="kw">await</span>.is_ok());
 <a href=#270 id=270 data-nosnippet>270</a>        })
