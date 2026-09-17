@@ -1,8 +1,8 @@
 # Wire CoreCrypto<a name="wire-corecrypto"></a>
 
 [![scheduled](https://github.com/wireapp/core-crypto/actions/workflows/scheduled.yml/badge.svg)](https://github.com/wireapp/core-crypto/actions/workflows/scheduled.yml)
-[![benchmarks](https://github.com/wireapp/core-crypto/actions/workflows/benchmarks.yml/badge.svg)](https://github.com/wireapp/core-crypto/actions/workflows/benchmarks.yml)
-[![🚀 pipeline](https://github.com/wireapp/core-crypto/actions/workflows/pipeline.yml/badge.svg)](https://github.com/wireapp/core-crypto/actions/workflows/pipeline.yml)
+[![benchmarks](https://github.com/wireapp/core-crypto/actions/workflows/benchmarks.yml/badge.svg?branch=main)](https://github.com/wireapp/core-crypto/actions/workflows/benchmarks.yml)
+[![🚀 pipeline](https://github.com/wireapp/core-crypto/actions/workflows/pipeline.yml/badge.svg?branch=main)](https://github.com/wireapp/core-crypto/actions/workflows/pipeline.yml)
 [![.github/workflows/interop.yml](https://github.com/wireapp/core-crypto/actions/workflows/interop.yml/badge.svg?event=workflow_dispatch)](https://github.com/wireapp/core-crypto/actions/workflows/interop.yml)
 [![.github/workflows/test-android.yml](https://github.com/wireapp/core-crypto/actions/workflows/test-android.yml/badge.svg?event=workflow_dispatch)](https://github.com/wireapp/core-crypto/actions/workflows/test-android.yml)
 [![.github/workflows/test-ios.yml](https://github.com/wireapp/core-crypto/actions/workflows/test-ios.yml/badge.svg?event=workflow_dispatch)](https://github.com/wireapp/core-crypto/actions/workflows/test-ios.yml)
