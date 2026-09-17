@@ -15,22 +15,18 @@ anyhow.workspace = true
 [target.'cfg(not(target_os = "unknown"))'.dependencies]
 core-crypto-keystore = { workspace = true }
 core-crypto = { path = "../crypto" }
-wire-e2e-identity.workspace = true
 
 clap = { version = "4", features = ["derive"] }
 serde_json.workspace = true
 serde.workspace = true
 postcard = { version = "1.1", default-features = false, features = ["use-std"] }
 hex.workspace = true
-serde-transcode = "1"
 macro_rules_attribute.workspace = true
 smol-macros.workspace = true
 
 openmls = { workspace = true, features = ["crypto-subtle"] }
 openmls_traits.workspace = true
 openmls_basic_credential.workspace = true
-openmls_x509_credential.workspace = true
-tls_codec.workspace = true
 
 chrono = { version = "0.4", default-features = false, features = [
   "std",
