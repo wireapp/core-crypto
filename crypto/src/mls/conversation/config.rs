@@ -264,7 +264,7 @@ mod tests {
                 SignatureScheme::ED448 => unreachable!(),
             };
 
-            let jwk = wire_e2e_identity::generate_jwk(alg);
+            let jwk = rusty_jwt_tools::prelude::generate_jwk(alg);
             let external_sender = ExternalSender::parse_jwk(&jwk).unwrap();
             assert!(case.cfg.clone().set_external_senders([external_sender]).await.is_ok());
         })
