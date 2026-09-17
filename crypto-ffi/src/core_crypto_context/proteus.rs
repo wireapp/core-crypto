@@ -1,8 +1,13 @@
+// The functions expanded by the uniffi macro call deprecated functions, which is why we have to `allow` here. We
+// re-introduce a `#[warn(expected)]` on our impl block below to prevent masking deprecated use in our own code.
+#![allow(deprecated, reason = "UniFFI wrappers call deprecated exports")]
+
 use crate::{CoreCryptoContext, CoreCryptoResult, ProteusAutoPrekeyBundle, proteus_impl};
 
 type BatchedEncryptedMessages = std::collections::HashMap<String, Vec<u8>>;
 
 #[uniffi::export]
+#[warn(deprecated)]
 impl CoreCryptoContext {
     /// Initializes the Proteus client.
     ///
@@ -109,6 +114,12 @@ impl CoreCryptoContext {
     /// `proteus_new_prekey_auto` to have a free ID chosen instead.
     ///
     /// Warning: the Proteus client must be initialized with `proteus_init` first or an error will be returned.
+    ///
+    /// This function has been deprecated. Any callers should update to use `proteus_new_prekey_auto` instead.
+    //
+    // UniFFI doesn't appear to propagate the `#[deprecated]` annotation here to downstream consumers so we need to
+    // deprecate it in wrappers, too.
+    #[deprecated = "Use CoreCryptoContext.proteusNewPrekeyAuto() instead."]
     pub async fn proteus_new_prekey(&self, prekey_id: u16) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl!({ self.inner.proteus_new_prekey(prekey_id).await.map_err(Into::into) })
     }
