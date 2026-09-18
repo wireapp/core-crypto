@@ -6,14 +6,12 @@
 //! exact same thing at the same time. So if we arrive second in this race, we must "rollback" the commit
 //! we created and accept ("merge") the other one.
 //!
-//! A client would:
-//!
-//! - Create a commit
-//! - Send the commit to the Delivery Service
-//! - When Delivery Service responds
-//!     - 200 OK --> use [ConversationGuard::commit_accepted] to merge the commit
-//!     - 409 CONFLICT --> do nothing. [ConversationGuard::decrypt_message] will restore the proposals not committed
-//!     - 5xx --> retry
+//! Those three steps — create the commit, send it, merge it — are all performed by
+//! [`ConversationMut`] itself; they are not driven by the caller. The caller's part is to supply an
+//! [`MlsTransport`][crate::MlsTransport] implementation, whose `send_commit_bundle` reports whether
+//! the Delivery Service accepted the commit by returning `Ok` or `Err`. On success the commit is
+//! merged locally; on failure the pending commit is discarded. If another member's commit arrives
+//! first, decrypting it restores the proposals which were not committed.
 //!
 //! An MLS group can be merged (aka committed) when it has a pending commit. The latter is a commit
 //! we created which has not yet been applied to the conversation. Doing so  will apply all the
@@ -63,7 +61,7 @@ impl ConversationMut {
     /// **CAUTION**: only use this when you had an explicit response from the Delivery Service
     /// e.g. 403. Do not use otherwise e.g. 5xx responses, timeout etc..
     /// **DO NOT** use when Delivery Service responds 409, pending state will be renewed
-    /// in [ConversationGuard::decrypt_message]
+    /// in [ConversationMut::decrypt_message]
     ///
     ///
     /// # Errors
