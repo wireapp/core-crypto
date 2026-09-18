@@ -25,7 +25,11 @@ pub trait KeypackageExt {
 
     /// Determines whether a keypackage is valid in the sense of the former `client_valid_keypackages_count` method.
     ///
-    /// In practice, this just checks whether its lifetime (if present) has expired or not.
+    /// A key package with no lifetime is always valid. Otherwise it must both be unexpired *and*
+    /// have an acceptable lifetime range: openmls rejects a leaf node whose
+    /// `not_after - not_before` exceeds ~3 months (`MAX_LEAF_NODE_LIFETIME_RANGE_SECONDS`, which is
+    /// its default lifetime plus a 1h clock-skew margin). So a key package generated with a
+    /// lifetime longer than that is never valid, not merely expired.
     fn is_valid(&self) -> bool;
 }
 
@@ -105,7 +109,11 @@ impl KeypackageRef {
 
     /// Determines whether this keypackage is valid in the sense of the former `client_valid_keypackages_count` method.
     ///
-    /// In practice, this just checks whether its lifetime (if present) has expired or not.
+    /// A key package with no lifetime is always valid. Otherwise it must both be unexpired *and*
+    /// have an acceptable lifetime range: openmls rejects a leaf node whose
+    /// `not_after - not_before` exceeds ~3 months (`MAX_LEAF_NODE_LIFETIME_RANGE_SECONDS`, which is
+    /// its default lifetime plus a 1h clock-skew margin). So a key package generated with a
+    /// lifetime longer than that is never valid, not merely expired.
     pub fn is_valid(&self) -> bool {
         self.lifetime()
             .is_none_or(|lifetime| lifetime.has_acceptable_range() && lifetime.is_valid())

@@ -15,6 +15,13 @@ use crate::{
 };
 
 /// Default lifetime of all generated Keypackages. Matches the limit defined in openmls
+/// Default lifetime of a generated key package.
+///
+/// Note that this sits exactly on the maximum lifetime range openmls will accept for a leaf node:
+/// `Lifetime::new` extends `not_before` a further hour into the past for clock skew, and
+/// `MAX_LEAF_NODE_LIFETIME_RANGE_SECONDS` is that margin plus this value. Raising this constant, or
+/// passing a longer lifetime to [`TransactionContext::generate_key_package`], produces key packages
+/// which `KeypackageExt::is_valid` reports as invalid from the moment they are created.
 pub const KEYPACKAGE_DEFAULT_LIFETIME: Duration = Duration::from_secs(60 * 60 * 24 * 28 * 3); // ~3 months
 
 impl TransactionContext {
