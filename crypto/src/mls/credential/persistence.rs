@@ -46,7 +46,8 @@ impl Credential {
     ///
     /// Returns a reference which is stable over time and across the FFI boundary.
     ///
-    /// Normally this is called internally by [`Session::add_credential`][crate::Session::add_credential];
+    /// Normally this is called internally by
+    /// [`TransactionContext::add_credential`][crate::transaction_context::TransactionContext::add_credential];
     /// use caution if calling it from elsewhere.
     pub(crate) fn save(&mut self, tx: &Transaction) -> Result<CredentialRef> {
         let credential_data = self

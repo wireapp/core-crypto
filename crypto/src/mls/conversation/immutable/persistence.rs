@@ -50,7 +50,7 @@ impl Conversation {
         Ok(Some(conversation))
     }
 
-    /// Effectively [`Database::mls_groups_restore`] but with better types
+    /// Effectively `Database::load_all::<PersistedMlsGroup>` but with better types
     ///
     /// Skips rows marked `is_pending`, for the same reason [`Self::load`] does.
     pub(crate) async fn load_all(session: Session) -> Result<HashMap<ConversationId, Self>> {
