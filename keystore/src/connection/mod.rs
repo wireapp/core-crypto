@@ -157,7 +157,9 @@ impl Database {
     /// local filesystem.
     pub async fn open(path: &str, database_key: &DatabaseKey) -> CryptoKeystoreResult<Arc<Self>> {
         let (conn, filesystem) = Self::open_internal(path, database_key).await?;
-        Self::init(conn, filesystem, MigrationTarget::Latest).map(Into::into)
+        Self::init(conn, filesystem, MigrationTarget::Latest)
+            .await
+            .map(Into::into)
     }
 
     /// Open an in-memory `Database`.
@@ -188,7 +190,7 @@ impl Database {
         migration_target: MigrationTarget,
     ) -> CryptoKeystoreResult<Self> {
         let (conn, filesystem) = Self::open_internal(path, database_key).await?;
-        Self::init(conn, filesystem, migration_target)
+        Self::init(conn, filesystem, migration_target).await
     }
 
     /// Change the encryption key for this database.

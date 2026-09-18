@@ -652,7 +652,9 @@ async fn imports_every_legacy_entity() {
     assert_imported_at_v22(&conn);
 
     // and this is the rest of `Database::open`
-    let db = Database::init(conn, Box::new(fs), MigrationTarget::Latest).expect("migrating the imported data");
+    let db = Database::init(conn, Box::new(fs), MigrationTarget::Latest)
+        .await
+        .expect("migrating the imported data");
     assert_imported_and_migrated(&db, seed::CREDENTIAL_CREATED_AT).await;
 
     assert!(
