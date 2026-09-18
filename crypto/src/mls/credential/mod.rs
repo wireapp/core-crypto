@@ -147,8 +147,7 @@ impl Credential {
         &self.signature_key_pair
     }
 
-    /// The signature key bytes.
-    // TODO temporary. Remove when https://wearezeta.atlassian.net/wiki/x/RABtrQ is resolved.
+    /// The **private** half of this credential's signature key.
     pub fn signature_key_bytes(&self) -> &[u8] {
         self.signature_key_pair.private()
     }
