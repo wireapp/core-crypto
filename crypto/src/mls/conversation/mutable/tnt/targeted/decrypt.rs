@@ -152,7 +152,7 @@ impl ConversationMut {
         let context_data = HpkeContextData {
             info,
             psk_id,
-            psk: secret.targeted_message_psk.clone(),
+            psk: zeroize::Zeroizing::new(secret.targeted_message_psk.clone()),
         };
         Ok((context_data, decryption_key))
     }
@@ -171,7 +171,7 @@ impl ConversationMut {
                 .export_group_context()
                 .tls_serialize_detached()
                 .map_err(TlsCodecError::serialize("TntSecret GroupContext"))?,
-            targeted_message_psk,
+            targeted_message_psk: targeted_message_psk.to_vec(),
         })
     }
 
