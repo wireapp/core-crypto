@@ -26,11 +26,14 @@ impl TransactionContext {
     ///
     /// **Rejoining an existing conversation overwrites it as soon as anything here reaches the
     /// keystore.** A pending join shares its row with any established conversation of the same id,
-    /// rather than a separate one, so retrying after a failure (which does persist the attempt, to
-    /// make the retry possible) leaves the previous conversation's state unrecoverable even if this
-    /// call, or the retry, never succeeds. This is fine because the only reason to call this on a
-    /// conversation you already have is that its local state is already considered unusable — that
-    /// is what "rejoin" means here — so there is nothing worth preserving in the row it replaces.
+    /// rather than a separate one, so retrying after a failure (which persists the attempt within
+    /// the current transaction, to make the retry possible) leaves the previous conversation's
+    /// state unrecoverable even if this call, or the retry, never succeeds. Note that every path
+    /// which saves the attempt also returns an error, so whether the saved row survives is up to
+    /// the caller: by default an error crossing the FFI aborts the transaction and rolls it back. This is fine because
+    /// the only reason to call this on a conversation you already have is that its local state is already
+    /// considered unusable — that is what "rejoin" means here — so there is nothing worth preserving in the row it
+    /// replaces.
     ///
     /// # Arguments
     /// * `group_info` - a GroupInfo wrapped in an MLS message. it can be obtained by deserializing a TLS serialized
