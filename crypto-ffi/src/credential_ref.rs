@@ -45,7 +45,8 @@ impl CredentialRef {
 
     /// Get the earliest possible validity of this credential, expressed as seconds after the unix epoch.
     ///
-    /// Basic credentials have no defined earliest validity and will always return 0.
+    /// For an X509 credential this is the leaf certificate's `not_before` claim. A basic credential
+    /// has no such claim, and reads as the time it was persisted.
     pub fn earliest_validity(&self) -> u64 {
         self.0.earliest_validity()
     }

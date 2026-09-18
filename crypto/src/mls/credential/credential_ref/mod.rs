@@ -71,6 +71,8 @@ impl CredentialRef {
     }
 
     /// Get the unix timestamp of the earliest validity of this credential.
+    ///
+    /// See [`Credential::earliest_validity`][crate::Credential::earliest_validity].
     pub fn earliest_validity(&self) -> u64 {
         self.earliest_validity
     }
