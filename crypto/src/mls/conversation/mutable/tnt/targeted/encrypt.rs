@@ -16,9 +16,15 @@ use crate::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq, TlsSize, TlsSerialize)]
 #[repr(u8)]
 pub enum TargetedMessagePolicy {
-    /// Won't be persisted and will only visible to currently online members who immediately process it.
+    /// The delivery service won't persist this message: it is delivered only to members who are
+    /// connected at the time, and dropped for everyone else.
+    ///
+    /// Note that this describes the delivery service rather than local storage. Decryption shares
+    /// its epoch handling with [`Self::Persisted`], so a message arriving ahead of the commit for
+    /// its own epoch is still buffered locally.
     Transient,
-    /// May be persisted and buffered, will also be delivered and processed by currently offline members.
+    /// May be persisted and buffered by the delivery service, and so will also be delivered to,
+    /// and processed by, members who are currently offline.
     Persisted,
 }
 
