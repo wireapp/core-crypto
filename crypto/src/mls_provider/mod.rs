@@ -151,9 +151,12 @@ impl CryptoProvider {
         self.auth_service.pki_env.read().await.is_some()
     }
 
-    /// Reseeds the internal CSPRNG entropy pool with a brand new one.
+    /// Reseeds the internal CSPRNG.
     ///
-    /// If [None] is provided, the new entropy will be pulled through the current OS target's capabilities
+    /// If [None] is provided, the new seed is pulled from the current OS target's capabilities.
+    ///
+    /// Note that this *replaces* the generator's state rather than mixing the new seed into it, so
+    /// the output after this call depends only on the seed given here.
     pub fn reseed(&self, entropy_seed: Option<EntropySeed>) -> MlsProviderResult<()> {
         self.crypto.reseed(entropy_seed)
     }
