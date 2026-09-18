@@ -276,7 +276,10 @@ impl CoreCryptoContext {
     }
 
     /// Decrypts an MLS message received in the given conversation.
-    /// **Note**: this will discard any local pending operations.
+    ///
+    /// A commit from another member supersedes any local pending commit and consumes the pending
+    /// proposals it references. Our own commit, delivered back to us, is merged. Proposals and
+    /// application messages leave local pending state untouched.
     pub async fn decrypt_message(
         &self,
         conversation_id: &ConversationId,
