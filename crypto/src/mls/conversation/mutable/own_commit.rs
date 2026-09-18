@@ -77,7 +77,7 @@ impl ConversationMut {
 
     /// When the incoming commit is sent by ourselves and it's the same as the local pending commit.
     /// This adapts [Self::commit_accepted] to return the same as
-    /// [crate::mls::conversation::ConversationGuard::decrypt_message]
+    /// [crate::mls::conversation::ConversationMut::decrypt_message]
     pub(crate) async fn merge_pending_commit(&mut self) -> Result<DecryptedMessage> {
         self.commit_accepted().await?;
 

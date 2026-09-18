@@ -90,7 +90,7 @@ pub enum DecryptedMessage {
     Commit(Commit),
     /// The decrypted message is a proposal.
     Proposal(Proposal),
-    /// The decrypted message is a transient targeted message.
+    /// The decrypted message is a transient message.
     Transient(DecryptedBytes),
     /// The decrypted message is a transient targeted message.
     TransientTargeted(DecryptedBytes),
@@ -179,7 +179,13 @@ enum RecursionPolicy {
 
 impl ConversationMut {
     /// Deserializes a TLS-serialized message, then processes it.
-    /// **Note**: this will discard any local pending commits or proposals.
+    ///
+    /// Effect on local pending state depends on what the message turns out to be:
+    ///
+    /// - a commit from another member supersedes any local pending commit, and consumes the
+    ///   pending proposals it references;
+    /// - our own commit, delivered back to us, is merged rather than discarded;
+    /// - proposals and application messages leave local pending state untouched.
     ///
     /// # Arguments
     /// * `message` - the encrypted message as a byte array

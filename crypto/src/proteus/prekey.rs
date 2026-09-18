@@ -17,12 +17,11 @@ impl ProteusCentral {
     pub(crate) async fn new_prekey(&self, id: u16, transaction: &Transaction) -> Result<Vec<u8>> {
         use proteus_wasm::keys::{PreKey, PreKeyId};
 
-        // The keystore also refuses a duplicate id, but only once the transaction is applied,
-        // which would take down whatever else that transaction was doing and report the conflict
-        // far from the call responsible for it. Catch it here, while we can still name the id and
-        // leave the transaction usable. Reading through the transaction consults its buffered
-        // operations as well as the database, so an id claimed earlier in this same transaction
-        // counts as taken.
+        // `ProteusPrekey::save` would refuse a duplicate id too: it maps the primary key violation
+        // at the `INSERT` and a constraint violation does not roll the transaction back. So this
+        // check is only here to name the offending id in the error rather than to protect the
+        // transaction. Reading through the transaction sees its own uncommitted writes, so an id
+        // claimed earlier in this same transaction counts as taken.
         if transaction
             .get::<ProteusPrekey>(&id)
             .await
@@ -53,7 +52,11 @@ impl ProteusCentral {
         Ok(bundle)
     }
 
-    /// Generates a new Proteus Prekey, with an automatically auto-incremented ID.
+    /// Generates a new Proteus Prekey, assigning it the lowest free id.
+    ///
+    /// Ids freed by deletion are reused before the id space is extended, so the returned id is not
+    /// monotonic and may be lower than one handed out earlier. A caller must not treat it as a
+    /// high-water mark: a recycled id is one which peers may still hold a now-stale bundle for.
     ///
     /// See [ProteusCentral::new_prekey]
     pub(crate) async fn new_prekey_auto(&self, transaction: &Transaction) -> Result<(u16, Vec<u8>)> {
@@ -104,7 +107,10 @@ impl ProteusCentral {
         Ok(bundle)
     }
 
-    /// Hex-encoded fingerprint of the given prekey
+    /// Hex-encoded fingerprint of the identity key in the given prekey bundle.
+    ///
+    /// Note this is the peer's long-term identity key, not the bundle's one-time prekey, so it is
+    /// the same for every bundle from the same peer.
     ///
     /// # Errors
     /// If the prekey cannot be deserialized

@@ -25,9 +25,13 @@ impl super::Conversation {
         Ok(state)
     }
 
-    /// From a given conversation, get the identity of the members supplied. Identity is only present for
-    /// members with a Certificate Credential (after turning on end-to-end identity).
-    /// If no member has a x509 certificate, it will return an empty Vec
+    /// From a given conversation, get the identity of the members supplied.
+    ///
+    /// An identity is returned for every requested member which is in the conversation, whatever
+    /// its credential type. Members with an X509 credential (i.e. after turning on end-to-end
+    /// identity) additionally carry a [`WireIdentity::x509_identity`]; members with a basic
+    /// credential do not, and their `status` is always `Valid`, which on its own is no evidence of
+    /// end-to-end identity enrolment.
     pub async fn get_device_identities(
         &self,
         device_ids: &[impl Borrow<ClientIdRef> + Sync],
@@ -57,8 +61,10 @@ impl super::Conversation {
     }
 
     /// From a given conversation, get the identity of the users (device holders) supplied.
-    /// Identity is only present for devices with a Certificate Credential (after turning on end-to-end identity).
-    /// If no member has a x509 certificate, it will return an empty Vec.
+    ///
+    /// As with [`Self::get_device_identities`], an identity is returned for every device of every
+    /// requested user, whatever its credential type; only devices with an X509 credential carry a
+    /// [`WireIdentity::x509_identity`].
     ///
     /// Returns a Map with all the identities for a given users. Consumers are then recommended to
     /// reduce those identities to determine the actual status of a user.

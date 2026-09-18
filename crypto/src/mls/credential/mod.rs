@@ -45,12 +45,10 @@ pub struct Credential {
     /// Public and private keys, and the signature scheme.
     #[sensitive]
     pub(crate) signature_key_pair: SignatureKeyPair,
-    /// Earliest valid time of creation for this credential.
+    /// Earliest point at which this credential is valid, in seconds since the unix epoch.
     ///
-    /// This is represented as seconds after the unix epoch.
-    ///
-    /// Only meaningful for X509, where it is the "valid_from" claim of the leaf credential.
-    /// For basic credentials, this is always 0.
+    /// For an X509 credential this is the leaf certificate's `not_before` claim. A basic credential has
+    /// no such claim: it reads 0 until the credential is persisted, and the insertion time thereafter.
     pub(crate) earliest_validity: u64,
 }
 
@@ -147,7 +145,11 @@ impl Credential {
         &self.signature_key_pair
     }
 
-    /// The signature key bytes.
+    /// The **private** half of this credential's signature key.
+    ///
+    /// Note that every other key accessor on this type deals in public material, and the field this
+    /// reads is marked `#[sensitive]`: do not log this, publish it, or send it anywhere. Its only
+    /// caller needs the private key in order to build a PEM document for E2EI enrolment.
     // TODO temporary. Remove when https://wearezeta.atlassian.net/wiki/x/RABtrQ is resolved.
     pub fn signature_key_bytes(&self) -> &[u8] {
         self.signature_key_pair.private()
@@ -171,13 +173,10 @@ impl Credential {
         }
     }
 
-    /// Earliest valid time of creation for this credential.
+    /// Earliest point at which this credential is valid, in seconds since the unix epoch.
     ///
-    /// This is represented as seconds after the unix epoch.
-    ///
-    /// Only meaningful for X509, where it is the "valid_from" claim of the leaf credential.
-    /// For basic credentials, this is always 0 when the credential is first created.
-    /// It is updated upon being persisted to the database.
+    /// For an X509 credential this is the leaf certificate's `not_before` claim. A basic credential has
+    /// no such claim: it reads 0 until the credential is persisted, and the insertion time thereafter.
     pub fn earliest_validity(&self) -> u64 {
         self.earliest_validity
     }
@@ -405,6 +404,60 @@ mod tests {
             assert_eq!(
                 conversation.guard().await.e2ei_conversation_state().await.unwrap(),
                 E2eiConversationState::NotVerified
+            );
+        })
+        .await;
+    }
+
+    /// Persisting an X509 credential must not overwrite the certificate's `not_before` claim.
+    ///
+    /// `Credential::save` used to stamp every credential with the insertion time, which discarded
+    /// the claim `Credential::x509` had just computed and made `FindFilters::earliest_validity`
+    /// -- documented as "point of earliest validity" -- match nothing.
+    #[apply(all_cred_cipher)]
+    async fn saving_an_x509_credential_keeps_the_certificate_validity(case: TestContext) {
+        if !case.is_x509() {
+            return;
+        }
+        let [alice] = case.sessions().await;
+        Box::pin(async move {
+            let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+            let local_ca = x509_test_chain.find_local_intermediate_ca();
+
+            // An hour in the past, so a stamp of "now" is unmistakably different.
+            let an_hour_ago = now_std() - core::time::Duration::from_secs(3600);
+            // Must be alice's own client id: `add_credential` rejects a credential belonging to
+            // anyone else.
+            let client_id = alice.get_client_id().await;
+            let cert = local_ca.create_and_sign_end_identity(CertificateParams {
+                common_name: Some("Alice Smith".to_string()),
+                handle: Some("alice_wire".to_string()),
+                client_id: Some(client_id),
+                validity_start: Some(an_hour_ago),
+                ..Default::default()
+            });
+            let bundle = CertificateBundle::from_certificate_and_issuer(&cert, local_ca);
+            let credential = Credential::x509(case.cipher_suite(), bundle).unwrap();
+
+            // The fixture's conversion of `validity_start` can be off by a second, so allow a
+            // little slack here; what matters is that this is an hour ago and not "now".
+            let from_certificate = credential.earliest_validity();
+            assert!(
+                from_certificate.abs_diff(an_hour_ago.as_secs()) <= 5,
+                "the credential must start out carrying the certificate's `not_before`: \
+                 got {from_certificate}, expected about {}",
+                an_hour_ago.as_secs()
+            );
+
+            let credential_ref = alice
+                .add_credential(credential)
+                .await
+                .expect("adding the credential should succeed");
+
+            assert_eq!(
+                credential_ref.earliest_validity(),
+                from_certificate,
+                "persisting must not replace the certificate claim with the insertion time"
             );
         })
         .await;

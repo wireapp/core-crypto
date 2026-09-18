@@ -5,7 +5,7 @@ pub enum Error {
     #[error("CSPRNG lock is poisoned")]
     RngLockPoison,
     #[error("Unable to collect enough randomness.")]
-    UnsufficientEntropy,
+    InsufficientEntropy,
     #[error("This ciphersuite isn't supported as of now")]
     UnsupportedSignatureScheme,
     #[error("{0}")]
