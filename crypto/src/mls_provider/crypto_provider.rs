@@ -703,18 +703,9 @@ mod hpke_core {
         aad: &[u8],
         ciphertext: &[u8],
     ) -> Result<Vec<u8>, CryptoError> {
-        use hpke::{Deserializable as _, Serializable as _};
+        use hpke::Deserializable as _;
         let encapped_key = Kem::EncappedKey::from_bytes(kem_output).map_err(|_| CryptoError::HpkeDecryptionError)?;
-        // Systematically normalize private keys
-        let sk_len = Kem::PrivateKey::size();
-        let mut sk_buf = zeroize::Zeroizing::new(Vec::with_capacity(sk_len));
-        if private_key.len() < sk_len {
-            for _ in 0..(sk_len - private_key.len()) {
-                sk_buf.push(0x00);
-            }
-        }
-        sk_buf.extend_from_slice(private_key);
-        let key = Kem::PrivateKey::from_bytes(&sk_buf).map_err(|_| CryptoError::HpkeDecryptionError)?;
+        let key = Kem::PrivateKey::from_bytes(private_key).map_err(|_| CryptoError::HpkeDecryptionError)?;
         let plaintext =
             hpke::single_shot_open::<Aead, Kdf, Kem>(&hpke::OpModeR::Base, &key, &encapped_key, info, ciphertext, aad)
                 .map_err(|_| CryptoError::HpkeDecryptionError)?;
@@ -731,18 +722,9 @@ mod hpke_core {
         psk_id: &[u8],
         ciphertext: &[u8],
     ) -> Result<Vec<u8>, CryptoError> {
-        use hpke::{Deserializable as _, Serializable as _};
+        use hpke::Deserializable as _;
         let encapped_key = Kem::EncappedKey::from_bytes(kem_output).map_err(|_| CryptoError::HpkeDecryptionError)?;
-        // Systematically normalize private keys
-        let sk_len = Kem::PrivateKey::size();
-        let mut sk_buf = zeroize::Zeroizing::new(Vec::with_capacity(sk_len));
-        if private_key.len() < sk_len {
-            for _ in 0..(sk_len - private_key.len()) {
-                sk_buf.push(0x00);
-            }
-        }
-        sk_buf.extend_from_slice(private_key);
-        let key = Kem::PrivateKey::from_bytes(&sk_buf).map_err(|_| CryptoError::HpkeDecryptionError)?;
+        let key = Kem::PrivateKey::from_bytes(private_key).map_err(|_| CryptoError::HpkeDecryptionError)?;
         let psk_bundle = PskBundle::new(psk, psk_id).map_err(|_| CryptoError::HpkeDecryptionError)?;
         let plaintext = hpke::single_shot_open::<Aead, Kdf, Kem>(
             &hpke::OpModeR::Psk(psk_bundle),
