@@ -70,6 +70,7 @@ impl RustCrypto {
         psk_id: &[u8],
         ptxt: &[u8],
     ) -> Result<HpkeCiphertext, CryptoError> {
+        validate_psk(psk, psk_id)?;
         let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
 
         match config {
@@ -115,6 +116,7 @@ impl RustCrypto {
         psk: &[u8],
         psk_id: &[u8],
     ) -> Result<Vec<u8>, CryptoError> {
+        validate_psk(psk, psk_id)?;
         match config {
             HpkeConfig(HpkeKemType::DhKem25519, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
                 hpke_core::hpke_open_psk::<hpke::aead::AesGcm128, hpke::kdf::HkdfSha256, hpke::kem::X25519HkdfSha256>(
@@ -178,6 +180,22 @@ impl RustCrypto {
             _ => Err(CryptoError::UnsupportedKem),
         }
     }
+}
+
+/// RFC 9180 section 5.1 requires that a PSK used in `mode_psk` or `mode_auth_psk` "MUST contain at
+/// least 32 bytes of entropy", and that the PSK and its id are either both present or both absent.
+///
+/// `hpke::OpModeS::Psk` enforces only the latter: `PskBundle::new(&[], &[])` is accepted and is
+/// documented as being "equivalent to `Base`". Without this check a caller who passes an
+/// `unwrap_or_default()`ed PSK gets a ciphertext with no PSK binding at all and no signal that the
+/// intended second factor is missing.
+fn validate_psk(psk: &[u8], psk_id: &[u8]) -> Result<(), CryptoError> {
+    const MIN_PSK_LEN: usize = 32;
+
+    if psk.len() < MIN_PSK_LEN || psk_id.is_empty() {
+        return Err(CryptoError::InvalidLength);
+    }
+    Ok(())
 }
 
 impl OpenMlsCrypto for RustCrypto {
@@ -874,7 +892,10 @@ impl OpenMlsRand for RustCrypto {
 
 #[cfg(test)]
 mod tests {
-    use openmls_traits::{crypto::OpenMlsCrypto as _, types::SignatureScheme};
+    use openmls_traits::{
+        crypto::OpenMlsCrypto as _,
+        types::{CryptoError, HpkeAeadType, HpkeCiphertext, HpkeConfig, HpkeKdfType, HpkeKemType, SignatureScheme},
+    };
 
     use super::RustCrypto;
 
@@ -906,6 +927,46 @@ mod tests {
             crypto
                 .validate_signature_key(scheme, &pk)
                 .unwrap_or_else(|err| panic!("generated {scheme:?} key must validate: {err:?}"));
+        }
+    }
+
+    /// An empty PSK provides no binding, and `hpke` treats such a bundle as plain `Base` mode, so
+    /// the `_psk` entry points must not silently accept one.
+    #[test]
+    fn hpke_psk_mode_rejects_a_psk_without_entropy() {
+        let crypto = RustCrypto::default();
+        // `HpkeConfig` is neither `Copy` nor `Clone`, so build a fresh one per call.
+        let config = || {
+            HpkeConfig(
+                HpkeKemType::DhKem25519,
+                HpkeKdfType::HkdfSha256,
+                HpkeAeadType::AesGcm128,
+            )
+        };
+        // Deliberately not a real recipient key or ciphertext: the PSK is checked before any of
+        // that is parsed, and asserting on `InvalidLength` specifically keeps this test from
+        // passing for the wrong reason.
+        let pk_r = [0u8; 32];
+        let ciphertext = HpkeCiphertext {
+            kem_output: Vec::new().into(),
+            ciphertext: Vec::new().into(),
+        };
+
+        for (psk, psk_id, case) in [
+            (&[][..], &[][..], "empty psk and psk id"),
+            (&[0u8; 32][..], &[][..], "empty psk id"),
+            (&[0u8; 31][..], &b"id"[..], "psk one byte short of 32"),
+        ] {
+            assert_eq!(
+                crypto.hpke_seal_psk(config(), &pk_r, b"info", b"aad", psk, psk_id, b"ptxt"),
+                Err(CryptoError::InvalidLength),
+                "hpke_seal_psk must reject: {case}"
+            );
+            assert_eq!(
+                crypto.hpke_open_psk(config(), &ciphertext, &pk_r, b"info", b"aad", psk, psk_id),
+                Err(CryptoError::InvalidLength),
+                "hpke_open_psk must reject: {case}"
+            );
         }
     }
 }
