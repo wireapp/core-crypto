@@ -147,7 +147,11 @@ impl Credential {
         &self.signature_key_pair
     }
 
-    /// The signature key bytes.
+    /// The **private** half of this credential's signature key.
+    ///
+    /// Note that every other key accessor on this type deals in public material, and the field this
+    /// reads is marked `#[sensitive]`: do not log this, publish it, or send it anywhere. Its only
+    /// caller needs the private key in order to build a PEM document for E2EI enrolment.
     // TODO temporary. Remove when https://wearezeta.atlassian.net/wiki/x/RABtrQ is resolved.
     pub fn signature_key_bytes(&self) -> &[u8] {
         self.signature_key_pair.private()
