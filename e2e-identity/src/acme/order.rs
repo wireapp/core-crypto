@@ -69,59 +69,6 @@ impl RustyAcme {
     }
 }
 
-// Long poll order until ready
-impl RustyAcme {
-    /// check an order status until it becomes ready
-    /// see [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4)
-    pub(crate) fn check_order_request(
-        order_url: url::Url,
-        account: &AcmeAccount,
-        alg: JwsAlgorithm,
-        kp: &Pem,
-        previous_nonce: String,
-    ) -> RustyAcmeResult<AcmeJws> {
-        // Extract the account URL from previous response which created a new account
-        let acct_url = account.acct_url()?;
-
-        // No payload required for authz
-        let payload = None::<serde_json::Value>;
-        let req = AcmeJws::new(alg, previous_nonce, &order_url, Some(&acct_url), payload, kp)?;
-        Ok(req)
-    }
-
-    /// parse response from order check
-    /// see [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4)
-    pub(crate) fn check_order_response(response: serde_json::Value) -> RustyAcmeResult<AcmeOrder> {
-        let order = serde_json::from_value::<AcmeOrder>(response)?;
-        match order.status {
-            AcmeOrderStatus::Ready => {}
-            AcmeOrderStatus::Pending => {
-                return Err(RustyAcmeError::ClientImplementationError(
-                    "an order is not supposed to be 'pending' at this point. \
-                    It means you have forgotten to create authorizations",
-                ));
-            }
-            AcmeOrderStatus::Processing => {
-                return Err(RustyAcmeError::ClientImplementationError(
-                    "an order is not supposed to be 'processing' at this point. \
-                    You should not have called finalize yet ; in fact, you should only call finalize \
-                    once this order turns 'ready'",
-                ));
-            }
-            AcmeOrderStatus::Valid => {
-                return Err(RustyAcmeError::ClientImplementationError(
-                    "an order is not supposed to be 'valid' at this point. \
-                    It means a certificate has already been delivered which defeats the purpose \
-                    of using this method",
-                ));
-            }
-            AcmeOrderStatus::Invalid => return Err(AcmeOrderError::Invalid)?,
-        }
-        order.verify()?;
-        Ok(order)
-    }
-}
-
 #[derive(Debug, thiserror::Error)]
 pub enum AcmeOrderError {
     /// step-ca flagged this order as invalid
@@ -476,55 +423,6 @@ mod tests {
             let order = serde_json::to_value(order).unwrap();
             assert!(matches!(
                 RustyAcme::new_order_response(order).unwrap_err(),
-                RustyAcmeError::OrderError(AcmeOrderError::Invalid)
-            ));
-        }
-    }
-
-    mod check {
-        use super::*;
-
-        #[test]
-        #[wasm_bindgen_test]
-        fn should_succeed_when_ready() {
-            let order = AcmeOrder {
-                status: AcmeOrderStatus::Ready,
-                ..Default::default()
-            };
-            let order = serde_json::to_value(order).unwrap();
-            assert!(RustyAcme::check_order_response(order).is_ok());
-        }
-
-        #[test]
-        #[wasm_bindgen_test]
-        fn should_fail_when_not_pending() {
-            for status in [
-                AcmeOrderStatus::Pending,
-                AcmeOrderStatus::Processing,
-                AcmeOrderStatus::Valid,
-            ] {
-                let order = AcmeOrder {
-                    status,
-                    ..Default::default()
-                };
-                let order = serde_json::to_value(&order).unwrap();
-                assert!(matches!(
-                    RustyAcme::check_order_response(order).unwrap_err(),
-                    RustyAcmeError::ClientImplementationError(_)
-                ));
-            }
-        }
-
-        #[test]
-        #[wasm_bindgen_test]
-        fn should_fail_when_invalid() {
-            let order = AcmeOrder {
-                status: AcmeOrderStatus::Invalid,
-                ..Default::default()
-            };
-            let order = serde_json::to_value(order).unwrap();
-            assert!(matches!(
-                RustyAcme::check_order_response(order).unwrap_err(),
                 RustyAcmeError::OrderError(AcmeOrderError::Invalid)
             ));
         }
