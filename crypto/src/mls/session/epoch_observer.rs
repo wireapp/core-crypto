@@ -39,7 +39,13 @@ impl Session {
 
     /// Notify the observer that the epoch has changed, if one is present.
     pub(crate) async fn notify_epoch_changed(&self, conversation_id: ConversationId, epoch: u64) {
-        if let Some(observer) = self.epoch_observer.read().await.as_ref() {
+        // Clone the handle out and release the lock before awaiting: the callback is foreign code,
+        // and `async_lock`'s `RwLock` is write-preferring, so holding a read guard across it lets a
+        // concurrent `register_epoch_observer` block every subsequent notification behind us.
+        // This also ensures we don't deadlock if a client's handler for the epoch event attempts to
+        // replace the epoch observer.
+        let observer = self.epoch_observer.read().await.clone();
+        if let Some(observer) = observer {
             observer.epoch_changed(conversation_id, epoch).await;
         }
     }
