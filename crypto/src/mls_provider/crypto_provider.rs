@@ -70,6 +70,7 @@ impl RustCrypto {
         psk_id: &[u8],
         ptxt: &[u8],
     ) -> Result<HpkeCiphertext, CryptoError> {
+        validate_psk(psk, psk_id)?;
         let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
 
         match config {
@@ -115,6 +116,7 @@ impl RustCrypto {
         psk: &[u8],
         psk_id: &[u8],
     ) -> Result<Vec<u8>, CryptoError> {
+        validate_psk(psk, psk_id)?;
         match config {
             HpkeConfig(HpkeKemType::DhKem25519, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
                 hpke_core::hpke_open_psk::<hpke::aead::AesGcm128, hpke::kdf::HkdfSha256, hpke::kem::X25519HkdfSha256>(
@@ -180,17 +182,41 @@ impl RustCrypto {
     }
 }
 
+/// RFC 9180 section 5.1 requires that a PSK used in `mode_psk` or `mode_auth_psk` "MUST contain at
+/// least 32 bytes of entropy", and that the PSK and its id are either both present or both absent.
+///
+/// `hpke::OpModeS::Psk` enforces only the latter: `PskBundle::new(&[], &[])` is accepted and is
+/// documented as being "equivalent to `Base`". Without this check a caller who passes an
+/// `unwrap_or_default()`ed PSK gets a ciphertext with no PSK binding at all and no signal that the
+/// intended second factor is missing.
+fn validate_psk(psk: &[u8], psk_id: &[u8]) -> Result<(), CryptoError> {
+    const MIN_PSK_LEN: usize = 32;
+
+    if psk.len() < MIN_PSK_LEN || psk_id.is_empty() {
+        return Err(CryptoError::InvalidLength);
+    }
+    Ok(())
+}
+
 impl OpenMlsCrypto for RustCrypto {
     fn signature_public_key_len(&self, signature_scheme: SignatureScheme) -> usize {
+        // `signature_key_gen` emits ECDSA public keys as uncompressed SEC1 points -- a 0x04 tag
+        // byte followed by the two field elements -- so the serialized length is not the field
+        // size. Returning the field size here makes the `OpenMlsCrypto::validate_signature_key`
+        // default reject every key this provider produces.
+        fn uncompressed_sec1_len(field_bytes_size: usize) -> usize {
+            1 + 2 * field_bytes_size
+        }
+
         match signature_scheme {
             SignatureScheme::ECDSA_SECP256R1_SHA256 => {
-                <p256::NistP256 as p256::elliptic_curve::Curve>::FieldBytesSize::to_usize()
+                uncompressed_sec1_len(<p256::NistP256 as p256::elliptic_curve::Curve>::FieldBytesSize::to_usize())
             }
             SignatureScheme::ECDSA_SECP384R1_SHA384 => {
-                <p384::NistP384 as p384::elliptic_curve::Curve>::FieldBytesSize::to_usize()
+                uncompressed_sec1_len(<p384::NistP384 as p384::elliptic_curve::Curve>::FieldBytesSize::to_usize())
             }
             SignatureScheme::ECDSA_SECP521R1_SHA512 => {
-                <p521::NistP521 as p521::elliptic_curve::Curve>::FieldBytesSize::to_usize()
+                uncompressed_sec1_len(<p521::NistP521 as p521::elliptic_curve::Curve>::FieldBytesSize::to_usize())
             }
             SignatureScheme::ED25519 => ed25519_dalek::PUBLIC_KEY_LENGTH,
             SignatureScheme::ED448 => 57,
@@ -677,18 +703,9 @@ mod hpke_core {
         aad: &[u8],
         ciphertext: &[u8],
     ) -> Result<Vec<u8>, CryptoError> {
-        use hpke::{Deserializable as _, Serializable as _};
+        use hpke::Deserializable as _;
         let encapped_key = Kem::EncappedKey::from_bytes(kem_output).map_err(|_| CryptoError::HpkeDecryptionError)?;
-        // Systematically normalize private keys
-        let sk_len = Kem::PrivateKey::size();
-        let mut sk_buf = zeroize::Zeroizing::new(Vec::with_capacity(sk_len));
-        if private_key.len() < sk_len {
-            for _ in 0..(sk_len - private_key.len()) {
-                sk_buf.push(0x00);
-            }
-        }
-        sk_buf.extend_from_slice(private_key);
-        let key = Kem::PrivateKey::from_bytes(&sk_buf).map_err(|_| CryptoError::HpkeDecryptionError)?;
+        let key = Kem::PrivateKey::from_bytes(private_key).map_err(|_| CryptoError::HpkeDecryptionError)?;
         let plaintext =
             hpke::single_shot_open::<Aead, Kdf, Kem>(&hpke::OpModeR::Base, &key, &encapped_key, info, ciphertext, aad)
                 .map_err(|_| CryptoError::HpkeDecryptionError)?;
@@ -705,18 +722,9 @@ mod hpke_core {
         psk_id: &[u8],
         ciphertext: &[u8],
     ) -> Result<Vec<u8>, CryptoError> {
-        use hpke::{Deserializable as _, Serializable as _};
+        use hpke::Deserializable as _;
         let encapped_key = Kem::EncappedKey::from_bytes(kem_output).map_err(|_| CryptoError::HpkeDecryptionError)?;
-        // Systematically normalize private keys
-        let sk_len = Kem::PrivateKey::size();
-        let mut sk_buf = zeroize::Zeroizing::new(Vec::with_capacity(sk_len));
-        if private_key.len() < sk_len {
-            for _ in 0..(sk_len - private_key.len()) {
-                sk_buf.push(0x00);
-            }
-        }
-        sk_buf.extend_from_slice(private_key);
-        let key = Kem::PrivateKey::from_bytes(&sk_buf).map_err(|_| CryptoError::HpkeDecryptionError)?;
+        let key = Kem::PrivateKey::from_bytes(private_key).map_err(|_| CryptoError::HpkeDecryptionError)?;
         let psk_bundle = PskBundle::new(psk, psk_id).map_err(|_| CryptoError::HpkeDecryptionError)?;
         let plaintext = hpke::single_shot_open::<Aead, Kdf, Kem>(
             &hpke::OpModeR::Psk(psk_bundle),
@@ -861,5 +869,86 @@ impl OpenMlsRand for RustCrypto {
         let mut out = vec![0u8; len];
         rng.fill_bytes(&mut out);
         Ok(out)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use openmls_traits::{
+        crypto::OpenMlsCrypto as _,
+        types::{CryptoError, HpkeAeadType, HpkeCiphertext, HpkeConfig, HpkeKdfType, HpkeKemType, SignatureScheme},
+    };
+
+    use super::RustCrypto;
+
+    /// `signature_public_key_len` exists so that callers can size a buffer for, or validate the
+    /// length of, a public key this provider produced. It is only meaningful if it agrees with
+    /// what `signature_key_gen` actually emits.
+    #[test]
+    fn signature_public_key_len_matches_generated_keys() {
+        let crypto = RustCrypto::default();
+
+        for scheme in [
+            SignatureScheme::ED25519,
+            SignatureScheme::ECDSA_SECP256R1_SHA256,
+            SignatureScheme::ECDSA_SECP384R1_SHA384,
+            SignatureScheme::ECDSA_SECP521R1_SHA512,
+        ] {
+            let (_sk, pk) = crypto
+                .signature_key_gen(scheme)
+                .expect("this provider supports all four of these schemes");
+
+            assert_eq!(
+                pk.len(),
+                crypto.signature_public_key_len(scheme),
+                "reported public key length for {scheme:?} must match the generated key"
+            );
+
+            // The generated key must also pass this provider's own validation, which is what the
+            // trait's default implementation would have used the length above to decide.
+            crypto
+                .validate_signature_key(scheme, &pk)
+                .unwrap_or_else(|err| panic!("generated {scheme:?} key must validate: {err:?}"));
+        }
+    }
+
+    /// An empty PSK provides no binding, and `hpke` treats such a bundle as plain `Base` mode, so
+    /// the `_psk` entry points must not silently accept one.
+    #[test]
+    fn hpke_psk_mode_rejects_a_psk_without_entropy() {
+        let crypto = RustCrypto::default();
+        // `HpkeConfig` is neither `Copy` nor `Clone`, so build a fresh one per call.
+        let config = || {
+            HpkeConfig(
+                HpkeKemType::DhKem25519,
+                HpkeKdfType::HkdfSha256,
+                HpkeAeadType::AesGcm128,
+            )
+        };
+        // Deliberately not a real recipient key or ciphertext: the PSK is checked before any of
+        // that is parsed, and asserting on `InvalidLength` specifically keeps this test from
+        // passing for the wrong reason.
+        let pk_r = [0u8; 32];
+        let ciphertext = HpkeCiphertext {
+            kem_output: Vec::new().into(),
+            ciphertext: Vec::new().into(),
+        };
+
+        for (psk, psk_id, case) in [
+            (&[][..], &[][..], "empty psk and psk id"),
+            (&[0u8; 32][..], &[][..], "empty psk id"),
+            (&[0u8; 31][..], &b"id"[..], "psk one byte short of 32"),
+        ] {
+            assert_eq!(
+                crypto.hpke_seal_psk(config(), &pk_r, b"info", b"aad", psk, psk_id, b"ptxt"),
+                Err(CryptoError::InvalidLength),
+                "hpke_seal_psk must reject: {case}"
+            );
+            assert_eq!(
+                crypto.hpke_open_psk(config(), &ciphertext, &pk_r, b"info", b"aad", psk, psk_id),
+                Err(CryptoError::InvalidLength),
+                "hpke_open_psk must reject: {case}"
+            );
+        }
     }
 }

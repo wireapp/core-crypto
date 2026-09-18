@@ -189,15 +189,22 @@ impl PendingConversation {
             .conversation(id)
             .await
             .map_err(RecursiveError::context("getting conversation by id"))?;
-        let group = conversation.group().await;
-        let own_leaf = group
-            .own_leaf()
-            .ok_or(Error::MlsGroupInvalidState("own leaf node not found"))?;
+        // Take everything we need from one group snapshot, then release the guard: holding it while
+        // awaiting below would mean taking a second read guard on the same lock, which `async_lock`
+        // cannot grant re-entrantly once a writer has queued in between.
+        let (own_leaf_credential_with_key, is_active) = {
+            let group = conversation.group().await;
+            let own_leaf = group
+                .own_leaf()
+                .ok_or(Error::MlsGroupInvalidState("own leaf node not found"))?;
 
-        // We return self identity here, probably not necessary to check revocation
-        let own_leaf_credential_with_key = CredentialWithKey {
-            credential: own_leaf.credential().clone(),
-            signature_key: own_leaf.signature_key().clone(),
+            // We return self identity here, probably not necessary to check revocation
+            let own_leaf_credential_with_key = CredentialWithKey {
+                credential: own_leaf.credential().clone(),
+                signature_key: own_leaf.signature_key().clone(),
+            };
+
+            (own_leaf_credential_with_key, group.is_active())
         };
         let pki_env = self.context.pki_environment().await.ok();
 
@@ -207,7 +214,7 @@ impl PendingConversation {
             .map_err(RecursiveError::context("extracting identity"))?;
 
         Ok(DecryptedMessage::Commit(super::mutable::decrypt::Commit {
-            is_active: conversation.group().await.is_active(),
+            is_active,
             buffered_messages,
             identity,
         }))

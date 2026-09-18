@@ -7,6 +7,7 @@ pub mod welcome;
 use std::sync::Arc;
 
 use core_crypto_keystore::{
+    Transaction,
     entities::{MlsPendingMessage, PersistedMlsGroup, StoredBufferedCommit},
     traits::{DeletableBySearchKey, EntityDeleteBorrowed, FetchFromDatabase as _},
 };
@@ -54,13 +55,7 @@ impl TransactionContext {
         Err(pending)
     }
 
-    /// Discard everything buffered for a conversation which no longer exists in any form.
-    ///
-    /// Buffered messages and buffered commits are keyed by conversation id, and both are only ever
-    /// read on behalf of a conversation. Once no conversation holds that id, they are unreachable:
-    /// nothing can restore them and nothing else will ever delete them. So whichever operation
-    /// removes the last trace of a conversation has to take its buffers along, and this is that
-    /// step.
+    /// See [`clear_orphaned_conversation_buffers`].
     ///
     /// Callers must have staged their own deletion before calling this, since that deletion is
     /// exactly what this reads back. It is also the reason this consults the keystore rather than
@@ -68,24 +63,7 @@ impl TransactionContext {
     /// commits, which the in-memory conversation cache does not answer.
     pub(crate) async fn clear_orphaned_conversation_buffers(&self, id: &ConversationIdRef) -> Result<()> {
         let inner = self.inner().await?;
-        let tx = inner.transaction();
-
-        let group_exists = tx
-            .get_borrowed::<PersistedMlsGroup>(id.keystore())
-            .await
-            .map_err(KeystoreError::wrap("looking for a group of a removed conversation"))?
-            .is_some();
-        if group_exists {
-            return Ok(());
-        }
-
-        MlsPendingMessage::delete_all_matching(tx, id.keystore()).map_err(KeystoreError::wrap(
-            "clearing the pending messages of a removed conversation",
-        ))?;
-        StoredBufferedCommit::delete_borrowed(tx, id.as_ref()).map_err(KeystoreError::wrap(
-            "clearing the buffered commit of a removed conversation",
-        ))?;
-
+        clear_orphaned_conversation_buffers(inner.transaction(), id).await?;
         Ok(())
     }
 
@@ -149,4 +127,40 @@ impl TransactionContext {
 
         Ok(())
     }
+}
+
+/// Discard everything buffered for a conversation which no longer exists in any form.
+///
+/// Buffered messages and buffered commits are keyed by conversation id, and both are only ever
+/// read on behalf of a conversation. Once no conversation holds that id, they are unreachable:
+/// nothing can restore them and nothing else will ever delete them. So whichever operation
+/// removes the last trace of a conversation has to take its buffers along, and this is that step.
+///
+/// Takes the transaction directly rather than a [`TransactionContext`], because one caller
+/// ([`ConversationCache::get_or_fetch`][crate::mls::conversation_cache::ConversationCache]) deletes
+/// a conversation while holding nothing else.
+///
+/// Callers must have staged their own deletion first; this reads it back to decide whether the
+/// conversation is really gone.
+pub(crate) async fn clear_orphaned_conversation_buffers(
+    tx: &Transaction,
+    id: &ConversationIdRef,
+) -> Result<(), KeystoreError> {
+    let group_exists = tx
+        .get_borrowed::<PersistedMlsGroup>(id.keystore())
+        .await
+        .map_err(KeystoreError::wrap("looking for a group of a removed conversation"))?
+        .is_some();
+    if group_exists {
+        return Ok(());
+    }
+
+    MlsPendingMessage::delete_all_matching(tx, id.keystore()).map_err(KeystoreError::wrap(
+        "clearing the pending messages of a removed conversation",
+    ))?;
+    StoredBufferedCommit::delete_borrowed(tx, id.as_ref()).map_err(KeystoreError::wrap(
+        "clearing the buffered commit of a removed conversation",
+    ))?;
+
+    Ok(())
 }
