@@ -133,7 +133,6 @@ pub mod pki_env;
 pub mod utils;
 pub mod validation;
 
-pub use acme::{AcmeDirectory, RustyAcme, RustyAcmeError};
 pub use acquisition::{
     X509CredentialAcquisition,
     identity::{WireIdentity, WireIdentityReader},
