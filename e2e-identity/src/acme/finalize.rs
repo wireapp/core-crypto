@@ -225,7 +225,8 @@ pub struct AcmeFinalizeError(#[from] AcmeOrderError);
 #[cfg_attr(test, derive(Clone))]
 #[serde(rename_all = "camelCase")]
 struct AcmeFinalizeRequest {
-    /// Certificate Signing Request in DER format
+    /// Certificate Signing Request,
+    /// DER representation encoded using url-safe base64, without padding.
     csr: String,
 }
 
