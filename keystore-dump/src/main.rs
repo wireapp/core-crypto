@@ -115,8 +115,8 @@ async fn main() -> anyhow::Result<()> {
 
     if let Some(proteus_identity) = keystore.get_unique::<ProteusIdentity>().await? {
         let identity = {
-            let sk = proteus_identity.sk_raw();
-            let pk = proteus_identity.pk_raw();
+            let sk = proteus_identity.sk_raw()?;
+            let pk = proteus_identity.pk_raw()?;
             proteus_wasm::keys::IdentityKeyPair::from_raw_key_pair(*sk, *pk)?
         };
         json_map.serialize_entry("proteus_identity", &identity)?;

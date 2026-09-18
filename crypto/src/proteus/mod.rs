@@ -53,10 +53,13 @@ impl ProteusCentral {
             return Self::create_identity(transaction);
         };
 
-        let sk = identity.sk_raw();
-        let pk = identity.pk_raw();
+        let sk = identity
+            .sk_raw()
+            .map_err(KeystoreError::wrap("reading the stored proteus identity secret key"))?;
+        let pk = identity
+            .pk_raw()
+            .map_err(KeystoreError::wrap("reading the stored proteus identity public key"))?;
 
-        // SAFETY: Byte lengths are ensured at the keystore level so this function is safe to call, despite being cursed
         IdentityKeyPair::from_raw_key_pair(*sk, *pk)
             .map_err(ProteusError::wrap("constructing identity keypair"))
             .map_err(Into::into)
