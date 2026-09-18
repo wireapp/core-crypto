@@ -53,7 +53,11 @@ impl ProteusCentral {
         Ok(bundle)
     }
 
-    /// Generates a new Proteus Prekey, with an automatically auto-incremented ID.
+    /// Generates a new Proteus Prekey, assigning it the lowest free id.
+    ///
+    /// Ids freed by deletion are reused before the id space is extended, so the returned id is not
+    /// monotonic and may be lower than one handed out earlier. A caller must not treat it as a
+    /// high-water mark: a recycled id is one which peers may still hold a now-stale bundle for.
     ///
     /// See [ProteusCentral::new_prekey]
     pub(crate) async fn new_prekey_auto(&self, transaction: &Transaction) -> Result<(u16, Vec<u8>)> {
