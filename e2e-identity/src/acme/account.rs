@@ -4,7 +4,7 @@ use crate::acme::{AcmeDirectory, AcmeJws, RustyAcme, RustyAcmeError, RustyAcmeRe
 
 impl RustyAcme {
     /// 5. Create a new acme account see [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3)
-    pub fn new_account_request(
+    pub(crate) fn new_account_request(
         directory: &AcmeDirectory,
         alg: JwsAlgorithm,
         kp: &Pem,
@@ -25,7 +25,7 @@ impl RustyAcme {
     }
 
     /// 6. parse the response from `POST /acme/new-account` see [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3)
-    pub fn new_account_response(response: serde_json::Value) -> RustyAcmeResult<AcmeAccount> {
+    pub(crate) fn new_account_response(response: serde_json::Value) -> RustyAcmeResult<AcmeAccount> {
         let account = serde_json::from_value::<AcmeAccount>(response)
             .map_err(|_| RustyAcmeError::SmallstepImplementationError("Invalid account response"))?;
         account.verify()?;

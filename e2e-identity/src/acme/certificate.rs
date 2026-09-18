@@ -6,7 +6,7 @@ use crate::acme::{AcmeAccount, AcmeFinalize, AcmeJws, AcmeOrder, RustyAcme, Rust
 impl RustyAcme {
     /// For fetching the generated certificate
     /// see [RFC 8555 Section 7.4.2](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2)
-    pub fn certificate_req(
+    pub(crate) fn certificate_req(
         finalize: &AcmeFinalize,
         account: &AcmeAccount,
         alg: JwsAlgorithm,
@@ -23,7 +23,7 @@ impl RustyAcme {
     }
 
     /// see [RFC 8555 Section 7.4.2](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2)
-    pub fn certificate_response(response: String, order: AcmeOrder) -> RustyAcmeResult<Vec<Certificate>> {
+    pub(crate) fn certificate_response(response: String, order: AcmeOrder) -> RustyAcmeResult<Vec<Certificate>> {
         order.verify()?;
         let pems: Vec<pem::Pem> = pem::parse_many(response)?;
 

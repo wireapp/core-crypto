@@ -15,7 +15,7 @@ use crate::acme::{
 
 impl RustyAcme {
     /// see [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4)
-    pub fn finalize_req(
+    pub(crate) fn finalize_req(
         order: &AcmeOrder,
         account: &AcmeAccount,
         alg: JwsAlgorithm,
@@ -213,7 +213,7 @@ impl RustyAcme {
     }
 
     /// see [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4)
-    pub fn finalize_response(response: serde_json::Value) -> RustyAcmeResult<AcmeFinalize> {
+    pub(crate) fn finalize_response(response: serde_json::Value) -> RustyAcmeResult<AcmeFinalize> {
         let finalize = serde_json::from_value::<AcmeFinalize>(response)?;
         Ok(finalize)
     }
@@ -234,14 +234,14 @@ struct AcmeFinalizeRequest {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(test, derive(Clone))]
 #[serde(rename_all = "camelCase")]
-pub struct AcmeFinalize {
+pub(crate) struct AcmeFinalize {
     pub certificate: url::Url,
     #[serde(flatten)]
     pub order: AcmeOrder,
 }
 
 impl AcmeFinalize {
-    pub fn verify(&self) -> RustyAcmeResult<()> {
+    pub(crate) fn verify(&self) -> RustyAcmeResult<()> {
         match self.order.status {
             AcmeOrderStatus::Valid => {}
             AcmeOrderStatus::Pending | AcmeOrderStatus::Processing | AcmeOrderStatus::Ready => {

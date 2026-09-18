@@ -5,7 +5,7 @@ use crate::acme::{AcmeAccount, AcmeJws, RustyAcme, RustyAcmeError, RustyAcmeResu
 impl RustyAcme {
     /// client id challenge request to `POST /acme/challenge/{token}`
     /// see [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1)
-    pub fn dpop_chall_request(
+    pub(crate) fn dpop_chall_request(
         access_token: String,
         dpop_chall: AcmeChallenge,
         account: &AcmeAccount,
@@ -27,7 +27,7 @@ impl RustyAcme {
     /// oidc challenge request to `POST /acme/challenge/{token}`
     /// see [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1)
     #[allow(clippy::too_many_arguments)]
-    pub fn oidc_chall_request(
+    pub(crate) fn oidc_chall_request(
         id_token: String,
         oidc_chall: &AcmeChallenge,
         account: &AcmeAccount,
@@ -45,7 +45,7 @@ impl RustyAcme {
     }
 
     /// 18. parse the response from `POST /acme/challenge/{token}` [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1)
-    pub fn new_chall_response(response: serde_json::Value) -> RustyAcmeResult<AcmeChallenge> {
+    pub(crate) fn new_chall_response(response: serde_json::Value) -> RustyAcmeResult<AcmeChallenge> {
         let chall = serde_json::from_value::<AcmeChallenge>(response)?;
         match chall.status {
             Some(AcmeChallengeStatus::Valid) => {}
