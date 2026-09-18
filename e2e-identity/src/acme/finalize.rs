@@ -8,9 +8,7 @@ use spki::SignatureBitStringEncoding as _;
 use x509_cert::der::Encode as _;
 
 use crate::acme::{
-    AcmeAccount, AcmeJws, AcmeOrder, RustyAcme, RustyAcmeError, RustyAcmeResult,
-    identifier::CanonicalIdentifier,
-    order::{AcmeOrderError, AcmeOrderStatus},
+    AcmeAccount, AcmeJws, AcmeOrder, RustyAcme, RustyAcmeResult, identifier::CanonicalIdentifier, order::AcmeOrderError,
 };
 
 impl RustyAcme {
@@ -240,41 +238,6 @@ pub(crate) struct AcmeFinalize {
     pub order: AcmeOrder,
 }
 
-impl AcmeFinalize {
-    pub(crate) fn verify(&self) -> RustyAcmeResult<()> {
-        match self.order.status {
-            AcmeOrderStatus::Valid => {}
-            AcmeOrderStatus::Pending | AcmeOrderStatus::Processing | AcmeOrderStatus::Ready => {
-                return Err(RustyAcmeError::ClientImplementationError(
-                    "finalize is not supposed to be 'pending | processing | ready' at this point. \
-                    It means you have forgotten previous steps",
-                ));
-            }
-            AcmeOrderStatus::Invalid => return Err(AcmeFinalizeError(AcmeOrderError::Invalid))?,
-        }
-        self.order.verify().map_err(|e| match e {
-            RustyAcmeError::OrderError(e) => RustyAcmeError::FinalizeError(AcmeFinalizeError(e)),
-            _ => e,
-        })?;
-        Ok(())
-    }
-}
-
-#[cfg(test)]
-impl Default for AcmeFinalize {
-    fn default() -> Self {
-        Self {
-            certificate: "https://acme-server/acme/wire-acme/certificate/poWXmZGdL5d5qlvHMHRC19w2O9s96fvz"
-                .parse()
-                .unwrap(),
-            order: AcmeOrder {
-                status: AcmeOrderStatus::Valid,
-                ..Default::default()
-            },
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use serde_json::json;
@@ -307,80 +270,6 @@ mod tests {
                 "certificate": "https://example.com/acme/cert/mAt3xBGaobw"
             });
             assert!(serde_json::from_value::<AcmeFinalize>(rfc_sample).is_ok());
-        }
-    }
-
-    mod verify {
-        use super::*;
-
-        #[test]
-        #[wasm_bindgen_test]
-        fn should_succeed_when_valid() {
-            let finalize = AcmeFinalize {
-                order: AcmeOrder {
-                    status: AcmeOrderStatus::Valid,
-                    ..Default::default()
-                },
-                ..Default::default()
-            };
-            assert!(finalize.verify().is_ok());
-        }
-
-        #[test]
-        #[wasm_bindgen_test]
-        fn should_fail_when_expired() {
-            // just make sure we delegate to order.verify()
-            let yesterday = time::OffsetDateTime::now_utc() - time::Duration::days(1);
-            let finalize = AcmeFinalize {
-                order: AcmeOrder {
-                    status: AcmeOrderStatus::Valid,
-                    expires: Some(yesterday),
-                    ..Default::default()
-                },
-                ..Default::default()
-            };
-            assert!(matches!(
-                finalize.verify().unwrap_err(),
-                RustyAcmeError::FinalizeError(AcmeFinalizeError(AcmeOrderError::Expired))
-            ));
-        }
-
-        #[test]
-        #[wasm_bindgen_test]
-        fn should_fail_when_status_not_valid() {
-            for status in [
-                AcmeOrderStatus::Pending,
-                AcmeOrderStatus::Processing,
-                AcmeOrderStatus::Ready,
-            ] {
-                let finalize = AcmeFinalize {
-                    order: AcmeOrder {
-                        status,
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                };
-                assert!(matches!(
-                    finalize.verify().unwrap_err(),
-                    RustyAcmeError::ClientImplementationError(_),
-                ));
-            }
-        }
-
-        #[test]
-        #[wasm_bindgen_test]
-        fn should_fail_when_status_invalid() {
-            let finalize = AcmeFinalize {
-                order: AcmeOrder {
-                    status: AcmeOrderStatus::Invalid,
-                    ..Default::default()
-                },
-                ..Default::default()
-            };
-            assert!(matches!(
-                finalize.verify().unwrap_err(),
-                RustyAcmeError::FinalizeError(AcmeFinalizeError(AcmeOrderError::Invalid)),
-            ));
         }
     }
 }
