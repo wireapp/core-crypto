@@ -1,7 +1,7 @@
 use wire_e2e_identity::IdentityStatus;
 use x509_cert::der::pem::LineEnding;
 
-use super::{Error, Result};
+use super::Result;
 use crate::{ClientId, CredentialType, RecursiveError};
 
 /// Represents the identity claims identifying a client
@@ -43,15 +43,14 @@ pub struct X509Identity {
 }
 
 impl<'a> TryFrom<(wire_e2e_identity::WireIdentity, &'a [u8])> for WireIdentity {
-    type Error = Error;
+    type Error = super::Error;
 
     fn try_from((e2ei_wire_identity, cert_bytes): (wire_e2e_identity::WireIdentity, &'a [u8])) -> Result<Self> {
         use x509_cert::der::Decode as _;
-        let document = x509_cert::der::Document::from_der(cert_bytes)
-            .map_err(wire_e2e_identity::E2eIdentityError::X509CertDerError)?;
+        let document = x509_cert::der::Document::from_der(cert_bytes).map_err(super::error::identity::Error::from)?;
         let certificate = document
             .to_pem("CERTIFICATE", LineEnding::LF)
-            .map_err(wire_e2e_identity::E2eIdentityError::X509CertDerError)?;
+            .map_err(super::error::identity::Error::from)?;
 
         let client_id = ClientId::try_from_str_with_base64_user_id(&e2ei_wire_identity.client_id)
             .map(Some)

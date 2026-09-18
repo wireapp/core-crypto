@@ -42,9 +42,6 @@ pub enum Error {
     /// An external MLS operation failed
     #[error(transparent)]
     OpenMls(#[from] OpenMlsError),
-    /// E2EI error
-    #[error(transparent)]
-    E2eIdentity(#[from] wire_e2e_identity::E2eIdentityError),
     /// A Proteus operation failed
     #[error(transparent)]
     Proteus(#[from] ProteusError),
