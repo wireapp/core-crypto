@@ -34,9 +34,6 @@ pub enum RustyAcmeError {
     /// We have done something terribly wrong
     #[error("We have done something terribly wrong and it needs to be fixed")]
     ImplementationError,
-    /// Mostly related to WASM support
-    #[error("Requested functionality is not supported for the moment")]
-    NotSupported,
     /// This library has been used the wrong way by users
     #[error("This library has been used the wrong way by users because {0}")]
     ClientImplementationError(&'static str),
