@@ -48,6 +48,9 @@ pub enum Error {
     /// A crate-internal operation failed
     #[error(transparent)]
     Recursive(#[from] RecursiveError),
+    /// RustyJwt error
+    #[error(transparent)]
+    RustyJwt(#[from] rusty_jwt_tools::prelude::RustyJwtError),
 }
 
 /// Produce the error message from the innermost wrapped error.
