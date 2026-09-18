@@ -58,15 +58,23 @@ impl Credential {
         let mut stored_credential = StoredCredential {
             session_id: self.client_id().to_owned().into_inner(),
             credential: credential_data,
-            created_at: Default::default(), // updated by `.pre_save`
+            // For an X509 credential this is the leaf certificate's `not_before` claim, computed
+            // by `Credential::x509`. Keep it: it is the credential's real point of earliest
+            // validity, and it is what `FindFilters::earliest_validity` is documented to match.
+            created_at: self.earliest_validity,
             ciphersuite: u16::from(self.cipher_suite),
             credential_type: self.credential_type.into(),
             private_key: self.signature_key_pair.private().to_owned(),
             public_key: self.signature_key().public().to_owned(),
         };
-        stored_credential
-            .pre_save()
-            .map_err(KeystoreError::wrap("presaving credential"))?;
+        if stored_credential.created_at == 0 {
+            // A basic credential has no validity claim of its own, so it is stamped with the
+            // insertion time instead. (A certificate whose `not_before` is genuinely the unix
+            // epoch would be treated the same way; that is not a value any real CA issues.)
+            stored_credential
+                .pre_save()
+                .map_err(KeystoreError::wrap("presaving credential"))?;
+        }
         stored_credential
             .save(tx)
             .map_err(KeystoreError::wrap("saving credential"))?;
