@@ -124,10 +124,11 @@
 //! - [RFC9449: OAuth 2.0 Demonstrating Proof of Possession (DPoP)](https://www.rfc-editor.org/rfc/rfc9449)
 //! - [OpenID Connect Core 1.0](https://openid.net/specs/openid-connect-core-1_0.html)
 
+mod acme;
+
 pub mod acquisition;
 mod error;
 
-pub mod acme;
 pub mod pki_env;
 pub mod utils;
 pub mod validation;
