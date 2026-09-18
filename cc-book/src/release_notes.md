@@ -4,6 +4,12 @@
 
 - `proteusNewPrekey` is deprecated; use `proteusNewPrekeyAuto` instead.
 
+- `reseed` now requires the entropy seed to be exactly 32 bytes long. It previously accepted any seed of at least 32
+  bytes and silently used only the first 32, discarding the rest; a caller who gathered more entropy than CoreCrypto
+  consumes had no way to discover that most of it was ignored. Seeds shorter than 32 bytes were already rejected, and a
+  32-byte seed behaves exactly as before, so only callers who were passing a longer seed are affected. Note also that
+  `reseed` replaces the CSPRNG's state outright rather than mixing the new seed into it.
+
 - TypeScript: browser and native packages are now released separately under `@wireapp/core-crypto` and
   `@wireapp/core-crypto-native`, respectively.
 
