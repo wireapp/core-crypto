@@ -90,7 +90,7 @@ pub enum DecryptedMessage {
     Commit(Commit),
     /// The decrypted message is a proposal.
     Proposal(Proposal),
-    /// The decrypted message is a transient targeted message.
+    /// The decrypted message is a transient message.
     Transient(DecryptedBytes),
     /// The decrypted message is a transient targeted message.
     TransientTargeted(DecryptedBytes),
