@@ -32,7 +32,6 @@ impl ClientId {
     pub const DELIMITER: &'static str = ":";
     /// seperator between a user's device and domain
     pub const DOMAIN_SEPERATOR: &'static str = "@";
-
     /// Create a new client ID.
     pub fn new(user_id: Uuid, device_id: u64, domain: &str) -> Self {
         let string = format!(
@@ -326,5 +325,65 @@ impl ClientId {
 
     pub(crate) fn with_user(&self) -> (ClientId, Uuid) {
         (self.clone(), self.as_user_id())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use uuid::Uuid;
+
+    use super::ClientId;
+
+    const USER_ID: Uuid = Uuid::from_u128(0x0195_7b1e_4f00_7c9b_8a3d_2e11_9c44_0d7f);
+    const DOMAIN: &str = "wire.com";
+
+    /// The device id inside a client id is unpadded lowercase hex.
+    ///
+    /// This has to stay in step with `rusty_jwt_tools`' `hex_encoded_device_id`, which is what
+    /// encodes the device id into the `wireapp://` SAN of an E2EI certificate (see
+    /// `e2e-identity`'s ACME identifier, which sends `to_uri()` to the ACME server). For an X509
+    /// credential the client id *is* the certificate's identity, so padding here would put us out
+    /// of step with every certificate already issued.
+    #[test]
+    fn device_id_is_encoded_as_unpadded_hex() {
+        for (device_id, expected) in [
+            (0x0, "0"),
+            (0xf, "f"),
+            (0x8e64_2443_0d3b_28be, "8e6424430d3b28be"),
+            (u64::MAX, "ffffffffffffffff"),
+        ] {
+            let client_id = ClientId::new(USER_ID, device_id, DOMAIN);
+            assert_eq!(
+                std::str::from_utf8(client_id.as_bytes()).unwrap(),
+                format!("{}:{expected}@{DOMAIN}", USER_ID.hyphenated()),
+            );
+        }
+    }
+
+    /// Whatever we render a client id as has to parse back to the same field values.
+    #[test]
+    fn client_id_round_trips_through_its_own_encoding() {
+        for device_id in [0x0, 0xf, 0x00ff, 0x8e64_2443_0d3b_28be, u64::MAX] {
+            let client_id = ClientId::new(USER_ID, device_id, DOMAIN);
+            let deserialized = client_id.deserialize();
+
+            assert_eq!(deserialized.user_id, USER_ID);
+            assert_eq!(deserialized.device_id, device_id);
+            assert_eq!(deserialized.domain, DOMAIN);
+        }
+    }
+
+    /// Parsing is lenient about padding even though we never produce it, so a zero-padded id from
+    /// another implementation still resolves to the right device id. Note that it does not produce
+    /// a byte-equal `ClientId`, because parsing preserves the input bytes.
+    #[test]
+    fn a_padded_device_id_still_parses() {
+        let padded = format!("{}:000000000000000f@{DOMAIN}", USER_ID.hyphenated());
+        let client_id =
+            ClientId::new_from_bytes(padded.clone().into_bytes()).expect("a padded device id must still parse");
+
+        assert_eq!(std::str::from_utf8(client_id.as_bytes()).unwrap(), padded);
+        assert_eq!(client_id.deserialize().device_id, 0xf);
+        assert_ne!(client_id, ClientId::new(USER_ID, 0xf, DOMAIN));
     }
 }
