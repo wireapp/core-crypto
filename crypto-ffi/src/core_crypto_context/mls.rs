@@ -65,9 +65,11 @@ bytes_wrapper!(
 /// The policy to encrypt the targeted message with.
 #[derive(Debug, Clone, Copy, uniffi::Enum)]
 pub enum TargetedMessagePolicy {
-    /// Won't be persisted and will only be visible to currently online members who immediately process it.
+    /// The delivery service won't persist this message: it is delivered only to members who are
+    /// connected at the time, and dropped for everyone else.
     Transient,
-    /// May be persisted and buffered, will also be delivered and processed by currently offline members.
+    /// May be persisted and buffered by the delivery service, and so will also be delivered to,
+    /// and processed by, members who are currently offline.
     Persisted,
 }
 
