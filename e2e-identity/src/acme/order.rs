@@ -12,7 +12,7 @@ impl RustyAcme {
     /// create a new order
     /// see [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4).
     #[allow(clippy::too_many_arguments)]
-    pub fn new_order_request(
+    pub(crate) fn new_order_request(
         display_name: &str,
         client_id: ClientId,
         handle: &Handle,
@@ -52,7 +52,7 @@ impl RustyAcme {
 
     /// parse response from order creation
     /// [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4)
-    pub fn new_order_response(response: serde_json::Value) -> RustyAcmeResult<AcmeOrder> {
+    pub(crate) fn new_order_response(response: serde_json::Value) -> RustyAcmeResult<AcmeOrder> {
         let order = serde_json::from_value::<AcmeOrder>(response)?;
         match order.status {
             AcmeOrderStatus::Pending => {}
@@ -73,7 +73,7 @@ impl RustyAcme {
 impl RustyAcme {
     /// check an order status until it becomes ready
     /// see [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4)
-    pub fn check_order_request(
+    pub(crate) fn check_order_request(
         order_url: url::Url,
         account: &AcmeAccount,
         alg: JwsAlgorithm,
@@ -91,7 +91,7 @@ impl RustyAcme {
 
     /// parse response from order check
     /// see [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4)
-    pub fn check_order_response(response: serde_json::Value) -> RustyAcmeResult<AcmeOrder> {
+    pub(crate) fn check_order_response(response: serde_json::Value) -> RustyAcmeResult<AcmeOrder> {
         let order = serde_json::from_value::<AcmeOrder>(response)?;
         match order.status {
             AcmeOrderStatus::Ready => {}

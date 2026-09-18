@@ -6,14 +6,14 @@ use crate::acme::{RustyAcmeError, RustyAcmeResult};
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[cfg_attr(test, derive(Clone))]
 #[serde(rename_all = "camelCase")]
-pub struct AcmeJws {
+pub(crate) struct AcmeJws {
     pub protected: String,
     pub payload: String,
     pub signature: String,
 }
 
 impl AcmeJws {
-    pub fn new<T>(
+    pub(crate) fn new<T>(
         alg: JwsAlgorithm,
         nonce: String,
         url: &url::Url,

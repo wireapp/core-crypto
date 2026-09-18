@@ -1,5 +1,5 @@
 /// Wrapper over a [Result] with a [RustyAcmeError] error
-pub type RustyAcmeResult<T> = Result<T, RustyAcmeError>;
+pub(crate) type RustyAcmeResult<T> = Result<T, RustyAcmeError>;
 
 /// All errors which [crate::RustyAcme] might throw
 #[derive(Debug, thiserror::Error)]

@@ -4,7 +4,7 @@ impl RustyAcme {
     /// First, call the directory endpoint `GET /acme/{provisioner_name}/directory`.
     /// Then pass the response to this method to deserialize it
     /// see [RFC 8555 Section 7.1.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1)
-    pub fn acme_directory_response(response: serde_json::Value) -> RustyAcmeResult<AcmeDirectory> {
+    pub(crate) fn acme_directory_response(response: serde_json::Value) -> RustyAcmeResult<AcmeDirectory> {
         let directory = serde_json::from_value::<AcmeDirectory>(response)
             .map_err(|_| RustyAcmeError::SmallstepImplementationError("Invalid directory response"))?;
         Ok(directory)
@@ -14,7 +14,7 @@ impl RustyAcme {
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 /// See [RFC 8555 Section 7.1.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1)
-pub struct AcmeDirectory {
+pub(crate) struct AcmeDirectory {
     /// URL for fetching the initial nonce used to create an account
     pub new_nonce: url::Url,
     /// URL for creating an account

@@ -8,7 +8,7 @@ use crate::acme::{
 impl RustyAcme {
     /// create authorizations
     /// see [RFC 8555 Section 7.5](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5)
-    pub fn new_authz_request(
+    pub(crate) fn new_authz_request(
         url: &url::Url,
         account: &AcmeAccount,
         alg: JwsAlgorithm,
@@ -26,7 +26,7 @@ impl RustyAcme {
 
     /// parse the response from `POST /acme/authz/{authz_id}`
     /// [RFC 8555 Section 7.5](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5)
-    pub fn new_authz_response(response: serde_json::Value) -> RustyAcmeResult<AcmeAuthz> {
+    pub(crate) fn new_authz_response(response: serde_json::Value) -> RustyAcmeResult<AcmeAuthz> {
         let authz = serde_json::from_value::<AcmeAuthz>(response)?;
 
         authz.verify()?;
@@ -77,7 +77,7 @@ pub enum AcmeAuthzError {
 /// see [RFC 8555 Section 7.5](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5)
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AcmeAuthz {
+pub(crate) struct AcmeAuthz {
     /// Should be pending for a newly created authorization
     pub status: AuthzStatus,
     #[serde(skip_serializing_if = "Option::is_none", with = "time::serde::rfc3339::option")]
@@ -90,7 +90,7 @@ pub struct AcmeAuthz {
 }
 
 impl AcmeAuthz {
-    pub fn verify(&self) -> RustyAcmeResult<()> {
+    pub(crate) fn verify(&self) -> RustyAcmeResult<()> {
         let [challenge] = &self.challenges;
 
         if matches!(
@@ -142,7 +142,7 @@ impl Default for AcmeAuthz {
 /// see [RFC 8555 Section 7.1.6](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.6)
 #[derive(Debug, Copy, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
-pub enum AuthzStatus {
+pub(crate) enum AuthzStatus {
     Pending,
     Invalid,
     Valid,
