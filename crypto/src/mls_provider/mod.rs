@@ -34,8 +34,17 @@ impl EntropySeed {
     pub const EXPECTED_LEN: usize = std::mem::size_of::<EntropySeed>() / std::mem::size_of::<u8>();
 
     /// Create an entropy seed from the provided slice.
+    ///
+    /// The slice must be exactly [`Self::EXPECTED_LEN`] bytes long. A longer slice is rejected
+    /// rather than truncated: we cannot tell whether a caller supplying more entropy than we
+    /// consume intended all of it to be mixed in, and silently discarding the remainder would give
+    /// them no way to find out that it was not.
+    ///
+    /// # Errors
+    ///
+    /// `Error::EntropySeedLength` if `data` is not exactly [`Self::EXPECTED_LEN`] bytes long.
     pub fn try_from_slice(data: &[u8]) -> MlsProviderResult<Self> {
-        if data.len() < Self::EXPECTED_LEN {
+        if data.len() != Self::EXPECTED_LEN {
             return Err(Error::EntropySeedLength {
                 actual: data.len(),
                 expected: Self::EXPECTED_LEN,
@@ -43,7 +52,7 @@ impl EntropySeed {
         }
 
         let mut inner = RawEntropySeed::default();
-        inner.copy_from_slice(&data[..Self::EXPECTED_LEN]);
+        inner.copy_from_slice(data);
 
         Ok(Self(inner))
     }
