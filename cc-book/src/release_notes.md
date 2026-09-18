@@ -4,6 +4,12 @@
 
 - `proteusNewPrekey` is deprecated; use `proteusNewPrekeyAuto` instead.
 
+- Rendering a `DeserializedClientId` (its `toString`/`Display`) now reproduces the client id it was deserialized
+  from. It previously rendered the device id as a fixed-width 16-character hex string, so for a device id with leading
+  zero nibbles — about one in sixteen — the result did not match the client id, and did not match the `wireapp://`
+  subject alternative name of the device's E2EI certificate either. `DeviceId.toHexString` is unchanged and remains
+  fixed-width; a client id is not a hex-encoded binary value, and only the unpadded form appears in a client id.
+
 - `reseed` now requires the entropy seed to be exactly 32 bytes long. It previously accepted any seed of at least 32
   bytes and silently used only the first 32, discarding the rest; a caller who gathered more entropy than CoreCrypto
   consumes had no way to discover that most of it was ignored. Seeds shorter than 32 bytes were already rejected, and a

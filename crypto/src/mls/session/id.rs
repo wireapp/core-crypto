@@ -32,12 +32,29 @@ impl ClientId {
     pub const DELIMITER: &'static str = ":";
     /// seperator between a user's device and domain
     pub const DOMAIN_SEPERATOR: &'static str = "@";
+    /// Encode a device id the way it appears within a client id: unpadded lowercase hex.
+    ///
+    /// This is the single definition of that encoding, so that anything rendering a device id as
+    /// part of a client id reproduces the bytes of the [`ClientId`] it came from.
+    ///
+    /// It must stay unpadded. `rusty_jwt_tools` uses the same encoding for the `wireapp://` SAN of
+    /// an E2EI certificate, and that URI is what `e2e-identity` sends to the ACME server, so the
+    /// certificates already issued in the field carry this form. For an X509 credential the client
+    /// id *is* the certificate's identity, so widening it here would put us out of step with them.
+    ///
+    /// Parsing is more lenient than this: [`Self::new_from_bytes`] accepts a zero-padded device id,
+    /// since other implementations may produce one.
+    pub fn encode_device_id(device_id: u64) -> String {
+        format!("{device_id:x}")
+    }
+
     /// Create a new client ID.
     pub fn new(user_id: Uuid, device_id: u64, domain: &str) -> Self {
         let string = format!(
-            "{user_id}{delimiter}{device_id:x}{seperator}{domain}",
+            "{user_id}{delimiter}{device_id}{seperator}{domain}",
             user_id = user_id.hyphenated(),
             delimiter = Self::DELIMITER,
+            device_id = Self::encode_device_id(device_id),
             seperator = Self::DOMAIN_SEPERATOR
         );
         let bytes = string.into_bytes();
@@ -352,6 +369,8 @@ mod tests {
             (0x8e64_2443_0d3b_28be, "8e6424430d3b28be"),
             (u64::MAX, "ffffffffffffffff"),
         ] {
+            assert_eq!(ClientId::encode_device_id(device_id), expected);
+
             let client_id = ClientId::new(USER_ID, device_id, DOMAIN);
             assert_eq!(
                 std::str::from_utf8(client_id.as_bytes()).unwrap(),
