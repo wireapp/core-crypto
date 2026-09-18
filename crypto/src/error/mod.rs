@@ -1,3 +1,4 @@
+pub(crate) mod identity;
 mod keystore;
 mod open_mls;
 mod proteus;
@@ -32,6 +33,9 @@ pub enum Error {
     /// A key store operation failed
     #[error(transparent)]
     Keystore(#[from] KeystoreError),
+    /// Identity error
+    #[error(transparent)]
+    Identity(#[from] identity::Error),
     /// Invalid history secret
     #[error("Invalid history secret: {0}")]
     InvalidHistorySecret(&'static str),
