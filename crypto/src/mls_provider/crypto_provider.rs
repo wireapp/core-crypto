@@ -54,8 +54,17 @@ impl RustCrypto {
     }
 
     pub(crate) fn reseed(&self, seed: Option<EntropySeed>) -> Result<(), Error> {
+        let seed = seed.map(|seed| Ok(seed.0)).unwrap_or_else(|| {
+            // Pull from the OS, as `Self::default` does. Note we cannot fall back to
+            // `EntropySeed::default()` here: that is 32 zero bytes, i.e. a fixed and publicly
+            // known key, and this generator is shared process-wide.
+            let mut raw = RawEntropySeed::default();
+            getrandom::fill(&mut raw).map_err(|_| Error::InsufficientEntropy)?;
+            Ok(raw)
+        })?;
+
         let mut val = self.rng.write().map_err(|_| Error::RngLockPoison)?;
-        *val = rand_chacha::ChaCha20Rng::from_seed(seed.unwrap_or_default().0);
+        *val = rand_chacha::ChaCha20Rng::from_seed(seed);
         Ok(())
     }
 
@@ -867,10 +876,11 @@ impl OpenMlsRand for RustCrypto {
 mod tests {
     use openmls_traits::{
         crypto::OpenMlsCrypto as _,
+        random::OpenMlsRand as _,
         types::{CryptoError, HpkeAeadType, HpkeCiphertext, HpkeConfig, HpkeKdfType, HpkeKemType, SignatureScheme},
     };
 
-    use super::RustCrypto;
+    use super::{EntropySeed, RawEntropySeed, RustCrypto};
 
     /// `signature_public_key_len` exists so that callers can size a buffer for, or validate the
     /// length of, a public key this provider produced. It is only meaningful if it agrees with
@@ -941,5 +951,34 @@ mod tests {
                 "hpke_open_psk must reject: {case}"
             );
         }
+    }
+
+    /// Reseeding without a seed must take one from the OS.
+    ///
+    /// It previously fell back to `EntropySeed::default()`, i.e. 32 zero bytes, which made every
+    /// subsequent key and nonce reproducible by anyone -- and for the whole process, since the
+    /// generator is a shared singleton.
+    #[test]
+    fn reseeding_without_a_seed_does_not_use_a_fixed_key() {
+        // Deliberately not the `CRYPTO` singleton: reseeding that would perturb other tests.
+        let crypto = RustCrypto::default();
+
+        crypto.reseed(None).unwrap();
+        let first = crypto.random_vec(32).unwrap();
+
+        crypto.reseed(None).unwrap();
+        let second = crypto.random_vec(32).unwrap();
+
+        assert_ne!(first, second, "two OS-seeded reseeds must not produce the same stream");
+
+        crypto
+            .reseed(Some(EntropySeed::from_raw(RawEntropySeed::default())))
+            .unwrap();
+        let all_zero_seed = crypto.random_vec(32).unwrap();
+
+        assert_ne!(
+            first, all_zero_seed,
+            "an OS-seeded reseed must not produce the all-zero-seed stream"
+        );
     }
 }
