@@ -104,7 +104,10 @@ impl ProteusCentral {
         Ok(bundle)
     }
 
-    /// Hex-encoded fingerprint of the given prekey
+    /// Hex-encoded fingerprint of the identity key in the given prekey bundle.
+    ///
+    /// Note this is the peer's long-term identity key, not the bundle's one-time prekey, so it is
+    /// the same for every bundle from the same peer.
     ///
     /// # Errors
     /// If the prekey cannot be deserialized
