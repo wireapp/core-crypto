@@ -23,6 +23,9 @@ pub enum CoreCryptoError {
     /// An error from the end-to-end identity layer.
     #[error("End to end identity error: {e2ei_error}")]
     E2ei { e2ei_error: String },
+    /// An error from rusty-jwt-tools.
+    #[error("rusty-jwt-tools error: {msg}")]
+    RustyJwt { msg: String },
     /// A transaction was rolled back due to an unexpected callback error.
     #[error("Transaction rolled back due to unexpected uniffi error: {error:?}")]
     TransactionFailed { error: String },
@@ -204,6 +207,7 @@ impl From<core_crypto::Error> for CoreCryptoError {
                 msg: keystore_error.innermost_error_message(),
             },
             core_crypto::Error::Recursive(recursive_error) => recursive_error.into(),
+            core_crypto::Error::RustyJwt(err) => Self::RustyJwt { msg: err.to_string() },
             core_crypto::Error::FeatureDisabled(_) | core_crypto::Error::InvalidHistorySecret(_) => {
                 Self::Other { msg: error.to_string() }
             }
