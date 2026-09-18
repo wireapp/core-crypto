@@ -32,8 +32,17 @@ impl EntropySeed {
     pub const EXPECTED_LEN: usize = std::mem::size_of::<EntropySeed>() / std::mem::size_of::<u8>();
 
     /// Create an entropy seed from the provided slice.
+    ///
+    /// The slice must be exactly [`Self::EXPECTED_LEN`] bytes long. A longer slice is rejected
+    /// rather than truncated: we cannot tell whether a caller supplying more entropy than we
+    /// consume intended all of it to be mixed in, and silently discarding the remainder would give
+    /// them no way to find out that it was not.
+    ///
+    /// # Errors
+    ///
+    /// [`Error::EntropySeedLength`] if `data` is not exactly [`Self::EXPECTED_LEN`] bytes long.
     pub fn try_from_slice(data: &[u8]) -> MlsProviderResult<Self> {
-        if data.len() < Self::EXPECTED_LEN {
+        if data.len() != Self::EXPECTED_LEN {
             return Err(Error::EntropySeedLength {
                 actual: data.len(),
                 expected: Self::EXPECTED_LEN,
@@ -41,7 +50,7 @@ impl EntropySeed {
         }
 
         let mut inner = RawEntropySeed::default();
-        inner.copy_from_slice(&data[..Self::EXPECTED_LEN]);
+        inner.copy_from_slice(data);
 
         Ok(Self(inner))
     }
@@ -342,5 +351,31 @@ impl OpenMlsCrypto for &CryptoProvider {
 
     fn derive_hpke_keypair(&self, config: HpkeConfig, ikm: &[u8]) -> Result<HpkeKeyPair, CryptoError> {
         self.crypto.derive_hpke_keypair(config, ikm)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{EntropySeed, Error};
+
+    #[test]
+    fn entropy_seed_requires_an_exact_length() {
+        let expected = EntropySeed::EXPECTED_LEN;
+
+        assert_eq!(
+            EntropySeed::try_from_slice(&vec![0xab; expected]).as_deref(),
+            Ok(&vec![0xab; expected][..]),
+            "a seed of exactly the expected length is accepted verbatim"
+        );
+
+        // A seed which is too long must be rejected rather than truncated: silently dropping the
+        // tail would leave a caller who gathered more entropy than we consume with no way to know.
+        for actual in [0, 1, expected - 1, expected + 1, 2 * expected] {
+            assert_eq!(
+                EntropySeed::try_from_slice(&vec![0xab; actual]),
+                Err(Error::EntropySeedLength { actual, expected }),
+                "a seed of {actual} bytes must be rejected"
+            );
+        }
     }
 }
