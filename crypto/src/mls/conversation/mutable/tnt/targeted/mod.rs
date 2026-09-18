@@ -87,7 +87,9 @@ impl TargetedMessage {
 struct HpkeContextData {
     info: Vec<u8>,
     psk_id: Vec<u8>,
-    psk: Vec<u8>,
+    /// Epoch-scoped key material, so it is wiped on drop just like `TransientMessageSecrets` and
+    /// the `TntSecret` row it can be read back out of.
+    psk: zeroize::Zeroizing<Vec<u8>>,
 }
 
 fn extract_hpke_context_data(
@@ -108,7 +110,10 @@ fn extract_hpke_context_data(
     Ok(HpkeContextData { info, psk_id, psk })
 }
 
-fn derive_targeted_message_psk(crypto_provider: &impl OpenMlsCryptoProvider, mls_group: &MlsGroup) -> Result<Vec<u8>> {
+fn derive_targeted_message_psk(
+    crypto_provider: &impl OpenMlsCryptoProvider,
+    mls_group: &MlsGroup,
+) -> Result<zeroize::Zeroizing<Vec<u8>>> {
     let cipher_suite = mls_group.ciphersuite();
     // We can use an empty context because we're using a unique label.
     mls_group
@@ -118,6 +123,7 @@ fn derive_targeted_message_psk(crypto_provider: &impl OpenMlsCryptoProvider, mls
             &[],
             cipher_suite.hash_length(),
         )
+        .map(zeroize::Zeroizing::new)
         .map_err(OpenMlsError::wrap("exporting targeted message psk"))
         .map_err(Into::into)
 }
