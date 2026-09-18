@@ -11,7 +11,7 @@ pub enum Error {
     InvalidQualifiedClientId,
     #[error("Supplied user id was not valid")]
     InvalidUserId,
-    #[error("A MLS operation was requested but MLS hasn't been initialized on this instance")]
+    #[error("An MLS operation was requested but MLS hasn't been initialized on this instance")]
     MlsNotInitialized,
     /// This error is emitted when the requested conversation couldn't be found in our store
     #[error("Couldn't find conversation")]

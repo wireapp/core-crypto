@@ -45,7 +45,7 @@ impl TransactionContext {
         Ok(ConversationMut::new(inner, self.clone()))
     }
 
-    /// Create a MLS conversation from an MLS Welcome message
+    /// Create an MLS conversation from an MLS Welcome message
     ///
     /// Unlike [`Self::persist_conversation_from_mls_group`], this _does_ check whether the conversation
     /// already exists or is pending. If it does, returns [`Error::ConversationAlreadyExists`].

@@ -1,4 +1,4 @@
-//! This table summarizes when a MLS group can create a commit or proposal:
+//! This table summarizes when an MLS group can create a commit or proposal:
 //!
 //! | can create handshake ? | 0 pend. Commit | 1 pend. Commit |
 //! |------------------------|----------------|----------------|

@@ -24,7 +24,7 @@ use crate::{
     mls_provider::{CryptoProvider, EntropySeed},
 };
 
-/// A MLS Session enables a user device to communicate via the MLS protocol.
+/// An MLS Session enables a user device to communicate via the MLS protocol.
 ///
 /// This closely maps to the `Client` term in [RFC 9720], but we avoid that term to avoid ambiguity;
 /// `Client` is very overloaded with distinct meanings.

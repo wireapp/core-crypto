@@ -1,6 +1,6 @@
 //! Operations on a conversation guard pertaining to merge commits.
 //!
-//! A MLS group is a distributed object scattered across many parties. We use a Delivery Service
+//! An MLS group is a distributed object scattered across many parties. We use a Delivery Service
 //! to orchestrate those parties. So when we create a commit, a mutable operation, it has to be
 //! validated by the Delivery Service. But it might occur that another group member did the
 //! exact same thing at the same time. So if we arrive second in this race, we must "rollback" the commit
@@ -15,12 +15,12 @@
 //!     - 409 CONFLICT --> do nothing. [ConversationGuard::decrypt_message] will restore the proposals not committed
 //!     - 5xx --> retry
 //!
-//! A MLS group can be merged (aka committed) when it has a pending commit. The latter is a commit
+//! An MLS group can be merged (aka committed) when it has a pending commit. The latter is a commit
 //! we created which has not yet been applied to the conversation. Doing so  will apply all the
 //! modifications present in the commit to the ratchet tree and also persist the new group in the
 //! keystore, so even if the application crashes, we will be able to restore.
 //!
-//! This table summarizes when a MLS group can be merged:
+//! This table summarizes when an MLS group can be merged:
 //!
 //! | can be merged ?   | 0 pend. Commit | 1 pend. Commit |
 //! |-------------------|----------------|----------------|

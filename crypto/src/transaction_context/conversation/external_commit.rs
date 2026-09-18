@@ -33,7 +33,7 @@ impl TransactionContext {
     /// is what "rejoin" means here — so there is nothing worth preserving in the row it replaces.
     ///
     /// # Arguments
-    /// * `group_info` - a GroupInfo wrapped in a MLS message. it can be obtained by deserializing a TLS serialized
+    /// * `group_info` - a GroupInfo wrapped in an MLS message. it can be obtained by deserializing a TLS serialized
     ///   `GroupInfo` object
     /// * `credential_ref` - reference to the [crate::Credential] to use for joining this group.
     ///

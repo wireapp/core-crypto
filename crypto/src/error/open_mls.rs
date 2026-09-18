@@ -1,4 +1,4 @@
-/// A MLS operation failed, but we captured some context about how it did so
+/// An MLS operation failed, but we captured some context about how it did so
 pub type OpenMlsError = super::wrapper::WrappedContextualError<OpenMlsErrorKind>;
 
 /// Openmls produces these kinds of error

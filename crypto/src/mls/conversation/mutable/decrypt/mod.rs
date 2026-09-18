@@ -1,7 +1,7 @@
 //! MLS defines 3 kind of messages: Proposal, Commits and Application messages. Since they can (should)
 //! be all encrypted we need to first decrypt them before deciding what to do with them.
 //!
-//! This table summarizes when a MLS group can decrypt any message:
+//! This table summarizes when an MLS group can decrypt any message:
 //!
 //! | can decrypt ?     | 0 pend. Commit | 1 pend. Commit |
 //! |-------------------|----------------|----------------|
