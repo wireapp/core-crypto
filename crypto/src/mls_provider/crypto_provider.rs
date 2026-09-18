@@ -182,15 +182,23 @@ impl RustCrypto {
 
 impl OpenMlsCrypto for RustCrypto {
     fn signature_public_key_len(&self, signature_scheme: SignatureScheme) -> usize {
+        // `signature_key_gen` emits ECDSA public keys as uncompressed SEC1 points -- a 0x04 tag
+        // byte followed by the two field elements -- so the serialized length is not the field
+        // size. Returning the field size here makes the `OpenMlsCrypto::validate_signature_key`
+        // default reject every key this provider produces.
+        fn uncompressed_sec1_len(field_bytes_size: usize) -> usize {
+            1 + 2 * field_bytes_size
+        }
+
         match signature_scheme {
             SignatureScheme::ECDSA_SECP256R1_SHA256 => {
-                <p256::NistP256 as p256::elliptic_curve::Curve>::FieldBytesSize::to_usize()
+                uncompressed_sec1_len(<p256::NistP256 as p256::elliptic_curve::Curve>::FieldBytesSize::to_usize())
             }
             SignatureScheme::ECDSA_SECP384R1_SHA384 => {
-                <p384::NistP384 as p384::elliptic_curve::Curve>::FieldBytesSize::to_usize()
+                uncompressed_sec1_len(<p384::NistP384 as p384::elliptic_curve::Curve>::FieldBytesSize::to_usize())
             }
             SignatureScheme::ECDSA_SECP521R1_SHA512 => {
-                <p521::NistP521 as p521::elliptic_curve::Curve>::FieldBytesSize::to_usize()
+                uncompressed_sec1_len(<p521::NistP521 as p521::elliptic_curve::Curve>::FieldBytesSize::to_usize())
             }
             SignatureScheme::ED25519 => ed25519_dalek::PUBLIC_KEY_LENGTH,
             SignatureScheme::ED448 => 57,
@@ -861,5 +869,43 @@ impl OpenMlsRand for RustCrypto {
         let mut out = vec![0u8; len];
         rng.fill_bytes(&mut out);
         Ok(out)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use openmls_traits::{crypto::OpenMlsCrypto as _, types::SignatureScheme};
+
+    use super::RustCrypto;
+
+    /// `signature_public_key_len` exists so that callers can size a buffer for, or validate the
+    /// length of, a public key this provider produced. It is only meaningful if it agrees with
+    /// what `signature_key_gen` actually emits.
+    #[test]
+    fn signature_public_key_len_matches_generated_keys() {
+        let crypto = RustCrypto::default();
+
+        for scheme in [
+            SignatureScheme::ED25519,
+            SignatureScheme::ECDSA_SECP256R1_SHA256,
+            SignatureScheme::ECDSA_SECP384R1_SHA384,
+            SignatureScheme::ECDSA_SECP521R1_SHA512,
+        ] {
+            let (_sk, pk) = crypto
+                .signature_key_gen(scheme)
+                .expect("this provider supports all four of these schemes");
+
+            assert_eq!(
+                pk.len(),
+                crypto.signature_public_key_len(scheme),
+                "reported public key length for {scheme:?} must match the generated key"
+            );
+
+            // The generated key must also pass this provider's own validation, which is what the
+            // trait's default implementation would have used the length above to decide.
+            crypto
+                .validate_signature_key(scheme, &pk)
+                .unwrap_or_else(|err| panic!("generated {scheme:?} key must validate: {err:?}"));
+        }
     }
 }
