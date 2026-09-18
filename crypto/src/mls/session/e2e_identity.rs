@@ -25,7 +25,12 @@ impl Session {
     /// This is determined by checking for existence of credentials for the given cipher suite:
     /// If there are x509 (and optionally basic) credentials -> Ok(true)
     /// If there are no x509 but basic credentials -> Ok(false)
-    /// If there are no credentials for the given cipher suite -> Err(CredentialNotFound)
+    /// If there are no credentials at all for the given cipher suite ->
+    /// `Err(Error::NoCredentialWithType(CredentialType::Basic))`
+    ///
+    /// Note that the credential type named in that error is not meaningful: the condition is "no
+    /// credentials for this cipher suite", which is precisely the case in which we know nothing
+    /// about basic credentials specifically.
     pub async fn e2ei_is_enabled(&self, cipher_suite: CipherSuite) -> Result<bool> {
         let credentials = CredentialRef::find(
             &self.database,
