@@ -332,7 +332,7 @@ mod tests {
         }
         Box::pin(async move {
             let mut x509_test_chain = case.set_test_chain(&[], &[], None).await;
-            let expiration_time = core::time::Duration::from_secs(5);
+            let expiration_time = core::time::Duration::from_secs(8);
             let start = web_time::Instant::now();
 
             let alice_cert = x509_test_chain.issue_simple_certificate_bundle("alice", None);
