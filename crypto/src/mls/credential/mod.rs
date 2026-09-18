@@ -330,44 +330,41 @@ mod tests {
         if !case.is_x509() {
             return;
         }
-        Box::pin(async move {
-            let mut x509_test_chain = case.set_test_chain(&[], &[], None).await;
-            let expiration_time = core::time::Duration::from_secs(8);
-            let start = web_time::Instant::now();
+        let mut x509_test_chain = case.set_test_chain(&[], &[], None).await;
+        let expiration_time = core::time::Duration::from_secs(8);
+        let start = web_time::Instant::now();
 
-            let alice_cert = x509_test_chain.issue_simple_certificate_bundle("alice", None);
-            let alice_cred = Credential::x509(case.cipher_suite(), alice_cert).unwrap();
-            let bob_cert = x509_test_chain.issue_simple_certificate_bundle("bob", Some(expiration_time));
-            let bob_cred = Credential::x509(case.cipher_suite(), bob_cert).unwrap();
-            let alice = SessionContext::new_with_credential(&case, alice_cred, case.sessions_in_memory)
-                .await
-                .unwrap();
-            let bob = SessionContext::new_with_credential(&case, bob_cred, case.sessions_in_memory)
-                .await
-                .unwrap();
+        let alice_cert = x509_test_chain.issue_simple_certificate_bundle("alice", None);
+        let alice_cred = Credential::x509(case.cipher_suite(), alice_cert).unwrap();
+        let bob_cert = x509_test_chain.issue_simple_certificate_bundle("bob", Some(expiration_time));
+        let bob_cred = Credential::x509(case.cipher_suite(), bob_cert).unwrap();
+        let alice = SessionContext::new_with_credential(&case, alice_cred, case.sessions_in_memory)
+            .await
+            .unwrap();
+        let bob = SessionContext::new_with_credential(&case, bob_cred, case.sessions_in_memory)
+            .await
+            .unwrap();
 
-            let conversation = case.create_conversation([&alice, &bob]).await;
-            // this should work since the certificate is not yet expired
-            assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
+        let conversation = case.create_conversation([&alice, &bob]).await;
+        // this should work since the certificate is not yet expired
+        assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
 
-            assert_eq!(
-                conversation.guard().await.e2ei_conversation_state().await.unwrap(),
-                E2eiConversationState::Verified
-            );
+        assert_eq!(
+            conversation.guard().await.e2ei_conversation_state().await.unwrap(),
+            E2eiConversationState::Verified
+        );
 
-            let elapsed = start.elapsed();
-            // Give time to the certificate to expire
-            if expiration_time > elapsed {
-                smol::Timer::after(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
-            }
+        let elapsed = start.elapsed();
+        // Give time to the certificate to expire
+        if expiration_time > elapsed {
+            smol::Timer::after(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
+        }
 
-            assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
-            assert_eq!(
-                conversation.guard().await.e2ei_conversation_state().await.unwrap(),
-                E2eiConversationState::NotVerified
-            );
-        })
-        .await;
+        assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
+        assert_eq!(
+            conversation.guard().await.e2ei_conversation_state().await.unwrap(),
+            E2eiConversationState::NotVerified
+        );
     }
 
     #[apply(all_cred_cipher)]
