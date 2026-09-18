@@ -26,8 +26,8 @@ pub(crate) struct AddGuard<'a> {
     pub(crate) new_members: Vec<&'a SessionContext>,
 }
 
-/// Keeps state about the committed operation that will be used when the
-/// corresponding [CommitGuard] is used to (notify members)[CommitGuard::notify_members].
+/// Keeps state about the committed operation that will be used when the corresponding
+/// [`OperationGuard<Commit>`][OperationGuard] is used to [notify members][OperationGuard::notify_members].
 pub(crate) enum TestOperation<'a> {
     /// New members will added to the member list of the test conversation
     Add(AddGuard<'a>),
@@ -150,8 +150,8 @@ impl<'a, T> OperationGuard<'a, T> {
         result.map(Some)
     }
 
-    /// Use this if you need access to the [MlsDecryptMessage] or potential error returned when the
-    /// member is notified about this.
+    /// Use this if you need access to the [`DecryptedMessage`][crate::DecryptedMessage] or potential
+    /// error returned when the member is notified about this.
     pub async fn notify_member_fallible(
         mut self,
         member: &SessionContext,

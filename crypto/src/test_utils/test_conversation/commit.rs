@@ -288,7 +288,7 @@ impl<'a> TestConversation<'a> {
     /// The supplied session joins this conversation by external commit, but doesn't merge it yet.
     ///
     /// This does _not_ distribute the external commit to the existing members. To do that,
-    /// use the [`notify_existing_members` method][CommitGuard::notify_members] of
+    /// use the [`notify_members` method][OperationGuard::notify_members] of
     /// the returned item.
     ///
     /// The pending conversation is persisted before it is returned.

@@ -1,6 +1,6 @@
 //! Conversation configuration.
 //!
-//! Either use [MlsConversationConfiguration] when creating a conversation or [MlsCustomConfiguration]
+//! Either use [ConversationConfiguration] when creating a conversation or [CustomConfiguration]
 //! when joining one by Welcome or external commit
 
 use openmls::prelude::{

@@ -25,7 +25,7 @@ struct TransientMessageAad {
     wire_format: TntWireFormat,
     sender: LeafNodeIndex,
     counter: TntMessageCounter,
-    /// The mls group context ([https://www.rfc-editor.org/info/rfc9420/#name-group-context]) contains the epoch and
+    /// The mls group context (<https://www.rfc-editor.org/info/rfc9420/#name-group-context>) contains the epoch and
     /// group id, so we don't need those in additional fields here.
     group_context: GroupContext,
 }
@@ -55,7 +55,7 @@ impl TransientMessageAad {
 pub(super) struct TransientMessage {
     sender: LeafNodeIndex,
     counter: TntMessageCounter,
-    /// The mls group context ([https://www.rfc-editor.org/info/rfc9420/#name-group-context]) contains the epoch and
+    /// The mls group context (<https://www.rfc-editor.org/info/rfc9420/#name-group-context>) contains the epoch and
     /// group id, so we don't need those in additional fields here.
     group_context: GroupContext,
     /// AEAD-encrypted with an MLS exporter secret. An additional authentication layer is
