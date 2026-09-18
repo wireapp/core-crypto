@@ -11,7 +11,10 @@ use core_crypto_keystore::{
 use schnellru::{ByLength, LruMap};
 
 use super::conversation::{ConversationId, ConversationIdRef};
-use crate::{ImmutableDatabase, KeystoreError, RecursiveError, Result, Session, mls::conversation::Conversation};
+use crate::{
+    ImmutableDatabase, KeystoreError, RecursiveError, Result, Session, mls::conversation::Conversation,
+    transaction_context::conversation::clear_orphaned_conversation_buffers,
+};
 
 /// LRU cache of live [`Conversation`]s, keyed by conversation id.
 ///
@@ -64,6 +67,9 @@ impl ConversationCache {
         if !conversation.group().await.is_active() {
             PersistedMlsGroup::delete_borrowed(transaction, id.keystore())
                 .map_err(KeystoreError::wrap("deleting inactive conversation from keystore"))?;
+            // This deletion removes the last trace of the conversation, so it owns the job of
+            // taking the conversation's buffers along; nothing else would ever reach them again.
+            clear_orphaned_conversation_buffers(transaction, id).await?;
             return Ok(None);
         }
 
