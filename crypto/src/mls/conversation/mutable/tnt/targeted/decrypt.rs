@@ -51,8 +51,10 @@ impl ConversationMut {
             return Err(Error::MessageEpochTooOld);
         }
 
+        // Both transient wire formats deliberately share one rx counter table; that decision is
+        // expressed inside `TntWireFormat`, so report the format the message actually arrived under.
         let message_type = match policy {
-            TargetedMessagePolicy::Transient => TntWireFormat::TRANSIENT_MESSAGE,
+            TargetedMessagePolicy::Transient => TntWireFormat::TRANSIENT_TARGETED_MESSAGE,
             TargetedMessagePolicy::Persisted => TntWireFormat::TARGETED_MESSAGE,
         };
 
