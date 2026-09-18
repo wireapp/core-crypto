@@ -40,7 +40,9 @@ impl Session {
         conversation_id: ConversationId,
         history_secret: &HistorySecret,
     ) {
-        if let Some(handler) = self.history_observer.read().await.as_ref() {
+        // Clone the handle out and release the lock before awaiting; see `notify_epoch_changed`.
+        let handler = self.history_observer.read().await.clone();
+        if let Some(handler) = handler {
             handler.history_client_created(conversation_id, history_secret).await;
         }
     }
