@@ -23,7 +23,14 @@ impl ConversationMut {
         match self.send_commit(commit).await {
             Ok(()) => self.merge_commit().await,
             e @ Err(_) => {
-                self.clear_pending_commit().await?;
+                // The transport failure is what the caller needs in order to choose a recovery, so
+                // a failure to clean up locally must not impersonate the delivery service's answer.
+                if let Err(cleanup_error) = self.clear_pending_commit().await {
+                    log::warn!(
+                        cleanup_error:% = cleanup_error;
+                        "failed to clear the pending commit after the delivery service rejected it"
+                    );
+                }
                 e
             }
         }
