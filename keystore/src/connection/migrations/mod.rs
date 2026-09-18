@@ -201,6 +201,8 @@ pub async fn migrate_db_key_type_to_bytes(
         use crate::CryptoKeystoreError;
 
         let mut conn = rusqlite::Connection::open(path)?;
+        let transaction_lock = super::TransactionLock::new(conn.path().unwrap_or_default())?;
+        let _guard = transaction_lock.acquire().await?;
 
         conn.pragma_update(None, "key", old_key)?;
 

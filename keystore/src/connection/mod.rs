@@ -104,10 +104,24 @@ impl Database {
     /// The connection must already be configured for encryption if appropriate.
     ///
     /// Sets appropriate pragmas and performs migrations and general initialization work.
-    fn init(
+    async fn init(
+        conn: Connection,
+        filesystem: Box<dyn Filesystem>,
+        migration_target: MigrationTarget,
+    ) -> CryptoKeystoreResult<Self> {
+        let transaction_lock = TransactionLock::new(conn.path().unwrap_or_default())?;
+        // SQL migrations and their meta migrations commit separately. Keep other processes
+        // out for the entire initialization, including reading the current schema version.
+        let _guard = transaction_lock.acquire().await?;
+        Self::init_with_lock(conn, filesystem, migration_target, transaction_lock)
+    }
+
+    /// Initialize while holding `transaction_lock`, or with a private in-memory connection.
+    fn init_with_lock(
         mut conn: Connection,
         filesystem: Box<dyn Filesystem>,
         migration_target: MigrationTarget,
+        transaction_lock: TransactionLock,
     ) -> CryptoKeystoreResult<Self> {
         #[cfg(feature = "log-queries")]
         conn.trace_v2(TraceEventCodes::SQLITE_TRACE_STMT, Some(log_query));
@@ -123,7 +137,6 @@ impl Database {
 
         migrations::run_migrations(&mut conn, migration_target)?;
 
-        let transaction_lock = TransactionLock::new(conn.path().unwrap_or_default())?;
         let conn = Arc::new(Mutex::new(conn));
 
         Ok(Self {
@@ -152,7 +165,13 @@ impl Database {
     /// In-memory databases are never encrypted.
     pub fn open_in_memory() -> CryptoKeystoreResult<Arc<Self>> {
         let connection = Connection::open_in_memory()?;
-        Self::init(connection, Box::new(filesystem::Nop), MigrationTarget::Composite).map(Into::into)
+        Self::init_with_lock(
+            connection,
+            Box::new(filesystem::Nop),
+            MigrationTarget::Composite,
+            TransactionLock::new("")?,
+        )
+        .map(Into::into)
     }
 
     /// Open an encrypted `Database` at the provided location.
