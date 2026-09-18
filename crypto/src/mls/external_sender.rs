@@ -4,7 +4,7 @@ use openmls::{
 };
 use rusty_jwt_tools::prelude::parse_json_jwk;
 
-use crate::{Error, OpenMlsError, RecursiveError, Result, mls_provider::CRYPTO};
+use crate::{Error, OpenMlsError, Result, mls_provider::CRYPTO};
 
 const WIRE_SERVER_IDENTITY: &str = "wire-server";
 
@@ -28,9 +28,7 @@ impl ExternalSender {
     ///
     /// This expects a raw json serialized JWK. It works with any Signature scheme.
     pub fn parse_jwk(jwk: &[u8]) -> Result<ExternalSender> {
-        let pk = parse_json_jwk(jwk)
-            .map_err(wire_e2e_identity::E2eIdentityError::from)
-            .map_err(RecursiveError::context("parsing jwk"))?;
+        let pk = parse_json_jwk(jwk)?;
         Ok(MlsExternalSender::new(pk.into(), MlsCredential::new_basic(WIRE_SERVER_IDENTITY.into())).into())
     }
 
