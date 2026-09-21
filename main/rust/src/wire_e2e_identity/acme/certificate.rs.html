@@ -6,7 +6,7 @@
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">impl </span>RustyAcme {
 <a href=#7 id=7 data-nosnippet>7</a>    <span class="doccomment">/// For fetching the generated certificate
 <a href=#8 id=8 data-nosnippet>8</a>    /// see [RFC 8555 Section 7.4.2](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2)
-<a href=#9 id=9 data-nosnippet>9</a>    </span><span class="kw">pub fn </span>certificate_req(
+<a href=#9 id=9 data-nosnippet>9</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>certificate_req(
 <a href=#10 id=10 data-nosnippet>10</a>        finalize: <span class="kw-2">&amp;</span>AcmeFinalize,
 <a href=#11 id=11 data-nosnippet>11</a>        account: <span class="kw-2">&amp;</span>AcmeAccount,
 <a href=#12 id=12 data-nosnippet>12</a>        alg: JwsAlgorithm,
@@ -23,7 +23,7 @@
 <a href=#23 id=23 data-nosnippet>23</a>    }
 <a href=#24 id=24 data-nosnippet>24</a>
 <a href=#25 id=25 data-nosnippet>25</a>    <span class="doccomment">/// see [RFC 8555 Section 7.4.2](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2)
-<a href=#26 id=26 data-nosnippet>26</a>    </span><span class="kw">pub fn </span>certificate_response(response: String, order: AcmeOrder) -&gt; RustyAcmeResult&lt;Vec&lt;Certificate&gt;&gt; {
+<a href=#26 id=26 data-nosnippet>26</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>certificate_response(response: String, order: AcmeOrder) -&gt; RustyAcmeResult&lt;Vec&lt;Certificate&gt;&gt; {
 <a href=#27 id=27 data-nosnippet>27</a>        order.verify()<span class="question-mark">?</span>;
 <a href=#28 id=28 data-nosnippet>28</a>        <span class="kw">let </span>pems: Vec&lt;pem::Pem&gt; = pem::parse_many(response)<span class="question-mark">?</span>;
 <a href=#29 id=29 data-nosnippet>29</a>

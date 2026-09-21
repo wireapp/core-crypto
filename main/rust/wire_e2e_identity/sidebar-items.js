@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["E2eIdentityError","HashAlgorithm","JwsAlgorithm"],"mod":["acme","acquisition","pki_env","utils","validation"],"struct":["E2eiClientId","Handle"],"type":["E2eIdentityResult"]};
+window.SIDEBAR_ITEMS = {"enum":["E2eIdentityError","HashAlgorithm","JwsAlgorithm"],"mod":["acquisition","pki_env","utils","validation"],"struct":["E2eiClientId","Handle"],"type":["E2eIdentityResult"]};

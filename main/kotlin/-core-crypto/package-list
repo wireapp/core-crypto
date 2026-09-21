@@ -299,6 +299,10 @@ $dokka.location:com.wire.crypto/CoreCryptoException.Proteus///PointingToDeclarat
 $dokka.location:com.wire.crypto/CoreCryptoException.Proteus/Proteus/#com.wire.crypto.ProteusException/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-proteus/-proteus.html
 $dokka.location:com.wire.crypto/CoreCryptoException.Proteus/exception/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-proteus/exception.html
 $dokka.location:com.wire.crypto/CoreCryptoException.Proteus/message/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-proteus/message.html
+$dokka.location:com.wire.crypto/CoreCryptoException.RustyJwt///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-rusty-jwt/index.html
+$dokka.location:com.wire.crypto/CoreCryptoException.RustyJwt/RustyJwt/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-rusty-jwt/-rusty-jwt.html
+$dokka.location:com.wire.crypto/CoreCryptoException.RustyJwt/message/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-rusty-jwt/message.html
+$dokka.location:com.wire.crypto/CoreCryptoException.RustyJwt/msg/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-rusty-jwt/msg.html
 $dokka.location:com.wire.crypto/CoreCryptoException.TransactionCanceled///PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-transaction-canceled/index.html
 $dokka.location:com.wire.crypto/CoreCryptoException.TransactionCanceled/TransactionCanceled/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-transaction-canceled/-transaction-canceled.html
 $dokka.location:com.wire.crypto/CoreCryptoException.TransactionCanceled/message/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-exception/-transaction-canceled/message.html
