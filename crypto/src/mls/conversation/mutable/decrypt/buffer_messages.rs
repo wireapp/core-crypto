@@ -121,15 +121,27 @@ impl ConversationMut {
 
             // We want to restore application messages first, then Proposals & finally Commits
             // luckily for us that's the exact same order as the [ContentType] enum
+            // Within the application messages, we'd ideally also like to sort by message generation.
+            // Unfortunately that's not possible given the current openmls APIs.
+            // We should look into this when we move to mls-rs.
             pending_messages.sort_by_key(|(content_type, _)| *content_type);
 
             info!(group_id = conversation_id.to_owned(); "Attempting to restore {} buffered messages", pending_messages.len());
 
             let mut decrypted_messages = Vec::with_capacity(pending_messages.len());
             for (_, pending_message) in pending_messages {
-                let decrypted = match pending_message {
-                    PendingMessage::Mls(mls_message) => self.decrypt_mls_message(*mls_message, RecursionPolicy::None).await?,
-                    PendingMessage::Tnt(tnt_message) => self.decrypt_tnt_message(*tnt_message).await?,
+                // we have to make a best-effort attempt at decrypting these messages, but ultimately the failure of a buffered
+                // message do decrypt should not short-circuit the decryption loop, and should not cause the commit to fail to decrypt
+                let maybe_decrypted = match pending_message {
+                    PendingMessage::Mls(mls_message) => self.decrypt_mls_message(*mls_message, RecursionPolicy::None).await,
+                    PendingMessage::Tnt(tnt_message) => self.decrypt_tnt_message(*tnt_message).await,
+                };
+                let decrypted = match maybe_decrypted {
+                    Ok(decrypted) => decrypted,
+                    Err(err) => {
+                        error!(error:% = err; "failed to decrypt buffered message");
+                        continue;
+                    }
                 };
                 decrypted_messages.push(decrypted.into());
             }
