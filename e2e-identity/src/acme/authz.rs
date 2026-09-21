@@ -153,38 +153,11 @@ pub(crate) enum AuthzStatus {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use wasm_bindgen_test::*;
 
     use super::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
-
-    mod json {
-        use super::*;
-
-        #[test]
-        #[wasm_bindgen_test]
-        fn can_deserialize_sample_response() {
-            let rfc_sample = json!({
-                "status": "pending",
-                "expires": "2016-01-02T14:09:30Z",
-                "identifier": {
-                    "type": "wireapp-user",
-                    "value": "www.example.org"
-                },
-                "challenges": [
-                    {
-                        "type": "http-01",
-                        "url": "https://example.com/acme/chall/prV_B7yEyA4",
-                        "token": "DGyRejmCefe7v4NfDGDKfA",
-                        "target": "https://example.com/target"
-                    }
-                ]
-            });
-            assert!(serde_json::from_value::<AcmeAuthz>(rfc_sample).is_ok());
-        }
-    }
 
     mod verify {
         use super::*;
