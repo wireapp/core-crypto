@@ -147,7 +147,7 @@ impl ConversationMut {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{DecryptedMessage, test_utils::*};
+    use crate::{DecryptedMessage, mls::conversation::config::OUT_OF_ORDER_TOLERANCE, test_utils::*};
 
     #[apply(all_cred_cipher)]
     async fn can_operate_with_pending_commit_wpb_17356(case: TestContext) {
@@ -438,6 +438,87 @@ mod tests {
         assert_eq!(
             counts.pending_messages, 0,
             "the buffered message belongs to a conversation which no longer exists"
+        );
+    }
+
+    /// Buffered application messages are restored as far as the out-of-order tolerance allows.
+    ///
+    /// The DS doesn't guarantee delivery order, so application messages for a new epoch can be
+    /// buffered in any order relative to each other. We replay them in the order they were
+    /// buffered, and we can't do better: a message's generation lives in its encrypted sender
+    /// data, so we can't sort the buffer by it without decrypting first.
+    ///
+    /// That costs us messages. Decrypting the newest generation first advances the ratchet past
+    /// it and immediately discards every past secret outside the tolerance window, so only
+    /// `OUT_OF_ORDER_TOLERANCE` of the buffered messages are still decryptable by the time we
+    /// reach them. We accept that loss, but it has to stay contained: the commit itself must
+    /// still merge and report success, and the buffer must still be cleared, so that an
+    /// undecryptable message can neither fail the commit nor poison every future restore.
+    #[apply(all_cred_cipher)]
+    async fn buffered_messages_are_restored_within_out_of_order_tolerance(case: TestContext) {
+        const MESSAGE_COUNT: u8 = 4;
+
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+
+        // Bob commits and merges immediately into his own state; Alice does not receive it yet.
+        let commit_guard = conversation.acting_as(&bob).await.update().await;
+        let commit = commit_guard.message();
+        let conversation = commit_guard.process_member_changes().await.finish();
+
+        // Bob sends more application messages in the new epoch than the tolerance window covers,
+        // at generations 0..MESSAGE_COUNT.
+        let mut app_messages = Vec::with_capacity(MESSAGE_COUNT.into());
+        for i in 0..MESSAGE_COUNT {
+            let msg = conversation.guard_of(&bob).await.encrypt_message([i]).await.unwrap();
+            app_messages.push(msg);
+        }
+
+        // The DS hands these to Alice newest first, oldest last. Alice is still on the old epoch,
+        // so each one gets buffered individually, in that same order.
+        for msg in app_messages.iter().rev() {
+            let decrypt = conversation.guard_of(&alice).await.decrypt_message(msg).await;
+            assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
+        }
+        assert_eq!(
+            alice.transaction.count_entities().await.pending_messages,
+            u32::from(MESSAGE_COUNT)
+        );
+
+        // Alice now receives the commit. It must merge, and whichever buffered messages are still
+        // decryptable must come back with it.
+        let restored = conversation
+            .guard_of(&alice)
+            .await
+            .decrypt_message(commit.to_bytes().unwrap())
+            .await
+            .expect("the commit must merge even though some buffered messages can't be decrypted")
+            .into_commit()
+            .unwrap()
+            .buffered_messages
+            .expect("the buffered messages within the tolerance window should have been restored");
+
+        let restored_plaintexts = restored
+            .into_iter()
+            .map(|m| DecryptedMessage::from(m).into_application_message().unwrap().plaintext[0])
+            .collect::<Vec<_>>();
+        let expected_plaintexts = ((MESSAGE_COUNT - OUT_OF_ORDER_TOLERANCE as u8)..MESSAGE_COUNT)
+            .rev()
+            .collect::<Vec<_>>();
+        assert_eq!(
+            restored_plaintexts, expected_plaintexts,
+            "only the newest OUT_OF_ORDER_TOLERANCE messages are still decryptable in replay order"
+        );
+
+        assert_eq!(
+            conversation.guard_of(&alice).await.group().await.epoch().as_u64(),
+            conversation.guard_of(&bob).await.group().await.epoch().as_u64(),
+            "the commit must have merged into Alice's group"
+        );
+        assert_eq!(
+            alice.transaction.count_entities().await.pending_messages,
+            0,
+            "the buffer must be cleared even though some of its messages could not be decrypted"
         );
     }
 
