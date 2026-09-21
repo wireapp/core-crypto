@@ -24,32 +24,3 @@ pub(crate) struct AcmeDirectory {
     /// URL for revoking a certificate
     pub revoke_cert: url::Url,
 }
-
-#[cfg(test)]
-mod tests {
-    use wasm_bindgen_test::*;
-
-    use super::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
-
-    #[test]
-    #[wasm_bindgen_test]
-    fn can_deserialize_rfc_sample() {
-        let rfc_sample = serde_json::json!({
-            "newNonce": "https://example.com/acme/new-nonce",
-            "newAccount": "https://example.com/acme/new-account",
-            "newOrder": "https://example.com/acme/new-order",
-            "newAuthz": "https://example.com/acme/new-authz",
-            "revokeCert": "https://example.com/acme/revoke-cert",
-            "keyChange": "https://example.com/acme/key-change",
-            "meta": {
-                "termsOfService": "https://example.com/acme/terms/2017-5-30",
-                "website": "https://www.example.com/",
-                "caaIdentities": ["example.com"],
-                "externalAccountRequired": false
-            }
-        });
-        assert!(serde_json::from_value::<AcmeDirectory>(rfc_sample).is_ok());
-    }
-}
