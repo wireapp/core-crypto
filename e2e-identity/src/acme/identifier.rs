@@ -45,12 +45,6 @@ impl AcmeIdentifier {
             AcmeIdentifier::WireappUser(id) => serde_json::from_str(id)?,
         })
     }
-
-    /// ACME protocol imposes this to be a json string while we need it to be a json object so
-    /// we serialize it to json like this which is simpler than implementing a serde Visitor
-    pub fn to_json(&self) -> RustyAcmeResult<String> {
-        Ok(serde_json::to_string(self)?)
-    }
 }
 
 #[cfg(test)]
