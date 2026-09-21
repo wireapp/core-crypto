@@ -4,7 +4,6 @@ use rusty_jwt_tools::prelude::{JwsAlgorithm, Pem, RustyJwtTools};
 use crate::acme::{RustyAcmeError, RustyAcmeResult};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(test, derive(Clone))]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct AcmeJws {
     pub protected: String,

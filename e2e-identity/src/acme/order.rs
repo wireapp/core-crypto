@@ -88,7 +88,6 @@ pub enum AcmeOrderError {
 /// For creating an order
 /// see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(test, derive(Clone))]
 #[serde(rename_all = "camelCase")]
 struct AcmeOrderRequest {
     /// An array of identifier objects that the client wishes to submit an order for

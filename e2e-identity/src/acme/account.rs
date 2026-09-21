@@ -49,7 +49,6 @@ pub enum AcmeAccountError {
 /// For creating an account
 /// see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3
 #[derive(Debug, Default, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(test, derive(Clone))]
 #[serde(rename_all = "camelCase")]
 struct AcmeAccountRequest {
     /// Including this field in a newAccount request, with a value of true, indicates the client's
