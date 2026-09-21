@@ -163,11 +163,8 @@ fn try_extract_san(cert: &x509_cert::TbsCertificate) -> Result<(String, Qualifie
 mod tests {
     use core_crypto_keystore::Database;
     use rstest::rstest;
-    use wasm_bindgen_test::*;
 
     use super::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     const CERT: &str = r#"-----BEGIN CERTIFICATE-----
 MIICGjCCAcCgAwIBAgIRAJaZdl+hZDl9qSSju5kmWNAwCgYIKoZIzj0EAwIwLjEN
@@ -207,7 +204,6 @@ OfqfZA1YMtN5NLz/AA==
 
     #[rstest]
     #[tokio::test]
-    #[wasm_bindgen_test]
     async fn should_find_claims_in_x509(#[future] pki_env: PkiEnvironment) {
         let cert_der = pem::parse(CERT).unwrap();
         let identity = cert_der
@@ -226,7 +222,6 @@ OfqfZA1YMtN5NLz/AA==
     }
 
     #[test]
-    #[wasm_bindgen_test]
     fn should_find_created_at_claim() {
         let cert_der = pem::parse(CERT).unwrap();
         let created_at = cert_der.contents().extract_created_at().unwrap();
@@ -234,7 +229,6 @@ OfqfZA1YMtN5NLz/AA==
     }
 
     #[test]
-    #[wasm_bindgen_test]
     fn should_find_public_key() {
         let cert_der = pem::parse(CERT).unwrap();
         let spki = cert_der.contents().extract_public_key().unwrap();
@@ -246,7 +240,6 @@ OfqfZA1YMtN5NLz/AA==
 
     #[rstest]
     #[tokio::test]
-    #[wasm_bindgen_test]
     async fn should_have_expired_status(#[future] pki_env: PkiEnvironment) {
         let cert_der = pem::parse(CERT_EXPIRED).unwrap();
         let identity = cert_der
@@ -259,7 +252,6 @@ OfqfZA1YMtN5NLz/AA==
 
     #[rstest]
     #[tokio::test]
-    #[wasm_bindgen_test]
     async fn should_have_thumbprint(#[future] pki_env: PkiEnvironment) {
         let cert_der = pem::parse(CERT).unwrap();
         let identity = cert_der

@@ -141,17 +141,12 @@ pub enum AcmeAccountStatus {
 
 #[cfg(test)]
 mod tests {
-    use wasm_bindgen_test::*;
-
     use super::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     mod verify {
         use super::*;
 
         #[test]
-        #[wasm_bindgen_test]
         fn should_succeed_when_status_valid() {
             let account = AcmeAccount {
                 status: AcmeAccountStatus::Valid,
@@ -161,7 +156,6 @@ mod tests {
         }
 
         #[test]
-        #[wasm_bindgen_test]
         fn should_fail_when_status_deactivated() {
             let account = AcmeAccount {
                 status: AcmeAccountStatus::Deactivated,
@@ -174,7 +168,6 @@ mod tests {
         }
 
         #[test]
-        #[wasm_bindgen_test]
         fn should_fail_when_status_revoked() {
             let account = AcmeAccount {
                 status: AcmeAccountStatus::Revoked,
@@ -187,7 +180,6 @@ mod tests {
         }
 
         #[test]
-        #[wasm_bindgen_test]
         fn should_fail_when_orders_absent() {
             let account = AcmeAccount {
                 orders: None,
@@ -204,7 +196,6 @@ mod tests {
         use super::*;
 
         #[test]
-        #[wasm_bindgen_test]
         fn should_trim_last_orders_segment() {
             let base = "https://acme-server/acme/wire-acme/account/muYiJmuJRn9u2L0tdI5bu11T7QqqPR1u";
             let orders_url = format!("{base}/orders");
@@ -216,7 +207,6 @@ mod tests {
         }
 
         #[test]
-        #[wasm_bindgen_test]
         fn should_fail_when_orders_absent() {
             let account = AcmeAccount {
                 orders: None,
@@ -229,7 +219,6 @@ mod tests {
         }
 
         #[test]
-        #[wasm_bindgen_test]
         fn should_fail_when_orders_url_doesnt_end_with_orders() {
             let base = "https://acme-server/acme/wire-acme/account/muYiJmuJRn9u2L0tdI5bu11T7QqqPR1u";
             let orders_url = format!("{base}/error");

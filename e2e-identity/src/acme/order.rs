@@ -225,17 +225,12 @@ pub enum AcmeOrderStatus {
 
 #[cfg(test)]
 mod tests {
-    use wasm_bindgen_test::*;
-
     use super::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
 
     mod verify {
         use super::*;
 
         #[test]
-        #[wasm_bindgen_test]
         fn should_succeed_when_valid() {
             let now = time::OffsetDateTime::now_utc();
             let tomorrow = now + time::Duration::days(1);
@@ -249,7 +244,6 @@ mod tests {
         }
 
         #[test]
-        #[wasm_bindgen_test]
         fn should_fail_when_not_before_in_future() {
             let tomorrow = time::OffsetDateTime::now_utc() + time::Duration::days(1);
             let order = AcmeOrder {
@@ -263,7 +257,6 @@ mod tests {
         }
 
         #[test]
-        #[wasm_bindgen_test]
         fn should_fail_when_not_after_in_past() {
             let yesterday = time::OffsetDateTime::now_utc() - time::Duration::days(1);
             let order = AcmeOrder {
@@ -277,7 +270,6 @@ mod tests {
         }
 
         #[test]
-        #[wasm_bindgen_test]
         fn should_fail_when_expires_in_past() {
             let yesterday = time::OffsetDateTime::now_utc() - time::Duration::days(1);
             let order = AcmeOrder {
@@ -291,7 +283,6 @@ mod tests {
         }
 
         #[test]
-        #[wasm_bindgen_test]
         fn should_fail_when_wrong_number_identifiers() {
             let now = time::OffsetDateTime::now_utc();
             let tomorrow = now + time::Duration::days(1);
@@ -328,7 +319,6 @@ mod tests {
         use super::*;
 
         #[test]
-        #[wasm_bindgen_test]
         fn should_succeed_when_pending() {
             let order = AcmeOrder {
                 status: AcmeOrderStatus::Pending,
@@ -339,7 +329,6 @@ mod tests {
         }
 
         #[test]
-        #[wasm_bindgen_test]
         fn should_fail_when_not_pending() {
             let order = AcmeOrder {
                 status: AcmeOrderStatus::Ready,
@@ -373,7 +362,6 @@ mod tests {
         }
 
         #[test]
-        #[wasm_bindgen_test]
         fn should_fail_when_invalid() {
             let order = AcmeOrder {
                 status: AcmeOrderStatus::Invalid,
