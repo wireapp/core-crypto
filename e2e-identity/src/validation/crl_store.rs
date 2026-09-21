@@ -53,8 +53,7 @@ impl CrlStore {
         crl_info.push(info);
         let index = crl_info.len() - 1;
 
-        // SAFETY: This unwrap is safe as we just inserted the data above
-        let info = crl_info.last().unwrap();
+        let info = crl_info.last().expect("fine as we just inserted the data above");
         if let Some(dp) = get_dp_from_crl(crl) {
             self.dps
                 .lock()
