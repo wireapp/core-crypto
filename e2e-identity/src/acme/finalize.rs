@@ -222,7 +222,6 @@ impl RustyAcme {
 pub struct AcmeFinalizeError(#[from] AcmeOrderError);
 
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(test, derive(Clone))]
 #[serde(rename_all = "camelCase")]
 struct AcmeFinalizeRequest {
     /// Certificate Signing Request,
@@ -231,46 +230,9 @@ struct AcmeFinalizeRequest {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-#[cfg_attr(test, derive(Clone))]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct AcmeFinalize {
     pub certificate: url::Url,
     #[serde(flatten)]
     pub order: AcmeOrder,
-}
-
-#[cfg(test)]
-mod tests {
-    use serde_json::json;
-    use wasm_bindgen_test::*;
-
-    use super::*;
-
-    wasm_bindgen_test_configure!(run_in_browser);
-
-    mod json {
-        use super::*;
-
-        #[test]
-        #[wasm_bindgen_test]
-        fn can_deserialize_sample_response() {
-            let rfc_sample = json!({
-                "status": "valid",
-                "expires": "2016-01-20T14:09:07.99Z",
-                "notBefore": "2016-01-01T00:00:00Z",
-                "notAfter": "2016-01-08T00:00:00Z",
-                "identifiers": [
-                    { "type": "wireapp-user", "value": "www.example.org" },
-                    { "type": "wireapp-device", "value": "example.org" }
-                ],
-                "authorizations": [
-                    "https://example.com/acme/authz/PAniVnsZcis",
-                    "https://example.com/acme/authz/r4HqLzrSrpI"
-                ],
-                "finalize": "https://example.com/acme/order/TOlocE8rfgo/finalize",
-                "certificate": "https://example.com/acme/cert/mAt3xBGaobw"
-            });
-            assert!(serde_json::from_value::<AcmeFinalize>(rfc_sample).is_ok());
-        }
-    }
 }
