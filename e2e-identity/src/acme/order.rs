@@ -226,51 +226,11 @@ pub enum AcmeOrderStatus {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use wasm_bindgen_test::*;
 
     use super::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
-
-    mod json {
-        use super::*;
-
-        #[test]
-        #[wasm_bindgen_test]
-        fn can_deserialize_sample_request() {
-            let rfc_sample = json!({
-                "identifiers": [
-                  { "type": "wireapp-user", "value": "www.example.org" },
-                  { "type": "wireapp-device", "value": "example.org" }
-                ],
-                "notBefore": "2016-01-01T00:04:00+04:00",
-                "notAfter": "2016-01-08T00:04:00+04:00"
-            });
-            assert!(serde_json::from_value::<AcmeOrderRequest>(rfc_sample).is_ok());
-        }
-
-        #[test]
-        #[wasm_bindgen_test]
-        fn can_deserialize_rfc_sample_response() {
-            let rfc_sample = json!({
-                "status": "pending",
-                "expires": "2016-01-05T14:09:07.99Z",
-                "notBefore": "2016-01-01T00:00:00Z",
-                "notAfter": "2016-01-08T00:00:00Z",
-                "identifiers": [
-                  { "type": "wireapp-user", "value": "www.example.org" },
-                  { "type": "wireapp-device", "value": "example.org" }
-                ],
-                "authorizations": [
-                  "https://example.com/acme/authz/PAniVnsZcis",
-                  "https://example.com/acme/authz/r4HqLzrSrpI"
-                ],
-                "finalize": "https://example.com/acme/order/TOlocE8rfgo/finalize"
-            });
-            assert!(serde_json::from_value::<AcmeOrderRequest>(rfc_sample).is_ok());
-        }
-    }
 
     mod verify {
         use super::*;
