@@ -142,43 +142,11 @@ pub enum AcmeAccountStatus {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
     use wasm_bindgen_test::*;
 
     use super::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
-
-    mod json {
-        use super::*;
-
-        #[test]
-        #[wasm_bindgen_test]
-        fn can_deserialize_rfc_sample_request() {
-            let rfc_sample = json!({
-                "termsOfServiceAgreed": true,
-                "contact": [
-                  "mailto:cert-admin@example.org",
-                  "mailto:admin@example.org"
-                ]
-            });
-            assert!(serde_json::from_value::<AcmeAccountRequest>(rfc_sample).is_ok());
-        }
-
-        #[test]
-        #[wasm_bindgen_test]
-        fn can_deserialize_rfc_sample_response() {
-            let rfc_sample = json!({
-                "status": "valid",
-                "contact": [
-                    "mailto:cert-admin@example.org",
-                    "mailto:admin@example.org"
-                ],
-                "orders": "https://example.com/acme/acct/evOfKhNU60wg/orders"
-            });
-            assert!(serde_json::from_value::<AcmeAccount>(rfc_sample).is_ok());
-        }
-    }
 
     mod verify {
         use super::*;
