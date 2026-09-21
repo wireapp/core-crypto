@@ -35,7 +35,7 @@ pub fn pem_from_bytes(bytes: &[u8], sign_alg: JwsAlgorithm) -> E2eIdentityResult
     Ok(pem.into())
 }
 
-pub fn public_jwk_from_pem_keypair(alg: JwsAlgorithm, keypair: &Pem) -> E2eIdentityResult<Jwk> {
+pub(crate) fn public_jwk_from_pem_keypair(alg: JwsAlgorithm, keypair: &Pem) -> E2eIdentityResult<Jwk> {
     let jwk = match alg {
         JwsAlgorithm::P256 => ES256KeyPair::from_pem(keypair)?.public_key().try_into_jwk()?,
         JwsAlgorithm::P384 => ES384KeyPair::from_pem(keypair)?.public_key().try_into_jwk()?,
