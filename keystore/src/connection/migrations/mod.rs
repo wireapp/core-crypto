@@ -60,28 +60,32 @@ pub(super) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationT
         }
     };
 
-    // This version is known to have an additional newline in some releases, but the actual migration work is
-    // identical. Ensure Refinery sees the checksum of the embedded migration when it validates the history.
-    const BROKEN_MIGRATION_FILE_VERSION: i32 = 16;
-    let expected_checksum = runner
-        .get_migrations()
-        .iter()
-        .find(|migration| migration.version() == BROKEN_MIGRATION_FILE_VERSION)
-        .expect("V16 is embedded")
-        .checksum()
-        .to_string();
-
     // Adjust the schema history only if it already exists.
     let has_refinery_schema_history = conn.query_row(
         "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'refinery_schema_history')",
         [],
         |row| row.get::<_, bool>(0),
     )?;
+
+    // These versions are known to have differences which affect the checksum but not the database shape when the
+    // migration has been completed.
+    // Ensure Refinery sees the checksum of the embedded migration when it validates the history.
+    const BROKEN_MIGRATION_FILE_VERSIONS: &[i32] = &[16, 31];
     if has_refinery_schema_history {
-        conn.execute(
-            "UPDATE refinery_schema_history SET checksum = ?1 WHERE version = ?2",
-            (expected_checksum, BROKEN_MIGRATION_FILE_VERSION),
-        )?;
+        for &version in BROKEN_MIGRATION_FILE_VERSIONS {
+            let expected_checksum = runner
+                .get_migrations()
+                .iter()
+                .find(|migration| migration.version() == version)
+                .expect("relevant versions are embedded")
+                .checksum()
+                .to_string();
+
+            conn.execute(
+                "UPDATE refinery_schema_history SET checksum = ?1 WHERE version = ?2",
+                (expected_checksum, version),
+            )?;
+        }
     }
 
     // Contrary to its documentation, `get_last_applied_migration` errors out when there are no applied migrations.
@@ -305,6 +309,14 @@ pub(crate) mod test {
         // Don't update existing, already released entries to accommodate an edit: add a new migration instead. Append a
         // checksum whenever a migration is added. Running this test after addiing a new migration file will
         // output the expected tuple.
+        //
+        // Escape hatch: if an existing migration:
+        // 1. is broken in a way that could cause it to fail to apply (i.e. new constraints without appropriate guards
+        //    on migration insertion)
+        // 2. can be fixed without changing the shape of the database (i.e. by adding new guards on migration insertion)
+        //
+        // then it is ok to update the checksum here and also add that migration to the special-case list in
+        // `BROKEN_MIGRATION_FILE_VERSIONS`.
         const RELEASED_CHECKSUMS: &[(i32, u64)] = &[
             (1, 13981446244764045850),
             (2, 10014296231349852013),
@@ -336,7 +348,7 @@ pub(crate) mod test {
             (28, 9800077133815304595),
             (29, 4026373323163068147),
             (30, 4359295101874567444),
-            (31, 11037059044990136413),
+            (31, 1341948504623982187),
             (32, 8623467557464580542),
             (33, 4190965026202622936),
             (34, 6226054801151536100),
