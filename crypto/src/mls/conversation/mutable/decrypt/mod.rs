@@ -487,7 +487,13 @@ impl ConversationMut {
                 .map_err(|e| match e {
                     ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
                         MessageDecryptionError::GenerationOutOfBound,
-                    )) => Error::DuplicateMessage,
+                    )) => {
+                        // This is an annoyance, but not wrong: OpenMLS knows whether the message was too old, too new,
+                        // or an actual duplicate. It emits a log line and flattens all three variants into this single
+                        // `GenerationOutOfBound` variant, so we can't tell what situation we're in at this level.
+                        // `DuplicateMessage` is more likely than the other two, so that's what we unpack here.
+                        Error::DuplicateMessage
+                    }
                     ProcessMessageError::ValidationError(ValidationError::WrongEpoch) => {
                         if is_duplicate {
                             Error::DuplicateMessage
