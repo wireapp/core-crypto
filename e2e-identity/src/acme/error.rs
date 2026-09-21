@@ -7,15 +7,9 @@ pub enum RustyAcmeError {
     /// Invalid Json representation
     #[error(transparent)]
     JsonError(#[from] serde_json::Error),
-    /// Invalid URL
-    #[error(transparent)]
-    UrlError(#[from] url::ParseError),
     /// Error while building a JWT
     #[error(transparent)]
     JwtError(#[from] rusty_jwt_tools::prelude::RustyJwtError),
-    /// Error related to various X509 processing facilities/tools/checks
-    #[error(transparent)]
-    X509CheckError(#[from] crate::validation::RustyX509CheckError),
     /// Failed mapping an ASN.1 ObjectIdentifier
     #[error(transparent)]
     OidError(#[from] x509_cert::der::oid::Error),
@@ -58,7 +52,4 @@ pub enum RustyAcmeError {
     /// UTF-8 parsing error
     #[error(transparent)]
     Utf8(#[from] std::str::Utf8Error),
-    /// Error while decoding elliptic curve keys (e.g. from PEM or DER)
-    #[error(transparent)]
-    DecodeError(#[from] elliptic_curve::DecodeError),
 }
