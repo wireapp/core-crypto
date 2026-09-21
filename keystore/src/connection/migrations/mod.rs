@@ -159,12 +159,13 @@ pub(crate) mod test {
 
     use crate::{
         Sha256Hash,
+        ancillary::ConversationIdRef,
         connection::{Database, DatabaseKey, migrate_db_key_type_to_bytes, migrations::MigrationTarget},
         entities::{
             MlsPendingMessage, StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle,
         },
         migrations::StoredCredentialV36,
-        traits::{Entity, EntityGetBorrowed as _, PrimaryKey as _},
+        traits::{Entity, EntityGetBorrowed as _, PrimaryKey as _, SearchableEntity as _},
     };
 
     pub(crate) const DB: &[u8] = include_bytes!(concat!(
@@ -549,6 +550,57 @@ r9IJmL6kDQ==
             let migrated = migrated.into_iter().next().unwrap();
             assert_eq!(migrated.conversation_id, CONVERSATION_ID);
             assert_eq!(migrated.message, MESSAGE);
+        });
+    }
+
+    /// V31 collapses pre-existing duplicate pending messages instead of failing the migration.
+    ///
+    /// Before V31 the table had no uniqueness constraint at all, and `MlsPendingMessage::save` was a
+    /// plain `INSERT`, so buffering the same message for the same conversation twice — the DS resending
+    /// it, or the same commit being processed twice — stored it twice. V31 derives the new primary key
+    /// by hashing exactly those two columns, so any such pair collides, and the backfill is a single
+    /// `INSERT ... SELECT`: one collision aborts the whole migration and leaves the database unopenable.
+    ///
+    /// Dropping the extra copy is the right outcome. The rows are byte-identical, so nothing is lost,
+    /// and post-V31 the entity treats a repeated save as a no-op for the same reason.
+    #[test]
+    fn v31_drops_duplicate_pending_messages_rather_than_failing() {
+        const CONVERSATION_ID: &[u8] = b"a conversation which buffered the same message twice";
+        const DUPLICATED_MESSAGE: &[u8] = b"a message buffered twice before the migration ran";
+        const DISTINCT_MESSAGE: &[u8] = b"a different message from the same conversation";
+
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let db = seed_then_migrate(path, &key, 30, |conn| {
+                // V7's foreign key is still in force at this version, so the parent row has to exist.
+                conn.execute(
+                    "INSERT INTO mls_pending_groups (id, state, cfg) VALUES (?, ?, ?)",
+                    (CONVERSATION_ID, b"group state", b"custom configuration"),
+                )
+                .expect("inserting the pending group the messages refer to");
+                for message in [DUPLICATED_MESSAGE, DUPLICATED_MESSAGE, DISTINCT_MESSAGE] {
+                    conn.execute(
+                        "INSERT INTO mls_pending_messages (id, message) VALUES (?, ?)",
+                        (CONVERSATION_ID, message),
+                    )
+                    .expect("the pre-V31 table has no uniqueness constraint, so this always succeeds");
+                }
+            })
+            .await;
+            let conn = db.conn().await;
+
+            let mut migrated = MlsPendingMessage::find_all_matching(&conn, ConversationIdRef::new(CONVERSATION_ID))
+                .expect("loading migrated pending messages");
+            migrated.sort_by(|a, b| a.message.cmp(&b.message));
+            let messages = migrated.iter().map(|m| m.message.as_slice()).collect::<Vec<_>>();
+            let mut expected = [DISTINCT_MESSAGE, DUPLICATED_MESSAGE];
+            expected.sort();
+            assert_eq!(
+                messages, expected,
+                "V31 must keep one copy of the duplicated message and the distinct one, and lose neither"
+            );
         });
     }
 
