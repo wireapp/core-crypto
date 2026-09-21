@@ -5,6 +5,8 @@ use core_crypto_keystore::Database;
 
 mod crypto_provider;
 mod error;
+#[cfg(test)]
+mod tests;
 
 pub(crate) use crypto_provider::CRYPTO;
 pub use crypto_provider::RustCrypto;

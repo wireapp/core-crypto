@@ -1,40 +1,33 @@
-#![allow(non_snake_case, dead_code, unused_macros, unused_imports)]
-
-use crate::mls_provider::{EntropySeed, MlsCryptoProvider};
-use getrandom::getrandom;
+use core_crypto_keystore::Database;
+use getrandom;
 pub(crate) use rstest::*;
 pub(crate) use rstest_reuse::{self, *};
+use tempfile::NamedTempFile;
+
+use crate::{CryptoProvider, mls_provider::EntropySeed};
 
 pub(crate) fn store_name() -> String {
-    use rand::Rng as _;
-    let mut rng = rand::thread_rng();
-    let name: String = (0..12)
-        .map(|_| rng.sample(rand::distributions::Alphanumeric) as char)
-        .collect();
-
-    #[cfg(target_os = "unknown")]
-    {
-        format!("corecrypto.test.{}.edb", name)
-    }
-
-    #[cfg(not(target_os = "unknown"))]
-    {
-        format!("./test.{name}.edb")
-    }
+    NamedTempFile::new()
+        .expect("can create tempfile")
+        .into_temp_path()
+        .keep()
+        .expect("can persist a tempfile")
+        .to_string_lossy()
+        .into()
 }
 
 #[fixture]
-pub(crate) async fn setup(#[default(false)] in_memory: bool) -> MlsCryptoProvider {
-    let store_name = store_name();
-    let key = core_crypto_keystore::DatabaseKey::generate();
+pub(crate) async fn setup(#[default(false)] in_memory: bool) -> CryptoProvider {
     let store = if !in_memory {
-        core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::Persistent(&store_name), &key).await
+        let store_name = store_name();
+        let key = core_crypto_keystore::DatabaseKey::generate();
+        Database::open(&store_name, &key).await
     } else {
-        core_crypto_keystore::Database::open(core_crypto_keystore::ConnectionType::InMemory, &key).await
+        Database::open_in_memory()
     }
     .unwrap();
 
-    MlsCryptoProvider::new(store)
+    CryptoProvider::new(store)
 }
 
 #[template]
@@ -43,19 +36,19 @@ pub(crate) async fn setup(#[default(false)] in_memory: bool) -> MlsCryptoProvide
     not(target_os = "unknown"),
     test_attr(macro_rules_attribute::apply(smol_macros::test))
 )]
-#[cfg_attr(target_os = "unknown", test_attr(wasm_bindgen_test))]
+
 async fn use_provider(
     #[from(setup)]
     #[with(true)]
     #[future]
-    backend: MlsCryptoProvider,
+    backend: CryptoProvider,
 ) {
 }
 
 #[fixture]
 pub fn entropy() -> EntropySeed {
     let mut seed: EntropySeed = Default::default();
-    getrandom(&mut seed).unwrap();
+    getrandom::fill(&mut seed).unwrap();
     seed
 }
 
@@ -165,18 +158,12 @@ pub fn entropy() -> EntropySeed {
     not(target_os = "unknown"),
     test_attr(macro_rules_attribute::apply(smol_macros::test))
 )]
-#[cfg_attr(target_os = "unknown", test_attr(wasm_bindgen_test))]
+
 pub fn all_storage_types_and_ciphersuites(
     #[case]
     #[future]
-    backend: MlsCryptoProvider,
+    backend: CryptoProvider,
     #[case] cipher_suite: openmls::prelude::Ciphersuite,
     #[case] entropy_seed: Option<EntropySeed>,
 ) {
-}
-
-#[inline(always)]
-pub(crate) async fn teardown(backend: MlsCryptoProvider) {
-    let store = backend.unwrap_keystore();
-    store.wipe().await.unwrap();
 }
