@@ -31,7 +31,7 @@ CREATE TABLE mls_pending_messages_new (
     message BLOB NOT NULL
 );
 
-INSERT INTO mls_pending_messages_new (
+INSERT OR IGNORE INTO mls_pending_messages_new (
     hash_sha256,
     conversation_id,
     message

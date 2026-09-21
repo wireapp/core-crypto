@@ -36,28 +36,32 @@ pub(super) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationT
         MigrationTarget::Version(target_argument) => (latest_migration_version).min(target_argument as i32),
     };
 
-    // This version is known to have an additional newline in some releases, but the actual migration work is
-    // identical. Ensure Refinery sees the checksum of the embedded migration when it validates the history.
-    const BROKEN_MIGRATION_FILE_VERSION: i32 = 16;
-    let expected_checksum = runner
-        .get_migrations()
-        .iter()
-        .find(|migration| migration.version() == BROKEN_MIGRATION_FILE_VERSION)
-        .expect("V16 is embedded")
-        .checksum()
-        .to_string();
-
     // Adjust the schema history only if it already exists.
     let has_refinery_schema_history = conn.query_row(
         "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'refinery_schema_history')",
         [],
         |row| row.get::<_, bool>(0),
     )?;
+
+    // These versions are known to have differences which affect the checksum but not the database shape when the
+    // migration has been completed.
+    // Ensure Refinery sees the checksum of the embedded migration when it validates the history.
+    const BROKEN_MIGRATION_FILE_VERSIONS: &[i32] = &[16, 31];
     if has_refinery_schema_history {
-        conn.execute(
-            "UPDATE refinery_schema_history SET checksum = ?1 WHERE version = ?2",
-            (expected_checksum, BROKEN_MIGRATION_FILE_VERSION),
-        )?;
+        for &version in BROKEN_MIGRATION_FILE_VERSIONS {
+            let expected_checksum = runner
+                .get_migrations()
+                .iter()
+                .find(|migration| migration.version() == version)
+                .expect("relevant versions are embedded")
+                .checksum()
+                .to_string();
+
+            conn.execute(
+                "UPDATE refinery_schema_history SET checksum = ?1 WHERE version = ?2",
+                (expected_checksum, version),
+            )?;
+        }
     }
 
     for version in 1..=target_version {
@@ -159,10 +163,10 @@ pub(crate) mod test {
 
     use crate::{
         Sha256Hash,
-        ancillary::ConversationIdRef,
         connection::{Database, DatabaseKey, migrate_db_key_type_to_bytes, migrations::MigrationTarget},
         entities::{
-            MlsPendingMessage, StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle,
+            ConversationIdRef, MlsPendingMessage, StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey,
+            StoredPskBundle,
         },
         migrations::StoredCredentialV36,
         traits::{Entity, EntityGetBorrowed as _, PrimaryKey as _, SearchableEntity as _},
