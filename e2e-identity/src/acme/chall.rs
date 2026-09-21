@@ -137,6 +137,8 @@ pub enum AcmeChallengeStatus {
     Invalid,
 }
 
+/// See [RFC 8555, section 9.7.8](https://www.rfc-editor.org/info/rfc8555/#section-9.7.8) and
+/// [RFC 8737](https://www.rfc-editor.org/info/rfc8737).
 #[derive(Debug, Copy, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum AcmeChallengeType {
     #[serde(rename = "http-01")]
@@ -145,10 +147,10 @@ pub enum AcmeChallengeType {
     Dns01,
     #[serde(rename = "tls-alpn-01")]
     TlsAlpn01,
-    /// Custom type for clientId challenge
+    /// DPoP challenge, specific to Wire (validates client ID)
     #[serde(rename = "wire-dpop-01")]
     WireDpop01,
-    /// Custom type for handle + display name challenge
+    /// OIDC challenge, specific to Wire (validates handle and display name)
     #[serde(rename = "wire-oidc-01")]
     WireOidc01,
 }
