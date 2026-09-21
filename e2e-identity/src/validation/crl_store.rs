@@ -50,8 +50,8 @@ impl CrlStore {
             return Ok(());
         }
 
+        let index = crl_info.len();
         crl_info.push(info);
-        let index = crl_info.len() - 1;
 
         let info = crl_info.last().expect("fine as we just inserted the data above");
         if let Some(dp) = get_dp_from_crl(crl) {
