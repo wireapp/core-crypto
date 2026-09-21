@@ -7441,7 +7441,6 @@ dependencies = [
  "tokio",
  "url",
  "uuid",
- "wasm-bindgen-test",
  "web-time",
  "x509-cert",
  "x509-ocsp",

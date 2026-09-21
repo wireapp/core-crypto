@@ -65,7 +65,6 @@ rusty-jwt-tools = { workspace = true, features = ["test-utils", "rsa"] }
 url.workspace = true
 itertools.workspace = true
 uuid.workspace = true
-wasm-bindgen-test.workspace = true
 hex.workspace = true
 shlex = "2"
 
