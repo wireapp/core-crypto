@@ -27,7 +27,7 @@ pub enum Error {
     DerError(#[from] x509_cert::der::Error),
     /// PEM de/serialization error
     #[error("PEM en/decoding error: {0}")]
-    PemError(x509_cert::der::pem::Error),
+    PemError(#[from] x509_cert::der::pem::Error),
     /// Poisoned lock error
     #[error("A lock has been poisoned and cannot be recovered from.")]
     LockPoisonError,
@@ -46,12 +46,6 @@ pub enum Error {
     /// Implementation error
     #[error("Implementation error")]
     ImplementationError,
-}
-
-impl From<x509_cert::der::pem::Error> for Error {
-    fn from(value: x509_cert::der::pem::Error) -> Self {
-        Error::PemError(value)
-    }
 }
 
 impl From<certval::Error> for Error {
