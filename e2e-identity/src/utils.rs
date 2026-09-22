@@ -10,10 +10,7 @@ use rusty_jwt_tools::{
 use spki::AlgorithmIdentifierOwned;
 use x509_cert::ext::pkix::AuthorityKeyIdentifier;
 
-use crate::{
-    error::E2eIdentityResult,
-    validation::{RustyX509CheckError, RustyX509CheckResult},
-};
+use crate::{error::E2eIdentityResult, validation};
 
 pub fn generate_key(sign_alg: JwsAlgorithm) -> E2eIdentityResult<Pem> {
     let pem = match sign_alg {
@@ -85,17 +82,15 @@ pub(crate) fn jws_alg_to_x509_identifier(alg: JwsAlgorithm) -> AlgorithmIdentifi
     }
 }
 
-pub(crate) fn extract_ski_aki_from_cert(
-    cert: &x509_cert::Certificate,
-) -> RustyX509CheckResult<(String, Option<String>)> {
+pub(crate) fn extract_ski_aki_from_cert(cert: &x509_cert::Certificate) -> validation::Result<(String, Option<String>)> {
     let cert = certval::PDVCertificate::try_from(cert.clone())?;
 
     let ski = cert
         .get_extension(&const_oid::db::rfc5912::ID_CE_SUBJECT_KEY_IDENTIFIER)?
-        .ok_or(RustyX509CheckError::MissingSki)?;
+        .ok_or(validation::Error::MissingSki)?;
     let ski = match ski {
         certval::PDVExtension::SubjectKeyIdentifier(ski) => hex::encode(ski.0.as_bytes()),
-        _ => return Err(RustyX509CheckError::ImplementationError),
+        _ => return Err(validation::Error::ImplementationError),
     };
 
     let aki = cert

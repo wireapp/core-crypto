@@ -15,5 +15,5 @@ pub enum E2eIdentityError {
     #[error(transparent)]
     PkiEnvError(#[from] crate::pki_env::Error),
     #[error(transparent)]
-    X509Error(#[from] crate::validation::RustyX509CheckError),
+    ValidationError(#[from] crate::validation::Error),
 }

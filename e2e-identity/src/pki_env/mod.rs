@@ -26,10 +26,8 @@ use x509_cert::{
 
 use crate::{
     pki_env::hooks::PkiEnvironmentHooks,
-    validation::{
-        RustyX509CheckError, RustyX509CheckResult, extract_crl_uris, now, prepare_environment, validate_cert,
-        validate_trust_anchor_cert,
-    },
+    validation,
+    validation::{extract_crl_uris, now, prepare_environment, validate_cert, validate_trust_anchor_cert},
 };
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -45,7 +43,7 @@ pub enum Error {
     #[error(transparent)]
     HooksError(#[from] hooks::PkiEnvironmentHooksError),
     #[error(transparent)]
-    X509Error(#[from] RustyX509CheckError),
+    Validation(#[from] validation::Error),
     #[error(transparent)]
     UrlError(#[from] url::ParseError),
     #[error(transparent)]
@@ -280,7 +278,7 @@ impl PkiEnvironment {
     /// defined by the set of trust anchors and intermediate certificates
     /// contained in this PKI environment. Revocation check is performed
     /// and time of interest is set to the time of the call.
-    pub async fn validate_cert(&self, cert: &x509_cert::Certificate) -> RustyX509CheckResult<()> {
+    pub async fn validate_cert(&self, cert: &x509_cert::Certificate) -> validation::Result<()> {
         validate_cert(&*self.env.lock().await, cert, true)
     }
 
@@ -302,15 +300,15 @@ impl PkiEnvironment {
         };
 
         match validate_cert(&*self.env.lock().await, &cert, true) {
-            Err(RustyX509CheckError::CertValError(CertvalError::PathValidation(
+            Err(validation::Error::CertValError(CertvalError::PathValidation(
                 PathValidationStatus::CertificateRevoked
                 | PathValidationStatus::CertificateRevokedEndEntity
                 | PathValidationStatus::CertificateRevokedIntermediateCa,
             ))) => CredentialAuthenticationStatus::Revoked,
-            Err(RustyX509CheckError::CertValError(CertvalError::PathValidation(
+            Err(validation::Error::CertValError(CertvalError::PathValidation(
                 PathValidationStatus::InvalidNotAfterDate,
             ))) => CredentialAuthenticationStatus::Expired,
-            Err(RustyX509CheckError::CertValError(CertvalError::PathValidation(_))) => {
+            Err(validation::Error::CertValError(CertvalError::PathValidation(_))) => {
                 CredentialAuthenticationStatus::Invalid
             }
             Err(_) => CredentialAuthenticationStatus::Unknown,

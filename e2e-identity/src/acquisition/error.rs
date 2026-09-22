@@ -61,9 +61,9 @@ pub enum CertificateError {
     /// Advertised public key is not supported
     #[error("Advertised public key is not supported")]
     UnsupportedPublicKey,
-    /// X509Check error
-    #[error("transparent")]
-    X509Check(#[from] crate::validation::RustyX509CheckError),
+    /// Validation error
+    #[error(transparent)]
+    Validation(#[from] crate::validation::Error),
     /// DER error
     #[error(transparent)]
     Der(#[from] spki::der::Error),

@@ -11,7 +11,7 @@ use const_oid::db::rfc5912::ID_CE_AUTHORITY_KEY_IDENTIFIER;
 use x509_cert::{certificate::Raw, crl::CertificateList, der::Encode};
 
 use super::{
-    RustyX509CheckError, RustyX509CheckResult,
+    Error, Result,
     misc::{check_crl_valid_at_toi, get_dp_from_crl, get_dps_from_cert},
 };
 
@@ -45,7 +45,7 @@ impl CrlStore {
         crl: &CertificateList<Raw>,
         info: CrlInfo,
         crl_info: &mut MutexGuard<Vec<CrlInfo>>,
-    ) -> RustyX509CheckResult<()> {
+    ) -> Result<()> {
         if crl_info.contains(&info) {
             return Ok(());
         }
@@ -57,7 +57,7 @@ impl CrlStore {
         if let Some(dp) = get_dp_from_crl(crl) {
             self.dps
                 .lock()
-                .map_err(|_| RustyX509CheckError::LockPoisonError)?
+                .map_err(|_| Error::LockPoisonError)?
                 .entry(dp)
                 .or_default()
                 .push(index);
@@ -65,7 +65,7 @@ impl CrlStore {
             if let Some(akid) = info.skid.clone() {
                 self.sk_ids
                     .lock()
-                    .map_err(|_| RustyX509CheckError::LockPoisonError)?
+                    .map_err(|_| Error::LockPoisonError)?
                     .entry(akid)
                     .or_default()
                     .push(index);
@@ -75,7 +75,7 @@ impl CrlStore {
                 let issuer_name = name_to_string(&crl.tbs_cert_list.issuer);
                 self.issuers
                     .lock()
-                    .map_err(|_| RustyX509CheckError::LockPoisonError)?
+                    .map_err(|_| Error::LockPoisonError)?
                     .entry(issuer_name)
                     .or_default()
                     .push(index);
@@ -85,9 +85,9 @@ impl CrlStore {
         Ok(())
     }
 
-    pub(crate) fn index_crls(&self, toi: TimeOfInterest) -> RustyX509CheckResult<()> {
-        let crls = self.crls.lock().map_err(|_| RustyX509CheckError::LockPoisonError)?;
-        let mut crl_info = self.crl_info.lock().map_err(|_| RustyX509CheckError::LockPoisonError)?;
+    pub(crate) fn index_crls(&self, toi: TimeOfInterest) -> Result<()> {
+        let crls = self.crls.lock().map_err(|_| Error::LockPoisonError)?;
+        let mut crl_info = self.crl_info.lock().map_err(|_| Error::LockPoisonError)?;
         for crl in crls.iter() {
             match get_crl_info(crl) {
                 Ok(info) if check_crl_valid_at_toi(toi, crl) => {

@@ -21,7 +21,7 @@ use cache::RevocationCache;
 use crl_store::CrlStore;
 
 #[derive(Debug, thiserror::Error)]
-pub enum RustyX509CheckError {
+pub enum Error {
     /// Failed mapping a DER certificate
     #[error(transparent)]
     DerError(#[from] x509_cert::der::Error),
@@ -48,19 +48,19 @@ pub enum RustyX509CheckError {
     ImplementationError,
 }
 
-impl From<x509_cert::der::pem::Error> for RustyX509CheckError {
+impl From<x509_cert::der::pem::Error> for Error {
     fn from(value: x509_cert::der::pem::Error) -> Self {
-        RustyX509CheckError::PemError(value)
+        Error::PemError(value)
     }
 }
 
-impl From<certval::Error> for RustyX509CheckError {
+impl From<certval::Error> for Error {
     fn from(value: certval::Error) -> Self {
-        RustyX509CheckError::CertValError(value)
+        Error::CertValError(value)
     }
 }
 
-pub type RustyX509CheckResult<T> = Result<T, RustyX509CheckError>;
+pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IdentityStatus {
@@ -75,7 +75,7 @@ pub enum IdentityStatus {
 impl IdentityStatus {
     pub async fn from_cert(cert: &x509_cert::Certificate, env: &crate::pki_env::PkiEnvironment) -> Self {
         match env.validate_cert(cert).await {
-            Err(RustyX509CheckError::CertValError(certval::Error::PathValidation(e))) => match e {
+            Err(Error::CertValError(certval::Error::PathValidation(e))) => match e {
                 PathValidationStatus::InvalidNotAfterDate => IdentityStatus::Expired,
                 PathValidationStatus::CertificateRevoked
                 | PathValidationStatus::CertificateRevokedEndEntity
@@ -89,9 +89,7 @@ impl IdentityStatus {
 }
 
 /// Extracts the CRL Distribution points that are FullName URIs from the Certificate
-pub fn extract_crl_uris(
-    cert: &x509_cert::Certificate,
-) -> RustyX509CheckResult<Option<std::collections::HashSet<String>>> {
+pub fn extract_crl_uris(cert: &x509_cert::Certificate) -> Result<Option<std::collections::HashSet<String>>> {
     use certval::validator::{PDVCertificate, PDVExtension};
     use x509_cert::ext::pkix::name::{DistributionPointName, GeneralName};
 
@@ -119,26 +117,24 @@ pub fn extract_crl_uris(
         }))
 }
 
-fn check_cpr(cpr: CertificationPathResults) -> RustyX509CheckResult<()> {
+fn check_cpr(cpr: CertificationPathResults) -> Result<()> {
     if let Some(validation_status) = cpr.get_validation_status() {
         match validation_status {
             certval::PathValidationStatus::Valid => Ok(()),
             // No CRL is available, this is fine
             certval::PathValidationStatus::RevocationStatusNotDetermined
             | certval::PathValidationStatus::RevocationStatusNotAvailable => Ok(()),
-            validation_status => Err(RustyX509CheckError::CertValError(certval::Error::PathValidation(
-                validation_status,
-            ))),
+            validation_status => Err(Error::CertValError(certval::Error::PathValidation(validation_status))),
         }
     } else {
-        Err(RustyX509CheckError::CannotDetermineVerificationStatus)
+        Err(Error::CannotDetermineVerificationStatus)
     }
 }
 
-pub(crate) fn now() -> RustyX509CheckResult<u64> {
+pub(crate) fn now() -> Result<u64> {
     Ok(web_time::SystemTime::now()
         .duration_since(web_time::SystemTime::UNIX_EPOCH)
-        .map_err(|_| RustyX509CheckError::CannotDetermineCurrentTime)?
+        .map_err(|_| Error::CannotDetermineCurrentTime)?
         .as_secs())
 }
 
@@ -147,7 +143,7 @@ pub(crate) fn prepare_environment(
     trust_roots: &[x509_cert::anchor::TrustAnchorChoice],
     intermediates: &[x509_cert::Certificate],
     crls: &[x509_cert::crl::CertificateList<Raw>],
-) -> RustyX509CheckResult<certval::environment::PkiEnvironment> {
+) -> Result<certval::environment::PkiEnvironment> {
     let toi = TimeOfInterest::from_unix_secs(now()?)?;
 
     let mut cps = CertificationPathSettings::new();
@@ -196,7 +192,7 @@ pub(crate) fn prepare_environment(
 pub(crate) fn validate_trust_anchor_cert(
     pe: &certval::environment::PkiEnvironment,
     cert: &x509_cert::Certificate,
-) -> RustyX509CheckResult<()> {
+) -> Result<()> {
     let toi = TimeOfInterest::from_unix_secs(now()?)?;
 
     let mut cps = CertificationPathSettings::default();
@@ -220,7 +216,7 @@ pub(crate) fn validate_cert(
     pe: &certval::environment::PkiEnvironment,
     end_identity_cert: &x509_cert::Certificate,
     perform_revocation_check: bool,
-) -> RustyX509CheckResult<()> {
+) -> Result<()> {
     let toi = TimeOfInterest::from_unix_secs(now()?)?;
 
     let mut cps = CertificationPathSettings::default();
@@ -235,7 +231,7 @@ pub(crate) fn validate_cert(
     pe.get_paths_for_target(&end_identity_cert, &mut paths, 0, toi)?;
 
     if paths.is_empty() {
-        return Err(RustyX509CheckError::CertValError(certval::Error::PathValidation(
+        return Err(Error::CertValError(certval::Error::PathValidation(
             certval::PathValidationStatus::NoPathsFound,
         )));
     }
@@ -272,7 +268,7 @@ pub(crate) fn validate_cert(
 pub(crate) fn validate_crl(
     pe: &certval::environment::PkiEnvironment,
     crl_raw: &[u8],
-) -> RustyX509CheckResult<x509_cert::crl::CertificateList<Raw>> {
+) -> Result<x509_cert::crl::CertificateList<Raw>> {
     let crl = x509_cert::crl::CertificateList::from_der(crl_raw)?;
 
     let mut spki_list = vec![];
@@ -324,7 +320,7 @@ pub(crate) fn validate_crl(
     if any_spki_verifies {
         Ok(crl)
     } else {
-        Err(RustyX509CheckError::CertValError(certval::Error::PathValidation(
+        Err(Error::CertValError(certval::Error::PathValidation(
             certval::PathValidationStatus::SignatureVerificationFailure,
         )))
     }
