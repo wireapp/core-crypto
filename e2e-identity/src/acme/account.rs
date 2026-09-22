@@ -1,36 +1,34 @@
 use rusty_jwt_tools::prelude::{JwsAlgorithm, Pem};
 
-use crate::acme::{AcmeDirectory, AcmeJws, RustyAcme, RustyAcmeError, RustyAcmeResult};
+use crate::acme::{AcmeDirectory, AcmeJws, RustyAcmeError, RustyAcmeResult};
 
-impl RustyAcme {
-    /// 5. Create a new acme account see [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3)
-    pub(crate) fn new_account_request(
-        directory: &AcmeDirectory,
-        alg: JwsAlgorithm,
-        kp: &Pem,
-        previous_nonce: String,
-    ) -> RustyAcmeResult<AcmeJws> {
-        const DEFAULT_CONTACT: &str = "anonymous@anonymous.invalid";
+/// 5. Create a new acme account see [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3)
+pub(crate) fn new_account_request(
+    directory: &AcmeDirectory,
+    alg: JwsAlgorithm,
+    kp: &Pem,
+    previous_nonce: String,
+) -> RustyAcmeResult<AcmeJws> {
+    const DEFAULT_CONTACT: &str = "anonymous@anonymous.invalid";
 
-        // explicitly set an invalid email so that if someday it is required to set one we do not
-        // set it by accident
-        let contact = vec![DEFAULT_CONTACT.to_string()];
-        let payload = AcmeAccountRequest {
-            terms_of_service_agreed: Some(true),
-            contact,
-            only_return_existing: Some(false),
-        };
-        let req = AcmeJws::new(alg, previous_nonce, &directory.new_account, None, Some(payload), kp)?;
-        Ok(req)
-    }
+    // explicitly set an invalid email so that if someday it is required to set one we do not
+    // set it by accident
+    let contact = vec![DEFAULT_CONTACT.to_string()];
+    let payload = AcmeAccountRequest {
+        terms_of_service_agreed: Some(true),
+        contact,
+        only_return_existing: Some(false),
+    };
+    let req = AcmeJws::new(alg, previous_nonce, &directory.new_account, None, Some(payload), kp)?;
+    Ok(req)
+}
 
-    /// 6. parse the response from `POST /acme/new-account` see [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3)
-    pub(crate) fn new_account_response(response: serde_json::Value) -> RustyAcmeResult<AcmeAccount> {
-        let account = serde_json::from_value::<AcmeAccount>(response)
-            .map_err(|_| RustyAcmeError::SmallstepImplementationError("Invalid account response"))?;
-        account.verify()?;
-        Ok(account)
-    }
+/// 6. parse the response from `POST /acme/new-account` see [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3)
+pub(crate) fn new_account_response(response: serde_json::Value) -> RustyAcmeResult<AcmeAccount> {
+    let account = serde_json::from_value::<AcmeAccount>(response)
+        .map_err(|_| RustyAcmeError::SmallstepImplementationError("Invalid account response"))?;
+    account.verify()?;
+    Ok(account)
 }
 
 #[derive(Debug, thiserror::Error)]
