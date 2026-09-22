@@ -86,7 +86,7 @@ fn csr_subject(identifier: &CanonicalIdentifier) -> Result<x509_cert::name::Dist
 
     // TODO: temporarily using a custom OIDC for carrying the display name without having it listed as a DNS SAN.
     // reusing LDAP's OID for display_name see http://oid-info.com/get/2.16.840.1.113730.3.1.241
-    let dn_display_name_oid = const_oid::ObjectIdentifier::new("2.16.840.1.113730.3.1.241")?;
+    let dn_display_name_oid = const_oid::db::rfc2798::DISPLAY_NAME;
     // let dn_display_name_oid = asn1_rs::oid!(2.16.840 .1 .113730 .3 .1 .241).as_bytes().try_into()?;
     let dn_display_name_value =
         x509_cert::attr::AttributeValue::new(x509_cert::der::Tag::Utf8String, identifier.display_name.as_bytes())?;
