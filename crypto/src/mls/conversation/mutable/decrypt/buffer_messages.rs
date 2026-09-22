@@ -453,6 +453,87 @@ mod tests {
         );
     }
 
+    /// A buffered commit which removes us must still wipe the conversation.
+    ///
+    /// The eviction can arrive out of order: the DS hands us the commit which removes us before
+    /// the earlier commit we need in order to process it, so the removal is buffered and only
+    /// replayed once that earlier commit merges. The replay is what actually evicts us, so the
+    /// earlier commit's decryption result is the only place the caller can learn about it, and it
+    /// therefore has to report us as inactive. Otherwise nothing wipes the conversation: the
+    /// keystore keeps a group we've been evicted from, every subsequent operation on it fails
+    /// inside openmls with `UseAfterEviction`, and the client is never told it was removed.
+    #[apply(all_cred_cipher)]
+    async fn buffered_commit_removing_self_must_wipe_conversation(case: TestContext) {
+        let [mut alice, bob, charlie] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
+        let conversation_id = conversation.id().clone();
+
+        // Bob commits at epoch 1, advancing the group to epoch 2. Charlie hears about it;
+        // Alice does not, so she stays at epoch 1.
+        let commit_guard = conversation.acting_as(&bob).await.update().await;
+        let first_commit = commit_guard.message().to_bytes().unwrap();
+        let conversation = commit_guard.notify_member(&charlie).await.finish();
+
+        // Bob then removes Alice, at epoch 2.
+        let commit_guard = conversation.acting_as(&bob).await.remove(&alice).await;
+        let removal_commit = commit_guard.message().to_bytes().unwrap();
+        let conversation = commit_guard
+            .notify_member(&charlie)
+            .await
+            .process_member_changes()
+            .await
+            .finish();
+
+        // The DS delivers the removal to Alice first. She's still at epoch 1, so she buffers it.
+        let decrypt = conversation
+            .guard_of(&alice)
+            .await
+            .decrypt_message(&removal_commit)
+            .await;
+        assert!(matches!(
+            decrypt.unwrap_err(),
+            Error::BufferedFutureMessage { message_epoch: 2 }
+        ));
+        assert_eq!(
+            alice.transaction.count_entities().await.pending_messages,
+            1,
+            "the commit Alice could not yet apply must have been buffered"
+        );
+
+        // Commit Alice's transaction, so the buffered commit is durable, as it would be
+        // between two real client calls.
+        drop(conversation);
+        alice.commit_transaction().await;
+
+        // Only now does Alice receive the commit which unblocks the buffered removal.
+        let decrypted = alice
+            .transaction
+            .conversation(&conversation_id)
+            .await
+            .unwrap()
+            .decrypt_message(&first_commit)
+            .await
+            .expect("the earlier commit must apply")
+            .into_commit()
+            .unwrap();
+        assert!(
+            !decrypted.is_active,
+            "replaying the buffered commit removed Alice, so she is no longer an active member"
+        );
+
+        alice.commit_transaction().await;
+
+        let counts = alice.transaction.count_entities().await;
+        assert_eq!(
+            counts.group, 0,
+            "processing her own removal must have wiped the conversation"
+        );
+        assert_eq!(
+            counts.pending_messages, 0,
+            "the buffered commit belongs to a conversation which no longer exists"
+        );
+    }
+
     /// Buffered application messages are restored as far as the out-of-order tolerance allows.
     ///
     /// The DS doesn't guarantee delivery order, so application messages for a new epoch can be
