@@ -42,7 +42,16 @@ fn uri(value: &str) -> Result<GeneralName> {
 }
 
 fn generate_csr(alg: JwsAlgorithm, identifier: CanonicalIdentifier, kp: &Pem) -> Result<String> {
-    let subject = x509_cert::name::Name::hazmat_from_rdn_sequence(csr_subject(&identifier)?);
+    // TODO: temporarily using a custom OID for carrying the display name without having it listed as a DNS SAN.
+    // reusing LDAP's OID for display_name see https://www.rfc-editor.org/info/rfc2798/#section-2.3
+    let subject = format!(
+        "{}={},O={}",
+        const_oid::db::rfc2798::DISPLAY_NAME,
+        identifier.display_name,
+        identifier.domain
+    );
+    let subject = x509_cert::name::Name::from_str(&subject)?;
+
     let mut builder = x509_cert::builder::RequestBuilder::new(subject)?;
 
     builder.add_extension(&SubjectAltName(vec![
@@ -73,32 +82,6 @@ fn generate_csr(alg: JwsAlgorithm, identifier: CanonicalIdentifier, kp: &Pem) ->
     let csr = csr.to_der()?;
     let csr = base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(csr);
     Ok(csr)
-}
-
-fn csr_subject(identifier: &CanonicalIdentifier) -> Result<x509_cert::name::DistinguishedName> {
-    let dn_domain_oid = const_oid::db::rfc4519::ORGANIZATION_NAME;
-    let dn_domain_value =
-        x509_cert::attr::AttributeValue::new(x509_cert::der::Tag::Utf8String, identifier.domain.as_bytes())?;
-    let dn_domain = x509_cert::attr::AttributeTypeAndValue {
-        oid: dn_domain_oid,
-        value: dn_domain_value,
-    };
-
-    // TODO: temporarily using a custom OIDC for carrying the display name without having it listed as a DNS SAN.
-    // reusing LDAP's OID for display_name see http://oid-info.com/get/2.16.840.1.113730.3.1.241
-    let dn_display_name_oid = const_oid::db::rfc2798::DISPLAY_NAME;
-    // let dn_display_name_oid = asn1_rs::oid!(2.16.840 .1 .113730 .3 .1 .241).as_bytes().try_into()?;
-    let dn_display_name_value =
-        x509_cert::attr::AttributeValue::new(x509_cert::der::Tag::Utf8String, identifier.display_name.as_bytes())?;
-    let dn_display_name = x509_cert::attr::AttributeTypeAndValue {
-        oid: dn_display_name_oid,
-        value: dn_display_name_value,
-    };
-
-    let domain = x509_cert::name::RelativeDistinguishedName::try_from(vec![dn_domain])?;
-    let display_name = x509_cert::name::RelativeDistinguishedName::try_from(vec![dn_display_name])?;
-    let subject = x509_cert::name::DistinguishedName::from(vec![domain, display_name]);
-    Ok(subject)
 }
 
 /// see [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4)
