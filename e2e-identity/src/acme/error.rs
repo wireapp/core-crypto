@@ -19,6 +19,9 @@ pub enum Error {
     /// Error while parsing a PEM document
     #[error(transparent)]
     Pem(#[from] pem::PemError),
+    /// Pkcs8 error
+    #[error(transparent)]
+    Pkcs8(#[from] ed25519_dalek::pkcs8::Error),
     /// Error while handling a JWT
     #[error(transparent)]
     RawJwt(#[from] jwt_simple::Error),
