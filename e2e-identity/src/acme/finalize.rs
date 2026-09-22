@@ -171,8 +171,8 @@ fn csr_signature(
 
     let signature = match alg {
         JwsAlgorithm::Ed25519 => {
-            let kp_bytes = ed25519_dalek::pkcs8::KeypairBytes::from_str(kp.as_ref()).unwrap();
-            let signing_key = ed25519_dalek::SigningKey::try_from(kp_bytes).unwrap();
+            let kp_bytes = ed25519_dalek::pkcs8::KeypairBytes::from_str(kp.as_ref())?;
+            let signing_key = ed25519_dalek::SigningKey::try_from(kp_bytes)?;
             let signature = signing_key.sign(&cert_data);
             signature.to_bitstring()?
         }
