@@ -35,7 +35,7 @@
 <a href=#35 id=35 data-nosnippet>35</a>    <span class="prelude-val">Ok</span>(pem.into())
 <a href=#36 id=36 data-nosnippet>36</a>}
 <a href=#37 id=37 data-nosnippet>37</a>
-<a href=#38 id=38 data-nosnippet>38</a><span class="kw">pub fn </span>public_jwk_from_pem_keypair(alg: JwsAlgorithm, keypair: <span class="kw-2">&amp;</span>Pem) -&gt; E2eIdentityResult&lt;Jwk&gt; {
+<a href=#38 id=38 data-nosnippet>38</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>public_jwk_from_pem_keypair(alg: JwsAlgorithm, keypair: <span class="kw-2">&amp;</span>Pem) -&gt; E2eIdentityResult&lt;Jwk&gt; {
 <a href=#39 id=39 data-nosnippet>39</a>    <span class="kw">let </span>jwk = <span class="kw">match </span>alg {
 <a href=#40 id=40 data-nosnippet>40</a>        JwsAlgorithm::P256 =&gt; ES256KeyPair::from_pem(keypair)<span class="question-mark">?</span>.public_key().try_into_jwk()<span class="question-mark">?</span>,
 <a href=#41 id=41 data-nosnippet>41</a>        JwsAlgorithm::P384 =&gt; ES384KeyPair::from_pem(keypair)<span class="question-mark">?</span>.public_key().try_into_jwk()<span class="question-mark">?</span>,
