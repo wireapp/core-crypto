@@ -54,7 +54,7 @@ pub(crate) fn new_order_response(response: serde_json::Value) -> Result<AcmeOrde
     match order.status {
         AcmeOrderStatus::Pending => {}
         AcmeOrderStatus::Processing | AcmeOrderStatus::Valid | AcmeOrderStatus::Ready => {
-            return Err(Error::ClientImplementationError(
+            return Err(Error::ClientImplementation(
                 "an order is not supposed to be 'processing | valid | ready' at this point. \
                     You should only be using this method after account creation, not after finalize",
             ));
@@ -177,7 +177,7 @@ impl AcmeOrder {
                 _ => None,
             })
             .transpose()?
-            .ok_or(Error::OrderError(AcmeOrderError::WrongIdentifiers))?
+            .ok_or(Error::Order(AcmeOrderError::WrongIdentifiers))?
             .try_into()
     }
 }
@@ -248,7 +248,7 @@ mod tests {
             };
             assert!(matches!(
                 order.verify().unwrap_err(),
-                Error::OrderError(AcmeOrderError::NotYetValid)
+                Error::Order(AcmeOrderError::NotYetValid)
             ));
         }
 
@@ -261,7 +261,7 @@ mod tests {
             };
             assert!(matches!(
                 order.verify().unwrap_err(),
-                Error::OrderError(AcmeOrderError::Expired)
+                Error::Order(AcmeOrderError::Expired)
             ));
         }
 
@@ -274,7 +274,7 @@ mod tests {
             };
             assert!(matches!(
                 order.verify().unwrap_err(),
-                Error::OrderError(AcmeOrderError::Expired)
+                Error::Order(AcmeOrderError::Expired)
             ));
         }
 
@@ -296,7 +296,7 @@ mod tests {
             };
             assert!(matches!(
                 order.verify().unwrap_err(),
-                Error::OrderError(AcmeOrderError::WrongIdentifiers)
+                Error::Order(AcmeOrderError::WrongIdentifiers)
             ));
 
             // homogeneous identifiers
@@ -306,7 +306,7 @@ mod tests {
             };
             assert!(matches!(
                 order.verify().unwrap_err(),
-                Error::OrderError(AcmeOrderError::WrongIdentifiers)
+                Error::Order(AcmeOrderError::WrongIdentifiers)
             ));
         }
     }
@@ -333,7 +333,7 @@ mod tests {
             let order = serde_json::to_value(order).unwrap();
             assert!(matches!(
                 new_order_response(order).unwrap_err(),
-                Error::ClientImplementationError(_)
+                Error::ClientImplementation(_)
             ));
 
             let order = AcmeOrder {
@@ -343,7 +343,7 @@ mod tests {
             let order = serde_json::to_value(order).unwrap();
             assert!(matches!(
                 new_order_response(order).unwrap_err(),
-                Error::ClientImplementationError(_)
+                Error::ClientImplementation(_)
             ));
 
             let order = AcmeOrder {
@@ -353,7 +353,7 @@ mod tests {
             let order = serde_json::to_value(order).unwrap();
             assert!(matches!(
                 new_order_response(order).unwrap_err(),
-                Error::ClientImplementationError(_)
+                Error::ClientImplementation(_)
             ));
         }
 
@@ -366,7 +366,7 @@ mod tests {
             let order = serde_json::to_value(order).unwrap();
             assert!(matches!(
                 new_order_response(order).unwrap_err(),
-                Error::OrderError(AcmeOrderError::Invalid)
+                Error::Order(AcmeOrderError::Invalid)
             ));
         }
     }

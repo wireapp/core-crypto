@@ -35,7 +35,7 @@ pub(crate) fn new_authz_response(response: serde_json::Value) -> Result<AcmeAuth
         AuthzStatus::Deactivated => return Err(AcmeAuthzError::Deactivated)?,
         AuthzStatus::Expired => return Err(AcmeAuthzError::Expired)?,
         AuthzStatus::Valid => {
-            return Err(Error::ClientImplementationError(
+            return Err(Error::ClientImplementation(
                 "an authorization is not supposed to be valid at this point. \
                     You should only use this method to parse the response of an authorization creation.",
             ));
@@ -173,7 +173,7 @@ mod tests {
             };
             assert!(matches!(
                 order.verify().unwrap_err(),
-                Error::AuthzError(AcmeAuthzError::Expired)
+                Error::Authz(AcmeAuthzError::Expired)
             ));
         }
 
@@ -188,7 +188,7 @@ mod tests {
             };
             assert!(matches!(
                 order.verify().unwrap_err(),
-                Error::AuthzError(AcmeAuthzError::InvalidChallengeType)
+                Error::Authz(AcmeAuthzError::InvalidChallengeType)
             ));
             let order = AcmeAuthz {
                 expires: Some(tomorrow),
@@ -198,7 +198,7 @@ mod tests {
             };
             assert!(matches!(
                 order.verify().unwrap_err(),
-                Error::AuthzError(AcmeAuthzError::InvalidChallengeType)
+                Error::Authz(AcmeAuthzError::InvalidChallengeType)
             ));
         }
     }

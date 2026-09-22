@@ -30,11 +30,11 @@ impl AcmeJws {
         let is_empty_payload = payload.is_none();
         let claims = payload.map(Self::claims);
         let jwt = RustyJwtTools::generate_jwt(alg, header, claims, kp, with_jwk)?;
-        let (protected, jwt) = jwt.split_once('.').ok_or(Error::ImplementationError)?;
-        let (payload, signature) = jwt.split_once('.').ok_or(Error::ImplementationError)?;
+        let (protected, jwt) = jwt.split_once('.').ok_or(Error::Implementation)?;
+        let (payload, signature) = jwt.split_once('.').ok_or(Error::Implementation)?;
         if signature.contains('.') {
             // we would have a malformed jwt
-            return Err(Error::ImplementationError);
+            return Err(Error::Implementation);
         }
 
         let payload = if is_empty_payload { "" } else { payload };

@@ -51,13 +51,13 @@ pub(crate) fn new_chall_response(response: serde_json::Value) -> Result<AcmeChal
         Some(AcmeChallengeStatus::Processing) => return Err(AcmeChallError::Processing)?,
         Some(AcmeChallengeStatus::Invalid) => return Err(AcmeChallError::Invalid)?,
         Some(AcmeChallengeStatus::Pending) => {
-            return Err(Error::ClientImplementationError(
+            return Err(Error::ClientImplementation(
                 "a challenge is not supposed to be pending at this point. \
                     It must either be 'valid' or 'processing'.",
             ));
         }
         None => {
-            return Err(Error::ClientImplementationError(
+            return Err(Error::ClientImplementation(
                 "at this point a challenge is supposed to have a status",
             ));
         }

@@ -26,7 +26,7 @@ pub(crate) fn new_account_request(
 /// 6. parse the response from `POST /acme/new-account` see [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3)
 pub(crate) fn new_account_response(response: serde_json::Value) -> Result<AcmeAccount> {
     let account = serde_json::from_value::<AcmeAccount>(response)
-        .map_err(|_| Error::SmallstepImplementationError("Invalid account response"))?;
+        .map_err(|_| Error::SmallstepImplementation("Invalid account response"))?;
     account.verify()?;
     Ok(account)
 }
@@ -82,22 +82,19 @@ impl AcmeAccount {
         let orders = self
             .orders
             .as_ref()
-            .ok_or(Error::SmallstepImplementationError("Account should have 'orders' url"))?;
+            .ok_or(Error::SmallstepImplementation("Account should have 'orders' url"))?;
         let mut orders = orders.clone();
         if orders.path_segments().and_then(|mut paths| paths.next_back()) == Some("orders") {
-            orders
-                .path_segments_mut()
-                .map_err(|_| Error::ImplementationError)?
-                .pop();
+            orders.path_segments_mut().map_err(|_| Error::Implementation)?.pop();
             Ok(orders)
         } else {
-            Err(Error::SmallstepImplementationError("Invalid 'orders' URL in account"))
+            Err(Error::SmallstepImplementation("Invalid 'orders' URL in account"))
         }
     }
 
     /// Verifies the account status and the presence of an 'orders' URL
     fn verify(&self) -> Result<()> {
-        self.orders.as_ref().ok_or(Error::SmallstepImplementationError(
+        self.orders.as_ref().ok_or(Error::SmallstepImplementation(
             "Newly created account should have 'orders' url",
         ))?;
         match self.status {
@@ -155,7 +152,7 @@ mod tests {
             };
             assert!(matches!(
                 account.verify().unwrap_err(),
-                Error::AccountError(AcmeAccountError::Deactivated)
+                Error::Account(AcmeAccountError::Deactivated)
             ));
         }
 
@@ -167,7 +164,7 @@ mod tests {
             };
             assert!(matches!(
                 account.verify().unwrap_err(),
-                Error::AccountError(AcmeAccountError::Revoked)
+                Error::Account(AcmeAccountError::Revoked)
             ));
         }
 
@@ -179,7 +176,7 @@ mod tests {
             };
             assert!(matches!(
                 account.verify().unwrap_err(),
-                Error::SmallstepImplementationError("Newly created account should have 'orders' url")
+                Error::SmallstepImplementation("Newly created account should have 'orders' url")
             ));
         }
     }
@@ -206,7 +203,7 @@ mod tests {
             };
             assert!(matches!(
                 account.acct_url().unwrap_err(),
-                Error::SmallstepImplementationError("Account should have 'orders' url")
+                Error::SmallstepImplementation("Account should have 'orders' url")
             ));
         }
 
@@ -220,7 +217,7 @@ mod tests {
             };
             assert!(matches!(
                 account.acct_url().unwrap_err(),
-                Error::SmallstepImplementationError("Invalid 'orders' URL in account")
+                Error::SmallstepImplementation("Invalid 'orders' URL in account")
             ));
         }
     }

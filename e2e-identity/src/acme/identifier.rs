@@ -101,7 +101,7 @@ impl TryFrom<WireIdentifier> for CanonicalIdentifier {
 
     fn try_from(i: WireIdentifier) -> Result<Self> {
         Ok(Self {
-            client_id: i.client_id.ok_or(Error::ImplementationError)?,
+            client_id: i.client_id.ok_or(Error::Implementation)?,
             handle: i.handle,
             display_name: i.display_name,
             domain: i.domain,

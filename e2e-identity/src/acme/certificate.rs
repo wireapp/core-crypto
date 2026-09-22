@@ -31,7 +31,7 @@ pub(crate) fn certificate_response(response: String, order: AcmeOrder) -> Result
     // ACME server has to provide provide us with at least one certificate, if everything went
     // well.
     if pems.is_empty() {
-        return Err(Error::SmallstepImplementationError(
+        return Err(Error::SmallstepImplementation(
             "the ACME server response contains no certificates",
         ));
     }

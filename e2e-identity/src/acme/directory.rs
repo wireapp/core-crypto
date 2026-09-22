@@ -5,7 +5,7 @@ use crate::acme::{Error, Result};
 /// see [RFC 8555 Section 7.1.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1)
 pub(crate) fn acme_directory_response(response: serde_json::Value) -> Result<AcmeDirectory> {
     let directory = serde_json::from_value::<AcmeDirectory>(response)
-        .map_err(|_| Error::SmallstepImplementationError("Invalid directory response"))?;
+        .map_err(|_| Error::SmallstepImplementation("Invalid directory response"))?;
     Ok(directory)
 }
 
