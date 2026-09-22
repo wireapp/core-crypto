@@ -358,7 +358,7 @@ impl ConversationMut {
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
                 self.validate_commit(&staged_commit).await?;
 
-                let (is_active, removed_members, added_members, group_id) = self
+                let (mut is_active, removed_members, added_members, group_id) = self
                     .mutate_group(async |_, group, id| {
                         let removed_indices = staged_commit
                             .remove_proposals()
@@ -393,6 +393,18 @@ impl ConversationMut {
                 let mut buffered_messages = None;
                 if is_active && recursion_policy == RecursionPolicy::AsNecessary {
                     buffered_messages = self.restore_and_clear_pending_messages().await?;
+
+                    // ensure that if any buffered message evicts us from the group, we propagate that info
+                    if let Some(buffered_messages) = buffered_messages.as_ref() {
+                        for message in buffered_messages {
+                            if let BufferedDecryptedMessage::Commit(commit) = message {
+                                is_active &= commit.is_active;
+                                if !is_active {
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
 
                 let epoch = staged_commit.staged_context().epoch().as_u64();
