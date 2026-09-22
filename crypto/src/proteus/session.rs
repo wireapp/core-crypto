@@ -109,9 +109,10 @@ impl ProteusCentral {
 
     /// Deletes a session in the store
     pub(crate) async fn session_delete(&mut self, transaction: &Transaction, session_id: &str) -> Result<()> {
-        if ProteusSession::delete_borrowed(transaction, session_id).is_ok() {
-            let _ = self.proteus_sessions.remove(session_id);
-        }
+        ProteusSession::delete_borrowed(transaction, session_id)
+            .map_err(KeystoreError::wrap("deleting proteus session"))?;
+        self.proteus_sessions.remove(session_id);
+
         Ok(())
     }
 
