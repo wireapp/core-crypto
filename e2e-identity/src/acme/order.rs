@@ -3,70 +3,67 @@ use std::collections::HashSet;
 use rusty_jwt_tools::prelude::{ClientId, Handle, JwsAlgorithm, Pem};
 
 use crate::acme::{
-    AcmeAccount, AcmeDirectory, AcmeIdentifier, AcmeJws, RustyAcme, RustyAcmeError, RustyAcmeResult,
+    AcmeAccount, AcmeDirectory, AcmeIdentifier, AcmeJws, RustyAcmeError, RustyAcmeResult,
     identifier::CanonicalIdentifier,
 };
 
-// Order creation
-impl RustyAcme {
-    /// create a new order
-    /// see [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4).
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn new_order_request(
-        display_name: &str,
-        client_id: ClientId,
-        handle: &Handle,
-        expiry: core::time::Duration,
-        directory: &AcmeDirectory,
-        account: &AcmeAccount,
-        alg: JwsAlgorithm,
-        kp: &Pem,
-        previous_nonce: String,
-    ) -> RustyAcmeResult<AcmeJws> {
-        // Extract the account URL from previous response which created a new account
-        let acct_url = account.acct_url()?;
+/// create a new order
+/// see [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4).
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn new_order_request(
+    display_name: &str,
+    client_id: ClientId,
+    handle: &Handle,
+    expiry: core::time::Duration,
+    directory: &AcmeDirectory,
+    account: &AcmeAccount,
+    alg: JwsAlgorithm,
+    kp: &Pem,
+    previous_nonce: String,
+) -> RustyAcmeResult<AcmeJws> {
+    // Extract the account URL from previous response which created a new account
+    let acct_url = account.acct_url()?;
 
-        let domain = client_id.domain.clone();
-        let handle = handle.try_to_qualified(&domain)?;
-        let device_identifier =
-            AcmeIdentifier::try_new_device(client_id, handle.clone(), display_name.to_string(), domain.clone())?;
-        let user_identifier = AcmeIdentifier::try_new_user(handle, display_name.to_string(), domain)?;
+    let domain = client_id.domain.clone();
+    let handle = handle.try_to_qualified(&domain)?;
+    let device_identifier =
+        AcmeIdentifier::try_new_device(client_id, handle.clone(), display_name.to_string(), domain.clone())?;
+    let user_identifier = AcmeIdentifier::try_new_user(handle, display_name.to_string(), domain)?;
 
-        let not_before = time::OffsetDateTime::now_utc();
-        let not_after = not_before + expiry;
-        let payload = AcmeOrderRequest {
-            identifiers: vec![device_identifier, user_identifier],
-            not_before: Some(not_before),
-            not_after: Some(not_after),
-        };
-        let req = AcmeJws::new(
-            alg,
-            previous_nonce,
-            &directory.new_order,
-            Some(&acct_url),
-            Some(payload),
-            kp,
-        )?;
-        Ok(req)
-    }
+    let not_before = time::OffsetDateTime::now_utc();
+    let not_after = not_before + expiry;
+    let payload = AcmeOrderRequest {
+        identifiers: vec![device_identifier, user_identifier],
+        not_before: Some(not_before),
+        not_after: Some(not_after),
+    };
+    let req = AcmeJws::new(
+        alg,
+        previous_nonce,
+        &directory.new_order,
+        Some(&acct_url),
+        Some(payload),
+        kp,
+    )?;
+    Ok(req)
+}
 
-    /// parse response from order creation
-    /// [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4)
-    pub(crate) fn new_order_response(response: serde_json::Value) -> RustyAcmeResult<AcmeOrder> {
-        let order = serde_json::from_value::<AcmeOrder>(response)?;
-        match order.status {
-            AcmeOrderStatus::Pending => {}
-            AcmeOrderStatus::Processing | AcmeOrderStatus::Valid | AcmeOrderStatus::Ready => {
-                return Err(RustyAcmeError::ClientImplementationError(
-                    "an order is not supposed to be 'processing | valid | ready' at this point. \
+/// parse response from order creation
+/// [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4)
+pub(crate) fn new_order_response(response: serde_json::Value) -> RustyAcmeResult<AcmeOrder> {
+    let order = serde_json::from_value::<AcmeOrder>(response)?;
+    match order.status {
+        AcmeOrderStatus::Pending => {}
+        AcmeOrderStatus::Processing | AcmeOrderStatus::Valid | AcmeOrderStatus::Ready => {
+            return Err(RustyAcmeError::ClientImplementationError(
+                "an order is not supposed to be 'processing | valid | ready' at this point. \
                     You should only be using this method after account creation, not after finalize",
-                ));
-            }
-            AcmeOrderStatus::Invalid => return Err(AcmeOrderError::Invalid)?,
+            ));
         }
-        order.verify()?;
-        Ok(order)
+        AcmeOrderStatus::Invalid => return Err(AcmeOrderError::Invalid)?,
     }
+    order.verify()?;
+    Ok(order)
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -325,7 +322,7 @@ mod tests {
                 ..Default::default()
             };
             let order = serde_json::to_value(order).unwrap();
-            assert!(RustyAcme::new_order_response(order).is_ok());
+            assert!(new_order_response(order).is_ok());
         }
 
         #[test]
@@ -336,7 +333,7 @@ mod tests {
             };
             let order = serde_json::to_value(order).unwrap();
             assert!(matches!(
-                RustyAcme::new_order_response(order).unwrap_err(),
+                new_order_response(order).unwrap_err(),
                 RustyAcmeError::ClientImplementationError(_)
             ));
 
@@ -346,7 +343,7 @@ mod tests {
             };
             let order = serde_json::to_value(order).unwrap();
             assert!(matches!(
-                RustyAcme::new_order_response(order).unwrap_err(),
+                new_order_response(order).unwrap_err(),
                 RustyAcmeError::ClientImplementationError(_)
             ));
 
@@ -356,7 +353,7 @@ mod tests {
             };
             let order = serde_json::to_value(order).unwrap();
             assert!(matches!(
-                RustyAcme::new_order_response(order).unwrap_err(),
+                new_order_response(order).unwrap_err(),
                 RustyAcmeError::ClientImplementationError(_)
             ));
         }
@@ -369,7 +366,7 @@ mod tests {
             };
             let order = serde_json::to_value(order).unwrap();
             assert!(matches!(
-                RustyAcme::new_order_response(order).unwrap_err(),
+                new_order_response(order).unwrap_err(),
                 RustyAcmeError::OrderError(AcmeOrderError::Invalid)
             ));
         }
