@@ -1,10 +1,7 @@
 use std::str::FromStr as _;
 
 use base64::Engine as _;
-use jwt_simple::prelude::*;
 use rusty_jwt_tools::prelude::{JwsAlgorithm, Pem};
-use signature::Signer as _;
-use spki::SignatureBitStringEncoding as _;
 use x509_cert::{
     builder::Builder as _,
     der::Encode as _,
@@ -78,16 +75,6 @@ fn generate_csr(alg: JwsAlgorithm, identifier: CanonicalIdentifier, kp: &Pem) ->
     Ok(csr)
 }
 
-fn csr_alg(alg: JwsAlgorithm) -> Result<x509_cert::spki::AlgorithmIdentifierOwned> {
-    let oid = match alg {
-        JwsAlgorithm::Ed25519 => const_oid::db::rfc8410::ID_ED_25519,
-        JwsAlgorithm::P256 => const_oid::db::rfc5912::ECDSA_WITH_SHA_256,
-        JwsAlgorithm::P384 => const_oid::db::rfc5912::ECDSA_WITH_SHA_384,
-        JwsAlgorithm::P521 => const_oid::db::rfc5912::ECDSA_WITH_SHA_512,
-    };
-    into_asn1_alg(oid, None)
-}
-
 fn csr_subject(identifier: &CanonicalIdentifier) -> Result<x509_cert::name::DistinguishedName> {
     let dn_domain_oid = const_oid::db::rfc4519::ORGANIZATION_NAME;
     let dn_domain_value =
@@ -112,122 +99,6 @@ fn csr_subject(identifier: &CanonicalIdentifier) -> Result<x509_cert::name::Dist
     let display_name = x509_cert::name::RelativeDistinguishedName::try_from(vec![dn_display_name])?;
     let subject = x509_cert::name::DistinguishedName::from(vec![domain, display_name]);
     Ok(subject)
-}
-
-fn csr_spki(alg: JwsAlgorithm, kp: &Pem) -> Result<x509_cert::spki::SubjectPublicKeyInfoOwned> {
-    let (pk, algorithm) = match alg {
-        JwsAlgorithm::Ed25519 => {
-            let pk = Ed25519KeyPair::from_pem(kp.as_str())?.public_key().to_bytes();
-            // see https://www.rfc-editor.org/rfc/rfc8410#section-3
-            let alg = into_asn1_alg(const_oid::db::rfc8410::ID_ED_25519, None)?;
-            (pk, alg)
-        }
-        JwsAlgorithm::P256 => {
-            let kp = ES256KeyPair::from_pem(kp.as_str())?;
-            let pk = kp.public_key().public_key().to_bytes_uncompressed();
-
-            // see https://www.rfc-editor.org/rfc/rfc3279#section-2.3.5
-            let alg = into_asn1_alg(
-                const_oid::db::rfc5912::ID_EC_PUBLIC_KEY,
-                Some(const_oid::db::rfc5912::SECP_256_R_1),
-            )?;
-            (pk, alg)
-        }
-        JwsAlgorithm::P384 => {
-            let kp = ES384KeyPair::from_pem(kp.as_str())?;
-            let pk = kp.public_key().public_key().to_bytes_uncompressed();
-
-            // see https://www.rfc-editor.org/rfc/rfc3279#section-2.3.5
-            let alg = into_asn1_alg(
-                const_oid::db::rfc5912::ID_EC_PUBLIC_KEY,
-                Some(const_oid::db::rfc5912::SECP_384_R_1),
-            )?;
-            (pk, alg)
-        }
-        JwsAlgorithm::P521 => {
-            let kp = ES512KeyPair::from_pem(kp.as_str())?;
-            let pk = kp.public_key().public_key().to_bytes_uncompressed();
-
-            // see https://www.rfc-editor.org/rfc/rfc3279#section-2.3.5
-            let alg = into_asn1_alg(
-                const_oid::db::rfc5912::ID_EC_PUBLIC_KEY,
-                Some(const_oid::db::rfc5912::SECP_521_R_1),
-            )?;
-            (pk, alg)
-        }
-    };
-    let subject_public_key = x509_cert::der::asn1::BitString::new(0, pk)?;
-    Ok(x509_cert::spki::SubjectPublicKeyInfoOwned {
-        algorithm,
-        subject_public_key,
-    })
-}
-
-// TODO: find a cleaner way to encode this reusing more x509-cert structs
-fn csr_attributes(identifier: CanonicalIdentifier) -> Result<x509_cert::attr::Attributes> {
-    fn gn(n: impl AsRef<str>) -> Result<x509_cert::ext::pkix::name::GeneralName> {
-        let ia5_str = x509_cert::der::asn1::Ia5String::new(n.as_ref())?;
-        Ok(x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
-            ia5_str,
-        ))
-    }
-    let san = x509_cert::ext::pkix::SubjectAltName(vec![gn(identifier.client_id)?, gn(identifier.handle.as_str())?]);
-    let san = x509_cert::attr::AttributeValue::new(x509_cert::der::Tag::OctetString, san.to_der()?)?;
-
-    let san_oid = const_oid::db::rfc5280::ID_CE_SUBJECT_ALT_NAME.to_der()?;
-    let san = [san_oid, san.to_der()?].concat();
-    let san = x509_cert::attr::AttributeValue::new(x509_cert::der::Tag::Sequence, san)?;
-    let san = x509_cert::attr::AttributeValue::new(x509_cert::der::Tag::Sequence, san.to_der()?)?;
-
-    let attributes = vec![x509_cert::attr::Attribute {
-        oid: const_oid::db::rfc5912::ID_EXTENSION_REQ,
-        values: vec![san].try_into()?,
-    }];
-    Ok(attributes.try_into()?)
-}
-
-fn csr_signature(
-    alg: JwsAlgorithm,
-    kp: &Pem,
-    cert_info: &x509_cert::request::CertReqInfo,
-) -> Result<x509_cert::der::asn1::BitString> {
-    let cert_data = cert_info.to_der()?;
-
-    let signature = match alg {
-        JwsAlgorithm::Ed25519 => {
-            let kp_bytes = ed25519_dalek::pkcs8::KeypairBytes::from_str(kp.as_ref())?;
-            let signing_key = ed25519_dalek::SigningKey::try_from(kp_bytes)?;
-            let signature = signing_key.sign(&cert_data);
-            signature.to_bitstring()?
-        }
-        JwsAlgorithm::P256 => {
-            let sk = p256::ecdsa::SigningKey::from_str(kp)?;
-            let signature: p256::ecdsa::Signature = sk.sign(&cert_data);
-            signature.to_der().to_bitstring()?
-        }
-        JwsAlgorithm::P384 => {
-            let sk = p384::ecdsa::SigningKey::from_str(kp)?;
-            let signature: p384::ecdsa::Signature = sk.sign(&cert_data);
-            signature.to_der().to_bitstring()?
-        }
-        JwsAlgorithm::P521 => {
-            let sk = p521::ecdsa::SigningKey::from_str(kp)?;
-            let signature: p521::ecdsa::Signature = sk.sign(&cert_data);
-            signature.to_der().to_bitstring()?
-        }
-    };
-    Ok(signature)
-}
-
-fn into_asn1_alg(
-    oid: const_oid::ObjectIdentifier,
-    oid_parameter: Option<const_oid::ObjectIdentifier>,
-) -> Result<x509_cert::spki::AlgorithmIdentifierOwned> {
-    let alg = x509_cert::spki::AlgorithmIdentifierOwned {
-        oid,
-        parameters: oid_parameter.map(Into::into),
-    };
-    Ok(alg)
 }
 
 /// see [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4)
