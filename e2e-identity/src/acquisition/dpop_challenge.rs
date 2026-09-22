@@ -5,7 +5,7 @@ use url::Url;
 use super::{Result, X509CredentialAcquisition, get_header, states};
 use crate::{
     acme,
-    acme::{AcmeAccount, AcmeChallenge, AcmeChallengeType, AcmeOrder, RustyAcmeError},
+    acme::{AcmeAccount, AcmeChallenge, AcmeChallengeType, AcmeOrder},
     pki_env::hooks::HttpMethod,
 };
 
@@ -55,7 +55,7 @@ impl X509CredentialAcquisition<states::Initialized> {
         match (challenge1.typ, challenge2.typ) {
             (WireDpop01, WireOidc01) => Ok((nonce, challenge1, challenge2)),
             (WireOidc01, WireDpop01) => Ok((nonce, challenge2, challenge1)),
-            _ => Err(RustyAcmeError::from(crate::acme::AcmeAuthzError::InvalidChallengeType).into()),
+            _ => Err(acme::Error::from(crate::acme::AcmeAuthzError::InvalidChallengeType).into()),
         }
     }
 

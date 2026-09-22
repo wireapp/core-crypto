@@ -3,8 +3,7 @@ use std::collections::HashSet;
 use rusty_jwt_tools::prelude::{ClientId, Handle, JwsAlgorithm, Pem};
 
 use crate::acme::{
-    AcmeAccount, AcmeDirectory, AcmeIdentifier, AcmeJws, RustyAcmeError, RustyAcmeResult,
-    identifier::CanonicalIdentifier,
+    AcmeAccount, AcmeDirectory, AcmeIdentifier, AcmeJws, Error, Result, identifier::CanonicalIdentifier,
 };
 
 /// create a new order
@@ -20,7 +19,7 @@ pub(crate) fn new_order_request(
     alg: JwsAlgorithm,
     kp: &Pem,
     previous_nonce: String,
-) -> RustyAcmeResult<AcmeJws> {
+) -> Result<AcmeJws> {
     // Extract the account URL from previous response which created a new account
     let acct_url = account.acct_url()?;
 
@@ -50,12 +49,12 @@ pub(crate) fn new_order_request(
 
 /// parse response from order creation
 /// [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4)
-pub(crate) fn new_order_response(response: serde_json::Value) -> RustyAcmeResult<AcmeOrder> {
+pub(crate) fn new_order_response(response: serde_json::Value) -> Result<AcmeOrder> {
     let order = serde_json::from_value::<AcmeOrder>(response)?;
     match order.status {
         AcmeOrderStatus::Pending => {}
         AcmeOrderStatus::Processing | AcmeOrderStatus::Valid | AcmeOrderStatus::Ready => {
-            return Err(RustyAcmeError::ClientImplementationError(
+            return Err(Error::ClientImplementationError(
                 "an order is not supposed to be 'processing | valid | ready' at this point. \
                     You should only be using this method after account creation, not after finalize",
             ));
@@ -117,14 +116,14 @@ pub struct AcmeOrder {
 }
 
 impl AcmeOrder {
-    pub fn verify(&self) -> RustyAcmeResult<()> {
+    pub fn verify(&self) -> Result<()> {
         let [ref a, ref b] = self
             .identifiers
             .iter()
             .collect::<HashSet<_>>() // ensures uniqueness
             .iter()
             .map(|i| i.to_wire_identifier())
-            .collect::<RustyAcmeResult<Vec<_>>>()?[..]
+            .collect::<Result<Vec<_>>>()?[..]
         else {
             return Err(AcmeOrderError::WrongIdentifiers)?;
         };
@@ -170,7 +169,7 @@ impl AcmeOrder {
 
     /// A Wire Order has 2 identifiers. For simplification purposes, since they share most of their fields together we
     /// merge them to access the fields
-    pub fn try_get_coalesce_identifier(&self) -> RustyAcmeResult<CanonicalIdentifier> {
+    pub fn try_get_coalesce_identifier(&self) -> Result<CanonicalIdentifier> {
         self.identifiers
             .iter()
             .find_map(|i| match i {
@@ -178,7 +177,7 @@ impl AcmeOrder {
                 _ => None,
             })
             .transpose()?
-            .ok_or(RustyAcmeError::OrderError(AcmeOrderError::WrongIdentifiers))?
+            .ok_or(Error::OrderError(AcmeOrderError::WrongIdentifiers))?
             .try_into()
     }
 }
@@ -249,7 +248,7 @@ mod tests {
             };
             assert!(matches!(
                 order.verify().unwrap_err(),
-                RustyAcmeError::OrderError(AcmeOrderError::NotYetValid)
+                Error::OrderError(AcmeOrderError::NotYetValid)
             ));
         }
 
@@ -262,7 +261,7 @@ mod tests {
             };
             assert!(matches!(
                 order.verify().unwrap_err(),
-                RustyAcmeError::OrderError(AcmeOrderError::Expired)
+                Error::OrderError(AcmeOrderError::Expired)
             ));
         }
 
@@ -275,7 +274,7 @@ mod tests {
             };
             assert!(matches!(
                 order.verify().unwrap_err(),
-                RustyAcmeError::OrderError(AcmeOrderError::Expired)
+                Error::OrderError(AcmeOrderError::Expired)
             ));
         }
 
@@ -297,7 +296,7 @@ mod tests {
             };
             assert!(matches!(
                 order.verify().unwrap_err(),
-                RustyAcmeError::OrderError(AcmeOrderError::WrongIdentifiers)
+                Error::OrderError(AcmeOrderError::WrongIdentifiers)
             ));
 
             // homogeneous identifiers
@@ -307,7 +306,7 @@ mod tests {
             };
             assert!(matches!(
                 order.verify().unwrap_err(),
-                RustyAcmeError::OrderError(AcmeOrderError::WrongIdentifiers)
+                Error::OrderError(AcmeOrderError::WrongIdentifiers)
             ));
         }
     }
@@ -334,7 +333,7 @@ mod tests {
             let order = serde_json::to_value(order).unwrap();
             assert!(matches!(
                 new_order_response(order).unwrap_err(),
-                RustyAcmeError::ClientImplementationError(_)
+                Error::ClientImplementationError(_)
             ));
 
             let order = AcmeOrder {
@@ -344,7 +343,7 @@ mod tests {
             let order = serde_json::to_value(order).unwrap();
             assert!(matches!(
                 new_order_response(order).unwrap_err(),
-                RustyAcmeError::ClientImplementationError(_)
+                Error::ClientImplementationError(_)
             ));
 
             let order = AcmeOrder {
@@ -354,7 +353,7 @@ mod tests {
             let order = serde_json::to_value(order).unwrap();
             assert!(matches!(
                 new_order_response(order).unwrap_err(),
-                RustyAcmeError::ClientImplementationError(_)
+                Error::ClientImplementationError(_)
             ));
         }
 
@@ -367,7 +366,7 @@ mod tests {
             let order = serde_json::to_value(order).unwrap();
             assert!(matches!(
                 new_order_response(order).unwrap_err(),
-                RustyAcmeError::OrderError(AcmeOrderError::Invalid)
+                Error::OrderError(AcmeOrderError::Invalid)
             ));
         }
     }

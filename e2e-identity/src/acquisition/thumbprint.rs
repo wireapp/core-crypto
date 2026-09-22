@@ -5,14 +5,14 @@ use rusty_jwt_tools::{
 };
 use x509_cert::spki::SubjectPublicKeyInfoOwned;
 
-use crate::{acme::RustyAcmeResult, acquisition::error::CertificateError};
+use crate::{acme, acquisition::error::CertificateError};
 
 /// Used to compute the MLS thumbprint of a Basic Credential
 pub fn compute_raw_key_thumbprint(
     sign_alg: JwsAlgorithm,
     hash_alg: HashAlgorithm,
     signature_public_key: &[u8],
-) -> RustyAcmeResult<String> {
+) -> acme::Result<String> {
     let jwk = match sign_alg {
         JwsAlgorithm::Ed25519 => Ed25519PublicKey::from_bytes(signature_public_key)?.try_into_jwk()?,
         JwsAlgorithm::P256 => ES256PublicKey::from_bytes(signature_public_key)?.try_into_jwk()?,

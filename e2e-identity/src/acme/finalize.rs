@@ -7,9 +7,7 @@ use signature::Signer as _;
 use spki::SignatureBitStringEncoding as _;
 use x509_cert::der::Encode as _;
 
-use crate::acme::{
-    AcmeAccount, AcmeJws, AcmeOrder, RustyAcmeResult, identifier::CanonicalIdentifier, order::AcmeOrderError,
-};
+use crate::acme::{AcmeAccount, AcmeJws, AcmeOrder, Result, identifier::CanonicalIdentifier, order::AcmeOrderError};
 
 /// see [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4)
 pub(crate) fn finalize_req(
@@ -19,7 +17,7 @@ pub(crate) fn finalize_req(
     acme_kp: &Pem,
     signing_kp: &Pem,
     previous_nonce: String,
-) -> RustyAcmeResult<AcmeJws> {
+) -> Result<AcmeJws> {
     // Extract the account URL from previous response which created a new account
     let acct_url = account.acct_url()?;
     order.verify()?;
@@ -36,7 +34,7 @@ pub(crate) fn finalize_req(
     Ok(req)
 }
 
-fn generate_csr(alg: JwsAlgorithm, identifier: CanonicalIdentifier, kp: &Pem) -> RustyAcmeResult<String> {
+fn generate_csr(alg: JwsAlgorithm, identifier: CanonicalIdentifier, kp: &Pem) -> Result<String> {
     let algorithm = csr_alg(alg)?;
     let cert_info = x509_cert::request::CertReqInfo {
         version: x509_cert::request::Version::V1,
@@ -56,7 +54,7 @@ fn generate_csr(alg: JwsAlgorithm, identifier: CanonicalIdentifier, kp: &Pem) ->
     Ok(csr)
 }
 
-fn csr_alg(alg: JwsAlgorithm) -> RustyAcmeResult<x509_cert::spki::AlgorithmIdentifierOwned> {
+fn csr_alg(alg: JwsAlgorithm) -> Result<x509_cert::spki::AlgorithmIdentifierOwned> {
     let oid = match alg {
         JwsAlgorithm::Ed25519 => const_oid::db::rfc8410::ID_ED_25519,
         JwsAlgorithm::P256 => const_oid::db::rfc5912::ECDSA_WITH_SHA_256,
@@ -66,7 +64,7 @@ fn csr_alg(alg: JwsAlgorithm) -> RustyAcmeResult<x509_cert::spki::AlgorithmIdent
     into_asn1_alg(oid, None)
 }
 
-fn csr_subject(identifier: &CanonicalIdentifier) -> RustyAcmeResult<x509_cert::name::DistinguishedName> {
+fn csr_subject(identifier: &CanonicalIdentifier) -> Result<x509_cert::name::DistinguishedName> {
     let dn_domain_oid = const_oid::db::rfc4519::ORGANIZATION_NAME;
     let dn_domain_value =
         x509_cert::attr::AttributeValue::new(x509_cert::der::Tag::Utf8String, identifier.domain.as_bytes())?;
@@ -92,7 +90,7 @@ fn csr_subject(identifier: &CanonicalIdentifier) -> RustyAcmeResult<x509_cert::n
     Ok(subject)
 }
 
-fn csr_spki(alg: JwsAlgorithm, kp: &Pem) -> RustyAcmeResult<x509_cert::spki::SubjectPublicKeyInfoOwned> {
+fn csr_spki(alg: JwsAlgorithm, kp: &Pem) -> Result<x509_cert::spki::SubjectPublicKeyInfoOwned> {
     let (pk, algorithm) = match alg {
         JwsAlgorithm::Ed25519 => {
             let pk = Ed25519KeyPair::from_pem(kp.as_str())?.public_key().to_bytes();
@@ -142,8 +140,8 @@ fn csr_spki(alg: JwsAlgorithm, kp: &Pem) -> RustyAcmeResult<x509_cert::spki::Sub
 }
 
 // TODO: find a cleaner way to encode this reusing more x509-cert structs
-fn csr_attributes(identifier: CanonicalIdentifier) -> RustyAcmeResult<x509_cert::attr::Attributes> {
-    fn gn(n: impl AsRef<str>) -> RustyAcmeResult<x509_cert::ext::pkix::name::GeneralName> {
+fn csr_attributes(identifier: CanonicalIdentifier) -> Result<x509_cert::attr::Attributes> {
+    fn gn(n: impl AsRef<str>) -> Result<x509_cert::ext::pkix::name::GeneralName> {
         let ia5_str = x509_cert::der::asn1::Ia5String::new(n.as_ref())?;
         Ok(x509_cert::ext::pkix::name::GeneralName::UniformResourceIdentifier(
             ia5_str,
@@ -168,7 +166,7 @@ fn csr_signature(
     alg: JwsAlgorithm,
     kp: &Pem,
     cert_info: &x509_cert::request::CertReqInfo,
-) -> RustyAcmeResult<x509_cert::der::asn1::BitString> {
+) -> Result<x509_cert::der::asn1::BitString> {
     let cert_data = cert_info.to_der()?;
 
     let signature = match alg {
@@ -200,7 +198,7 @@ fn csr_signature(
 fn into_asn1_alg(
     oid: const_oid::ObjectIdentifier,
     oid_parameter: Option<const_oid::ObjectIdentifier>,
-) -> RustyAcmeResult<x509_cert::spki::AlgorithmIdentifierOwned> {
+) -> Result<x509_cert::spki::AlgorithmIdentifierOwned> {
     let alg = x509_cert::spki::AlgorithmIdentifierOwned {
         oid,
         parameters: oid_parameter.map(Into::into),
@@ -209,7 +207,7 @@ fn into_asn1_alg(
 }
 
 /// see [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4)
-pub(crate) fn finalize_response(response: serde_json::Value) -> RustyAcmeResult<AcmeFinalize> {
+pub(crate) fn finalize_response(response: serde_json::Value) -> Result<AcmeFinalize> {
     let finalize = serde_json::from_value::<AcmeFinalize>(response)?;
     Ok(finalize)
 }

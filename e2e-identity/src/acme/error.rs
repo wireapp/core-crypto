@@ -1,9 +1,9 @@
-/// Wrapper over a [Result] with a [RustyAcmeError] error
-pub(crate) type RustyAcmeResult<T> = Result<T, RustyAcmeError>;
+/// Wrapper over a [Result] with an ACME error
+pub(crate) type Result<T> = core::result::Result<T, Error>;
 
-/// All errors which [crate::RustyAcme] might throw
+/// All errors which [crate::acme] might throw
 #[derive(Debug, thiserror::Error)]
-pub enum RustyAcmeError {
+pub enum Error {
     /// Invalid Json representation
     #[error(transparent)]
     JsonError(#[from] serde_json::Error),

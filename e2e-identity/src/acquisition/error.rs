@@ -11,7 +11,7 @@ pub enum Error {
     #[error("HTTP response is missing header '{0}'")]
     MissingHeader(&'static str),
     #[error(transparent)]
-    Acme(#[from] crate::acme::RustyAcmeError),
+    Acme(#[from] crate::acme::Error),
     #[error(transparent)]
     RustyJwtError(#[from] RustyJwtError),
     /// Invalid/incomplete certificate
@@ -72,7 +72,7 @@ pub enum CertificateError {
     Utf8(#[from] std::str::Utf8Error),
     /// ACME error
     #[error(transparent)]
-    Acme(#[from] crate::acme::RustyAcmeError),
+    Acme(#[from] crate::acme::Error),
     /// JWT error
     #[error(transparent)]
     RustyJwtError(#[from] RustyJwtError),

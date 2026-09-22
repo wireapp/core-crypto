@@ -1,6 +1,6 @@
 use rusty_jwt_tools::prelude::{JwsAlgorithm, Pem};
 
-use crate::acme::{AcmeDirectory, AcmeJws, RustyAcmeError, RustyAcmeResult};
+use crate::acme::{AcmeDirectory, AcmeJws, Error, Result};
 
 /// 5. Create a new acme account see [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3)
 pub(crate) fn new_account_request(
@@ -8,7 +8,7 @@ pub(crate) fn new_account_request(
     alg: JwsAlgorithm,
     kp: &Pem,
     previous_nonce: String,
-) -> RustyAcmeResult<AcmeJws> {
+) -> Result<AcmeJws> {
     const DEFAULT_CONTACT: &str = "anonymous@anonymous.invalid";
 
     // explicitly set an invalid email so that if someday it is required to set one we do not
@@ -24,9 +24,9 @@ pub(crate) fn new_account_request(
 }
 
 /// 6. parse the response from `POST /acme/new-account` see [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3)
-pub(crate) fn new_account_response(response: serde_json::Value) -> RustyAcmeResult<AcmeAccount> {
+pub(crate) fn new_account_response(response: serde_json::Value) -> Result<AcmeAccount> {
     let account = serde_json::from_value::<AcmeAccount>(response)
-        .map_err(|_| RustyAcmeError::SmallstepImplementationError("Invalid account response"))?;
+        .map_err(|_| Error::SmallstepImplementationError("Invalid account response"))?;
     account.verify()?;
     Ok(account)
 }
@@ -78,34 +78,28 @@ pub struct AcmeAccount {
 impl AcmeAccount {
     /// Infers the account url used in almost all [AcmeJws] kid.
     /// To do so, trims the last segment from the 'orders' URL
-    pub fn acct_url(&self) -> RustyAcmeResult<url::Url> {
+    pub fn acct_url(&self) -> Result<url::Url> {
         let orders = self
             .orders
             .as_ref()
-            .ok_or(RustyAcmeError::SmallstepImplementationError(
-                "Account should have 'orders' url",
-            ))?;
+            .ok_or(Error::SmallstepImplementationError("Account should have 'orders' url"))?;
         let mut orders = orders.clone();
         if orders.path_segments().and_then(|mut paths| paths.next_back()) == Some("orders") {
             orders
                 .path_segments_mut()
-                .map_err(|_| RustyAcmeError::ImplementationError)?
+                .map_err(|_| Error::ImplementationError)?
                 .pop();
             Ok(orders)
         } else {
-            Err(RustyAcmeError::SmallstepImplementationError(
-                "Invalid 'orders' URL in account",
-            ))
+            Err(Error::SmallstepImplementationError("Invalid 'orders' URL in account"))
         }
     }
 
     /// Verifies the account status and the presence of an 'orders' URL
-    fn verify(&self) -> RustyAcmeResult<()> {
-        self.orders
-            .as_ref()
-            .ok_or(RustyAcmeError::SmallstepImplementationError(
-                "Newly created account should have 'orders' url",
-            ))?;
+    fn verify(&self) -> Result<()> {
+        self.orders.as_ref().ok_or(Error::SmallstepImplementationError(
+            "Newly created account should have 'orders' url",
+        ))?;
         match self.status {
             AcmeAccountStatus::Valid => Ok(()),
             AcmeAccountStatus::Deactivated => Err(AcmeAccountError::Deactivated)?,
@@ -161,7 +155,7 @@ mod tests {
             };
             assert!(matches!(
                 account.verify().unwrap_err(),
-                RustyAcmeError::AccountError(AcmeAccountError::Deactivated)
+                Error::AccountError(AcmeAccountError::Deactivated)
             ));
         }
 
@@ -173,7 +167,7 @@ mod tests {
             };
             assert!(matches!(
                 account.verify().unwrap_err(),
-                RustyAcmeError::AccountError(AcmeAccountError::Revoked)
+                Error::AccountError(AcmeAccountError::Revoked)
             ));
         }
 
@@ -185,7 +179,7 @@ mod tests {
             };
             assert!(matches!(
                 account.verify().unwrap_err(),
-                RustyAcmeError::SmallstepImplementationError("Newly created account should have 'orders' url")
+                Error::SmallstepImplementationError("Newly created account should have 'orders' url")
             ));
         }
     }
@@ -212,7 +206,7 @@ mod tests {
             };
             assert!(matches!(
                 account.acct_url().unwrap_err(),
-                RustyAcmeError::SmallstepImplementationError("Account should have 'orders' url")
+                Error::SmallstepImplementationError("Account should have 'orders' url")
             ));
         }
 
@@ -226,7 +220,7 @@ mod tests {
             };
             assert!(matches!(
                 account.acct_url().unwrap_err(),
-                RustyAcmeError::SmallstepImplementationError("Invalid 'orders' URL in account")
+                Error::SmallstepImplementationError("Invalid 'orders' URL in account")
             ));
         }
     }

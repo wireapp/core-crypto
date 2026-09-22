@@ -1,9 +1,7 @@
 use base64::Engine;
 use rusty_jwt_tools::prelude::{JwsAlgorithm, Pem};
 
-use crate::acme::{
-    AcmeAccount, AcmeChallenge, AcmeChallengeType, AcmeIdentifier, AcmeJws, RustyAcmeError, RustyAcmeResult,
-};
+use crate::acme::{AcmeAccount, AcmeChallenge, AcmeChallengeType, AcmeIdentifier, AcmeJws, Error, Result};
 
 /// create authorizations
 /// see [RFC 8555 Section 7.5](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5)
@@ -13,7 +11,7 @@ pub(crate) fn new_authz_request(
     alg: JwsAlgorithm,
     kp: &Pem,
     previous_nonce: String,
-) -> RustyAcmeResult<AcmeJws> {
+) -> Result<AcmeJws> {
     // Extract the account URL from previous response which created a new account
     let acct_url = account.acct_url()?;
 
@@ -25,7 +23,7 @@ pub(crate) fn new_authz_request(
 
 /// parse the response from `POST /acme/authz/{authz_id}`
 /// [RFC 8555 Section 7.5](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5)
-pub(crate) fn new_authz_response(response: serde_json::Value) -> RustyAcmeResult<AcmeAuthz> {
+pub(crate) fn new_authz_response(response: serde_json::Value) -> Result<AcmeAuthz> {
     let authz = serde_json::from_value::<AcmeAuthz>(response)?;
 
     authz.verify()?;
@@ -37,7 +35,7 @@ pub(crate) fn new_authz_response(response: serde_json::Value) -> RustyAcmeResult
         AuthzStatus::Deactivated => return Err(AcmeAuthzError::Deactivated)?,
         AuthzStatus::Expired => return Err(AcmeAuthzError::Expired)?,
         AuthzStatus::Valid => {
-            return Err(RustyAcmeError::ClientImplementationError(
+            return Err(Error::ClientImplementationError(
                 "an authorization is not supposed to be valid at this point. \
                     You should only use this method to parse the response of an authorization creation.",
             ));
@@ -88,7 +86,7 @@ pub(crate) struct AcmeAuthz {
 }
 
 impl AcmeAuthz {
-    pub(crate) fn verify(&self) -> RustyAcmeResult<()> {
+    pub(crate) fn verify(&self) -> Result<()> {
         let [challenge] = &self.challenges;
 
         if matches!(
@@ -175,7 +173,7 @@ mod tests {
             };
             assert!(matches!(
                 order.verify().unwrap_err(),
-                RustyAcmeError::AuthzError(AcmeAuthzError::Expired)
+                Error::AuthzError(AcmeAuthzError::Expired)
             ));
         }
 
@@ -190,7 +188,7 @@ mod tests {
             };
             assert!(matches!(
                 order.verify().unwrap_err(),
-                RustyAcmeError::AuthzError(AcmeAuthzError::InvalidChallengeType)
+                Error::AuthzError(AcmeAuthzError::InvalidChallengeType)
             ));
             let order = AcmeAuthz {
                 expires: Some(tomorrow),
@@ -200,7 +198,7 @@ mod tests {
             };
             assert!(matches!(
                 order.verify().unwrap_err(),
-                RustyAcmeError::AuthzError(AcmeAuthzError::InvalidChallengeType)
+                Error::AuthzError(AcmeAuthzError::InvalidChallengeType)
             ));
         }
     }

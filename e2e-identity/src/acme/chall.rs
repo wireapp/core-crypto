@@ -1,6 +1,6 @@
 use rusty_jwt_tools::prelude::{JwsAlgorithm, Pem};
 
-use crate::acme::{AcmeAccount, AcmeJws, RustyAcmeError, RustyAcmeResult};
+use crate::acme::{AcmeAccount, AcmeJws, Error, Result};
 
 /// client id challenge request to `POST /acme/challenge/{token}`
 /// see [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1)
@@ -11,7 +11,7 @@ pub(crate) fn dpop_chall_request(
     alg: JwsAlgorithm,
     kp: &Pem,
     previous_nonce: String,
-) -> RustyAcmeResult<AcmeJws> {
+) -> Result<AcmeJws> {
     // Extract the account URL from previous response which created a new account
     let acct_url = account.acct_url()?;
 
@@ -33,7 +33,7 @@ pub(crate) fn oidc_chall_request(
     alg: JwsAlgorithm,
     kp: &Pem,
     previous_nonce: String,
-) -> RustyAcmeResult<AcmeJws> {
+) -> Result<AcmeJws> {
     // Extract the account URL from previous response which created a new account
     let acct_url = account.acct_url()?;
     let payload = Some(serde_json::json!({
@@ -44,20 +44,20 @@ pub(crate) fn oidc_chall_request(
 }
 
 /// 18. parse the response from `POST /acme/challenge/{token}` [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1)
-pub(crate) fn new_chall_response(response: serde_json::Value) -> RustyAcmeResult<AcmeChallenge> {
+pub(crate) fn new_chall_response(response: serde_json::Value) -> Result<AcmeChallenge> {
     let chall = serde_json::from_value::<AcmeChallenge>(response)?;
     match chall.status {
         Some(AcmeChallengeStatus::Valid) => {}
         Some(AcmeChallengeStatus::Processing) => return Err(AcmeChallError::Processing)?,
         Some(AcmeChallengeStatus::Invalid) => return Err(AcmeChallError::Invalid)?,
         Some(AcmeChallengeStatus::Pending) => {
-            return Err(RustyAcmeError::ClientImplementationError(
+            return Err(Error::ClientImplementationError(
                 "a challenge is not supposed to be pending at this point. \
                     It must either be 'valid' or 'processing'.",
             ));
         }
         None => {
-            return Err(RustyAcmeError::ClientImplementationError(
+            return Err(Error::ClientImplementationError(
                 "at this point a challenge is supposed to have a status",
             ));
         }

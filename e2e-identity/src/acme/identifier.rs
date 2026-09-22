@@ -1,6 +1,6 @@
 use rusty_jwt_tools::prelude::*;
 
-use crate::acme::*;
+use crate::acme::{Error, Result};
 
 /// Represent an identifier in an ACME Order
 #[derive(Debug, Clone, Eq, PartialEq, Hash, serde::Serialize, serde::Deserialize)]
@@ -16,7 +16,7 @@ impl AcmeIdentifier {
         handle: QualifiedHandle,
         display_name: String,
         domain: String,
-    ) -> RustyAcmeResult<Self> {
+    ) -> Result<Self> {
         let client_id = client_id.to_uri();
         let identifier = WireIdentifier {
             display_name,
@@ -28,7 +28,7 @@ impl AcmeIdentifier {
         Ok(Self::WireappDevice(identifier))
     }
 
-    pub fn try_new_user(handle: QualifiedHandle, display_name: String, domain: String) -> RustyAcmeResult<Self> {
+    pub fn try_new_user(handle: QualifiedHandle, display_name: String, domain: String) -> Result<Self> {
         let identifier = WireIdentifier {
             display_name,
             handle,
@@ -39,7 +39,7 @@ impl AcmeIdentifier {
         Ok(Self::WireappUser(identifier))
     }
 
-    pub fn to_wire_identifier(&self) -> RustyAcmeResult<WireIdentifier> {
+    pub fn to_wire_identifier(&self) -> Result<WireIdentifier> {
         Ok(match self {
             AcmeIdentifier::WireappDevice(id) => serde_json::from_str(id)?,
             AcmeIdentifier::WireappUser(id) => serde_json::from_str(id)?,
@@ -97,11 +97,11 @@ pub struct CanonicalIdentifier {
 }
 
 impl TryFrom<WireIdentifier> for CanonicalIdentifier {
-    type Error = RustyAcmeError;
+    type Error = Error;
 
-    fn try_from(i: WireIdentifier) -> RustyAcmeResult<Self> {
+    fn try_from(i: WireIdentifier) -> Result<Self> {
         Ok(Self {
-            client_id: i.client_id.ok_or(RustyAcmeError::ImplementationError)?,
+            client_id: i.client_id.ok_or(Error::ImplementationError)?,
             handle: i.handle,
             display_name: i.display_name,
             domain: i.domain,

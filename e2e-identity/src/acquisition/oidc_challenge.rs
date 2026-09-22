@@ -5,7 +5,6 @@ use x509_cert::Certificate;
 use super::{Result, X509CredentialAcquisition, states};
 use crate::{
     acme,
-    acme::RustyAcmeError,
     pki_env::hooks::{HttpHeader, HttpMethod},
 };
 
@@ -82,7 +81,7 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
         let response = hooks
             .http_request(HttpMethod::Post, finalize.certificate.to_string(), headers, body)
             .await?;
-        let response = String::from_utf8(response.body).map_err(|e| RustyAcmeError::from(e.utf8_error()))?;
+        let response = String::from_utf8(response.body).map_err(|e| acme::Error::from(e.utf8_error()))?;
         let certificates = acme::certificate_response(response, self.data.order)?;
         log::debug!(
             "acquisition({:?}): got the certificate",

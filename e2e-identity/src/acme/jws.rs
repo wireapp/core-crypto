@@ -1,7 +1,7 @@
 use jwt_simple::prelude::{JWTClaims, JWTHeader};
 use rusty_jwt_tools::prelude::{JwsAlgorithm, Pem, RustyJwtTools};
 
-use crate::acme::{RustyAcmeError, RustyAcmeResult};
+use crate::acme::{Error, Result};
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -19,7 +19,7 @@ impl AcmeJws {
         kid: Option<&url::Url>,
         payload: Option<T>,
         kp: &Pem,
-    ) -> RustyAcmeResult<Self>
+    ) -> Result<Self>
     where
         T: serde::Serialize,
         for<'de> T: serde::Deserialize<'de>,
@@ -30,11 +30,11 @@ impl AcmeJws {
         let is_empty_payload = payload.is_none();
         let claims = payload.map(Self::claims);
         let jwt = RustyJwtTools::generate_jwt(alg, header, claims, kp, with_jwk)?;
-        let (protected, jwt) = jwt.split_once('.').ok_or(RustyAcmeError::ImplementationError)?;
-        let (payload, signature) = jwt.split_once('.').ok_or(RustyAcmeError::ImplementationError)?;
+        let (protected, jwt) = jwt.split_once('.').ok_or(Error::ImplementationError)?;
+        let (payload, signature) = jwt.split_once('.').ok_or(Error::ImplementationError)?;
         if signature.contains('.') {
             // we would have a malformed jwt
-            return Err(RustyAcmeError::ImplementationError);
+            return Err(Error::ImplementationError);
         }
 
         let payload = if is_empty_payload { "" } else { payload };

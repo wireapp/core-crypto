@@ -7,7 +7,7 @@ pub type E2eIdentityResult<T> = Result<T, E2eIdentityError>;
 #[derive(Debug, thiserror::Error)]
 pub enum E2eIdentityError {
     #[error(transparent)]
-    AcmeError(#[from] crate::acme::RustyAcmeError),
+    AcmeError(#[from] crate::acme::Error),
     #[error(transparent)]
     JwtError(#[from] rusty_jwt_tools::prelude::RustyJwtError),
     #[error(transparent)]
