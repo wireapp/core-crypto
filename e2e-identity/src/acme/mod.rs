@@ -19,5 +19,3 @@ pub(crate) use finalize::{AcmeFinalize, finalize_req, finalize_response};
 pub(crate) use identifier::AcmeIdentifier;
 pub(crate) use jws::AcmeJws;
 pub(crate) use order::{AcmeOrder, new_order_request, new_order_response};
-
-pub(crate) struct RustyAcme;
