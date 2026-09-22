@@ -4,7 +4,8 @@ use x509_cert::Certificate;
 
 use super::{Result, X509CredentialAcquisition, states};
 use crate::{
-    acme::{RustyAcme, RustyAcmeError},
+    acme,
+    acme::RustyAcmeError,
     pki_env::hooks::{HttpHeader, HttpMethod},
 };
 
@@ -31,7 +32,7 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
             Obfuscated::from(&self.sign_kp),
         );
 
-        let oidc_challenge_request = RustyAcme::oidc_chall_request(
+        let oidc_challenge_request = acme::oidc_chall_request(
             id_token,
             &self.data.oidc_challenge,
             &self.data.acme_account,
@@ -40,7 +41,7 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
             self.data.nonce.clone(),
         )?;
         let (nonce, response) = self.acme_request(url, &oidc_challenge_request).await?;
-        let _ = RustyAcme::new_chall_response(response)?;
+        let _ = acme::new_chall_response(response)?;
         log::info!(
             "acquisition({:?}): OIDC challenge completed",
             Obfuscated::from(&self.sign_kp),
@@ -48,7 +49,7 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
 
         // Finalize the order. This generates a CSR (Certificate Signing Request) and
         // sends it to the ACME server.
-        let finalize_request = RustyAcme::finalize_req(
+        let finalize_request = acme::finalize_req(
             &self.data.order,
             &self.data.acme_account,
             self.config.sign_alg,
@@ -57,7 +58,7 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
             nonce,
         )?;
         let (nonce, response) = self.acme_request(&self.data.order.finalize, &finalize_request).await?;
-        let finalize = RustyAcme::finalize_response(response)?;
+        let finalize = acme::finalize_response(response)?;
         log::debug!(
             "acquisition({:?}): ACME order finalized",
             Obfuscated::from(&self.sign_kp),
@@ -66,7 +67,7 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
         // Get the certificate chain.
         //
         // See [RFC 8555 Section 7.4.2](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2).
-        let certificate_request = RustyAcme::certificate_req(
+        let certificate_request = acme::certificate_req(
             &finalize,
             &self.data.acme_account,
             self.config.sign_alg,
@@ -82,7 +83,7 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
             .http_request(HttpMethod::Post, finalize.certificate.to_string(), headers, body)
             .await?;
         let response = String::from_utf8(response.body).map_err(|e| RustyAcmeError::from(e.utf8_error()))?;
-        let certificates = RustyAcme::certificate_response(response, self.data.order)?;
+        let certificates = acme::certificate_response(response, self.data.order)?;
         log::debug!(
             "acquisition({:?}): got the certificate",
             Obfuscated::from(&self.sign_kp),

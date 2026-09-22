@@ -4,7 +4,8 @@ use url::Url;
 
 use super::{Result, X509CredentialAcquisition, get_header, states};
 use crate::{
-    acme::{AcmeAccount, AcmeChallenge, AcmeChallengeType, AcmeOrder, RustyAcme, RustyAcmeError},
+    acme,
+    acme::{AcmeAccount, AcmeChallenge, AcmeChallengeType, AcmeOrder, RustyAcmeError},
     pki_env::hooks::HttpMethod,
 };
 
@@ -16,9 +17,9 @@ impl X509CredentialAcquisition<states::Initialized> {
         nonce: String,
     ) -> Result<(String, AcmeChallenge)> {
         let authz_request =
-            RustyAcme::new_authz_request(url, acme_account, self.config.sign_alg, &self.acme_kp, nonce.clone())?;
+            acme::new_authz_request(url, acme_account, self.config.sign_alg, &self.acme_kp, nonce.clone())?;
         let (nonce, response) = self.acme_request(url, &authz_request).await?;
-        let authorization = RustyAcme::new_authz_response(response)?;
+        let authorization = acme::new_authz_response(response)?;
         let [challenge] = authorization.challenges;
         log::debug!(
             "acquisition({:?}): got ACME challenge {:?}",
@@ -80,7 +81,7 @@ impl X509CredentialAcquisition<states::Initialized> {
             str::from_utf8(&resp.body),
         );
         let body = resp.json()?;
-        let directory = RustyAcme::acme_directory_response(body)?;
+        let directory = acme::acme_directory_response(body)?;
 
         let url = directory.new_nonce.to_string();
         let resp = hooks.http_request(HttpMethod::Head, url, vec![], vec![]).await?;
@@ -93,9 +94,9 @@ impl X509CredentialAcquisition<states::Initialized> {
         // Create a new ACME account.
         //
         // See [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3).
-        let account_request = RustyAcme::new_account_request(&directory, self.config.sign_alg, &self.acme_kp, nonce)?;
+        let account_request = acme::new_account_request(&directory, self.config.sign_alg, &self.acme_kp, nonce)?;
         let (nonce, response) = self.acme_request(&directory.new_account, &account_request).await?;
-        let acme_account = RustyAcme::new_account_response(response)?;
+        let acme_account = acme::new_account_response(response)?;
         log::debug!(
             "acquisition({:?}): created a new ACME account",
             Obfuscated::from(&self.sign_kp),
@@ -104,7 +105,7 @@ impl X509CredentialAcquisition<states::Initialized> {
         // Create a new ACME order.
         //
         // See [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4).
-        let order_request = RustyAcme::new_order_request(
+        let order_request = acme::new_order_request(
             &self.config.display_name,
             self.config.client_id.clone(),
             &self.config.handle.clone().into(),
@@ -116,7 +117,7 @@ impl X509CredentialAcquisition<states::Initialized> {
             nonce,
         )?;
         let (nonce, response) = self.acme_request(&directory.new_order, &order_request).await?;
-        let order = RustyAcme::new_order_response(response)?;
+        let order = acme::new_order_response(response)?;
         log::debug!(
             "acquisition({:?}): created a new ACME order",
             Obfuscated::from(&self.sign_kp),
@@ -165,7 +166,7 @@ impl X509CredentialAcquisition<states::Initialized> {
         // Complete the DPoP challenge.
         //
         // See [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1).
-        let dpop_challenge_request = RustyAcme::dpop_chall_request(
+        let dpop_challenge_request = acme::dpop_chall_request(
             access_token,
             dpop_challenge.clone(),
             &acme_account,
@@ -174,7 +175,7 @@ impl X509CredentialAcquisition<states::Initialized> {
             nonce,
         )?;
         let (nonce, response) = self.acme_request(&dpop_challenge.url, &dpop_challenge_request).await?;
-        let _ = RustyAcme::new_chall_response(response)?;
+        let _ = acme::new_chall_response(response)?;
         log::info!(
             "acquisition({:?}): DPoP challenge completed",
             Obfuscated::from(&self.sign_kp),
