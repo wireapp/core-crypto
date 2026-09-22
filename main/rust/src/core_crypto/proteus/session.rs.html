@@ -109,60 +109,61 @@
 <a href=#109 id=109 data-nosnippet>109</a>
 <a href=#110 id=110 data-nosnippet>110</a>    <span class="doccomment">/// Deletes a session in the store
 <a href=#111 id=111 data-nosnippet>111</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>session_delete(<span class="kw-2">&amp;mut </span><span class="self">self</span>, transaction: <span class="kw-2">&amp;</span>Transaction, session_id: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#112 id=112 data-nosnippet>112</a>        <span class="kw">if </span>ProteusSession::delete_borrowed(transaction, session_id).is_ok() {
-<a href=#113 id=113 data-nosnippet>113</a>            <span class="kw">let _ </span>= <span class="self">self</span>.proteus_sessions.remove(session_id);
-<a href=#114 id=114 data-nosnippet>114</a>        }
-<a href=#115 id=115 data-nosnippet>115</a>        <span class="prelude-val">Ok</span>(())
-<a href=#116 id=116 data-nosnippet>116</a>    }
-<a href=#117 id=117 data-nosnippet>117</a>
-<a href=#118 id=118 data-nosnippet>118</a>    <span class="doccomment">/// Session accessor
-<a href=#119 id=119 data-nosnippet>119</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>session(
-<a href=#120 id=120 data-nosnippet>120</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#121 id=121 data-nosnippet>121</a>        session_id: <span class="kw-2">&amp;</span>str,
-<a href=#122 id=122 data-nosnippet>122</a>        keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase,
-<a href=#123 id=123 data-nosnippet>123</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>ProteusConversationSession&gt;&gt; {
-<a href=#124 id=124 data-nosnippet>124</a>        <span class="self">self</span>.proteus_sessions.get_or_fetch(session_id, keystore).<span class="kw">await
-<a href=#125 id=125 data-nosnippet>125</a>    </span>}
-<a href=#126 id=126 data-nosnippet>126</a>
-<a href=#127 id=127 data-nosnippet>127</a>    <span class="doccomment">/// Session exists
-<a href=#128 id=128 data-nosnippet>128</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>session_exists(<span class="kw-2">&amp;mut </span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
-<a href=#129 id=129 data-nosnippet>129</a>        <span class="self">self</span>.session(session_id, keystore)
-<a href=#130 id=130 data-nosnippet>130</a>            .<span class="kw">await
-<a href=#131 id=131 data-nosnippet>131</a>            </span>.map(|maybe_session| maybe_session.is_some())
-<a href=#132 id=132 data-nosnippet>132</a>    }
-<a href=#133 id=133 data-nosnippet>133</a>
-<a href=#134 id=134 data-nosnippet>134</a>    <span class="doccomment">/// Proteus Session local hex-encoded fingerprint
-<a href=#135 id=135 data-nosnippet>135</a>    ///
-<a href=#136 id=136 data-nosnippet>136</a>    /// # Errors
-<a href=#137 id=137 data-nosnippet>137</a>    /// When the session is not found
-<a href=#138 id=138 data-nosnippet>138</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>fingerprint_local(
-<a href=#139 id=139 data-nosnippet>139</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#140 id=140 data-nosnippet>140</a>        session_id: <span class="kw-2">&amp;</span>str,
-<a href=#141 id=141 data-nosnippet>141</a>        keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase,
-<a href=#142 id=142 data-nosnippet>142</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-<a href=#143 id=143 data-nosnippet>143</a>        <span class="kw">let </span>session = <span class="self">self
-<a href=#144 id=144 data-nosnippet>144</a>            </span>.session(session_id, keystore)
-<a href=#145 id=145 data-nosnippet>145</a>            .<span class="kw">await</span><span class="question-mark">?
-<a href=#146 id=146 data-nosnippet>146</a>            </span>.ok_or_else(|| ProteusErrorKind::SessionNotFound(session_id.to_owned()))
-<a href=#147 id=147 data-nosnippet>147</a>            .map_err(ProteusError::wrap(<span class="string">"getting session"</span>))<span class="question-mark">?</span>;
-<a href=#148 id=148 data-nosnippet>148</a>        <span class="prelude-val">Ok</span>(session.fingerprint_local())
-<a href=#149 id=149 data-nosnippet>149</a>    }
-<a href=#150 id=150 data-nosnippet>150</a>
-<a href=#151 id=151 data-nosnippet>151</a>    <span class="doccomment">/// Proteus Session remote hex-encoded fingerprint
-<a href=#152 id=152 data-nosnippet>152</a>    ///
-<a href=#153 id=153 data-nosnippet>153</a>    /// # Errors
-<a href=#154 id=154 data-nosnippet>154</a>    /// When the session is not found
-<a href=#155 id=155 data-nosnippet>155</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>fingerprint_remote(
-<a href=#156 id=156 data-nosnippet>156</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#157 id=157 data-nosnippet>157</a>        session_id: <span class="kw-2">&amp;</span>str,
-<a href=#158 id=158 data-nosnippet>158</a>        keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase,
-<a href=#159 id=159 data-nosnippet>159</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-<a href=#160 id=160 data-nosnippet>160</a>        <span class="kw">let </span>session = <span class="self">self
-<a href=#161 id=161 data-nosnippet>161</a>            </span>.session(session_id, keystore)
-<a href=#162 id=162 data-nosnippet>162</a>            .<span class="kw">await</span><span class="question-mark">?
-<a href=#163 id=163 data-nosnippet>163</a>            </span>.ok_or_else(|| ProteusErrorKind::SessionNotFound(session_id.to_owned()))
-<a href=#164 id=164 data-nosnippet>164</a>            .map_err(ProteusError::wrap(<span class="string">"getting session"</span>))<span class="question-mark">?</span>;
-<a href=#165 id=165 data-nosnippet>165</a>        <span class="prelude-val">Ok</span>(session.fingerprint_remote())
-<a href=#166 id=166 data-nosnippet>166</a>    }
-<a href=#167 id=167 data-nosnippet>167</a>}
+<a href=#112 id=112 data-nosnippet>112</a>        ProteusSession::delete_borrowed(transaction, session_id)
+<a href=#113 id=113 data-nosnippet>113</a>            .map_err(KeystoreError::wrap(<span class="string">"deleting proteus session"</span>))<span class="question-mark">?</span>;
+<a href=#114 id=114 data-nosnippet>114</a>        <span class="self">self</span>.proteus_sessions.remove(session_id);
+<a href=#115 id=115 data-nosnippet>115</a>
+<a href=#116 id=116 data-nosnippet>116</a>        <span class="prelude-val">Ok</span>(())
+<a href=#117 id=117 data-nosnippet>117</a>    }
+<a href=#118 id=118 data-nosnippet>118</a>
+<a href=#119 id=119 data-nosnippet>119</a>    <span class="doccomment">/// Session accessor
+<a href=#120 id=120 data-nosnippet>120</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>session(
+<a href=#121 id=121 data-nosnippet>121</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#122 id=122 data-nosnippet>122</a>        session_id: <span class="kw-2">&amp;</span>str,
+<a href=#123 id=123 data-nosnippet>123</a>        keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase,
+<a href=#124 id=124 data-nosnippet>124</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;mut </span>ProteusConversationSession&gt;&gt; {
+<a href=#125 id=125 data-nosnippet>125</a>        <span class="self">self</span>.proteus_sessions.get_or_fetch(session_id, keystore).<span class="kw">await
+<a href=#126 id=126 data-nosnippet>126</a>    </span>}
+<a href=#127 id=127 data-nosnippet>127</a>
+<a href=#128 id=128 data-nosnippet>128</a>    <span class="doccomment">/// Session exists
+<a href=#129 id=129 data-nosnippet>129</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>session_exists(<span class="kw-2">&amp;mut </span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
+<a href=#130 id=130 data-nosnippet>130</a>        <span class="self">self</span>.session(session_id, keystore)
+<a href=#131 id=131 data-nosnippet>131</a>            .<span class="kw">await
+<a href=#132 id=132 data-nosnippet>132</a>            </span>.map(|maybe_session| maybe_session.is_some())
+<a href=#133 id=133 data-nosnippet>133</a>    }
+<a href=#134 id=134 data-nosnippet>134</a>
+<a href=#135 id=135 data-nosnippet>135</a>    <span class="doccomment">/// Proteus Session local hex-encoded fingerprint
+<a href=#136 id=136 data-nosnippet>136</a>    ///
+<a href=#137 id=137 data-nosnippet>137</a>    /// # Errors
+<a href=#138 id=138 data-nosnippet>138</a>    /// When the session is not found
+<a href=#139 id=139 data-nosnippet>139</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>fingerprint_local(
+<a href=#140 id=140 data-nosnippet>140</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#141 id=141 data-nosnippet>141</a>        session_id: <span class="kw-2">&amp;</span>str,
+<a href=#142 id=142 data-nosnippet>142</a>        keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase,
+<a href=#143 id=143 data-nosnippet>143</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+<a href=#144 id=144 data-nosnippet>144</a>        <span class="kw">let </span>session = <span class="self">self
+<a href=#145 id=145 data-nosnippet>145</a>            </span>.session(session_id, keystore)
+<a href=#146 id=146 data-nosnippet>146</a>            .<span class="kw">await</span><span class="question-mark">?
+<a href=#147 id=147 data-nosnippet>147</a>            </span>.ok_or_else(|| ProteusErrorKind::SessionNotFound(session_id.to_owned()))
+<a href=#148 id=148 data-nosnippet>148</a>            .map_err(ProteusError::wrap(<span class="string">"getting session"</span>))<span class="question-mark">?</span>;
+<a href=#149 id=149 data-nosnippet>149</a>        <span class="prelude-val">Ok</span>(session.fingerprint_local())
+<a href=#150 id=150 data-nosnippet>150</a>    }
+<a href=#151 id=151 data-nosnippet>151</a>
+<a href=#152 id=152 data-nosnippet>152</a>    <span class="doccomment">/// Proteus Session remote hex-encoded fingerprint
+<a href=#153 id=153 data-nosnippet>153</a>    ///
+<a href=#154 id=154 data-nosnippet>154</a>    /// # Errors
+<a href=#155 id=155 data-nosnippet>155</a>    /// When the session is not found
+<a href=#156 id=156 data-nosnippet>156</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>fingerprint_remote(
+<a href=#157 id=157 data-nosnippet>157</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#158 id=158 data-nosnippet>158</a>        session_id: <span class="kw-2">&amp;</span>str,
+<a href=#159 id=159 data-nosnippet>159</a>        keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase,
+<a href=#160 id=160 data-nosnippet>160</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
+<a href=#161 id=161 data-nosnippet>161</a>        <span class="kw">let </span>session = <span class="self">self
+<a href=#162 id=162 data-nosnippet>162</a>            </span>.session(session_id, keystore)
+<a href=#163 id=163 data-nosnippet>163</a>            .<span class="kw">await</span><span class="question-mark">?
+<a href=#164 id=164 data-nosnippet>164</a>            </span>.ok_or_else(|| ProteusErrorKind::SessionNotFound(session_id.to_owned()))
+<a href=#165 id=165 data-nosnippet>165</a>            .map_err(ProteusError::wrap(<span class="string">"getting session"</span>))<span class="question-mark">?</span>;
+<a href=#166 id=166 data-nosnippet>166</a>        <span class="prelude-val">Ok</span>(session.fingerprint_remote())
+<a href=#167 id=167 data-nosnippet>167</a>    }
+<a href=#168 id=168 data-nosnippet>168</a>}
 </code></pre></div></section></main></body></html>
