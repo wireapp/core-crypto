@@ -60,11 +60,8 @@ impl ConversationMut {
     /// Allows to remove a pending commit. Use this when backend rejects the commit
     /// you just sent e.g. if permissions have changed meanwhile.
     ///
-    /// **CAUTION**: only use this when you had an explicit response from the Delivery Service
-    /// e.g. 403. Do not use otherwise e.g. 5xx responses, timeout etc..
-    /// **DO NOT** use when Delivery Service responds 409, pending state will be renewed
-    /// in [ConversationGuard::decrypt_message]
-    ///
+    /// Called unconditionally on a mls transport error; clients need to recreate the commits themselves
+    /// in that case.
     ///
     /// # Errors
     /// When there is no pending commit
