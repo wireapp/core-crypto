@@ -53,7 +53,6 @@ fn generate_authority_config(cfg: &CaCfg) -> serde_json::Value {
     let b64_sign_key = BASE64_STANDARD.encode(sign_key);
     let transform = serde_json::to_string(&oidc_template).unwrap();
 
-    // TODO: remove RS256 when EcDSA & EdDSA are supported in Dex
     json!({
         "provisioners": [
         {
