@@ -1172,7 +1172,6 @@ dependencies = [
  "spki 0.8.0",
  "tempfile",
  "thiserror 2.0.20",
- "time",
  "tls_codec",
  "typed-builder",
  "uuid",

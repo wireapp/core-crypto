@@ -91,7 +91,6 @@ rstest.workspace = true
 rstest_reuse.workspace = true
 futures-util = { workspace = true, features = ["std", "alloc"] }
 async-trait.workspace = true
-time = { workspace = true, features = ["wasm-bindgen"] }
 core-crypto-keystore = { workspace = true, features = ["dummy-entity"] }
 rmp-serde.workspace = true
 smol.workspace = true
