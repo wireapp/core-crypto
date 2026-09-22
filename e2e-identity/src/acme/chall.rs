@@ -1,70 +1,68 @@
 use rusty_jwt_tools::prelude::{JwsAlgorithm, Pem};
 
-use crate::acme::{AcmeAccount, AcmeJws, RustyAcme, RustyAcmeError, RustyAcmeResult};
+use crate::acme::{AcmeAccount, AcmeJws, RustyAcmeError, RustyAcmeResult};
 
-impl RustyAcme {
-    /// client id challenge request to `POST /acme/challenge/{token}`
-    /// see [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1)
-    pub(crate) fn dpop_chall_request(
-        access_token: String,
-        dpop_chall: AcmeChallenge,
-        account: &AcmeAccount,
-        alg: JwsAlgorithm,
-        kp: &Pem,
-        previous_nonce: String,
-    ) -> RustyAcmeResult<AcmeJws> {
-        // Extract the account URL from previous response which created a new account
-        let acct_url = account.acct_url()?;
+/// client id challenge request to `POST /acme/challenge/{token}`
+/// see [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1)
+pub(crate) fn dpop_chall_request(
+    access_token: String,
+    dpop_chall: AcmeChallenge,
+    account: &AcmeAccount,
+    alg: JwsAlgorithm,
+    kp: &Pem,
+    previous_nonce: String,
+) -> RustyAcmeResult<AcmeJws> {
+    // Extract the account URL from previous response which created a new account
+    let acct_url = account.acct_url()?;
 
-        let payload = Some(serde_json::json!({
-            "access_token": access_token,
-        }));
+    let payload = Some(serde_json::json!({
+        "access_token": access_token,
+    }));
 
-        let req = AcmeJws::new(alg, previous_nonce, &dpop_chall.url, Some(&acct_url), payload, kp)?;
-        Ok(req)
-    }
+    let req = AcmeJws::new(alg, previous_nonce, &dpop_chall.url, Some(&acct_url), payload, kp)?;
+    Ok(req)
+}
 
-    /// oidc challenge request to `POST /acme/challenge/{token}`
-    /// see [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1)
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn oidc_chall_request(
-        id_token: String,
-        oidc_chall: &AcmeChallenge,
-        account: &AcmeAccount,
-        alg: JwsAlgorithm,
-        kp: &Pem,
-        previous_nonce: String,
-    ) -> RustyAcmeResult<AcmeJws> {
-        // Extract the account URL from previous response which created a new account
-        let acct_url = account.acct_url()?;
-        let payload = Some(serde_json::json!({
-            "id_token": id_token,
-        }));
-        let req = AcmeJws::new(alg, previous_nonce, &oidc_chall.url, Some(&acct_url), payload, kp)?;
-        Ok(req)
-    }
+/// oidc challenge request to `POST /acme/challenge/{token}`
+/// see [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1)
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn oidc_chall_request(
+    id_token: String,
+    oidc_chall: &AcmeChallenge,
+    account: &AcmeAccount,
+    alg: JwsAlgorithm,
+    kp: &Pem,
+    previous_nonce: String,
+) -> RustyAcmeResult<AcmeJws> {
+    // Extract the account URL from previous response which created a new account
+    let acct_url = account.acct_url()?;
+    let payload = Some(serde_json::json!({
+        "id_token": id_token,
+    }));
+    let req = AcmeJws::new(alg, previous_nonce, &oidc_chall.url, Some(&acct_url), payload, kp)?;
+    Ok(req)
+}
 
-    /// 18. parse the response from `POST /acme/challenge/{token}` [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1)
-    pub(crate) fn new_chall_response(response: serde_json::Value) -> RustyAcmeResult<AcmeChallenge> {
-        let chall = serde_json::from_value::<AcmeChallenge>(response)?;
-        match chall.status {
-            Some(AcmeChallengeStatus::Valid) => {}
-            Some(AcmeChallengeStatus::Processing) => return Err(AcmeChallError::Processing)?,
-            Some(AcmeChallengeStatus::Invalid) => return Err(AcmeChallError::Invalid)?,
-            Some(AcmeChallengeStatus::Pending) => {
-                return Err(RustyAcmeError::ClientImplementationError(
-                    "a challenge is not supposed to be pending at this point. \
+/// 18. parse the response from `POST /acme/challenge/{token}` [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1)
+pub(crate) fn new_chall_response(response: serde_json::Value) -> RustyAcmeResult<AcmeChallenge> {
+    let chall = serde_json::from_value::<AcmeChallenge>(response)?;
+    match chall.status {
+        Some(AcmeChallengeStatus::Valid) => {}
+        Some(AcmeChallengeStatus::Processing) => return Err(AcmeChallError::Processing)?,
+        Some(AcmeChallengeStatus::Invalid) => return Err(AcmeChallError::Invalid)?,
+        Some(AcmeChallengeStatus::Pending) => {
+            return Err(RustyAcmeError::ClientImplementationError(
+                "a challenge is not supposed to be pending at this point. \
                     It must either be 'valid' or 'processing'.",
-                ));
-            }
-            None => {
-                return Err(RustyAcmeError::ClientImplementationError(
-                    "at this point a challenge is supposed to have a status",
-                ));
-            }
+            ));
         }
-        Ok(chall)
+        None => {
+            return Err(RustyAcmeError::ClientImplementationError(
+                "at this point a challenge is supposed to have a status",
+            ));
+        }
     }
+    Ok(chall)
 }
 
 #[derive(Debug, thiserror::Error)]
