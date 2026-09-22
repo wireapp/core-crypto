@@ -5,7 +5,11 @@ use jwt_simple::prelude::*;
 use rusty_jwt_tools::prelude::{JwsAlgorithm, Pem};
 use signature::Signer as _;
 use spki::SignatureBitStringEncoding as _;
-use x509_cert::der::Encode as _;
+use x509_cert::{
+    builder::Builder as _,
+    der::Encode as _,
+    ext::pkix::{SubjectAltName, name::GeneralName},
+};
 
 use crate::acme::{AcmeAccount, AcmeJws, AcmeOrder, Result, identifier::CanonicalIdentifier, order::AcmeOrderError};
 
@@ -34,21 +38,41 @@ pub(crate) fn finalize_req(
     Ok(req)
 }
 
-fn generate_csr(alg: JwsAlgorithm, identifier: CanonicalIdentifier, kp: &Pem) -> Result<String> {
-    let algorithm = csr_alg(alg)?;
-    let cert_info = x509_cert::request::CertReqInfo {
-        version: x509_cert::request::Version::V1,
-        subject: x509_cert::name::Name::hazmat_from_rdn_sequence(csr_subject(&identifier)?),
-        public_key: csr_spki(alg, kp)?,
-        attributes: csr_attributes(identifier)?,
-    };
-    let signature = csr_signature(alg, kp, &cert_info)?;
+fn uri(value: &str) -> Result<GeneralName> {
+    Ok(GeneralName::UniformResourceIdentifier(
+        x509_cert::der::asn1::Ia5String::new(value)?,
+    ))
+}
 
-    let csr = x509_cert::request::CertReq {
-        info: cert_info,
-        algorithm,
-        signature,
+fn generate_csr(alg: JwsAlgorithm, identifier: CanonicalIdentifier, kp: &Pem) -> Result<String> {
+    let subject = x509_cert::name::Name::hazmat_from_rdn_sequence(csr_subject(&identifier)?);
+    let mut builder = x509_cert::builder::RequestBuilder::new(subject)?;
+
+    builder.add_extension(&SubjectAltName(vec![
+        uri(&identifier.client_id)?,
+        uri(&identifier.handle)?,
+    ]))?;
+
+    let csr = match alg {
+        JwsAlgorithm::Ed25519 => {
+            let kp_bytes = ed25519_dalek::pkcs8::KeypairBytes::from_str(kp.as_ref())?;
+            let signing_key = ed25519_dalek::SigningKey::try_from(kp_bytes)?;
+            builder.build(&signing_key)?
+        }
+        JwsAlgorithm::P256 => {
+            let sk = p256::ecdsa::SigningKey::from_str(kp)?;
+            builder.build::<_, p256::ecdsa::DerSignature>(&sk)?
+        }
+        JwsAlgorithm::P384 => {
+            let sk = p384::ecdsa::SigningKey::from_str(kp)?;
+            builder.build::<_, p384::ecdsa::DerSignature>(&sk)?
+        }
+        JwsAlgorithm::P521 => {
+            let sk = p521::ecdsa::SigningKey::from_str(kp)?;
+            builder.build::<_, p521::ecdsa::DerSignature>(&sk)?
+        }
     };
+
     let csr = csr.to_der()?;
     let csr = base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(csr);
     Ok(csr)
