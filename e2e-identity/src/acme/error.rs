@@ -10,6 +10,9 @@ pub enum Error {
     /// Error while building a JWT
     #[error(transparent)]
     Jwt(#[from] rusty_jwt_tools::prelude::RustyJwtError),
+    /// x509-cert builder error
+    #[error(transparent)]
+    X509CertBuilder(#[from] x509_cert::builder::Error),
     /// Failed mapping an ASN.1 ObjectIdentifier
     #[error(transparent)]
     Oid(#[from] x509_cert::der::oid::Error),
