@@ -2,50 +2,48 @@ use base64::Engine;
 use rusty_jwt_tools::prelude::{JwsAlgorithm, Pem};
 
 use crate::acme::{
-    AcmeAccount, AcmeChallenge, AcmeChallengeType, AcmeIdentifier, AcmeJws, RustyAcme, RustyAcmeError, RustyAcmeResult,
+    AcmeAccount, AcmeChallenge, AcmeChallengeType, AcmeIdentifier, AcmeJws, RustyAcmeError, RustyAcmeResult,
 };
 
-impl RustyAcme {
-    /// create authorizations
-    /// see [RFC 8555 Section 7.5](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5)
-    pub(crate) fn new_authz_request(
-        url: &url::Url,
-        account: &AcmeAccount,
-        alg: JwsAlgorithm,
-        kp: &Pem,
-        previous_nonce: String,
-    ) -> RustyAcmeResult<AcmeJws> {
-        // Extract the account URL from previous response which created a new account
-        let acct_url = account.acct_url()?;
+/// create authorizations
+/// see [RFC 8555 Section 7.5](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5)
+pub(crate) fn new_authz_request(
+    url: &url::Url,
+    account: &AcmeAccount,
+    alg: JwsAlgorithm,
+    kp: &Pem,
+    previous_nonce: String,
+) -> RustyAcmeResult<AcmeJws> {
+    // Extract the account URL from previous response which created a new account
+    let acct_url = account.acct_url()?;
 
-        // No payload required for authz
-        let payload = None::<serde_json::Value>;
-        let req = AcmeJws::new(alg, previous_nonce, url, Some(&acct_url), payload, kp)?;
-        Ok(req)
-    }
+    // No payload required for authz
+    let payload = None::<serde_json::Value>;
+    let req = AcmeJws::new(alg, previous_nonce, url, Some(&acct_url), payload, kp)?;
+    Ok(req)
+}
 
-    /// parse the response from `POST /acme/authz/{authz_id}`
-    /// [RFC 8555 Section 7.5](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5)
-    pub(crate) fn new_authz_response(response: serde_json::Value) -> RustyAcmeResult<AcmeAuthz> {
-        let authz = serde_json::from_value::<AcmeAuthz>(response)?;
+/// parse the response from `POST /acme/authz/{authz_id}`
+/// [RFC 8555 Section 7.5](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5)
+pub(crate) fn new_authz_response(response: serde_json::Value) -> RustyAcmeResult<AcmeAuthz> {
+    let authz = serde_json::from_value::<AcmeAuthz>(response)?;
 
-        authz.verify()?;
+    authz.verify()?;
 
-        match authz.status {
-            AuthzStatus::Pending => {}
-            AuthzStatus::Invalid => return Err(AcmeAuthzError::Invalid)?,
-            AuthzStatus::Revoked => return Err(AcmeAuthzError::Revoked)?,
-            AuthzStatus::Deactivated => return Err(AcmeAuthzError::Deactivated)?,
-            AuthzStatus::Expired => return Err(AcmeAuthzError::Expired)?,
-            AuthzStatus::Valid => {
-                return Err(RustyAcmeError::ClientImplementationError(
-                    "an authorization is not supposed to be valid at this point. \
+    match authz.status {
+        AuthzStatus::Pending => {}
+        AuthzStatus::Invalid => return Err(AcmeAuthzError::Invalid)?,
+        AuthzStatus::Revoked => return Err(AcmeAuthzError::Revoked)?,
+        AuthzStatus::Deactivated => return Err(AcmeAuthzError::Deactivated)?,
+        AuthzStatus::Expired => return Err(AcmeAuthzError::Expired)?,
+        AuthzStatus::Valid => {
+            return Err(RustyAcmeError::ClientImplementationError(
+                "an authorization is not supposed to be valid at this point. \
                     You should only use this method to parse the response of an authorization creation.",
-                ));
-            }
+            ));
         }
-        Ok(authz)
     }
+    Ok(authz)
 }
 
 #[derive(Debug, thiserror::Error)]
