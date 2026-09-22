@@ -1,14 +1,12 @@
-use crate::acme::{RustyAcme, RustyAcmeError, RustyAcmeResult};
+use crate::acme::{RustyAcmeError, RustyAcmeResult};
 
-impl RustyAcme {
-    /// First, call the directory endpoint `GET /acme/{provisioner_name}/directory`.
-    /// Then pass the response to this method to deserialize it
-    /// see [RFC 8555 Section 7.1.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1)
-    pub(crate) fn acme_directory_response(response: serde_json::Value) -> RustyAcmeResult<AcmeDirectory> {
-        let directory = serde_json::from_value::<AcmeDirectory>(response)
-            .map_err(|_| RustyAcmeError::SmallstepImplementationError("Invalid directory response"))?;
-        Ok(directory)
-    }
+/// First, call the directory endpoint `GET /acme/{provisioner_name}/directory`.
+/// Then pass the response to this method to deserialize it
+/// see [RFC 8555 Section 7.1.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1)
+pub(crate) fn acme_directory_response(response: serde_json::Value) -> RustyAcmeResult<AcmeDirectory> {
+    let directory = serde_json::from_value::<AcmeDirectory>(response)
+        .map_err(|_| RustyAcmeError::SmallstepImplementationError("Invalid directory response"))?;
+    Ok(directory)
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
