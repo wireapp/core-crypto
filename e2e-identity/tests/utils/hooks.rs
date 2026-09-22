@@ -8,7 +8,7 @@ use wire_e2e_identity::pki_env::hooks::{
 use crate::utils::{
     OauthCfg, WireServer,
     ctx::ctx_get_http_client_builder,
-    idp::{IdpServer, OidcProvider, fetch_id_token},
+    idp::{IdpServer, fetch_id_token},
     stepca::AcmeServer,
 };
 
@@ -83,14 +83,7 @@ impl PkiEnvironmentHooks for TestPkiEnvironmentHooks {
             client_id: "wireapp".to_string(),
             redirect_uri: self.wire_server.oauth_redirect_uri(),
         };
-        let mut oidc_target = idp.clone();
-
-        // TODO: this is a temporary workaround to make sure this works with both Keycloak
-        // and Authelia. See the comment about the issuer URL in authelia::fetch_id_token.
-        if self.idp_server.provider == OidcProvider::Authelia && !oidc_target.ends_with("/") {
-            oidc_target.push('/');
-        }
-        let oidc_target = url::Url::parse(&oidc_target).unwrap();
+        let oidc_target = url::Url::parse(&idp).unwrap();
         let id_token = fetch_id_token(&self.idp_server, &oauth_cfg, &oidc_target, &key_auth, &acme_aud).await;
         Ok(id_token)
     }
