@@ -1,5 +1,5 @@
 import type { Bench, Task } from "tinybench";
-import { CipherSuite } from "#core-crypto";
+import type { CipherSuite } from "#core-crypto";
 import { isNumberObject } from "node:util/types";
 import { mkdir } from "node:fs/promises";
 import { writeFile } from "node:fs/promises";
@@ -50,14 +50,6 @@ type MessageParameterSet = {
 const DEFAULT_MESSAGE_COUNTS = [1, 10, 100];
 const DEFAULT_MESSAGE_SIZES = [16, 1024, 65536];
 const DEFAULT_USER_COUNTS = [1, 10, 100];
-const DEFAULT_CIPHER_SUITES = [
-    CipherSuite.Mls128Dhkemx25519Aes128gcmSha256Ed25519,
-    CipherSuite.Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519,
-    CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256,
-    CipherSuite.Mls256Dhkemp384Aes256gcmSha384P384,
-    CipherSuite.Mls256Dhkemp521Aes256gcmSha512P521,
-];
-
 function parsePositiveIntegerList(
     envVarName: string,
     fallback: number[]
@@ -72,24 +64,36 @@ function parsePositiveIntegerList(
     return values.map((value) => Number.parseInt(value, 10));
 }
 
-function parseCipherSuiteList(
-    envVarName: string,
-    fallback: number[]
-): number[] {
+async function parseCipherSuiteList(
+    envVarName: string
+): Promise<CipherSuite[]> {
     const rawValue = process.env[envVarName];
+    const values =
+        rawValue === undefined || rawValue.trim() === ""
+            ? undefined
+            : rawValue.split(",").map((value) => value.trim());
 
-    if (rawValue === undefined || rawValue.trim() === "") {
-        return fallback;
-    }
-
-    const values = rawValue.split(",").map((value) => value.trim());
-    return values.map((value) => {
-        const index = Number(value)
-        if (!Object.values(CipherSuite).includes(index)) {
-            throw new Error(`Invalid cipher suite override: ${value}`);
+    return await runOnPlatform((values) => {
+        if (values === undefined) {
+            return [
+                ccModule.CipherSuite
+                    .Mls128Dhkemx25519Aes128gcmSha256Ed25519,
+                ccModule.CipherSuite
+                    .Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519,
+                ccModule.CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256,
+                ccModule.CipherSuite.Mls256Dhkemp384Aes256gcmSha384P384,
+                ccModule.CipherSuite.Mls256Dhkemp521Aes256gcmSha512P521,
+            ];
         }
-        return index as CipherSuite
-    });
+
+        return values.map((value) => {
+            const index = Number(value);
+            if (!Object.values(ccModule.CipherSuite).includes(index)) {
+                throw new Error(`Invalid cipher suite override: ${value}`);
+            }
+            return index as CipherSuite;
+        });
+    }, values);
 }
 
 export async function messageBenchmarkParameters(): Promise<
@@ -103,9 +107,8 @@ export async function messageBenchmarkParameters(): Promise<
         "BENCHMARK_MESSAGE_SIZES",
         DEFAULT_MESSAGE_SIZES
     );
-    const cipherSuites = parseCipherSuiteList(
-        "BENCHMARK_CIPHER_SUITES",
-        DEFAULT_CIPHER_SUITES
+    const cipherSuites = await parseCipherSuiteList(
+        "BENCHMARK_CIPHER_SUITES"
     );
 
     function* benchmarkCombinations() {
@@ -131,9 +134,8 @@ export async function userBenchmarkParameters(): Promise<UserParameterSet[]> {
         "BENCHMARK_USER_COUNTS",
         DEFAULT_USER_COUNTS
     );
-    const cipherSuites = parseCipherSuiteList(
-        "BENCHMARK_CIPHER_SUITES",
-        DEFAULT_CIPHER_SUITES
+    const cipherSuites = await parseCipherSuiteList(
+        "BENCHMARK_CIPHER_SUITES"
     );
 
     function* benchmarkCombinations() {
