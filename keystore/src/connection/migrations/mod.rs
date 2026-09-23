@@ -254,7 +254,8 @@ pub(crate) mod test {
         ancillary::ConversationIdRef,
         connection::{Database, DatabaseKey, migrate_db_key_type_to_bytes, migrations::MigrationTarget},
         entities::{
-            MlsPendingMessage, StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle,
+            MlsPendingMessage, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
+            StoredHpkePrivateKey, StoredPskBundle,
         },
         migrations::StoredCredentialV36,
         traits::{Entity, EntityGetBorrowed as _, PrimaryKey as _, SearchableEntity as _},
@@ -1179,6 +1180,134 @@ r9IJmL6kDQ==
             assert!(
                 credential_exists,
                 "(credential_id, credential_type) must reference a credential which is actually in mls_credentials"
+            );
+        });
+    }
+
+    /// V41 carries a live conversation's epoch keypairs across the table rebuild and leaves orphaned
+    /// ones behind.
+    ///
+    /// Until V41 nothing reliably deleted an `epoch_encryption_keypairs` row, so a keystore which has wiped
+    /// an active conversation still holds that conversation's HPKE private keys. V41's foreign key stops
+    /// more of them accumulating; the `WHERE conversation_id IN (SELECT id FROM mls_groups)` on its copy
+    /// is what disposes of the ones already there, because a row the new constraint cannot accept must
+    /// not be carried into the rebuilt table.
+    ///
+    /// The live conversation is seeded with two rows at different leaf indices. Only one of them can be
+    /// the conversation's current leaf, so this also pins that the filter selects by conversation rather
+    /// than by the full primary key: key material we still need is kept wherever it sits in the table.
+    #[test]
+    fn v41_keeps_a_live_conversations_epoch_keypairs_and_discards_orphaned_ones() {
+        const LIVE_CONVERSATION: &[u8] = b"a conversation which still exists when V41 runs";
+        const WIPED_CONVERSATION: &[u8] = b"a conversation wiped while nothing cleaned up after it";
+        const CREDENTIAL_ID: &[u8] = b"the credential the live conversation was created with";
+        const CREDENTIAL_TYPE: u16 = 1;
+
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let db = seed_then_migrate(path, &key, 40, |conn| {
+                // V40 made `mls_groups.credential_id` a foreign key onto `mls_credentials`, so the
+                // credential has to exist before the conversation which refers to it.
+                conn.execute(
+                    "INSERT INTO mls_credentials
+                        (public_key_sha256, credential_type, public_key, session_id, credential, ciphersuite,
+                         private_key)
+                     VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        CREDENTIAL_ID,
+                        CREDENTIAL_TYPE,
+                        b"public key".as_slice(),
+                        b"session id".as_slice(),
+                        b"credential".as_slice(),
+                        1,
+                        b"private key".as_slice(),
+                    ),
+                )
+                .expect("inserting the credential the live conversation refers to");
+                conn.execute(
+                    "INSERT INTO mls_groups
+                        (id, state, epoch, ciphersuite, credential_id, credential_type, own_leaf_index, is_pending)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        LIVE_CONVERSATION,
+                        b"group state".as_slice(),
+                        2,
+                        1,
+                        CREDENTIAL_ID,
+                        CREDENTIAL_TYPE,
+                        3,
+                        false,
+                    ),
+                )
+                .expect("inserting the live conversation");
+
+                // The pre-V41 table has no foreign key, so the wiped conversation's row inserts just as
+                // readily as the live conversation's.
+                for (conversation_id, own_leaf_index, epoch, keypairs) in [
+                    (
+                        LIVE_CONVERSATION,
+                        3,
+                        2,
+                        b"keypairs at the live conversation's current leaf".as_slice(),
+                    ),
+                    (
+                        LIVE_CONVERSATION,
+                        0,
+                        1,
+                        b"keypairs left at a leaf index we have since moved off".as_slice(),
+                    ),
+                    (
+                        WIPED_CONVERSATION,
+                        0,
+                        1,
+                        b"keypairs of a conversation the user asked us to destroy".as_slice(),
+                    ),
+                ] {
+                    conn.execute(
+                        "INSERT INTO epoch_encryption_keypairs (conversation_id, own_leaf_index, epoch, keypairs)
+                         VALUES (?, ?, ?, ?)",
+                        (conversation_id, own_leaf_index, epoch, keypairs),
+                    )
+                    .expect("inserting an epoch keypair row");
+                }
+            })
+            .await;
+            let conn = db.conn().await;
+
+            let mut migrated = StoredEpochEncryptionKeypair::load_all(&conn).expect("loading migrated keypairs");
+            migrated.sort_by_key(|keypair| keypair.epoch);
+            let migrated = migrated
+                .iter()
+                .map(|keypair| {
+                    (
+                        keypair.conversation_id.bytes(),
+                        keypair.own_leaf_idx,
+                        keypair.epoch,
+                        keypair.keypairs.as_slice(),
+                    )
+                })
+                .collect::<Vec<_>>();
+
+            assert_eq!(
+                migrated,
+                [
+                    (
+                        LIVE_CONVERSATION,
+                        0,
+                        1,
+                        b"keypairs left at a leaf index we have since moved off".as_slice()
+                    ),
+                    (
+                        LIVE_CONVERSATION,
+                        3,
+                        2,
+                        b"keypairs at the live conversation's current leaf".as_slice()
+                    ),
+                ],
+                "V41 must carry every row of a live conversation across intact, and keep nothing belonging \
+                 to a conversation which no longer has a group"
             );
         });
     }
