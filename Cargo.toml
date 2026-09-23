@@ -15,6 +15,7 @@ resolver = "2"
 [workspace.lints.clippy]
 missing_safety_doc = "deny"
 undocumented_unsafe_blocks = "deny"
+unused_async = "warn"
 
 [workspace.lints.rust]
 unreachable_pub = "warn"
