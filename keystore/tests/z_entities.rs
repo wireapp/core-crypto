@@ -135,8 +135,8 @@ mod tests_impl {
     use core_crypto_keystore::{
         CryptoKeystoreError, Transactionlike,
         entities::{
-            MlsPendingMessage, PersistedMlsGroup, StoredCredential, TargetedMessageRxCounter, TntMessageTxCounter,
-            TransientMessageRxCounter,
+            MlsPendingMessage, PersistedMlsGroup, StoredCredential, StoredEpochEncryptionKeypair,
+            TargetedMessageRxCounter, TntMessageTxCounter, TransientMessageRxCounter,
         },
         traits::{
             Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase as _,
@@ -202,14 +202,17 @@ mod tests_impl {
 
         let group_id_as_foreign_key = match_heterogenous!(any_e => {
             // tnt message counters also have a foreign key constraint which must be satisfied
-            counter @ TntMessageTxCounter { .. } => {
-                Some(counter.conversation_id.clone())
+            TntMessageTxCounter { conversation_id, .. } => {
+                Some(conversation_id.clone())
             },
-            counter @ TargetedMessageRxCounter { .. } => {
-                Some(counter.conversation_id.clone())
+            TargetedMessageRxCounter { conversation_id, .. } => {
+                Some(conversation_id.clone())
             },
-            counter @ TransientMessageRxCounter { .. } => {
-                Some(counter.conversation_id.clone())
+            TransientMessageRxCounter { conversation_id, .. } => {
+                Some(conversation_id.clone())
+            },
+            StoredEpochEncryptionKeypair { conversation_id, .. } => {
+                Some(conversation_id.clone())
             },
             ||=> None,
         });
@@ -313,14 +316,17 @@ mod tests_impl {
         let any_e = &entity as &dyn Any;
 
         let group_id_as_foreign_key = match_heterogenous!(any_e => {
-            counter @ TntMessageTxCounter { .. } => {
-                Some(counter.conversation_id.clone())
+            TntMessageTxCounter { conversation_id, .. } => {
+                Some(conversation_id.clone())
             },
-            counter @ TargetedMessageRxCounter { .. } => {
-                Some(counter.conversation_id.clone())
+            TargetedMessageRxCounter { conversation_id, .. } => {
+                Some(conversation_id.clone())
             },
-            counter @ TransientMessageRxCounter { .. } => {
-                Some(counter.conversation_id.clone())
+            TransientMessageRxCounter { conversation_id, .. } => {
+                Some(conversation_id.clone())
+            },
+            StoredEpochEncryptionKeypair { conversation_id, .. } => {
+                Some(conversation_id.clone())
             },
             ||=> None,
         });
@@ -474,14 +480,17 @@ mod tests_impl {
             let mut entity = E::random();
             let any_e: &mut dyn Any = &mut entity;
             let group_id_as_foreign_key = match_heterogenous!(any_e => {
-                counter @ TntMessageTxCounter { .. } => {
-                    Some(counter.conversation_id.clone())
+                TntMessageTxCounter { conversation_id, .. } => {
+                    Some(conversation_id.clone())
                 },
-                counter @ TargetedMessageRxCounter { .. } => {
-                    Some(counter.conversation_id.clone())
+                TargetedMessageRxCounter { conversation_id, .. } => {
+                    Some(conversation_id.clone())
                 },
-                counter @ TransientMessageRxCounter { .. } => {
-                    Some(counter.conversation_id.clone())
+                TransientMessageRxCounter { conversation_id, .. } => {
+                    Some(conversation_id.clone())
+                },
+                StoredEpochEncryptionKeypair { conversation_id, .. } => {
+                    Some(conversation_id.clone())
                 },
                 ||=> None,
             });
