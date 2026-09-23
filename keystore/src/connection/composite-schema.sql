@@ -57,14 +57,6 @@ CREATE TABLE "mls_pending_messages" (
 
 CREATE INDEX idx_mls_pending_messages_conversation_id ON mls_pending_messages(conversation_id);
 
-CREATE TABLE epoch_encryption_keypairs (
-  conversation_id BLOB NOT NULL,
-  own_leaf_index INTEGER NOT NULL,
-  epoch INTEGER NOT NULL,
-  keypairs BLOB NOT NULL,
-  PRIMARY KEY (conversation_id, own_leaf_index, epoch)
-);
-
 CREATE TABLE "mls_credentials" (
   public_key_sha256 BLOB NOT NULL,
   credential_type INTEGER NOT NULL,
@@ -132,4 +124,15 @@ CREATE TABLE "mls_buffered_commits" (
   conversation_id BLOB NOT NULL PRIMARY KEY,
   commit_data BLOB,
   FOREIGN KEY (conversation_id) REFERENCES "mls_groups"(id) ON DELETE CASCADE
+);
+
+CREATE TABLE "epoch_encryption_keypairs" (
+  conversation_id BLOB NOT NULL,
+  own_leaf_index INTEGER NOT NULL,
+  epoch INTEGER NOT NULL,
+  keypairs BLOB NOT NULL,
+  PRIMARY KEY (conversation_id, own_leaf_index, epoch),
+  -- DEFERRABLE INITIALLY DEFERRED means that we only enforce this constraint
+  -- when the outermost transaction / savepoint is committed.
+  FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
 );
