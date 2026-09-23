@@ -1,7 +1,6 @@
 import { expect } from "chai";
 import { runOnPlatform, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { GroupInfoEncryptionType, RatchetTreeType } from "#core-crypto";
 
 beforeEach(async () => {
     await setup();
@@ -13,16 +12,21 @@ afterEach(async () => {
 
 describe("conversation", () => {
     it("should allow inviting members", async () => {
-        const groupInfo = await runOnPlatform(async () => {
+        const result = await runOnPlatform(async () => {
             const alice = await helpers.ccInit();
             const bob = await helpers.ccInit();
             const convId = await helpers.createConversation(alice);
-            return await helpers.invite(alice, bob, convId);
+            const groupInfo = await helpers.invite(alice, bob, convId);
+            return {
+                isPlaintext:
+                    groupInfo.encryptionType ===
+                    ccModule.GroupInfoEncryptionType.Plaintext,
+                isFullRatchetTree:
+                    groupInfo.ratchetTreeType === ccModule.RatchetTreeType.Full,
+            };
         });
-        expect(groupInfo.encryptionType).to.equal(
-            GroupInfoEncryptionType.Plaintext
-        );
-        expect(groupInfo.ratchetTreeType).to.equal(RatchetTreeType.Full);
+        expect(result.isPlaintext).to.equal(true);
+        expect(result.isFullRatchetTree).to.equal(true);
     });
 
     it("should allow sending messages", async () => {
