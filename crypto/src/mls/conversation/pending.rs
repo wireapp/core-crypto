@@ -47,7 +47,6 @@ impl PendingConversation {
         let group_id = group.group_id().as_slice();
         let database = context
             .database()
-            .await
             .map_err(RecursiveError::context("getting database from transaction context"))?;
 
         // A group we have just built by external commit is active, as required by
@@ -74,10 +73,9 @@ impl PendingConversation {
             .map_err(Into::into)
     }
 
-    async fn keystore(&self) -> Result<Arc<Database>> {
+    fn keystore(&self) -> Result<Arc<Database>> {
         self.context
             .database()
-            .await
             .map_err(RecursiveError::context("getting database from transaction context"))
             .map_err(Into::into)
     }
@@ -86,7 +84,7 @@ impl PendingConversation {
         ConversationIdRef::new(self.inner.id.bytes())
     }
 
-    pub(crate) async fn save(&self) -> Result<()> {
+    pub(crate) fn save(&self) -> Result<()> {
         let context = self
             .context
             .inner()
@@ -144,7 +142,7 @@ impl PendingConversation {
     /// the external join commit has been accepted by the DS and the pending group can be merged.
     async fn incoming_message_is_own_join_commit(&self, message: impl AsRef<[u8]>) -> Result<bool> {
         let backend = self.mls_provider().await?;
-        let database = self.keystore().await?;
+        let database = self.keystore()?;
         // Instantiate the pending group
         let group = database
             .get_borrowed::<PersistedMlsGroup>(self.id().keystore())
@@ -219,7 +217,7 @@ impl PendingConversation {
     /// Errors resulting from OpenMls, the KeyStore calls and deserialization
     pub(crate) async fn merge(&mut self) -> Result<Option<Vec<BufferedDecryptedMessage>>> {
         let mls_provider = self.mls_provider().await?;
-        let database = self.keystore().await?;
+        let database = self.keystore()?;
         let id = self.id();
         let group = &self.inner.state;
 

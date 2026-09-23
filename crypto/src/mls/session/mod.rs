@@ -106,7 +106,7 @@ impl Session {
     }
 
     /// see [crate::mls_provider::CryptoProvider::reseed]
-    pub async fn reseed(&self, seed: Option<EntropySeed>) -> crate::Result<()> {
+    pub fn reseed(&self, seed: Option<EntropySeed>) -> crate::Result<()> {
         self.crypto_provider
             .reseed(seed)
             .map_err(OpenMlsError::wrap("reseeding mls backend"))

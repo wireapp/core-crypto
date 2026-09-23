@@ -10,11 +10,7 @@ use crate::{KeystoreError, ProteusError, ProteusErrorKind, Result};
 
 impl ProteusCentral {
     /// Creates a new session from a prekey
-    pub async fn session_from_prekey(
-        &mut self,
-        session_id: &str,
-        key: &[u8],
-    ) -> Result<&mut ProteusConversationSession> {
+    pub fn session_from_prekey(&mut self, session_id: &str, key: &[u8]) -> Result<&mut ProteusConversationSession> {
         let prekey = PreKeyBundle::deserialise(key).map_err(ProteusError::wrap("deserializing prekey bundle"))?;
         // Note on the `::<>` turbofish below:
         //
@@ -86,15 +82,12 @@ impl ProteusCentral {
     /// messages and initializing Sessions
     pub(crate) async fn session_save(&mut self, transaction: &Transaction, session_id: &str) -> Result<()> {
         if let Some(session) = self.proteus_sessions.get_or_fetch(session_id, transaction).await? {
-            Self::session_save_by_ref(transaction, session).await?;
+            Self::session_save_by_ref(transaction, session)?;
         }
         Ok(())
     }
 
-    pub(crate) async fn session_save_by_ref(
-        transaction: &Transaction,
-        session: &ProteusConversationSession,
-    ) -> Result<()> {
+    pub(crate) fn session_save_by_ref(transaction: &Transaction, session: &ProteusConversationSession) -> Result<()> {
         ProteusSession {
             id: session.identifier().to_string(),
             session: session
@@ -108,7 +101,7 @@ impl ProteusCentral {
     }
 
     /// Deletes a session in the store
-    pub(crate) async fn session_delete(&mut self, transaction: &Transaction, session_id: &str) -> Result<()> {
+    pub(crate) fn session_delete(&mut self, transaction: &Transaction, session_id: &str) -> Result<()> {
         ProteusSession::delete_borrowed(transaction, session_id)
             .map_err(KeystoreError::wrap("deleting proteus session"))?;
         self.proteus_sessions.remove(session_id);

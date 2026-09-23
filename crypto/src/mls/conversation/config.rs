@@ -101,10 +101,7 @@ impl ConversationConfiguration {
 
     /// Updates external senders provided by the delivery service
     /// and updates the conversation's configuration with them.
-    pub async fn set_external_senders(
-        &mut self,
-        external_senders: impl IntoIterator<Item = ExternalSender>,
-    ) -> Result<()> {
+    pub fn set_external_senders(&mut self, external_senders: impl IntoIterator<Item = ExternalSender>) -> Result<()> {
         self.external_senders = external_senders.into_iter().collect();
         Ok(())
     }
@@ -246,7 +243,7 @@ mod tests {
                 .unwrap();
             let pk = ExternalSender::parse_public_key(&pk, case.signature_scheme()).unwrap();
 
-            assert!(case.cfg.clone().set_external_senders([pk]).await.is_ok());
+            assert!(case.cfg.clone().set_external_senders([pk]).is_ok());
         })
         .await
     }
@@ -266,7 +263,7 @@ mod tests {
 
             let jwk = rusty_jwt_tools::prelude::generate_jwk(alg);
             let external_sender = ExternalSender::parse_jwk(&jwk).unwrap();
-            assert!(case.cfg.clone().set_external_senders([external_sender]).await.is_ok());
+            assert!(case.cfg.clone().set_external_senders([external_sender]).is_ok());
         })
         .await;
     }

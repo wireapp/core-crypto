@@ -70,8 +70,7 @@ impl ConversationMut {
             TntWireFormat::TRANSIENT_MESSAGE,
             message_sender,
             message_counter,
-        )
-        .await?;
+        )?;
 
         Ok(DecryptedMessage::Transient(decrypted_bytes))
     }

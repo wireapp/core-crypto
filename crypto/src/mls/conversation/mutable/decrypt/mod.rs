@@ -212,12 +212,12 @@ impl ConversationMut {
         // That's because in the scope they're raised, we don't have access to the raw message
         // bytes; here, we do.
         if let Err(Error::BufferedFutureMessage { message_epoch }) = decrypt_message_result {
-            self.buffer_future_message(message.as_ref()).await?;
+            self.buffer_future_message(message.as_ref())?;
             let conversation_id = self.id().to_owned();
             info!(group_id = conversation_id; "Buffered future message from epoch {message_epoch}");
         }
         if let Err(Error::BufferedCommit) = decrypt_message_result {
-            self.buffer_commit(message).await?;
+            self.buffer_commit(message)?;
         }
 
         let decrypt_message = decrypt_message_result?;
@@ -333,7 +333,7 @@ impl ConversationMut {
                     let process_result = self.try_process_buffered_commit(commit, recursion_policy).await;
 
                     if process_result.is_ok() {
-                        self.clear_buffered_commit().await.map_err(RecursiveError::context(
+                        self.clear_buffered_commit().map_err(RecursiveError::context(
                             "clearing buffered commit after successful application",
                         ))?;
                     }

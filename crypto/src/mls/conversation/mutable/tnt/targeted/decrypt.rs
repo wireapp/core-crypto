@@ -90,8 +90,7 @@ impl ConversationMut {
 
         let decrypted_bytes = self.extract_sender_id(sender, plaintext).await?;
 
-        self.persist_rx_message_counter(group_epoch, message_type, message_sender, message_counter)
-            .await?;
+        self.persist_rx_message_counter(group_epoch, message_type, message_sender, message_counter)?;
 
         match policy {
             TargetedMessagePolicy::Transient => Ok(DecryptedMessage::TransientTargeted(decrypted_bytes)),
@@ -122,7 +121,7 @@ impl ConversationMut {
             return Ok((context_data, decryption_key));
         }
 
-        let database = self.database().await?;
+        let database = self.database()?;
         let key = TntSecretPkRef::new(
             KeystoreConversationIdRef::new(mls_group.group_id().as_slice()),
             message.epoch.as_u64(),
@@ -182,7 +181,7 @@ impl ConversationMut {
             mls_group.epoch().as_u64(),
         );
 
-        let database = self.database().await?;
+        let database = self.database()?;
 
         let stored_keypairs = database
             .get_borrowed::<StoredEpochEncryptionKeypair>(kp_ref)

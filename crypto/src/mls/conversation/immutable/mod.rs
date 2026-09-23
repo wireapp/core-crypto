@@ -72,7 +72,7 @@ impl MlsGroupState {
         Ok(counter)
     }
 
-    pub(in crate::mls::conversation) async fn reset_tnt_message_tx_counter(&mut self, tx: &Transaction) -> Result<()> {
+    pub(in crate::mls::conversation) fn reset_tnt_message_tx_counter(&mut self, tx: &Transaction) -> Result<()> {
         self.tnt_message_tx_counter = Default::default();
         let id = KeystoreConversationIdRef::new(self.group.group_id().as_slice());
         TntMessageTxCounter::delete_borrowed(tx, id)

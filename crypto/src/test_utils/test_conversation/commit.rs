@@ -308,7 +308,7 @@ impl<'a> TestConversation<'a> {
             .create_external_join_commit(group_info, &joiner_credential_ref)
             .await
             .unwrap();
-        pending_conversation.save().await.unwrap();
+        pending_conversation.save().unwrap();
 
         // if this is a rejoin, make sure that the joiner doesn't receive their join commit again
         let already_notified: &[usize] = if self.is_member(joiner).await {

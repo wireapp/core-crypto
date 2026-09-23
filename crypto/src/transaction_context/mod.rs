@@ -133,7 +133,7 @@ impl TransactionContext {
             )
     }
 
-    pub(crate) async fn database(&self) -> Result<Arc<Database>> {
+    pub(crate) fn database(&self) -> Result<Arc<Database>> {
         let inner = self.inner()?;
         Ok(inner.core_crypto.database.clone())
     }
@@ -226,7 +226,7 @@ impl TransactionContext {
 
     /// Initializes the MLS client of [super::CoreCrypto].
     pub async fn mls_init(&self, session_id: ClientId, transport: Arc<dyn MlsTransport>) -> Result<()> {
-        let database = self.database().await?;
+        let database = self.database()?;
         let pki_env = self.pki_environment().await.ok();
         let crypto_provider = CryptoProvider::new_with_pki_env(database.clone(), pki_env);
         let session = Session::new(session_id.clone(), crypto_provider, database.into(), transport);
@@ -263,7 +263,7 @@ impl TransactionContext {
     /// Set arbitrary data to be retrieved by [TransactionContext::get_data].
     /// This is meant to be used as a check point at the end of a transaction.
     /// The data should be limited to a reasonable size.
-    pub async fn set_data(&self, data: Vec<u8>) -> Result<()> {
+    pub fn set_data(&self, data: Vec<u8>) -> Result<()> {
         let inner = self.inner()?;
         ConsumerData::from(data)
             .save(inner.transaction())

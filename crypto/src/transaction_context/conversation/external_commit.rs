@@ -56,7 +56,7 @@ impl TransactionContext {
                 // for anything except a message rejected, attempt to save here so we can recover later
                 // (a message rejected error will always be that though, don't bother in that case)
                 // (and don't shadow the existing error)
-                let _ = pending_conversation.save().await;
+                let _ = pending_conversation.save();
             }
             return Err(err);
         }
@@ -64,7 +64,7 @@ impl TransactionContext {
         if let Err(err) = pending_conversation.merge().await {
             // here also, we need to attempt to persist the pending conversation for recovery later
             // and once again, the existing error is more important than a failure to save
-            let _ = pending_conversation.save().await;
+            let _ = pending_conversation.save();
             return Err(RecursiveError::context("merging from external commit")(err).into());
         }
 
@@ -180,7 +180,6 @@ mod tests {
             let group = bob
                 .transaction
                 .database()
-                .await
                 .unwrap()
                 .get_borrowed::<PersistedMlsGroup>(keystore_id)
                 .await

@@ -11,7 +11,7 @@ impl CoreCryptoFfi {
     /// Re-seed the MLS session's CSPRNG with the provided entropy seed.
     pub async fn reseed(&self, seed: Vec<u8>) -> CoreCryptoResult<()> {
         let seed = core_crypto::EntropySeed::try_from_slice(&seed).map_err(CoreCryptoError::generic())?;
-        self.inner.mls_session().await?.reseed(Some(seed)).await?;
+        self.inner.mls_session().await?.reseed(Some(seed))?;
 
         Ok(())
     }

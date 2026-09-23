@@ -48,7 +48,7 @@ impl Credential {
     ///
     /// Normally this is called internally by [`Session::add_credential`][crate::Session::add_credential];
     /// use caution if calling it from elsewhere.
-    pub(crate) async fn save(&mut self, tx: &Transaction) -> Result<CredentialRef> {
+    pub(crate) fn save(&mut self, tx: &Transaction) -> Result<CredentialRef> {
         let credential_data = self
             .mls_credential
             .tls_serialize_detached()
@@ -77,7 +77,7 @@ impl Credential {
     }
 
     /// Delete this credential from the database
-    pub(crate) async fn delete(self, tx: &Transaction) -> Result<bool> {
+    pub(crate) fn delete(self, tx: &Transaction) -> Result<bool> {
         StoredCredential::delete(
             tx,
             &StoredCredentialPk::new(

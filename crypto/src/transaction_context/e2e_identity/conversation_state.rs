@@ -172,7 +172,6 @@ mod tests {
             alice
                 .transaction
                 .add_credential_without_clientid_check(credential)
-                .await
                 .unwrap();
 
             let credential_ref = CredentialRef::from_credential(&cb);

@@ -127,7 +127,6 @@ mod tests {
         session
             .transaction
             .database()
-            .await
             .unwrap()
             .get_borrowed::<PersistedMlsGroup>(conversation.as_ref().keystore())
             .await
@@ -290,7 +289,6 @@ mod tests {
         alice
             .transaction
             .add_credential_without_clientid_check(new_credential.clone())
-            .await
             .unwrap();
         let new_credential = CredentialRef::from_credential(&new_credential);
 

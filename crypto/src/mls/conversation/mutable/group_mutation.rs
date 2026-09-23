@@ -64,7 +64,7 @@ impl ConversationMut {
         }
 
         if epoch_before_operation < group.epoch() {
-            group.reset_tnt_message_tx_counter(tx).await?;
+            group.reset_tnt_message_tx_counter(tx)?;
 
             let oldest_retained_epoch = group.epoch().as_u64().saturating_sub(MAX_PAST_EPOCHS as u64);
             let stale_epochs = ConversationEpochsOlderThan::new(id.as_ref().into(), oldest_retained_epoch);

@@ -32,10 +32,8 @@ impl TransactionContext {
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         let session = proteus
             .session_from_prekey(session_id, prekey)
-            .await
             .map_err(RecursiveError::context("creating proteus session from prekey"))?;
         ProteusCentral::session_save_by_ref(&inner.transaction, session)
-            .await
             .map_err(RecursiveError::context("saving proteus session by ref"))?;
         Ok(())
     }
@@ -53,7 +51,6 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::context("creating proteus sesseion from message"))?;
         ProteusCentral::session_save_by_ref(&inner.transaction, session)
-            .await
             .map_err(RecursiveError::context("saving proteus session by ref"))?;
         Ok(message)
     }
@@ -83,7 +80,6 @@ impl TransactionContext {
         let proteus = guard.as_mut().ok_or(Error::ProteusNotInitialized)?;
         proteus
             .session_delete(&inner.transaction, session_id)
-            .await
             .map_err(RecursiveError::context("deleting proteus session"))
             .map_err(Into::into)
     }

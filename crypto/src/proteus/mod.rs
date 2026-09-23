@@ -50,7 +50,7 @@ impl ProteusCentral {
             .await
             .map_err(KeystoreError::wrap("finding proteus identity"))?
         else {
-            return Self::create_identity(transaction).await;
+            return Self::create_identity(transaction);
         };
 
         let sk = identity.sk_raw();
@@ -63,7 +63,7 @@ impl ProteusCentral {
     }
 
     /// Internal function to create and save a new Proteus Identity
-    async fn create_identity(transaction: &Transaction) -> Result<IdentityKeyPair> {
+    fn create_identity(transaction: &Transaction) -> Result<IdentityKeyPair> {
         let kp = IdentityKeyPair::new();
         let pk = kp.public_key.public_key.as_slice().to_vec();
 

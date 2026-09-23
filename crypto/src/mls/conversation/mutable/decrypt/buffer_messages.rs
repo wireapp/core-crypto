@@ -38,7 +38,7 @@ pub(crate) enum MessageRestorePolicy {
 }
 
 impl ConversationMut {
-    pub(super) async fn buffer_future_message(&self, message: impl AsRef<[u8]>) -> Result<()> {
+    pub(super) fn buffer_future_message(&self, message: impl AsRef<[u8]>) -> Result<()> {
         let pending_msg = MlsPendingMessage {
             conversation_id: self.id().into(),
             message: message.as_ref().to_vec(),
@@ -52,7 +52,7 @@ impl ConversationMut {
         Ok(())
     }
 
-    async fn clear_pending_messages(&self) -> Result<()> {
+    fn clear_pending_messages(&self) -> Result<()> {
         let tx = self
             .tx_context
             .inner()
@@ -71,7 +71,7 @@ impl ConversationMut {
             return Ok(None);
         };
 
-        self.clear_pending_messages().await?;
+        self.clear_pending_messages()?;
 
         Ok(Some(pending_messages))
     }
@@ -84,9 +84,9 @@ impl ConversationMut {
     ) -> Result<Option<Vec<BufferedDecryptedMessage>>> {
         async move {
             let conversation_id = self.id();
-            let database = self.database().await?;
+            let database = self.database()?;
             if policy == MessageRestorePolicy::ClearOnly {
-                self.clear_pending_messages().await?;
+                self.clear_pending_messages()?;
                 return Ok(None);
             }
 

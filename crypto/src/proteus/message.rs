@@ -22,7 +22,7 @@ impl ProteusCentral {
             .map_err(ProteusError::wrap("getting session"))?;
 
         let plaintext = session.decrypt(transaction, ciphertext).await?;
-        Self::session_save_by_ref(transaction, session).await?;
+        Self::session_save_by_ref(transaction, session)?;
 
         Ok(plaintext)
     }
@@ -41,7 +41,7 @@ impl ProteusCentral {
             .map_err(ProteusError::wrap("getting session"))?;
 
         let ciphertext = session.encrypt(plaintext)?;
-        Self::session_save_by_ref(transaction, session).await?;
+        Self::session_save_by_ref(transaction, session)?;
 
         Ok(ciphertext)
     }
@@ -61,7 +61,7 @@ impl ProteusCentral {
             if let Some(session) = self.session(session_id.as_ref(), transaction).await? {
                 let identifier = session.identifier.clone();
                 let ciphertext = session.encrypt(plaintext)?;
-                Self::session_save_by_ref(transaction, session).await?;
+                Self::session_save_by_ref(transaction, session)?;
                 acc.insert(identifier, ciphertext);
             }
         }
@@ -96,7 +96,6 @@ mod tests {
 
         alice
             .session_from_prekey(&session_id, &bob_pk_bundle.serialise().unwrap())
-            .await
             .unwrap();
 
         let message = b"Hello world";

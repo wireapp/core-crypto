@@ -23,7 +23,7 @@ impl TransactionContext {
     ///
     /// Somewhat cheaper than `self.conversation(id).is_ok()`.
     pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
-        let database = self.database().await?.into();
+        let database = self.database()?.into();
         self.mls_groups()
             .await?
             .exists(id, &database)
@@ -121,7 +121,7 @@ impl TransactionContext {
         credential_ref: &CredentialRef,
         configuration: ConversationConfiguration,
     ) -> Result<()> {
-        let database = self.database().await?;
+        let database = self.database()?;
         let provider = self.crypto_provider().await?;
         if self.conversation_exists(id).await? || self.pending_conversation_exists(id).await? {
             return Err(Error::ConversationAlreadyExists(id.to_owned()));

@@ -41,7 +41,7 @@ impl ConversationMut {
             .crypto_provider()
             .await
             .map_err(RecursiveError::transaction("obtaining crypto provider"))?;
-        let database = self.database().await?;
+        let database = self.database()?;
 
         let targeted = self
             .mutate_group(async |_, group_state, _| {

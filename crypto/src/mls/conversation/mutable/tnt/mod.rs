@@ -114,7 +114,7 @@ impl TntWireFormat {
     ///
     /// Implementation note: because transient targeted message and targeted message share a type but don't share a
     /// counter table, we're implementing this here instead of on the types themselves.
-    async fn persist_rx_message_counter(
+    fn persist_rx_message_counter(
         &self,
         group_epoch: u64,
         message_sender: LeafNodeIndex,
@@ -313,7 +313,7 @@ impl ConversationMut {
         message_sender: LeafNodeIndex,
         message_counter: TntMessageCounter,
     ) -> Result<()> {
-        let database = self.database().await?;
+        let database = self.database()?;
         let counter_pk = MessageRxCounterPkRef::new(self.id.as_ref().into(), message_sender.u32(), group_epoch);
         let existing_counter = message_type.current_rx_counter(database.as_ref(), counter_pk).await?;
 
@@ -324,7 +324,7 @@ impl ConversationMut {
         }
     }
 
-    async fn persist_rx_message_counter(
+    fn persist_rx_message_counter(
         &self,
         group_epoch: u64,
         message_type: TntWireFormat,
@@ -338,9 +338,7 @@ impl ConversationMut {
         let tx = tx.transaction();
         let conversation_id = self.id().into();
 
-        message_type
-            .persist_rx_message_counter(group_epoch, message_sender, message_counter, tx, conversation_id)
-            .await?;
+        message_type.persist_rx_message_counter(group_epoch, message_sender, message_counter, tx, conversation_id)?;
         Ok(())
     }
 

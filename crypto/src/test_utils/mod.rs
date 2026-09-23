@@ -196,11 +196,8 @@ impl SessionContext {
         self.x509_chain().expect("No x509 test chain setup")
     }
 
-    pub async fn database(&self) -> Arc<Database> {
-        self.transaction
-            .database()
-            .await
-            .expect("database from transaction context")
+    pub fn database(&self) -> Arc<Database> {
+        self.transaction.database().expect("database from transaction context")
     }
 
     pub async fn session(&self) -> Session {
@@ -216,7 +213,7 @@ impl SessionContext {
         *guard = new_transport.clone();
         let session = self.session().await;
         let crypto_provider = session.crypto_provider.clone();
-        let database = self.transaction.database().await.unwrap().into();
+        let database = self.transaction.database().unwrap().into();
         let new_session = Session::new(self.get_client_id().await, crypto_provider, database, new_transport);
         self.set_session(new_session).await;
     }

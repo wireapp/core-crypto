@@ -38,7 +38,7 @@ impl CoreCryptoContext {
     /// The stored data can be retrieved via `get_data`. Keep the data size reasonable;
     /// this is not a general-purpose key-value store.
     pub async fn set_data(&self, data: Vec<u8>) -> CoreCryptoResult<()> {
-        self.inner.set_data(data).await.map_err(Into::into)
+        self.inner.set_data(data).map_err(Into::into)
     }
 
     /// Returns data previously stored by `set_data`, or `None` if no data has been stored.

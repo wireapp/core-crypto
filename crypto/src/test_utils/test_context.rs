@@ -110,7 +110,7 @@ impl TestContext {
         self.cfg.custom.clone()
     }
 
-    pub async fn create_in_memory_database(&mut self) -> Arc<Database> {
+    pub fn create_in_memory_database(&mut self) -> Arc<Database> {
         let database = Database::open_in_memory().unwrap();
         let out = database.clone();
         self.db = Some((database, None));
@@ -335,7 +335,7 @@ impl TestContext {
     {
         let signature_key = external_sender
             .initial_credential
-            .load(&*external_sender.database().await)
+            .load(&*external_sender.database())
             .await
             .unwrap()
             .signature_key()
@@ -344,7 +344,7 @@ impl TestContext {
             ExternalSender::parse_public_key(&signature_key, external_sender.initial_credential.signature_scheme())
                 .unwrap();
 
-        self.cfg.set_external_senders([external_sender]).await.unwrap();
+        self.cfg.set_external_senders([external_sender]).unwrap();
         self.create_conversation(members).await
     }
 

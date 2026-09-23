@@ -14,7 +14,7 @@ impl ConversationMut {
     ///
     /// By storing the raw commit bytes and doing deserialization/decryption from scratch, we preserve all
     /// security guarantees. When we do restore, it's as though the commit had simply been received later.
-    pub(super) async fn buffer_commit(&self, commit: impl AsRef<[u8]>) -> Result<()> {
+    pub(super) fn buffer_commit(&self, commit: impl AsRef<[u8]>) -> Result<()> {
         info!(group_id = self.id().to_owned(); "buffering commit");
 
         let buffered_commit = StoredBufferedCommit::new(self.id().to_bytes(), commit.as_ref().to_owned());
@@ -31,7 +31,7 @@ impl ConversationMut {
 
     /// Retrieve the bytes of a pending commit.
     pub(super) async fn retrieve_buffered_commit(&self) -> Result<Option<Vec<u8>>> {
-        let database = self.database().await?;
+        let database = self.database()?;
         info!(group_id = self.id().to_owned(); "attempting to retrieve buffered commit");
         database
             .get_borrowed::<StoredBufferedCommit>(self.id().as_ref())
@@ -61,7 +61,7 @@ impl ConversationMut {
     }
 
     /// Remove the buffered commit for this conversation; it has been applied.
-    pub(super) async fn clear_buffered_commit(&self) -> Result<bool> {
+    pub(super) fn clear_buffered_commit(&self) -> Result<bool> {
         info!(group_id = self.id().to_owned(); "attempting to delete buffered commit");
         let context_inner = self.tx_context.inner().map_err(RecursiveError::context(
             "getting context inner for transaction for clearing buffered commit",

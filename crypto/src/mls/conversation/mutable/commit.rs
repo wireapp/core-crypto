@@ -183,7 +183,7 @@ impl ConversationMut {
 
     /// Set the referenced credential for this conversation.
     pub async fn set_credential_by_ref(&mut self, credential_ref: &CredentialRef) -> Result<()> {
-        let database = self.database().await?;
+        let database = self.database()?;
         let credential = credential_ref
             .load(&*database)
             .await

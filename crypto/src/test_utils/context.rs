@@ -55,7 +55,6 @@ impl SessionContext {
     pub async fn count_key_package(&self, cs: CipherSuite, ct: Option<CredentialType>) -> usize {
         self.transaction
             .database()
-            .await
             .unwrap()
             .load_all::<StoredKeyPackage>()
             .await
@@ -105,7 +104,6 @@ impl SessionContext {
         // be) part of setup, not part of the code under test.
         self.transaction
             .add_credential_without_clientid_check(credential)
-            .await
             .unwrap()
     }
 
@@ -119,7 +117,7 @@ impl SessionContext {
             .expect("find credentials for cipher_suite and credential type");
         let credential_ref = credentials.first().expect("at least one credential found");
 
-        let database = self.transaction.database().await.unwrap();
+        let database = self.transaction.database().unwrap();
         credential_ref.load(&*database).await.unwrap()
     }
 
@@ -136,7 +134,6 @@ impl SessionContext {
     pub async fn find_hpke_private_key_from_keystore(&self, skp: &HpkePublicKey) -> Option<StoredHpkePrivateKey> {
         self.transaction
             .database()
-            .await
             .unwrap()
             .get::<StoredHpkePrivateKey>(&skp.tls_serialize_detached().unwrap())
             .await
@@ -148,7 +145,6 @@ impl SessionContext {
         let credential = cb.mls_credential.tls_serialize_detached().unwrap();
         self.transaction
             .database()
-            .await
             .unwrap()
             .load_all::<StoredCredential>()
             .await
@@ -161,7 +157,6 @@ impl SessionContext {
     pub async fn count_hpke_private_key(&self) -> u32 {
         self.transaction
             .database()
-            .await
             .unwrap()
             .count::<StoredHpkePrivateKey>()
             .await
@@ -171,7 +166,6 @@ impl SessionContext {
     pub async fn count_encryption_keypairs(&self) -> u32 {
         self.transaction
             .database()
-            .await
             .unwrap()
             .count::<StoredEncryptionKeyPair>()
             .await
@@ -181,7 +175,6 @@ impl SessionContext {
     pub async fn count_credentials_in_keystore(&self) -> u32 {
         self.transaction
             .database()
-            .await
             .unwrap()
             .count::<StoredCredential>()
             .await
@@ -220,7 +213,7 @@ impl SessionContext {
         expected_credential_ref: &CredentialRef,
         decrypted: &DecryptedMessage,
     ) {
-        let database = self.transaction.database().await.unwrap();
+        let database = self.transaction.database().unwrap();
         let expected_credential = expected_credential_ref.load(&*database).await.unwrap();
         if let openmls::prelude::MlsCredentialType::X509(certificate) =
             &expected_credential.mls_credential().mls_credential()

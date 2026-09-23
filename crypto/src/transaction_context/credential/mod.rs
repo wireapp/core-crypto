@@ -14,14 +14,10 @@ impl TransactionContext {
     /// This is rarely useful and should only be used when absolutely necessary. You'll know it if you need it.
     ///
     /// Prefer [`Self::add_credential`].
-    pub(crate) async fn add_credential_without_clientid_check(
-        &self,
-        mut credential: Credential,
-    ) -> Result<Arc<Credential>> {
+    pub(crate) fn add_credential_without_clientid_check(&self, mut credential: Credential) -> Result<Arc<Credential>> {
         let inner = self.inner()?;
         let _credential_ref = credential
             .save(&inner.transaction)
-            .await
             .map_err(RecursiveError::context("saving credential"))?;
 
         Ok(Arc::new(credential))
@@ -42,7 +38,7 @@ impl TransactionContext {
             return Err(Error::WrongCredential);
         }
 
-        self.add_credential_without_clientid_check(credential).await
+        self.add_credential_without_clientid_check(credential)
     }
 
     /// Remove a credential from the database of this session.
@@ -88,7 +84,6 @@ impl TransactionContext {
         // finally remove the credentials from the keystore so they won't be loaded on next mls_init
         credential
             .delete(&inner.transaction)
-            .await
             .map_err(RecursiveError::context("deleting credential from keystore"))
             .map_err(Into::into)
     }
