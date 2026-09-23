@@ -36,7 +36,6 @@ impl ConversationMut {
         let context_inner = self
             .tx_context
             .inner()
-            .await
             .map_err(RecursiveError::context("getting inner from context to mutate group"))?;
         let tx = context_inner.transaction();
 

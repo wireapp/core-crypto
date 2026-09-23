@@ -32,7 +32,7 @@ impl TransactionContext {
         credential_ref: &CredentialRef,
         lifetime: Option<Duration>,
     ) -> Result<Keypackage> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         let lifetime = Lifetime::new(lifetime.unwrap_or(KEYPACKAGE_DEFAULT_LIFETIME).as_secs());
         let credential = credential_ref
             .load(&inner.transaction)
@@ -83,7 +83,7 @@ impl TransactionContext {
             return Ok(());
         };
 
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         let tx = inner.transaction();
         StoredKeyPackage::delete_borrowed(tx, kp_ref.hash_ref())
             .map_err(KeystoreError::wrap("removing key package from keystore"))?;
@@ -103,7 +103,7 @@ impl TransactionContext {
     /// if removing one returns an error. In that case, only the first produced error is returned.
     /// This helps ensure that as many keypackages for the given credential ref are removed as possible.
     pub async fn remove_key_packages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         let credential = credential_ref
             .load(&inner.transaction)
             .await

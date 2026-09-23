@@ -20,7 +20,7 @@ impl TransactionContext {
     /// This function must be called at least once every 24 hours. It is recommended to do this during an idle period,
     /// because in case x509 credentials are used, HTTP requests are done to fetch new certificate revocation lists.
     pub async fn check_credentials(&self) -> Result<()> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         let env = self.pki_environment().await?;
 
         let credentials = Credential::get_all(&inner.transaction)
@@ -101,7 +101,7 @@ impl TransactionContext {
     }
 
     async fn clean_up_irrelevant_crls(&self, relevant_crl_uris: &CrlUris) -> Result<()> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         for db_crl in inner
             .transaction
             .load_all::<X509Crl>()

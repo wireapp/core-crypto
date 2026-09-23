@@ -247,7 +247,7 @@ impl X509TestChain {
     pub async fn register_with_central(&self, context: &TransactionContext) {
         use x509_cert::der::Encode as _;
 
-        let inner = context.inner().await.unwrap();
+        let inner = context.inner().unwrap();
         let env = context.pki_environment().await.unwrap();
 
         env.add_trust_anchor(inner.transaction(), self.trust_anchor.certificate.clone())

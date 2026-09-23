@@ -31,7 +31,7 @@ impl TransactionContext {
             ..Default::default()
         };
 
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         let conversation = inner
             .transaction()
             .with_savepoint(

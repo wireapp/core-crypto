@@ -25,7 +25,7 @@ pub struct EntitiesCount {
 impl TransactionContext {
     /// Count the entities
     pub async fn count_entities(&self) -> EntitiesCount {
-        let inner = self.inner().await.unwrap();
+        let inner = self.inner().unwrap();
         let buffered_commits = inner.transaction.count::<StoredBufferedCommit>().await.unwrap();
         let credential = inner.transaction.count::<StoredCredential>().await.unwrap();
         let encryption_keypair = inner.transaction.count::<StoredEncryptionKeyPair>().await.unwrap();

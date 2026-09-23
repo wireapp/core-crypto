@@ -78,9 +78,9 @@ mod tests {
         let mut nested = Box::pin({
             let context = context.clone();
             async move {
-                let _outer_guard = context.inner().await.expect("outer guard is valid");
+                let _outer_guard = context.inner().expect("outer guard is valid");
                 smol::future::yield_now().await;
-                context.inner().await.map(|_| ())
+                context.inner().map(|_| ())
             }
         });
 

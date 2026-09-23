@@ -18,7 +18,7 @@ impl TransactionContext {
         &self,
         mut credential: Credential,
     ) -> Result<Arc<Credential>> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         let _credential_ref = credential
             .save(&inner.transaction)
             .await
@@ -55,7 +55,7 @@ impl TransactionContext {
             return Err(Error::WrongCredential);
         }
 
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
 
         let credential = credential_ref
             .load(&inner.transaction)

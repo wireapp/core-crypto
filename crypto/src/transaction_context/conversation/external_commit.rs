@@ -76,7 +76,7 @@ impl TransactionContext {
         group_info: VerifiableGroupInfo,
         credential_ref: &CredentialRef,
     ) -> Result<(CommitBundle, ConversationId, PendingConversation)> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         let cipher_suite = group_info.ciphersuite().into();
         let mls_provider = self.crypto_provider().await?;
         let credential = credential_ref

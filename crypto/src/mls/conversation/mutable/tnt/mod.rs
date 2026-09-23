@@ -334,7 +334,6 @@ impl ConversationMut {
         let tx = self
             .tx_context
             .inner()
-            .await
             .map_err(RecursiveError::transaction("getting inner context"))?;
         let tx = tx.transaction();
         let conversation_id = self.id().into();

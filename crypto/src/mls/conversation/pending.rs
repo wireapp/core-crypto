@@ -90,7 +90,6 @@ impl PendingConversation {
         let context = self
             .context
             .inner()
-            .await
             .map_err(RecursiveError::context("getting inner context"))?;
         let tx = context.transaction();
         self.inner
@@ -128,7 +127,6 @@ impl PendingConversation {
         let context_inner = self
             .context
             .inner()
-            .await
             .map_err(RecursiveError::context("acquiring transaction to process join commit"))?;
         let tx = context_inner.transaction();
 
@@ -276,7 +274,7 @@ impl PendingConversation {
             .map_err(RecursiveError::context("restoring pending messages"))?;
 
         if pending_messages.is_some() {
-            let tx = context.inner().await.map_err(RecursiveError::context(
+            let tx = context.inner().map_err(RecursiveError::context(
                 "getting transaction context to delete pending messages",
             ))?;
             MlsPendingMessage::delete_all_matching(tx.transaction(), id.keystore()).map_err(KeystoreError::wrap(
@@ -300,7 +298,6 @@ impl PendingConversation {
         let context = self
             .context
             .inner()
-            .await
             .map_err(RecursiveError::context("getting inner context"))?;
         let tx = context.transaction();
         let group_id = self.id();

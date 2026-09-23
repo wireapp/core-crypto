@@ -27,7 +27,7 @@ impl TransactionContext {
         let id = ConversationId::from(group.group_id().as_slice());
         let mut group_state = MlsGroupState::new(group, Default::default());
 
-        let context_inner = self.inner().await?;
+        let context_inner = self.inner()?;
         group_state
             .persist(&context_inner.transaction)
             .await

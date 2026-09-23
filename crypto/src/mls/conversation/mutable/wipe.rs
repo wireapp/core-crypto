@@ -39,7 +39,6 @@ impl ConversationMut {
         let context = self
             .tx_context
             .inner()
-            .await
             .map_err(RecursiveError::context("getting inner context"))?;
         let tx = context.transaction();
         PersistedMlsGroup::delete_borrowed(tx, id.keystore()).map_err(KeystoreError::wrap("deleting mls group"))?;

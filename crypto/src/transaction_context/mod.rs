@@ -78,7 +78,7 @@ impl TransactionContext {
     }
 
     pub(crate) async fn session(&self) -> Result<Session> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         inner.core_crypto.mls.read().await.as_ref().cloned().ok_or(
             RecursiveError::context("Getting mls session from transaction context")(
                 mls::session::Error::MlsNotInitialized,
@@ -89,7 +89,7 @@ impl TransactionContext {
 
     #[cfg(test)]
     pub(crate) async fn set_session_if_exists(&self, new_session: Session) {
-        let Ok(inner) = self.inner().await else {
+        let Ok(inner) = self.inner() else {
             return;
         };
         let mut guard = inner.core_crypto.mls.write().await;
@@ -99,7 +99,7 @@ impl TransactionContext {
     }
 
     pub(crate) async fn mls_transport(&self) -> Result<Arc<dyn MlsTransport + 'static>> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         inner
             .core_crypto
             .mls
@@ -117,7 +117,7 @@ impl TransactionContext {
 
     /// Clones the [CryptoProvider].
     pub async fn crypto_provider(&self) -> Result<CryptoProvider> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         inner
             .core_crypto
             .mls
@@ -134,12 +134,12 @@ impl TransactionContext {
     }
 
     pub(crate) async fn database(&self) -> Result<Arc<Database>> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         Ok(inner.core_crypto.database.clone())
     }
 
     pub(crate) async fn pki_environment(&self) -> Result<Arc<PkiEnvironment>> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         inner
             .core_crypto
             .pki_environment
@@ -151,7 +151,7 @@ impl TransactionContext {
     }
 
     pub(crate) async fn mls_groups(&self) -> Result<MutexGuardArc<ConversationCache>> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         let cache = inner
             .core_crypto
             .mls
@@ -169,7 +169,7 @@ impl TransactionContext {
     }
 
     pub(crate) async fn queue_epoch_changed(&self, conversation_id: ConversationId, epoch: u64) -> Result<()> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         inner.pending_epoch_changes.lock().await.push((conversation_id, epoch));
         Ok(())
     }
@@ -237,7 +237,7 @@ impl TransactionContext {
 
     /// Set the `mls_session` Arc (also sets it on the transaction's CoreCrypto instance)
     pub(crate) async fn set_mls_session(&self, session: Session) -> Result<()> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         let mut guard = inner.core_crypto.mls.write().await;
         *guard = Some(session);
         Ok(())
@@ -264,7 +264,7 @@ impl TransactionContext {
     /// This is meant to be used as a check point at the end of a transaction.
     /// The data should be limited to a reasonable size.
     pub async fn set_data(&self, data: Vec<u8>) -> Result<()> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         ConsumerData::from(data)
             .save(inner.transaction())
             .map_err(KeystoreError::wrap("saving consumer data"))?;
@@ -274,7 +274,7 @@ impl TransactionContext {
     /// Get the data that has previously been set by [TransactionContext::set_data].
     /// This is meant to be used as a check point at the end of a transaction.
     pub async fn get_data(&self) -> Result<Option<Vec<u8>>> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         match inner.transaction.get_unique::<ConsumerData>().await {
             Ok(maybe_data) => Ok(maybe_data.map(Arc::unwrap_or_clone).map(Into::into)),
             Err(CryptoKeystoreError::NotFound(..)) => Ok(None),

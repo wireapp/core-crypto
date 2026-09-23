@@ -43,7 +43,7 @@ impl ConversationMut {
             conversation_id: self.id().into(),
             message: message.as_ref().to_vec(),
         };
-        let context_inner = self.tx_context.inner().await.map_err(RecursiveError::context(
+        let context_inner = self.tx_context.inner().map_err(RecursiveError::context(
             "getting transaction inner to buffer future message",
         ))?;
         pending_msg
@@ -56,7 +56,6 @@ impl ConversationMut {
         let tx = self
             .tx_context
             .inner()
-            .await
             .map_err(RecursiveError::context("getting tx context to clear pending messages"))?;
         MlsPendingMessage::delete_all_matching(tx.transaction(), ConversationIdRef::new(self.id().as_ref()))
             .map_err(KeystoreError::wrap("clearing pending messages"))?;

@@ -36,7 +36,7 @@ impl TransactionContext {
     ///
     /// This helper struct permits mutations on a conversation.
     pub async fn conversation(&self, id: &ConversationIdRef) -> Result<ConversationMut> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         let session = self.session().await?;
         let conversation = self
             .mls_groups()
@@ -67,7 +67,7 @@ impl TransactionContext {
     /// [`Self::conversation_exists`]: the question is which rows will exist once the transaction
     /// commits, which the in-memory conversation cache does not answer.
     pub(crate) async fn clear_orphaned_conversation_buffers(&self, id: &ConversationIdRef) -> Result<()> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         let tx = inner.transaction();
 
         let group_exists = tx
@@ -90,7 +90,7 @@ impl TransactionContext {
     }
 
     pub(crate) async fn pending_conversation(&self, id: &ConversationIdRef) -> Result<PendingConversation> {
-        let inner = self.inner().await?;
+        let inner = self.inner()?;
         let group = inner
             .transaction
             .get_borrowed::<PersistedMlsGroup>(id.keystore())
@@ -141,8 +141,7 @@ impl TransactionContext {
         // it gets checked at the outermost commit.
         // wrapping these two operations in an explicit savepoint means that these two operations
         // are bundled together; failing to persist the group un-persists the keypairs.
-        self.inner()
-            .await?
+        self.inner()?
             .transaction()
             .with_savepoint(
                 "new_conversation",
