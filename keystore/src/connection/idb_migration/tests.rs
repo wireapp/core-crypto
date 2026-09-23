@@ -589,6 +589,14 @@ async fn assert_imported_and_migrated(db: &Database, credential_created_at: u64)
         .expect("the key package survives the import");
     assert_eq!(key_package.key_package, seed::KEY_PACKAGE);
 
+    // The epoch keypair belongs to the group family, and [`seed::GROUP_STATE`] explains why that family
+    // only reaches the V22 checkpoint: V39 drops the conversation because its state is opaque bytes. The
+    // keypair used to outlive its conversation anyway, having no foreign key to stop it; V41 gives it one,
+    // so it is now discarded alongside the conversation it was generated for.
+    //
+    // `assert_imported_at_v22` pins that the import copied this row across in the first place, and
+    // `imports_a_database_captured_from_v9_3_4` covers the surviving case — V34's split of the composite
+    // key included — against captured conversations whose state really does deserialize.
     let epoch_keypair = db
         .get_borrowed::<StoredEpochEncryptionKeypair>(StoredEpochEncryptionKeypairPkRef::new(
             seed::GROUP_ID,
@@ -596,9 +604,11 @@ async fn assert_imported_and_migrated(db: &Database, credential_created_at: u64)
             seed::EPOCH_KEYPAIR_EPOCH,
         ))
         .await
-        .unwrap()
-        .expect("the epoch keypair survives the import and V34 splits its key correctly");
-    assert_eq!(epoch_keypair.keypairs, seed::EPOCH_KEYPAIRS);
+        .unwrap();
+    assert!(
+        epoch_keypair.is_none(),
+        "V39 drops this conversation, so V41 must not leave its epoch keypair behind"
+    );
 
     #[cfg(feature = "proteus-keystore")]
     {
