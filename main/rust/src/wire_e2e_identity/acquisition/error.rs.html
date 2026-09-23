@@ -11,7 +11,7 @@
 <a href=#11 id=11 data-nosnippet>11</a>    <span class="attr">#[error(<span class="string">"HTTP response is missing header '{0}'"</span>)]
 <a href=#12 id=12 data-nosnippet>12</a>    </span>MissingHeader(<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str),
 <a href=#13 id=13 data-nosnippet>13</a>    <span class="attr">#[error(transparent)]
-<a href=#14 id=14 data-nosnippet>14</a>    </span>Acme(<span class="attr">#[from] </span><span class="kw">crate</span>::acme::RustyAcmeError),
+<a href=#14 id=14 data-nosnippet>14</a>    </span>Acme(<span class="attr">#[from] </span><span class="kw">crate</span>::acme::Error),
 <a href=#15 id=15 data-nosnippet>15</a>    <span class="attr">#[error(transparent)]
 <a href=#16 id=16 data-nosnippet>16</a>    </span>RustyJwtError(<span class="attr">#[from] </span>RustyJwtError),
 <a href=#17 id=17 data-nosnippet>17</a>    <span class="doccomment">/// Invalid/incomplete certificate
@@ -61,9 +61,9 @@
 <a href=#61 id=61 data-nosnippet>61</a>    <span class="doccomment">/// Advertised public key is not supported
 <a href=#62 id=62 data-nosnippet>62</a>    </span><span class="attr">#[error(<span class="string">"Advertised public key is not supported"</span>)]
 <a href=#63 id=63 data-nosnippet>63</a>    </span>UnsupportedPublicKey,
-<a href=#64 id=64 data-nosnippet>64</a>    <span class="doccomment">/// X509Check error
-<a href=#65 id=65 data-nosnippet>65</a>    </span><span class="attr">#[error(<span class="string">"transparent"</span>)]
-<a href=#66 id=66 data-nosnippet>66</a>    </span>X509Check(<span class="attr">#[from] </span><span class="kw">crate</span>::validation::RustyX509CheckError),
+<a href=#64 id=64 data-nosnippet>64</a>    <span class="doccomment">/// Validation error
+<a href=#65 id=65 data-nosnippet>65</a>    </span><span class="attr">#[error(transparent)]
+<a href=#66 id=66 data-nosnippet>66</a>    </span>Validation(<span class="attr">#[from] </span><span class="kw">crate</span>::validation::Error),
 <a href=#67 id=67 data-nosnippet>67</a>    <span class="doccomment">/// DER error
 <a href=#68 id=68 data-nosnippet>68</a>    </span><span class="attr">#[error(transparent)]
 <a href=#69 id=69 data-nosnippet>69</a>    </span>Der(<span class="attr">#[from] </span>spki::der::Error),
@@ -72,7 +72,7 @@
 <a href=#72 id=72 data-nosnippet>72</a>    </span>Utf8(<span class="attr">#[from] </span>std::str::Utf8Error),
 <a href=#73 id=73 data-nosnippet>73</a>    <span class="doccomment">/// ACME error
 <a href=#74 id=74 data-nosnippet>74</a>    </span><span class="attr">#[error(transparent)]
-<a href=#75 id=75 data-nosnippet>75</a>    </span>Acme(<span class="attr">#[from] </span><span class="kw">crate</span>::acme::RustyAcmeError),
+<a href=#75 id=75 data-nosnippet>75</a>    </span>Acme(<span class="attr">#[from] </span><span class="kw">crate</span>::acme::Error),
 <a href=#76 id=76 data-nosnippet>76</a>    <span class="doccomment">/// JWT error
 <a href=#77 id=77 data-nosnippet>77</a>    </span><span class="attr">#[error(transparent)]
 <a href=#78 id=78 data-nosnippet>78</a>    </span>RustyJwtError(<span class="attr">#[from] </span>RustyJwtError),

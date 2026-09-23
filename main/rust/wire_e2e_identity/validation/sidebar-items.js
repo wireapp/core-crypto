@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["IdentityStatus","RustyX509CheckError"],"fn":["extract_crl_uris"],"type":["RustyX509CheckResult"]};
+window.SIDEBAR_ITEMS = {"enum":["Error","IdentityStatus"],"fn":["extract_crl_uris"],"type":["Result"]};
