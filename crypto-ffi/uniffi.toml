@@ -21,3 +21,34 @@ generate_module_map = false
 [bindings.typescript]
 strictObjectTypes = true
 strictByteArrays = true
+
+# Enable JSPI by default so that new synchronous calls, or async calls later made synchronous, can still reach OPFS.
+# Exclude the existing synchronous API that cannot reach OPFS.
+jspi = { exclude = [
+  "buildMetadata",
+  "cipherSuiteDefault",
+  "cipherSuiteFromU16",
+  "proteusFingerprintPrekeybundleFfi",
+  "proteusLastResortPrekeyIdFfi",
+  "setLogger",
+  "setMaxLogLevel",
+  "version",
+  "Welcome",
+  "ClientId",
+  "Uuid",
+  "DeviceId",
+  "DeserializedClientId",
+  "ConversationId",
+  "KeyPackageRef",
+  "KeyPackage",
+  "Credential",
+  "CredentialRef",
+  "ExternalSender",
+  "SecretKey",
+  "GroupInfo",
+  "DatabaseKey",
+  "CoreCryptoFfi.constructor",
+  "coreCryptoNew",
+  "X509CredentialAcquisition.constructor",
+  "X509CredentialAcquisition.fromBytes",
+] }
