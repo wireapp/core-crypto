@@ -22,7 +22,7 @@ impl Deref for InnerGuard {
 
 impl TransactionContext {
     /// Get a guard which derefs to [`TransactionContextInner`], or produce an appropriate error.
-    pub(crate) async fn inner(&self) -> Result<impl Deref<Target = TransactionContextInner>> {
+    pub(crate) fn inner(&self) -> Result<impl Deref<Target = TransactionContextInner>> {
         // Access to inner is designed to be immutable, concurrent, and fast.
         // There is exactly one place where we take a write guard: `take_inner`, below, where we invalidate the context.
         // If we can't immediately acquire a read guard, we'll never be able to (unless the future containing
