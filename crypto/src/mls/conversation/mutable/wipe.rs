@@ -10,7 +10,6 @@ impl ConversationMut {
     /// KeyStore errors, such as IO
     pub async fn wipe(&mut self) -> Result<()> {
         // to the degree that it's easy, fallibly get things before doing any mutation
-        let provider = self.crypto_provider().await?;
         let mut conversation_cache = self
             .tx_context
             .mls_groups()
@@ -18,10 +17,6 @@ impl ConversationMut {
             .map_err(RecursiveError::context("getting mls conversation cache"))?;
 
         self.mutate_group(async |transaction, group, _| {
-            // the own client may or may not have generated an epoch keypair in the previous epoch
-            // Since it is a terminal operation, ignoring the error is fine here.
-            let _ = group.delete_previous_epoch_keypairs(&provider).await;
-
             // collect all the relevant proposal refs without holding onto the group;
             // we'll need to mutate the group in shortly
             let proposals = group
