@@ -22,13 +22,16 @@
         "ts-loader": "^9.6.2",
         "typedoc": "0.28.20",
         "typescript": "^7.0.2",
-        "uniffi-bindgen-react-native": "^0.31.0-6",
+        "uniffi-bindgen-react-native": "github:wireapp/uniffi-bindgen-react-native#c31e77be44b4996c22d3a38820a448ac6aeb29ac",
         "yarn": "^1.22.22",
       },
     },
     "packages/browser": {
       "name": "@wireapp/core-crypto",
       "version": "10.3.0",
+      "dependencies": {
+        "@ubjs/core": "github:wireapp/uniffi-bindgen-react-native#c31e77be44b4996c22d3a38820a448ac6aeb29ac",
+      },
     },
     "packages/native": {
       "name": "@wireapp/core-crypto-native",
@@ -40,6 +43,7 @@
     },
   },
   "trustedDependencies": [
+    "@ubjs/core",
     "uniffi-bindgen-react-native",
   ],
   "packages": {
@@ -219,7 +223,7 @@
 
     "@typescript/typescript-win32-x64": ["@typescript/typescript-win32-x64@7.0.2", "", { "os": "win32", "cpu": "x64" }, "sha512-0BQ3HkAHHlKLSp1qRvf3SUhGpGsDuhB/jgFw75guyqbxJqEaS0Cw/VFO8i2nHglJUzQCRtMMR/IBAKE3ETMC4g=="],
 
-    "@ubjs/core": ["@ubjs/core@0.31.0-6", "", {}, "sha512-pscv6Zj8mVmd5+ikb1Zr6XZ0yqYwKGeIV8HU8rf9sTvs7GW34OARAp03xFJ7rE9XE4R6LgwQhzYW9knAuz5yxA=="],
+    "@ubjs/core": ["uniffi-bindgen-react-native@github:wireapp/uniffi-bindgen-react-native#c31e77b", { "bin": { "ubrn": "./bin/cli.cjs", "uniffi-bindgen-react-native": "./bin/cli.cjs" } }, "wireapp-uniffi-bindgen-react-native-c31e77b"],
 
     "@ubjs/node": ["@ubjs/node@0.31.0-6", "", { "optionalDependencies": { "@ubjs/node-darwin-arm64": "0.31.0-6", "@ubjs/node-darwin-x64": "0.31.0-6", "@ubjs/node-linux-arm64-gnu": "0.31.0-6", "@ubjs/node-linux-arm64-musl": "0.31.0-6", "@ubjs/node-linux-x64-gnu": "0.31.0-6", "@ubjs/node-linux-x64-musl": "0.31.0-6", "@ubjs/node-win32-arm64-msvc": "0.31.0-6", "@ubjs/node-win32-x64-msvc": "0.31.0-6" } }, "sha512-VrLj3vnh2TPLb8PItmrK5JJe277rdpTrqiptmb8zySdJ+sGl9Kj1imAE6XSK9zCokPl8lSpgotEQZYCVGZ7egg=="],
 
@@ -487,7 +491,7 @@
 
     "undici-types": ["undici-types@8.9.0", "", {}, "sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg=="],
 
-    "uniffi-bindgen-react-native": ["uniffi-bindgen-react-native@0.31.0-6", "", { "bin": { "ubrn": "bin/cli.cjs", "uniffi-bindgen-react-native": "bin/cli.cjs" } }, "sha512-4SfjPl8b9oQQcLJRH7INa+DdWV2FKu9HAVOjHL0+rT8EniTG4qoxOdmDBw8Novq7vSqEFmiXbHaoArLFqWWEhg=="],
+    "uniffi-bindgen-react-native": ["uniffi-bindgen-react-native@github:wireapp/uniffi-bindgen-react-native#c31e77b", { "bin": { "ubrn": "./bin/cli.cjs", "uniffi-bindgen-react-native": "./bin/cli.cjs" } }, "wireapp-uniffi-bindgen-react-native-c31e77b"],
 
     "update-browserslist-db": ["update-browserslist-db@1.1.3", "", { "dependencies": { "escalade": "^3.2.0", "picocolors": "^1.1.1" }, "peerDependencies": { "browserslist": ">= 4.21.0" }, "bin": { "update-browserslist-db": "cli.js" } }, "sha512-UxhIZQ+QInVdunkDAaiazvvT/+fXL5Osr0JZlJulepYu6Jd7qJtDZjlur0emRlT71EN3ScPoE7gvsuIKKNavKw=="],
 
@@ -518,6 +522,8 @@
     "zod": ["zod@4.6.7", "", {}, "sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg=="],
 
     "@puppeteer/browsers/yargs": ["yargs@18.1.0", "", { "dependencies": { "cliui": "^9.0.1", "escalade": "^3.1.1", "get-caller-file": "^2.0.5", "string-width": "^8.2.1", "y18n": "^5.0.5", "yargs-parser": "^22.0.0" } }, "sha512-2rAgRKu54VsHkqI0/tYkmluGXHD4KW7yZoycuqDQ15QOTnc2VVfy0nN/1eMhnQLO00A+dwtK20xuCnc1YGeUyg=="],
+
+    "@wireapp/core-crypto-native/@ubjs/core": ["@ubjs/core@0.31.0-5", "", {}, "sha512-oRBRtyYOhaodiOY3rLMZFgAHGFMmD44XefMpsAx4Ja0/rO+45kVdQB1VZsblQMLYxP965i3IHm56eymgo3I5eQ=="],
 
     "chalk/supports-color": ["supports-color@7.2.0", "", { "dependencies": { "has-flag": "^4.0.0" } }, "sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw=="],
 
