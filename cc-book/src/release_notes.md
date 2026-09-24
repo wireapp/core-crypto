@@ -32,6 +32,8 @@
   second between registrations. This was never true of any released version; we fixed it before releasing 10.0.0. If you
   added a delay between `addCredential` calls to comply, you can remove it.
 
+- `CoreCryptoContext.setData` and `Database.openInMemory` are now synchronous functions, not async.
+
 ## CoreCrypto 10
 
 ### v10.5.2 - 2026-09-09
