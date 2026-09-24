@@ -13,6 +13,7 @@
 // that several methods are only now used in tests, sorting out what is or is not
 // actually used in these modules is a pain. So we avoid that by deciding we don't care.
 #![expect(unused)]
+#![allow(clippy::unused_async)]
 
 pub(crate) mod connection;
 pub(crate) mod entities;

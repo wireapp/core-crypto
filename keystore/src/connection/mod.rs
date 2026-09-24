@@ -66,6 +66,7 @@ impl Database {
     /// Open an encrypted `Database` at the provided location.
     ///
     /// This function is the internal implementation for [`Self::open`]; that method should be generally preferred.
+    #[cfg_attr(not(target_os = "unknown"), expect(clippy::unused_async))]
     async fn open_internal(
         path: &str,
         database_key: &DatabaseKey,
