@@ -139,7 +139,7 @@ impl SimulatorDriver {
         Ok((process, output))
     }
 
-    async fn execute(&self, action: String) -> Result<String> {
+    fn execute(&self, action: String) -> Result<String> {
         let args = [
             "-s",
             self.device.as_str(),
@@ -190,7 +190,7 @@ pub(crate) struct CoreCryptoAndroidClient {
 }
 
 impl CoreCryptoAndroidClient {
-    pub(crate) async fn new() -> Result<Self> {
+    pub(crate) fn new() -> Result<Self> {
         let user_id = uuid::Uuid::new_v4();
         let user_id_base64 = general_purpose::STANDARD.encode(user_id.as_hyphenated().to_string());
         let device_id = rand::random::<u64>();
@@ -208,7 +208,7 @@ impl CoreCryptoAndroidClient {
             .execute(format!(
                 "--es action init-mls --es client_id {user_id_base64} --es device_id {device_id_hex} --ei cipherSuite {cipher_suite}"
             ))
-            .await?;
+            ?;
 
         Ok(Self {
             driver,
@@ -249,8 +249,7 @@ impl EmulatedMlsClient for CoreCryptoAndroidClient {
         let start = std::time::Instant::now();
         let kp_base64 = self
             .driver
-            .execute(format!("--es action get-key-package --ei cipherSuite {cipher_suite}"))
-            .await?;
+            .execute(format!("--es action get-key-package --ei cipherSuite {cipher_suite}"))?;
         let kp_raw = general_purpose::STANDARD.decode(kp_base64)?;
         let kp: Keypackage = KeyPackageIn::tls_deserialize(&mut kp_raw.as_slice())?.into();
 
@@ -269,8 +268,7 @@ impl EmulatedMlsClient for CoreCryptoAndroidClient {
         let welcome_base64 = general_purpose::STANDARD.encode(welcome);
         let conversation_id_base64 = self
             .driver
-            .execute(format!("--es action process-welcome --es welcome {welcome_base64}"))
-            .await?;
+            .execute(format!("--es action process-welcome --es welcome {welcome_base64}"))?;
         let conversation_id = general_purpose::STANDARD.decode(conversation_id_base64)?;
 
         Ok(conversation_id)
@@ -279,12 +277,9 @@ impl EmulatedMlsClient for CoreCryptoAndroidClient {
     async fn encrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
         let cid_base64 = general_purpose::STANDARD.encode(conversation_id);
         let message_base64 = general_purpose::STANDARD.encode(message);
-        let encrypted_message_base64 = self
-            .driver
-            .execute(format!(
-                "--es action encrypt-message --es cid {cid_base64} --es message {message_base64}"
-            ))
-            .await?;
+        let encrypted_message_base64 = self.driver.execute(format!(
+            "--es action encrypt-message --es cid {cid_base64} --es message {message_base64}"
+        ))?;
         let encrypted_message = general_purpose::STANDARD.decode(encrypted_message_base64)?;
 
         Ok(encrypted_message)
@@ -309,7 +304,7 @@ impl EmulatedMlsClient for CoreCryptoAndroidClient {
             .execute(format!(
                 "--es action encrypt-targeted-message --es cid {cid_base64} --es recipient {recipient_base64} --es policy {policy} --es message {message_base64}"
             ))
-            .await?;
+            ?;
 
         general_purpose::STANDARD
             .decode(encrypted_message_base64)
@@ -319,12 +314,9 @@ impl EmulatedMlsClient for CoreCryptoAndroidClient {
     async fn encrypt_transient_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
         let cid_base64 = general_purpose::STANDARD.encode(conversation_id);
         let message_base64 = general_purpose::STANDARD.encode(message);
-        let encrypted_message_base64 = self
-            .driver
-            .execute(format!(
-                "--es action encrypt-transient-message --es cid {cid_base64} --es message {message_base64}"
-            ))
-            .await?;
+        let encrypted_message_base64 = self.driver.execute(format!(
+            "--es action encrypt-transient-message --es cid {cid_base64} --es message {message_base64}"
+        ))?;
 
         general_purpose::STANDARD
             .decode(encrypted_message_base64)
@@ -334,12 +326,9 @@ impl EmulatedMlsClient for CoreCryptoAndroidClient {
     async fn decrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Option<Vec<u8>>> {
         let cid_base64 = general_purpose::STANDARD.encode(conversation_id);
         let message_base64 = general_purpose::STANDARD.encode(message);
-        let result = self
-            .driver
-            .execute(format!(
-                "--es action decrypt-message --es cid {cid_base64} --es message {message_base64}"
-            ))
-            .await?;
+        let result = self.driver.execute(format!(
+            "--es action decrypt-message --es cid {cid_base64} --es message {message_base64}"
+        ))?;
 
         if result == "decrypted protocol message" {
             Ok(None)
@@ -354,7 +343,7 @@ impl EmulatedMlsClient for CoreCryptoAndroidClient {
 #[async_trait::async_trait(?Send)]
 impl crate::clients::EmulatedProteusClient for CoreCryptoAndroidClient {
     async fn init(&mut self) -> Result<()> {
-        self.driver.execute("--es action init-proteus".into()).await?;
+        self.driver.execute("--es action init-proteus".into())?;
         Ok(())
     }
 
@@ -364,8 +353,7 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoAndroidClient {
 
         let prekey_base64 = self
             .driver
-            .execute(format!("--es action get-prekey --es id {prekey_last_id}"))
-            .await?;
+            .execute(format!("--es action get-prekey --es id {prekey_last_id}"))?;
         let prekey = general_purpose::STANDARD.decode(prekey_base64)?;
 
         Ok(prekey)
@@ -373,35 +361,27 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoAndroidClient {
 
     async fn session_from_prekey(&self, session_id: &str, prekey: &[u8]) -> Result<()> {
         let prekey_base64 = general_purpose::STANDARD.encode(prekey);
-        self.driver
-            .execute(format!(
-                "--es action session-from-prekey --es session_id {session_id} --es prekey {prekey_base64}"
-            ))
-            .await?;
+        self.driver.execute(format!(
+            "--es action session-from-prekey --es session_id {session_id} --es prekey {prekey_base64}"
+        ))?;
 
         Ok(())
     }
 
     async fn session_from_message(&self, session_id: &str, message: &[u8]) -> Result<Vec<u8>> {
         let message_base64 = general_purpose::STANDARD.encode(message);
-        let decrypted_message_base64 = self
-            .driver
-            .execute(format!(
-                "--es action session-from-message --es session_id {session_id} --es message {message_base64}"
-            ))
-            .await?;
+        let decrypted_message_base64 = self.driver.execute(format!(
+            "--es action session-from-message --es session_id {session_id} --es message {message_base64}"
+        ))?;
         let decrypted_message = general_purpose::STANDARD.decode(decrypted_message_base64)?;
 
         Ok(decrypted_message)
     }
     async fn encrypt(&self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
         let plaintext_base64 = general_purpose::STANDARD.encode(plaintext);
-        let encrypted_message_base64 = self
-            .driver
-            .execute(format!(
-                "--es action encrypt-proteus --es session_id {session_id} --es message {plaintext_base64}"
-            ))
-            .await?;
+        let encrypted_message_base64 = self.driver.execute(format!(
+            "--es action encrypt-proteus --es session_id {session_id} --es message {plaintext_base64}"
+        ))?;
         let encrypted_message = general_purpose::STANDARD.decode(encrypted_message_base64)?;
 
         Ok(encrypted_message)
@@ -409,19 +389,16 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoAndroidClient {
 
     async fn decrypt(&self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
         let ciphertext_base64 = general_purpose::STANDARD.encode(ciphertext);
-        let decrypted_message_base64 = self
-            .driver
-            .execute(format!(
-                "--es action decrypt-proteus --es session_id {session_id} --es message {ciphertext_base64}"
-            ))
-            .await?;
+        let decrypted_message_base64 = self.driver.execute(format!(
+            "--es action decrypt-proteus --es session_id {session_id} --es message {ciphertext_base64}"
+        ))?;
         let decrypted_message = general_purpose::STANDARD.decode(decrypted_message_base64)?;
 
         Ok(decrypted_message)
     }
 
     async fn fingerprint(&self) -> Result<String> {
-        let fingerprint = self.driver.execute("--es action get-fingerprint".into()).await?;
+        let fingerprint = self.driver.execute("--es action get-fingerprint".into())?;
 
         Ok(fingerprint)
     }

@@ -31,11 +31,7 @@ async fn create_mls_clients<'a>(
     web_server: &'a std::net::SocketAddr,
 ) -> Vec<Box<dyn clients::EmulatedMlsClient>> {
     vec![
-        Box::new(
-            clients::corecrypto::android::CoreCryptoAndroidClient::new()
-                .await
-                .unwrap(),
-        ),
+        Box::new(clients::corecrypto::android::CoreCryptoAndroidClient::new().unwrap()),
         #[cfg(target_os = "macos")]
         Box::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await.unwrap()),
         Box::new(
@@ -52,11 +48,7 @@ async fn create_proteus_clients<'a>(
     web_server: &'a std::net::SocketAddr,
 ) -> Vec<Box<dyn clients::EmulatedProteusClient>> {
     vec![
-        Box::new(
-            clients::corecrypto::android::CoreCryptoAndroidClient::new()
-                .await
-                .unwrap(),
-        ),
+        Box::new(clients::corecrypto::android::CoreCryptoAndroidClient::new().unwrap()),
         #[cfg(target_os = "macos")]
         Box::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await.unwrap()),
         Box::new(
@@ -93,7 +85,7 @@ fn run_test() -> Result<()> {
         .unwrap();
 
     runtime.block_on(async {
-        util::cp_wasm_files(tempdir.path().to_path_buf()).await?;
+        util::cp_wasm_files(tempdir.path().to_path_buf())?;
 
         let spinner = util::RunningProcess::new("Starting HTTP server...", false);
         let (server, server_task) = util::bind_http_server(tempdir.path().to_path_buf()).await;
@@ -102,7 +94,7 @@ fn run_test() -> Result<()> {
 
         let mut spinner = util::RunningProcess::new("Starting WebDriver [ChromeDriver & GeckoDriver]...", false);
         let chrome_driver_addr = TcpListener::bind("127.0.0.1:0").await?.local_addr()?;
-        let mut chrome_webdriver = util::start_webdriver_chrome(&chrome_driver_addr).await?;
+        let mut chrome_webdriver = util::start_webdriver_chrome(&chrome_driver_addr)?;
         spinner.update("Sleeping to wait for Webdrivers to get ready...");
         let timeout = Duration::from_secs(5);
         let start = Instant::now();

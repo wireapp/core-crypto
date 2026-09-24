@@ -113,7 +113,7 @@ impl core_crypto_ffi::MlsTransport for MlsTransportSuccessProvider {
 }
 
 /// Copy wasm files from sources into deployment path
-pub(crate) async fn cp_wasm_files(wasm_deploy_path: PathBuf) -> Result<()> {
+pub(crate) fn cp_wasm_files(wasm_deploy_path: PathBuf) -> Result<()> {
     let cwd = std::env::current_dir()?;
 
     let spinner = RunningProcess::new("Copying data into WASM bundle...", false);
@@ -153,7 +153,7 @@ pub(crate) async fn bind_http_server(wasm_deploy_path: PathBuf) -> (SocketAddr, 
     (addr, warp::serve(warp_filter_cc).incoming(listener).run())
 }
 
-pub(crate) async fn start_webdriver_chrome(addr: &std::net::SocketAddr) -> Result<tokio::process::Child> {
+pub(crate) fn start_webdriver_chrome(addr: &std::net::SocketAddr) -> Result<tokio::process::Child> {
     let chromedriver_path = std::env::var_os("CHROMEDRIVER_PATH")
         .map(PathBuf::from)
         .or_else(|| which("chromedriver").ok())
