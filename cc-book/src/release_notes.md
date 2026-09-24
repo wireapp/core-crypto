@@ -34,6 +34,11 @@
 - `e2eiIsEnabled` has been removed. You can use `findCredentials` to check whether an X509 credential for a given cipher
   suite exists.
 
+- TypeScript (browser): the encrypted keystore now uses SQLite on OPFS through JSPI. IndexedDB keystores (CoreCrypto
+  v9.x and earlier) migrate automatically. A temporary VFS based on IndexedDB was used in CoreCrypto 10.x, which is now
+  unsupported. Any instance initialized on CoreCrypto 10.x will result in an error. It is not migrated and must be
+  discarded.
+
 - `proteusNewPrekey` is deprecated; use `proteusNewPrekeyAuto` instead.
 
 - Rendering a `DeserializedClientId` (its `toString`/`Display`) now reproduces the client id it was deserialized from.
