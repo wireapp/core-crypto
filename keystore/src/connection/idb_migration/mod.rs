@@ -28,7 +28,6 @@ use crate::{
             pending_message::LegacyMlsPendingMessage, stored_keypackage::StoredKeypackage,
         },
         migrations::MigrationTarget,
-        os_unknown::FsAbstraction,
     },
     entities::{StoredBufferedCommit, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle},
     migrations::{LegacyPersistedMlsGroup, StoredCredentialV36, V33StoredEpochEncryptionKeypair},
@@ -140,7 +139,6 @@ pub(super) async fn maybe_migrate(
     name: &str,
     database_key: &DatabaseKey,
     new_conn: &mut Connection,
-    fs: &FsAbstraction,
 ) -> CryptoKeystoreResult<()> {
     /// This SQL database version corresponds to the final IDB version,
     /// so is what we need to perform the migration from IDB.
@@ -231,9 +229,8 @@ pub(super) async fn maybe_migrate(
 
     for_each_imported_legacy_entity!(migrate_entities);
 
-    // The commit above only queued the write of the copied data to IndexedDB. Until that write has landed, the
-    // legacy database is the only durable copy, so it must not be deleted yet.
-    fs.flush().await?;
+    // OPFS writes close their writable streams before returning through JSPI, so
+    // the successful commit above has published the imported data before we delete IDB.
 
     // clients can recover independently from this; the migrations all succeeded, so no need to
     // propagate an error
