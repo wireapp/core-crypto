@@ -12,6 +12,25 @@ afterEach(async () => {
 });
 
 describe("database", () => {
+    it("serializes overlapping OPFS calls within a database", async () => {
+        const result = await getPage().evaluate(async () => {
+            const cc = await helpers.ccInit();
+            await cc.transaction(async (ctx) => {
+                // These share a connection; a second synchronous mutex acquisition
+                // must not block the browser while the first SQLite call suspends.
+                await Promise.all([
+                    ctx.setData(new Uint8Array([1])),
+                    ctx.getData(),
+                ]);
+            });
+            const value = await cc.transaction(async (ctx) => {
+                return Array.from((await ctx.getData())!);
+            });
+            return value;
+        });
+        expect(result).to.deep.equal([1]);
+    });
+
     it("migrating key type to bytes works", async () => {
         const stores = await import("./db-v10002003-dump.json");
 
