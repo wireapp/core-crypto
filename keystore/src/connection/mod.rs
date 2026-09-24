@@ -7,6 +7,7 @@ mod filesystem;
 mod idb_migration;
 #[cfg(target_os = "ios")]
 mod ios_wal_compat;
+pub(crate) mod managed_connection;
 mod migrations;
 mod mls;
 #[cfg(target_os = "unknown")]
