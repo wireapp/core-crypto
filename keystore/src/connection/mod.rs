@@ -209,6 +209,20 @@ impl Database {
     /// Change the encryption key for this database.
     pub async fn update_key(&self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()> {
         let mut guard = self.conn.lock().await;
+        let _sqlite = SqliteGuard::lock();
+        #[cfg(target_os = "unknown")]
+        {
+            // sqlite3-multiple-ciphers cannot rekey in WAL mode. Switching to
+            // DELETE checkpoints the old WAL before rewriting encrypted pages.
+            let mode = guard.pragma_query_value(None, "journal_mode", |row| row.get::<_, String>(0))?;
+            if mode == "wal" {
+                guard.pragma_update(None, "journal_mode", "delete")?;
+                let result = encryption::rekey(&mut guard, new_key);
+                // Restore WAL on both success and failure, preserving the rekey error.
+                let restore = guard.pragma_update(None, "journal_mode", "wal").map_err(Into::into);
+                return result.and(restore);
+            }
+        }
         encryption::rekey(&mut guard, new_key)
     }
 
