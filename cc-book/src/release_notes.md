@@ -34,6 +34,15 @@
 
 ## CoreCrypto 10
 
+### v10.5.3 - 2026-09-23
+
+- Fixed duplicate existing pending messages leading to database migration to fail. From now on, duplicate pending
+  messages will be ignored.
+
+- Fixed receiving too many out-of-order buffered messages could result in processing the commit to fail, putting the
+  group into an invalid and irrecoverable state. Now, processing the buffered messages is done on a best-effort basis
+  and cannot on its own put the group into an invalid state.
+
 ### v10.5.2 - 2026-09-09
 
 - Fixed a migration issue impacting Web only. Web clients who had previously upgraded to a version between 10.0.0 and
