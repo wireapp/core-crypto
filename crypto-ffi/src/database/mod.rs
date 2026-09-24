@@ -27,7 +27,7 @@ impl Database {
     /// Create an in-memory database whose data will be lost when the instance is dropped.
     /// In-memory databases are never encrypted.
     #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::constructor)]
-    pub async fn in_memory() -> CoreCryptoResult<Self> {
+    pub fn in_memory() -> CoreCryptoResult<Self> {
         core_crypto_keystore::Database::open_in_memory()
             .map(Database)
             .map_err(CoreCryptoError::generic())
@@ -46,7 +46,7 @@ pub async fn open_database(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoR
 #[cfg(not(any(feature = "wasm", feature = "napi", target_os = "unknown")))]
 #[uniffi::export]
 pub async fn in_memory_database() -> CoreCryptoResult<Database> {
-    Database::in_memory().await
+    Database::in_memory()
 }
 
 #[uniffi::export]

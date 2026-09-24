@@ -20,7 +20,7 @@ describe("set_data()", () => {
             let dbResultBeforeSet: Uint8Array | undefined;
             await cc.transaction(async (ctx) => {
                 dbResultBeforeSet = await ctx.getData();
-                await ctx.setData(data);
+                ctx.setData(data);
             });
             const dbResultAfterSet = await cc.transaction(async (ctx) => {
                 return await ctx.getData();
