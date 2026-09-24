@@ -73,12 +73,12 @@ async fn wire_api(nonces: &Mutex<Nonces>, req: Request<Incoming>) -> http::Resul
                     .unwrap(),
             }
         }
-        (Method::GET, ["callback"]) => handle_callback(parts.uri).await?,
+        (Method::GET, ["callback"]) => handle_callback(parts.uri)?,
         _ => not_found()?,
     })
 }
 
-async fn handle_callback(uri: http::Uri) -> http::Result<Response<Full<Bytes>>> {
+fn handle_callback(uri: http::Uri) -> http::Result<Response<Full<Bytes>>> {
     let req_uri: url::Url = format!("http://localhost{uri}").parse().unwrap();
     let authorization_code = req_uri
         .query_pairs()
