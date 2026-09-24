@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- TypeScript (browser): the encrypted keystore now uses OPFS through JSPI, with a persistent WAL and an in-memory WAL
+  index. IndexedDB keystores (CoreCrypto v9.x and earlier) migrate automatically. A temporary VFS based on IndexedDB was
+  used in CoreCrypto 10.x, which is now unsupported. Any instance initialized on CoreCrypto 10.x will result in an
+  error. It is not migrated and must be discarded.
+
 - `proteusNewPrekey` is deprecated; use `proteusNewPrekeyAuto` instead.
 
 - TypeScript: browser and native packages are now released separately under `@wireapp/core-crypto` and
