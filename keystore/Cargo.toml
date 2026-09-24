@@ -74,8 +74,11 @@ rusqlite = { version = "0.38", default-features = false, features = [
 idb.workspace = true
 js-sys.workspace = true
 paste = "1.0.5"
+rsqlite-vfs = "0.2"
 sqlite-wasm-rs = { version = "0.5.5", features = ["sqlite3mc"] }
-sqlite-wasm-vfs = "0.2.0"
+sqlite-wasm-vfs = { git = "https://github.com/wireapp/sqlite-wasm-rs", rev = "5617734a61fd158843d6c7aba261e0bed918b309", features = [
+  "opfs-jspi",
+] }
 time = { version = "0.3.5", features = ["wasm-bindgen"] }
 serde-wasm-bindgen.workspace = true
 wasm-bindgen.workspace = true
