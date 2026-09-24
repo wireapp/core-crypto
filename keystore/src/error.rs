@@ -94,6 +94,9 @@ pub enum CryptoKeystoreError {
     #[cfg(target_os = "unknown")]
     #[error("Migration from version {0} is not supported")]
     MigrationNotSupported(u32),
+    #[cfg(target_os = "unknown")]
+    #[error("CoreCrypto 10.x databases are unsupported and must be discarded")]
+    CoreCrypto10DatabaseUnsupported,
     #[error("The migration failed: {0}")]
     MigrationFailed(String),
     #[cfg(target_os = "unknown")]

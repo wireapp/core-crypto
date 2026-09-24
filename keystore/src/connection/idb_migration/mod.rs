@@ -7,8 +7,10 @@ mod legacy;
 #[cfg(test)]
 mod tests;
 
-use idb::Factory;
+use idb::{Factory, KeyRange, TransactionMode};
+use js_sys::{Array, Number};
 use rusqlite::Connection;
+use wasm_bindgen::JsValue;
 
 #[cfg(feature = "proteus-keystore")]
 use self::legacy::entities::proteus::identity::LegacyProteusIdentity;
@@ -19,7 +21,7 @@ use self::legacy::{
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::{ProteusPrekey, ProteusSession};
 use crate::{
-    CryptoKeystoreResult, DatabaseKey,
+    CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
     connection::{
         idb_migration::legacy::entities::mls::{
             e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
@@ -33,6 +35,47 @@ use crate::{
     migrations::{LegacyPersistedMlsGroup, StoredCredentialV36, V33StoredEpochEncryptionKeypair},
     traits::EntityDatabaseMutation as _,
 };
+
+/// The IndexedDB database used by the temporary SQLite VFS in CoreCrypto 10.x.
+const CORE_CRYPTO_10_VFS_DATABASE: &str = "core-crypto";
+/// The VFS stored every page in this object store, under the compound key `(path, offset)`.
+const CORE_CRYPTO_10_VFS_OBJECT_STORE: &str = "blocks";
+
+/// Reject a database stored by the temporary IndexedDB-backed SQLite VFS from CoreCrypto 10.x.
+pub(super) async fn reject_core_crypto_10_database(name: &str) -> CryptoKeystoreResult<()> {
+    if core_crypto_10_database_exists(CORE_CRYPTO_10_VFS_DATABASE, name).await? {
+        Err(CryptoKeystoreError::CoreCrypto10DatabaseUnsupported)
+    } else {
+        Ok(())
+    }
+}
+
+/// Return whether `vfs_database` contains pages for `name` in the CoreCrypto 10.x VFS layout.
+///
+/// The VFS shared one IndexedDB database between all keystores, so checking merely for the
+/// `core-crypto` database or its `blocks` store would reject unrelated CoreCrypto instances.
+async fn core_crypto_10_database_exists(vfs_database: &str, name: &str) -> CryptoKeystoreResult<bool> {
+    let factory = Factory::new()?;
+    let db = factory.open(vfs_database, None)?.await?;
+    if !db
+        .store_names()
+        .iter()
+        .any(|store| store == CORE_CRYPTO_10_VFS_OBJECT_STORE)
+    {
+        db.close();
+        return Ok(false);
+    }
+
+    let transaction = db.transaction(&[CORE_CRYPTO_10_VFS_OBJECT_STORE], TransactionMode::ReadOnly)?;
+    let store = transaction.object_store(CORE_CRYPTO_10_VFS_OBJECT_STORE)?;
+    let lower = Array::of2(&JsValue::from_str(name), &JsValue::from_f64(0.0));
+    let upper = Array::of2(&JsValue::from_str(name), &JsValue::from_f64(Number::POSITIVE_INFINITY));
+    let range = KeyRange::bound(&lower.into(), &upper.into(), None, None)?;
+    let count = store.count(Some(range.into()))?.await?;
+    db.close();
+
+    Ok(count > 0)
+}
 
 /// Every legacy object store which [`maybe_migrate`] copies verbatim, named by the entity type it is read as.
 ///
