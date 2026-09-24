@@ -47,6 +47,8 @@ pub(super) fn ensure_vfs_installed(guard: &SqliteGuard) -> CryptoKeystoreResult<
 /// Migration: might partially migrate the database, if it detects that a legacy IDB database exists whose
 /// data has not yet been imported. A final migration to latest version will be necessary!
 pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<(ManagedConnection, FsAbstraction)> {
+    super::idb_migration::reject_core_crypto_10_database(name).await?;
+
     let sqlite = SqliteGuard::lock();
     ensure_vfs_installed(&sqlite)?;
     let already_exists = opfs_vfs::contains(name).map_err(CryptoKeystoreError::opfs("checking database existence"))?;
