@@ -113,7 +113,7 @@
 <a href=#113 id=113 data-nosnippet>113</a>}
 <a href=#114 id=114 data-nosnippet>114</a>
 <a href=#115 id=115 data-nosnippet>115</a><span class="doccomment">/// Copy wasm files from sources into deployment path
-<a href=#116 id=116 data-nosnippet>116</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>cp_wasm_files(wasm_deploy_path: PathBuf) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#116 id=116 data-nosnippet>116</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>cp_wasm_files(wasm_deploy_path: PathBuf) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
 <a href=#117 id=117 data-nosnippet>117</a>    <span class="kw">let </span>cwd = std::env::current_dir()<span class="question-mark">?</span>;
 <a href=#118 id=118 data-nosnippet>118</a>
 <a href=#119 id=119 data-nosnippet>119</a>    <span class="kw">let </span>spinner = RunningProcess::new(<span class="string">"Copying data into WASM bundle..."</span>, <span class="bool-val">false</span>);
@@ -153,7 +153,7 @@
 <a href=#153 id=153 data-nosnippet>153</a>    (addr, warp::serve(warp_filter_cc).incoming(listener).run())
 <a href=#154 id=154 data-nosnippet>154</a>}
 <a href=#155 id=155 data-nosnippet>155</a>
-<a href=#156 id=156 data-nosnippet>156</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>start_webdriver_chrome(addr: <span class="kw-2">&amp;</span>std::net::SocketAddr) -&gt; <span class="prelude-ty">Result</span>&lt;tokio::process::Child&gt; {
+<a href=#156 id=156 data-nosnippet>156</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>start_webdriver_chrome(addr: <span class="kw-2">&amp;</span>std::net::SocketAddr) -&gt; <span class="prelude-ty">Result</span>&lt;tokio::process::Child&gt; {
 <a href=#157 id=157 data-nosnippet>157</a>    <span class="kw">let </span>chromedriver_path = std::env::var_os(<span class="string">"CHROMEDRIVER_PATH"</span>)
 <a href=#158 id=158 data-nosnippet>158</a>        .map(PathBuf::from)
 <a href=#159 id=159 data-nosnippet>159</a>        .or_else(|| which(<span class="string">"chromedriver"</span>).ok())

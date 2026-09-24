@@ -26,7 +26,7 @@
 <a href=#26 id=26 data-nosnippet>26</a>            .crypto_provider()
 <a href=#27 id=27 data-nosnippet>27</a>            .<span class="kw">await
 <a href=#28 id=28 data-nosnippet>28</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"obtaining crypto provider"</span>))<span class="question-mark">?</span>;
-<a href=#29 id=29 data-nosnippet>29</a>        <span class="kw">let </span>database = <span class="self">self</span>.database().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#29 id=29 data-nosnippet>29</a>        <span class="kw">let </span>database = <span class="self">self</span>.database()<span class="question-mark">?</span>;
 <a href=#30 id=30 data-nosnippet>30</a>
 <a href=#31 id=31 data-nosnippet>31</a>        <span class="kw">let </span>transient_message = <span class="self">self
 <a href=#32 id=32 data-nosnippet>32</a>            </span>.mutate_group(<span class="kw">async </span>|<span class="kw">_</span>, group_state, <span class="kw">_</span>| {

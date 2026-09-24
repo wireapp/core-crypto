@@ -50,7 +50,7 @@
 <a href=#50 id=50 data-nosnippet>50</a>            .<span class="kw">await
 <a href=#51 id=51 data-nosnippet>51</a>            </span>.map_err(KeystoreError::wrap(<span class="string">"finding proteus identity"</span>))<span class="question-mark">?
 <a href=#52 id=52 data-nosnippet>52</a>        </span><span class="kw">else </span>{
-<a href=#53 id=53 data-nosnippet>53</a>            <span class="kw">return </span><span class="self">Self</span>::create_identity(transaction).<span class="kw">await</span>;
+<a href=#53 id=53 data-nosnippet>53</a>            <span class="kw">return </span><span class="self">Self</span>::create_identity(transaction);
 <a href=#54 id=54 data-nosnippet>54</a>        };
 <a href=#55 id=55 data-nosnippet>55</a>
 <a href=#56 id=56 data-nosnippet>56</a>        <span class="kw">let </span>sk = identity.sk_raw();
@@ -63,7 +63,7 @@
 <a href=#63 id=63 data-nosnippet>63</a>    }
 <a href=#64 id=64 data-nosnippet>64</a>
 <a href=#65 id=65 data-nosnippet>65</a>    <span class="doccomment">/// Internal function to create and save a new Proteus Identity
-<a href=#66 id=66 data-nosnippet>66</a>    </span><span class="kw">async fn </span>create_identity(transaction: <span class="kw-2">&amp;</span>Transaction) -&gt; <span class="prelude-ty">Result</span>&lt;IdentityKeyPair&gt; {
+<a href=#66 id=66 data-nosnippet>66</a>    </span><span class="kw">fn </span>create_identity(transaction: <span class="kw-2">&amp;</span>Transaction) -&gt; <span class="prelude-ty">Result</span>&lt;IdentityKeyPair&gt; {
 <a href=#67 id=67 data-nosnippet>67</a>        <span class="kw">let </span>kp = IdentityKeyPair::new();
 <a href=#68 id=68 data-nosnippet>68</a>        <span class="kw">let </span>pk = kp.public_key.public_key.as_slice().to_vec();
 <a href=#69 id=69 data-nosnippet>69</a>

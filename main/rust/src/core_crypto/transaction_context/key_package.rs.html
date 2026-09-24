@@ -32,7 +32,7 @@
 <a href=#32 id=32 data-nosnippet>32</a>        credential_ref: <span class="kw-2">&amp;</span>CredentialRef,
 <a href=#33 id=33 data-nosnippet>33</a>        lifetime: <span class="prelude-ty">Option</span>&lt;Duration&gt;,
 <a href=#34 id=34 data-nosnippet>34</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;Keypackage&gt; {
-<a href=#35 id=35 data-nosnippet>35</a>        <span class="kw">let </span>inner = <span class="self">self</span>.inner().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#35 id=35 data-nosnippet>35</a>        <span class="kw">let </span>inner = <span class="self">self</span>.inner()<span class="question-mark">?</span>;
 <a href=#36 id=36 data-nosnippet>36</a>        <span class="kw">let </span>lifetime = Lifetime::new(lifetime.unwrap_or(KEYPACKAGE_DEFAULT_LIFETIME).as_secs());
 <a href=#37 id=37 data-nosnippet>37</a>        <span class="kw">let </span>credential = credential_ref
 <a href=#38 id=38 data-nosnippet>38</a>            .load(<span class="kw-2">&amp;</span>inner.transaction)
@@ -83,7 +83,7 @@
 <a href=#83 id=83 data-nosnippet>83</a>            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
 <a href=#84 id=84 data-nosnippet>84</a>        };
 <a href=#85 id=85 data-nosnippet>85</a>
-<a href=#86 id=86 data-nosnippet>86</a>        <span class="kw">let </span>inner = <span class="self">self</span>.inner().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#86 id=86 data-nosnippet>86</a>        <span class="kw">let </span>inner = <span class="self">self</span>.inner()<span class="question-mark">?</span>;
 <a href=#87 id=87 data-nosnippet>87</a>        <span class="kw">let </span>tx = inner.transaction();
 <a href=#88 id=88 data-nosnippet>88</a>        StoredKeyPackage::delete_borrowed(tx, kp_ref.hash_ref())
 <a href=#89 id=89 data-nosnippet>89</a>            .map_err(KeystoreError::wrap(<span class="string">"removing key package from keystore"</span>))<span class="question-mark">?</span>;
@@ -103,7 +103,7 @@
 <a href=#103 id=103 data-nosnippet>103</a>    /// if removing one returns an error. In that case, only the first produced error is returned.
 <a href=#104 id=104 data-nosnippet>104</a>    /// This helps ensure that as many keypackages for the given credential ref are removed as possible.
 <a href=#105 id=105 data-nosnippet>105</a>    </span><span class="kw">pub async fn </span>remove_key_packages_for(<span class="kw-2">&amp;</span><span class="self">self</span>, credential_ref: <span class="kw-2">&amp;</span>CredentialRef) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span>inner = <span class="self">self</span>.inner().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span>inner = <span class="self">self</span>.inner()<span class="question-mark">?</span>;
 <a href=#107 id=107 data-nosnippet>107</a>        <span class="kw">let </span>credential = credential_ref
 <a href=#108 id=108 data-nosnippet>108</a>            .load(<span class="kw-2">&amp;</span>inner.transaction)
 <a href=#109 id=109 data-nosnippet>109</a>            .<span class="kw">await
