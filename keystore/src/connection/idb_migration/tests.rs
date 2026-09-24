@@ -6,7 +6,7 @@
 
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
-use idb::{Factory, TransactionMode};
+use idb::{Factory, KeyPath, TransactionMode, builder::ObjectStoreBuilder};
 use js_sys::{Array, Object, Reflect, Uint8Array};
 use openmls::prelude::{Credential as MlsCredential, TlsSerializeTrait as _};
 use rand::distr::{Alphanumeric, SampleString as _};
@@ -729,6 +729,11 @@ const LEGACY_FIXTURE_V9_3_4: &str = include_str!("fixtures/legacy-idb-v9.3.4.jso
 /// catches what the other cannot.
 const LEGACY_FIXTURE_V10_1_0: &str = include_str!("fixtures/legacy-idb-v10.1.0.json");
 
+/// An encrypted SQLite page captured after v10.5.3 initialized a keystore through the relaxed-IDB VFS.
+///
+/// See `fixtures/README.md` and `fixtures/generate-relaxed-idb-vfs-v10.5.3.rs` for its provenance.
+const RELAXED_IDB_VFS_FIXTURE_V10_5_3: &str = include_str!("fixtures/relaxed-idb-vfs-v10.5.3.json");
+
 /// What the generator put into the captured keystore; these must match `fixtures/generate-legacy-idb-v9.3.4.rs`.
 mod captured {
     pub(super) const CLIENT_ID: &[u8] = b"alice-legacy-fixture@wire.com:0a1b2c3d";
@@ -778,6 +783,48 @@ fn fixture_value_to_js(value: &serde_json::Value) -> JsValue {
             object.into()
         }
     }
+}
+
+/// Restore the genuine relaxed-IDB VFS record captured from v10.5.3.
+async fn restore_relaxed_idb_vfs_fixture(json: &str) -> DatabaseKey {
+    let fixture = fixture(json);
+    let name = fixture["database_name"]
+        .as_str()
+        .expect("fixture records the database name");
+    let store_name = fixture["store"]
+        .as_str()
+        .expect("fixture records the object store name");
+    let row = &fixture["row"];
+    let factory = Factory::new().expect("factory");
+    factory
+        .delete(CORE_CRYPTO_10_VFS_DATABASE)
+        .expect("delete request")
+        .await
+        .expect("wiping the shared v10 VFS database");
+
+    let idb = idb::Database::builder(CORE_CRYPTO_10_VFS_DATABASE)
+        .add_object_store(ObjectStoreBuilder::new(store_name).key_path(Some(KeyPath::new_array(["path", "offset"]))))
+        .build()
+        .await
+        .expect("restoring the v10 VFS database");
+    let transaction = idb
+        .transaction(&[store_name], TransactionMode::ReadWrite)
+        .expect("opening a write transaction");
+    transaction
+        .object_store(store_name)
+        .expect("opening the blocks store")
+        .put(&fixture_value_to_js(&row["value"]), None)
+        .expect("creating the page write request")
+        .await
+        .expect("restoring the captured v10 page");
+    transaction.commit().expect("committing the page").await.unwrap();
+    idb.close();
+
+    assert_eq!(row["key"][0].as_str(), Some(name));
+    DatabaseKey::try_from(
+        hex::decode(fixture["database_key"].as_str().expect("fixture records its key")).expect("key is hex"),
+    )
+    .expect("key has the right length")
 }
 
 /// Recreate the captured legacy database under `name`, at the schema version it was captured at, and return its
@@ -1010,6 +1057,31 @@ async fn imports_a_database_captured_from_v10_1_0() {
         .wipe()
         .await
         .expect("wiping the new database");
+}
+
+/// A keystore genuinely initialized through the v10.5.3 relaxed-IDB VFS is rejected.
+#[core_crypto_macros::jspi_wasm_bindgen_test]
+async fn rejects_a_database_captured_from_v10_5_3() {
+    let fixture = fixture(RELAXED_IDB_VFS_FIXTURE_V10_5_3);
+    let name = fixture["database_name"]
+        .as_str()
+        .expect("fixture records the database name");
+    let key = restore_relaxed_idb_vfs_fixture(RELAXED_IDB_VFS_FIXTURE_V10_5_3).await;
+
+    let error = Database::open(name, &key)
+        .await
+        .expect_err("a database initialized by CoreCrypto 10.x must be rejected");
+    assert!(matches!(
+        &error,
+        crate::CryptoKeystoreError::CoreCrypto10DatabaseUnsupported
+    ));
+
+    Factory::new()
+        .expect("factory")
+        .delete(CORE_CRYPTO_10_VFS_DATABASE)
+        .expect("delete request")
+        .await
+        .expect("wiping the shared v10 VFS database");
 }
 
 /// The key under which [`plant_corrupt_pending_message`] stores its row.
