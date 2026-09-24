@@ -100,10 +100,10 @@ pub enum CryptoKeystoreError {
     MigrationFailed(String),
     #[cfg(target_os = "unknown")]
     #[error("{context}")]
-    RelaxedIdbError {
+    OpfsError {
         context: &'static str,
         #[source]
-        error: sqlite_wasm_vfs::relaxed_idb::RelaxedIdbError,
+        error: rsqlite_vfs::VfsError,
     },
     #[error("The database includes migrations newer than this version of CC knows about")]
     DatabaseFromTheFuture,
@@ -125,10 +125,8 @@ impl CryptoKeystoreError {
     }
 
     #[cfg(target_os = "unknown")]
-    pub(crate) fn relaxed_idb(
-        context: &'static str,
-    ) -> impl FnOnce(sqlite_wasm_vfs::relaxed_idb::RelaxedIdbError) -> Self {
-        move |error| Self::RelaxedIdbError { context, error }
+    pub(crate) fn opfs(context: &'static str) -> impl FnOnce(rsqlite_vfs::VfsError) -> Self {
+        move |error| Self::OpfsError { context, error }
     }
 }
 
