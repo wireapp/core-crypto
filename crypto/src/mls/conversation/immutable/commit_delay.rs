@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use itertools::Itertools;
 use log::{debug, trace};
 use openmls::{messages::proposals::Proposal, prelude::LeafNodeIndex};
 
@@ -48,21 +49,24 @@ impl Conversation {
         }
 
         let epoch = group.epoch().as_u64();
-        let mut own_index = self_index.u32() as u64;
 
-        // Look for members that were removed at the left of our tree in order to shift our own leaf index (post-commit
-        // tree visualization)
-        let left_tree_diff = group
+        // Position in array among non-blank leaf node indices
+        let self_position = group
             .members()
-            .take(own_index as usize)
-            .filter(|member| removed_indices.contains(&member.index))
+            .find_position(|member| member.index == self_index)
+            .map(|pos| pos.0 as u64)
+            .unwrap();
+        let removed_indices_to_the_left = removed_indices
+            .iter()
+            .filter(|index| index.u32() < self_index.u32())
             .count() as u64;
+
+        // This shifts our own self-position to the left (tree-wise) from as many as there was removed members that have
+        // a smaller leaf index than us (older members)
+        let own_index = self_position - removed_indices_to_the_left;
 
         // Post-commit visualization of the number of members after remove proposals
         let nb_members = (group.members().count() as u64).saturating_sub(removed_indices.len() as u64);
-        // This shifts our own leaf index to the left (tree-wise) from as many as there was removed members that have a
-        // smaller leaf index than us (older members)
-        own_index = own_index.saturating_sub(left_tree_diff);
 
         Some(Self::calculate_delay(own_index, epoch, nb_members))
     }
