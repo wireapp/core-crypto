@@ -18,18 +18,52 @@ impl ProteusIdentity {
     pub const PK_KEY_SIZE: usize = 32;
     pub const ID: &[u8; 1] = b"1";
 
-    pub fn sk_raw(&self) -> zeroize::Zeroizing<[u8; Self::SK_KEY_SIZE]> {
-        let mut slice = zeroize::Zeroizing::new([0u8; Self::SK_KEY_SIZE]);
-        debug_assert_eq!(self.sk.len(), Self::SK_KEY_SIZE);
-        slice.copy_from_slice(&self.sk[..Self::SK_KEY_SIZE]);
-        slice
+    /// The secret key as a fixed-size array.
+    ///
+    /// # Errors
+    ///
+    /// [`CryptoKeystoreError::InvalidKeySize`] if the stored blob is not [`Self::SK_KEY_SIZE`]
+    /// bytes long.
+    // See [`Self::fixed_size`] for why that has to be checked here.
+    pub fn sk_raw(&self) -> crate::CryptoKeystoreResult<zeroize::Zeroizing<[u8; Self::SK_KEY_SIZE]>> {
+        Self::fixed_size(&self.sk, "sk")
     }
 
-    pub fn pk_raw(&self) -> zeroize::Zeroizing<[u8; Self::PK_KEY_SIZE]> {
-        let mut slice = zeroize::Zeroizing::new([0u8; Self::PK_KEY_SIZE]);
-        debug_assert_eq!(self.pk.len(), Self::PK_KEY_SIZE);
-        slice.copy_from_slice(&self.pk[..Self::PK_KEY_SIZE]);
-        slice
+    /// The public key as a fixed-size array.
+    ///
+    /// # Errors
+    ///
+    /// [`CryptoKeystoreError::InvalidKeySize`] if the stored blob is not [`Self::PK_KEY_SIZE`]
+    /// bytes long.
+    // See [`Self::fixed_size`] for why that has to be checked here.
+    pub fn pk_raw(&self) -> crate::CryptoKeystoreResult<zeroize::Zeroizing<[u8; Self::PK_KEY_SIZE]>> {
+        Self::fixed_size(&self.pk, "pk")
+    }
+
+    /// Copy a stored key blob into a fixed-size, zeroized-on-drop buffer.
+    ///
+    /// The length has to be checked rather than assumed: the schema declares these columns as plain
+    /// `BLOB` with no length constraint, and the legacy IndexedDB import copies the blobs across
+    /// without validating them, so a truncated or corrupt row can reach us. This previously used a
+    /// `debug_assert_eq!` followed by a slice, which meant a release build indexed out of bounds
+    /// and panicked instead of reporting the problem.
+    fn fixed_size<const N: usize>(
+        blob: &[u8],
+        key: &'static str,
+    ) -> crate::CryptoKeystoreResult<zeroize::Zeroizing<[u8; N]>> {
+        if blob.len() != N {
+            return Err(CryptoKeystoreError::InvalidKeySize {
+                expected: N,
+                actual: blob.len(),
+                key,
+            });
+        }
+
+        // Copy into the zeroizing buffer rather than through a temporary, so no unprotected copy of
+        // the key material is left behind.
+        let mut out = zeroize::Zeroizing::new([0u8; N]);
+        out.copy_from_slice(blob);
+        Ok(out)
     }
 }
 
@@ -98,4 +132,40 @@ impl PrimaryKey for ProteusIdentity {
 
 impl UniqueEntity for ProteusIdentity {
     const KEY: Self::PrimaryKey = ();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ProteusIdentity;
+    use crate::CryptoKeystoreError;
+
+    /// Nothing constrains the length of these columns, so a short or over-long blob has to be
+    /// reported. This used to `debug_assert_eq!` and then slice, which panicked in release builds.
+    #[test]
+    fn a_wrong_length_key_blob_is_rejected() {
+        for (len, expect_ok) in [
+            (0, false),
+            (ProteusIdentity::SK_KEY_SIZE - 1, false),
+            (ProteusIdentity::SK_KEY_SIZE, true),
+            (ProteusIdentity::SK_KEY_SIZE + 1, false),
+        ] {
+            let identity = ProteusIdentity {
+                sk: vec![0xab; len],
+                pk: vec![0xcd; ProteusIdentity::PK_KEY_SIZE],
+            };
+
+            match (identity.sk_raw(), expect_ok) {
+                (Ok(sk), true) => assert_eq!(sk.as_slice(), &vec![0xab; len][..]),
+                (Err(CryptoKeystoreError::InvalidKeySize { expected, actual, key }), false) => {
+                    assert_eq!(expected, ProteusIdentity::SK_KEY_SIZE);
+                    assert_eq!(actual, len);
+                    assert_eq!(key, "sk");
+                }
+                (result, _) => panic!("unexpected result for a {len}-byte secret key: {result:?}"),
+            }
+
+            // The public key is well-formed throughout, so it must keep working regardless.
+            assert!(identity.pk_raw().is_ok());
+        }
+    }
 }

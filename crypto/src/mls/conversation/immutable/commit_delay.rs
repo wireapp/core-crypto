@@ -12,11 +12,17 @@ const DELAY_POS_LINEAR_INCR: u64 = 15;
 const DELAY_POS_LINEAR_RANGE: std::ops::RangeInclusive<u64> = 1..=3;
 
 impl Conversation {
-    /// Helps consumer by providing a deterministic delay in seconds for him to commit its pending proposal.
-    /// It depends on the index of the client in the ratchet tree
-    /// * `self_index` - ratchet tree index of self client
-    /// * `epoch` - current group epoch
-    /// * `nb_members` - number of clients in the group
+    /// A deterministic delay, in seconds, which this client should wait before committing the
+    /// conversation's pending proposals.
+    ///
+    /// The delay is derived from this client's position in the ratchet tree and the current epoch,
+    /// so that members of a group stagger their commits rather than racing to commit the same
+    /// proposals.
+    ///
+    /// Returns `None` in two cases, which callers have to distinguish:
+    ///
+    /// - there are no pending proposals, so there is nothing to commit;
+    /// - a pending proposal removes this client, so it must not commit at all.
     pub async fn compute_next_commit_delay(&self) -> Option<u64> {
         let group = self.group().await;
 
@@ -67,6 +73,11 @@ impl Conversation {
         Some(Self::calculate_delay(own_index, epoch, nb_members))
     }
 
+    /// Compute the delay for a given position in the group.
+    ///
+    /// * `self_index` - ratchet tree index of self client
+    /// * `epoch` - current group epoch
+    /// * `nb_members` - number of clients in the group
     fn calculate_delay(self_index: u64, epoch: u64, nb_members: u64) -> u64 {
         let position = if nb_members > 0 {
             ((epoch % nb_members) + (self_index % nb_members)) % nb_members + 1
