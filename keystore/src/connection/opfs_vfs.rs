@@ -90,7 +90,7 @@ impl SqliteGuard {
 /// Defers SQLite cleanup from `Drop`, which may run outside of a JSPI export.
 ///
 /// The cleanup runs under `SqliteGuard`, within the next JSPI entry. It must not acquire the guard itself.
-pub fn defer(cleanup: impl FnOnce() + 'static) {
+pub(crate) fn defer(cleanup: impl FnOnce() + 'static) {
     CLEANUP.with_borrow_mut(|queue| queue.push_back(Box::new(cleanup)));
     schedule_cleanup(&wasm_bindgen::exports());
 }
