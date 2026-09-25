@@ -160,7 +160,7 @@ impl TransactionContext {
 
                     Ok(())
                 },
-                |context| Box::new(move |err| KeystoreError::wrap(context)(err).into()),
+                Error::savepoint,
             )
             .await
     }

@@ -3,7 +3,7 @@
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 
 use super::{Error, Result, TransactionContext};
-use crate::{ConversationConfiguration, ConversationId, KeystoreError};
+use crate::{ConversationConfiguration, ConversationId};
 
 impl TransactionContext {
     /// Create a conversation from a received MLS Welcome message
@@ -40,7 +40,7 @@ impl TransactionContext {
                     self.persist_conversation_from_welcome_message(welcome, configuration)
                         .await
                 },
-                |context| Box::new(move |err| KeystoreError::wrap(context)(err).into()),
+                Error::savepoint,
             )
             .await?;
 
