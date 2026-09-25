@@ -180,4 +180,47 @@ mod tests {
         })
         .await;
     }
+    
+    #[apply(all_cred_cipher)]
+    async fn calculate_delay_is_unique_with_blank_leaves(case: TestContext) {
+        let [alice, bob, charlie, dave, eve, frank] = case.sessions().await;
+        Box::pin(async move {
+            // leaf indices: alice 0, bob 1, charlie 2, dave 3, eve 4
+            let conversation = case
+                .create_conversation([&alice, &bob, &charlie, &dave, &eve])
+                .await
+                // removing bob leaves a blank leaf at index 1
+                .remove_notify(&bob)
+                .await;
+            assert_eq!(conversation.member_count().await, 4);
+
+            // any pending proposal which isn't a remove will do
+            let mut proposal_guard = conversation.invite_proposal(&frank).await;
+            let mut delays = vec![(
+                "alice",
+                proposal_guard
+                    .conversation()
+                    .guard_of(&alice)
+                    .await
+                    .compute_next_commit_delay()
+                    .await,
+            )];
+            for (name, member) in [("charlie", &charlie), ("dave", &dave), ("eve", &eve)] {
+                let (guard, result) = proposal_guard.notify_member_fallible(member).await;
+                proposal_guard = guard;
+                delays.push((name, result.unwrap().as_proposal().unwrap().delay));
+            }
+
+            for (i, (name_a, delay_a)) in delays.iter().enumerate() {
+                assert!(delay_a.is_some(), "{name_a} should have a delay");
+                for (name_b, delay_b) in &delays[i + 1..] {
+                    assert_ne!(
+                        delay_a, delay_b,
+                        "{name_a} and {name_b} have the same commit delay; all delays: {delays:?}"
+                    );
+                }
+            }
+        })
+        .await;
+    }
 }
