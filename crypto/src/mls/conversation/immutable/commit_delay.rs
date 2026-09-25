@@ -87,6 +87,18 @@ mod tests {
     use super::*;
     use crate::test_utils::*;
 
+    fn assert_delays_are_unique(delays: &[(&str, Option<u64>)]) {
+        for (i, (name_a, delay_a)) in delays.iter().enumerate() {
+            assert!(delay_a.is_some(), "{name_a} should have a delay");
+            for (name_b, delay_b) in &delays[i + 1..] {
+                assert_ne!(
+                    delay_a, delay_b,
+                    "{name_a} and {name_b} have the same commit delay; all delays: {delays:?}"
+                );
+            }
+        }
+    }
+
     #[test]
     fn calculate_delay_single() {
         let (self_index, epoch, nb_members) = (0, 0, 1);
@@ -180,7 +192,7 @@ mod tests {
         })
         .await;
     }
-    
+
     #[apply(all_cred_cipher)]
     async fn calculate_delay_is_unique_with_blank_leaves(case: TestContext) {
         let [alice, bob, charlie, dave, eve, frank] = case.sessions().await;
@@ -211,15 +223,40 @@ mod tests {
                 delays.push((name, result.unwrap().as_proposal().unwrap().delay));
             }
 
-            for (i, (name_a, delay_a)) in delays.iter().enumerate() {
-                assert!(delay_a.is_some(), "{name_a} should have a delay");
-                for (name_b, delay_b) in &delays[i + 1..] {
-                    assert_ne!(
-                        delay_a, delay_b,
-                        "{name_a} and {name_b} have the same commit delay; all delays: {delays:?}"
-                    );
-                }
-            }
+            assert_delays_are_unique(&delays);
+        })
+        .await;
+    }
+
+    #[apply(all_cred_cipher)]
+    async fn calculate_delay_with_blank_leaves_ignores_removed_members_to_the_right(case: TestContext) {
+        let [alice, bob, charlie, dave, eve] = case.sessions().await;
+        Box::pin(async move {
+            // leaf indices: alice 0, bob 1, charlie 2, dave 3, eve 4
+            let conversation = case
+                .create_conversation([&alice, &bob, &charlie, &dave, &eve])
+                .await
+                // removing bob and charlie leaves blank leaves at indices 1 and 2
+                .remove_notify(&bob)
+                .await
+                .remove_notify(&charlie)
+                .await;
+            assert_eq!(conversation.member_count().await, 3);
+
+            // eve is to the right of dave, so her removal must not shift dave's position
+            let proposal_guard = conversation.remove_proposal(&eve).await;
+            let alice_delay = proposal_guard
+                .conversation()
+                .guard_of(&alice)
+                .await
+                .compute_next_commit_delay()
+                .await;
+            let (_, result) = proposal_guard.notify_member_fallible(&dave).await;
+            let dave_delay = result.unwrap().as_proposal().unwrap().delay;
+            let delays = vec![("alice", alice_delay), ("dave", dave_delay)];
+
+            // post-commit, the members are alice and dave, at positions 0 and 1
+            assert_delays_are_unique(&delays);
         })
         .await;
     }
