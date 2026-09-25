@@ -26,24 +26,34 @@ module in the parent module's tests describes, saved one per store through that 
 alongside the v9.3.4 capture because the two generations keyed some rows differently, unique entities in particular, and
 each capture catches what the other cannot.
 
+## `relaxed-idb-vfs-v10.5.3.json`
+
+v10.5.3 stored encrypted SQLite pages in the temporary relaxed-IDB VFS. This fixture is the exact offset-zero page
+written after that release initialized a new keystore through `Database::open`. One page is sufficient because current
+versions only detect the presence of records belonging to the requested keystore; they do not open or migrate it.
+
+The generator is `generate-relaxed-idb-vfs-v10.5.3.rs`. Run it as `keystore/tests/fixture_gen.rs` in a v10.5.3 checkout,
+following the same procedure below. It waits for the VFS's asynchronous write queue before dumping the page.
+
 ## Regenerating
 
-Both generators are kept next to the fixtures. Neither compiles here: each is written against the API of the tag it
+The generators are kept next to the fixtures. They do not compile here: each is written against the API of the tag it
 captures, and only builds in a checkout of that tag.
 
 1. `git worktree add /tmp/cc-<tag> <tag>`
 
 1. Copy the generator into the worktree as an integration test, dropping the leading comment:
-   `crypto/tests/fixture_gen.rs` for v9.3.4, `keystore/tests/fixture_gen.rs` for v10.1.0.
+   `crypto/tests/fixture_gen.rs` for v9.3.4, or `keystore/tests/fixture_gen.rs` for v10.1.0 and v10.5.3.
 
 1. For v9.3.4 only: in the worktree's `crypto/Cargo.toml`, add `wasm-bindgen-test = "0.3"` and
    `console_error_panic_hook = "0.1"` to `[dev-dependencies]`, and move `tempfile`, `smol`, and `smol-macros` into the
    `[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]` section. They pull in native-only crates, and that
    release never built its crypto tests for wasm.
 
-1. Run the one test target. For v10.1.0, `wasm-pack test --headless --chrome -- ./keystore --test fixture_gen` works.
-   For v9.3.4, `wasm-pack test` would also build the crate's unit tests, which do not build for wasm, so drive the
-   runner directly, with a `wasm-bindgen-test-runner` matching the `wasm-bindgen` version in the worktree's `Cargo.lock`
+1. Run the one test target. For v10.1.0 and v10.5.3,
+   `wasm-pack test --headless --chrome -- ./keystore --test fixture_gen` works. For v9.3.4, `wasm-pack test` would also
+   build the crate's unit tests, which do not build for wasm, so drive the runner directly, with a
+   `wasm-bindgen-test-runner` matching the `wasm-bindgen` version in the worktree's `Cargo.lock`
    (`cargo install wasm-bindgen-cli --version <that version>`):
 
    ```sh
