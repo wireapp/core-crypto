@@ -56,4 +56,10 @@ impl Error {
     pub fn key_package_new<E: std::error::Error>() -> impl FnOnce(E) -> Self {
         move |source| Self::KeypackageNew(source.to_string())
     }
+
+    pub(super) fn savepoint(
+        context: &'static str,
+    ) -> Box<dyn FnOnce(core_crypto_keystore::CryptoKeystoreError) -> Self> {
+        Box::new(move |err| crate::KeystoreError::wrap(context)(err).into())
+    }
 }
