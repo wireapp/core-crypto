@@ -97,3 +97,11 @@ pub enum Error {
     #[error(transparent)]
     Recursive(#[from] crate::RecursiveError),
 }
+
+impl Error {
+    pub(super) fn savepoint(
+        context: &'static str,
+    ) -> Box<dyn FnOnce(core_crypto_keystore::CryptoKeystoreError) -> Self> {
+        Box::new(move |err| crate::KeystoreError::wrap(context)(err).into())
+    }
+}

@@ -29,7 +29,7 @@ use tls_codec::Deserialize as _;
 
 use super::{ConversationMut, Result};
 use crate::{
-    ClientId, E2eiConversationState, KeystoreError, OpenMlsError, RecursiveError, Session, TlsCodecError, WireIdentity,
+    ClientId, E2eiConversationState, OpenMlsError, RecursiveError, Session, TlsCodecError, WireIdentity,
     mls::{
         conversation::{
             Conversation, Error,
@@ -345,7 +345,7 @@ impl ConversationMut {
                                 self.clear_buffered_commit()?;
                                 self.try_process_buffered_commit(commit, recursion_policy).await
                             },
-                            |context| Box::new(move |err| KeystoreError::wrap(context)(err).into()),
+                            Error::savepoint,
                         )
                         .await;
 
