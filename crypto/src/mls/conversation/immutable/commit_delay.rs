@@ -13,9 +13,9 @@ const DELAY_POS_LINEAR_INCR: u64 = 15;
 const DELAY_POS_LINEAR_RANGE: std::ops::RangeInclusive<u64> = 1..=3;
 
 impl Conversation {
-    /// Helps consumer by providing a deterministic delay in seconds for him to commit its pending proposal.
+    /// Helps a consumer by providing a deterministic delay in seconds for him to commit its pending proposal.
     /// It depends on the index of the client in the ratchet tree
-    /// * `self_index` - ratchet tree index of self client
+    /// * `self_index` - ratchet tree index of a self-client
     /// * `epoch` - current group epoch
     /// * `nb_members` - number of clients in the group
     pub async fn compute_next_commit_delay(&self) -> Option<u64> {
