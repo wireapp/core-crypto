@@ -51,8 +51,10 @@ impl ConversationMut {
             return Err(Error::MessageEpochTooOld);
         }
 
+        // Both transient wire formats deliberately share one rx counter table; that decision is
+        // expressed inside `TntWireFormat`, so report the format the message actually arrived under.
         let message_type = match policy {
-            TargetedMessagePolicy::Transient => TntWireFormat::TRANSIENT_MESSAGE,
+            TargetedMessagePolicy::Transient => TntWireFormat::TRANSIENT_TARGETED_MESSAGE,
             TargetedMessagePolicy::Persisted => TntWireFormat::TARGETED_MESSAGE,
         };
 
@@ -150,7 +152,7 @@ impl ConversationMut {
         let context_data = HpkeContextData {
             info,
             psk_id,
-            psk: secret.targeted_message_psk.clone(),
+            psk: zeroize::Zeroizing::new(secret.targeted_message_psk.clone()),
         };
         Ok((context_data, decryption_key))
     }
@@ -169,7 +171,7 @@ impl ConversationMut {
                 .export_group_context()
                 .tls_serialize_detached()
                 .map_err(TlsCodecError::serialize("TntSecret GroupContext"))?,
-            targeted_message_psk,
+            targeted_message_psk: targeted_message_psk.to_vec(),
         })
     }
 

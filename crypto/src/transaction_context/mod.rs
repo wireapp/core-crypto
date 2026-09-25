@@ -67,7 +67,7 @@ impl TransactionContext {
             .database
             .new_transaction()
             .await
-            .map_err(OpenMlsError::wrap("creating new transaction"))?;
+            .map_err(KeystoreError::wrap("creating new transaction"))?;
         Ok(Self {
             inner: Arc::new(RwLock::new(Some(TransactionContextInner {
                 core_crypto,

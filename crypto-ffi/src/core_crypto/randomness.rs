@@ -9,6 +9,9 @@ impl CoreCryptoFfi {
     }
 
     /// Re-seed the MLS session's CSPRNG with the provided entropy seed.
+    ///
+    /// `seed` must be exactly 32 bytes long; any other length is an error. Note that this replaces
+    /// the CSPRNG's state outright rather than mixing the new seed into it.
     pub async fn reseed(&self, seed: Vec<u8>) -> CoreCryptoResult<()> {
         let seed = core_crypto::EntropySeed::try_from_slice(&seed).map_err(CoreCryptoError::generic())?;
         self.inner.mls_session().await?.reseed(Some(seed))?;
