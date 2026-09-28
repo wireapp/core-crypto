@@ -263,7 +263,7 @@ mod tests {
     impl CoreCryptoCommand for ReleaseObserver {
         async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()> {
             self.release.add_permits(1);
-            context.set_data(b"the second transaction ran".to_vec()).await
+            context.set_data(b"the second transaction ran".to_vec())
         }
     }
 
@@ -276,7 +276,7 @@ mod tests {
     /// panic.
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn transaction_can_start_while_previous_epoch_observer_runs() {
-        let database = Arc::new(Database::in_memory().await.unwrap());
+        let database = Arc::new(Database::in_memory().unwrap());
         let core_crypto = core_crypto_new(&database).unwrap();
 
         let client_id = Arc::new(ClientId::new(
