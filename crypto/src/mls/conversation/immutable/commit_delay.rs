@@ -167,34 +167,31 @@ mod tests {
     #[apply(all_cred_cipher)]
     async fn calculate_delay_creator_removed(case: TestContext) {
         let [alice, bob, charlie] = case.sessions().await;
-        Box::pin(async move {
-            let conversation = case
-                .create_conversation([&alice, &bob])
-                .await
-                .invite_notify([&charlie])
-                .await;
-            assert_eq!(conversation.member_count().await, 3);
+        let conversation = case
+            .create_conversation([&alice, &bob])
+            .await
+            .invite_notify([&charlie])
+            .await;
+        assert_eq!(conversation.member_count().await, 3);
 
-            let proposal_guard = conversation.remove_proposal(&alice).await;
-            let (proposal_guard, result) = proposal_guard.notify_member_fallible(&bob).await;
-            let bob_decrypted_message = result.unwrap();
-            let (_, result) = proposal_guard.notify_member_fallible(&charlie).await;
-            let charlie_decrypted_message = result.unwrap();
+        let proposal_guard = conversation.remove_proposal(&alice).await;
+        let (proposal_guard, result) = proposal_guard.notify_member_fallible(&bob).await;
+        let bob_decrypted_message = result.unwrap();
+        let (_, result) = proposal_guard.notify_member_fallible(&charlie).await;
+        let charlie_decrypted_message = result.unwrap();
 
-            let bob_hypothetical_position = 0;
-            let charlie_hypothetical_position = 1;
+        let bob_hypothetical_position = 0;
+        let charlie_hypothetical_position = 1;
 
-            assert_eq!(
-                bob_decrypted_message.as_proposal().unwrap().delay,
-                Some(DELAY_POS_LINEAR_INCR * bob_hypothetical_position)
-            );
+        assert_eq!(
+            bob_decrypted_message.as_proposal().unwrap().delay,
+            Some(DELAY_POS_LINEAR_INCR * bob_hypothetical_position)
+        );
 
-            assert_eq!(
-                charlie_decrypted_message.as_proposal().unwrap().delay,
-                Some(DELAY_POS_LINEAR_INCR * charlie_hypothetical_position)
-            );
-        })
-        .await;
+        assert_eq!(
+            charlie_decrypted_message.as_proposal().unwrap().delay,
+            Some(DELAY_POS_LINEAR_INCR * charlie_hypothetical_position)
+        );
     }
 
     #[apply(all_cred_cipher)]
