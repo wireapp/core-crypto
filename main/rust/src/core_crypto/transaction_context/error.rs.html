@@ -56,5 +56,11 @@
 <a href=#56 id=56 data-nosnippet>56</a>    <span class="kw">pub fn </span>key_package_new&lt;E: std::error::Error&gt;() -&gt; <span class="kw">impl </span>FnOnce(E) -&gt; <span class="self">Self </span>{
 <a href=#57 id=57 data-nosnippet>57</a>        <span class="kw">move </span>|source| <span class="self">Self</span>::KeypackageNew(source.to_string())
 <a href=#58 id=58 data-nosnippet>58</a>    }
-<a href=#59 id=59 data-nosnippet>59</a>}
+<a href=#59 id=59 data-nosnippet>59</a>
+<a href=#60 id=60 data-nosnippet>60</a>    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>savepoint(
+<a href=#61 id=61 data-nosnippet>61</a>        context: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
+<a href=#62 id=62 data-nosnippet>62</a>    ) -&gt; Box&lt;<span class="kw">dyn </span>FnOnce(core_crypto_keystore::CryptoKeystoreError) -&gt; <span class="self">Self</span>&gt; {
+<a href=#63 id=63 data-nosnippet>63</a>        Box::new(<span class="kw">move </span>|err| <span class="kw">crate</span>::KeystoreError::wrap(context)(err).into())
+<a href=#64 id=64 data-nosnippet>64</a>    }
+<a href=#65 id=65 data-nosnippet>65</a>}
 </code></pre></div></section></main></body></html>

@@ -22,7 +22,7 @@
 <a href=#22 id=22 data-nosnippet>22</a>
 <a href=#23 id=23 data-nosnippet>23</a><span class="kw">impl </span>TransactionContext {
 <a href=#24 id=24 data-nosnippet>24</a>    <span class="doccomment">/// Get a guard which derefs to [`TransactionContextInner`], or produce an appropriate error.
-<a href=#25 id=25 data-nosnippet>25</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">impl </span>Deref&lt;Target = TransactionContextInner&gt;&gt; {
+<a href=#25 id=25 data-nosnippet>25</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>inner(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">impl use</span>&lt;&gt; + Deref&lt;Target = TransactionContextInner&gt;&gt; {
 <a href=#26 id=26 data-nosnippet>26</a>        <span class="comment">// Access to inner is designed to be immutable, concurrent, and fast.
 <a href=#27 id=27 data-nosnippet>27</a>        // There is exactly one place where we take a write guard: `take_inner`, below, where we invalidate the context.
 <a href=#28 id=28 data-nosnippet>28</a>        // If we can't immediately acquire a read guard, we'll never be able to (unless the future containing
