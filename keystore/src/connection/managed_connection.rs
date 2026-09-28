@@ -120,6 +120,95 @@ mod tests {
     use crate::{Database, DatabaseKey};
 
     #[wasm_bindgen_test]
+    async fn persistent_opfs_wal_policy_is_reapplied_on_reopen() {
+        run_test(async {
+            let name = format!("wal-policy-{}.db", uuid::Uuid::new_v4());
+            let key = DatabaseKey::generate();
+
+            for reopen in 0..2 {
+                let db = Database::open(&name, &key).await.unwrap();
+                let conn = db.conn().await;
+                assert_eq!(
+                    conn.pragma_query_value(None, "journal_mode", |row| row.get::<_, String>(0))
+                        .unwrap(),
+                    "wal"
+                );
+                assert_eq!(
+                    conn.pragma_query_value(None, "synchronous", |row| row.get::<_, i64>(0))
+                        .unwrap(),
+                    2
+                );
+                assert_eq!(
+                    conn.pragma_query_value(None, "locking_mode", |row| row.get::<_, String>(0))
+                        .unwrap(),
+                    "exclusive"
+                );
+                assert_eq!(
+                    conn.pragma_query_value(None, "page_size", |row| row.get::<_, i64>(0))
+                        .unwrap(),
+                    8192
+                );
+                assert_eq!(
+                    conn.pragma_query_value(None, "journal_size_limit", |row| row.get::<_, i64>(0))
+                        .unwrap(),
+                    0
+                );
+                assert_eq!(
+                    conn.pragma_query_value(None, "wal_autocheckpoint", |row| row.get::<_, i64>(0))
+                        .unwrap(),
+                    64
+                );
+
+                if reopen == 0 {
+                    conn.execute_batch(
+                        "CREATE TABLE wal_policy_probe(value INTEGER); INSERT INTO wal_policy_probe VALUES (42)",
+                    )
+                    .unwrap();
+                    // Connection-local values must be restored on the next open.
+                    conn.pragma_update(None, "journal_size_limit", -1).unwrap();
+                    conn.pragma_update(None, "wal_autocheckpoint", 1000).unwrap();
+                } else {
+                    assert_eq!(
+                        conn.query_row("SELECT value FROM wal_policy_probe", [], |row| row.get::<_, i64>(0))
+                            .unwrap(),
+                        42
+                    );
+                    assert_eq!(
+                        conn.query_row("PRAGMA integrity_check", [], |row| row.get::<_, String>(0))
+                            .unwrap(),
+                        "ok"
+                    );
+                }
+                drop(conn);
+                if reopen == 0 {
+                    Arc::into_inner(db).unwrap().close().await.unwrap();
+                } else {
+                    Arc::into_inner(db).unwrap().wipe().await.unwrap();
+                }
+            }
+
+            let memory = Database::open_in_memory().unwrap();
+            let conn = memory.conn().await;
+            assert_eq!(
+                conn.pragma_query_value(None, "journal_mode", |row| row.get::<_, String>(0))
+                    .unwrap(),
+                "memory"
+            );
+            assert_eq!(
+                conn.pragma_query_value(None, "journal_size_limit", |row| row.get::<_, i64>(0))
+                    .unwrap(),
+                -1
+            );
+            assert_eq!(
+                conn.pragma_query_value(None, "wal_autocheckpoint", |row| row.get::<_, i64>(0))
+                    .unwrap(),
+                1000
+            );
+        })
+        .await;
+    }
+
+    #[wasm_bindgen_test]
     async fn drop_outside_jspi_rolls_back_and_closes_before_reopen() {
         let name = format!("managed-{}.db", uuid::Uuid::new_v4());
         let key = DatabaseKey::generate();

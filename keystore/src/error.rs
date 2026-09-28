@@ -45,6 +45,9 @@ pub enum CryptoKeystoreError {
     SerdeWasmBindgenError(String),
     #[error(transparent)]
     DbError(#[from] rusqlite::Error),
+    #[cfg(target_os = "unknown")]
+    #[error("startup WAL checkpoint incomplete (busy={busy}, log={log}, checkpointed={checkpointed})")]
+    WalCheckpointIncomplete { busy: i64, log: i64, checkpointed: i64 },
     #[error(transparent)]
     DbMigrationError(#[from] Box<refinery::Error>),
     #[cfg(test)]
@@ -161,6 +164,8 @@ impl proteus_traits::ProteusErrorCode for CryptoKeystoreError {
             CryptoKeystoreError::KeyStoreValueTransformError(_) => ProteusErrorKind::DecodeError,
             CryptoKeystoreError::IoError(_) => ProteusErrorKind::IoError,
             CryptoKeystoreError::DbError(_) => ProteusErrorKind::IoError,
+            #[cfg(target_os = "unknown")]
+            CryptoKeystoreError::WalCheckpointIncomplete { .. } => ProteusErrorKind::IoError,
             CryptoKeystoreError::DbMigrationError(_) => ProteusErrorKind::IoError,
             CryptoKeystoreError::InvalidKeySize { .. } => ProteusErrorKind::InvalidArrayLen,
             CryptoKeystoreError::ParseIntError(_) => ProteusErrorKind::DecodeError,

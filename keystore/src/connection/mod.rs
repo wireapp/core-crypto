@@ -34,6 +34,8 @@ pub use self::{
     migrations::migrate_db_key_type_to_bytes,
     mls::{deser, ser},
 };
+#[cfg(target_os = "unknown")]
+use crate::CryptoKeystoreError;
 use crate::{
     CryptoKeystoreResult, DatabaseKey, Transaction, connection::migrations::MigrationTarget, unique_arc::UniqueWeak,
 };
@@ -143,9 +145,34 @@ impl Database {
         {
             // Enable WAL journaling mode when not in memory
             conn.pragma_update(None, "journal_mode", "wal")?;
+            #[cfg(target_os = "unknown")]
+            {
+                // The JSPI OPFS VFS republishes the WAL on every FULL commit.
+                // Keep it small, starting with the migrations on this connection.
+                conn.pragma_update(None, "journal_size_limit", 0)?;
+                conn.pragma_update(None, "wal_autocheckpoint", 64)?;
+            }
         }
 
         migrations::run_migrations(&mut conn, migration_target)?;
+
+        #[cfg(target_os = "unknown")]
+        if let Some(path) = conn.path()
+            && !path.is_empty()
+        {
+            // A pre-existing WAL can still be large after setting the limit.
+            // Checkpoint after migrations, while the initialization lock is held.
+            let (busy, log, checkpointed) = conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| {
+                Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?, row.get::<_, i64>(2)?))
+            })?;
+            if busy != 0 || log < 0 || checkpointed != log {
+                return Err(CryptoKeystoreError::WalCheckpointIncomplete {
+                    busy,
+                    log,
+                    checkpointed,
+                });
+            }
+        }
 
         let conn = Arc::new(Mutex::new(conn));
 
