@@ -4,6 +4,8 @@
 
 - Fixed unrelated MLS updates resetting transient and targeted message send counters after a conversation reload,
   which could cause transient-message nonce reuse within an epoch.
+  Upgrading prevents further resets but cannot recover counters already reset by an older version.
+  Advancing affected groups to a fresh epoch establishes new transient key/nonce material.
 
 - `proteusNewPrekey` is deprecated; use `proteusNewPrekeyAuto` instead.
 
