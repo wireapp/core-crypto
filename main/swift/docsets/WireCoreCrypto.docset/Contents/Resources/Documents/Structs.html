@@ -459,7 +459,12 @@
                       <div class="pointer"></div>
                       <div class="abstract">
                         <p>This directly represents a <code><a href="WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></code> of the <code>&lt;userid&gt;:&lt;device-id&gt;@&lt;domain&gt;</code> format.
-Instantiate via [ClientId::deserialize].</p>
+ Instantiate via [ClientId::deserialize].</p>
+
+<p>Its <code>Display</code> reproduces the bytes of the [<code><a href="WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></code>] it came from, so the device id is
+ rendered as unpadded hex. Note that this differs from [<code>DeviceId::to_hex_string</code>], which is
+ fixed-width: a client id is not a hex-encoded binary value, and only the unpadded form matches
+ what an E2EI certificate carries.</p>
 
                         <a href="WireCoreCryptoUniffi/Structs/DeserializedClientId.html" class="slightly-smaller">See more</a>
                       </div>
