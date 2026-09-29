@@ -33,7 +33,9 @@ pub(crate) struct MlsGroupState {
     ///
     /// The purpose of these counters is replay protection on the recipient side: we provide the count when sending a
     /// message to a receiver, and they check if the counter is greater than any they've seen before.
-    tnt_message_tx_counter: TntMessageCounter,
+    /// `None` means the persisted counter has not been loaded yet; it must not be overwritten.
+    /// `Some(0)` is an initialized counter for a new conversation or epoch.
+    tnt_message_tx_counter: Option<TntMessageCounter>,
 }
 
 impl MlsGroupState {
@@ -53,27 +55,26 @@ impl MlsGroupState {
         &mut self,
         database: &impl FetchFromDatabase,
     ) -> Result<TntMessageCounter> {
-        let mut counter = self.tnt_message_tx_counter;
-
-        if counter.is_zero() {
-            counter = database
+        let mut counter = match self.tnt_message_tx_counter {
+            Some(counter) => counter,
+            None => database
                 .get_borrowed::<TntMessageTxCounter>(KeystoreConversationIdRef::new(self.group_id().as_slice()))
                 .await
                 .map_err(KeystoreError::wrap("searching for tnt message counters for group"))?
                 .map(|counter| counter.count)
                 .unwrap_or_default()
-                .into();
-        }
+                .into(),
+        };
 
         counter.increment()?;
-        self.tnt_message_tx_counter = counter;
+        self.tnt_message_tx_counter = Some(counter);
         self.group.set_state(InnerState::Changed);
 
         Ok(counter)
     }
 
     pub(in crate::mls::conversation) fn reset_tnt_message_tx_counter(&mut self, tx: &Transaction) -> Result<()> {
-        self.tnt_message_tx_counter = Default::default();
+        self.tnt_message_tx_counter = Some(Default::default());
         let id = KeystoreConversationIdRef::new(self.group.group_id().as_slice());
         TntMessageTxCounter::delete_borrowed(tx, id)
             .map_err(KeystoreError::wrap("removing transient message tx counter"))?;
@@ -130,12 +131,14 @@ impl MlsGroupState {
         .save(tx)
         .map_err(KeystoreError::wrap("persisting mls group"))?;
 
-        TntMessageTxCounter {
-            conversation_id: id.as_slice().into(),
-            count: self.tnt_message_tx_counter.into(),
+        if let Some(counter) = self.tnt_message_tx_counter {
+            TntMessageTxCounter {
+                conversation_id: id.as_slice().into(),
+                count: counter.into(),
+            }
+            .save(tx)
+            .map_err(KeystoreError::wrap("saving transient message tx counter"))?;
         }
-        .save(tx)
-        .map_err(KeystoreError::wrap("saving transient message tx counter"))?;
 
         Ok(())
     }

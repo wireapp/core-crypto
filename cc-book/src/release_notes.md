@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fixed unrelated MLS updates resetting transient and targeted message send counters after a conversation reload,
+  which could cause transient-message nonce reuse within an epoch.
+
 - `proteusNewPrekey` is deprecated; use `proteusNewPrekeyAuto` instead.
 
 - TypeScript: browser and native packages are now released separately under `@wireapp/core-crypto` and
