@@ -1,0 +1,65 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Keystore live WAL recovery</title>
+<pre id="result">Running…</pre>
+<script type="module">
+import init, { prepare, recover, finish } from './pkg/keystore_opfs_recovery.js';
+import './worker-hooks.js';
+
+const result = document.querySelector('#result');
+const first = 'opfs-large-wal-success.db';
+const second = 'opfs-large-wal-failure.db';
+const physical = name => 'f-' + Array.from(new TextEncoder().encode(name),
+    byte => byte.toString(16).padStart(2, '0')).join('');
+async function walSize(name) {
+    const root = await navigator.storage.getDirectory();
+    const dir = await (await root.getDirectoryHandle('core-crypto')).getDirectoryHandle('worker-v1');
+    try {
+        const file = await dir.getFileHandle(physical(name + '-wal'));
+        return (await file.getFile()).size;
+    } catch (error) {
+        if (error.name === 'NotFoundError') return 0;
+        throw error;
+    }
+}
+function check(condition, message) {
+    if (!condition) throw new Error(message);
+}
+async function reload(stage) {
+    sessionStorage.setItem('keystore-opfs-recovery', stage);
+    location.reload();
+    await new Promise(() => {});
+}
+
+try {
+    await init();
+    const stage = sessionStorage.getItem('keystore-opfs-recovery');
+    if (stage === 'success') {
+        check((await walSize(first)) > 4 * 1024 * 1024, 'committed WAL disappeared before reopen');
+        await recover(first, false);
+        const firstAfter = await walSize(first);
+        check(firstAfter === 0, `startup did not truncate the large WAL: ${firstAfter} bytes`);
+        await finish();
+        await prepare(second);
+        check((await walSize(second)) > 4 * 1024 * 1024, 'second committed WAL is not large');
+        await reload('failure');
+    } else if (stage === 'failure') {
+        check((await walSize(second)) > 4 * 1024 * 1024, 'failure fixture WAL disappeared before reopen');
+        await recover(second, true);
+        const secondAfter = await walSize(second);
+        check(secondAfter === 0, `retry did not truncate the WAL: ${secondAfter} bytes`);
+        await finish();
+        sessionStorage.removeItem('keystore-opfs-recovery');
+        result.textContent = 'PASS: large live WAL survives reload, startup truncates it, and checkpoint failure permits retry';
+        document.documentElement.dataset.result = 'passed';
+    } else {
+        await prepare(first);
+        check((await walSize(first)) > 4 * 1024 * 1024, 'first committed WAL is not large');
+        await reload('success');
+    }
+} catch (error) {
+    result.textContent = `FAIL: ${error?.stack || error}`;
+    document.documentElement.dataset.result = 'failed';
+    console.error(error);
+}
+</script>

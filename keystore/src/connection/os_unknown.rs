@@ -45,7 +45,7 @@ fn get_vfs_util() -> CryptoKeystoreResult<Rc<OpfsJspi>> {
     if let Some(vfs) = VFS.with_borrow(Clone::clone) {
         return Ok(vfs);
     }
-    let vfs = Rc::new(opfs_jspi::install::<OpfsOs>(VFS_NAME, VFS_NAME, false)?);
+    let vfs = Rc::new(opfs_jspi::install_worker::<OpfsOs>(VFS_NAME, VFS_NAME, false)?);
     VFS.with_borrow_mut(|slot| *slot = Some(vfs.clone()));
     Ok(vfs)
 }

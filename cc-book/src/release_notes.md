@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- TypeScript (browser): new OPFS keystores use an I/O worker with synchronous access handles while SQLite and CoreCrypto
+  stay on the calling thread. Existing writable-stream OPFS stores cannot be opened by this backend; there is no
+  migration from that store format in this release.
+
 - TypeScript (browser): the encrypted keystore now uses OPFS through JSPI, with a persistent WAL and an in-memory WAL
   index. IndexedDB keystores (CoreCrypto v9.x and earlier) migrate automatically. A temporary VFS based on IndexedDB was
   used in CoreCrypto 10.x, which is now unsupported. Any instance initialized on CoreCrypto 10.x will result in an

@@ -10,6 +10,8 @@ mod ios_wal_compat;
 pub(crate) mod managed_connection;
 mod migrations;
 mod mls;
+#[cfg(all(target_os = "unknown", feature = "opfs-recovery-fixture"))]
+pub mod opfs_recovery_fixture;
 #[cfg(target_os = "unknown")]
 mod os_unknown;
 mod transaction;
@@ -162,7 +164,7 @@ impl Database {
         {
             // A pre-existing WAL can still be large after setting the limit.
             // Checkpoint after migrations, while the initialization lock is held.
-            let (busy, log, checkpointed) = conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| {
+            let (busy, log, checkpointed) = conn.query_row("PRAGMA main.wal_checkpoint(TRUNCATE)", [], |row| {
                 Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?, row.get::<_, i64>(2)?))
             })?;
             if busy != 0 || log < 0 || checkpointed != log {
