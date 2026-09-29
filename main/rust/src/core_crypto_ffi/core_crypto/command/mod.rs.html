@@ -263,8 +263,8 @@
 <a href=#263 id=263 data-nosnippet>263</a>    </span><span class="kw">impl </span>CoreCryptoCommand <span class="kw">for </span>ReleaseObserver {
 <a href=#264 id=264 data-nosnippet>264</a>        <span class="kw">async fn </span>execute(<span class="kw-2">&amp;</span><span class="self">self</span>, context: Arc&lt;CoreCryptoContext&gt;) -&gt; CoreCryptoResult&lt;()&gt; {
 <a href=#265 id=265 data-nosnippet>265</a>            <span class="self">self</span>.release.add_permits(<span class="number">1</span>);
-<a href=#266 id=266 data-nosnippet>266</a>            context.set_data(<span class="string">b"the second transaction ran"</span>.to_vec()).<span class="kw">await
-<a href=#267 id=267 data-nosnippet>267</a>        </span>}
+<a href=#266 id=266 data-nosnippet>266</a>            context.set_data(<span class="string">b"the second transaction ran"</span>.to_vec())
+<a href=#267 id=267 data-nosnippet>267</a>        }
 <a href=#268 id=268 data-nosnippet>268</a>    }
 <a href=#269 id=269 data-nosnippet>269</a>
 <a href=#270 id=270 data-nosnippet>270</a>    <span class="doccomment">/// A transaction must be able to start while the previous transaction's epoch observer runs.
@@ -276,7 +276,7 @@
 <a href=#276 id=276 data-nosnippet>276</a>    /// panic.
 <a href=#277 id=277 data-nosnippet>277</a>    </span><span class="attr">#[macro_rules_attribute::apply(smol_macros::test)]
 <a href=#278 id=278 data-nosnippet>278</a>    </span><span class="kw">async fn </span>transaction_can_start_while_previous_epoch_observer_runs() {
-<a href=#279 id=279 data-nosnippet>279</a>        <span class="kw">let </span>database = Arc::new(Database::in_memory().<span class="kw">await</span>.unwrap());
+<a href=#279 id=279 data-nosnippet>279</a>        <span class="kw">let </span>database = Arc::new(Database::in_memory().unwrap());
 <a href=#280 id=280 data-nosnippet>280</a>        <span class="kw">let </span>core_crypto = core_crypto_new(<span class="kw-2">&amp;</span>database).unwrap();
 <a href=#281 id=281 data-nosnippet>281</a>
 <a href=#282 id=282 data-nosnippet>282</a>        <span class="kw">let </span>client_id = Arc::new(ClientId::new(
