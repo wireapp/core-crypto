@@ -20,6 +20,8 @@ impl X509CredentialAcquisition {
     /// Provide `core_crypto_database` if you're using distinct DB instances for `PkiEnvironment` and `CoreCrypto`.
     /// Otherwise, the `PkiEnvironment`'s DB will be used to load the full credential.
     #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::constructor)]
+    // we can't formally deprecate this function at the Rust level as it breaks our CI,
+    // so we deprecate it in all target bindings instead.
     pub async fn new_from_credential_ref(
         pki_environment: Arc<PkiEnvironment>,
         config: X509CredentialAcquisitionConfiguration,
