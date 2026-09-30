@@ -82,6 +82,7 @@ CREATE TABLE "mls_groups" (
   own_leaf_index INTEGER NOT NULL,
   -- this field distinguishes between proper groups and pending groups
   is_pending BOOLEAN NOT NULL DEFAULT 0,
+  tnt_tx_counter INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY (credential_id, credential_type) REFERENCES mls_credentials (public_key_sha256, credential_type) ON DELETE RESTRICT
 );
 
@@ -101,13 +102,6 @@ CREATE TABLE "targeted_message_rx_counters" (
   epoch INTEGER NOT NULL,
   count INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (conversation_id, sender, epoch),
-  FOREIGN KEY (conversation_id) REFERENCES "mls_groups"(id) ON DELETE CASCADE
-);
-
-CREATE TABLE "tnt_message_tx_counters" (
-  conversation_id BLOB NOT NULL,
-  count INTEGER NOT NULL DEFAULT 0,
-  PRIMARY KEY (conversation_id),
   FOREIGN KEY (conversation_id) REFERENCES "mls_groups"(id) ON DELETE CASCADE
 );
 
