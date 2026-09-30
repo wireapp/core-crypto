@@ -375,3 +375,148 @@ fn tls_serialize_padded(message: &[u8]) -> Result<Vec<u8>, tls_codec::Error> {
     payload.resize(payload.len().next_multiple_of(PADDING_SIZE), 0);
     Ok(payload)
 }
+
+#[cfg(test)]
+mod tests {
+    use core_crypto_keystore::{entities::PersistedMlsGroup, traits::FetchFromDatabase as _};
+
+    use crate::{
+        mls::conversation::{Conversation, ConversationMut},
+        test_utils::*,
+    };
+
+    #[apply(all_cred_cipher)]
+    async fn unrelated_mutation_after_reload_preserves_tnt_counter(case: TestContext) {
+        let [mut alice, bob] = case.sessions().await;
+
+        let (conversation_id, epoch) = {
+            let conversation = case.create_conversation([&alice, &bob]).await;
+
+            // Encrypt a transient message, bumping the tx counter to 1.
+            let first = conversation
+                .guard()
+                .await
+                .encrypt_transient(b"first".to_vec())
+                .await
+                .unwrap();
+            conversation.guard_of(&bob).await.decrypt_message(&first).await.unwrap();
+            (conversation.id().to_owned(), conversation.guard().await.epoch().await)
+        };
+        alice.commit_transaction().await;
+
+        // load the session and mutate its group by sending a normal message
+        let session = alice.session().await;
+        session.conversation_cache.lock().await.clear();
+        let loaded = Conversation::load(session.clone(), conversation_id.as_ref())
+            .await
+            .unwrap()
+            .unwrap();
+
+        let second = {
+            let loaded = session.conversation_cache.lock().await.insert(loaded);
+            let mut loaded = ConversationMut::new(loaded, alice.transaction.clone());
+            loaded.encrypt_message(b"ordinary MLS message").await.unwrap();
+            assert_eq!(loaded.epoch().await, epoch);
+
+            let counter = alice
+                .database()
+                .get_borrowed::<PersistedMlsGroup>(conversation_id.keystore())
+                .await
+                .unwrap()
+                .unwrap()
+                .tnt_tx_counter;
+            assert_eq!(
+                counter, 1,
+                "persisting unrelated group state must preserve the stored TNT counter"
+            );
+
+            loaded.encrypt_transient(b"second".to_vec()).await.unwrap()
+        };
+        alice.commit_transaction().await;
+
+        let counter = alice
+            .database()
+            .get_borrowed::<PersistedMlsGroup>(conversation_id.keystore())
+            .await
+            .unwrap()
+            .unwrap()
+            .tnt_tx_counter;
+        assert_eq!(
+            counter, 2,
+            "the next transient message must advance the persisted counter"
+        );
+
+        let second = bob
+            .transaction
+            .conversation(&conversation_id)
+            .await
+            .unwrap()
+            .decrypt_message(second)
+            .await
+            .unwrap();
+        assert_eq!(second.into_transient().unwrap().plaintext, b"second");
+    }
+
+    #[apply(all_cred_cipher)]
+    async fn epoch_change_resets_tnt_counter_after_reload(case: TestContext) {
+        let [mut alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+        let id = conversation.id().clone();
+        let epoch = conversation.guard().await.epoch().await;
+
+        for message in [b"first", b"other"] {
+            let encrypted = conversation
+                .guard()
+                .await
+                .encrypt_transient(message.to_vec())
+                .await
+                .unwrap();
+            conversation
+                .guard_of(&bob)
+                .await
+                .decrypt_message(encrypted)
+                .await
+                .unwrap();
+        }
+        drop(conversation);
+        alice.commit_transaction().await;
+        alice.pretend_crash().await;
+
+        let conversation = TestConversation::new_from_existing(&case, id.clone(), vec![&alice, &bob]).await;
+        let conversation = conversation.update_notify().await;
+        assert_eq!(conversation.guard().await.epoch().await, epoch + 1);
+        let counter = alice
+            .database()
+            .get_borrowed::<PersistedMlsGroup>(id.keystore())
+            .await
+            .unwrap()
+            .unwrap()
+            .tnt_tx_counter;
+        assert_eq!(
+            counter, 0,
+            "advancing the epoch must reset the counter, even before it is loaded"
+        );
+
+        let encrypted = conversation
+            .guard()
+            .await
+            .encrypt_transient(b"new epoch".to_vec())
+            .await
+            .unwrap();
+        let decrypted = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(encrypted)
+            .await
+            .unwrap();
+        assert_eq!(decrypted.into_transient().unwrap().plaintext, b"new epoch");
+        let counter = alice
+            .database()
+            .get_borrowed::<PersistedMlsGroup>(id.keystore())
+            .await
+            .unwrap()
+            .unwrap()
+            .tnt_tx_counter;
+        assert_eq!(counter, 1);
+    }
+}
