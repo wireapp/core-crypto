@@ -13,8 +13,4 @@ impl TntMessageCounter {
         self.0 = self.0.checked_add(1).ok_or_else(|| Error::TntMessageCounterOverflow)?;
         Ok(())
     }
-
-    pub(crate) fn is_zero(&self) -> bool {
-        self.0 == 0
-    }
 }
