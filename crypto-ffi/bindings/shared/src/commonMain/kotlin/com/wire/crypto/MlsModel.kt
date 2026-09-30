@@ -58,6 +58,11 @@ suspend fun PkiEnvironment.Companion.new(
  * Provide [coreCryptoDatabase] if you're using distinct DB instances for [PkiEnvironment] and [CoreCrypto].
  * Otherwise, the [PkiEnvironment]'s DB will be used to load the full credential.
  */
+@Deprecated(
+    message = "this function reuses key material",
+    replaceWith = ReplaceWith("X509CredentialAcquisition(pkiEnvironment, config)"),
+    level = DeprecationLevel.WARNING,
+)
 suspend fun X509CredentialAcquisition.Companion.newFromCredentialRef(
     pkiEnvironment: PkiEnvironment,
     config: X509CredentialAcquisitionConfiguration,
