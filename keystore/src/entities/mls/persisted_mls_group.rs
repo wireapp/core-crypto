@@ -29,6 +29,8 @@ pub struct PersistedMlsGroup {
     pub own_leaf_index: u32,
     /// Distinguishes a group joined by external commit but not yet merged from an established one.
     pub is_pending: bool,
+    /// Counter for outbound TNT messages
+    pub tnt_tx_counter: u32,
 }
 
 impl PersistedMlsGroup {
@@ -56,6 +58,7 @@ impl PersistedMlsGroup {
             credential_type: row.get("credential_type")?,
             own_leaf_index: row.get("own_leaf_index")?,
             is_pending: row.get("is_pending")?,
+            tnt_tx_counter: row.get("tnt_tx_counter")?,
         })
     }
 }
@@ -109,9 +112,9 @@ impl EntityDatabaseMutation for PersistedMlsGroup {
         // "delete then insert", so all those foreign keys would cascade-delete before we insert a replacement.
         let mut stmt = conn.prepare_cached(
             "INSERT INTO mls_groups
-                ( id,  state,  epoch,  ciphersuite,  credential_id,  credential_type,  own_leaf_index,  is_pending)
+                ( id,  state,  epoch,  ciphersuite,  credential_id,  credential_type,  own_leaf_index,  is_pending,  tnt_tx_counter)
              VALUES
-                (:id, :state, :epoch, :ciphersuite, :credential_id, :credential_type, :own_leaf_index, :is_pending)
+                (:id, :state, :epoch, :ciphersuite, :credential_id, :credential_type, :own_leaf_index, :is_pending, :tnt_tx_counter)
              ON CONFLICT (id) DO UPDATE SET
                 state = excluded.state,
                 epoch = excluded.epoch,
@@ -119,7 +122,8 @@ impl EntityDatabaseMutation for PersistedMlsGroup {
                 credential_id = excluded.credential_id,
                 credential_type = excluded.credential_type,
                 own_leaf_index = excluded.own_leaf_index,
-                is_pending = excluded.is_pending",
+                is_pending = excluded.is_pending,
+                tnt_tx_counter = excluded.tnt_tx_counter",
         )?;
         stmt.execute(named_params![
             ":id": self.id,
@@ -130,6 +134,7 @@ impl EntityDatabaseMutation for PersistedMlsGroup {
             ":credential_type": self.credential_type,
             ":own_leaf_index": self.own_leaf_index,
             ":is_pending": self.is_pending,
+            ":tnt_tx_counter": self.tnt_tx_counter,
         ])?;
         Ok(())
     }

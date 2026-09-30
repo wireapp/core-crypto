@@ -11,7 +11,6 @@ mod stored_psk_bundle;
 mod targeted_message_rx_counter;
 mod tnt_secret;
 mod transient_message_rx_counter;
-mod transient_message_tx_counter;
 mod x509_intermediate_cert;
 mod x509_trust_anchor;
 
@@ -30,6 +29,5 @@ pub use stored_psk_bundle::StoredPskBundle;
 pub use targeted_message_rx_counter::TargetedMessageRxCounter;
 pub use tnt_secret::{TntSecret, TntSecretPk, TntSecretPkRef};
 pub use transient_message_rx_counter::TransientMessageRxCounter;
-pub use transient_message_tx_counter::TntMessageTxCounter;
 pub use x509_intermediate_cert::X509IntermediateCert;
 pub use x509_trust_anchor::X509TrustAnchor;
