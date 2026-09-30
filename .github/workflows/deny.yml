@@ -5,10 +5,8 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  # disabled since we don't want to resolve cargo deny issues on 9.x
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
