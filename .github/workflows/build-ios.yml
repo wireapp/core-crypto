@@ -23,7 +23,9 @@ jobs:
       matrix:
         include:
           - task: ios-device
+            target: aarch64-apple-ios
           - task: ios-simulator-arm
+            target: aarch64-apple-ios-sim
     steps:
       - uses: actions/checkout@v5
       - name: Setup rust macOS
