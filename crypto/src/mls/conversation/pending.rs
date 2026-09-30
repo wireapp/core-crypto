@@ -61,6 +61,7 @@ impl PendingConversation {
             credential_type: current_credential.credential_type,
             own_leaf_index: group.own_leaf_index().u32(),
             is_pending: true,
+            tnt_tx_counter: Default::default(),
         };
         Ok(Self::new(inner, context))
     }

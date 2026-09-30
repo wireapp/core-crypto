@@ -1,4 +1,3 @@
-use core_crypto_keystore::Database;
 use openmls::prelude::OpenMlsCrypto;
 use tls_codec::Serialize as _;
 
@@ -26,11 +25,10 @@ impl ConversationMut {
             .crypto_provider()
             .await
             .map_err(RecursiveError::transaction("obtaining crypto provider"))?;
-        let database = self.database()?;
 
         let transient_message = self
             .mutate_group(async |_, group_state, _| {
-                Self::create_transient_message(&database, group_state, &crypto_provider, &message).await
+                Self::create_transient_message(group_state, &crypto_provider, &message)
             })
             .await?;
 
@@ -38,13 +36,12 @@ impl ConversationMut {
         self.sign_tnt_message(tbs).await
     }
 
-    async fn create_transient_message(
-        database: &Database,
+    fn create_transient_message(
         group_state: &mut MlsGroupState,
         crypto_provider: &CryptoProvider,
         message: &[u8],
     ) -> Result<TransientMessage> {
-        let counter = group_state.obtain_tnt_message_tx_counter(database).await?;
+        let counter = group_state.obtain_tnt_message_tx_counter()?;
         let mls_group = group_state.mls_group();
         let aad = TransientMessageAad::new(mls_group.own_leaf_index(), counter, mls_group.export_group_context());
 

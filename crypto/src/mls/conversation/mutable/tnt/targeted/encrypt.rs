@@ -1,6 +1,5 @@
 use std::borrow::Borrow;
 
-use core_crypto_keystore::Database;
 use openmls::prelude::Member;
 use tls_codec::{Serialize as _, TlsSerialize, TlsSize};
 
@@ -41,7 +40,6 @@ impl ConversationMut {
             .crypto_provider()
             .await
             .map_err(RecursiveError::transaction("obtaining crypto provider"))?;
-        let database = self.database()?;
 
         let targeted = self
             .mutate_group(async |_, group_state, _| {
@@ -50,8 +48,7 @@ impl ConversationMut {
                     .members()
                     .find(|member| ClientIdRef::new(member.credential.identity()) == recipient.borrow())
                     .ok_or_else(|| Error::MemberNotFound(recipient.borrow().to_owned()))?;
-                Self::create_targeted_message(&database, policy, group_state, &crypto_provider, &recipient, &message)
-                    .await
+                Self::create_targeted_message(policy, group_state, &crypto_provider, &recipient, &message)
             })
             .await?;
 
@@ -62,15 +59,14 @@ impl ConversationMut {
         self.sign_tnt_message(tbs).await
     }
 
-    async fn create_targeted_message(
-        database: &Database,
+    fn create_targeted_message(
         policy: TargetedMessagePolicy,
         group_state: &mut MlsGroupState,
         crypto_provider: &CryptoProvider,
         recipient: &Member,
         message: &[u8],
     ) -> Result<TargetedMessage> {
-        let counter = group_state.obtain_tnt_message_tx_counter(database).await?;
+        let counter = group_state.obtain_tnt_message_tx_counter()?;
         let mls_group = group_state.mls_group();
         let aad = counter
             .tls_serialize_detached()
