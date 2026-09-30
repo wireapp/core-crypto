@@ -136,7 +136,7 @@ mod tests_impl {
         CryptoKeystoreError, Transactionlike,
         entities::{
             MlsPendingMessage, PersistedMlsGroup, StoredCredential, StoredEpochEncryptionKeypair,
-            TargetedMessageRxCounter, TntMessageTxCounter, TransientMessageRxCounter,
+            TargetedMessageRxCounter, TransientMessageRxCounter,
         },
         traits::{
             Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase as _,
@@ -202,9 +202,6 @@ mod tests_impl {
 
         let group_id_as_foreign_key = match_heterogenous!(any_e => {
             // tnt message counters also have a foreign key constraint which must be satisfied
-            TntMessageTxCounter { conversation_id, .. } => {
-                Some(conversation_id.clone())
-            },
             TargetedMessageRxCounter { conversation_id, .. } => {
                 Some(conversation_id.clone())
             },
@@ -316,10 +313,7 @@ mod tests_impl {
         let any_e = &entity as &dyn Any;
 
         let group_id_as_foreign_key = match_heterogenous!(any_e => {
-            TntMessageTxCounter { conversation_id, .. } => {
-                Some(conversation_id.clone())
-            },
-            TargetedMessageRxCounter { conversation_id, .. } => {
+                        TargetedMessageRxCounter { conversation_id, .. } => {
                 Some(conversation_id.clone())
             },
             TransientMessageRxCounter { conversation_id, .. } => {
@@ -480,9 +474,6 @@ mod tests_impl {
             let mut entity = E::random();
             let any_e: &mut dyn Any = &mut entity;
             let group_id_as_foreign_key = match_heterogenous!(any_e => {
-                TntMessageTxCounter { conversation_id, .. } => {
-                    Some(conversation_id.clone())
-                },
                 TargetedMessageRxCounter { conversation_id, .. } => {
                     Some(conversation_id.clone())
                 },
@@ -535,7 +526,6 @@ mod tests {
     use core_crypto_keystore::entities::*;
 
     test_for_entity!(test_persisted_mls_group, PersistedMlsGroup);
-    test_for_entity!(test_transient_message_tx_counter, TntMessageTxCounter);
     test_for_entity!(test_targeted_message_rx_counter, TargetedMessageRxCounter);
     test_for_entity!(test_transient_message_rx_counter, TransientMessageRxCounter);
     test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_entity_count: true ignore_update:true ignore_remove:true ignore_find_many:true no_borrowed_key:true);
@@ -601,7 +591,7 @@ pub mod utils {
         entities::{
             MlsPendingMessage, PersistedMlsGroup, ProteusSession, StoredCredential, StoredEncryptionKeyPair,
             StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
-            TargetedMessageRxCounter, TntMessageTxCounter, TransientMessageRxCounter, X509TrustAnchor,
+            TargetedMessageRxCounter, TransientMessageRxCounter, X509TrustAnchor,
         },
     };
     use rand::{RngExt as _, distr::SampleString};
@@ -733,7 +723,6 @@ pub mod utils {
     impl_entity_random_update_ext!(StoredHpkePrivateKey, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredPskBundle, blob_fields=[psk,psk_id id_like:true,]);
-    impl_entity_random_update_ext!(TntMessageTxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),]);
     impl_entity_random_update_ext!(TargetedMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);
     impl_entity_random_update_ext!(TransientMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);
 
@@ -894,8 +883,9 @@ pub mod utils {
                     id.into()
                 },
                 credential_type: 1, // type of basic credential
-                own_leaf_index: (rand::random()),
+                own_leaf_index: rand::random(),
                 is_pending: false,
+                tnt_tx_counter: rand::random(),
             }
         }
     }
