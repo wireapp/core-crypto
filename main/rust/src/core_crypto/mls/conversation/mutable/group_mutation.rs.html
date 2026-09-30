@@ -64,7 +64,7 @@
 <a href=#64 id=64 data-nosnippet>64</a>        }
 <a href=#65 id=65 data-nosnippet>65</a>
 <a href=#66 id=66 data-nosnippet>66</a>        <span class="kw">if </span>epoch_before_operation &lt; group.epoch() {
-<a href=#67 id=67 data-nosnippet>67</a>            group.reset_tnt_message_tx_counter(tx)<span class="question-mark">?</span>;
+<a href=#67 id=67 data-nosnippet>67</a>            group.reset_tnt_message_tx_counter();
 <a href=#68 id=68 data-nosnippet>68</a>
 <a href=#69 id=69 data-nosnippet>69</a>            <span class="kw">let </span>oldest_retained_epoch = group.epoch().as_u64().saturating_sub(MAX_PAST_EPOCHS <span class="kw">as </span>u64);
 <a href=#70 id=70 data-nosnippet>70</a>            <span class="kw">let </span>stale_epochs = ConversationEpochsOlderThan::new(id.as_ref().into(), oldest_retained_epoch);
