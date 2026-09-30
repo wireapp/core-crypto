@@ -146,11 +146,12 @@ fn transient_message_secrets(
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::entities::TntMessageTxCounter;
-    use core_crypto_keystore::traits::FetchFromDatabase as _;
+    use core_crypto_keystore::{entities::PersistedMlsGroup, traits::FetchFromDatabase as _};
 
-    use crate::mls::conversation::{Conversation, ConversationMut};
-    use crate::test_utils::*;
+    use crate::{
+        mls::conversation::{Conversation, ConversationMut},
+        test_utils::*,
+    };
 
     #[apply(all_cred_cipher)]
     async fn can_decrypt_transient_message(case: TestContext) {
@@ -243,12 +244,13 @@ mod tests {
 
         let counter = alice
             .database()
-            .get_borrowed::<TntMessageTxCounter>(id.keystore())
+            .get_borrowed::<PersistedMlsGroup>(id.keystore())
             .await
             .unwrap()
-            .unwrap();
+            .unwrap()
+            .tnt_tx_counter;
         assert_eq!(
-            counter.count, 1,
+            counter, 1,
             "persisting unrelated group state must preserve the stored TNT counter"
         );
 
@@ -258,12 +260,13 @@ mod tests {
 
         let counter = alice
             .database()
-            .get_borrowed::<TntMessageTxCounter>(id.keystore())
+            .get_borrowed::<PersistedMlsGroup>(id.keystore())
             .await
             .unwrap()
-            .unwrap();
+            .unwrap()
+            .tnt_tx_counter;
         assert_eq!(
-            counter.count, 2,
+            counter, 2,
             "the next transient message must advance the persisted counter"
         );
         let second = bob
@@ -307,12 +310,13 @@ mod tests {
         assert_eq!(conversation.guard().await.epoch().await, epoch + 1);
         let counter = alice
             .database()
-            .get_borrowed::<TntMessageTxCounter>(id.keystore())
+            .get_borrowed::<PersistedMlsGroup>(id.keystore())
             .await
             .unwrap()
-            .unwrap();
+            .unwrap()
+            .tnt_tx_counter;
         assert_eq!(
-            counter.count, 0,
+            counter, 0,
             "advancing the epoch must reset the counter, even before it is loaded"
         );
 
@@ -331,10 +335,11 @@ mod tests {
         assert_eq!(decrypted.into_transient().unwrap().plaintext, b"new epoch");
         let counter = alice
             .database()
-            .get_borrowed::<TntMessageTxCounter>(id.keystore())
+            .get_borrowed::<PersistedMlsGroup>(id.keystore())
             .await
             .unwrap()
-            .unwrap();
-        assert_eq!(counter.count, 1);
+            .unwrap()
+            .tnt_tx_counter;
+        assert_eq!(counter, 1);
     }
 }
