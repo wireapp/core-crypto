@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use core_crypto_keystore::{ancillary::ConversationIdRef, entities::PersistedMlsGroup, traits::FetchFromDatabase};
 use openmls::group::MlsGroup;
@@ -10,18 +10,18 @@ use crate::{
 };
 
 impl Conversation {
-    /// restore the conversation from a persistence-saved serialized Group State.
-    fn from_serialized_state(session: Session, buf: Vec<u8>) -> Result<Self> {
+    /// restore the conversation from a persisted group
+    fn from_persisted(session: Session, persisted: &PersistedMlsGroup) -> Result<Self> {
         let group: MlsGroup =
-            core_crypto_keystore::deser(&buf).map_err(KeystoreError::wrap("deserializing group state"))?;
+            core_crypto_keystore::deser(&persisted.state).map_err(KeystoreError::wrap("deserializing group state"))?;
         let id = ConversationId::from(group.group_id().as_slice());
         let configuration = ConversationConfiguration {
             cipher_suite: group.ciphersuite().into(),
             ..Default::default()
         };
 
-        // The tnt message counter is empty when initializing, we're loading it lazily on usage.
-        let group = MlsGroupState::new(group, Default::default()).into();
+        // The tnt message counter is stored in the same row as the rest of the group.
+        let group = MlsGroupState::new(group, persisted.tnt_tx_counter.into()).into();
 
         Ok(Self {
             id,
@@ -45,8 +45,7 @@ impl Conversation {
         let Some(group) = group.filter(|group| !group.is_pending) else {
             return Ok(None);
         };
-        let mut group = Arc::unwrap_or_clone(group);
-        let conversation = Self::from_serialized_state(session, std::mem::take(&mut group.state))?;
+        let conversation = Self::from_persisted(session, &group)?;
         Ok(Some(conversation))
     }
 
@@ -66,8 +65,8 @@ impl Conversation {
                 // we can't just destructure the fields straight out of the group, because we derive `Zeroize`, which
                 // zeroizes on drop, which means we are forced to clone all the group's fields, because
                 // otherwise the drop impl couldn't run.
-                let conversation = Self::from_serialized_state(session.clone(), group.state.clone())?;
-                Ok((ConversationId::from(group.id.bytes()), conversation))
+                let conversation = Self::from_persisted(session.clone(), &group)?;
+                Ok((conversation.id.clone(), conversation))
             })
             .collect()
     }

@@ -10,8 +10,8 @@ use async_lock::{RwLock, RwLockReadGuard};
 use core_crypto_keystore::{
     Transaction,
     ancillary::ConversationIdRef as KeystoreConversationIdRef,
-    entities::{PersistedMlsGroup, TntMessageTxCounter},
-    traits::{EntityDatabaseMutation as _, EntityDeleteBorrowed as _, FetchFromDatabase},
+    entities::PersistedMlsGroup,
+    traits::{EntityDatabaseMutation as _, FetchFromDatabase},
 };
 use openmls::group::{InnerState, MlsGroup};
 
@@ -46,38 +46,16 @@ impl MlsGroupState {
     }
 
     /// Get the transient message sender (tx) counter bound to this conversation after incrementing it.
-    ///
-    /// If the counter hasn't been used yet for this conversation, it is loaded from the database or initialized
-    /// freshly.
-    pub(in crate::mls::conversation) async fn obtain_tnt_message_tx_counter(
-        &mut self,
-        database: &impl FetchFromDatabase,
-    ) -> Result<TntMessageCounter> {
-        let mut counter = self.tnt_message_tx_counter;
-
-        if counter.is_zero() {
-            counter = database
-                .get_borrowed::<TntMessageTxCounter>(KeystoreConversationIdRef::new(self.group_id().as_slice()))
-                .await
-                .map_err(KeystoreError::wrap("searching for tnt message counters for group"))?
-                .map(|counter| counter.count)
-                .unwrap_or_default()
-                .into();
-        }
-
-        counter.increment()?;
-        self.tnt_message_tx_counter = counter;
+    pub(in crate::mls::conversation) fn obtain_tnt_message_tx_counter(&mut self) -> Result<TntMessageCounter> {
+        self.tnt_message_tx_counter.increment()?;
         self.group.set_state(InnerState::Changed);
 
-        Ok(counter)
+        Ok(self.tnt_message_tx_counter)
     }
 
-    pub(in crate::mls::conversation) fn reset_tnt_message_tx_counter(&mut self, tx: &Transaction) -> Result<()> {
+    pub(in crate::mls::conversation) fn reset_tnt_message_tx_counter(&mut self) {
         self.tnt_message_tx_counter = Default::default();
-        let id = KeystoreConversationIdRef::new(self.group.group_id().as_slice());
-        TntMessageTxCounter::delete_borrowed(tx, id)
-            .map_err(KeystoreError::wrap("removing transient message tx counter"))?;
-        Ok(())
+        self.group.set_state(InnerState::Changed);
     }
 
     pub(crate) async fn persist(&mut self, tx: &Transaction) -> Result<()> {
@@ -126,16 +104,10 @@ impl MlsGroupState {
             // already been merged — either way, this group is no longer pending by the time this
             // runs.
             is_pending: false,
+            tnt_tx_counter: self.tnt_message_tx_counter.into(),
         }
         .save(tx)
         .map_err(KeystoreError::wrap("persisting mls group"))?;
-
-        TntMessageTxCounter {
-            conversation_id: id.as_slice().into(),
-            count: self.tnt_message_tx_counter.into(),
-        }
-        .save(tx)
-        .map_err(KeystoreError::wrap("saving transient message tx counter"))?;
 
         Ok(())
     }
