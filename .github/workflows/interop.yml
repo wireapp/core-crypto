@@ -63,7 +63,7 @@ jobs:
         run: |
           cd interop/src/clients/InteropClient
           xcodebuild -scheme InteropClient -sdk iphonesimulator -configuration Release \
-                     -destination 'platform=iOS Simulator,name=iPhone 16 e2e-interop-test' clean build install DSTROOT=./Products
+                     -destination "id=${{ env.SIMULATOR }}" clean build install DSTROOT=./Products
           ./install-interop-client.sh ${{ env.SIMULATOR }}
       - name: run e2e interop test
         run: cargo run --bin interop
