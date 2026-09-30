@@ -1,9 +1,7 @@
 name: benchmarks
+# Disabled since we don't have the infrastructure to run bencher anymore
 on:
-  push:
-    branches:
-      - main
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   benchmarks_with_bencher:
