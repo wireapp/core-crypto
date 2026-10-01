@@ -79,7 +79,9 @@ serde-wasm-bindgen.workspace = true
 
 # For supported architectures we use the crypto implementations in graviola, which are fast
 [target.'cfg(any(target_arch = "aarch64", target_arch = "x86_64"))'.dependencies]
-graviola = "0.4"
+# Pinned to a git revision until a release includes "Use Mach-O relocation syntax on all Apple platforms",
+# without which graviola does not assemble for iOS.
+graviola = { git = "https://github.com/ctz/graviola.git", rev = "1a9dfcde985638c05b8fe192639c2e7a8ca763dc" }
 
 # but in other architectures we have to fall back to the rust-crypto implementations.
 [target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))'.dependencies]
