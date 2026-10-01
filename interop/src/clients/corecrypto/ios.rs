@@ -116,7 +116,7 @@ impl SimulatorDriver {
         Ok((process, output))
     }
 
-    async fn execute(&self, action: String) -> Result<String> {
+    fn execute(&self, action: String) -> Result<String> {
         log::info!("interop://{}", action);
 
         Command::new("xcrun")
@@ -170,12 +170,10 @@ impl CoreCryptoIosClient {
 
         let driver = SimulatorDriver::new(device, "com.wire.InteropClient".into());
         log::info!("initialising core crypto with cipher suite {}", cipher_suite);
-        driver
-            .execute(format!(
-                "init-mls?client={}&deviceId={device_id:x}&cipherSuite={}",
-                user_id_base64, cipher_suite
-            ))
-            .await?;
+        driver.execute(format!(
+            "init-mls?client={}&deviceId={device_id:x}&cipherSuite={}",
+            user_id_base64, cipher_suite
+        ))?;
 
         Ok(Self {
             driver,
@@ -216,8 +214,7 @@ impl EmulatedMlsClient for CoreCryptoIosClient {
         let start = std::time::Instant::now();
         let kp_base64 = self
             .driver
-            .execute(format!("get-key-package?cipherSuite={}", cipher_suite))
-            .await?;
+            .execute(format!("get-key-package?cipherSuite={}", cipher_suite))?;
         let kp_raw = general_purpose::STANDARD.decode(kp_base64)?;
         let kp: Keypackage = KeyPackageIn::tls_deserialize(&mut kp_raw.as_slice())?.into();
 
@@ -235,13 +232,10 @@ impl EmulatedMlsClient for CoreCryptoIosClient {
     async fn process_welcome(&self, welcome: &[u8]) -> Result<Vec<u8>> {
         let welcome_path = std::env::temp_dir().join(format!("welcome-{}", uuid::Uuid::new_v4().as_hyphenated()));
         fs::write(&welcome_path, welcome)?;
-        let conversation_id_base64 = self
-            .driver
-            .execute(format!(
-                "process-welcome?welcome_path={}",
-                welcome_path.to_str().unwrap()
-            ))
-            .await?;
+        let conversation_id_base64 = self.driver.execute(format!(
+            "process-welcome?welcome_path={}",
+            welcome_path.to_str().unwrap()
+        ))?;
         let conversation_id = general_purpose::STANDARD.decode(conversation_id_base64)?;
 
         Ok(conversation_id)
@@ -252,8 +246,7 @@ impl EmulatedMlsClient for CoreCryptoIosClient {
         let message_base64 = general_purpose::STANDARD.encode(message);
         let encrypted_message_base64 = self
             .driver
-            .execute(format!("encrypt-message?cid={}&message={}", cid_base64, message_base64))
-            .await?;
+            .execute(format!("encrypt-message?cid={}&message={}", cid_base64, message_base64))?;
         let encrypted_message = general_purpose::STANDARD.decode(encrypted_message_base64)?;
 
         Ok(encrypted_message)
@@ -278,7 +271,7 @@ impl EmulatedMlsClient for CoreCryptoIosClient {
             .execute(format!(
                 "encrypt-targeted-message?cid={cid_base64}&recipient={recipient_base64}&policy={policy}&message={message_base64}"
             ))
-            .await?;
+            ?;
 
         general_purpose::STANDARD
             .decode(encrypted_message_base64)
@@ -288,12 +281,9 @@ impl EmulatedMlsClient for CoreCryptoIosClient {
     async fn encrypt_transient_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
         let cid_base64 = general_purpose::STANDARD.encode(conversation_id);
         let message_base64 = general_purpose::STANDARD.encode(message);
-        let encrypted_message_base64 = self
-            .driver
-            .execute(format!(
-                "encrypt-transient-message?cid={cid_base64}&message={message_base64}"
-            ))
-            .await?;
+        let encrypted_message_base64 = self.driver.execute(format!(
+            "encrypt-transient-message?cid={cid_base64}&message={message_base64}"
+        ))?;
 
         general_purpose::STANDARD
             .decode(encrypted_message_base64)
@@ -305,8 +295,7 @@ impl EmulatedMlsClient for CoreCryptoIosClient {
         let message_base64 = general_purpose::STANDARD.encode(message);
         let result = self
             .driver
-            .execute(format!("decrypt-message?cid={}&message={}", cid_base64, message_base64))
-            .await?;
+            .execute(format!("decrypt-message?cid={}&message={}", cid_base64, message_base64))?;
 
         if result == "decrypted protocol message" {
             Ok(None)
@@ -321,7 +310,7 @@ impl EmulatedMlsClient for CoreCryptoIosClient {
 #[async_trait::async_trait(?Send)]
 impl crate::clients::EmulatedProteusClient for CoreCryptoIosClient {
     async fn init(&mut self) -> Result<()> {
-        self.driver.execute("init-proteus".into()).await?;
+        self.driver.execute("init-proteus".into())?;
         Ok(())
     }
 
@@ -329,7 +318,7 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoIosClient {
         let prekey_last_id = self.prekey_last_id.get() + 1;
         self.prekey_last_id.replace(prekey_last_id);
 
-        let prekey_base64 = self.driver.execute(format!("get-prekey?id={}", prekey_last_id)).await?;
+        let prekey_base64 = self.driver.execute(format!("get-prekey?id={}", prekey_last_id))?;
         let prekey = general_purpose::STANDARD.decode(prekey_base64)?;
 
         Ok(prekey)
@@ -337,38 +326,30 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoIosClient {
 
     async fn session_from_prekey(&self, session_id: &str, prekey: &[u8]) -> Result<()> {
         let prekey_base64 = general_purpose::STANDARD.encode(prekey);
-        self.driver
-            .execute(format!(
-                "session-from-prekey?session_id={}&prekey={}",
-                session_id, prekey_base64
-            ))
-            .await?;
+        self.driver.execute(format!(
+            "session-from-prekey?session_id={}&prekey={}",
+            session_id, prekey_base64
+        ))?;
 
         Ok(())
     }
 
     async fn session_from_message(&self, session_id: &str, message: &[u8]) -> Result<Vec<u8>> {
         let message_base64 = general_purpose::STANDARD.encode(message);
-        let decrypted_message_base64 = self
-            .driver
-            .execute(format!(
-                "session-from-message?session_id={}&message={}",
-                session_id, message_base64
-            ))
-            .await?;
+        let decrypted_message_base64 = self.driver.execute(format!(
+            "session-from-message?session_id={}&message={}",
+            session_id, message_base64
+        ))?;
         let decrypted_message = general_purpose::STANDARD.decode(decrypted_message_base64)?;
 
         Ok(decrypted_message)
     }
     async fn encrypt(&self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
         let plaintext_base64 = general_purpose::STANDARD.encode(plaintext);
-        let encrypted_message_base64 = self
-            .driver
-            .execute(format!(
-                "encrypt-proteus?session_id={}&message={}",
-                session_id, plaintext_base64
-            ))
-            .await?;
+        let encrypted_message_base64 = self.driver.execute(format!(
+            "encrypt-proteus?session_id={}&message={}",
+            session_id, plaintext_base64
+        ))?;
         let encrypted_message = general_purpose::STANDARD.decode(encrypted_message_base64)?;
 
         Ok(encrypted_message)
@@ -376,20 +357,17 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoIosClient {
 
     async fn decrypt(&self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
         let ciphertext_base64 = general_purpose::STANDARD.encode(ciphertext);
-        let decrypted_message_base64 = self
-            .driver
-            .execute(format!(
-                "decrypt-proteus?session_id={}&message={}",
-                session_id, ciphertext_base64
-            ))
-            .await?;
+        let decrypted_message_base64 = self.driver.execute(format!(
+            "decrypt-proteus?session_id={}&message={}",
+            session_id, ciphertext_base64
+        ))?;
         let decrypted_message = general_purpose::STANDARD.decode(decrypted_message_base64)?;
 
         Ok(decrypted_message)
     }
 
     async fn fingerprint(&self) -> Result<String> {
-        let fingerprint = self.driver.execute("get-fingerprint".into()).await?;
+        let fingerprint = self.driver.execute("get-fingerprint".into())?;
 
         Ok(fingerprint)
     }

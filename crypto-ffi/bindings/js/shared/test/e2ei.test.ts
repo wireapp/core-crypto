@@ -1,6 +1,5 @@
 import { runOnPlatform, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { E2eiConversationState } from "#core-crypto";
 import { expect } from "chai";
 
 const TEST_CA_PEM = `-----BEGIN CERTIFICATE-----
@@ -212,14 +211,17 @@ describe("end to end identity", () => {
     });
 
     it("should not be enabled on conversation with basic credential", async () => {
-        const conversationState = await runOnPlatform(async () => {
+        const isNotEnabled = await runOnPlatform(async () => {
             const cc = await helpers.ccInit();
             const conversationId = await helpers.createConversation(cc);
-            return await cc.transaction(async (ctx) => {
+            const conversationState = await cc.transaction(async (ctx) => {
                 return await ctx.e2eiConversationState(conversationId);
             });
+            return (
+                conversationState === ccModule.E2eiConversationState.NotEnabled
+            );
         });
-        expect(conversationState).to.equal(E2eiConversationState.NotEnabled);
+        expect(isNotEnabled).to.equal(true);
     });
 
     it("identities can be queried by client id", async () => {

@@ -87,5 +87,5 @@ impl Drop for KeystoreTestContext {
     not(target_os = "unknown"),
     test_attr(macro_rules_attribute::apply(smol_macros::test))
 )]
-#[cfg_attr(target_os = "unknown", test_attr(wasm_bindgen_test::wasm_bindgen_test))]
+#[cfg_attr(target_os = "unknown", test_attr(core_crypto_macros::jspi_wasm_bindgen_test))]
 pub async fn all_storage_types(#[case] context: KeystoreTestContext) {}

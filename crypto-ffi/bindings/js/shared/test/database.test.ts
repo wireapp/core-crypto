@@ -15,7 +15,8 @@ describe("database", () => {
         const result = await runOnPlatform(async () => {
             const databaseName = crypto.randomUUID();
             const key = helpers.newDatabaseKey();
-            await helpers.newDatabase(databaseName, key);
+            const first = await helpers.newDatabase(databaseName, key);
+            first.uniffiDestroy();
             const db = await helpers.newDatabase(databaseName, key);
             return db !== undefined;
         });

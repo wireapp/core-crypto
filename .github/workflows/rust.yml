@@ -94,7 +94,20 @@ jobs:
         # With Rust 1.97's v0 mangling, wasm-bindgen's demangler can map distinct symbols to
         # the same generated export name. Stable Rust cannot opt back into legacy mangling.
         # See https://blog.rust-lang.org/2026/07/09/Rust-1.97.0/#symbol-mangling-v0-enabled-by-default
-      - run: CARGO_PROFILE_TEST_STRIP=symbols wasm-pack test --headless --chrome -- ./keystore --locked
+        # WASM_BINDGEN_EXTERNREF is needed for JSPI.
+      - run: CARGO_PROFILE_TEST_STRIP=symbols WASM_BINDGEN_EXTERNREF=1 wasm-pack test --headless --chrome -- ./keystore --locked
+      - uses: browser-actions/setup-chrome@v2
+        id: opfs-chrome
+        with:
+          chrome-version: stable
+          install-chromedriver: true
+      - name: Build live-WAL recovery fixture
+        run: WASM_BINDGEN_EXTERNREF=1 wasm-pack build --target web examples/keystore-opfs-recovery
+      - name: Test recovery from a live WAL and startup checkpoint failure
+        env:
+          CHROME_BIN: ${{ steps.opfs-chrome.outputs.chrome-path }}
+          CHROMEDRIVER: ${{ steps.opfs-chrome.outputs.chromedriver-path }}
+        run: node examples/keystore-opfs-recovery/run.mjs
 
   keystore-proteus-wasm-test:
     runs-on: ubuntu-latest
@@ -112,7 +125,8 @@ jobs:
       # With Rust 1.97's v0 mangling, wasm-bindgen's demangler can map distinct symbols to
       # the same generated export name. Stable Rust cannot opt back into legacy mangling.
       # See https://blog.rust-lang.org/2026/07/09/Rust-1.97.0/#symbol-mangling-v0-enabled-by-default
-      - run: CARGO_PROFILE_TEST_STRIP=symbols wasm-pack test --headless --chrome -- ./keystore --locked --features proteus-keystore -- proteus
+      # WASM_BINDGEN_EXTERNREF is needed for JSPI.
+      - run: CARGO_PROFILE_TEST_STRIP=symbols WASM_BINDGEN_EXTERNREF=1 wasm-pack test --headless --chrome -- ./keystore --locked --features proteus-keystore -- proteus
 
   hack:
     runs-on: ubuntu-latest

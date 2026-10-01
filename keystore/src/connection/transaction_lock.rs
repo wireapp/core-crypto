@@ -13,7 +13,7 @@
 #[cfg(all(feature = "cross-process-lock", target_os = "unknown"))]
 compile_error!(
     "the `cross-process-lock` feature locks a file in the local filesystem, which the wasm \
-     keystore (backed by IndexedDB) has none of; disable it for `target_os = \"unknown\"`"
+     keystore (backed by OPFS) has none of; disable it for `target_os = \"unknown\"`"
 );
 
 use std::sync::Arc;

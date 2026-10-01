@@ -7,8 +7,11 @@ mod filesystem;
 mod idb_migration;
 #[cfg(target_os = "ios")]
 mod ios_wal_compat;
+pub(crate) mod managed_connection;
 mod migrations;
 mod mls;
+#[cfg(all(target_os = "unknown", feature = "opfs-recovery-fixture"))]
+pub mod opfs_recovery_fixture;
 #[cfg(target_os = "unknown")]
 mod os_unknown;
 mod transaction;
@@ -24,11 +27,17 @@ use rusqlite::trace::{TraceEvent, TraceEventCodes};
 #[cfg(target_os = "unknown")]
 pub use self::idb_migration::{delete_legacy_idb, legacy_idb_exists};
 use self::transaction_lock::TransactionLock;
-pub(crate) use self::{filesystem::Filesystem, transaction_lock::TransactionGuard};
+pub(crate) use self::{
+    filesystem::Filesystem,
+    managed_connection::{ManagedConnection, SqliteGuard},
+    transaction_lock::TransactionGuard,
+};
 pub use self::{
     migrations::migrate_db_key_type_to_bytes,
     mls::{deser, ser},
 };
+#[cfg(target_os = "unknown")]
+use crate::CryptoKeystoreError;
 use crate::{
     CryptoKeystoreResult, DatabaseKey, Transaction, connection::migrations::MigrationTarget, unique_arc::UniqueWeak,
 };
@@ -52,7 +61,7 @@ pub struct Database {
     // nobody ever actually clones this `Arc`. For now I don't believe it's
     // worth the effort of making a `UniqueArc` work here, but if this proves
     // to be a problem, we might make that effort in the future.
-    conn: Arc<Mutex<Connection>>,
+    conn: Arc<Mutex<ManagedConnection>>,
     // handler with which to delete the database;
     // mutexed to provide `Sync`
     pub(crate) filesystem: Mutex<Box<dyn Filesystem>>,
@@ -70,7 +79,7 @@ impl Database {
     async fn open_internal(
         path: &str,
         database_key: &DatabaseKey,
-    ) -> CryptoKeystoreResult<(Connection, Box<dyn Filesystem>)> {
+    ) -> CryptoKeystoreResult<(ManagedConnection, Box<dyn Filesystem>)> {
         #[cfg(target_os = "unknown")]
         let (conn, filesystem) = { os_unknown::open(path, database_key).await? };
 
@@ -106,11 +115,14 @@ impl Database {
     ///
     /// Sets appropriate pragmas and performs migrations and general initialization work.
     async fn init(
-        conn: Connection,
+        conn: ManagedConnection,
         filesystem: Box<dyn Filesystem>,
         migration_target: MigrationTarget,
     ) -> CryptoKeystoreResult<Self> {
-        let transaction_lock = TransactionLock::new(conn.path().unwrap_or_default())?;
+        let transaction_lock = {
+            let _sqlite = SqliteGuard::lock();
+            TransactionLock::new(conn.path().unwrap_or_default())?
+        };
         // SQL migrations and their meta migrations commit separately. Keep other processes
         // out for the entire initialization, including reading the current schema version.
         let _guard = transaction_lock.acquire().await?;
@@ -119,11 +131,12 @@ impl Database {
 
     /// Initialize while holding `transaction_lock`, or with a private in-memory connection.
     fn init_with_lock(
-        mut conn: Connection,
+        mut conn: ManagedConnection,
         filesystem: Box<dyn Filesystem>,
         migration_target: MigrationTarget,
         transaction_lock: TransactionLock,
     ) -> CryptoKeystoreResult<Self> {
+        let _sqlite = SqliteGuard::lock();
         #[cfg(feature = "log-queries")]
         conn.trace_v2(TraceEventCodes::SQLITE_TRACE_STMT, Some(log_query));
         conn.pragma_update(None, "foreign_keys", "ON")?;
@@ -134,9 +147,34 @@ impl Database {
         {
             // Enable WAL journaling mode when not in memory
             conn.pragma_update(None, "journal_mode", "wal")?;
+            #[cfg(target_os = "unknown")]
+            {
+                // The JSPI OPFS VFS republishes the WAL on every FULL commit.
+                // Keep it small, starting with the migrations on this connection.
+                conn.pragma_update(None, "journal_size_limit", 0)?;
+                conn.pragma_update(None, "wal_autocheckpoint", 64)?;
+            }
         }
 
         migrations::run_migrations(&mut conn, migration_target)?;
+
+        #[cfg(target_os = "unknown")]
+        if let Some(path) = conn.path()
+            && !path.is_empty()
+        {
+            // A pre-existing WAL can still be large after setting the limit.
+            // Checkpoint after migrations, while the initialization lock is held.
+            let (busy, log, checkpointed) = conn.query_row("PRAGMA main.wal_checkpoint(TRUNCATE)", [], |row| {
+                Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?, row.get::<_, i64>(2)?))
+            })?;
+            if busy != 0 || log < 0 || checkpointed != log {
+                return Err(CryptoKeystoreError::WalCheckpointIncomplete {
+                    busy,
+                    log,
+                    checkpointed,
+                });
+            }
+        }
 
         let conn = Arc::new(Mutex::new(conn));
 
@@ -151,8 +189,8 @@ impl Database {
     /// Open an encrypted Sqlite `Database` at the provided location.
     ///
     /// When compiled with `target_os = "unknown"`, this database is encrypted via
-    /// sqlite3-multiple-ciphers using its default encryption mechanism, stored in IndexedDB
-    /// via the `relaxed-idb` shim.
+    /// sqlite3-multiple-ciphers using its default encryption mechanism, stored in OPFS
+    /// via JSPI. WAL uses exclusive locking and an in-memory index.
     ///
     /// When compiled normally, this database is encrypted via sqlcipher at a path in the
     /// local filesystem.
@@ -167,7 +205,10 @@ impl Database {
     ///
     /// In-memory databases are never encrypted.
     pub fn open_in_memory() -> CryptoKeystoreResult<Arc<Self>> {
-        let connection = Connection::open_in_memory()?;
+        let connection = {
+            let _sqlite = SqliteGuard::lock();
+            ManagedConnection::from(Connection::open_in_memory()?)
+        };
         Self::init_with_lock(
             connection,
             Box::new(filesystem::Nop),
@@ -197,6 +238,20 @@ impl Database {
     /// Change the encryption key for this database.
     pub async fn update_key(&self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()> {
         let mut guard = self.conn.lock().await;
+        let _sqlite = SqliteGuard::lock();
+        #[cfg(target_os = "unknown")]
+        {
+            // sqlite3-multiple-ciphers cannot rekey in WAL mode. Switching to
+            // DELETE checkpoints the old WAL before rewriting encrypted pages.
+            let mode = guard.pragma_query_value(None, "journal_mode", |row| row.get::<_, String>(0))?;
+            if mode == "wal" {
+                guard.pragma_update(None, "journal_mode", "delete")?;
+                let result = encryption::rekey(&mut guard, new_key);
+                // Restore WAL on both success and failure, preserving the rekey error.
+                let restore = guard.pragma_update(None, "journal_mode", "wal").map_err(Into::into);
+                return result.and(restore);
+            }
+        }
         encryption::rekey(&mut guard, new_key)
     }
 
@@ -205,7 +260,7 @@ impl Database {
     ///
     /// The returned guard keeps other processes out for as long as the caller holds it, so that
     /// teardown is not interleaved with somebody else's transaction.
-    async fn take(self) -> CryptoKeystoreResult<(Connection, Box<dyn Filesystem>, TransactionGuard)> {
+    async fn take(self) -> CryptoKeystoreResult<(ManagedConnection, Box<dyn Filesystem>, TransactionGuard)> {
         // Nobody ever clones `self.conn`; the Arc is only so we can have a lifetime-free guard over
         // the interior mutex. So we know that its strong count is 1.
         let conn = Arc::into_inner(self.conn)
@@ -229,14 +284,17 @@ impl Database {
     /// simply open an empty database.
     pub async fn wipe(self) -> CryptoKeystoreResult<()> {
         let (conn, fs, _guard) = self.take().await?;
-        conn.execute_batch(
-            "
+        {
+            let _sqlite = SqliteGuard::lock();
+            conn.execute_batch(
+                "
             PRAGMA writable_schema = 1;
             DELETE FROM sqlite_master WHERE type IN ('table', 'index', 'trigger');
             PRAGMA writable_schema = 0;
             VACUUM;
         ",
-        )?;
+            )?;
+        }
         let location = conn.path().map(ToOwned::to_owned);
         conn.close().map_err(|(_conn, err)| err)?;
         if let Some(path) = location {
@@ -255,7 +313,7 @@ impl Database {
     /// **CAUTION**: this will block until the in-flight transaction completes, if one exists.
     ///
     /// Most users should prefer [`Self::conn`].
-    pub(crate) async fn raw_conn(&self) -> MutexGuardArc<Connection> {
+    pub(crate) async fn raw_conn(&self) -> MutexGuardArc<ManagedConnection> {
         self.conn.lock_arc().await
     }
 

@@ -13,6 +13,7 @@ mod debug;
 mod durable;
 mod entity_derive;
 mod idempotent;
+mod wasm_test;
 
 /// Implements the `Entity` trait and related traits for the given struct.
 ///
@@ -153,6 +154,18 @@ pub fn idempotent(_args: TokenStream, item: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn dispotent(_args: TokenStream, item: TokenStream) -> TokenStream {
     idempotent::dispotent(item)
+}
+
+/// Runs an async `wasm-bindgen-test` through a JSPI-capable entry point.
+///
+/// `wasm-bindgen-test` polls test futures through a JavaScript panic-catching
+/// trampoline. A test using synchronous JSPI APIs cannot suspend through that
+/// trampoline, so this attribute defers the test body to the Keystore's shared
+/// promising export while leaving registration and reporting to the standard
+/// `wasm-bindgen-test` runner.
+#[proc_macro_attribute]
+pub fn jspi_wasm_bindgen_test(_args: TokenStream, item: TokenStream) -> TokenStream {
+    wasm_test::wasm_bindgen_test(item)
 }
 
 pub(crate) fn doc_attributes(ast: &ItemFn) -> Vec<Attribute> {

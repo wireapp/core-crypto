@@ -12,6 +12,40 @@ afterEach(async () => {
 });
 
 describe("database", () => {
+    it("serializes overlapping OPFS calls across and within databases", async () => {
+        const result = await getPage().evaluate(async () => {
+            const names = [crypto.randomUUID(), crypto.randomUUID()];
+            const key = helpers.newDatabaseKey();
+            const databases = await Promise.all(
+                names.map((name) => ccModule.Database.open(name, key))
+            );
+            const clients = databases.map((db) => ccModule.CoreCrypto.new(db));
+            await Promise.all(
+                clients.map((cc, index) =>
+                    cc.transaction(async (ctx) => {
+                        // These share a connection; a second synchronous mutex acquisition
+                        // must not block the browser while the first SQLite call suspends.
+                        await Promise.all([
+                            ctx.setData(new Uint8Array([index + 1])),
+                            ctx.getData(),
+                        ]);
+                    })
+                )
+            );
+            const values = await Promise.all(
+                clients.map((cc) =>
+                    cc.transaction(async (ctx) => {
+                        return Array.from((await ctx.getData())!);
+                    })
+                )
+            );
+            clients.forEach((cc) => cc.uniffiDestroy());
+            databases.forEach((db) => db.uniffiDestroy());
+            return values;
+        });
+        expect(result).to.deep.equal([[1], [2]]);
+    });
+
     it("migrating key type to bytes works", async () => {
         const stores = await import("./db-v10002003-dump.json");
 

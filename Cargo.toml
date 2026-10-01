@@ -6,6 +6,7 @@ members = [
   "e2e-identity",
   "keystore",
   "keystore-dump",
+  "examples/keystore-opfs-recovery",
   "interop",
   "obfuscate",
   "test-wire-server",
