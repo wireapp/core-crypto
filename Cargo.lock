@@ -3825,7 +3825,7 @@ dependencies = [
 [[package]]
 name = "openmls"
 version = "1.0.0"
-source = "git+https://github.com/wireapp/openmls?rev=fc0a001c00ef2b8458043e4295c9eb25663bab8d#fc0a001c00ef2b8458043e4295c9eb25663bab8d"
+source = "git+https://github.com/wireapp/openmls?rev=5ae76ab1c7dc653fced9569f41c2335e337c36c5#5ae76ab1c7dc653fced9569f41c2335e337c36c5"
 dependencies = [
  "async-trait",
  "backtrace",
@@ -3847,7 +3847,7 @@ dependencies = [
 [[package]]
 name = "openmls_basic_credential"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=fc0a001c00ef2b8458043e4295c9eb25663bab8d#fc0a001c00ef2b8458043e4295c9eb25663bab8d"
+source = "git+https://github.com/wireapp/openmls?rev=5ae76ab1c7dc653fced9569f41c2335e337c36c5#5ae76ab1c7dc653fced9569f41c2335e337c36c5"
 dependencies = [
  "async-trait",
  "ed25519-dalek 3.0.0",
@@ -3867,7 +3867,7 @@ dependencies = [
 [[package]]
 name = "openmls_traits"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=fc0a001c00ef2b8458043e4295c9eb25663bab8d#fc0a001c00ef2b8458043e4295c9eb25663bab8d"
+source = "git+https://github.com/wireapp/openmls?rev=5ae76ab1c7dc653fced9569f41c2335e337c36c5#5ae76ab1c7dc653fced9569f41c2335e337c36c5"
 dependencies = [
  "async-trait",
  "ed25519-dalek 3.0.0",
@@ -3885,7 +3885,7 @@ dependencies = [
 [[package]]
 name = "openmls_x509_credential"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=fc0a001c00ef2b8458043e4295c9eb25663bab8d#fc0a001c00ef2b8458043e4295c9eb25663bab8d"
+source = "git+https://github.com/wireapp/openmls?rev=5ae76ab1c7dc653fced9569f41c2335e337c36c5#5ae76ab1c7dc653fced9569f41c2335e337c36c5"
 dependencies = [
  "async-trait",
  "base64 0.21.7",
