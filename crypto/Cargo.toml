@@ -60,7 +60,12 @@ obfuscate = { workspace = true, features = [
   "openmls",
   "openmls_basic_credential",
 ] }
+aes-gcm = "0.11"
+chacha20poly1305 = "0.11"
 sha2 = { workspace = true, features = ["oid"] }
+ed25519-dalek = { workspace = true, features = ["pkcs8"] }
+p256 = { workspace = true, features = ["pkcs8"] }
+p384 = { workspace = true, features = ["pkcs8"] }
 signature.workspace = true
 elliptic-curve.workspace = true
 ecdsa = { workspace = true, features = ["der", "pkcs8"] }
@@ -77,25 +82,14 @@ rand_chacha = "0.10"
 [target.'cfg(target_os = "unknown")'.dependencies]
 serde-wasm-bindgen.workspace = true
 
-# For supported architectures we use the crypto implementations in graviola, which are fast
+# On supported architectures we prefer the crypto implementations in graviola, which are fast.
+# The rust-crypto implementations above are always built: they are the fallback for the rest.
 [target.'cfg(any(target_arch = "aarch64", target_arch = "x86_64"))'.dependencies]
 # Pinned to a git revision until a release includes "Use Mach-O relocation syntax on all Apple platforms",
 # without which graviola does not assemble for iOS.
 graviola = { git = "https://github.com/ctz/graviola.git", rev = "1a9dfcde985638c05b8fe192639c2e7a8ca763dc" }
 
-# but in other architectures we have to fall back to the rust-crypto implementations.
-[target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))'.dependencies]
-aes-gcm = "0.11"
-chacha20poly1305 = "0.11"
-ed25519-dalek = { workspace = true, features = ["pkcs8"] }
-p256 = { workspace = true, features = ["pkcs8"] }
-p384 = { workspace = true, features = ["pkcs8"] }
-
 [dev-dependencies]
-# test-only PKI generation (`test_utils::x509::pki`) signs with rustcrypto on every architecture
-ed25519-dalek = { workspace = true, features = ["pkcs8"] }
-p256 = { workspace = true, features = ["pkcs8"] }
-p384 = { workspace = true, features = ["pkcs8"] }
 itertools.workspace = true
 uuid = { workspace = true, features = ["v4", "js"] }
 tempfile.workspace = true

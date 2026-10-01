@@ -3,6 +3,7 @@ use std::sync::Arc;
 use async_lock::RwLock;
 use core_crypto_keystore::Database;
 
+mod backend;
 mod crypto_provider;
 mod error;
 #[cfg(test)]
