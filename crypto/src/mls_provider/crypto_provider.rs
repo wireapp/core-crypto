@@ -1,4 +1,4 @@
-use std::sync::{Arc, LazyLock, RwLock, RwLockWriteGuard};
+use std::sync::{Arc, LazyLock, PoisonError, RwLock, RwLockWriteGuard};
 
 use crypto_common::KeySizeUser as _;
 use elliptic_curve::sec1;
@@ -100,6 +100,17 @@ impl RustCrypto {
         }
     }
 
+    /// Lock the RNG for writing.
+    ///
+    /// A poisoned lock means some thread panicked while holding the guard. That can happen in
+    /// code that uses the RNG, such as a primitive that panics on a malformed input, but not in
+    /// the RNG itself. The RNG is plain data with no invariant for such a panic to break, so we
+    /// carry on and do not leave the provider unable to produce randomness for the rest of the
+    /// process.
+    fn rng(&self) -> RwLockWriteGuard<'_, rand_chacha::ChaCha20Rng> {
+        self.rng.write().unwrap_or_else(PoisonError::into_inner)
+    }
+
     pub(crate) fn reseed(&self, seed: Option<EntropySeed>) -> Result<(), Error> {
         let seed = seed.map(|seed| Ok(seed.0)).unwrap_or_else(|| {
             // Pull from the OS, as `Self::default` does. Note we cannot fall back to
@@ -110,8 +121,7 @@ impl RustCrypto {
             Ok(raw)
         })?;
 
-        let mut val = self.rng.write().map_err(|_| Error::RngLockPoison)?;
-        *val = rand_chacha::ChaCha20Rng::from_seed(seed);
+        *self.rng() = rand_chacha::ChaCha20Rng::from_seed(seed);
         Ok(())
     }
 
@@ -127,7 +137,7 @@ impl RustCrypto {
         ptxt: &[u8],
     ) -> Result<HpkeCiphertext, CryptoError> {
         validate_psk(psk, psk_id)?;
-        let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
+        let mut rng = self.rng();
         hpke_dispatch!(config, hpke_seal_psk, pk_r, info, aad, psk, psk_id, ptxt, &mut *rng)
     }
 
@@ -313,7 +323,7 @@ impl OpenMlsCrypto for RustCrypto {
 
     /// Generate a `(secret key, public key)` pair from a signature scheme.
     fn signature_key_gen(&self, alg: SignatureScheme) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
-        let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
+        let mut rng = self.rng();
         backend::signature_key_gen(alg, &mut rng)
     }
 
@@ -343,7 +353,7 @@ impl OpenMlsCrypto for RustCrypto {
         aad: &[u8],
         ptxt: &[u8],
     ) -> Result<types::HpkeCiphertext, CryptoError> {
-        let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
+        let mut rng = self.rng();
         hpke_dispatch!(config, hpke_seal, pk_r, info, aad, ptxt, &mut *rng)
     }
 
@@ -374,7 +384,7 @@ impl OpenMlsCrypto for RustCrypto {
         exporter_context: &[u8],
         exporter_length: usize,
     ) -> Result<(Vec<u8>, ExporterSecret), CryptoError> {
-        let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
+        let mut rng = self.rng();
         let (kem_output, export) = hpke_dispatch!(
             config,
             hpke_export_tx,
@@ -581,7 +591,7 @@ impl OpenMlsRand for RustCrypto {
     type BorrowTarget<'a> = RwLockWriteGuard<'a, Self::RandImpl>;
 
     fn borrow_rand(&self) -> Result<Self::BorrowTarget<'_>, Self::Error> {
-        self.rng.write().map_err(|_| Error::RngLockPoison)
+        Ok(self.rng())
     }
 
     fn random_array<const N: usize>(&self) -> Result<[u8; N], Self::Error> {
@@ -707,5 +717,26 @@ mod tests {
             first, all_zero_seed,
             "an OS-seeded reseed must not produce the all-zero-seed stream"
         );
+    }
+    /// A panic while the RNG is borrowed poisons its lock. That must not leave the provider
+    /// unable to produce randomness for the rest of the process: on a CPU graviola cannot
+    /// run on, such a panic once made every later key generation fail with `InsufficientRandomness`.
+    #[test]
+    #[cfg(not(target_os = "unknown"))]
+    fn a_panic_while_the_rng_is_borrowed_does_not_disable_it() {
+        let crypto = RustCrypto::default();
+
+        let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _rng = crypto.rng();
+            panic!("deliberate panic while holding the RNG lock");
+        }));
+        assert!(panicked.is_err());
+        assert!(crypto.rng.is_poisoned(), "precondition: the lock is poisoned");
+
+        assert_eq!(crypto.random_vec(32).expect("random_vec").len(), 32);
+        crypto
+            .signature_key_gen(SignatureScheme::ED25519)
+            .expect("key generation must still work");
+        crypto.reseed(None).expect("reseed must still work");
     }
 }
