@@ -37,7 +37,7 @@ pub(crate) fn aead_encrypt(
     nonce: &[u8],
     aad: &[u8],
 ) -> Result<Vec<u8>, CryptoError> {
-    let nonce: &[u8; 12] = nonce.try_into().map_err(|_| CryptoError::CryptoLibraryError)?;
+    let nonce: &[u8; 12] = nonce.try_into().map_err(|_| CryptoError::InvalidLength)?;
     let mut buf = data.to_vec();
     let mut tag = [0u8; 16];
 
@@ -73,7 +73,7 @@ pub(crate) fn aead_decrypt(
     nonce: &[u8],
     aad: &[u8],
 ) -> Result<Vec<u8>, CryptoError> {
-    let nonce: &[u8; 12] = nonce.try_into().map_err(|_| CryptoError::CryptoLibraryError)?;
+    let nonce: &[u8; 12] = nonce.try_into().map_err(|_| CryptoError::InvalidLength)?;
 
     // The trailing 16 bytes are the authentication tag.
     if ct_tag.len() < 16 {
