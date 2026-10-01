@@ -79,7 +79,7 @@ serde-wasm-bindgen.workspace = true
 
 # For supported architectures we use the crypto implementations in graviola, which are fast
 [target.'cfg(any(target_arch = "aarch64", target_arch = "x86_64"))'.dependencies]
-graviola = "0.3"
+graviola = "0.4"
 
 # but in other architectures we have to fall back to the rust-crypto implementations.
 [target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64")))'.dependencies]
