@@ -1,11 +1,6 @@
-use std::sync::{Arc, LazyLock, RwLock, RwLockWriteGuard};
+use std::sync::{Arc, LazyLock, PoisonError, RwLock, RwLockWriteGuard};
 
-use aes_gcm::{
-    Aes128Gcm, Aes256Gcm, KeyInit,
-    aead::{Aead, Nonce, Payload},
-};
-use chacha20poly1305::ChaCha20Poly1305;
-use elliptic_curve::{Generate as _, sec1};
+use elliptic_curve::sec1;
 use hkdf::Hkdf;
 use openmls::prelude::HpkeCiphertext;
 use openmls_traits::{
@@ -18,11 +13,11 @@ use openmls_traits::{
 };
 use rand::Rng as _;
 use rand_core::SeedableRng as _;
-use sha2::{Digest, Sha256, Sha384, Sha512};
+use sha2::{Sha256, Sha384, Sha512};
 use signature::digest::typenum::Unsigned;
 use tls_codec::SecretVLBytes;
 
-use super::{EntropySeed, Error, RawEntropySeed};
+use super::{EntropySeed, Error, RawEntropySeed, backend};
 
 /// Singleton for `RustCrypto`
 /// Because of the reseed feature we have to use this
@@ -53,9 +48,19 @@ impl RustCrypto {
         }
     }
 
+    /// Lock the RNG for writing.
+    ///
+    /// A poisoned lock means some thread panicked while holding the guard. That can happen in
+    /// code that uses the RNG, such as a primitive that panics on a malformed input, but not in
+    /// the RNG itself. The RNG is plain data with no invariant for such a panic to break, so we
+    /// carry on and do not leave the provider unable to produce randomness for the rest of the
+    /// process.
+    fn rng(&self) -> RwLockWriteGuard<'_, rand_chacha::ChaCha20Rng> {
+        self.rng.write().unwrap_or_else(PoisonError::into_inner)
+    }
+
     pub(crate) fn reseed(&self, seed: Option<EntropySeed>) -> Result<(), Error> {
-        let mut val = self.rng.write().map_err(|_| Error::RngLockPoison)?;
-        *val = rand_chacha::ChaCha20Rng::from_seed(seed.unwrap_or_default().0);
+        *self.rng() = rand_chacha::ChaCha20Rng::from_seed(seed.unwrap_or_default().0);
         Ok(())
     }
 
@@ -71,7 +76,7 @@ impl RustCrypto {
         ptxt: &[u8],
     ) -> Result<HpkeCiphertext, CryptoError> {
         validate_psk(psk, psk_id)?;
-        let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
+        let mut rng = self.rng();
 
         match config {
             HpkeConfig(HpkeKemType::DhKem25519, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
@@ -197,6 +202,8 @@ fn validate_psk(psk: &[u8], psk_id: &[u8]) -> Result<(), CryptoError> {
 }
 
 impl OpenMlsCrypto for RustCrypto {
+    // These lengths are fixed by the curve specifications, so we can return them
+    // directly without consulting graviola or rustcrypto.
     fn signature_public_key_len(&self, signature_scheme: SignatureScheme) -> usize {
         // `signature_key_gen` emits ECDSA public keys as uncompressed SEC1 points -- a 0x04 tag
         // byte followed by the two field elements -- so the serialized length is not the field
@@ -282,11 +289,7 @@ impl OpenMlsCrypto for RustCrypto {
     }
 
     fn hash(&self, hash_type: HashType, data: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        match hash_type {
-            HashType::Sha2_256 => Ok(Sha256::digest(data).as_slice().into()),
-            HashType::Sha2_384 => Ok(Sha384::digest(data).as_slice().into()),
-            HashType::Sha2_512 => Ok(Sha512::digest(data).as_slice().into()),
-        }
+        backend::hash(hash_type, data)
     }
 
     fn aead_encrypt(
@@ -297,34 +300,7 @@ impl OpenMlsCrypto for RustCrypto {
         nonce: &[u8],
         aad: &[u8],
     ) -> Result<Vec<u8>, CryptoError> {
-        // All supported algorithms use the same nonce size of 96 bits, so
-        // picking any of them for the generic parameter of Nonce<A> is fine.
-        let nonce = Nonce::<Aes128Gcm>::try_from(nonce).map_err(|_| CryptoError::InvalidLength)?;
-
-        match alg {
-            AeadType::Aes128Gcm => {
-                let aes = Aes128Gcm::new_from_slice(key).map_err(|_| CryptoError::CryptoLibraryError)?;
-
-                aes.encrypt(&nonce, Payload { msg: data, aad })
-                    .map(|r| r.as_slice().into())
-                    .map_err(|_| CryptoError::CryptoLibraryError)
-            }
-            AeadType::Aes256Gcm => {
-                let aes = Aes256Gcm::new_from_slice(key).map_err(|_| CryptoError::CryptoLibraryError)?;
-
-                aes.encrypt(&nonce, Payload { msg: data, aad })
-                    .map(|r| r.as_slice().into())
-                    .map_err(|_| CryptoError::CryptoLibraryError)
-            }
-            AeadType::ChaCha20Poly1305 => {
-                let chacha_poly = ChaCha20Poly1305::new_from_slice(key).map_err(|_| CryptoError::CryptoLibraryError)?;
-
-                chacha_poly
-                    .encrypt(&nonce, Payload { msg: data, aad })
-                    .map(|r| r.as_slice().into())
-                    .map_err(|_| CryptoError::CryptoLibraryError)
-            }
-        }
+        backend::aead_encrypt(alg, key, data, nonce, aad)
     }
 
     fn aead_decrypt(
@@ -335,84 +311,17 @@ impl OpenMlsCrypto for RustCrypto {
         nonce: &[u8],
         aad: &[u8],
     ) -> Result<Vec<u8>, CryptoError> {
-        // All supported algorithms use the same nonce size of 96 bits, so
-        // picking any of them for the generic parameter of Nonce<A> is fine.
-        let nonce = Nonce::<Aes128Gcm>::try_from(nonce).map_err(|_| CryptoError::InvalidLength)?;
-
-        match alg {
-            AeadType::Aes128Gcm => {
-                let aes = Aes128Gcm::new_from_slice(key).map_err(|_| CryptoError::CryptoLibraryError)?;
-                aes.decrypt(&nonce, Payload { msg: ct_tag, aad })
-                    .map(|r| r.as_slice().into())
-                    .map_err(|_| CryptoError::AeadDecryptionError)
-            }
-            AeadType::Aes256Gcm => {
-                let aes = Aes256Gcm::new_from_slice(key).map_err(|_| CryptoError::CryptoLibraryError)?;
-                aes.decrypt(&nonce, Payload { msg: ct_tag, aad })
-                    .map(|r| r.as_slice().into())
-                    .map_err(|_| CryptoError::AeadDecryptionError)
-            }
-            AeadType::ChaCha20Poly1305 => {
-                let chacha_poly = ChaCha20Poly1305::new_from_slice(key).map_err(|_| CryptoError::CryptoLibraryError)?;
-                chacha_poly
-                    .decrypt(&nonce, Payload { msg: ct_tag, aad })
-                    .map(|r| r.as_slice().into())
-                    .map_err(|_| CryptoError::AeadDecryptionError)
-            }
-        }
+        backend::aead_decrypt(alg, key, ct_tag, nonce, aad)
     }
 
     /// Generate a `(secret key, public key)` pair from a signature scheme.
     fn signature_key_gen(&self, alg: SignatureScheme) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
-        let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
-
-        match alg {
-            SignatureScheme::ECDSA_SECP256R1_SHA256 => {
-                let sk = p256::ecdsa::SigningKey::generate_from_rng(&mut *rng);
-                let pk = sk.verifying_key().to_sec1_bytes().to_vec();
-                Ok((sk.to_bytes().to_vec(), pk))
-            }
-            SignatureScheme::ECDSA_SECP384R1_SHA384 => {
-                let sk = p384::ecdsa::SigningKey::generate_from_rng(&mut *rng);
-                let pk = sk.verifying_key().to_sec1_bytes().to_vec();
-                Ok((sk.to_bytes().to_vec(), pk))
-            }
-            SignatureScheme::ECDSA_SECP521R1_SHA512 => {
-                let sk = p521::ecdsa::SigningKey::generate_from_rng(&mut *rng);
-                let pk = p521::ecdsa::VerifyingKey::from(&sk)
-                    .to_sec1_point(false)
-                    .to_bytes()
-                    .into();
-                Ok((sk.to_bytes().to_vec(), pk))
-            }
-            SignatureScheme::ED25519 => {
-                let k = ed25519_dalek::SigningKey::generate(&mut *rng);
-                let pk = k.verifying_key();
-                Ok((k.to_bytes().into(), pk.to_bytes().into()))
-            }
-            _ => Err(CryptoError::UnsupportedSignatureScheme),
-        }
+        let mut rng = self.rng();
+        backend::signature_key_gen(alg, &mut rng)
     }
 
     fn validate_signature_key(&self, alg: SignatureScheme, key: &[u8]) -> Result<(), CryptoError> {
-        match alg {
-            SignatureScheme::ED25519 => {
-                ed25519_dalek::VerifyingKey::try_from(key).map_err(|_| CryptoError::InvalidKey)?;
-            }
-            SignatureScheme::ECDSA_SECP256R1_SHA256 => {
-                p256::ecdsa::VerifyingKey::try_from(key).map_err(|_| CryptoError::InvalidKey)?;
-            }
-            SignatureScheme::ECDSA_SECP384R1_SHA384 => {
-                p384::ecdsa::VerifyingKey::try_from(key).map_err(|_| CryptoError::InvalidKey)?;
-            }
-            SignatureScheme::ECDSA_SECP521R1_SHA512 => {
-                p521::ecdsa::VerifyingKey::from_sec1_bytes(key).map_err(|_| CryptoError::InvalidKey)?;
-            }
-            SignatureScheme::ED448 => {
-                return Err(CryptoError::UnsupportedSignatureScheme);
-            }
-        }
-        Ok(())
+        backend::validate_signature_key(alg, key)
     }
 
     fn verify_signature(
@@ -422,41 +331,7 @@ impl OpenMlsCrypto for RustCrypto {
         pk: &[u8],
         signature: &[u8],
     ) -> Result<(), CryptoError> {
-        use signature::Verifier as _;
-        match alg {
-            SignatureScheme::ECDSA_SECP256R1_SHA256 => {
-                let k = p256::ecdsa::VerifyingKey::from_sec1_bytes(pk).map_err(|_| CryptoError::CryptoLibraryError)?;
-
-                let signature =
-                    p256::ecdsa::DerSignature::from_bytes(signature).map_err(|_| CryptoError::InvalidSignature)?;
-
-                k.verify(data, &signature).map_err(|_| CryptoError::InvalidSignature)
-            }
-            SignatureScheme::ECDSA_SECP384R1_SHA384 => {
-                let k = p384::ecdsa::VerifyingKey::from_sec1_bytes(pk).map_err(|_| CryptoError::CryptoLibraryError)?;
-
-                let signature =
-                    p384::ecdsa::DerSignature::from_bytes(signature).map_err(|_| CryptoError::InvalidSignature)?;
-
-                k.verify(data, &signature).map_err(|_| CryptoError::InvalidSignature)
-            }
-            SignatureScheme::ECDSA_SECP521R1_SHA512 => {
-                let k = p521::ecdsa::VerifyingKey::from_sec1_bytes(pk).map_err(|_| CryptoError::CryptoLibraryError)?;
-
-                let signature =
-                    p521::ecdsa::Signature::from_der(signature).map_err(|_| CryptoError::InvalidSignature)?;
-
-                k.verify(data, &signature).map_err(|_| CryptoError::InvalidSignature)
-            }
-            SignatureScheme::ED25519 => {
-                let k = ed25519_dalek::VerifyingKey::try_from(pk).map_err(|_| CryptoError::CryptoLibraryError)?;
-
-                let sig = ed25519_dalek::Signature::from_slice(signature).map_err(|_| CryptoError::InvalidSignature)?;
-
-                k.verify_strict(data, &sig).map_err(|_| CryptoError::InvalidSignature)
-            }
-            _ => Err(CryptoError::UnsupportedSignatureScheme),
-        }
+        backend::verify_signature(alg, data, pk, signature)
     }
 
     fn sign(&self, _alg: SignatureScheme, _data: &[u8], _key: &[u8]) -> Result<Vec<u8>, CryptoError> {
@@ -471,7 +346,7 @@ impl OpenMlsCrypto for RustCrypto {
         aad: &[u8],
         ptxt: &[u8],
     ) -> Result<types::HpkeCiphertext, CryptoError> {
-        let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
+        let mut rng = self.rng();
 
         match config {
             HpkeConfig(HpkeKemType::DhKem25519, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
@@ -571,7 +446,7 @@ impl OpenMlsCrypto for RustCrypto {
         exporter_context: &[u8],
         exporter_length: usize,
     ) -> Result<(Vec<u8>, ExporterSecret), CryptoError> {
-        let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
+        let mut rng = self.rng();
 
         let (kem_output, export) =
             match config {
@@ -845,7 +720,7 @@ impl OpenMlsRand for RustCrypto {
     type BorrowTarget<'a> = RwLockWriteGuard<'a, Self::RandImpl>;
 
     fn borrow_rand(&self) -> Result<Self::BorrowTarget<'_>, Self::Error> {
-        self.rng.write().map_err(|_| Error::RngLockPoison)
+        Ok(self.rng())
     }
 
     fn random_array<const N: usize>(&self) -> Result<[u8; N], Self::Error> {
@@ -867,6 +742,7 @@ impl OpenMlsRand for RustCrypto {
 mod tests {
     use openmls_traits::{
         crypto::OpenMlsCrypto as _,
+        random::OpenMlsRand as _,
         types::{CryptoError, HpkeAeadType, HpkeCiphertext, HpkeConfig, HpkeKdfType, HpkeKemType, SignatureScheme},
     };
 
@@ -941,5 +817,27 @@ mod tests {
                 "hpke_open_psk must reject: {case}"
             );
         }
+    }
+
+    /// A panic while the RNG is borrowed poisons its lock. That must not leave the provider
+    /// unable to produce randomness for the rest of the process: on a CPU graviola cannot
+    /// run on, such a panic once made every later key generation fail with `InsufficientRandomness`.
+    #[test]
+    #[cfg(not(target_os = "unknown"))]
+    fn a_panic_while_the_rng_is_borrowed_does_not_disable_it() {
+        let crypto = RustCrypto::default();
+
+        let panicked = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _rng = crypto.rng();
+            panic!("deliberate panic while holding the RNG lock");
+        }));
+        assert!(panicked.is_err());
+        assert!(crypto.rng.is_poisoned(), "precondition: the lock is poisoned");
+
+        assert_eq!(crypto.random_vec(32).expect("random_vec").len(), 32);
+        crypto
+            .signature_key_gen(SignatureScheme::ED25519)
+            .expect("key generation must still work");
+        crypto.reseed(None).expect("reseed must still work");
     }
 }

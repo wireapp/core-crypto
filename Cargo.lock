@@ -1135,6 +1135,7 @@ dependencies = [
  "enum-as-inner",
  "futures-util",
  "getrandom 0.4.3",
+ "graviola",
  "hex",
  "hex-literal",
  "hkdf 0.13.0",
@@ -2316,6 +2317,15 @@ dependencies = [
  "log",
  "plain",
  "scroll",
+]
+
+[[package]]
+name = "graviola"
+version = "0.4.1"
+source = "git+https://github.com/ctz/graviola.git?rev=1a9dfcde985638c05b8fe192639c2e7a8ca763dc#1a9dfcde985638c05b8fe192639c2e7a8ca763dc"
+dependencies = [
+ "cfg-if",
+ "getrandom 0.3.4",
 ]
 
 [[package]]
@@ -5871,7 +5881,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix 1.1.4",
  "windows-sys 0.61.2",

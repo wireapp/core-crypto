@@ -59,6 +59,8 @@ license-files = []
 [sources]
 unknown-git = "deny"
 unknown-registry = "deny"
+# graviola is pinned to a git revision until a release includes its iOS (Mach-O) assembler fix
+allow-git = ["https://github.com/ctz/graviola.git"]
 
 [sources.allow-org]
 github = ["wireapp", "RustCrypto", "carl-wallace"]

@@ -61,14 +61,14 @@ obfuscate = { workspace = true, features = [
   "openmls_basic_credential",
 ] }
 aes-gcm = "0.11"
-sha2 = { workspace = true, features = ["oid"] }
 chacha20poly1305 = "0.11"
+sha2 = { workspace = true, features = ["oid"] }
 ed25519-dalek = { workspace = true, features = ["pkcs8"] }
+p256 = { workspace = true, features = ["pkcs8"] }
+p384 = { workspace = true, features = ["pkcs8"] }
 signature.workspace = true
 elliptic-curve.workspace = true
 ecdsa = { workspace = true, features = ["der", "pkcs8"] }
-p256 = { workspace = true, features = ["pkcs8"] }
-p384 = { workspace = true, features = ["pkcs8"] }
 p521 = { workspace = true, features = ["pkcs8"] }
 hkdf = "0.13"
 hpke = { version = "0.14", features = ["x25519", "nistp", "aes"] }
@@ -81,6 +81,13 @@ rand_chacha = "0.10"
 
 [target.'cfg(target_os = "unknown")'.dependencies]
 serde-wasm-bindgen.workspace = true
+
+# On supported architectures we prefer the crypto implementations in graviola, which are fast.
+# The rust-crypto implementations above are always built: they are the fallback for the rest.
+[target.'cfg(any(target_arch = "aarch64", target_arch = "x86_64"))'.dependencies]
+# Pinned to a git revision until a release includes "Use Mach-O relocation syntax on all Apple platforms",
+# without which graviola does not assemble for iOS.
+graviola = { git = "https://github.com/ctz/graviola.git", rev = "1a9dfcde985638c05b8fe192639c2e7a8ca763dc" }
 
 [dev-dependencies]
 itertools.workspace = true
