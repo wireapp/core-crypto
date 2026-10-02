@@ -78,6 +78,7 @@ impl ConversationMut {
 
     #[cfg_attr(target_os = "unknown", async_recursion::async_recursion(?Send))]
     #[cfg_attr(not(target_os = "unknown"), async_recursion::async_recursion)]
+    #[expect(clippy::double_must_use)]
     pub(crate) async fn restore_pending_messages(
         &mut self,
         policy: MessageRestorePolicy,
