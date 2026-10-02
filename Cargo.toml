@@ -16,6 +16,8 @@ resolver = "2"
 missing_safety_doc = "deny"
 undocumented_unsafe_blocks = "deny"
 unused_async = "warn"
+# False positive on `derive_more::Constructor`, see https://github.com/rust-lang/rust-clippy/issues/17525
+redundant_field_names = "allow"
 
 [workspace.lints.rust]
 unreachable_pub = "warn"
