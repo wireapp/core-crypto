@@ -127,7 +127,7 @@ impl EmulatedClient for CoreCryptoWebClient {
     }
 
     async fn wipe(&mut self) -> Result<()> {
-        let user_id = self.client_id.deserialize().user_id;
+        let user_id = self.client_id.deserialize()?.user_id;
         let database_name = format!("db-{}", user_id.as_hyphenated());
         self.browser
             .execute_async(

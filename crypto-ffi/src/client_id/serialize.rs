@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use crate::{ClientId, DeviceId, Uuid};
+use core_crypto::RecursiveError;
+
+use crate::{ClientId, CoreCryptoResult, DeviceId, Uuid};
 
 /// This directly represents a `ClientId` of the `<userid>:<device-id>@<domain>` format.
 /// Instantiate via [ClientId::deserialize].
@@ -30,14 +32,18 @@ pub struct DeserializedClientId {
 }
 
 impl DeserializedClientId {
-    pub(crate) fn new(client_id: ClientId) -> Self {
-        let serialized = client_id.0.deserialize();
-        Self {
+    pub(crate) fn new(client_id: ClientId) -> CoreCryptoResult<Self> {
+        let deserialized = client_id
+            .0
+            .deserialize()
+            .map_err(RecursiveError::mls_client("deserializing client id"))?;
+        let deserialized = Self {
             client_id: client_id.into(),
-            user_id: Arc::new(serialized.user_id.into()),
-            device_id: Arc::new(serialized.device_id.into()),
-            domain: serialized.domain,
-        }
+            user_id: Arc::new(deserialized.user_id.into()),
+            device_id: Arc::new(deserialized.device_id.into()),
+            domain: deserialized.domain,
+        };
+        Ok(deserialized)
     }
 }
 
@@ -70,7 +76,7 @@ mod tests {
             let expected = String::from_utf8(client_id.copy_bytes()).unwrap();
 
             assert_eq!(
-                client_id.deserialize().to_string(),
+                client_id.deserialize().unwrap().to_string(),
                 expected,
                 "rendering a deserialized client id must reproduce the client id"
             );

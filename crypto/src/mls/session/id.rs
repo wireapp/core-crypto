@@ -81,14 +81,16 @@ impl ClientId {
     }
 
     /// Deserialize the client ID into its parts
-    pub fn deserialize(&self) -> DeserializedClientId {
-        let (user_id, device_id, domain) = Self::try_parse_bytes(&self.0).expect("We just invert initialization");
-
-        DeserializedClientId {
+    ///
+    /// Fails for history client ids, as they don't have the `<user-id:device-id@domain>` format.
+    pub fn deserialize(&self) -> Result<DeserializedClientId> {
+        let (user_id, device_id, domain) = Self::try_parse_bytes(&self.0)?;
+        let deserialized = DeserializedClientId {
             user_id,
             device_id,
             domain,
-        }
+        };
+        Ok(deserialized)
     }
 
     pub(crate) fn new_from_bytes(bytes: Vec<u8>) -> Result<Self> {
@@ -125,9 +127,13 @@ impl ClientId {
     }
 
     /// Parse this into the representation required by the e2ei crate.
-    pub fn as_e2ei_client_id(&self) -> E2eiClientId {
-        let (user_id, device_id, domain) = Self::try_parse_bytes(&self.0).expect("We just invert initialization");
-        E2eiClientId::try_new(user_id.to_string(), device_id, &domain).expect("We just invert intialization")
+    ///
+    /// Fails for history client ids, as they don't have the `<user-id:device-id@domain>` format.
+    pub fn as_e2ei_client_id(&self) -> Result<E2eiClientId> {
+        let (user_id, device_id, domain) = Self::try_parse_bytes(&self.0)?;
+        let e2ei_client_id =
+            E2eiClientId::try_new(user_id.to_string(), device_id, &domain).expect("parsing just succeeded");
+        Ok(e2ei_client_id)
     }
 
     pub(crate) fn into_inner(self) -> Vec<u8> {
@@ -337,7 +343,7 @@ impl fmt::Debug for ClientIdRef {
 #[cfg(test)]
 impl ClientId {
     pub(crate) fn as_user_id(&self) -> Uuid {
-        self.deserialize().user_id
+        self.deserialize().unwrap().user_id
     }
 
     pub(crate) fn with_user(&self) -> (ClientId, Uuid) {
@@ -384,7 +390,7 @@ mod tests {
     fn client_id_round_trips_through_its_own_encoding() {
         for device_id in [0x0, 0xf, 0x00ff, 0x8e64_2443_0d3b_28be, u64::MAX] {
             let client_id = ClientId::new(USER_ID, device_id, DOMAIN);
-            let deserialized = client_id.deserialize();
+            let deserialized = client_id.deserialize().unwrap();
 
             assert_eq!(deserialized.user_id, USER_ID);
             assert_eq!(deserialized.device_id, device_id);
@@ -402,7 +408,7 @@ mod tests {
             ClientId::new_from_bytes(padded.clone().into_bytes()).expect("a padded device id must still parse");
 
         assert_eq!(std::str::from_utf8(client_id.as_bytes()).unwrap(), padded);
-        assert_eq!(client_id.deserialize().device_id, 0xf);
+        assert_eq!(client_id.deserialize().unwrap().device_id, 0xf);
         assert_ne!(client_id, ClientId::new(USER_ID, 0xf, DOMAIN));
     }
 }
