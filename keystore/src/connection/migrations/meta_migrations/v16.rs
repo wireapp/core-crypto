@@ -11,6 +11,14 @@ pub(crate) const VERSION: i32 = 16;
 
 pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
     let tx = conn.transaction()?;
+
+    // We begin by clearing `mls_credentials_new` to be absolutely sure that
+    // even if this meta-migration was run twice (due to a crash between finishing
+    // its first run and running the v17 migration), that table contains one
+    // credential per credential.
+    tx.execute("DELETE FROM mls_credentials_new", [])?;
+
+    // Now join credentials with appropriate keypairs.
     let mut stmt = tx.prepare(formatcp!(
         "SELECT
             {credential_table}.rowid AS cred_rowid,
@@ -63,14 +71,6 @@ pub(crate) fn meta_migration(conn: &mut rusqlite::Connection) -> CryptoKeystoreR
                     c.public_key.clone(),
                     c.private_key.clone(),
                 ),
-            )?;
-
-            // Delete this credential from the old table, so that migration only happens once
-            let rowid = row.get::<_, i32>("cred_rowid")?;
-            tx.execute(
-                "DELETE FROM mls_credentials
-                        WHERE rowid = ?1",
-                (rowid,),
             )?;
         }
     }
