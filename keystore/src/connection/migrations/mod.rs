@@ -369,6 +369,108 @@ pub(crate) mod test {
         });
     }
 
+    /// A v9 client which completed E2EI enrollment keeps its X509 credential through the migration chain.
+    ///
+    /// In v9, E2EI activation reused the basic credential's signature key for the new X509 credential, and
+    /// stored the keypair again, all under the same client id. The basic credential may be dropped, as v9
+    /// enrollment was a replacement of the basic credential, but the X509 credential must survive.
+    #[test]
+    fn e2ei_enrolled_v9_client_keeps_its_x509_credential() {
+        use openmls::prelude::{CredentialType, SignatureScheme};
+        use openmls_basic_credential::SignatureKeyPair;
+
+        // A self-signed P256 certificate for client `7f3a9c2e-5b1d-4e8a-9c6f-2d4b8e1a3f5c:a1b2c3d4e5f60718@wire.com`
+        const CERTIFICATE_PEM: &str = "-----BEGIN CERTIFICATE-----
+MIIBwzCCAWigAwIBAgIULao7a4zzIWQnsf+x3AATPKxNz9MwCgYIKoZIzj0EAwIw
+EDEOMAwGA1UEAwwFYWxpY2UwIBcNMjYxMDAyMDkxMzMyWhgPMjEyNjA5MDgwOTEz
+MzJaMBAxDjAMBgNVBAMMBWFsaWNlMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE
+jVFOhKBLgunDycNREMhL/HNqEVu4q233k4OLVEfSV7cxWEiObENMRUqdR3QnRKfk
+xZcUf/LTfGEhM9ZITludV6OBnTCBmjAdBgNVHQ4EFgQUInHZBtKavuhbjGkbsEJN
+TXgPgDYwHwYDVR0jBBgwFoAUInHZBtKavuhbjGkbsEJNTXgPgDYwDwYDVR0TAQH/
+BAUwAwEB/zBHBgNVHREEQDA+hjx3aXJlYXBwOi8vZnpxY0xsc2RUb3FjYnkxTGpo
+b19YQSUyMWExYjJjM2Q0ZTVmNjA3MThAd2lyZS5jb20wCgYIKoZIzj0EAwIDSQAw
+RgIhAPzHW4tb1ABKVdVaCD/FyEAAo/iKXYrIY7Sb/u1A6zEzAiEAvXkFu46HchDj
+IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
+-----END CERTIFICATE-----
+";
+        const PRIVATE_KEY_HEX: &str = "6f5653a1cd645f9a8ca45e8dc724f5adb5117cd1ce0ec3cd1a11745e9c0a0a08";
+        const CLIENT_ID: &[u8] = b"7f3a9c2e-5b1d-4e8a-9c6f-2d4b8e1a3f5c:a1b2c3d4e5f60718@wire.com";
+
+        let certificate = x509_cert::Certificate::from_pem(CERTIFICATE_PEM).unwrap();
+        let public_key = certificate
+            .tbs_certificate
+            .subject_public_key_info
+            .subject_public_key
+            .raw_bytes()
+            .to_vec();
+        let private_key = hex::decode(PRIVATE_KEY_HEX).unwrap();
+        let keypair = SignatureKeyPair::from_raw(
+            SignatureScheme::ECDSA_SECP256R1_SHA256,
+            private_key.clone(),
+            public_key.clone(),
+        )
+        .tls_serialize_detached()
+        .unwrap();
+
+        let basic_credential = MlsCredential::new_basic(CLIENT_ID.to_vec())
+            .tls_serialize_detached()
+            .unwrap();
+        let x509_credential = MlsCredential::new_x509(vec![certificate.to_der().unwrap()])
+            .unwrap()
+            .tls_serialize_detached()
+            .unwrap();
+
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let db = seed_then_migrate(path, &key, 15, |conn| {
+                // Each v9 `save_identity` call stored a credential and its keypair: once when the basic
+                // credential was created, and again when E2EI activation saved the X509 credential.
+                for (credential, created_at) in [(&basic_credential, 1_700_000_000), (&x509_credential, 1_700_000_100)]
+                {
+                    conn.execute(
+                        "INSERT INTO mls_credentials (id, credential, created_at) \
+                         VALUES (?1, ?2, datetime(?3, 'unixepoch'))",
+                        (CLIENT_ID, credential, created_at),
+                    )
+                    .expect("inserting a v9 credential");
+                    conn.execute(
+                        "INSERT INTO mls_signature_keypairs (signature_scheme, pk, keypair, credential_id) \
+                         VALUES (?1, ?2, ?3, ?4)",
+                        (
+                            SignatureScheme::ECDSA_SECP256R1_SHA256 as u16,
+                            &public_key,
+                            &keypair,
+                            CLIENT_ID,
+                        ),
+                    )
+                    .expect("inserting a v9 signature keypair");
+                }
+            })
+            .await;
+            let conn = db.conn().await;
+
+            let stored = StoredCredential::get(
+                &conn,
+                &crate::entities::StoredCredentialPk::new(
+                    Sha256Hash::hash_from(&public_key),
+                    CredentialType::X509.into(),
+                ),
+            )
+            .unwrap()
+            .expect("the X509 credential must survive the migrations");
+
+            assert_eq!(stored.credential, x509_credential);
+            assert_eq!(stored.session_id, CLIENT_ID);
+            assert_eq!(stored.private_key, private_key);
+            assert_eq!(
+                stored.ciphersuite,
+                Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 as u16
+            );
+        });
+    }
+
     #[test]
     fn migrate_to_multiple_trust_anchors() {
         let test_pem = "-----BEGIN CERTIFICATE-----
