@@ -108,6 +108,12 @@ pub(crate) struct StoredCredentialV36 {
     pub(crate) private_key: Vec<u8>,
 }
 
+impl StoredCredentialV36 {
+    pub(crate) fn credential_type(&self) -> CryptoKeystoreResult<u16> {
+        credential_type_from_serialized(&self.credential)
+    }
+}
+
 impl crate::traits::PrimaryKey for StoredCredentialV36 {
     type PrimaryKey = Sha256Hash;
 
@@ -248,20 +254,6 @@ struct CiphersuiteOccurences {
     ed448_chacha: u32,
 }
 
-impl CiphersuiteOccurences {
-    fn of(&self, ciphersuite: u16) -> Option<u32> {
-        match ciphersuite.try_into().ok()? {
-            Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 => self.ed25519_aes.into(),
-            Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 => None,
-            Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 => self.ed25519_chacha.into(),
-            Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 => self.ed448_aes.into(),
-            Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521 => None,
-            Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 => self.ed448_chacha.into(),
-            Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 => None,
-        }
-    }
-}
-
 /// Count occurences of ciphersuites ambiguous with regard to the signature scheme.
 fn count_ciphersuite_occurences(
     persisted_mls_groups: impl IntoIterator<Item = LegacyPersistedMlsGroup>,
@@ -335,64 +327,6 @@ pub(crate) fn make_ciphersuite_for_signature_scheme(
         }
     };
     Ok(ciphersuite_for_signature_scheme)
-}
-
-/// Make a function that determines the least used ciphersuite dependeing on usages in the given mls groups.
-///
-/// Behavioral notes of the resulting function:
-/// * Ciphersuites that are not considered will cause `None` to be returned.
-/// * Only ciphersuites ambiguous w.r.t. their signature scheme will be considered (see [CiphersuiteOccurences]).
-/// * If both ciphersuites have an occurence of 0, `None` is returned.
-/// * If both ciphersuites have equal occurence, the numerically higher ciphersuite is returned.
-pub(crate) fn make_least_used_ciphersuite(
-    persisted_mls_groups: impl IntoIterator<Item = LegacyPersistedMlsGroup>,
-) -> CryptoKeystoreResult<impl Fn(u16, u16) -> Option<u16>> {
-    let occurences = count_ciphersuite_occurences(persisted_mls_groups)?;
-
-    let least_used_ciphersuite = move |ciphersuite_a: u16, ciphersuite_b: u16| -> Option<u16> {
-        let occurence_a = occurences.of(ciphersuite_a);
-        let occurence_b = occurences.of(ciphersuite_b);
-
-        match (occurence_a, occurence_b) {
-            // If one of the occurences is None, it means that the ciphersuites aren't both instances of an ambiguous
-            // pair of ciphersuites. If both have an occurence of 0, we cannot determine a least used ciphersuite,
-            // either.
-            (None, _) | (_, None) | (Some(0), Some(0)) => return None,
-            (Some(a), Some(b)) if a < b => {
-                return Some(ciphersuite_a);
-            }
-            // If both credentials have equal occurence, let the below if-clause handle this.
-            (Some(a), Some(b)) if a == b => {}
-            _ => {
-                return Some(ciphersuite_b);
-            }
-        }
-
-        // This is reached when both credentials have equal occurence. Take the one with the numerically
-        // higher ciphersuite in this case.
-        if ciphersuite_a > ciphersuite_b {
-            Some(ciphersuite_a)
-        } else {
-            Some(ciphersuite_b)
-        }
-    };
-
-    Ok(least_used_ciphersuite)
-}
-
-pub(crate) fn detect_duplicate_credentials(
-    creds: &[StoredCredentialV36],
-) -> Vec<(&StoredCredentialV36, &StoredCredentialV36)> {
-    let mut duplicates = Vec::new();
-
-    for (i, a) in creds.iter().enumerate() {
-        for b in creds.iter().skip(i + 1) {
-            if a.public_key == b.public_key {
-                duplicates.push((a, b));
-            }
-        }
-    }
-    duplicates
 }
 
 /// [`StoredEpochEncryptionKeypair`][crate::entities::StoredEpochEncryptionKeypair] as it appeared prior to v34
