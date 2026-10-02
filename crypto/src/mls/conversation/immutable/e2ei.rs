@@ -6,7 +6,7 @@ use uuid::Uuid;
 use super::{Error, Result};
 use crate::{
     ClientIdRef, CredentialType, E2eiConversationState, RecursiveError, Session, WireIdentity,
-    mls::credential::ext::CredentialExt as _,
+    ephemeral::is_history_client, mls::credential::ext::CredentialExt as _,
 };
 
 impl super::Conversation {
@@ -75,7 +75,15 @@ impl super::Conversation {
 
         let mut identities = HashMap::new();
         for (id, credential) in self.members_with_key().await? {
-            let user_id = &id.deserialize().user_id;
+            // history clients don't belong to any user
+            if is_history_client(&id) {
+                continue;
+            }
+
+            let user_id = &id
+                .deserialize()
+                .map_err(RecursiveError::mls_client("deserializing client id"))?
+                .user_id;
 
             if !user_ids.contains(user_id) {
                 continue;
