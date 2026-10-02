@@ -4,8 +4,10 @@ mod user_id;
 
 use std::sync::Arc;
 
+use core_crypto::RecursiveError;
 use wire_e2e_identity::E2eiClientId;
 
+use crate::CoreCryptoResult;
 pub use crate::client_id::{device_id::DeviceId, serialize::DeserializedClientId, user_id::Uuid};
 
 /// A unique identifier for an MLS client.
@@ -44,7 +46,9 @@ impl ClientId {
     }
 
     /// Copy the wrapped data into a direct representation of the `<user-id>:<device-id>@<domain>` format.
-    pub fn deserialize(&self) -> DeserializedClientId {
+    ///
+    /// Fails for history client ids, as they don't have that format.
+    pub fn deserialize(&self) -> CoreCryptoResult<DeserializedClientId> {
         DeserializedClientId::new(self.clone())
     }
 
@@ -55,7 +59,10 @@ impl ClientId {
 }
 
 impl ClientId {
-    pub(crate) fn as_e2ei_client_id(&self) -> E2eiClientId {
-        self.0.as_e2ei_client_id()
+    pub(crate) fn as_e2ei_client_id(&self) -> CoreCryptoResult<E2eiClientId> {
+        self.0
+            .as_e2ei_client_id()
+            .map_err(RecursiveError::mls_client("converting client id to e2ei client id"))
+            .map_err(Into::into)
     }
 }
