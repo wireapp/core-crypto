@@ -46,6 +46,9 @@
 
 - `CoreCryptoContext.setData` and `Database.openInMemory` are now synchronous functions, not async.
 
+- Fixed a bug in the data migrations. This applies to clients upgrading from v9. The bug caused exactly one credential
+  to be migrated to the v10 data format, effectively at random. The fix causes them all to be propagated.
+
 ## CoreCrypto 10
 
 ### v10.5.3 - 2026-09-23
