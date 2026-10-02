@@ -93,7 +93,7 @@ impl X509CredentialAcquisitionConfiguration {
             sign_alg,
             hash_alg: HashAlgorithm::SHA256,
             display_name: self.display_name,
-            client_id: self.client_id.as_e2ei_client_id(),
+            client_id: self.client_id.as_e2ei_client_id()?,
             handle: self.handle,
             domain: self.domain,
             team: self.team,
