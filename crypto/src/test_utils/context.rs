@@ -83,7 +83,7 @@ impl SessionContext {
     }
 
     pub async fn get_user_id(&self) -> Uuid {
-        self.get_client_id().await.deserialize().user_id
+        self.get_client_id().await.deserialize().unwrap().user_id
     }
 
     /// Create, save, and add a new credential of the type relevant to this test

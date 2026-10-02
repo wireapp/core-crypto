@@ -432,7 +432,7 @@ impl X509Certificate {
         }
 
         if let Some(client_id) = &params.client_id {
-            let qualified_client_id = client_id.as_e2ei_client_id().to_uri();
+            let qualified_client_id = client_id.as_e2ei_client_id().unwrap().to_uri();
 
             alternative_names.push(qualified_client_id);
         }
