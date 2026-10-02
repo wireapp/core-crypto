@@ -108,6 +108,12 @@ pub(crate) struct StoredCredentialV36 {
     pub(crate) private_key: Vec<u8>,
 }
 
+impl StoredCredentialV36 {
+    pub(crate) fn credential_type(&self) -> CryptoKeystoreResult<u16> {
+        credential_type_from_serialized(&self.credential)
+    }
+}
+
 impl crate::traits::PrimaryKey for StoredCredentialV36 {
     type PrimaryKey = Sha256Hash;
 
@@ -248,6 +254,7 @@ struct CiphersuiteOccurences {
     ed448_chacha: u32,
 }
 
+#[cfg(target_os = "unknown")]
 impl CiphersuiteOccurences {
     fn of(&self, ciphersuite: u16) -> Option<u32> {
         match ciphersuite.try_into().ok()? {
@@ -344,6 +351,7 @@ pub(crate) fn make_ciphersuite_for_signature_scheme(
 /// * Only ciphersuites ambiguous w.r.t. their signature scheme will be considered (see [CiphersuiteOccurences]).
 /// * If both ciphersuites have an occurence of 0, `None` is returned.
 /// * If both ciphersuites have equal occurence, the numerically higher ciphersuite is returned.
+#[cfg(target_os = "unknown")]
 pub(crate) fn make_least_used_ciphersuite(
     persisted_mls_groups: impl IntoIterator<Item = LegacyPersistedMlsGroup>,
 ) -> CryptoKeystoreResult<impl Fn(u16, u16) -> Option<u16>> {
@@ -380,6 +388,7 @@ pub(crate) fn make_least_used_ciphersuite(
     Ok(least_used_ciphersuite)
 }
 
+#[cfg(target_os = "unknown")]
 pub(crate) fn detect_duplicate_credentials(
     creds: &[StoredCredentialV36],
 ) -> Vec<(&StoredCredentialV36, &StoredCredentialV36)> {
