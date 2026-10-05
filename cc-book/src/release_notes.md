@@ -9,6 +9,9 @@
   to lose all credentials for which both the basic and x509 versions were present in the database, causing them to
   additionally lose all conversations using those credentials.
 
+- Fixes an issue with how commit delays are calculated which could lead to collisions between other members of a group,
+  which in turn leads to commit congestion.
+
 ## CoreCrypto 10
 
 ### v10.5.3 - 2026-09-23
