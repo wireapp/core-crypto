@@ -10,6 +10,8 @@
   alternative name of the device's E2EI certificate either. `DeviceId.toHexString` is unchanged and remains fixed-width;
   a client id is not a hex-encoded binary value, and only the unpadded form appears in a client id.
 
+- `ClientId.deserialize` can now fail. Calling `deserialize` on history client ids throws a `CoreCryptoError`.
+
 - `reseed` now requires the entropy seed to be exactly 32 bytes long. It previously accepted any seed of at least 32
   bytes and silently used only the first 32, discarding the rest; a caller who gathered more entropy than CoreCrypto
   consumes had no way to discover that most of it was ignored. Seeds shorter than 32 bytes were already rejected, and a
