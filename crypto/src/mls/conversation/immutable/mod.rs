@@ -80,7 +80,9 @@ impl MlsGroupState {
             let persisted = tx
                 .get_borrowed::<PersistedMlsGroup>(KeystoreConversationIdRef::new(id.as_slice()))
                 .await
-                .map_err(KeystoreError::wrap("finding the existing row of an evicted conversation"))?
+                .map_err(KeystoreError::wrap(
+                    "finding the existing row of an evicted conversation",
+                ))?
                 // We can only have been evicted from a conversation we were a member of, and
                 // joining one always persists it, so the row is always already there: the only
                 // other caller of this function performs the first persist of a group we have just

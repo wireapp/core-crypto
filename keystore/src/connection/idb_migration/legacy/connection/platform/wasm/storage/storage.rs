@@ -172,11 +172,12 @@ impl WasmEncryptedStorage {
                 let map = map.borrow();
                 map.get(E::TABLE_NAME)
                     .map(|v| {
-                        v.values().cloned()
-                        // Annoying that we have to allocate a vector of the collected values instead of just
-                        // iterating over borrowed values, but that's the simplest way to keep compat with
-                        // the idb version
-                        .collect()
+                        v.values()
+                            .cloned()
+                            // Annoying that we have to allocate a vector of the collected values instead of just
+                            // iterating over borrowed values, but that's the simplest way to keep compat with
+                            // the idb version
+                            .collect()
                     })
                     .unwrap_or_default()
             }
