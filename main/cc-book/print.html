@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-dd093329.js";
+            window.path_to_searchindex_js = "searchindex-a5c4c6e0.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1c113b1d.js"></script>
@@ -1567,6 +1567,9 @@ It previously rendered the device id as a fixed-width 16-character hex string, s
 nibbles — about one in sixteen — the result did not match the client id, and did not match the <code>wireapp://</code> subject
 alternative name of the device’s E2EI certificate either. <code>DeviceId.toHexString</code> is unchanged and remains fixed-width;
 a client id is not a hex-encoded binary value, and only the unpadded form appears in a client id.</p>
+</li>
+<li>
+<p><code>ClientId.deserialize</code> can now fail. Calling <code>deserialize</code> on history client ids throws a <code>CoreCryptoError</code>.</p>
 </li>
 <li>
 <p><code>reseed</code> now requires the entropy seed to be exactly 32 bytes long. It previously accepted any seed of at least 32

@@ -127,7 +127,7 @@
 <a href=#127 id=127 data-nosnippet>127</a>    }
 <a href=#128 id=128 data-nosnippet>128</a>
 <a href=#129 id=129 data-nosnippet>129</a>    <span class="kw">async fn </span>wipe(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#130 id=130 data-nosnippet>130</a>        <span class="kw">let </span>user_id = <span class="self">self</span>.client_id.deserialize().user_id;
+<a href=#130 id=130 data-nosnippet>130</a>        <span class="kw">let </span>user_id = <span class="self">self</span>.client_id.deserialize()<span class="question-mark">?</span>.user_id;
 <a href=#131 id=131 data-nosnippet>131</a>        <span class="kw">let </span>database_name = <span class="macro">format!</span>(<span class="string">"db-{}"</span>, user_id.as_hyphenated());
 <a href=#132 id=132 data-nosnippet>132</a>        <span class="self">self</span>.browser
 <a href=#133 id=133 data-nosnippet>133</a>            .execute_async(

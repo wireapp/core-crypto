@@ -429,9 +429,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi16ClientIdProtocolP11deserializeAA012DeserializedeF0VyF"></a>
+                    <a name="/s:20WireCoreCryptoUniffi16ClientIdProtocolP11deserializeAA012DeserializedeF0VyKF"></a>
                     <a name="//apple_ref/swift/Method/deserialize()" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi16ClientIdProtocolP11deserializeAA012DeserializedeF0VyF">deserialize()</a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi16ClientIdProtocolP11deserializeAA012DeserializedeF0VyKF">deserialize()</a>
                     </code>
                   </div>
                   <div class="height-container">
@@ -441,12 +441,14 @@
                       <div class="abstract">
                         <p>Copy the wrapped data into a direct representation of the <code>&lt;user-id&gt;:&lt;device-id&gt;@&lt;domain&gt;</code> format.</p>
 
+<p>Fails for history client ids, as they don&rsquo;t have that format.</p>
+
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">deserialize</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/DeserializedClientId.html">DeserializedClientId</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">func</span> <span class="nf">deserialize</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/DeserializedClientId.html">DeserializedClientId</a></span></code></pre>
 
                         </div>
                       </div>
