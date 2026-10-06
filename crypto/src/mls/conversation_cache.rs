@@ -27,7 +27,7 @@ use crate::{
 /// in-memory state mutated during the aborted transaction would diverge from
 /// the keystore.
 pub(crate) struct ConversationCache {
-    // `Arc<_>` is required here so that `ConversationGuard` can
+    // `Arc<_>` is required here so that `ConversationMut` can
     // hold a handle that outlives any single cache lookup.
     entries: LruMap<ConversationId, Arc<Conversation>, ByLength>,
 }
