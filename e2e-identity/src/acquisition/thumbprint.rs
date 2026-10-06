@@ -23,7 +23,7 @@ pub fn compute_raw_key_thumbprint(
     Ok(thumbprint.kid)
 }
 
-/// See: https://datatracker.ietf.org/doc/html/rfc8037#appendix-A.3
+/// See: <https://datatracker.ietf.org/doc/html/rfc8037#appendix-A.3>
 pub(crate) fn try_compute_jwk_canonicalized_thumbprint(
     cert: &x509_cert::TbsCertificate,
     hash_alg: HashAlgorithm,

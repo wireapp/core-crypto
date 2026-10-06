@@ -82,7 +82,8 @@ pub enum AcmeOrderError {
 }
 
 /// For creating an order
-/// see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+///
+/// see <https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4>
 #[derive(Debug, Default, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct AcmeOrderRequest {
@@ -99,6 +100,7 @@ struct AcmeOrderRequest {
 }
 
 /// Result of an order creation
+///
 /// see [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4)
 #[derive(Debug, Clone, Eq, PartialEq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
