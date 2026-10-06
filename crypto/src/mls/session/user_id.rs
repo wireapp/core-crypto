@@ -1,6 +1,7 @@
 use super::{Error, Result};
 
 /// Unique identifier of a User (human person holding some devices).
+///
 /// This contradicts the initial design requirements of this project since it was supposed to be
 /// agnostic from Wire.
 /// End-to-end Identity re-shuffled that... But we still want to keep this isolated from the rest
