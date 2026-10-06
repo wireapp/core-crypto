@@ -1,5 +1,5 @@
 //! When a client joins a group via an external commit, it sometimes receives messages
-//! (most of the time renewed external proposals) for the new epoch whereas it does not yet have
+//! for the new epoch whereas it does not yet have
 //! the confirmation from the DS that the external join commit has been accepted.
 
 use std::sync::Arc;

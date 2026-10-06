@@ -153,7 +153,7 @@ mod tests {
             let epoch_after_decrypt = conversation.guard().await.epoch().await;
             assert_eq!(epoch + 1, epoch_after_decrypt);
 
-            // there is no proposals to renew here since it's our own commit we merge
+            // there are no proposals remaining
             assert!(!conversation.has_pending_proposals().await);
 
             // verify that we return the new identity
