@@ -94,7 +94,7 @@ pub async fn legacy_idb_exists(name: &str) -> bool {
 /// Delete the legacy IndexedDB database with the given name.
 ///
 /// This is exposed publicly so that callers can retry deletion independently if it fails during
-/// [`maybe_migrate`] (e.g. after a crash between a successful data copy and a failed cleanup).
+/// `maybe_migrate` (e.g. after a crash between a successful data copy and a failed cleanup).
 pub async fn delete_legacy_idb(name: &str) -> CryptoKeystoreResult<()> {
     let factory = Factory::new()?;
     factory.delete(name)?.await?;

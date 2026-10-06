@@ -154,9 +154,6 @@ impl WasmEncryptedStorage {
     }
 
     /// Get all instance of `E` from the database, limiting to the key or key range specified in `query`.
-    ///
-    /// This has the same `DeserializeOwned` limitation that [`Self::new_get`] does; see documentation
-    /// there for details.
     pub(crate) async fn get_all_with_query<'a, E>(&self, query: Option<idb::Query>) -> CryptoKeystoreResult<Vec<E>>
     where
         E: Entity<ConnectionType = WasmConnection> + Decryptable<'a>,

@@ -25,7 +25,7 @@ impl KeystoreError {
     }
 
     /// Some of the error variants for WASM are not thread-safe at all
-    /// (looking at you, [idb::Error]), so we have to construct an approximation
+    /// (looking at you, `idb::Error`), so we have to construct an approximation
     /// of them instead.
     #[cfg(target_os = "unknown")]
     pub(crate) fn wrap<E>(context: &'static str) -> impl FnOnce(E) -> Self

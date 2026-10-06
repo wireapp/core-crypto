@@ -11,7 +11,7 @@ use crate::{
 /// `mls_groups` until V39, long after v22), so this can't reuse [`crate::entities::PersistedMlsGroup`]:
 /// that type's shape belongs to the unified table this migration hasn't reached yet.
 ///
-/// Only used by the WASM legacy IndexedDB migration: unlike [`LegacyPersistedMlsGroup`], nothing on
+/// Only used by the WASM legacy IndexedDB migration: unlike `LegacyPersistedMlsGroup`, nothing on
 /// native ever needed to read a pre-unification pending group by hand.
 #[derive(ZeroizeOnDrop)]
 pub(crate) struct LegacyPersistedMlsPendingGroup {
