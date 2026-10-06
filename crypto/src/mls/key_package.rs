@@ -23,7 +23,7 @@ pub trait KeypackageExt {
     /// Returns the credential type associated with this key package.
     fn credential_type(&self) -> CredentialType;
 
-    /// Determines whether a keypackage is valid in the sense of the former `client_valid_keypackages_count` method.
+    /// Determines whether a keypackage is unexpired.
     ///
     /// A key package with no lifetime is always valid. Otherwise it must both be unexpired *and*
     /// have an acceptable lifetime range: openmls rejects a leaf node whose
@@ -107,7 +107,7 @@ impl KeypackageRef {
         self.lifetime.as_ref()
     }
 
-    /// Determines whether this keypackage is valid in the sense of the former `client_valid_keypackages_count` method.
+    /// Determines whether this keypackage is unexpired.
     ///
     /// A key package with no lifetime is always valid. Otherwise it must both be unexpired *and*
     /// have an acceptable lifetime range: openmls rejects a leaf node whose
