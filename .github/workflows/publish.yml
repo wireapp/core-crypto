@@ -18,38 +18,6 @@ on:
           - jvm
           - android
           - kmp
-      sonatype-action:
-        description: >
-          For JVM/Android/KMP: 'release' promotes an existing closed staging repository.
-          'prepare-and-release' re-stages from scratch first (requires workflow
-          artifacts from the original run to still be available).
-        required: false
-        type: choice
-        default: release
-        options:
-          - release
-          - prepare-and-release
-      jvm-staging-repository-id:
-        description: >
-          Required when 'sonatype-action' is 'release'.
-          In that case, you must manually specify the sonatype repository id which will be promoted.
-        required: false
-        type: string
-        default: ""
-      android-staging-repository-id:
-        description: >
-          Required when 'sonatype-action' is 'release'.
-          In that case, you must manually specify the sonatype repository id which will be promoted.
-        required: false
-        type: string
-        default: ""
-      kmp-staging-repository-id:
-        description: >
-          Required when 'sonatype-action' is 'release'.
-          In that case, you must manually specify the sonatype repository id which will be promoted.
-        required: false
-        type: string
-        default: ""
 
 env:
   RELEASE: 1
@@ -59,211 +27,38 @@ jobs:
   artifact-generation:
     uses: ./.github/workflows/artifact-generation.yml
 
-  # For JVM/Android we use Sonatype's two-phase staging model.
-  # 'prepare' uploads to a staging repo and closes it (validation happens here).
-  # 'release' finds the closed staging repo and promotes it to Maven Central.
-  # In the normal failure-retry case only the 'release' step is needed.
-
-  prepare-jvm:
-    if: >
-      (inputs.registry == 'all' || inputs.registry == 'jvm') &&
-      inputs.sonatype-action == 'prepare-and-release'
+  publish-jvm:
+    if: inputs.registry == 'all' || inputs.registry == 'jvm'
     needs: artifact-generation
     uses: ./.github/workflows/prepare-publish-jvm.yml
     with:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
     secrets:
-      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
       PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
       PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
 
-  jvm-staging-repository-id:
-    runs-on: ubuntu-latest
-    needs: prepare-jvm
-    # always() lets this run even when prepare-jvm was skipped (sonatype-action == 'release').
-    # The result check ensures we don't run if prepare-jvm actually failed.
-    if: >
-      always() &&
-      (inputs.registry == 'all' || inputs.registry == 'jvm') &&
-      (needs.prepare-jvm.result == 'success' || needs.prepare-jvm.result == 'skipped')
-    env:
-      COMPUTED_ID: ${{ needs.prepare-jvm.outputs.staging_repository_id }}
-      PROVIDED_ID: ${{ inputs.jvm-staging-repository-id }}
-    steps:
-      - name: ensure the jvm staging repository id
-        id: ensure-staging-repo
-        run: |
-          if [ -n "$COMPUTED_ID" ]; then
-            staging_repository_id="$COMPUTED_ID"
-          elif [ -n "$PROVIDED_ID" ]; then
-            staging_repository_id="$PROVIDED_ID"
-          else
-            echo "::error ::When 'sonatype-action' is 'release' you must manually specify the 'jvm-staging-repository-id' input"
-            exit 1
-          fi
-          echo "staging_repository_id=$staging_repository_id" >> "$GITHUB_OUTPUT"
-    outputs:
-      staging_repository_id: ${{ steps.ensure-staging-repo.outputs.staging_repository_id }}
-
-  release-jvm:
-    needs:
-      - prepare-jvm
-      - jvm-staging-repository-id
-    # always() lets this run even when prepare-jvm was skipped (sonatype-action == 'release').
-    # The result check ensures we don't run if prepare-jvm actually failed.
-    if: >
-      always() &&
-      (inputs.registry == 'all' || inputs.registry == 'jvm') &&
-      (needs.prepare-jvm.result == 'success' || needs.prepare-jvm.result == 'skipped') &&
-      needs.jvm-staging-repository-id.result == 'success'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: release artifact
-        uses: ./.github/actions/sonatype/release
-        with:
-          staging-repository-id: ${{ needs.jvm-staging-repository-id.outputs.staging_repository_id }}
-          sonatype-username: ${{ secrets.SONATYPE_USERNAME }}
-          sonatype-password: ${{ secrets.SONATYPE_PASSWORD }}
-          pgp-key-id: ${{ secrets.PGP_KEY_ID }}
-          pgp-signing-key: ${{ secrets.PGP_SIGNING_KEY }}
-          pgp-passphrase: ${{ secrets.PGP_PASSPHRASE }}
-
-  prepare-android:
-    if: >
-      (inputs.registry == 'all' || inputs.registry == 'android') &&
-      inputs.sonatype-action == 'prepare-and-release'
+  publish-android:
+    if: inputs.registry == 'all' || inputs.registry == 'android'
     needs: artifact-generation
     uses: ./.github/workflows/prepare-publish-android.yml
     with:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
     secrets:
-      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
       PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
       PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
 
-
-  android-staging-repository-id:
-    runs-on: ubuntu-latest
-    needs: prepare-android
-    # always() lets this run even when prepare-android was skipped (sonatype-action == 'release').
-    # The result check ensures we don't run if prepare-android actually failed.
-    if: >
-      always() &&
-      (inputs.registry == 'all' || inputs.registry == 'android') &&
-      (needs.prepare-android.result == 'success' || needs.prepare-android.result == 'skipped')
-    env:
-      COMPUTED_ID: ${{ needs.prepare-android.outputs.staging_repository_id }}
-      PROVIDED_ID: ${{ inputs.android-staging-repository-id }}
-    steps:
-      - name: ensure the android staging repository id
-        id: ensure-staging-repo
-        run: |
-          if [ -n "$COMPUTED_ID" ]; then
-            staging_repository_id="$COMPUTED_ID"
-          elif [ -n "$PROVIDED_ID" ]; then
-            staging_repository_id="$PROVIDED_ID"
-          else
-            echo "::error ::When 'sonatype-action' is 'release' you must manually specify the 'android-staging-repository-id' input"
-            exit 1
-          fi
-          echo "staging_repository_id=$staging_repository_id" >> "$GITHUB_OUTPUT"
-    outputs:
-      staging_repository_id: ${{ steps.ensure-staging-repo.outputs.staging_repository_id }}
-
-
-  release-android:
-    needs:
-      - prepare-android
-      - android-staging-repository-id
-    if: >
-      always() &&
-      (inputs.registry == 'all' || inputs.registry == 'android') &&
-      (needs.prepare-android.result == 'success' || needs.prepare-android.result == 'skipped') &&
-      needs.android-staging-repository-id.result == 'success'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: release artifact
-        uses: ./.github/actions/sonatype/release
-        with:
-          staging-repository-id: ${{ needs.android-staging-repository-id.outputs.staging_repository_id }}
-          sonatype-username: ${{ secrets.SONATYPE_USERNAME }}
-          sonatype-password: ${{ secrets.SONATYPE_PASSWORD }}
-          pgp-key-id: ${{ secrets.PGP_KEY_ID }}
-          pgp-signing-key: ${{ secrets.PGP_SIGNING_KEY }}
-          pgp-passphrase: ${{ secrets.PGP_PASSPHRASE }}
-
-  prepare-kmp:
-    if: >
-      (inputs.registry == 'all' || inputs.registry == 'kmp') &&
-      inputs.sonatype-action == 'prepare-and-release'
+  publish-kmp:
+    if: inputs.registry == 'all' || inputs.registry == 'kmp'
     needs: artifact-generation
     uses: ./.github/workflows/prepare-publish-kmp.yml
     with:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
     secrets:
-      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
       PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
       PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
-
-  kmp-staging-repository-id:
-    runs-on: ubuntu-latest
-    needs: prepare-kmp
-    # always() lets this run even when prepare-kmp was skipped (sonatype-action == 'release').
-    # The result check ensures we don't run if prepare-kmp actually failed.
-    if: >
-      always() &&
-      (inputs.registry == 'all' || inputs.registry == 'kmp') &&
-      (needs.prepare-kmp.result == 'success' || needs.prepare-kmp.result == 'skipped')
-    env:
-      COMPUTED_ID: ${{ needs.prepare-kmp.outputs.staging_repository_id }}
-      PROVIDED_ID: ${{ inputs.kmp-staging-repository-id }}
-    steps:
-      - name: ensure the kmp staging repository id
-        id: ensure-staging-repo
-        run: |
-          if [ -n "$COMPUTED_ID" ]; then
-            staging_repository_id="$COMPUTED_ID"
-          elif [ -n "$PROVIDED_ID" ]; then
-            staging_repository_id="$PROVIDED_ID"
-          else
-            echo "::error ::When 'sonatype-action' is 'release' you must manually specify the 'kmp-staging-repository-id' input"
-            exit 1
-          fi
-          echo "staging_repository_id=$staging_repository_id" >> "$GITHUB_OUTPUT"
-    outputs:
-      staging_repository_id: ${{ steps.ensure-staging-repo.outputs.staging_repository_id }}
-
-  release-kmp:
-    needs:
-      - prepare-kmp
-      - kmp-staging-repository-id
-    # always() lets this run even when prepare-kmp was skipped (sonatype-action == 'release').
-    # The result check ensures we don't run if prepare-kmp actually failed.
-    if: >
-      always() &&
-      (inputs.registry == 'all' || inputs.registry == 'kmp') &&
-      (needs.prepare-kmp.result == 'success' || needs.prepare-kmp.result == 'skipped') &&
-      needs.kmp-staging-repository-id.result == 'success'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: release artifact
-        uses: ./.github/actions/sonatype/release
-        with:
-          staging-repository-id: ${{ needs.kmp-staging-repository-id.outputs.staging_repository_id }}
-          sonatype-username: ${{ secrets.SONATYPE_USERNAME }}
-          sonatype-password: ${{ secrets.SONATYPE_PASSWORD }}
-          pgp-key-id: ${{ secrets.PGP_KEY_ID }}
-          pgp-signing-key: ${{ secrets.PGP_SIGNING_KEY }}
-          pgp-passphrase: ${{ secrets.PGP_PASSPHRASE }}
 
   publish-npm:
     # The npm tarballs are uploaded to the GH release during the automatic pipeline run.

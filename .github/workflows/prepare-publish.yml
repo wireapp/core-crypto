@@ -21,10 +21,6 @@ on:
         description: "Sonatype staging repository id staged for the kmp packages."
         value: ${{ jobs.kmp.outputs.staging_repository_id }}
     secrets:
-      SONATYPE_USERNAME:
-        required: true
-      SONATYPE_PASSWORD:
-        required: true
       PGP_KEY_ID:
         required: true
       PGP_SIGNING_KEY:
@@ -101,8 +97,6 @@ jobs:
     with:
       artifact_generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
     secrets:
-      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
       PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
       PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
@@ -113,8 +107,6 @@ jobs:
     with:
       artifact_generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
     secrets:
-      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
       PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
       PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
@@ -125,8 +117,6 @@ jobs:
     with:
       artifact_generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
     secrets:
-      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
       PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
       PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
       PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}

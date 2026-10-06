@@ -68,6 +68,8 @@ val selectedRustTargetsByAndroidAbi = if (buildAllAbis) {
 // Libraries are copied there during the preDebugBuild and preReleaseBuild tasks.
 val ffiLibsBase = layout.buildDirectory.dir("ffiLibs").get().asFile
 
+val mavenPublishDir = layout.buildDirectory.dir("maven-publish").get().asFile
+
 fun copyFfiLibraries(buildType: String) {
     val buildTypeOutputDir = ffiLibsBase.resolve(buildType)
     if (buildTypeOutputDir.exists()) {
@@ -146,6 +148,7 @@ android {
     publishing {
         singleVariant("release") {
             withSourcesJar()
+            withJavadocJar()
         }
     }
 
@@ -208,12 +211,27 @@ afterEvaluate {
                 }
             }
         }
+        repositories {
+            maven {
+                name = "wireMaven"
+                url = mavenPublishDir.toURI()
+            }
+        }
     }
+}
+
+// Signing is only configured when PGP env vars are set (i.e. during release to maven.wire.com).
+// For local development and PR builds, signing is skipped.
+val androidSigningKeyId = System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyId")
+val androidSigningKey = System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey")
+val androidSigningPassword = System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyPassword")
+
+if (androidSigningKeyId != null && androidSigningKey != null && androidSigningPassword != null) {
     signing {
         useInMemoryPgpKeys(
-            System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyId"),
-            System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey"),
-            System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyPassword")
+            androidSigningKeyId,
+            androidSigningKey,
+            androidSigningPassword
         )
         sign(publishing.publications)
     }

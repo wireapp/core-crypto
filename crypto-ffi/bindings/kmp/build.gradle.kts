@@ -22,6 +22,8 @@ plugins {
 version = findProperty("VERSION_NAME") as String
 group = findProperty("GROUP") as String
 
+val mavenPublishDir = layout.buildDirectory.dir("maven-publish").get().asFile
+
 val dokkaHtmlJar = tasks.register<Jar>("dokkaHtmlJar") {
     dependsOn(tasks.dokkaGeneratePublicationHtml)
     from(tasks.dokkaGeneratePublicationHtml.flatMap { it.outputDirectory })
@@ -197,14 +199,29 @@ afterEvaluate {
             }
         }
 
-        signing {
-            useInMemoryPgpKeys(
-                System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyId"),
-                System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey"),
-                System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyPassword")
-            )
-            sign(publishing.publications)
+        repositories {
+            maven {
+                name = "wireMaven"
+                url = mavenPublishDir.toURI()
+            }
         }
+    }
+}
+
+// Signing is only configured when PGP env vars are set (i.e. during release to maven.wire.com).
+// For local development and PR builds, signing is skipped.
+val kmpSigningKeyId = System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyId")
+val kmpSigningKey = System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey")
+val kmpSigningPassword = System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyPassword")
+
+if (kmpSigningKeyId != null && kmpSigningKey != null && kmpSigningPassword != null) {
+    signing {
+        useInMemoryPgpKeys(
+            kmpSigningKeyId,
+            kmpSigningKey,
+            kmpSigningPassword
+        )
+        sign(publishing.publications)
     }
 }
 
