@@ -1,0 +1,65 @@
+# Check rust documentation. In particular, ensure that even private items render properly.
+#
+# This is distinct from the docs-rust job in the pipeline: that's intended to produce public documentation
+# for external consumption, where this is intended to check the private docs.
+#
+# We don't check all possible feature combinations here, just the default features, because
+# it's non-trivial to determine the sets of features which will always build.
+
+name: check rust docs
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: "read"
+
+on:
+  push:
+    branches: ['main']
+    paths: &relevant-paths
+      - '**.rs'
+      - '.github/workflows/docs-rust.yml'
+      - '.github/actions/setup-and-cache-rust/**'
+      - '**/Cargo.toml'
+      - 'Cargo.lock'
+      - 'README.md'
+      - '.cargo/rustdoc-wrapper.sh'
+      - '.cargo/munge-readme.pl'
+      - '.cargo/config.toml'
+      - 'rust-toolchain.toml'
+  pull_request:
+    paths: *relevant-paths
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-and-cache-rust
+        with:
+          rustflags: ''
+
+      - run: cargo doc --document-private-items --no-deps --locked --workspace
+        env:
+          RUSTDOCFLAGS: "-Dwarnings"
+
+  wasm:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: ./.github/actions/setup-and-cache-rust
+        with:
+          rustflags: ''
+          target: wasm32-unknown-unknown
+
+      - run: cargo doc --document-private-items --no-deps --locked --workspace --exclude test-wire-server --target wasm32-unknown-unknown
+        env:
+          RUSTDOCFLAGS: "-Dwarnings"
