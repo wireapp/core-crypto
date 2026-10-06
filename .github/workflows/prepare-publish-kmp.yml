@@ -111,7 +111,7 @@ jobs:
           artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       - name: configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@e3dd6a42937f6c41cc3996999f48f3337c1f09f48 # v4.0.3
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
           role-to-assume: arn:aws:iam::093205192929:role/gh-actions-maven-publish-core-crypto
           aws-region: us-east-1
@@ -130,14 +130,16 @@ jobs:
           GROUP="com.wire"
           
           echo "Publishing ${GROUP}/${ARTIFACT_ID}/${VERSION} to s3://maven-wire-com"
-          
-          aws s3 sync crypto-ffi/bindings/kmp/build/maven-publish s3://maven-wire-com/${GROUP//./$'/'}/${ARTIFACT_ID}/${VERSION}/ --no-progress
-          
+
+          local_s3_path="s3://maven-wire-com/${GROUP//./$'/'}${ARTIFACT_ID}/${VERSION}/"
+          aws s3 sync "crypto-ffi/bindings/kmp/build/maven-publish" "$local_s3_path" --no-progress
+
           # Extract the maven-metadata.xml from the published version directory
           local_metadata=$(find crypto-ffi/bindings/kmp/build/maven-publish -name "maven-metadata.xml" | head -n1)
           if [ -n "$local_metadata" ]; then
-            echo "Uploading maven-metadata.xml to s3://maven-wire-com/${GROUP//./$'/'}/${ARTIFACT_ID}/"
-            aws s3 cp "$local_metadata" "s3://maven-wire-com/${GROUP//./$'/'}/${ARTIFACT_ID}/"
+            meta_path="s3://maven-wire-com/${GROUP//./$'/'}${ARTIFACT_ID}/"
+            echo "Uploading maven-metadata.xml to ${meta_path}"
+            aws s3 cp "$local_metadata" "${meta_path}"
           fi
 
           echo "staging_repository_id=kmp" >> "$GITHUB_OUTPUT"
