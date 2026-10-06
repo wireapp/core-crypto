@@ -1,4 +1,4 @@
-//! Methods which terminate the lifecycle of a [`TransactionWrapper`]
+//! Methods which terminate the lifecycle of a [`Transaction`]
 
 use rusqlite::Connection;
 
@@ -29,7 +29,7 @@ impl UniqueArc<Transaction> {
     ) -> CryptoKeystoreResult<()> {
         // We're doing a little dance here, which is tricky but legal: this statement
         // _consumes_ the `UniqueArc` which is `self`, but
-        // _borrows_ the `TransactionWrapper` contained in there. That struct impls `Drop`,
+        // _borrows_ the `Transaction` contained in there. That struct impls `Drop`,
         // which means it can't be consumably destructured like this, but because we know
         // we have the only arc reference, we know it's going to run its destructor as soon
         // as this function ends.

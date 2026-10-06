@@ -54,7 +54,7 @@ pub struct Transaction {
     ///
     /// The synchronous Mutex here does a few things:
     ///
-    /// - turns `Connection: Send + !Sync` -> `TransactionWrapper: Send + Sync`
+    /// - turns `Connection: Send + !Sync` -> `Transaction: Send + Sync`
     /// - by using the synchronous version, the compiler ensures we don't hold a guard over an await point, which would
     ///   deadlock everything
     /// - ensures that no two threads race on `conn.prepare` / `prepare_cached`

@@ -9,10 +9,11 @@ use crate::{CryptoKeystoreError, CryptoKeystoreResult, unique_arc::ArcWithReadGu
 
 /// The type of the guard we end up holding over the connection.
 type InternalGuard = ArcMutexGuard<RawMutex, Option<MutexGuardArc<Connection>>>;
-/// Keeps the wrapper alive for as long as this guard exists. `None` when the caller
-/// already holds a `&TransactionWrapper`, where borrowck provides the same guarantee.
-/// `Some` when the caller upgraded a weak reference; this holds the reference for the
-/// duration that this connection is held, ensuring that it stays alive.
+/// Keeps the wrapper alive for as long as this guard exists.
+///
+/// - `None` when the caller already holds a [`&Transaction`][Transaction], where borrowck provides the same guarantee.
+/// - `Some` when the caller upgraded a weak reference; this holds the reference for the duration that this connection
+///   is held, ensuring that it stays alive.
 type Keepalive = Option<ArcWithReadGuard<Transaction>>;
 
 /// A guard over the connection belonging to an in-flight transaction.
@@ -22,7 +23,7 @@ type Keepalive = Option<ArcWithReadGuard<Transaction>>;
 ///
 /// Field order is load-bearing, for the same reason as [`ArcWithReadGuard`]: `guard` must be
 /// released before `_keepalive`. Were `_keepalive` to drop first it could drop the wrapper's
-/// last strong reference, and `TransactionWrapper::drop` would then block trying to lock a
+/// last strong reference, and [`Transaction::drop`] would then block trying to lock a
 /// mutex we still hold.
 pub struct TransactionConnection {
     guard: InternalGuard,
@@ -60,7 +61,7 @@ impl Transaction {
 }
 
 impl TransactionConnection {
-    /// As [`TransactionWrapper::conn`], for callers who reached the transaction
+    /// As [`Transaction::conn`], for callers who reached the transaction
     /// through a weak reference and must keep it alive.
     pub(crate) fn shared(wrapper: ArcWithReadGuard<Transaction>) -> CryptoKeystoreResult<Self> {
         let guard = wrapper.conn.lock_arc();
