@@ -27,7 +27,7 @@
 <a href=#27 id=27 data-nosnippet>27</a>/// in-memory state mutated during the aborted transaction would diverge from
 <a href=#28 id=28 data-nosnippet>28</a>/// the keystore.
 <a href=#29 id=29 data-nosnippet>29</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>ConversationCache {
-<a href=#30 id=30 data-nosnippet>30</a>    <span class="comment">// `Arc&lt;_&gt;` is required here so that `ConversationGuard` can
+<a href=#30 id=30 data-nosnippet>30</a>    <span class="comment">// `Arc&lt;_&gt;` is required here so that `ConversationMut` can
 <a href=#31 id=31 data-nosnippet>31</a>    // hold a handle that outlives any single cache lookup.
 <a href=#32 id=32 data-nosnippet>32</a>    </span>entries: LruMap&lt;ConversationId, Arc&lt;Conversation&gt;, ByLength&gt;,
 <a href=#33 id=33 data-nosnippet>33</a>}

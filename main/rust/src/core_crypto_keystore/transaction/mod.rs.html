@@ -54,7 +54,7 @@
 <a href=#54 id=54 data-nosnippet>54</a>    ///
 <a href=#55 id=55 data-nosnippet>55</a>    /// The synchronous Mutex here does a few things:
 <a href=#56 id=56 data-nosnippet>56</a>    ///
-<a href=#57 id=57 data-nosnippet>57</a>    /// - turns `Connection: Send + !Sync` -&gt; `TransactionWrapper: Send + Sync`
+<a href=#57 id=57 data-nosnippet>57</a>    /// - turns `Connection: Send + !Sync` -&gt; `Transaction: Send + Sync`
 <a href=#58 id=58 data-nosnippet>58</a>    /// - by using the synchronous version, the compiler ensures we don't hold a guard over an await point, which would
 <a href=#59 id=59 data-nosnippet>59</a>    ///   deadlock everything
 <a href=#60 id=60 data-nosnippet>60</a>    /// - ensures that no two threads race on `conn.prepare` / `prepare_cached`

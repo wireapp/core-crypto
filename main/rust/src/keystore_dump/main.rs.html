@@ -115,8 +115,8 @@
 <a href=#115 id=115 data-nosnippet>115</a>
 <a href=#116 id=116 data-nosnippet>116</a>    <span class="kw">if let </span><span class="prelude-val">Some</span>(proteus_identity) = keystore.get_unique::&lt;ProteusIdentity&gt;().<span class="kw">await</span><span class="question-mark">? </span>{
 <a href=#117 id=117 data-nosnippet>117</a>        <span class="kw">let </span>identity = {
-<a href=#118 id=118 data-nosnippet>118</a>            <span class="kw">let </span>sk = proteus_identity.sk_raw();
-<a href=#119 id=119 data-nosnippet>119</a>            <span class="kw">let </span>pk = proteus_identity.pk_raw();
+<a href=#118 id=118 data-nosnippet>118</a>            <span class="kw">let </span>sk = proteus_identity.sk_raw()<span class="question-mark">?</span>;
+<a href=#119 id=119 data-nosnippet>119</a>            <span class="kw">let </span>pk = proteus_identity.pk_raw()<span class="question-mark">?</span>;
 <a href=#120 id=120 data-nosnippet>120</a>            proteus_wasm::keys::IdentityKeyPair::from_raw_key_pair(<span class="kw-2">*</span>sk, <span class="kw-2">*</span>pk)<span class="question-mark">?
 <a href=#121 id=121 data-nosnippet>121</a>        </span>};
 <a href=#122 id=122 data-nosnippet>122</a>        json_map.serialize_entry(<span class="string">"proteus_identity"</span>, <span class="kw-2">&amp;</span>identity)<span class="question-mark">?</span>;
