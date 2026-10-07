@@ -55,6 +55,10 @@
   to lose all credentials for which both the basic and x509 versions were present in the database, causing them to
   additionally lose all conversations using those credentials.
 
+- Kotlin: the JVM, Android and KMP packages are now published to Wire's Maven repository, <https://maven.wire.com>,
+  instead of Maven Central. Add `maven { url = uri("https://maven.wire.com") }` to your repositories. Earlier releases
+  remain on Maven Central.
+
 ## CoreCrypto 10
 
 ### v10.5.3 - 2026-09-23
