@@ -131,7 +131,9 @@ def load_repo(root: Path, group: str, version: str, allowed_prefix: str) -> Stag
     for path in sorted(p for p in root.rglob("*") if p.is_file()):
         relative = PurePosixPath(path.relative_to(root).as_posix())
         if not relative.as_posix().startswith(allowed_prefix):
-            raise ReleaseError(f"{relative} is outside {allowed_prefix}*, where we may not publish")
+            raise ReleaseError(
+                f"{relative} is outside {allowed_prefix}*, where we may not publish"
+            )
         if not relative.is_relative_to(group_path):
             raise ReleaseError(f"{relative} is outside the {group} group")
         match relative.relative_to(group_path).parts:
@@ -139,10 +141,16 @@ def load_repo(root: Path, group: str, version: str, allowed_prefix: str) -> Stag
                 continue
             case (artifact_id, file_version, _):
                 if file_version != version:
-                    raise ReleaseError(f"{relative} belongs to version {file_version}, not {version}")
-                artifacts.setdefault(artifact_id, Artifact(artifact_id)).files.append(relative)
+                    raise ReleaseError(
+                        f"{relative} belongs to version {file_version}, not {version}"
+                    )
+                artifacts.setdefault(artifact_id, Artifact(artifact_id)).files.append(
+                    relative
+                )
             case _:
-                raise ReleaseError(f"{relative} does not fit the Maven repository layout")
+                raise ReleaseError(
+                    f"{relative} does not fit the Maven repository layout"
+                )
     if not artifacts:
         raise ReleaseError(f"{root} holds no artifacts")
     return StagedRepo(root, group, version, artifacts)
@@ -153,7 +161,8 @@ def unsigned_files(repo: StagedRepo) -> list[PurePosixPath]:
     return [
         path
         for path in repo.files()
-        if is_payload(path) and path.with_name(path.name + SIGNATURE_SUFFIX) not in present
+        if is_payload(path)
+        and path.with_name(path.name + SIGNATURE_SUFFIX) not in present
     ]
 
 
@@ -185,7 +194,15 @@ def badly_signed_files(
     for path in filter(is_payload, repo.files()):
         file = repo.root / path
         result = run(
-            ["gpg", "--batch", "--status-fd", "1", "--verify", f"{file}{SIGNATURE_SUFFIX}", file],
+            [
+                "gpg",
+                "--batch",
+                "--status-fd",
+                "1",
+                "--verify",
+                f"{file}{SIGNATURE_SUFFIX}",
+                file,
+            ],
             capture_output=True,
             text=True,
         )
@@ -210,7 +227,12 @@ def upload_order(repo: StagedRepo) -> list[PurePosixPath]:
         repo.artifacts.values(),
         key=lambda artifact: (is_aggregating(repo, artifact), artifact.artifact_id),
     )
-    rest = [path for artifact in artifacts for path in artifact.files if path.suffix not in DESCRIPTOR_SUFFIXES]
+    rest = [
+        path
+        for artifact in artifacts
+        for path in artifact.files
+        if path.suffix not in DESCRIPTOR_SUFFIXES
+    ]
     descriptors = [
         path
         for artifact in artifacts
@@ -249,9 +271,15 @@ def merge_metadata(
         root = ET.fromstring(existing)
         found = (_text(_child(root, "groupId")), _text(_child(root, "artifactId")))
         if found != (group, artifact_id):
-            raise ReleaseError(f"metadata for {group}:{artifact_id} describes {found[0]}:{found[1]}")
+            raise ReleaseError(
+                f"metadata for {group}:{artifact_id} describes {found[0]}:{found[1]}"
+            )
         listed = _child(_child(root, "versioning"), "versions")
-        versions = [text for child in ([] if listed is None else listed) if (text := _text(child))]
+        versions = [
+            text
+            for child in ([] if listed is None else listed)
+            if (text := _text(child))
+        ]
         if version in versions:
             return None
     versions = sorted({*versions, version}, key=version_key)
@@ -315,7 +343,17 @@ class S3Bucket:
         if_match: str | None = None,
         cache_control: str | None = None,
     ) -> bool:
-        command = ["aws", "s3api", "put-object", "--bucket", self.name, "--key", key, "--body", str(body)]
+        command = [
+            "aws",
+            "s3api",
+            "put-object",
+            "--bucket",
+            self.name,
+            "--key",
+            key,
+            "--body",
+            str(body),
+        ]
         # wire-maven-infra: the bucket refuses any write that does not promise not to
         # overwrite, which is why this never uses `aws s3 sync` or `aws s3 cp`.
         if if_none_match:
@@ -332,7 +370,10 @@ class S3Bucket:
             return True
         # 412 means the precondition failed; 409 that a concurrent conditional write to the
         # same key won. Either way, the caller should look at what is there now.
-        if "PreconditionFailed" in result.stderr or "ConditionalRequestConflict" in result.stderr:
+        if (
+            "PreconditionFailed" in result.stderr
+            or "ConditionalRequestConflict" in result.stderr
+        ):
             return False
         raise ReleaseError(f"uploading {key} failed: {result.stderr.strip()}")
 
@@ -347,12 +388,16 @@ class HttpCdn:
         # No Accept-Encoding header: a compressed response would carry a weak ETag, which
         # S3 cannot match.
         try:
-            with urllib.request.urlopen(f"{self.base_url}/{key}", timeout=30) as response:
+            with urllib.request.urlopen(
+                f"{self.base_url}/{key}", timeout=30
+            ) as response:
                 return Published(response.read(), response.headers.get("ETag"))
         except urllib.error.HTTPError as error:
             if error.code == 404:
                 return None
-            raise ReleaseError(f"reading {key} from {self.base_url} failed: {error}") from error
+            raise ReleaseError(
+                f"reading {key} from {self.base_url} failed: {error}"
+            ) from error
 
 
 def sha256(data: bytes) -> str:
@@ -373,7 +418,9 @@ class Release:
         for path in upload_order(self.repo):
             self.upload(path)
         if is_prerelease(self.repo.version):
-            print(f"{self.repo.version} is a pre-release, so no maven-metadata.xml will list it")
+            print(
+                f"{self.repo.version} is a pre-release, so no maven-metadata.xml will list it"
+            )
             return
         for artifact_id in sorted(self.repo.artifacts):
             self.list_version(artifact_id)
@@ -401,7 +448,9 @@ class Release:
         # The key exists already: an earlier attempt at this release got this far, or this
         # version was published before from different content.
         expected = sha256(file.read_bytes())
-        for _ in self.patiently(f"{key} exists in the bucket, but the CDN never served it"):
+        for _ in self.patiently(
+            f"{key} exists in the bucket, but the CDN never served it"
+        ):
             published = self.cdn.get(key)
             if published is None:
                 # The CDN still caches an earlier 404.
@@ -416,7 +465,9 @@ class Release:
 
     def list_version(self, artifact_id: str) -> None:
         key = self.key(self.repo.group_path / artifact_id / METADATA)
-        for _ in self.patiently(f"{key} kept changing, or the CDN kept serving a stale copy"):
+        for _ in self.patiently(
+            f"{key} kept changing, or the CDN kept serving a stale copy"
+        ):
             current = self.cdn.get(key)
             merged = merge_metadata(
                 current.body if current else None,
@@ -428,8 +479,12 @@ class Release:
             if merged is None:
                 print(f"{key} already lists {self.repo.version}")
                 return
-            if current is not None and (current.etag is None or current.etag.startswith("W/")):
-                raise ReleaseError(f"{key} came without a strong ETag, so it cannot be updated safely")
+            if current is not None and (
+                current.etag is None or current.etag.startswith("W/")
+            ):
+                raise ReleaseError(
+                    f"{key} came without a strong ETag, so it cannot be updated safely"
+                )
             with tempfile.NamedTemporaryFile(suffix=".xml") as body:
                 body.write(merged)
                 body.flush()
@@ -460,8 +515,12 @@ def main(argv: list[str] | None = None) -> int:
     def add_command(name: str, summary: str) -> argparse.ArgumentParser:
         command = commands.add_parser(name, help=summary)
         command.add_argument("repo", type=Path, help="the staged Maven repository")
-        command.add_argument("--version", required=True, help="the version being published")
-        command.add_argument("--group", default=GROUP, help="the Maven group id (default: %(default)s)")
+        command.add_argument(
+            "--version", required=True, help="the version being published"
+        )
+        command.add_argument(
+            "--group", default=GROUP, help="the Maven group id (default: %(default)s)"
+        )
         command.add_argument(
             "--allowed-prefix",
             default=ALLOWED_PREFIX,
@@ -480,17 +539,21 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     release = add_command("release", "upload a staged repository to S3")
-    release.add_argument("--bucket", default=BUCKET, help="the S3 bucket (default: %(default)s)")
+    release.add_argument(
+        "--bucket", default=BUCKET, help="the S3 bucket (default: %(default)s)"
+    )
     release.add_argument("--key-prefix", default="", help="prepended to every S3 key")
     release.add_argument(
         "--public-url",
         default=PUBLIC_URL,
         help="where the bucket is served (default: %(default)s)",
     )
-    release.add_argument("--dry-run", action="store_true", help="print uploads instead of making them")
+    release.add_argument(
+        "--dry-run", action="store_true", help="print uploads instead of making them"
+    )
 
     args = parser.parse_args(argv)
-    HTTPS="https://"
+    HTTPS = "https://"
     if not args.public_url.startswith(HTTPS):
         raise ValueError(f"--public-url value must start with '{HTTPS}'")
     try:
@@ -498,13 +561,19 @@ def main(argv: list[str] | None = None) -> int:
         if unsigned := unsigned_files(repo):
             raise ReleaseError("unsigned: " + ", ".join(map(str, unsigned)))
         if args.command == "verify":
-            if args.expect_artifact and set(args.expect_artifact) != set(repo.artifacts):
+            if args.expect_artifact and set(args.expect_artifact) != set(
+                repo.artifacts
+            ):
                 raise ReleaseError(
                     f"expected artifacts {sorted(args.expect_artifact)}, found {sorted(repo.artifacts)}"
                 )
             if args.key_id and (bad := badly_signed_files(repo, args.key_id)):
-                raise ReleaseError(f"not validly signed by {args.key_id}: " + ", ".join(map(str, bad)))
-            print(f"verified {len(list(repo.files()))} files in {sorted(repo.artifacts)}")
+                raise ReleaseError(
+                    f"not validly signed by {args.key_id}: " + ", ".join(map(str, bad))
+                )
+            print(
+                f"verified {len(list(repo.files()))} files in {sorted(repo.artifacts)}"
+            )
         else:
             bucket = S3Bucket(args.bucket, dry_run=args.dry_run)
             cdn = HttpCdn(args.public_url.rstrip("/"))

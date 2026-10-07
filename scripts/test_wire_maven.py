@@ -14,19 +14,25 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
-_spec = importlib.util.spec_from_file_location("wire_maven", Path(__file__).with_name("wire-maven.py"))
+_spec = importlib.util.spec_from_file_location(
+    "wire_maven", Path(__file__).with_name("wire-maven.py")
+)
 assert _spec is not None and _spec.loader is not None
 wm = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(wm)
 
 VERSION = "10.4.0"
 NOW = datetime(2026, 10, 7, 12, 0, 0, tzinfo=timezone.utc)
-AGGREGATING_MODULE = json.dumps({"variants": [{"name": "jvm", "available-at": {"url": "../x"}}]})
+AGGREGATING_MODULE = json.dumps(
+    {"variants": [{"name": "jvm", "available-at": {"url": "../x"}}]}
+)
 JVM_METADATA = "com/wire/core-crypto-jvm/maven-metadata.xml"
 JVM_JAR = f"com/wire/core-crypto-jvm/{VERSION}/core-crypto-jvm-{VERSION}.jar"
 
 
-def staged_files(artifact_id: str, version: str = VERSION, module: str = "{}") -> dict[str, str]:
+def staged_files(
+    artifact_id: str, version: str = VERSION, module: str = "{}"
+) -> dict[str, str]:
     """What Gradle stages for one artifact: payload, signatures, checksums and metadata."""
     files = {}
     for name, content in [
@@ -39,7 +45,9 @@ def staged_files(artifact_id: str, version: str = VERSION, module: str = "{}") -
         files[f"{path}.asc"] = f"signature of {name}"
         files[f"{path}.sha1"] = f"checksum of {name}"
     files[f"com/wire/{artifact_id}/maven-metadata.xml"] = "gradle's metadata"
-    files[f"com/wire/{artifact_id}/maven-metadata.xml.sha1"] = "gradle's metadata checksum"
+    files[f"com/wire/{artifact_id}/maven-metadata.xml.sha1"] = (
+        "gradle's metadata checksum"
+    )
     return files
 
 
@@ -119,7 +127,9 @@ def load(root: Path, version: str = VERSION):
     return wm.load_repo(root, "com.wire", version, "com/wire/core-crypto")
 
 
-def release(root: Path, bucket: FakeBucket, cdn: FakeCdn | None = None, version: str = VERSION):
+def release(
+    root: Path, bucket: FakeBucket, cdn: FakeCdn | None = None, version: str = VERSION
+):
     """Release `root`; returns the pauses it took."""
     sleeps: list[float] = []
     clock = iter(range(10_000))
@@ -138,7 +148,15 @@ def release(root: Path, bucket: FakeBucket, cdn: FakeCdn | None = None, version:
 
 
 def test_versions_order_numerically_with_prereleases_first():
-    versions = ["10.0.1", "10.0.0", "9.12.0", "10.0.0-rc.10", "10.0.0-rc.2", "10.0.0-pre.1", "9.2.0"]
+    versions = [
+        "10.0.1",
+        "10.0.0",
+        "9.12.0",
+        "10.0.0-rc.10",
+        "10.0.0-rc.2",
+        "10.0.0-pre.1",
+        "9.2.0",
+    ]
     assert sorted(versions, key=wm.version_key) == [
         "9.2.0",
         "9.12.0",
@@ -188,7 +206,9 @@ def test_merge_never_makes_a_listed_prerelease_latest():
 
 
 def test_merge_reads_namespaced_metadata():
-    namespaced = metadata("10.3.0").replace(b"<metadata>", b'<metadata xmlns="http://maven.apache.org/METADATA/1.1.0">')
+    namespaced = metadata("10.3.0").replace(
+        b"<metadata>", b'<metadata xmlns="http://maven.apache.org/METADATA/1.1.0">'
+    )
     assert parse(merge(namespaced))["versions"] == ["10.3.0", VERSION]
 
 
@@ -252,7 +272,10 @@ def test_signed_by_signing_key_or_its_primary():
 
 def test_descriptors_go_last_and_aggregating_module_after_the_rest(stage):
     stage(staged_files("core-crypto-kmp", module=AGGREGATING_MODULE))
-    order = [path.name for path in wm.upload_order(load(stage(staged_files("core-crypto-kmp-jvm"))))]
+    order = [
+        path.name
+        for path in wm.upload_order(load(stage(staged_files("core-crypto-kmp-jvm"))))
+    ]
     descriptors = [name for name in order if name.endswith((".module", ".pom"))]
     assert order[-len(descriptors) :] == descriptors
     assert descriptors == [
@@ -281,14 +304,19 @@ def test_retry_skips_identical_objects(stage):
     files = staged_files("core-crypto-jvm")
     bucket = FakeBucket({JVM_JAR: files[JVM_JAR].encode()})
     release(stage(files), bucket)
-    assert f"com/wire/core-crypto-jvm/{VERSION}/core-crypto-jvm-{VERSION}.pom" in bucket.objects
+    assert (
+        f"com/wire/core-crypto-jvm/{VERSION}/core-crypto-jvm-{VERSION}.pom"
+        in bucket.objects
+    )
 
 
 def test_refuses_to_publish_over_different_content(stage):
     bucket = FakeBucket({JVM_JAR: b"something else"})
     with pytest.raises(wm.ReleaseError, match="different content"):
         release(stage(staged_files("core-crypto-jvm")), bucket)
-    assert not any(key.endswith((".pom", ".module", wm.METADATA)) for key in bucket.objects)
+    assert not any(
+        key.endswith((".pom", ".module", wm.METADATA)) for key in bucket.objects
+    )
 
 
 def test_waits_for_the_cdn_to_stop_serving_a_cached_404(stage):
@@ -313,7 +341,11 @@ def test_remerges_after_reading_stale_metadata(stage):
     cdn = FakeCdn(bucket)
     cdn.stale[JVM_METADATA] = [wm.Published(metadata("10.3.0"), '"stale"')]
     release(stage(staged_files("core-crypto-jvm")), bucket, cdn)
-    assert parse(bucket.objects[JVM_METADATA])["versions"] == ["10.3.0", "10.3.1", VERSION]
+    assert parse(bucket.objects[JVM_METADATA])["versions"] == [
+        "10.3.0",
+        "10.3.1",
+        VERSION,
+    ]
 
 
 def test_creates_metadata_despite_a_cached_404(stage):
@@ -326,8 +358,15 @@ def test_creates_metadata_despite_a_cached_404(stage):
 
 def test_prerelease_is_uploaded_but_not_listed(stage):
     bucket = FakeBucket({JVM_METADATA: metadata("10.3.0")})
-    release(stage(staged_files("core-crypto-jvm", version="10.4.0-test1")), bucket, version="10.4.0-test1")
-    assert "com/wire/core-crypto-jvm/10.4.0-test1/core-crypto-jvm-10.4.0-test1.pom" in bucket.objects
+    release(
+        stage(staged_files("core-crypto-jvm", version="10.4.0-test1")),
+        bucket,
+        version="10.4.0-test1",
+    )
+    assert (
+        "com/wire/core-crypto-jvm/10.4.0-test1/core-crypto-jvm-10.4.0-test1.pom"
+        in bucket.objects
+    )
     assert parse(bucket.objects[JVM_METADATA])["versions"] == ["10.3.0"]
 
 
