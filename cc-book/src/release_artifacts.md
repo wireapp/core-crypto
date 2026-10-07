@@ -10,13 +10,35 @@ TypeScript releases are published on NPM as separate packages:
 - [@wireapp/core-crypto-native](https://www.npmjs.com/package/@wireapp/core-crypto-native) for native javascript
   runtimes.
 
-## JVM / KMP
+## Kotlin (JVM / Android / KMP)
 
-Java bindings are published [on Sonatype](https://central.sonatype.com/artifact/com.wire/core-crypto-jvm).
+Kotlin bindings are published to Wire's Maven repository, <https://maven.wire.com>, in the `com.wire` group:
 
-## Android
+- `core-crypto-jvm` for the JVM
+- `core-crypto-android` for Android
+- `core-crypto-kmp` for Kotlin Multiplatform
 
-Android bindings are published [on Sonatype](https://central.sonatype.com/artifact/com.wire/core-crypto-android).
+Add the repository to your build:
+
+```kotlin
+repositories {
+    maven { url = uri("https://maven.wire.com") }
+}
+```
+
+or, for Maven:
+
+```xml
+<repositories>
+    <repository>
+        <id>wire</id>
+        <url>https://maven.wire.com</url>
+    </repository>
+</repositories>
+```
+
+Earlier releases were published to Maven Central, where they remain; keep `mavenCentral()` among your repositories to
+resolve them.
 
 ## Swift
 

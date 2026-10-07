@@ -3,48 +3,18 @@
 If one of the publishing jobs fails due to some temporary error, it might be necessary to publish the release artifacts
 for a platform manually to avoid having to restart the whole release process.
 
-## Android / JVM (Kotlin)
+## Android / JVM / KMP (Kotlin)
 
-### Preparation
+These cannot be published manually. Wire's Maven repository accepts uploads only from CI runs triggered by pushing a
+release tag, and never overwrites or deletes a published file.
 
-- Checkout the release tag
-- Open the Core Libraries vault on 1Password and copy the secrets from
-  [Maven Central Publishing](https://start.1password.com/open/i?a=FOQLGGWZU5EQXEJO3V3A5HI3DU&v=djjqzfw3nbf5zi5ytli7eg6vza&i=bhy2booptksljmacemcsfqjlui&h=wire.1password.eu)
-  and
-  [CoreCrypto Sonatype PGP Signing Key](https://start.1password.com/open/i?a=FOQLGGWZU5EQXEJO3V3A5HI3DU&v=djjqzfw3nbf5zi5ytli7eg6vza&i=bpxhdqfderdddblxes4pu4s6ji&h=wire.1password.eu)
-  ```
-  export ORG_GRADLE_PROJECT_mavenCentralPassword <secret>
-  export ORG_GRADLE_PROJECT_mavenCentralUsername <secret>
-  export ORG_GRADLE_PROJECT_signingInMemoryKeyId <secret>
-  export ORG_GRADLE_PROJECT_signingInMemoryKey <secret>
-  export ORG_GRADLE_PROJECT_signingInMemoryKeyPassword <secret>
-  ```
+If `publish-jvm`, `publish-android` or `publish-kmp` fails, re-run the failed jobs of the tag's pipeline run. A release
+job is safe to re-run after a partial upload: it accepts files that are already published with identical content, and
+uploads the rest. It releases what `prepare-publish` staged earlier in the same run, and staged artifacts are kept for 7
+days.
 
-### Android
-
-- Download the android.zip from the release on https://github.com/wireapp/core-crypto/releases
-- Extract the archive and copy the Android artifacts into the root of the core-crypto project
-  ```bash
-  cp -r ~/downloads/android/* core-crypto
-  ```
-- Publish the project
-  ```bash
-  cd crypto-ffi/bindings
-  ./gradlew android:publishAllPublicationsToMavenCentralRepository --no-configuration-cache
-  ```
-
-### JVM
-
-- Download the jvm.zip from the release on https://github.com/wireapp/core-crypto/releases
-- Extract the archive and copy the JVM artifacts into the root of the core-crypto project
-  ```bash
-  cp -r ~/downloads/jvm/* core-crypto
-  ```
-- Publish the project
-  ```bash
-  cd crypto-ffi/bindings
-  ./gradlew jvm:publishAllPublicationsToMavenCentralRepository --no-configuration-cache
-  ```
+If a release job fails because a file is already published with different content, or the staged artifacts have expired,
+that version cannot be completed. Release a new patch version instead.
 
 ## iOS (Swift)
 
