@@ -207,7 +207,6 @@ ignore.build-time-only:
     - dev.*
     - assertj-core
     - org.jetbrains.kotlin.plugin.*
-    - io.github.gradle-nexus.publish-plugin
     - gradle
     - com.android.library
     - com.android.application
