@@ -490,6 +490,9 @@ def main(argv: list[str] | None = None) -> int:
     release.add_argument("--dry-run", action="store_true", help="print uploads instead of making them")
 
     args = parser.parse_args(argv)
+    HTTPS="https://"
+    if not args.public_url.startswith(HTTPS):
+        raise ValueError(f"--public-url value must start with '{HTTPS}'")
     try:
         repo = load_repo(args.repo, args.group, args.version, args.allowed_prefix)
         if unsigned := unsigned_files(repo):
