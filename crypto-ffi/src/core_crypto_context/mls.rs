@@ -210,7 +210,6 @@ impl CoreCryptoContext {
                 .into_iter()
                 .map(|arc_external_sender| Arc::unwrap_or_clone(arc_external_sender).into())
                 .collect(),
-            ..Default::default()
         };
 
         self.inner
