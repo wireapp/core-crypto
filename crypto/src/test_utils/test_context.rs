@@ -134,10 +134,6 @@ impl TestContext {
         matches!(self.credential_type, CredentialType::Basic)
     }
 
-    pub fn is_pure_ciphertext(&self) -> bool {
-        matches!(self.cfg.custom.wire_policy, WirePolicy::Ciphertext)
-    }
-
     /// Create a new temporary directory and open a db there. Will be deleted on drop of [TestContext].
     /// Use this only if you're not instantiating a [SessionContext] in your test.
     pub async fn create_persistent_db(&mut self) -> Arc<Database> {
