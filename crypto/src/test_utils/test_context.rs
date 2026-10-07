@@ -126,12 +126,6 @@ impl TestContext {
         }
     }
 
-    pub fn default_cipher() -> Self {
-        let mut default = Self::default();
-        default.cfg.custom.wire_policy = WirePolicy::Ciphertext;
-        default
-    }
-
     pub fn is_x509(&self) -> bool {
         matches!(self.credential_type, CredentialType::X509)
     }
