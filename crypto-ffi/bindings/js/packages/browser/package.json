@@ -1,6 +1,6 @@
 {
     "name": "@wireapp/core-crypto",
-    "version": "10.3.0",
+    "version": "10.3.0-test3",
     "description": "CoreCrypto bindings for browser JavaScript runtimes",
     "keywords": [
         "corecrypto",
