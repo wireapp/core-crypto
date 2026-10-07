@@ -1,7 +1,6 @@
 //! Conversation configuration.
 //!
-//! Either use [ConversationConfiguration] when creating a conversation or [CustomConfiguration]
-//! when joining one by Welcome or external commit
+//! Use [ConversationConfiguration] when creating a conversation.
 
 use openmls::prelude::{
     Capabilities, CredentialType, PURE_CIPHERTEXT_WIRE_FORMAT_POLICY, PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
@@ -33,8 +32,6 @@ pub struct ConversationConfiguration {
     pub cipher_suite: CipherSuite,
     /// Delivery service public signature key and credential
     pub external_senders: Vec<ExternalSender>,
-    /// Implementation specific configuration
-    pub custom: CustomConfiguration,
 }
 
 impl ConversationConfiguration {
@@ -68,15 +65,15 @@ impl ConversationConfiguration {
             ciphersuite: self.cipher_suite.into(),
         };
         Ok(openmls::group::MlsGroupConfig::builder()
-            .wire_format_policy(self.custom.wire_policy.into())
+            .wire_format_policy(WirePolicy::Plaintext.into())
             .max_past_epochs(MAX_PAST_EPOCHS)
             .padding_size(Self::PADDING_SIZE)
             .number_of_resumption_psks(Self::NUMBER_RESUMPTION_PSK)
             .leaf_capabilities(Self::default_leaf_capabilities())
             .required_capabilities(self.default_required_capabilities())
             .sender_ratchet_configuration(SenderRatchetConfiguration::new(
-                self.custom.out_of_order_tolerance,
-                self.custom.maximum_forward_distance,
+                OUT_OF_ORDER_TOLERANCE,
+                MAXIMUM_FORWARD_DISTANCE,
             ))
             .use_ratchet_tree_extension(true)
             .external_senders(self.external_senders.iter().cloned().map(Into::into).collect())
@@ -104,34 +101,6 @@ impl ConversationConfiguration {
     pub fn set_external_senders(&mut self, external_senders: impl IntoIterator<Item = ExternalSender>) -> Result<()> {
         self.external_senders = external_senders.into_iter().collect();
         Ok(())
-    }
-}
-
-/// The configuration parameters for a group/conversation which are not handled natively by openmls
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CustomConfiguration {
-    // TODO: Not implemented yet. Tracking issue: WPB-9609
-    /// Duration in seconds after which we will automatically force a self_update commit
-    pub key_rotation_span: Option<std::time::Duration>,
-    /// Defines if handshake messages are encrypted or not
-    pub wire_policy: WirePolicy,
-    /// Window for which decryption secrets are kept within an epoch. Use this with caution since
-    /// this affects forward secrecy within an epoch. Use this when the Delivery Service cannot
-    /// guarantee application messages order.
-    pub out_of_order_tolerance: u32,
-    /// How many application messages can be skipped. Use this when the Delivery Service can drop
-    /// application messages
-    pub maximum_forward_distance: u32,
-}
-
-impl Default for CustomConfiguration {
-    fn default() -> Self {
-        Self {
-            wire_policy: WirePolicy::Plaintext,
-            key_rotation_span: Default::default(),
-            out_of_order_tolerance: OUT_OF_ORDER_TOLERANCE,
-            maximum_forward_distance: MAXIMUM_FORWARD_DISTANCE,
-        }
     }
 }
 

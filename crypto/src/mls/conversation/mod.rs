@@ -29,7 +29,7 @@ pub(crate) use pending::PendingConversation;
 
 pub use self::{
     commit::CommitBundle,
-    config::{ConversationConfiguration, CustomConfiguration, WirePolicy},
+    config::{ConversationConfiguration, WirePolicy},
     error::{Error, Result},
     group_info::{GroupInfoBundle, GroupInfoEncryptionType, GroupInfoPayload, RatchetTreeType},
     id::{ConversationId, ConversationIdRef},
