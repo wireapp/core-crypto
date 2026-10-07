@@ -643,7 +643,10 @@ impl ConversationMut {
 #[cfg(test)]
 mod tests {
     use crate::{
-        mls::conversation::{config::MAX_PAST_EPOCHS, error::Error},
+        mls::conversation::{
+            config::{MAX_PAST_EPOCHS, OUT_OF_ORDER_TOLERANCE},
+            error::Error,
+        },
         test_utils::*,
     };
 
@@ -865,8 +868,7 @@ mod tests {
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
 
-                let out_of_order_tolerance = case.custom_cfg().out_of_order_tolerance;
-                let nb_messages = out_of_order_tolerance * 2;
+                let nb_messages = OUT_OF_ORDER_TOLERANCE * 2;
                 let mut messages = vec![];
 
                 // stack up encrypted messages..
@@ -876,10 +878,10 @@ mod tests {
                     messages.push((msg, encrypted));
                 }
 
-                // ..then unstack them to see out_of_order_tolerance come into play
+                // ..then unstack them to see OUT_OF_ORDER_TOLERANCE come into play
                 for (i, (original, encrypted)) in messages.iter().rev().enumerate() {
                     let decrypt = conversation.guard_of(&bob).await.decrypt_message(encrypted).await;
-                    if i < out_of_order_tolerance as usize {
+                    if i < OUT_OF_ORDER_TOLERANCE as usize {
                         let decrypt = decrypt.unwrap();
                         let decrypted = &decrypt.as_application_message().unwrap().plaintext;
                         assert_eq!(decrypted, original.as_bytes());
@@ -919,9 +921,7 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        async fn should_throw_specialized_error_when_epoch_too_old(mut case: TestContext) {
-            case.cfg.custom.out_of_order_tolerance = 0;
-
+        async fn should_throw_specialized_error_when_epoch_too_old(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
                 let mut conversation = case.create_conversation([&alice, &bob]).await;
@@ -959,9 +959,7 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        async fn should_throw_specialized_error_when_epoch_desynchronized(mut case: TestContext) {
-            case.cfg.custom.out_of_order_tolerance = 0;
-
+        async fn should_throw_specialized_error_when_epoch_desynchronized(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
