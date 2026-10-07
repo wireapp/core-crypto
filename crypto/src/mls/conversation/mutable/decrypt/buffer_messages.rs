@@ -176,12 +176,6 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn should_buffer_and_reapply_messages_after_commit_merged_for_sender(case: TestContext) {
-        if case.is_pure_ciphertext() {
-            // The use case tested here requires inspecting your own commit.
-            // Openmls does not support this currently when protocol messages are encrypted.
-            return;
-        }
-
         let [alice, bob, charlie, debbie] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice, &bob, &debbie]).await;
@@ -278,12 +272,6 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn should_buffer_and_reapply_messages_after_commit_merged_for_receivers(case: TestContext) {
-        if case.is_pure_ciphertext() {
-            // The use case tested here requires inspecting your own commit.
-            // Openmls does not support this currently when protocol messages are encrypted.
-            return;
-        }
-
         let [alice, bob, charlie, debbie] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
@@ -620,12 +608,6 @@ mod tests {
     /// [WPB-15810]: https://wearezeta.atlassian.net/browse/WPB-15810
     #[apply(all_cred_cipher)]
     async fn wpb_15810(mut case: TestContext) {
-        if case.is_pure_ciphertext() {
-            // The use case tested here requires inspecting your own commit.
-            // Openmls does not support this currently when protocol messages are encrypted.
-            return;
-        }
-
         case.sessions_in_memory = true;
         let [external_0, new_member, member_27, observer, member_114, member_115] = case.sessions().await;
         Box::pin(async move {

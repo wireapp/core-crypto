@@ -54,11 +54,6 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn decrypting_duplicate_member_commit_should_fail(case: TestContext) {
-        // cannot work in pure ciphertext since we'd have to decrypt the message first
-        if case.is_pure_ciphertext() {
-            return;
-        }
-
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice, &bob]).await;

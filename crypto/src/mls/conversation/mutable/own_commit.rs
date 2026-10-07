@@ -118,7 +118,7 @@ mod tests {
     // If there’s a pending commit & it matches the incoming commit: mark pending commit as accepted
     #[apply(all_cred_cipher)]
     pub async fn should_succeed_when_incoming_commit_same_as_pending(case: TestContext) {
-        if case.is_pure_ciphertext() || case.is_basic() {
+        if case.is_basic() {
             return;
         }
         let [alice] = case.sessions().await;
@@ -168,9 +168,6 @@ mod tests {
     // If there’s a pending commit & it does not match the self incoming commit: fail with dedicated error
     #[apply(all_cred_cipher)]
     pub async fn should_succeed_when_incoming_commit_mismatches_pending_commit(case: TestContext) {
-        if case.is_pure_ciphertext() {
-            return;
-        }
         let [alice] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice]).await;
@@ -205,9 +202,6 @@ mod tests {
     // commit
     #[apply(all_cred_cipher)]
     pub async fn should_ignore_self_incoming_commit_when_no_pending_commit(case: TestContext) {
-        if case.is_pure_ciphertext() {
-            return;
-        }
         let [alice] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice]).await;
@@ -233,12 +227,6 @@ mod tests {
     #[apply(all_cred_cipher)]
     pub async fn should_fail_when_tampering_with_incoming_own_commit_same_as_pending(case: TestContext) {
         use crate::OpenMlsErrorKind;
-
-        if case.is_pure_ciphertext() {
-            // The use case tested here requires inspecting your own commit.
-            // Openmls does not support this currently when protocol messages are encrypted.
-            return;
-        }
 
         let [alice] = case.sessions().await;
         let conversation = case.create_conversation([&alice]).await;
@@ -298,12 +286,6 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn should_succeed_when_incoming_commit_is_self_commit_but_was_lost(case: TestContext) {
-        if case.is_pure_ciphertext() {
-            // The use case tested here requires inspecting your own commit.
-            // Openmls does not support this currently when protocol messages are encrypted.
-            return;
-        }
-
         Box::pin(async move {
             let [mut alice, bob] = case.sessions().await;
             let conversation = case.create_conversation([&alice, &bob]).await;
