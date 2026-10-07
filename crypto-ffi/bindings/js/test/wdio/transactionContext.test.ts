@@ -122,4 +122,53 @@ describe("transaction context", () => {
         }, alice);
         expect(error.message).toBe("Conversation already exists");
     });
+
+    // If formatting the error panics or throws inside wasm, the transaction never settles and this test times out which
+    // must not happen.
+    it("should propagate unserializable thrown values", async () => {
+        const alice = crypto.randomUUID();
+        await ccInit(alice);
+
+        const results = await browser.execute(async (clientName) => {
+            const cc = window.ensureCcDefined(clientName);
+
+            const ccErrorLike = {
+                errorStack: [],
+                context: {},
+                type: "TransactionFailed",
+            };
+            const circularObject: Record<string, unknown> = { ...ccErrorLike };
+            circularObject["context"] = circularObject;
+            const circularArray: unknown[] = Object.assign([], ccErrorLike);
+            circularArray.push(circularArray);
+            const withBigInt = { ...ccErrorLike, context: { value: 1n } };
+            const errorWithThrowingGetter = Object.assign(
+                new Error(),
+                ccErrorLike
+            );
+            Object.defineProperty(errorWithThrowingGetter, "message", {
+                get() {
+                    throw new Error("getter throws");
+                },
+            });
+
+            const results = [];
+            for (const value of [
+                circularObject,
+                circularArray,
+                withBigInt,
+                errorWithThrowingGetter,
+            ]) {
+                const error = await cc
+                    .transaction(async () => {
+                        throw value;
+                    })
+                    .catch((e) => e);
+                results.push(error === value);
+            }
+            return results;
+        }, alice);
+
+        expect(results).toEqual([true, true, true, true]);
+    });
 });
