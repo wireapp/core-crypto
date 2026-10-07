@@ -1,0 +1,72 @@
+name: Stage artifacts for maven.wire.com
+description: |
+  Publish a Gradle project's publications into a local Maven repository, check that
+  every expected artifact is there and validly signed, and upload the repository as a workflow
+  artifact for `wire-maven/release` to publish. Assumes the repository is already checked out
+  and the project's inputs are already built.
+
+inputs:
+  project:
+    description: The Gradle project path to publish, e.g. ':jvm', ':android', ':core-crypto-kmp'.
+    required: true
+  platform:
+    description: Names the staged workflow artifact; `wire-maven/release` takes the same value.
+      E.g. 'jvm', 'android', 'kmp'.
+    required: true
+  artifacts:
+    description: Whitespace-separated Maven artifact ids the project must publish.
+    required: true
+  pgp-key-id:
+    required: true
+  pgp-signing-key:
+    required: true
+  pgp-passphrase:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: publish into the staging repository
+      shell: bash
+      working-directory: crypto-ffi/bindings
+      run: ./gradlew "$PROJECT:publishAllPublicationsToWireMavenRepository"
+      env:
+        PROJECT: ${{ inputs.project }}
+        ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ inputs.pgp-key-id }}
+        ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ inputs.pgp-signing-key }}
+        ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ inputs.pgp-passphrase }}
+
+    - name: verify the staging repository
+      shell: bash
+      run: |
+        # Checking signatures needs only the public key, which importing the secret key
+        # provides without its passphrase.
+        GNUPGHOME="$(mktemp -d)"
+        export GNUPGHOME
+        gpg --batch --import <<< "$PGP_SIGNING_KEY"
+
+        expected=()
+        for artifact in $ARTIFACTS; do
+          expected+=(--expect-artifact "$artifact")
+        done
+        scripts/wire-maven.py verify crypto-ffi/bindings/build/wire-maven \
+          --version "$(sed -n 's/^VERSION_NAME=//p' crypto-ffi/bindings/gradle.properties)" \
+          --key-id "$PGP_KEY_ID" \
+          "${expected[@]}"
+      env:
+        ARTIFACTS: ${{ inputs.artifacts }}
+        PGP_KEY_ID: ${{ inputs.pgp-key-id }}
+        PGP_SIGNING_KEY: ${{ inputs.pgp-signing-key }}
+
+    - name: upload the staging repository
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: wire-maven-${{ inputs.platform }}
+        path: crypto-ffi/bindings/build/wire-maven
+        if-no-files-found: error
+        # Staging only holds a release until every platform has staged, which takes hours,
+        # not days.
+        retention-days: 7
+        # Re-running an already successful stage job stages a fresh build. That is safe: if
+        # an earlier one was released already, releasing this one fails on the differences.
+        overwrite: true
