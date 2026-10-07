@@ -14,20 +14,12 @@ on:
         required: false
         type: string
     secrets:
-      SONATYPE_USERNAME:
-        required: true
-      SONATYPE_PASSWORD:
-        required: true
       PGP_KEY_ID:
         required: true
       PGP_SIGNING_KEY:
         required: true
       PGP_PASSPHRASE:
         required: true
-    outputs:
-      staging_repository_id:
-        description: "The Sonatype staging repository id created during the prepare phase."
-        value: ${{ jobs.android.outputs.staging_repository_id }}
 
 env:
   RELEASE: 1
@@ -36,8 +28,6 @@ jobs:
   android:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
-    outputs:
-      staging_repository_id: ${{ steps.stage.outputs.staging_repository_id }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -63,14 +53,12 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
-      - name: stage artifact in sonatype
-        id: stage
-        uses: ./.github/actions/sonatype/stage
+      - name: stage artifacts for maven.wire.com
+        uses: ./.github/actions/wire-maven/stage
         with:
           project: ":android"
-          label: Android
-          sonatype-username: ${{ secrets.SONATYPE_USERNAME }}
-          sonatype-password: ${{ secrets.SONATYPE_PASSWORD }}
+          platform: android
+          artifacts: core-crypto-android
           pgp-key-id: ${{ secrets.PGP_KEY_ID }}
           pgp-signing-key: ${{ secrets.PGP_SIGNING_KEY }}
           pgp-passphrase: ${{ secrets.PGP_PASSPHRASE }}
