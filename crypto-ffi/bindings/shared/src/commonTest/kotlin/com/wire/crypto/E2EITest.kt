@@ -126,6 +126,7 @@ internal class E2EITest {
     }
 
     @Test
+    @Suppress("DEPRECATION")
     fun testInstantiateX509CredentialAcquisitionFromCredentialRef() = runTest {
         val db = newDatabase()
         val pkiEnv = PkiEnvironment.new(MockPkiEnvironmentHooks(), db)
