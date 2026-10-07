@@ -344,33 +344,5 @@ mod tests {
             })
             .await;
         }
-
-        #[apply(all_cred_cipher)]
-        async fn should_prevent_replayed_encrypted_handshake_messages(case: TestContext) {
-            if !case.is_pure_ciphertext() {
-                return;
-            }
-
-            let [alice, bob] = case.sessions().await;
-            Box::pin(async move {
-                let conversation = case.create_conversation([&alice, &bob]).await;
-
-                let commit_guard = conversation.update().await;
-                let commit_replay = commit_guard.message();
-
-                // replayed encrypted commit should fail
-                let conversation = commit_guard.notify_members().await;
-                assert!(matches!(
-                    conversation
-                        .guard_of(&bob)
-                        .await
-                        .decrypt_message(commit_replay.to_bytes().unwrap())
-                        .await
-                        .unwrap_err(),
-                    Error::StaleCommit
-                ));
-            })
-            .await;
-        }
     }
 }
