@@ -13,7 +13,7 @@ use crate::{
     CertificateBundle, ClientId, Credential, CredentialRef, Database, DatabaseKey, ExternalSender,
     test_utils::SessionContext,
 };
-pub use crate::{CipherSuite, ConversationConfiguration, CredentialType, CustomConfiguration, WirePolicy};
+pub use crate::{CipherSuite, ConversationConfiguration, CredentialType, WirePolicy};
 
 #[template]
 #[rstest(
@@ -104,10 +104,6 @@ impl TestContext {
 
     pub fn signature_scheme(&self) -> SignatureScheme {
         self.cfg.cipher_suite.signature_algorithm()
-    }
-
-    pub fn custom_cfg(&self) -> CustomConfiguration {
-        self.cfg.custom.clone()
     }
 
     pub fn create_in_memory_database(&mut self) -> Arc<Database> {
