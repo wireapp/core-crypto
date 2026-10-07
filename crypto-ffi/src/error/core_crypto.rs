@@ -30,7 +30,10 @@ pub enum CoreCryptoError {
     #[error("Unknown ciphersuite identifier")]
     UnknownCiphersuite,
     #[cfg(target_family = "wasm")]
-    #[error("Transaction rolled back due to unexpected JS error: {error:?}")]
+    #[error(
+        "Transaction rolled back due to unexpected JS error: {}",
+        super::wasm::describe_js_value(.error)
+    )]
     TransactionFailed { error: JsValue },
     #[cfg(not(target_family = "wasm"))]
     #[error("Transaction rolled back due to unexpected uniffi error: {error:?}")]

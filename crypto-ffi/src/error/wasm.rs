@@ -12,17 +12,19 @@ pub struct CoreCryptoError(#[source] InternalError);
 impl std::fmt::Display for CoreCryptoError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let (error_type, error_context) = self.get_type_and_context();
-        let context_string = js_sys::JSON::stringify(&error_context)
-            .expect("serializing error context")
-            .as_string()
-            .expect("parsing js string into rust string");
+        // The context can hold arbitrary JS values, which are not guaranteed to be JSON-serializable.
+        let context = js_sys::JSON::stringify(&error_context)
+            .ok()
+            .and_then(|context| context.as_string())
+            .and_then(|context| serde_json::from_str(&context).ok())
+            .unwrap_or_else(|| serde_json::json!({ "msg": "error context is not JSON-serializable" }));
 
         let json = serde_json::to_string(&serde_json::json!({
             "message": self.0.to_string(),
             "error_name": self.0.variant_name(),
             "error_stack": self.0.stack(),
             "type": error_type.to_string(),
-            "context": serde_json::from_str::<serde_json::Value>(&context_string).expect("parsing json string")
+            "context": context
         }))
         .map_err(|_| std::fmt::Error)?;
 
@@ -58,6 +60,18 @@ impl From<CoreCryptoError> for wasm_bindgen::JsValue {
 
         stacked_error.into()
     }
+}
+
+/// Describe a JS value we don't control without running JS code that can throw uncaught.
+///
+/// Context: The `Debug` impl of [`JsValue`] throws on e.g. circular arrays or errors with throwing getters,
+/// which unwinds through wasm without running any destructors, just like a panic.
+pub(super) fn describe_js_value(value: &JsValue) -> String {
+    value
+        .as_string()
+        .or_else(|| Reflect::get(value, &"message".into()).ok()?.as_string())
+        .or_else(|| js_sys::JSON::stringify(value).ok()?.as_string())
+        .unwrap_or_else(|| "<JS value without description>".into())
 }
 
 pub(super) trait JsErrorContext {
