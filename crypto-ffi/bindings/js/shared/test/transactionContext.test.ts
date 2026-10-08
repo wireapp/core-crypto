@@ -124,4 +124,27 @@ describe("transaction context", () => {
         });
         expect(error.message).to.equal("MlsError.ConversationAlreadyExists");
     });
+
+    it("should reject when null or undefined is thrown", async () => {
+        const results = await runOnPlatform(async () => {
+            const cc = await helpers.ccInit();
+
+            const results = [];
+            for (const value of [null, undefined]) {
+                results.push(
+                    await cc
+                        .transaction(async () => {
+                            throw value;
+                        })
+                        .then(
+                            () => "resolved",
+                            () => "rejected"
+                        )
+                );
+            }
+            return results;
+        });
+
+        expect(results).to.deep.equal(["rejected", "rejected"]);
+    });
 });
