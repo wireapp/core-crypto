@@ -164,6 +164,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "arrayvec"
+version = "0.7.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d3fb67a6e08acf24fdeccbac2cb6ac4305825bd1f117462e0e6f2f193345ad56"
+
+[[package]]
 name = "askama"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -560,6 +566,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b5d4d889834ee8ecfc0f8426ad30faf7cdcb10f741a8e6d7224d95325479f6f"
 dependencies = [
  "digest 0.11.2",
+]
+
+[[package]]
+name = "blake3"
+version = "1.8.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6d9e454fc11f76977dc803893aff6304ed33d6a26efae8696573bea74baa27ae"
+dependencies = [
+ "arrayvec",
+ "cc",
+ "cfg-if",
+ "constant_time_eq",
+ "cpufeatures 0.3.0",
 ]
 
 [[package]]
@@ -1066,6 +1085,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "constant_time_eq"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d52eff69cd5e647efe296129160853a42795992097e8af39800e1060caeea9b"
+
+[[package]]
 name = "convert_case"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1123,10 +1148,12 @@ dependencies = [
  "async-recursion",
  "async-trait",
  "base64 0.23.1",
+ "blake3",
  "chacha20poly1305",
  "const_format",
  "core-crypto-keystore",
  "core-crypto-macros",
+ "crypto-common 0.2.2",
  "der 0.8.2",
  "derive_more",
  "ecdsa 0.17.0",
@@ -1142,6 +1169,7 @@ dependencies = [
  "itertools 0.15.0",
  "log",
  "macro_rules_attribute",
+ "ml-dsa",
  "obfuscate",
  "openmls",
  "openmls_basic_credential",
@@ -3502,6 +3530,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "ml-dsa"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "add6b9d92e496f16f4526d68ff29da1483aba4b119baeab8bed3b9e3544a6f3d"
+dependencies = [
+ "crypto-common 0.2.2",
+ "ctutils",
+ "hybrid-array",
+ "module-lattice",
+ "pkcs8 0.11.0",
+ "shake",
+ "signature 3.0.0",
+ "zeroize",
+]
+
+[[package]]
 name = "ml-kem"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3768,7 +3812,7 @@ dependencies = [
 [[package]]
 name = "openmls"
 version = "1.0.0"
-source = "git+https://github.com/wireapp/openmls?rev=9252caa031d874b2e6e2157db6b8024882eb72f3#9252caa031d874b2e6e2157db6b8024882eb72f3"
+source = "git+https://github.com/wireapp/openmls?rev=70311ef0fdb6bf69d344d08eb9b73feb473ba19b#70311ef0fdb6bf69d344d08eb9b73feb473ba19b"
 dependencies = [
  "async-trait",
  "backtrace",
@@ -3790,12 +3834,13 @@ dependencies = [
 [[package]]
 name = "openmls_basic_credential"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=9252caa031d874b2e6e2157db6b8024882eb72f3#9252caa031d874b2e6e2157db6b8024882eb72f3"
+source = "git+https://github.com/wireapp/openmls?rev=70311ef0fdb6bf69d344d08eb9b73feb473ba19b#70311ef0fdb6bf69d344d08eb9b73feb473ba19b"
 dependencies = [
  "async-trait",
  "ed25519-dalek 3.0.0",
  "elliptic-curve 0.14.1",
  "getrandom 0.4.3",
+ "ml-dsa",
  "openmls_traits",
  "p256 0.14.0",
  "p384 0.14.0",
@@ -3809,10 +3854,11 @@ dependencies = [
 [[package]]
 name = "openmls_traits"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=9252caa031d874b2e6e2157db6b8024882eb72f3#9252caa031d874b2e6e2157db6b8024882eb72f3"
+source = "git+https://github.com/wireapp/openmls?rev=70311ef0fdb6bf69d344d08eb9b73feb473ba19b#70311ef0fdb6bf69d344d08eb9b73feb473ba19b"
 dependencies = [
  "async-trait",
  "ed25519-dalek 3.0.0",
+ "ml-dsa",
  "p256 0.14.0",
  "p384 0.14.0",
  "p521 0.14.0",
@@ -3826,7 +3872,7 @@ dependencies = [
 [[package]]
 name = "openmls_x509_credential"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=9252caa031d874b2e6e2157db6b8024882eb72f3#9252caa031d874b2e6e2157db6b8024882eb72f3"
+source = "git+https://github.com/wireapp/openmls?rev=70311ef0fdb6bf69d344d08eb9b73feb473ba19b#70311ef0fdb6bf69d344d08eb9b73feb473ba19b"
 dependencies = [
  "async-trait",
  "base64 0.21.7",
@@ -5871,7 +5917,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "once_cell",
  "rustix 1.1.4",
  "windows-sys 0.61.2",
