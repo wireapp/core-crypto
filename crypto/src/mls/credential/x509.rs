@@ -84,6 +84,11 @@ impl CertificateBundle {
             SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ED25519 => HashAlgorithm::SHA256,
             SignatureScheme::ECDSA_SECP384R1_SHA384 => HashAlgorithm::SHA384,
             SignatureScheme::ED448 | SignatureScheme::ECDSA_SECP521R1_SHA512 => HashAlgorithm::SHA512,
+            SignatureScheme::MLDSA44 | SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87 => {
+                // TODO: use SHA-256 for the time being; thumbprints are soon going to be
+                // ciphersuite-independent at which point this whole block will go away.
+                HashAlgorithm::SHA256
+            }
         };
 
         let identity = leaf

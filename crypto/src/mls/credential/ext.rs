@@ -134,6 +134,18 @@ impl CredentialExt for openmls::prelude::Certificate {
     }
 }
 
+fn compute_thumbprint_mldsa(scheme: SignatureScheme, key: &[u8]) -> String {
+    let mut hasher = blake3::Hasher::new();
+    match scheme {
+        SignatureScheme::MLDSA44 => hasher.update(b"MLDSA44"),
+        SignatureScheme::MLDSA65 => hasher.update(b"MLDSA65"),
+        SignatureScheme::MLDSA87 => hasher.update(b"MLDSA87"),
+        _ => unreachable!(),
+    };
+    hasher.update(key);
+    hasher.finalize().to_string()
+}
+
 fn compute_thumbprint(cs: CipherSuite, raw_key: &[u8]) -> Result<String> {
     let sign_alg = match cs.signature_algorithm() {
         SignatureScheme::ED25519 => JwsAlgorithm::Ed25519,
@@ -141,6 +153,12 @@ fn compute_thumbprint(cs: CipherSuite, raw_key: &[u8]) -> Result<String> {
         SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::P384,
         SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::P521,
         SignatureScheme::ED448 => return Err(Error::UnsupportedAlgorithm),
+        scheme @ (SignatureScheme::MLDSA44 | SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87) => {
+            // There is no JOSE key type for ML-DSA yet.
+            // We're going to change the way we compute thumbprints anyway, but for the time being
+            // just provide something sensible.
+            return Ok(compute_thumbprint_mldsa(scheme, raw_key));
+        }
     };
     let hash_alg = match cs.hash_algorithm() {
         HashType::Sha2_256 => HashAlgorithm::SHA256,
