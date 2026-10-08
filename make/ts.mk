@@ -295,9 +295,13 @@ $(STAMPS)/ts-native-test: $(ts-native-test-deps)
 	fi
 	$(TOUCH_STAMP)
 
+# Run both suites even when the first one fails, so one red suite cannot hide the other's
+# result; fail afterwards if either did.
 $(STAMPS)/ts-test:
-	@$(MAKE) LAZY_MAKE= ts-browser-test TEST="$(TEST)"
-	@$(MAKE) LAZY_MAKE= ts-native-test TEST="$(TEST)"
+	@status=0; \
+	$(MAKE) LAZY_MAKE= ts-browser-test TEST="$(TEST)" || status=1; \
+	$(MAKE) LAZY_MAKE= ts-native-test TEST="$(TEST)" || status=1; \
+	exit $$status
 	$(TOUCH_STAMP)
 
 define run-ts-benches
