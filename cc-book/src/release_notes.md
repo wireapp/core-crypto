@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+- CoreCrypto now has support for 11 post-quantum ciphersuites, as defined by the
+  [draft](https://www.ietf.org/archive/id/draft-ietf-mls-pq-ciphersuites-06.html). Specifically, support has been added
+  for the 6 ciphersuites that use hybrid (post-quantum + classical) key-exchange mechanisms:
+
+  - `MLS_128_MLKEM768X25519_AES128GCM_SHA256_Ed25519`
+  - `MLS_128_MLKEM768X25519_AES256GCM_SHA384_Ed25519`
+  - `MLS_128_MLKEM768P256_AES128GCM_SHA256_P256`
+  - `MLS_128_MLKEM768P256_AES256GCM_SHA384_P256`
+  - `MLS_128_MLKEM768X25519_CHACHA20POLY1305_SHA384_MLDSA44`
+  - `MLS_192_MLKEM1024P384_AES256GCM_SHA384_P384`
+
+  as well as the 5 ciphersuites that use pure post-quantum key-exchange mechanisms:
+
+  - `MLS_128_MLKEM768_AES256GCM_SHA384_Ed25519`
+  - `MLS_128_MLKEM768_AES256GCM_SHA384_P256`
+  - `MLS_192_MLKEM1024_AES256GCM_SHA384_P384`
+  - `MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65`
+  - `MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87`
+
+  Note that only 3 of the 11 ciphersuites use post-quantum signatures (ML-DSA), and that using x509 credentials with
+  post-quantum signatures is not yet supported.
+
 - `proteusNewPrekey` is deprecated; use `proteusNewPrekeyAuto` instead.
 
 - Rendering a `DeserializedClientId` (its `toString`/`Display`) now reproduces the client id it was deserialized from.
