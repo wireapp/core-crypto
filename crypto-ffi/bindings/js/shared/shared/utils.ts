@@ -65,18 +65,18 @@ export async function sharedTeardown() {
 
 export type CcInitOptions =
     | {
-          withBasicCredential: false;
-          clientId?: ClientId;
-          database?: Database;
-          withPkiEnvironment?: boolean;
-      }
+        withBasicCredential: false;
+        clientId?: ClientId;
+        database?: Database;
+        withPkiEnvironment?: boolean;
+    }
     | {
-          withBasicCredential?: true;
-          cipherSuite?: CipherSuite;
-          clientId?: ClientId;
-          database?: Database;
-          withPkiEnvironment?: boolean;
-      };
+        withBasicCredential?: true;
+        cipherSuite?: CipherSuite;
+        clientId?: ClientId;
+        database?: Database;
+        withPkiEnvironment?: boolean;
+    };
 
 export interface Helpers {
     newClientId(): ClientId;
@@ -563,6 +563,17 @@ async function setLogger() {
                 },
             });
             ccModule.setMaxLogLevel(ccModule.CoreCryptoLogLevel.Debug);
+        });
+    } else {
+        await runOnPlatform(() => {
+            ccModule.setLogger({
+                log: (
+                    _level: CoreCryptoLogLevel,
+                    _message: string,
+                    _context: string | undefined
+                ) => { },
+            });
+            ccModule.setMaxLogLevel(ccModule.CoreCryptoLogLevel.Off);
         });
     }
 }
