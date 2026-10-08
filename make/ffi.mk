@@ -46,7 +46,7 @@ ffi-library: $(FFI_LIBRARY) ## Build the libcore_crypto_ffi library
 # Use stamp files for generators: only re-run when inputs change
 #-------------------------------------------------------------------------------
 
-bindings-deps := $(UNIFFI_BINDGEN) $(FFI_LIBRARY)
+bindings-deps := $(UNIFFI_BINDGEN) $(FFI_LIBRARY) $(UNIFFI_TOML)
 
 # Swift bindings
 UNIFFI_SWIFT_OUTPUT := crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift
@@ -59,7 +59,7 @@ else
 $(UNIFFI_SWIFT_OUTPUT): $(bindings-deps)
 	mkdir -p crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi
 	$(UNIFFI_BINDGEN) generate \
-	  --config crypto-ffi/uniffi.toml \
+	  --config $(UNIFFI_TOML) \
 	  --language swift \
 	  --out-dir crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi \
 	  --library $(FFI_LIBRARY)
@@ -74,17 +74,17 @@ swift: bindings-swift $(STAMPS)/docs-swift
 # Kotlin-Android bindings
 UNIFFI_ANDROID_OUTPUT := crypto-ffi/bindings/android/src/main/uniffi/com/wire/crypto/core_crypto_ffi.kt
 
-$(UNIFFI_ANDROID_OUTPUT): $(bindings-deps)
+$(UNIFFI_ANDROID_OUTPUT): $(bindings-deps) $(UNIFFI_ANDROID_TOML)
 	mkdir -p crypto-ffi/bindings/android/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
-	  --config crypto-ffi/uniffi-android.toml \
+	  --config $(UNIFFI_ANDROID_TOML) \
 	  --language kotlin \
 	  --no-format \
 	  --out-dir crypto-ffi/bindings/android/src/main/uniffi \
 	  --library $(FFI_LIBRARY)
 
 .PHONY: bindings-kotlin-android
-bindings-kotlin-android-deps := $(bindings-deps)
+bindings-kotlin-android-deps := $(bindings-deps) $(UNIFFI_ANDROID_TOML)
 bindings-kotlin-android: $(UNIFFI_ANDROID_OUTPUT)  ## Generate Kotlin bindings for Android
 
 # Kotlin-JVM bindings
@@ -93,7 +93,7 @@ UNIFFI_JVM_OUTPUT := crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/cor
 $(UNIFFI_JVM_OUTPUT): $(bindings-deps)
 	mkdir -p crypto-ffi/bindings/jvm/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
-	  --config crypto-ffi/uniffi.toml \
+	  --config $(UNIFFI_TOML) \
 	  --language kotlin \
 	  --no-format \
 	  --out-dir crypto-ffi/bindings/jvm/src/main/uniffi \

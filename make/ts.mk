@@ -63,7 +63,7 @@ ts-clean: ## Cleanup old TypeScript build outputs
 	&& rm -rf $(WASM_TARGET_DIR) \
 	&& rm -rf $(JS_DIR)/rust_modules
 
-ubrn-deps := $(RUST_SOURCES) $(UBRN_CONFIG) $(BUN_LOCK) $(NODE_MODULES)
+ubrn-deps := $(RUST_SOURCES) $(UNIFFI_TOML) $(UBRN_CONFIG) $(BUN_LOCK) $(NODE_MODULES)
 $(WASM_FFI_LIB) $(BROWSER_TS_IMPL) $(RUST_MODULES_STAMP) &: $(ubrn-deps)
 	cd $(JS_DIR) && $(WASM_BUILD_ENV) bun ubrn build web --no-wasm-pack
 	touch $(RUST_MODULES_STAMP)
@@ -198,7 +198,7 @@ UBRN := $(JS_DIR)/node_modules/uniffi-bindgen-react-native/bin/cli.cjs
 
 # Cargo does not relink the library when the Rust sources were touched without changing, so we touch it
 # ourselves; otherwise it would stay older than its prerequisites and this rule would rerun every time.
-ts-native-gen-deps := $(RUST_SOURCES) $(BUN_LOCK) $(NODE_MODULES)
+ts-native-gen-deps := $(RUST_SOURCES) $(UNIFFI_TOML) $(BUN_LOCK) $(NODE_MODULES)
 $(TS_NATIVE_GEN) &: $(ts-native-gen-deps)
 	rm -rf $(TS_NATIVE_GEN_DIR) && \
 	mkdir -p $(TS_NATIVE_GEN_DIR) && \
@@ -215,7 +215,7 @@ $(TS_NATIVE_GEN) &: $(ts-native-gen-deps)
 .PHONY: ts-native-gen
 ts-native-gen: $(TS_NATIVE_GEN) ## Build the napi library and generate its TypeScript bindings
 
-ts-native-deps := $(TS_NATIVE_SRCS) $(RUST_SOURCES) $(BUN_LOCK) $(NODE_MODULES)
+ts-native-deps := $(TS_NATIVE_SRCS) $(RUST_SOURCES) $(UNIFFI_TOML) $(BUN_LOCK) $(NODE_MODULES)
 
 # Depend on source files, not $(TS_NATIVE_GEN) directly. The CI artifact system restores only
 # $(TS_NATIVE_OUT), so a direct prerequisite would make those restored files look stale and force
