@@ -569,8 +569,7 @@ Results are saved to `core-crypto/crypto-ffi/bindings/jvm/build/reports/async`.
   `git merge-base main release/2.x` must be a commit pointed to by tag `v2.0.0`.
 - Release branches are created lazily, that is, only when the first fix needs to be applied and released for a specific
   release series.
-- Use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) -- those are picked up by the changelog
-  generator.
+- Use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/).
 - If there is a JIRA ticket related to the change, you should mention it in either the PR title or the commit(s), with
   the following format: `[TICKET_ID]`.
 - Sign your [commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits)
