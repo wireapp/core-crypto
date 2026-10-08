@@ -45,8 +45,11 @@ jobs:
 
       - name: publish package to npm (Trusted Publishers)
         run: |
+          # 9.x is a maintenance line: never claim `latest`, the default, which belongs to the
+          # current major.
+          tag='CC9'
           cd crypto-ffi/bindings/js
-          npm publish "./${{ steps.package.outputs.filename }}"
+          npm publish "./${{ steps.package.outputs.filename }}" --tag "$tag"
 
       - name: delete package from gh release
         run: gh release delete-asset $GITHUB_REF_NAME "${{ steps.package.outputs.filename }}" --yes
