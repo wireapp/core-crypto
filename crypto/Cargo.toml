@@ -82,6 +82,7 @@ ml-dsa = { version = "0.1", default-features = false, features = [
   "alloc",
   "zeroize",
 ] }
+crypto-common = "0.2"
 
 [target.'cfg(target_os = "unknown")'.dependencies]
 serde-wasm-bindgen.workspace = true
