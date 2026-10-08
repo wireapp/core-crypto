@@ -1,0 +1,35 @@
+name: wire-maven script
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+# The script only runs on release tags, too late to find out it is broken, so test it
+# whenever it changes.
+on:
+  pull_request:
+    paths:
+      - "scripts/wire-maven.py"
+      - "scripts/test_wire_maven.py"
+      - ".github/workflows/wire-maven.yml"
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: install uv
+        uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
+        with:
+          tool: uv
+
+      - name: test the script
+        run: scripts/test_wire_maven.py

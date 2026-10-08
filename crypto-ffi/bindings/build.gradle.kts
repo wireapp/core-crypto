@@ -15,12 +15,24 @@ buildscript {
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
     alias(libs.plugins.android.library) apply false
-    id(libs.plugins.nexus.publish.get().pluginId) version libs.versions.nexus
     id(libs.plugins.dokka.get().pluginId) version libs.versions.dokka
 }
 
 subprojects {
     apply(plugin = "org.jetbrains.dokka")
+
+    // CI publishes into this local repository, then uploads it to maven.wire.com;
+    // see `.github/actions/wire-maven`.
+    plugins.withId("maven-publish") {
+        extensions.configure<PublishingExtension> {
+            repositories {
+                maven {
+                    name = "wireMaven"
+                    url = rootProject.layout.buildDirectory.dir("wire-maven").get().asFile.toURI()
+                }
+            }
+        }
+    }
 }
 
 allprojects {
@@ -75,16 +87,4 @@ allprojects {
 tasks.withType<Wrapper>().configureEach {
     version = libs.versions.gradle.get()
     distributionType = Wrapper.DistributionType.BIN
-}
-
-nexusPublishing {
-    repositories {
-        sonatype {
-            packageGroup.set("com.wire")
-            nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
-            snapshotRepositoryUrl.set(uri("https://central.sonatype.com/repository/maven-snapshots/"))
-            username.set(System.getenv("ORG_GRADLE_PROJECT_mavenCentralUsername"))
-            password.set(System.getenv("ORG_GRADLE_PROJECT_mavenCentralPassword"))
-        }
-    }
 }
