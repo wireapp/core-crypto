@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v9.3.5 - 2026-10-08
+
 ### Highlights
 
 - Fixes an issue with how commit delays are calculated which could lead to collisions between other members of a group, which in turn leads to commit congestion.
