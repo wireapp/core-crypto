@@ -36,7 +36,7 @@ jobs:
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
       - name: setup android sdk
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
       - uses: ./.github/actions/make/android/package
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
