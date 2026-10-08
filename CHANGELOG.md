@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Highlights
+
+- web: Fixes a wasm panic when a transaction callback throws a value that can't be serialized. The panic left the cc instance unusable. Only values that look like a `CoreCryptoError` reached the affected code, so this was unlikely to be hit in practice.
+
 ## v9.3.4 - 2026-04-30
 
 ### Highlights
