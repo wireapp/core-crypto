@@ -185,28 +185,46 @@ $(BROWSER_OUT) &: $(ts-browser-deps)
 .PHONY: ts-browser
 ts-browser: $(BROWSER_OUT) ## Build the TypeScript wrapper for the browser
 
-ts-native-deps := $(TS_NATIVE_SRCS) $(RUST_SOURCES) $(BUN_LOCK) $(NODE_MODULES)
+TS_NATIVE_GEN := \
+	$(TS_NATIVE_FFI_LIB) \
+	$(TS_NATIVE_GEN_DIR)/core_crypto_ffi.ts \
+	$(TS_NATIVE_GEN_DIR)/core_crypto_ffi-ffi.ts \
+	$(TS_NATIVE_GEN_DIR)/index.ts
 
-# For the ts-native rule, we're switching into `CURDIR` because ubrn has a bug where running this in a sub dir causes a
+# We're switching into `CURDIR` for ubrn because it has a bug where running this in a sub dir causes a
 # `cargo metadata` call to fail. Switching directories doesn't allow us to run `bun ubrn` directly, so we're setting
 # the script absolute path here.
 UBRN := $(JS_DIR)/node_modules/uniffi-bindgen-react-native/bin/cli.cjs
 
-$(TS_NATIVE_OUT) &: $(ts-native-deps)
-	cd $(JS_DIR) && \
-	rm -rf $(TS_NATIVE_OUT_DIR) && \
+# Cargo does not relink the library when the Rust sources were touched without changing, so we touch it
+# ourselves; otherwise it would stay older than its prerequisites and this rule would rerun every time.
+ts-native-gen-deps := $(RUST_SOURCES) $(BUN_LOCK) $(NODE_MODULES)
+$(TS_NATIVE_GEN) &: $(ts-native-gen-deps)
 	rm -rf $(TS_NATIVE_GEN_DIR) && \
 	mkdir -p $(TS_NATIVE_GEN_DIR) && \
-	mkdir -p $(TS_NATIVE_OUT_DIR) && \
 	$(TS_NATIVE_BUILD_ENV) cargo build $(CARGO_BUILD_ARGS) \
 		--locked \
 		--package core-crypto-ffi \
 		--lib \
 		--features napi \
 		--target $(TS_NATIVE_TARGET_TRIPLE) && \
-	(cd $(CURDIR) && $(TS_NATIVE_BUILD_ENV) RUSTFLAGS="$(RUSTFLAGS) -Awarnings" bun $(UBRN) generate napi bindings \
+	$(TS_NATIVE_BUILD_ENV) RUSTFLAGS="$(RUSTFLAGS) -Awarnings" bun $(UBRN) generate napi bindings \
 		--library $(TS_NATIVE_FFI_LIB) \
-		--ts-dir $(TS_NATIVE_GEN_DIR) --lib-colocated) && \
+		--ts-dir $(TS_NATIVE_GEN_DIR) --lib-colocated && \
+	touch $(TS_NATIVE_FFI_LIB)
+.PHONY: ts-native-gen
+ts-native-gen: $(TS_NATIVE_GEN) ## Build the napi library and generate its TypeScript bindings
+
+ts-native-deps := $(TS_NATIVE_SRCS) $(RUST_SOURCES) $(BUN_LOCK) $(NODE_MODULES)
+
+# Depend on source files, not $(TS_NATIVE_GEN) directly. The CI artifact system restores only
+# $(TS_NATIVE_OUT), so a direct prerequisite would make those restored files look stale and force
+# a full cargo build. The sub-make keeps TypeScript-only changes from touching cargo locally.
+$(TS_NATIVE_OUT) &: $(ts-native-deps)
+	$(MAKE) $(TS_NATIVE_GEN)
+	cd $(JS_DIR) && \
+	rm -rf $(TS_NATIVE_OUT_DIR) && \
+	mkdir -p $(TS_NATIVE_OUT_DIR) && \
 	bun build packages/native/src/CoreCrypto.ts \
 	  --conditions=cc-native \
 	  --target node \
