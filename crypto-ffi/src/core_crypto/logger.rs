@@ -95,9 +95,9 @@ impl Default for LogShim {
 impl LogShim {
     fn adjusted_log_level(&self, metadata: &Metadata) -> Level {
         match (metadata.level(), metadata.target()) {
-            // increase log level for refinery_core::traits since they are too verbose in transactions
-            (level, "refinery_core::traits") if level >= Level::Info => Level::Debug,
-            (level, "refinery_core::traits::sync") if level >= Level::Info => Level::Debug,
+            // depress log level for refinery_core::traits since they are too verbose in transactions
+            (level, "refinery_core::traits") if level >= Level::Info => Level::Trace,
+            (level, "refinery_core::traits::sync") if level >= Level::Info => Level::Trace,
             (level, _) => level,
         }
     }
