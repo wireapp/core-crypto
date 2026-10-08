@@ -94,16 +94,16 @@ export class CoreCrypto extends CoreCryptoFfi {
                         result = await callback(ctx);
                     } catch (e) {
                         // We want to catch the error before it gets wrapped by core crypto.
-                        if (CoreCryptoError.instanceOf(e)) {
-                            error = e;
-                        } else if (Error.isError(e)) {
+                        if (Error.isError(e)) {
                             error = e;
                         } else {
                             // Something unexpected was thrown
                             needOuterRethrow = true;
                         }
                         // This is to tell core crypto that there was an error inside the transaction.
-                        throw e;
+                        // Uniffi can't handle `null` or `undefined` (the transaction would never settle),
+                        // so pass an `Error` instead.
+                        throw e ?? new Error(String(e));
                     }
                 },
             });
