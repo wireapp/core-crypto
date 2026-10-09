@@ -82,7 +82,11 @@ mod tests {
 
             use crate::test_utils::DummyPkiEnvironmentHooks;
 
-            let x509_test_chain = case.set_test_chain(&[], &[], None).await;
+            let x509_test_chain = if case.supports_x509() {
+                Some(case.set_test_chain(&[], &[], None).await)
+            } else {
+                None
+            };
 
             // phase 1: init without initialized mls_client
             let cc = CoreCrypto::new(db.clone());
@@ -92,7 +96,9 @@ mod tests {
             let pki_env = PkiEnvironment::new(hooks, db).await.expect("creating pki environment");
             cc.set_pki_environment(Some(Arc::new(pki_env))).await;
 
-            x509_test_chain.register_with_central(&context).await;
+            if let Some(x509_test_chain) = x509_test_chain {
+                x509_test_chain.register_with_central(&context).await;
+            }
 
             // phase 2: init mls_client
             let credential = case.generate_credential().await;
