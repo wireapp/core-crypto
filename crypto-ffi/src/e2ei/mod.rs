@@ -264,3 +264,42 @@ impl X509CredentialAcquisition {
         credential_from_acquisition_result(self.cipher_suite, signing_key_pem.as_str(), certificate_chain)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use core_crypto::SignatureScheme;
+
+    use super::*;
+
+    fn all_cipher_suites() -> impl Iterator<Item = FfiCiphersuite> {
+        (0..=u16::MAX).filter_map(|cs| FfiCiphersuite::try_from(cs).ok())
+    }
+
+    #[test]
+    fn acquisition_signing_algorithm_matches_cipher_suite() {
+        for cipher_suite in all_cipher_suites() {
+            let Ok(sign_alg) = JwsAlgorithm::try_from(cipher_suite) else {
+                continue;
+            };
+            let expected = match core_crypto::CipherSuite::from(cipher_suite).signature_algorithm() {
+                SignatureScheme::ED25519 => JwsAlgorithm::Ed25519,
+                SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::P256,
+                SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::P384,
+                SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::P521,
+                scheme => panic!("{cipher_suite:?} with {scheme:?} must not support acquisition"),
+            };
+            assert_eq!(sign_alg, expected, "{cipher_suite:?}");
+        }
+    }
+
+    #[test]
+    fn cipher_suite_is_restored_from_snapshot() {
+        for cipher_suite in all_cipher_suites() {
+            let Ok(sign_alg) = JwsAlgorithm::try_from(cipher_suite) else {
+                continue;
+            };
+            let restored = cipher_suite_from_snapshot(Some(cipher_suite as u16), sign_alg).unwrap();
+            assert_eq!(restored, cipher_suite);
+        }
+    }
+}
