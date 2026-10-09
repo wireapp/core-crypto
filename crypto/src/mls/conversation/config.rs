@@ -52,6 +52,18 @@ impl ConversationConfiguration {
         MlsCiphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519,
         MlsCiphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
         MlsCiphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+        // PQ ciphersuites from draft-ietf-mls-pq-ciphersuites-06
+        MlsCiphersuite::MLS_128_MLKEM768X25519_AES128GCM_SHA256_Ed25519,
+        MlsCiphersuite::MLS_128_MLKEM768X25519_AES256GCM_SHA384_Ed25519,
+        MlsCiphersuite::MLS_128_MLKEM768P256_AES128GCM_SHA256_P256,
+        MlsCiphersuite::MLS_128_MLKEM768P256_AES256GCM_SHA384_P256,
+        MlsCiphersuite::MLS_192_MLKEM1024P384_AES256GCM_SHA384_P384,
+        MlsCiphersuite::MLS_128_MLKEM768_AES256GCM_SHA384_P256,
+        MlsCiphersuite::MLS_192_MLKEM1024_AES256GCM_SHA384_P384,
+        MlsCiphersuite::MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65,
+        MlsCiphersuite::MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87,
+        MlsCiphersuite::MLS_128_MLKEM768_AES256GCM_SHA384_Ed25519,
+        MlsCiphersuite::MLS_128_MLKEM768X25519_CHACHA20POLY1305_SHA384_MLDSA44,
     ];
 
     /// Not used at the moment
@@ -227,7 +239,11 @@ mod tests {
                 SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::P256,
                 SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::P384,
                 SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::P521,
-                SignatureScheme::ED448 => unreachable!(),
+                // no JWK algorithm for these yet, so nothing to test here
+                SignatureScheme::ED448
+                | SignatureScheme::MLDSA44
+                | SignatureScheme::MLDSA65
+                | SignatureScheme::MLDSA87 => return,
             };
 
             let jwk = rusty_jwt_tools::prelude::generate_jwk(alg);

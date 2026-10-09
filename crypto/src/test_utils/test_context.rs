@@ -66,6 +66,114 @@ pub use crate::{CipherSuite, ConversationConfiguration, CredentialType, WirePoli
         crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
+    // Post-quantum variants.
+    case::basic_f001(TestContext::new(
+        crate::CredentialType::Basic,
+        openmls::prelude::Ciphersuite::MLS_128_MLKEM768X25519_AES128GCM_SHA256_Ed25519
+    )),
+    case::cert_f001(TestContext::new(
+        crate::CredentialType::X509,
+        openmls::prelude::Ciphersuite::MLS_128_MLKEM768X25519_AES128GCM_SHA256_Ed25519
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::basic_f002(TestContext::new(
+        crate::CredentialType::Basic,
+        openmls::prelude::Ciphersuite::MLS_128_MLKEM768X25519_AES256GCM_SHA384_Ed25519,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::cert_f002(TestContext::new(
+        crate::CredentialType::X509,
+        openmls::prelude::Ciphersuite::MLS_128_MLKEM768X25519_AES256GCM_SHA384_Ed25519,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::basic_f003(TestContext::new(
+        crate::CredentialType::Basic,
+        openmls::prelude::Ciphersuite::MLS_128_MLKEM768P256_AES128GCM_SHA256_P256,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::cert_f003(TestContext::new(
+        crate::CredentialType::X509,
+        openmls::prelude::Ciphersuite::MLS_128_MLKEM768P256_AES128GCM_SHA256_P256,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::basic_f004(TestContext::new(
+        crate::CredentialType::Basic,
+        openmls::prelude::Ciphersuite::MLS_128_MLKEM768P256_AES256GCM_SHA384_P256,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::cert_f004(TestContext::new(
+        crate::CredentialType::X509,
+        openmls::prelude::Ciphersuite::MLS_128_MLKEM768P256_AES256GCM_SHA384_P256,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::basic_f005(TestContext::new(
+        crate::CredentialType::Basic,
+        openmls::prelude::Ciphersuite::MLS_192_MLKEM1024P384_AES256GCM_SHA384_P384,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::cert_f005(TestContext::new(
+        crate::CredentialType::X509,
+        openmls::prelude::Ciphersuite::MLS_192_MLKEM1024P384_AES256GCM_SHA384_P384,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::basic_f006(TestContext::new(
+        crate::CredentialType::Basic,
+        openmls::prelude::Ciphersuite::MLS_128_MLKEM768_AES256GCM_SHA384_Ed25519,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::cert_f006(TestContext::new(
+        crate::CredentialType::X509,
+        openmls::prelude::Ciphersuite::MLS_128_MLKEM768_AES256GCM_SHA384_Ed25519,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::basic_f007(TestContext::new(
+        crate::CredentialType::Basic,
+        openmls::prelude::Ciphersuite::MLS_128_MLKEM768_AES256GCM_SHA384_P256,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::cert_f007(TestContext::new(
+        crate::CredentialType::X509,
+        openmls::prelude::Ciphersuite::MLS_128_MLKEM768_AES256GCM_SHA384_P256,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::basic_f008(TestContext::new(
+        crate::CredentialType::Basic,
+        openmls::prelude::Ciphersuite::MLS_192_MLKEM1024_AES256GCM_SHA384_P384,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::cert_f008(TestContext::new(
+        crate::CredentialType::X509,
+        openmls::prelude::Ciphersuite::MLS_192_MLKEM1024_AES256GCM_SHA384_P384,
+    )),
+    case::basic_f009(TestContext::new(
+        crate::CredentialType::Basic,
+        openmls::prelude::Ciphersuite::MLS_128_MLKEM768X25519_CHACHA20POLY1305_SHA384_MLDSA44,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::cert_f009(TestContext::new(
+        crate::CredentialType::X509,
+        openmls::prelude::Ciphersuite::MLS_128_MLKEM768X25519_CHACHA20POLY1305_SHA384_MLDSA44,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::basic_f00a(TestContext::new(
+        crate::CredentialType::Basic,
+        openmls::prelude::Ciphersuite::MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::cert_f00a(TestContext::new(
+        crate::CredentialType::X509,
+        openmls::prelude::Ciphersuite::MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::basic_f00b(TestContext::new(
+        crate::CredentialType::Basic,
+        openmls::prelude::Ciphersuite::MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87,
+    )),
+    #[cfg(feature = "test-all-cipher")]
+    case::cert_f00b(TestContext::new(
+        crate::CredentialType::X509,
+        openmls::prelude::Ciphersuite::MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87,
+    )),
 )]
 #[test_attr(macro_rules_attribute::apply(smol_macros::test))]
 #[allow(non_snake_case)]

@@ -78,6 +78,12 @@ rand.workspace = true
 getrandom.workspace = true
 rand_core = "0.10"
 rand_chacha = "0.10"
+ml-dsa = { version = "0.1", default-features = false, features = [
+  "alloc",
+  "zeroize",
+] }
+crypto-common = "0.2"
+blake3 = "1.8"
 
 [target.'cfg(target_os = "unknown")'.dependencies]
 serde-wasm-bindgen.workspace = true

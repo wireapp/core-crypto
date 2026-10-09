@@ -237,6 +237,17 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn heterogeneous_clients_can_send_messages(case: TestContext) {
+        // We don't yet support ML-DSA signatures with x509 credentials.
+        if [
+            SignatureScheme::MLDSA44,
+            SignatureScheme::MLDSA65,
+            SignatureScheme::MLDSA87,
+        ]
+        .contains(&case.signature_scheme())
+        {
+            return;
+        }
+
         // check that both credentials can initiate/join a group
         let ([x509_session], [basic_session]) = case.sessions_mixed_credential_types().await;
 
