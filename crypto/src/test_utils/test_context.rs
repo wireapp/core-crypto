@@ -145,13 +145,10 @@ pub use crate::{CipherSuite, ConversationConfiguration, CredentialType, WirePoli
         crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_192_MLKEM1024_AES256GCM_SHA384_P384,
     )),
+    // We don't yet support ML-DSA signatures with x509 credentials, so the ML-DSA ciphersuites are
+    // only tested with basic credentials. See `TestContext::supports_x509`.
     case::basic_f009(TestContext::new(
         crate::CredentialType::Basic,
-        openmls::prelude::Ciphersuite::MLS_128_MLKEM768X25519_CHACHA20POLY1305_SHA384_MLDSA44,
-    )),
-    #[cfg(feature = "test-all-cipher")]
-    case::cert_f009(TestContext::new(
-        crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_MLKEM768X25519_CHACHA20POLY1305_SHA384_MLDSA44,
     )),
     #[cfg(feature = "test-all-cipher")]
@@ -160,18 +157,8 @@ pub use crate::{CipherSuite, ConversationConfiguration, CredentialType, WirePoli
         openmls::prelude::Ciphersuite::MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65,
     )),
     #[cfg(feature = "test-all-cipher")]
-    case::cert_f00a(TestContext::new(
-        crate::CredentialType::X509,
-        openmls::prelude::Ciphersuite::MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65,
-    )),
-    #[cfg(feature = "test-all-cipher")]
     case::basic_f00b(TestContext::new(
         crate::CredentialType::Basic,
-        openmls::prelude::Ciphersuite::MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87,
-    )),
-    #[cfg(feature = "test-all-cipher")]
-    case::cert_f00b(TestContext::new(
-        crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87,
     )),
 )]
