@@ -36,7 +36,7 @@
         "access": "public"
     },
     "dependencies": {
-        "@ubjs/core": "0.31.0-5",
-        "@ubjs/node": "0.31.0-5"
+        "@ubjs/core": "0.31.0-6",
+        "@ubjs/node": "0.31.0-6"
     }
 }
