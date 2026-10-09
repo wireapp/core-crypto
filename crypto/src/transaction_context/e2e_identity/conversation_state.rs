@@ -126,6 +126,9 @@ mod tests {
     // testing the case where Bob & Alice have different Credential type
     #[apply(all_cred_cipher)]
     async fn heterogeneous_conversation_should_be_not_verified(case: TestContext) {
+        if !case.supports_x509() {
+            return;
+        }
         let ([x509_session], [basic_session]) = case.sessions_mixed_credential_types().await;
         Box::pin(async move {
             // That way the conversation creator (Alice) will have a different credential type than Bob

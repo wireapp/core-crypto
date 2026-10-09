@@ -237,14 +237,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn heterogeneous_clients_can_send_messages(case: TestContext) {
-        // We don't yet support ML-DSA signatures with x509 credentials.
-        if [
-            SignatureScheme::MLDSA44,
-            SignatureScheme::MLDSA65,
-            SignatureScheme::MLDSA87,
-        ]
-        .contains(&case.signature_scheme())
-        {
+        if !case.supports_x509() {
             return;
         }
 
@@ -263,6 +256,9 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn should_fail_when_certificate_chain_is_empty(case: TestContext) {
+        if !case.supports_x509() {
+            return;
+        }
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
         let x509_intermediate = x509_test_chain.find_local_intermediate_ca();

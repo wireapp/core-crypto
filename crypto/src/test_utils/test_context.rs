@@ -238,6 +238,16 @@ impl TestContext {
         matches!(self.credential_type, CredentialType::Basic)
     }
 
+    /// Whether x509 credentials (and thus an x509 test chain) can be created with this case's ciphersuite.
+    ///
+    /// We don't yet support ML-DSA signatures with x509 credentials, and neither does the test PKI.
+    pub fn supports_x509(&self) -> bool {
+        !matches!(
+            self.signature_scheme(),
+            SignatureScheme::MLDSA44 | SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87
+        )
+    }
+
     /// Create a new temporary directory and open a db there. Will be deleted on drop of [TestContext].
     /// Use this only if you're not instantiating a [SessionContext] in your test.
     pub async fn create_persistent_db(&mut self) -> Arc<Database> {
