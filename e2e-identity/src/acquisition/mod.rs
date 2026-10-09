@@ -37,6 +37,12 @@ pub struct X509CredentialConfiguration {
     pub domain: String,
     pub team: Option<String>,
     pub validity_period: std::time::Duration,
+    /// The MLS ciphersuite the acquired credential is going to be used with.
+    ///
+    /// Ciphersuites can share the same `sign_alg`, so this is needed to restore the ciphersuite
+    /// when resuming a serialized acquisition. `None` for acquisitions serialized before this
+    /// field was introduced.
+    pub cipher_suite: Option<u16>,
 }
 
 pub mod states {
@@ -123,6 +129,11 @@ impl<T: std::fmt::Debug> X509CredentialAcquisition<T> {
     /// The signing algorithm used for certificate acquisition.
     pub fn sign_alg(&self) -> JwsAlgorithm {
         self.config.sign_alg
+    }
+
+    /// The MLS ciphersuite the acquired credential is going to be used with, if known.
+    pub fn cipher_suite(&self) -> Option<u16> {
+        self.config.cipher_suite
     }
 
     /// Send an HTTP request to the ACME server and return the result in the form of a
