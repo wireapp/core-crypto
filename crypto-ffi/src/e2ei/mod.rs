@@ -40,27 +40,54 @@ impl TryFrom<FfiCiphersuite> for JwsAlgorithm {
     type Error = CoreCryptoError;
 
     fn try_from(value: FfiCiphersuite) -> Result<Self, Self::Error> {
+        // This match is deliberately exhaustive, so that adding a ciphersuite requires deciding
+        // whether it supports certificate acquisition.
         match value {
-            FfiCiphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 => Ok(Self::Ed25519),
-            FfiCiphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 => Ok(Self::P256),
-            FfiCiphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 => Ok(Self::P384),
+            FfiCiphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+            | FfiCiphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
+            | FfiCiphersuite::MLS_128_MLKEM768X25519_AES128GCM_SHA256_Ed25519
+            | FfiCiphersuite::MLS_128_MLKEM768X25519_AES256GCM_SHA384_Ed25519
+            | FfiCiphersuite::MLS_128_MLKEM768_AES256GCM_SHA384_Ed25519 => Ok(Self::Ed25519),
+            FfiCiphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+            | FfiCiphersuite::MLS_128_MLKEM768P256_AES128GCM_SHA256_P256
+            | FfiCiphersuite::MLS_128_MLKEM768P256_AES256GCM_SHA384_P256
+            | FfiCiphersuite::MLS_128_MLKEM768_AES256GCM_SHA384_P256 => Ok(Self::P256),
+            FfiCiphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
+            | FfiCiphersuite::MLS_192_MLKEM1024P384_AES256GCM_SHA384_P384
+            | FfiCiphersuite::MLS_192_MLKEM1024_AES256GCM_SHA384_P384 => Ok(Self::P384),
             FfiCiphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521 => Ok(Self::P521),
-            _ => Err(CoreCryptoError::ad_hoc(
+            // There is no JWS algorithm for Ed448.
+            FfiCiphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448
+            | FfiCiphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448
+            // We don't yet support ML-DSA signatures with x509 credentials.
+            | FfiCiphersuite::MLS_128_MLKEM768X25519_CHACHA20POLY1305_SHA384_MLDSA44
+            | FfiCiphersuite::MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65
+            | FfiCiphersuite::MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87 => Err(CoreCryptoError::ad_hoc(
                 "cipher_suite is not supported for certificate acquisition",
             )),
         }
     }
 }
 
-impl From<JwsAlgorithm> for FfiCiphersuite {
-    fn from(value: JwsAlgorithm) -> Self {
-        match value {
+/// Restore the ciphersuite of a deserialized acquisition.
+fn cipher_suite_from_snapshot(cipher_suite: Option<u16>, sign_alg: JwsAlgorithm) -> CoreCryptoResult<FfiCiphersuite> {
+    let Some(cipher_suite) = cipher_suite else {
+        // Acquisitions serialized before the ciphersuite was stored could only use these.
+        return Ok(match sign_alg {
             JwsAlgorithm::Ed25519 => FfiCiphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
             JwsAlgorithm::P256 => FfiCiphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
             JwsAlgorithm::P384 => FfiCiphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
             JwsAlgorithm::P521 => FfiCiphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
-        }
+        });
+    };
+
+    let cipher_suite = FfiCiphersuite::try_from(cipher_suite).map_err(CoreCryptoError::generic())?;
+    if JwsAlgorithm::try_from(cipher_suite)? != sign_alg {
+        return Err(CoreCryptoError::ad_hoc(
+            "acquisition cipher suite doesn't match its signing algorithm",
+        ));
     }
+    Ok(cipher_suite)
 }
 
 /// Configuration for an X509 credential acquisition flow.
@@ -98,6 +125,7 @@ impl X509CredentialAcquisitionConfiguration {
             domain: self.domain,
             team: self.team,
             validity_period: std::time::Duration::from_secs(self.validity_period_secs),
+            cipher_suite: Some(self.cipher_suite as u16),
         })
     }
 }
@@ -184,7 +212,7 @@ impl X509CredentialAcquisition {
         )
         .map_err(CoreCryptoError::generic())?;
 
-        let cipher_suite: FfiCiphersuite = snapshot.sign_alg().into();
+        let cipher_suite = cipher_suite_from_snapshot(snapshot.cipher_suite(), snapshot.sign_alg())?;
 
         Ok(Self {
             state: Mutex::new(AcquisitionState::DpopChallengeCompleted(snapshot.into())),
@@ -234,5 +262,44 @@ impl X509CredentialAcquisition {
         *self.state.lock().await = AcquisitionState::Finalized;
         let (signing_key_pem, certificate_chain) = result?;
         credential_from_acquisition_result(self.cipher_suite, signing_key_pem.as_str(), certificate_chain)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use core_crypto::SignatureScheme;
+
+    use super::*;
+
+    fn all_cipher_suites() -> impl Iterator<Item = FfiCiphersuite> {
+        (0..=u16::MAX).filter_map(|cs| FfiCiphersuite::try_from(cs).ok())
+    }
+
+    #[test]
+    fn acquisition_signing_algorithm_matches_cipher_suite() {
+        for cipher_suite in all_cipher_suites() {
+            let Ok(sign_alg) = JwsAlgorithm::try_from(cipher_suite) else {
+                continue;
+            };
+            let expected = match core_crypto::CipherSuite::from(cipher_suite).signature_algorithm() {
+                SignatureScheme::ED25519 => JwsAlgorithm::Ed25519,
+                SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::P256,
+                SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::P384,
+                SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::P521,
+                scheme => panic!("{cipher_suite:?} with {scheme:?} must not support acquisition"),
+            };
+            assert_eq!(sign_alg, expected, "{cipher_suite:?}");
+        }
+    }
+
+    #[test]
+    fn cipher_suite_is_restored_from_snapshot() {
+        for cipher_suite in all_cipher_suites() {
+            let Ok(sign_alg) = JwsAlgorithm::try_from(cipher_suite) else {
+                continue;
+            };
+            let restored = cipher_suite_from_snapshot(Some(cipher_suite as u16), sign_alg).unwrap();
+            assert_eq!(restored, cipher_suite);
+        }
     }
 }

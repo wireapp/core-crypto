@@ -109,6 +109,7 @@ mod tests {
             domain: "wire.example".into(),
             team: Some("team".into()),
             validity_period: std::time::Duration::from_secs(3600),
+            cipher_suite: Some(0xF003),
         };
         let initialized = X509CredentialAcquisition::try_new(pki_env.clone(), config).unwrap();
         let acquisition = X509CredentialAcquisition::<states::DpopChallengeCompleted> {

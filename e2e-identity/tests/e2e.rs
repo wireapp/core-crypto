@@ -204,6 +204,7 @@ async fn prepare_pki_env_and_config(
         domain: domain.clone(),
         team: Some("team".into()),
         validity_period: std::time::Duration::from_hours(1),
+        cipher_suite: None,
     };
     let wire_server_context = serde_json::json!({
         "client-id": client_id.to_uri(),
