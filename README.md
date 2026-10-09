@@ -578,6 +578,8 @@ Results are saved to `core-crypto/crypto-ffi/bindings/jvm/build/reports/async`.
 
 ## Publishing<a name="publishing"></a>
 
+Gradle/Maven packages (JVM, Android, KMP) are published to [maven.wire.com](https://maven.wire.com).
+
 ### Versioning<a name="versioning"></a>
 
 The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.org).

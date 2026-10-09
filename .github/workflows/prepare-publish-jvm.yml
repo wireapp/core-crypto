@@ -14,10 +14,6 @@ on:
         required: false
         type: string
     secrets:
-      SONATYPE_USERNAME:
-        required: true
-      SONATYPE_PASSWORD:
-        required: true
       PGP_KEY_ID:
         required: true
       PGP_SIGNING_KEY:
@@ -26,7 +22,7 @@ on:
         required: true
     outputs:
       staging_repository_id:
-        description: "The Sonatype staging repository id created during the prepare phase."
+        description: "Sonatype staging repository id created during the prepare phase."
         value: ${{ jobs.jvm.outputs.staging_repository_id }}
 
 env:
@@ -36,6 +32,8 @@ jobs:
   jvm:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     outputs:
       staging_repository_id: ${{ steps.stage.outputs.staging_repository_id }}
     steps:
@@ -77,14 +75,40 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
-      - name: stage artifact in sonatype
-        id: stage
-        uses: ./.github/actions/sonatype/stage
+      - name: configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
-          project: ":jvm"
-          label: JVM
-          sonatype-username: ${{ secrets.SONATYPE_USERNAME }}
-          sonatype-password: ${{ secrets.SONATYPE_PASSWORD }}
-          pgp-key-id: ${{ secrets.PGP_KEY_ID }}
-          pgp-signing-key: ${{ secrets.PGP_SIGNING_KEY }}
-          pgp-passphrase: ${{ secrets.PGP_PASSPHRASE }}
+          role-to-assume: arn:aws:iam::093205192929:role/gh-actions-maven-publish-core-crypto
+          aws-region: us-east-1
+
+      - name: publish to local maven
+        id: publish
+        working-directory: crypto-ffi/bindings
+        run: |
+          ./gradlew :jvm:publishMavenPublicationToWireMavenRepository -PskipSigning=true
+
+      - name: sync to S3
+        id: stage
+        run: |
+          VERSION=$(sed -n 's/^VERSION_NAME=//p' crypto-ffi/bindings/gradle.properties)
+          ARTIFACT_ID=$(sed -n 's/^POM_ARTIFACT_ID=//p' crypto-ffi/bindings/jvm/gradle.properties)
+          GROUP="com.wire"
+
+          echo "Publishing ${GROUP}/${ARTIFACT_ID}/${VERSION} to s3://maven-wire-com"
+
+          local_s3_path="s3://maven-wire-com/${GROUP//./$'/'}${ARTIFACT_ID}/${VERSION}/"
+          aws s3 sync "crypto-ffi/bindings/jvm/build/maven-publish" "$local_s3_path" --no-progress
+
+          # Extract the maven-metadata.xml from the published version directory
+          local_metadata=$(find crypto-ffi/bindings/jvm/build/maven-publish -name "maven-metadata.xml" | head -n1)
+          if [ -n "$local_metadata" ]; then
+            meta_path="s3://maven-wire-com/${GROUP//./$'/'}${ARTIFACT_ID}/"
+            echo "Uploading maven-metadata.xml to ${meta_path}"
+            aws s3 cp "$local_metadata" "${meta_path}"
+          fi
+
+          echo "staging_repository_id=jvm" >> "$GITHUB_OUTPUT"
+        env:
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.PGP_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.PGP_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.PGP_PASSPHRASE }}

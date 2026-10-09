@@ -10,6 +10,10 @@ plugins {
     id("me.champeau.jmh") version "0.7.3"
 }
 
+repositories {
+    mavenLocal()
+}
+
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
@@ -36,6 +40,8 @@ dependencies {
 }
 
 val buildType = if (System.getenv("RELEASE") == "1") "release" else "debug"
+
+val mavenPublishDir = layout.buildDirectory.dir("maven-publish").get().asFile
 
 // This is the base directory under `build` that holds all libraries, organized by
 // the build type (debug or release) and the target (linux-x86-64 etc.).
@@ -174,50 +180,66 @@ val dokkaHtmlJar = tasks.register<Jar>("dokkaHtmlJar") {
     from(tasks.named("dokkaGeneratePublicationHtml"))
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            from(components["java"])
-            artifactId = findProperty("POM_ARTIFACT_ID") as String
-            groupId = findProperty("GROUP") as String
-            version = findProperty("VERSION_NAME") as String
-            artifact(sourcesJar)
-            artifact(dokkaHtmlJar)
-            pom {
-                name.set(findProperty("POM_NAME") as String)
-                description.set(findProperty("POM_DESCRIPTION") as String)
-                url.set(findProperty("POM_URL") as String)
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("maven") {
+                from(components["java"])
+                artifactId = findProperty("POM_ARTIFACT_ID") as String
+                groupId = findProperty("GROUP") as String
+                version = findProperty("VERSION_NAME") as String
+                artifact(sourcesJar)
+                artifact(dokkaHtmlJar)
+                pom {
+                    name.set(findProperty("POM_NAME") as String)
+                    description.set(findProperty("POM_DESCRIPTION") as String)
+                    url.set(findProperty("POM_URL") as String)
 
-                licenses {
-                    license {
-                        name.set(findProperty("POM_LICENSE_NAME") as String)
-                        url.set(findProperty("POM_LICENSE_URL") as String)
-                        distribution.set(findProperty("POM_LICENSE_DIST") as String)
+                    licenses {
+                        license {
+                            name.set(findProperty("POM_LICENSE_NAME") as String)
+                            url.set(findProperty("POM_LICENSE_URL") as String)
+                            distribution.set(findProperty("POM_LICENSE_DIST") as String)
+                        }
+                    }
+
+                    scm {
+                        url.set(findProperty("POM_SCM_URL") as String)
+                        connection.set(findProperty("POM_SCM_CONNECTION") as String)
+                        developerConnection.set(findProperty("POM_SCM_DEV_CONNECTION") as String)
+                    }
+
+                    developers {
+                        developer {
+                            name.set(findProperty("POM_DEVELOPER_NAME") as String)
+                            email.set(findProperty("POM_DEVELOPER_EMAIL") as String)
+                        }
                     }
                 }
-
-                scm {
-                    url.set(findProperty("POM_SCM_URL") as String)
-                    connection.set(findProperty("POM_SCM_CONNECTION") as String)
-                    developerConnection.set(findProperty("POM_SCM_DEV_CONNECTION") as String)
-                }
-
-                developers {
-                    developer {
-                        name.set(findProperty("POM_DEVELOPER_NAME") as String)
-                        email.set(findProperty("POM_DEVELOPER_EMAIL") as String)
-                    }
-                }
+            }
+        }
+        repositories {
+            maven {
+                name = "wireMaven"
+                url = mavenPublishDir.toURI()
             }
         }
     }
 }
 
-signing {
-    useInMemoryPgpKeys(
-        System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyId"),
-        System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey"),
-        System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyPassword")
-    )
-    sign(publishing.publications)
+// Signing is only configured when PGP env vars are set (i.e. during release to maven.wire.com).
+// For local development and PR builds, signing is skipped.
+val signingKeyId = System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyId")
+val signingKey = System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKey")
+val signingPassword = System.getenv("ORG_GRADLE_PROJECT_signingInMemoryKeyPassword")
+
+if (signingKeyId != null && signingKey != null && signingPassword != null) {
+    signing {
+        useInMemoryPgpKeys(
+            signingKeyId,
+            signingKey,
+            signingPassword
+        )
+        sign(publishing.publications)
+    }
 }
