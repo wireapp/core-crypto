@@ -204,6 +204,13 @@ async fn prepare_pki_env_and_config(
         domain: domain.clone(),
         team: Some("team".into()),
         validity_period: std::time::Duration::from_hours(1),
+        // the classical ciphersuite using `sign_alg`
+        cipher_suite: match sign_alg {
+            JwsAlgorithm::Ed25519 => 0x0001,
+            JwsAlgorithm::P256 => 0x0002,
+            JwsAlgorithm::P384 => 0x0007,
+            JwsAlgorithm::P521 => 0x0005,
+        },
     };
     let wire_server_context = serde_json::json!({
         "client-id": client_id.to_uri(),
