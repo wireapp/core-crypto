@@ -95,9 +95,9 @@
 <a href=#95 id=95 data-nosnippet>95</a><span class="kw">impl </span>LogShim {
 <a href=#96 id=96 data-nosnippet>96</a>    <span class="kw">fn </span>adjusted_log_level(<span class="kw-2">&amp;</span><span class="self">self</span>, metadata: <span class="kw-2">&amp;</span>Metadata) -&gt; Level {
 <a href=#97 id=97 data-nosnippet>97</a>        <span class="kw">match </span>(metadata.level(), metadata.target()) {
-<a href=#98 id=98 data-nosnippet>98</a>            <span class="comment">// increase log level for refinery_core::traits since they are too verbose in transactions
-<a href=#99 id=99 data-nosnippet>99</a>            </span>(level, <span class="string">"refinery_core::traits"</span>) <span class="kw">if </span>level &gt;= Level::Info =&gt; Level::Debug,
-<a href=#100 id=100 data-nosnippet>100</a>            (level, <span class="string">"refinery_core::traits::sync"</span>) <span class="kw">if </span>level &gt;= Level::Info =&gt; Level::Debug,
+<a href=#98 id=98 data-nosnippet>98</a>            <span class="comment">// depress log level for refinery_core::traits since they are too verbose in transactions
+<a href=#99 id=99 data-nosnippet>99</a>            </span>(level, <span class="string">"refinery_core::traits"</span>) <span class="kw">if </span>level &gt;= Level::Info =&gt; Level::Trace,
+<a href=#100 id=100 data-nosnippet>100</a>            (level, <span class="string">"refinery_core::traits::sync"</span>) <span class="kw">if </span>level &gt;= Level::Info =&gt; Level::Trace,
 <a href=#101 id=101 data-nosnippet>101</a>            (level, <span class="kw">_</span>) =&gt; level,
 <a href=#102 id=102 data-nosnippet>102</a>        }
 <a href=#103 id=103 data-nosnippet>103</a>    }

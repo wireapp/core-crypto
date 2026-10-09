@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-55575af7.js";
+            window.path_to_searchindex_js = "searchindex-d22ab2a3.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1c113b1d.js"></script>
@@ -392,6 +392,18 @@ only if the key package was created in an earlier CoreCrypto transaction.</li>
 <li>Reworked client id constructor to take typed data instead of a byte string</li>
 </ul>
 <h2 id="corecrypto-9"><a class="header" href="#corecrypto-9">CoreCrypto 9</a></h2>
+<h2 id="v935---2026-10-08"><a class="header" href="#v935---2026-10-08">v9.3.5 - 2026-10-08</a></h2>
+<ul>
+<li>
+<p>Fixes an issue with how commit delays are calculated which could lead to collisions between other members of a group,
+which in turn leads to commit congestion.</p>
+</li>
+<li>
+<p>web: Fixes a wasm panic when a transaction callback throws a value that can’t be serialized. The panic left the cc
+instance unusable. Only values that look like a <code>CoreCryptoError</code> reached the affected code, so this was unlikely to
+be hit in practice.</p>
+</li>
+</ul>
 <h3 id="v934---2026-04-30"><a class="header" href="#v934---2026-04-30">v9.3.4 - 2026-04-30</a></h3>
 <p>Fixes an issue that could cause <em>epoch observer</em> events to be emitted for epoch changes that would not (yet) actually be
 persisted to the CoreCrypto database. This is relevant if the CoreCrypto instance is used inside the event handler of
