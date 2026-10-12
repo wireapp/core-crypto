@@ -35,7 +35,7 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
             id_token,
             &self.data.oidc_challenge,
             &self.data.acme_account,
-            self.config.sign_alg,
+            self.sign_alg,
             &self.acme_kp,
             self.data.nonce.clone(),
         )?;
@@ -51,7 +51,7 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
         let finalize_request = acme::finalize_req(
             &self.data.order,
             &self.data.acme_account,
-            self.config.sign_alg,
+            self.sign_alg,
             &self.acme_kp,
             &self.sign_kp,
             nonce,
@@ -66,13 +66,8 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
         // Get the certificate chain.
         //
         // See [RFC 8555 Section 7.4.2](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2).
-        let certificate_request = acme::certificate_req(
-            &finalize,
-            &self.data.acme_account,
-            self.config.sign_alg,
-            &self.acme_kp,
-            nonce,
-        )?;
+        let certificate_request =
+            acme::certificate_req(&finalize, &self.data.acme_account, self.sign_alg, &self.acme_kp, nonce)?;
         let headers = vec![HttpHeader {
             name: "content-type".into(),
             value: "application/jose+json".into(),

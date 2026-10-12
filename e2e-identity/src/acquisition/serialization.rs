@@ -4,7 +4,9 @@ use jwt_simple::prelude::Jwk;
 use rusty_jwt_tools::prelude::{ClientId, Pem};
 use uuid::Uuid;
 
-use super::{Result, X509CredentialAcquisition, X509CredentialConfiguration, states};
+use super::{
+    CiphersuiteExt as _, Result, X509CredentialAcquisition, X509CredentialConfiguration, error::Error, states,
+};
 use crate::pki_env::PkiEnvironment;
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -31,10 +33,16 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
     pub fn deserialize(pki_env: Arc<PkiEnvironment>, bytes: &[u8]) -> Result<Self> {
         let helper: X509CredentialAcquisitionSerialisationHelper<states::DpopChallengeCompleted> =
             serde_json::from_slice(bytes)?;
+        let sign_alg = helper
+            .config
+            .cipher_suite
+            .jws_algorithm()
+            .ok_or(Error::UnsupportedCipherSuite(helper.config.cipher_suite))?;
 
         Ok(Self {
             pki_env,
             config: helper.config,
+            sign_alg,
             sign_kp: helper.sign_kp,
             acme_kp: helper.acme_kp,
             acme_jwk: helper.acme_jwk,
@@ -46,7 +54,8 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
 #[cfg(test)]
 mod tests {
     use core_crypto_keystore::Database;
-    use rusty_jwt_tools::prelude::{HashAlgorithm, JwsAlgorithm};
+    use openmls_traits::types::Ciphersuite;
+    use rusty_jwt_tools::prelude::HashAlgorithm;
 
     use super::*;
     use crate::{
@@ -101,7 +110,7 @@ mod tests {
         let client_id = ClientId::try_new(Uuid::new_v4().to_string(), 1, "wire.example").unwrap();
         let config = X509CredentialConfiguration {
             acme_directory_url: "acme.example".into(),
-            sign_alg: JwsAlgorithm::P256,
+            cipher_suite: Ciphersuite::MLS_128_MLKEM768P256_AES128GCM_SHA256_P256,
             hash_alg: HashAlgorithm::SHA256,
             display_name: "Alice".into(),
             client_id,
@@ -109,12 +118,12 @@ mod tests {
             domain: "wire.example".into(),
             team: Some("team".into()),
             validity_period: std::time::Duration::from_secs(3600),
-            cipher_suite: 0xF003,
         };
         let initialized = X509CredentialAcquisition::try_new(pki_env.clone(), config).unwrap();
         let acquisition = X509CredentialAcquisition::<states::DpopChallengeCompleted> {
             pki_env: initialized.pki_env,
             config: initialized.config,
+            sign_alg: initialized.sign_alg,
             sign_kp: initialized.sign_kp,
             acme_kp: initialized.acme_kp,
             acme_jwk: initialized.acme_jwk,

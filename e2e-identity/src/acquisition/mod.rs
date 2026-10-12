@@ -29,7 +29,8 @@ pub use serialization::ClientIdDef;
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct X509CredentialConfiguration {
     pub acme_directory_url: String,
-    pub sign_alg: JwsAlgorithm,
+    /// The MLS ciphersuite the acquired credential is going to be used with.
+    pub cipher_suite: Ciphersuite,
     pub hash_alg: HashAlgorithm,
     pub display_name: String,
     #[serde(with = "ClientIdDef")]
@@ -38,11 +39,6 @@ pub struct X509CredentialConfiguration {
     pub domain: String,
     pub team: Option<String>,
     pub validity_period: std::time::Duration,
-    /// The MLS ciphersuite the acquired credential is going to be used with.
-    ///
-    /// Ciphersuites can share the same `sign_alg`, so this is needed to restore the ciphersuite
-    /// when resuming a serialized acquisition.
-    pub cipher_suite: u16,
 }
 
 /// Certificate acquisition specific extensions to [Ciphersuite].
@@ -126,6 +122,9 @@ pub struct X509CredentialAcquisition<T: std::fmt::Debug = states::Initialized> {
     pki_env: Arc<PkiEnvironment>,
     /// The configuration used for acquisition.
     config: X509CredentialConfiguration,
+    /// The signing algorithm, derived from `config.cipher_suite` when creating the acquisition.
+    #[serde(skip)]
+    sign_alg: JwsAlgorithm,
     /// The signing keypair, public part of which will be certified
     /// by the ACME server via inclusion in the certificate.
     /// This keypair is essentially the credential.
@@ -151,11 +150,11 @@ fn get_header(resp: &HttpResponse, header: &'static str) -> Result<String> {
 impl<T: std::fmt::Debug> X509CredentialAcquisition<T> {
     /// The signing algorithm used for certificate acquisition.
     pub fn sign_alg(&self) -> JwsAlgorithm {
-        self.config.sign_alg
+        self.sign_alg
     }
 
     /// The MLS ciphersuite the acquired credential is going to be used with.
-    pub fn cipher_suite(&self) -> u16 {
+    pub fn cipher_suite(&self) -> Ciphersuite {
         self.config.cipher_suite
     }
 

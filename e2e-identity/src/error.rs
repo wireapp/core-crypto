@@ -6,6 +6,8 @@ pub type E2eIdentityResult<T> = Result<T, E2eIdentityError>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum E2eIdentityError {
+    #[error("certificate acquisition is not supported for {0:?}")]
+    UnsupportedCipherSuite(openmls_traits::types::Ciphersuite),
     #[error(transparent)]
     AcmeError(#[from] crate::acme::Error),
     #[error(transparent)]

@@ -41,7 +41,7 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
 
         // Make sure that the algorithm specified by the certificate matches the one of the signing
         // keypair.
-        let alg = crate::utils::jws_alg_to_x509_identifier(self.config.sign_alg);
+        let alg = crate::utils::jws_alg_to_x509_identifier(self.sign_alg);
         if cert.tbs_certificate().subject_public_key_info().algorithm != alg {
             return Err(CertificateError::AlgorithmMismatch);
         }
@@ -51,7 +51,7 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
         // internally, when starting acquisition; if the expect fails, that means the implementation is
         // broken.
         let sign_kp_bytes =
-            crate::utils::public_key_bytes(self.config.sign_alg, &self.sign_kp).expect("sign_kp must be valid PEM");
+            crate::utils::public_key_bytes(self.sign_alg, &self.sign_kp).expect("sign_kp must be valid PEM");
         let cert_pubkey_bytes = cert
             .tbs_certificate()
             .subject_public_key_info()

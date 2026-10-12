@@ -31,6 +31,7 @@ use std::{
 
 use core_crypto_keystore::{Database, Transaction, UniqueArc};
 use jwt_simple::prelude::*;
+use openmls_traits::types::Ciphersuite;
 use rstest::rstest;
 use rusty_jwt_tools::prelude::*;
 use utils::{
@@ -196,7 +197,13 @@ async fn prepare_pki_env_and_config(
 
     let config = X509CredentialConfiguration {
         acme_directory_url: acme_url,
-        sign_alg,
+        // the classical ciphersuite using `sign_alg`
+        cipher_suite: match sign_alg {
+            JwsAlgorithm::Ed25519 => Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+            JwsAlgorithm::P256 => Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
+            JwsAlgorithm::P384 => Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
+            JwsAlgorithm::P521 => Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+        },
         hash_alg: HashAlgorithm::SHA256,
         display_name: "Alice Smith".into(),
         handle: "alice_wire".into(),
@@ -204,13 +211,6 @@ async fn prepare_pki_env_and_config(
         domain: domain.clone(),
         team: Some("team".into()),
         validity_period: std::time::Duration::from_hours(1),
-        // the classical ciphersuite using `sign_alg`
-        cipher_suite: match sign_alg {
-            JwsAlgorithm::Ed25519 => 0x0001,
-            JwsAlgorithm::P256 => 0x0002,
-            JwsAlgorithm::P384 => 0x0007,
-            JwsAlgorithm::P521 => 0x0005,
-        },
     };
     let wire_server_context = serde_json::json!({
         "client-id": client_id.to_uri(),

@@ -16,8 +16,7 @@ impl X509CredentialAcquisition<states::Initialized> {
         acme_account: &AcmeAccount,
         nonce: String,
     ) -> Result<(String, AcmeChallenge)> {
-        let authz_request =
-            acme::new_authz_request(url, acme_account, self.config.sign_alg, &self.acme_kp, nonce.clone())?;
+        let authz_request = acme::new_authz_request(url, acme_account, self.sign_alg, &self.acme_kp, nonce.clone())?;
         let (nonce, response) = self.acme_request(url, &authz_request).await?;
         let authorization = acme::new_authz_response(response)?;
         let [challenge] = authorization.challenges;
@@ -94,7 +93,7 @@ impl X509CredentialAcquisition<states::Initialized> {
         // Create a new ACME account.
         //
         // See [RFC 8555 Section 7.3](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3).
-        let account_request = acme::new_account_request(&directory, self.config.sign_alg, &self.acme_kp, nonce)?;
+        let account_request = acme::new_account_request(&directory, self.sign_alg, &self.acme_kp, nonce)?;
         let (nonce, response) = self.acme_request(&directory.new_account, &account_request).await?;
         let acme_account = acme::new_account_response(response)?;
         log::debug!(
@@ -112,7 +111,7 @@ impl X509CredentialAcquisition<states::Initialized> {
             self.config.validity_period,
             &directory,
             &acme_account,
-            self.config.sign_alg,
+            self.sign_alg,
             &self.acme_kp,
             nonce,
         )?;
@@ -152,7 +151,7 @@ impl X509CredentialAcquisition<states::Initialized> {
             backend_nonce.into(),
             audience,
             std::time::Duration::from_mins(5),
-            self.config.sign_alg,
+            self.sign_alg,
             &self.acme_kp,
         )?;
 
@@ -170,7 +169,7 @@ impl X509CredentialAcquisition<states::Initialized> {
             access_token,
             dpop_challenge.clone(),
             &acme_account,
-            self.config.sign_alg,
+            self.sign_alg,
             &self.acme_kp,
             nonce,
         )?;
@@ -184,6 +183,7 @@ impl X509CredentialAcquisition<states::Initialized> {
         Ok(X509CredentialAcquisition::<states::DpopChallengeCompleted> {
             pki_env: self.pki_env,
             config: self.config,
+            sign_alg: self.sign_alg,
             sign_kp: self.sign_kp,
             acme_kp: self.acme_kp,
             acme_jwk: self.acme_jwk,
