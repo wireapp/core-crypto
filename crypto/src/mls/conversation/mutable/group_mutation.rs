@@ -1,7 +1,7 @@
 use core_crypto_keystore::{
     Transaction,
     ancillary::ConversationEpochsOlderThan,
-    entities::{TargetedMessageRxCounter, TntSecret, TntSecretPkRef, TransientMessageRxCounter},
+    entities::{OldEpochData, OldEpochDataPkRef, TargetedMessageRxCounter, TransientMessageRxCounter},
     traits::{DeletableBySearchKey as _, EntityDatabaseMutation as _, FetchFromDatabase as _},
 };
 use openmls::group::InnerState;
@@ -44,9 +44,9 @@ impl ConversationMut {
         let epoch_before_operation = group.epoch();
 
         // Save the tnt secret. We need to do this exactly once per epoch.
-        let tnt_secret_key = TntSecretPkRef::new(id.as_ref().into(), epoch_before_operation.as_u64());
+        let tnt_secret_key = OldEpochDataPkRef::new(id.as_ref().into(), epoch_before_operation.as_u64());
         if tx
-            .get_borrowed::<TntSecret>(tnt_secret_key)
+            .get_borrowed::<OldEpochData>(tnt_secret_key)
             .await
             .map_err(KeystoreError::wrap("finding tnt secret for current epoch"))?
             .is_none()
@@ -68,7 +68,7 @@ impl ConversationMut {
 
             let oldest_retained_epoch = group.epoch().as_u64().saturating_sub(MAX_PAST_EPOCHS as u64);
             let stale_epochs = ConversationEpochsOlderThan::new(id.as_ref().into(), oldest_retained_epoch);
-            TntSecret::delete_all_matching(tx, &stale_epochs)
+            OldEpochData::delete_all_matching(tx, &stale_epochs)
                 .map_err(KeystoreError::wrap("deleting tnt secrets on epoch change"))?;
             TargetedMessageRxCounter::delete_all_matching(tx, &stale_epochs).map_err(KeystoreError::wrap(
                 "deleting targeted message rx counter on epoch change",

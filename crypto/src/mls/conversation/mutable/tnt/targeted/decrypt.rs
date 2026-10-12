@@ -1,6 +1,6 @@
 use core_crypto_keystore::{
     ancillary::ConversationIdRef as KeystoreConversationIdRef,
-    entities::{StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef, TntSecret, TntSecretPkRef},
+    entities::{OldEpochData, OldEpochDataPkRef, StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef},
     traits::FetchFromDatabase as _,
 };
 use openmls::{
@@ -124,12 +124,12 @@ impl ConversationMut {
         }
 
         let database = self.database()?;
-        let key = TntSecretPkRef::new(
+        let key = OldEpochDataPkRef::new(
             KeystoreConversationIdRef::new(mls_group.group_id().as_slice()),
             message.epoch.as_u64(),
         );
         let secret = database
-            .get_borrowed::<TntSecret>(key)
+            .get_borrowed::<OldEpochData>(key)
             .await
             .map_err(KeystoreError::wrap("loading tnt secret"))?
             .ok_or(Error::MlsGroupInvalidState("tnt secret is missing"))?;
@@ -157,12 +157,15 @@ impl ConversationMut {
         Ok((context_data, decryption_key))
     }
 
-    pub(in crate::mls::conversation) async fn create_tnt_secret(&self, mls_group: &MlsGroup) -> Result<TntSecret> {
+    pub(in crate::mls::conversation) async fn create_old_epoch_data(
+        &self,
+        mls_group: &MlsGroup,
+    ) -> Result<OldEpochData> {
         let crypto_provider = self.crypto_provider().await?;
         let hpke_private_key = self.load_decryption_key(mls_group).await?;
         let targeted_message_psk = derive_targeted_message_psk(&crypto_provider, mls_group)?;
 
-        Ok(TntSecret {
+        Ok(OldEpochData {
             conversation_id: mls_group.group_id().as_slice().into(),
             epoch: mls_group.epoch().as_u64(),
             hpke_private_key: core_crypto_keystore::ser(&hpke_private_key)
