@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use jwt_simple::prelude::Jwk;
+use openmls_traits::types::{Ciphersuite, SignatureScheme};
 use rusty_jwt_tools::prelude::{ClientId, HashAlgorithm, JwsAlgorithm, Pem};
 use url::Url;
 
@@ -42,6 +43,29 @@ pub struct X509CredentialConfiguration {
     /// Ciphersuites can share the same `sign_alg`, so this is needed to restore the ciphersuite
     /// when resuming a serialized acquisition.
     pub cipher_suite: u16,
+}
+
+/// Certificate acquisition specific extensions to [Ciphersuite].
+pub trait CiphersuiteExt {
+    /// The signing algorithm, or `None` if certificate acquisition is not supported for it.
+    fn jws_algorithm(&self) -> Option<JwsAlgorithm>;
+}
+
+impl CiphersuiteExt for Ciphersuite {
+    fn jws_algorithm(&self) -> Option<JwsAlgorithm> {
+        match self.signature_algorithm() {
+            SignatureScheme::ED25519 => Some(JwsAlgorithm::Ed25519),
+            SignatureScheme::ECDSA_SECP256R1_SHA256 => Some(JwsAlgorithm::P256),
+            SignatureScheme::ECDSA_SECP384R1_SHA384 => Some(JwsAlgorithm::P384),
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => Some(JwsAlgorithm::P521),
+            // There is no JWS algorithm for Ed448.
+            SignatureScheme::ED448
+            // We don't yet support ML-DSA signatures with x509 credentials.
+            | SignatureScheme::MLDSA44
+            | SignatureScheme::MLDSA65
+            | SignatureScheme::MLDSA87 => None,
+        }
+    }
 }
 
 pub mod states {
