@@ -60,7 +60,7 @@ impl ConversationMut {
 
         let message_sender = message.sender();
         let message_counter = message.counter;
-        self.ensure_no_duplicate_message(group_epoch, message_type, message_sender, message_counter)
+        self.ensure_no_duplicate_message(message_epoch, message_type, message_sender, message_counter)
             .await?;
 
         let crypto_provider = self.crypto_provider().await?;
@@ -92,7 +92,7 @@ impl ConversationMut {
 
         let decrypted_bytes = self.extract_sender_id(sender, plaintext).await?;
 
-        self.persist_rx_message_counter(group_epoch, message_type, message_sender, message_counter)?;
+        self.persist_rx_message_counter(message_epoch, message_type, message_sender, message_counter)?;
 
         match policy {
             TargetedMessagePolicy::Transient => Ok(DecryptedMessage::TransientTargeted(decrypted_bytes)),
