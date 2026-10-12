@@ -296,3 +296,155 @@ impl DeletableBySearchKey<ConversationEpochsOlderThan<'_>> for OldEpochMemberDat
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use futures_lite::future;
+
+    use super::*;
+    use crate::{
+        Database,
+        entities::{OldEpochData, PersistedMlsGroup, StoredCredential},
+    };
+
+    const CONVERSATION_A: &[u8] = b"conversation a";
+    const CONVERSATION_B: &[u8] = b"conversation b";
+    const OWN_PUBLIC_KEY: &[u8] = b"the public key of the credential both conversations were created with";
+    const OWN_CREDENTIAL_TYPE: u16 = 1;
+
+    fn make_group(id: &[u8]) -> PersistedMlsGroup {
+        PersistedMlsGroup {
+            id: id.into(),
+            state: b"group state".to_vec(),
+            epoch: 2,
+            ciphersuite: 1,
+            credential_id: Sha256Hash::hash_from(OWN_PUBLIC_KEY),
+            credential_type: OWN_CREDENTIAL_TYPE,
+            own_leaf_index: 0,
+            is_pending: false,
+            tnt_tx_counter: 0,
+        }
+    }
+
+    fn make_old_epoch_data(conversation_id: &[u8], epoch: u64) -> OldEpochData {
+        OldEpochData {
+            conversation_id: conversation_id.into(),
+            epoch,
+            hpke_private_key: b"hpke private key".to_vec(),
+            group_context: b"group context".to_vec(),
+            targeted_message_psk: b"psk".to_vec(),
+        }
+    }
+
+    fn make_old_epoch_member_data(
+        conversation_id: &[u8],
+        epoch: u64,
+        leaf_node_index: u32,
+        credential: &[u8],
+    ) -> OldEpochMemberData {
+        OldEpochMemberData {
+            conversation_id: conversation_id.into(),
+            epoch,
+            leaf_node_index,
+            credential: credential.to_vec(),
+            signature_key: b"signature key".to_vec(),
+        }
+    }
+
+    async fn remaining_foreign_credentials(store: &Database) -> Vec<Sha256Hash> {
+        let conn = store.conn().await;
+        let mut statement = conn
+            .prepare("SELECT hash FROM foreign_credentials ORDER BY hash")
+            .unwrap();
+        statement
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .expect("reading the remaining foreign credentials")
+    }
+
+    /// A foreign credential is kept while any member row still refers to it, and dropped with the last one.
+    ///
+    /// `foreign_credentials` is shared across epochs and conversations, so nothing can cascade into it.
+    /// The `drop_unreferenced_foreign_credential` trigger stands in for that cascade. Member rows are
+    /// only ever removed by cascade, so this test deletes in the same places the library does: pruning
+    /// old epochs from `old_epoch_data`, and wiping a whole conversation from `mls_groups`.
+    #[test]
+    fn foreign_credential_is_dropped_with_its_last_reference() {
+        // In both conversations, in every epoch.
+        let make_shared_oemd = |conversation_id, epoch, leaf_node_index| {
+            make_old_epoch_member_data(
+                conversation_id,
+                epoch,
+                leaf_node_index,
+                b"a credential shared across epochs and conversations",
+            )
+        };
+        // Only in conversation a's first epoch, e.g. a member who has since rotated their key.
+        let rotated_away = make_old_epoch_member_data(
+            CONVERSATION_A,
+            1,
+            1,
+            b"a credential used only in conversation a, epoch 1",
+        );
+
+        future::block_on(async {
+            let store = Database::open_in_memory().unwrap();
+
+            let tx = store.new_transaction().await.unwrap();
+            StoredCredential {
+                session_id: b"session id".to_vec(),
+                credential: b"our own credential".to_vec(),
+                created_at: 0,
+                ciphersuite: 1,
+                public_key: OWN_PUBLIC_KEY.to_vec(),
+                credential_type: OWN_CREDENTIAL_TYPE,
+                private_key: b"private key".to_vec(),
+            }
+            .save(&*tx)
+            .unwrap();
+            for conversation_id in [CONVERSATION_A, CONVERSATION_B] {
+                make_group(conversation_id).save(&*tx).unwrap();
+            }
+            for (conversation_id, epoch_number) in [(CONVERSATION_A, 1), (CONVERSATION_A, 2), (CONVERSATION_B, 1)] {
+                make_old_epoch_data(conversation_id, epoch_number).save(&*tx).unwrap();
+                make_shared_oemd(conversation_id, epoch_number, 0).save(&*tx).unwrap();
+            }
+            rotated_away.save(&*tx).unwrap();
+            tx.commit().await.unwrap();
+
+            let shared_hash = make_shared_oemd(CONVERSATION_A, 1, 0).foreign_credentials_hash();
+
+            let tx = store.new_transaction().await.unwrap();
+            OldEpochData::delete_all_matching(
+                &*tx,
+                &ConversationEpochsOlderThan::new(ConversationIdRef::new(CONVERSATION_A), 2),
+            )
+            .unwrap();
+            tx.commit().await.unwrap();
+            assert_eq!(
+                remaining_foreign_credentials(&store).await,
+                [shared_hash],
+                "pruning an epoch must drop the credentials only it referred to, and keep the ones other epochs \
+                 still refer to"
+            );
+
+            let tx = store.new_transaction().await.unwrap();
+            PersistedMlsGroup::delete(&*tx, &CONVERSATION_A.into()).unwrap();
+            tx.commit().await.unwrap();
+            assert_eq!(
+                remaining_foreign_credentials(&store).await,
+                [shared_hash],
+                "wiping a conversation must keep the credentials another conversation still refers to"
+            );
+
+            let tx = store.new_transaction().await.unwrap();
+            PersistedMlsGroup::delete(&*tx, &CONVERSATION_B.into()).unwrap();
+            tx.commit().await.unwrap();
+            assert!(
+                remaining_foreign_credentials(&store).await.is_empty(),
+                "once nothing refers to a foreign credential it must be gone"
+            );
+        });
+    }
+}
