@@ -42,7 +42,22 @@ impl TransactionContext {
         let mut group_store = self.mls_groups().await?;
 
         let inner = group_store.insert(conversation);
-        Ok(ConversationMut::new(inner, self.clone()))
+        let conversation = ConversationMut::new(inner, self.clone());
+
+        // this place is a convergence point where every path to a new group gets saved,
+        // so we can use it for the initial epoch data recording
+        // (the call path in `mutate_group` only ever handle subsequent epochs, not the initial)
+        {
+            let group_state = conversation.group().await;
+            conversation
+                .record_epoch_data(group_state.mls_group())
+                .await
+                .map_err(RecursiveError::context(
+                    "recording epoch data for new conversation creation",
+                ))?;
+        }
+
+        Ok(conversation)
     }
 
     /// Create an MLS conversation from an MLS Welcome message

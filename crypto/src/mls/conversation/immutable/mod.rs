@@ -37,7 +37,7 @@ pub(crate) struct MlsGroupState {
 }
 
 impl MlsGroupState {
-    pub(in crate::mls::conversation) fn mls_group(&self) -> &MlsGroup {
+    pub(crate) fn mls_group(&self) -> &MlsGroup {
         &self.group
     }
 

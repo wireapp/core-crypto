@@ -6,6 +6,7 @@ mod history_sharing;
 mod merge;
 mod own_commit;
 mod proposal;
+mod record_epoch_data;
 mod tnt;
 mod wipe;
 
