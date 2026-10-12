@@ -8,7 +8,8 @@ use core_crypto::RecursiveError;
 
 use crate::{
     CoreCryptoError, CoreCryptoResult, CredentialRef, Database, PkiEnvironment, X509CredentialAcquisition,
-    X509CredentialAcquisitionConfiguration, e2ei::AcquisitionState,
+    X509CredentialAcquisitionConfiguration,
+    e2ei::{AcquisitionState, jws_algorithm},
 };
 
 #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::export)]
@@ -44,8 +45,7 @@ impl X509CredentialAcquisition {
             .map_err(RecursiveError::context("loading credential from ref"))?;
 
         let key_bytes = credential.signature_key_bytes();
-        let algorithm = cipher_suite.try_into()?;
-        let pem = wire_e2e_identity::utils::pem_from_bytes(key_bytes, algorithm)?;
+        let pem = wire_e2e_identity::utils::pem_from_bytes(key_bytes, jws_algorithm(cipher_suite)?)?;
 
         let inner = wire_e2e_identity::X509CredentialAcquisition::try_new_from_pem(
             pki_environment.clone_inner(),
