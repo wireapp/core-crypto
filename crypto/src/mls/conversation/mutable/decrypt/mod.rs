@@ -1012,4 +1012,26 @@ mod tests {
             .await
         }
     }
+
+    mod malformed {
+        use super::*;
+
+        #[macro_rules_attribute::apply(smol_macros::test)]
+        async fn too_short_message_is_a_tls_error() {
+            let case = TestContext::default();
+            let [alice] = case.sessions().await;
+            let conversation = case.create_conversation([&alice]).await;
+
+            // Anything shorter than 4 bytes can't hold the protocol version and wire format.
+            for len in 0..4 {
+                let message = vec![0; len];
+                // notably, attempting to decrypt a short message produces an error, not a panic
+                let decrypt_err = conversation.guard().await.decrypt_message(&message).await.unwrap_err();
+                assert!(
+                    matches!(decrypt_err, Error::Tls(_)),
+                    "{len}-byte message: unexpected error {decrypt_err:?}"
+                );
+            }
+        }
+    }
 }
