@@ -606,6 +606,7 @@ mod tests {
     /// Replicating [WPB-15810]
     ///
     /// [WPB-15810]: https://wearezeta.atlassian.net/browse/WPB-15810
+    /// Overflows with default stack size in debug mode for ML-DSA-87, passes with increased stack size.
     #[apply(all_cred_cipher)]
     async fn wpb_15810(mut case: TestContext) {
         case.sessions_in_memory = true;
