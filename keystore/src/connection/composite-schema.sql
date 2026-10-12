@@ -86,7 +86,7 @@ CREATE TABLE "mls_groups" (
   FOREIGN KEY (credential_id, credential_type) REFERENCES mls_credentials (public_key_sha256, credential_type) ON DELETE RESTRICT
 );
 
-CREATE TABLE "tnt_secrets" (
+CREATE TABLE "old_epoch_data" (
   conversation_id BLOB NOT NULL,
   epoch INTEGER NOT NULL,
   hpke_private_key BLOB NOT NULL,
@@ -130,3 +130,39 @@ CREATE TABLE "epoch_encryption_keypairs" (
   -- when the outermost transaction / savepoint is committed.
   FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
 );
+
+CREATE TABLE foreign_credentials (
+  hash BLOB NOT NULL PRIMARY KEY,  -- hash of length-prefixed credential and signature key
+  credential BLOB NOT NULL,
+  signature_key BLOB NOT NULL
+);
+
+CREATE TABLE old_epoch_member_data (
+  conversation_id BLOB NOT NULL,
+  epoch INTEGER NOT NULL,
+  leaf_node_index INTEGER NOT NULL,
+  foreign_credential_hash BLOB NOT NULL,
+  PRIMARY KEY (conversation_id, epoch, leaf_node_index),
+  FOREIGN KEY (conversation_id, epoch) REFERENCES old_epoch_data(conversation_id, epoch) ON DELETE CASCADE,
+  FOREIGN KEY (foreign_credential_hash) REFERENCES foreign_credentials(hash) ON DELETE RESTRICT
+);
+
+CREATE INDEX old_epoch_member_data_foreign_credential_hash ON old_epoch_member_data (foreign_credential_hash);
+
+CREATE TRIGGER drop_unreferenced_foreign_credential
+AFTER
+  DELETE ON old_epoch_member_data
+BEGIN
+DELETE FROM
+  foreign_credentials
+WHERE
+  hash = OLD.foreign_credential_hash
+  AND NOT EXISTS (
+    SELECT
+      1
+    FROM
+      old_epoch_member_data
+    WHERE
+      foreign_credential_hash = OLD.foreign_credential_hash
+  );
+END;
