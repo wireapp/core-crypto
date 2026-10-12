@@ -2,17 +2,20 @@ mod targeted;
 mod tnt_message_counter;
 mod transient;
 
+use std::sync::Arc;
+
 use core_crypto_keystore::{
     Transaction,
     ancillary::{ConversationId as KeystoreConversationId, MessageRxCounterPkRef},
-    entities::{TargetedMessageRxCounter, TransientMessageRxCounter},
+    entities::{OldEpochMemberData, OldEpochMemberDataPkRef, TargetedMessageRxCounter, TransientMessageRxCounter},
     traits::{EntityDatabaseMutation as _, FetchFromDatabase},
 };
 use openmls::prelude::{
-    CredentialWithKey, LeafNodeIndex, Member, OpenMlsSignaturePublicKey, Signable as _, Signature, Verifiable as _,
+    Credential as MlsCredential, CredentialWithKey, LeafNodeIndex, Member, OpenMlsSignaturePublicKey, Signable as _,
+    Signature, Verifiable as _,
 };
 use openmls_traits::OpenMlsCryptoProvider;
-use tls_codec::{Serialize, TlsDeserialize, TlsSerialize, TlsSize, VLBytes};
+use tls_codec::{Deserialize as _, Serialize, TlsDeserialize, TlsSerialize, TlsSize, VLBytes};
 
 use self::targeted::TargetedMessage;
 pub use self::targeted::encrypt::TargetedMessagePolicy;
@@ -22,7 +25,11 @@ use crate::{
     ConversationConfiguration, DecryptedBytes, DecryptedMessage, KeystoreError, OpenMlsError, RecursiveError,
     TlsCodecError,
     mls::{
-        conversation::{ConversationMut, Error, mutable::tnt::transient::TransientMessage},
+        conversation::{
+            ConversationMut, Error,
+            config::{MAX_FUTURE_EPOCHS, MAX_PAST_EPOCHS},
+            mutable::tnt::transient::TransientMessage,
+        },
         credential::ext::CredentialExt as _,
     },
 };
@@ -70,6 +77,14 @@ impl TntMessageBody {
             Self::Transient(transient) => transient.epoch().as_u64(),
             Self::Targeted(targeted) | Self::TransientTargeted(targeted) => targeted.epoch.as_u64(),
         }
+    }
+
+    /// `true` when this message is transient.
+    pub(crate) fn is_transient(&self) -> bool {
+        matches!(
+            self,
+            TntMessageBody::Transient(_) | TntMessageBody::TransientTargeted(_)
+        )
     }
 }
 
@@ -255,14 +270,61 @@ impl ConversationMut {
             return Err(Error::MlsMessageInvalidState("Unsupported tnt protocol version"));
         }
 
+        let message_epoch = message.content.body.epoch();
+        let group_epoch = self.epoch().await;
+        let sender = if message_epoch == group_epoch {
+            // for current-epoch messages regardless of type it is ok to inspect the current group state to find the
+            // sender
+            self.group()
+                .await
+                .members()
+                .find(|member| member.index == message.content.sender_index())
+                .ok_or(Error::MlsMessageInvalidState(
+                    "tnt sender is not a group member in the current epoch",
+                ))?
+        } else if message_epoch > group_epoch {
+            if message_epoch <= group_epoch.saturating_add(MAX_FUTURE_EPOCHS) {
+                // returning the error here is sufficient to cause the buffering to happen,
+                // and should also be ok for transient messages; transience is a backend property
+                return Err(Error::BufferedFutureMessage { message_epoch });
+            }
+            return Err(Error::UnbufferedFarFutureMessage);
+        } else if message.content.body.is_transient() {
+            return Err(Error::InvalidTransientMessageEpoch {
+                group_epoch,
+                message_epoch,
+            });
+        } else if message_epoch < group_epoch.saturating_sub(MAX_PAST_EPOCHS as _) {
+            return Err(Error::MessageEpochTooOld);
+        } else {
+            // for older targeted messages we have to be able to look into the past and get old member data
+            // (FetchFromDatabase impl for Database arc-wraps internally, so this should never clone)
+            let oemd = Arc::unwrap_or_clone(
+                self.database()?
+                    .get_borrowed::<OldEpochMemberData>(OldEpochMemberDataPkRef::new(
+                        self.id.keystore(),
+                        message_epoch,
+                        message.content.sender_index().u32(),
+                    ))
+                    .await
+                    .map_err(KeystoreError::wrap("fetching old epoch member data"))?
+                    .ok_or(Error::MlsMessageInvalidState(
+                        "old epoch member data not found for the sender",
+                    ))?,
+            );
+            let credential = MlsCredential::tls_deserialize_exact(&oemd.credential)
+                .map_err(TlsCodecError::deserialize("deserializing old epoch member credential"))?;
+            Member {
+                index: oemd.leaf_node_index.into(),
+                signature_key: oemd.signature_key,
+                credential,
+                // we don't attempt to encrypt anything with this member, only decrypt
+                encryption_key: Default::default(),
+            }
+        };
+
         let crypto_provider = self.crypto_provider().await?;
         let signature_algorithm = self.cipher_suite().signature_algorithm();
-        let sender = self
-            .group()
-            .await
-            .members()
-            .find(|member| member.index == message.content.sender_index())
-            .ok_or(Error::MlsMessageInvalidState("tnt sender is not a group member"))?;
 
         let sender_public_key =
             OpenMlsSignaturePublicKey::new(sender.signature_key.clone().into(), signature_algorithm)
