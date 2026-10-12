@@ -63,6 +63,8 @@ pub(super) struct TargetedMessage {
     counter: TntMessageCounter,
     sender: LeafNodeIndex,
     recipient: LeafNodeIndex,
+    /// Client ID as it appears in credentials.
+    recipient_id: Vec<u8>,
     pub(super) epoch: GroupEpoch,
     group_id: GroupId,
     /// Encrypted with the receipient's HPKE public key; authenticated with a PSK derived from the epoch secret,

@@ -101,7 +101,15 @@ impl ConversationMut {
         let group_id = mls_group.group_id();
         let epoch = mls_group.epoch();
 
-        let targeted = TargetedMessage::new(counter, sender, recipient.index, epoch, group_id.clone(), payload);
+        let targeted = TargetedMessage::new(
+            counter,
+            sender,
+            recipient.index,
+            recipient.credential.identity().to_owned(),
+            epoch,
+            group_id.clone(),
+            payload,
+        );
         Ok(targeted)
     }
 }
