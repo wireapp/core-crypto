@@ -82,7 +82,7 @@ impl EntityDatabaseMutation for OldEpochData {
     {
         let conn = tx.into().conn()?;
         let mut stmt = conn.prepare_cached(formatcp!(
-            "INSERT OR REPLACE INTO {}
+            "INSERT INTO {}
                 (conversation_id, epoch, hpke_private_key, group_context, targeted_message_psk)
              VALUES (:conversation_id, :epoch, :hpke_private_key, :group_context, :targeted_message_psk)",
             OldEpochData::TABLE_NAME
