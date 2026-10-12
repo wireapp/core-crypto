@@ -22,7 +22,7 @@ pub(crate) fn certificate_req(
 }
 
 /// see [RFC 8555 Section 7.4.2](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2)
-pub(crate) fn certificate_response(response: String, order: AcmeOrder) -> Result<Vec<Certificate>> {
+pub(crate) fn certificate_response(response: String, order: &AcmeOrder) -> Result<Vec<Certificate>> {
     order.verify()?;
     let pems: Vec<pem::Pem> = pem::parse_many(response)?;
 
