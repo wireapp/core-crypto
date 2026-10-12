@@ -15,7 +15,7 @@ use crate::{
 
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
-pub struct TntSecret {
+pub struct OldEpochData {
     pub conversation_id: ConversationId,
     pub epoch: u64,
     #[sensitive]
@@ -26,13 +26,13 @@ pub struct TntSecret {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, derive_more::Constructor)]
-pub struct TntSecretPk {
+pub struct OldEpochDataPk {
     conversation_id: ConversationId,
     epoch: u64,
 }
 
-impl TntSecret {
-    const TABLE_NAME: &str = "tnt_secrets";
+impl OldEpochData {
+    const TABLE_NAME: &str = "old_epoch_data";
     const PRIMARY_KEY_COLUMN_NAMES: [&str; 2] = ["conversation_id", "epoch"];
 
     fn from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Self> {
@@ -46,18 +46,18 @@ impl TntSecret {
     }
 }
 
-impl PrimaryKey for TntSecret {
-    type PrimaryKey = TntSecretPk;
+impl PrimaryKey for OldEpochData {
+    type PrimaryKey = OldEpochDataPk;
 
     fn primary_key(&self) -> Self::PrimaryKey {
-        TntSecretPk::new(self.conversation_id.clone(), self.epoch)
+        OldEpochDataPk::new(self.conversation_id.clone(), self.epoch)
     }
 }
 
-impl Entity for TntSecret {
+impl Entity for OldEpochData {
     const TABLE_NAME: &str = Self::TABLE_NAME;
 
-    fn get(conn: &rusqlite::Connection, key: &TntSecretPk) -> CryptoKeystoreResult<Option<Self>> {
+    fn get(conn: &rusqlite::Connection, key: &OldEpochDataPk) -> CryptoKeystoreResult<Option<Self>> {
         get_helper_composite_key(
             conn,
             &Self::PRIMARY_KEY_COLUMN_NAMES,
@@ -75,7 +75,7 @@ impl Entity for TntSecret {
     }
 }
 
-impl EntityDatabaseMutation for TntSecret {
+impl EntityDatabaseMutation for OldEpochData {
     fn save<'a, Tx>(&self, tx: &'a Tx) -> CryptoKeystoreResult<()>
     where
         &'a Tx: Into<Transactionlike<'a>>,
@@ -85,7 +85,7 @@ impl EntityDatabaseMutation for TntSecret {
             "INSERT OR REPLACE INTO {}
                 (conversation_id, epoch, hpke_private_key, group_context, targeted_message_psk)
              VALUES (:conversation_id, :epoch, :hpke_private_key, :group_context, :targeted_message_psk)",
-            TntSecret::TABLE_NAME
+            OldEpochData::TABLE_NAME
         ))?;
         stmt.execute(rusqlite::named_params! {
             ":conversation_id": self.conversation_id,
@@ -97,14 +97,14 @@ impl EntityDatabaseMutation for TntSecret {
         Ok(())
     }
 
-    fn delete<'a, Tx>(tx: &'a Tx, key: &TntSecretPk) -> CryptoKeystoreResult<bool>
+    fn delete<'a, Tx>(tx: &'a Tx, key: &OldEpochDataPk) -> CryptoKeystoreResult<bool>
     where
         &'a Tx: Into<Transactionlike<'a>>,
     {
         let conn = tx.into().conn()?;
         let mut stmt = conn.prepare_cached(formatcp!(
             "DELETE FROM {} WHERE conversation_id = ? AND epoch = ?",
-            TntSecret::TABLE_NAME
+            OldEpochData::TABLE_NAME
         ))?;
         stmt.execute(rusqlite::params![key.conversation_id, key.epoch])
             .map(|affected_rows| affected_rows > 0)
@@ -113,20 +113,20 @@ impl EntityDatabaseMutation for TntSecret {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, derive_more::Constructor)]
-pub struct TntSecretPkRef<'a> {
+pub struct OldEpochDataPkRef<'a> {
     conversation_id: &'a ConversationIdRef,
     epoch: u64,
 }
 
-impl BorrowPrimaryKey for TntSecret {
-    type BorrowedPrimaryKey<'a> = TntSecretPkRef<'a>;
+impl BorrowPrimaryKey for OldEpochData {
+    type BorrowedPrimaryKey<'a> = OldEpochDataPkRef<'a>;
 
     fn borrow_primary_key(&self) -> Self::BorrowedPrimaryKey<'_> {
-        TntSecretPkRef::new(self.conversation_id.as_ref(), self.epoch)
+        OldEpochDataPkRef::new(self.conversation_id.as_ref(), self.epoch)
     }
 }
 
-impl EntityGetBorrowed for TntSecret {
+impl EntityGetBorrowed for OldEpochData {
     fn get_borrowed(
         conn: &rusqlite::Connection,
         key: Self::BorrowedPrimaryKey<'_>,
@@ -140,7 +140,7 @@ impl EntityGetBorrowed for TntSecret {
     }
 }
 
-impl EntityDeleteBorrowed for TntSecret {
+impl EntityDeleteBorrowed for OldEpochData {
     fn delete_borrowed<'a, Tx>(tx: &'a Tx, key: Self::BorrowedPrimaryKey<'_>) -> CryptoKeystoreResult<bool>
     where
         &'a Tx: Into<Transactionlike<'a>>,
@@ -148,7 +148,7 @@ impl EntityDeleteBorrowed for TntSecret {
         let conn = tx.into().conn()?;
         let mut stmt = conn.prepare_cached(formatcp!(
             "DELETE FROM {} WHERE conversation_id = ? AND epoch = ?",
-            TntSecret::TABLE_NAME
+            OldEpochData::TABLE_NAME
         ))?;
         stmt.execute(rusqlite::params![key.conversation_id, key.epoch])
             .map(|affected_rows| affected_rows > 0)
@@ -156,14 +156,14 @@ impl EntityDeleteBorrowed for TntSecret {
     }
 }
 
-impl SearchableEntity<ConversationEpochsOlderThan<'_>> for TntSecret {
+impl SearchableEntity<ConversationEpochsOlderThan<'_>> for OldEpochData {
     fn find_all_matching(
         conn: &rusqlite::Connection,
         conversation_epoch: &ConversationEpochsOlderThan,
     ) -> CryptoKeystoreResult<Vec<Self>> {
         let mut stmt = conn.prepare_cached(formatcp!(
             "SELECT * FROM {} WHERE conversation_id = ? AND epoch < ?",
-            TntSecret::TABLE_NAME
+            OldEpochData::TABLE_NAME
         ))?;
         stmt.query_map(
             rusqlite::params![conversation_epoch.conversation_id, conversation_epoch.epoch],
@@ -178,7 +178,7 @@ impl SearchableEntity<ConversationEpochsOlderThan<'_>> for TntSecret {
     }
 }
 
-impl DeletableBySearchKey<ConversationEpochsOlderThan<'_>> for TntSecret {
+impl DeletableBySearchKey<ConversationEpochsOlderThan<'_>> for OldEpochData {
     fn delete_all_matching<'a, Tx>(
         tx: &'a Tx,
         conversation_epoch: &ConversationEpochsOlderThan,
@@ -189,7 +189,7 @@ impl DeletableBySearchKey<ConversationEpochsOlderThan<'_>> for TntSecret {
         let conn = tx.into().conn()?;
         let mut stmt = conn.prepare_cached(formatcp!(
             "DELETE FROM {} WHERE conversation_id = ? AND epoch < ?",
-            TntSecret::TABLE_NAME
+            OldEpochData::TABLE_NAME
         ))?;
         stmt.execute(rusqlite::params![
             conversation_epoch.conversation_id,
@@ -199,8 +199,8 @@ impl DeletableBySearchKey<ConversationEpochsOlderThan<'_>> for TntSecret {
     }
 }
 
-impl From<TntSecretPkRef<'_>> for TntSecretPk {
-    fn from(key: TntSecretPkRef<'_>) -> Self {
+impl From<OldEpochDataPkRef<'_>> for OldEpochDataPk {
+    fn from(key: OldEpochDataPkRef<'_>) -> Self {
         Self::new(key.conversation_id.into(), key.epoch)
     }
 }
