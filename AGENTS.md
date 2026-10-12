@@ -133,9 +133,9 @@ before it.
 - When a refactor of an internal API ripples through the codebase, the core refactor is one commit, and updating the
   callers to the new signature is the next.
 - Not every commit has to build. Readability for the reviewer comes first.
-- Tests come first in the sequence, even if they were written after the code. A test that demonstrates a bug is easy to
-  check that way: the reviewer runs it at the commit that added it and sees it fail, then runs it at the tip of the
-  branch and sees it pass.
+- When fixing a bug, the test that demonstrates it comes first in the sequence, even if it was written after the fix.
+  That makes it easy to check: the reviewer runs it at the commit that added it and sees it fail, then runs it at the
+  tip of the branch and sees it pass. For new features, it's fine for the code to come before its tests.
 - Rewriting history within a PR to get a clean sequence is normal and encouraged.
 
 You don't commit, so your part is to make this easy for the human. Order the work so it splits naturally: dependency
