@@ -196,8 +196,13 @@ impl ConversationMut {
     pub async fn decrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<DecryptedMessage> {
         let message = message.as_ref();
         // Bytes 0 and 1 are the protocol version, bytes 2 and 3 are the wire format.
+        let wire_format_bytes = message
+            .get(2..=3)
+            .ok_or(TlsCodecError::deserialize("u16 (wire format)")(
+                tls_codec::Error::EndOfStream,
+            ))?;
         let wire_format =
-            u16::tls_deserialize_exact(&message[2..4]).map_err(TlsCodecError::deserialize("u16 (wire format)"))?;
+            u16::tls_deserialize_exact(wire_format_bytes).map_err(TlsCodecError::deserialize("u16 (wire format)"))?;
 
         let decrypt_message_result = match wire_format {
             TntWireFormat::MIN..=TntWireFormat::MAX => {
