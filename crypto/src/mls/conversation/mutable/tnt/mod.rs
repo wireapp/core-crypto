@@ -63,6 +63,16 @@ enum TntMessageBody {
     TransientTargeted(TargetedMessage),
 }
 
+impl TntMessageBody {
+    /// Get the epoch to which this message applies
+    pub(crate) fn epoch(&self) -> u64 {
+        match self {
+            Self::Transient(transient) => transient.epoch().as_u64(),
+            Self::Targeted(targeted) | Self::TransientTargeted(targeted) => targeted.epoch.as_u64(),
+        }
+    }
+}
+
 #[derive(Clone, Copy, TlsSize, TlsDeserialize, TlsSerialize, derive_more::From, PartialEq, Eq)]
 pub(crate) struct TntWireFormat(u16);
 

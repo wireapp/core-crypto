@@ -80,7 +80,7 @@ impl TransientMessage {
         }
     }
 
-    fn epoch(&self) -> GroupEpoch {
+    pub(super) fn epoch(&self) -> GroupEpoch {
         self.group_context.epoch()
     }
 
