@@ -1,4 +1,20 @@
-ALTER TABLE tnt_secrets RENAME TO old_epoch_data;
+-- effectively this just renames `tnt_secrets` -> `old_epoch_data` and adds `own_leaf_index`.
+-- however, sqlite prohibits adding a non-null non-default column to an existing table;
+-- it has to have _some_ kind of value.
+--
+-- So we just drop and recreate instead of migrating. This is OK because we can prove that
+-- we never released V33 to any client, so the table must be fresh/empty.
+DROP TABLE tnt_secrets;
+CREATE TABLE old_epoch_data (
+  conversation_id BLOB NOT NULL,
+  epoch INTEGER NOT NULL,
+  hpke_private_key BLOB NOT NULL,
+  group_context BLOB NOT NULL,
+  targeted_message_psk BLOB NOT NULL,
+  own_leaf_index INTEGER NOT NULL,
+  PRIMARY KEY (conversation_id, epoch),
+  FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
+);
 
 -- this table stores the actual foreign credentials
 -- we store each one exactly once per distinct signature key

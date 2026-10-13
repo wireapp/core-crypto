@@ -86,16 +86,6 @@ CREATE TABLE "mls_groups" (
   FOREIGN KEY (credential_id, credential_type) REFERENCES mls_credentials (public_key_sha256, credential_type) ON DELETE RESTRICT
 );
 
-CREATE TABLE "old_epoch_data" (
-  conversation_id BLOB NOT NULL,
-  epoch INTEGER NOT NULL,
-  hpke_private_key BLOB NOT NULL,
-  group_context BLOB NOT NULL,
-  targeted_message_psk BLOB NOT NULL,
-  PRIMARY KEY (conversation_id, epoch),
-  FOREIGN KEY (conversation_id) REFERENCES "mls_groups"(id) ON DELETE CASCADE
-);
-
 CREATE TABLE "targeted_message_rx_counters" (
   conversation_id BLOB NOT NULL,
   sender INTEGER NOT NULL,
@@ -129,6 +119,17 @@ CREATE TABLE "epoch_encryption_keypairs" (
   -- DEFERRABLE INITIALLY DEFERRED means that we only enforce this constraint
   -- when the outermost transaction / savepoint is committed.
   FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+);
+
+CREATE TABLE old_epoch_data (
+  conversation_id BLOB NOT NULL,
+  epoch INTEGER NOT NULL,
+  hpke_private_key BLOB NOT NULL,
+  group_context BLOB NOT NULL,
+  targeted_message_psk BLOB NOT NULL,
+  own_leaf_index INTEGER NOT NULL,
+  PRIMARY KEY (conversation_id, epoch),
+  FOREIGN KEY (conversation_id) REFERENCES mls_groups(id) ON DELETE CASCADE
 );
 
 CREATE TABLE foreign_credentials (
