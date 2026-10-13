@@ -1,4 +1,4 @@
-use rusty_jwt_tools::prelude::{ClientId, HashAlgorithm, QualifiedHandle};
+use rusty_jwt_tools::prelude::{ClientId, QualifiedHandle};
 use x509_cert::der::Decode as _;
 
 use crate::{
@@ -26,7 +26,7 @@ pub trait WireIdentityReader {
     /// Verifies a proof of identity, may it be a x509 certificate (or a Verifiable Presentation (later)).
     /// We do not verify anything else e.g. expiry, it is left to MLS implementation
     #[expect(async_fn_in_trait)]
-    async fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity>;
+    async fn extract_identity(&self, env: &PkiEnvironment) -> Result<WireIdentity>;
 
     /// returns the 'Not Before' claim which usually matches the creation timestamp
     fn extract_created_at(&self) -> Result<u64>;
@@ -36,7 +36,7 @@ pub trait WireIdentityReader {
 }
 
 impl WireIdentityReader for x509_cert::Certificate {
-    async fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity> {
+    async fn extract_identity(&self, env: &PkiEnvironment) -> Result<WireIdentity> {
         let validity = self.tbs_certificate().validity();
         let serial_number = hex::encode(self.tbs_certificate().serial_number().as_bytes());
         let not_before = validity.not_before.to_unix_duration().as_secs();
@@ -44,7 +44,7 @@ impl WireIdentityReader for x509_cert::Certificate {
         let (client_id, handle) = try_extract_san(self.tbs_certificate())?;
         let (display_name, domain) = try_extract_subject(self.tbs_certificate())?;
         let status = IdentityStatus::from_cert(self, env).await;
-        let thumbprint = try_compute_jwk_canonicalized_thumbprint(self.tbs_certificate(), hash_alg)?;
+        let thumbprint = try_compute_jwk_canonicalized_thumbprint(self.tbs_certificate())?;
 
         Ok(WireIdentity {
             client_id,
@@ -79,10 +79,8 @@ impl WireIdentityReader for x509_cert::Certificate {
 }
 
 impl WireIdentityReader for &[u8] {
-    async fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity> {
-        x509_cert::Certificate::from_der(self)?
-            .extract_identity(env, hash_alg)
-            .await
+    async fn extract_identity(&self, env: &PkiEnvironment) -> Result<WireIdentity> {
+        x509_cert::Certificate::from_der(self)?.extract_identity(env).await
     }
 
     fn extract_created_at(&self) -> Result<u64> {
@@ -95,8 +93,8 @@ impl WireIdentityReader for &[u8] {
 }
 
 impl WireIdentityReader for Vec<u8> {
-    async fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity> {
-        self.as_slice().extract_identity(env, hash_alg).await
+    async fn extract_identity(&self, env: &PkiEnvironment) -> Result<WireIdentity> {
+        self.as_slice().extract_identity(env).await
     }
 
     fn extract_created_at(&self) -> Result<u64> {
@@ -206,11 +204,7 @@ OfqfZA1YMtN5NLz/AA==
     #[tokio::test]
     async fn should_find_claims_in_x509(#[future] pki_env: PkiEnvironment) {
         let cert_der = pem::parse(CERT).unwrap();
-        let identity = cert_der
-            .contents()
-            .extract_identity(&pki_env.await, HashAlgorithm::SHA256)
-            .await
-            .unwrap();
+        let identity = cert_der.contents().extract_identity(&pki_env.await).await.unwrap();
 
         assert_eq!(&identity.client_id, "obakjPOHQ2CkNb0rOrNM3A:ba54e8ace8b4c90d@wire.com");
         assert_eq!(identity.handle.as_str(), "wireapp://%40alice_wire@wire.com");
@@ -242,11 +236,7 @@ OfqfZA1YMtN5NLz/AA==
     #[tokio::test]
     async fn should_have_expired_status(#[future] pki_env: PkiEnvironment) {
         let cert_der = pem::parse(CERT_EXPIRED).unwrap();
-        let identity = cert_der
-            .contents()
-            .extract_identity(&pki_env.await, HashAlgorithm::SHA256)
-            .await
-            .unwrap();
+        let identity = cert_der.contents().extract_identity(&pki_env.await).await.unwrap();
         assert_eq!(&identity.status, &IdentityStatus::Expired);
     }
 
@@ -254,11 +244,7 @@ OfqfZA1YMtN5NLz/AA==
     #[tokio::test]
     async fn should_have_thumbprint(#[future] pki_env: PkiEnvironment) {
         let cert_der = pem::parse(CERT).unwrap();
-        let identity = cert_der
-            .contents()
-            .extract_identity(&pki_env.await, HashAlgorithm::SHA256)
-            .await
-            .unwrap();
+        let identity = cert_der.contents().extract_identity(&pki_env.await).await.unwrap();
         assert!(!identity.thumbprint.is_empty());
     }
 }

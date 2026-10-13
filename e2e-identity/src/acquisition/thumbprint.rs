@@ -7,29 +7,27 @@ use x509_cert::spki::SubjectPublicKeyInfoOwned;
 
 use crate::{acme, acquisition::error::CertificateError};
 
+/// The hash algorithm used for all thumbprints, regardless of the MLS ciphersuite.
+const THUMBPRINT_HASH_ALG: HashAlgorithm = HashAlgorithm::SHA256;
+
 /// Used to compute the MLS thumbprint of a Basic Credential
-pub fn compute_raw_key_thumbprint(
-    sign_alg: JwsAlgorithm,
-    hash_alg: HashAlgorithm,
-    signature_public_key: &[u8],
-) -> acme::Result<String> {
+pub fn compute_raw_key_thumbprint(sign_alg: JwsAlgorithm, signature_public_key: &[u8]) -> acme::Result<String> {
     let jwk = match sign_alg {
         JwsAlgorithm::Ed25519 => Ed25519PublicKey::from_bytes(signature_public_key)?.try_into_jwk()?,
         JwsAlgorithm::P256 => ES256PublicKey::from_bytes(signature_public_key)?.try_into_jwk()?,
         JwsAlgorithm::P384 => ES384PublicKey::from_bytes(signature_public_key)?.try_into_jwk()?,
         JwsAlgorithm::P521 => ES512PublicKey::from_bytes(signature_public_key)?.try_into_jwk()?,
     };
-    let thumbprint = JwkThumbprint::generate(&jwk, hash_alg)?;
+    let thumbprint = JwkThumbprint::generate(&jwk, THUMBPRINT_HASH_ALG)?;
     Ok(thumbprint.kid)
 }
 
 /// See: <https://datatracker.ietf.org/doc/html/rfc8037#appendix-A.3>
 pub(crate) fn try_compute_jwk_canonicalized_thumbprint(
     cert: &x509_cert::TbsCertificate,
-    hash_alg: HashAlgorithm,
 ) -> Result<String, CertificateError> {
     let jwk = try_into_jwk(cert.subject_public_key_info())?;
-    let thumbprint = JwkThumbprint::generate(&jwk, hash_alg)?;
+    let thumbprint = JwkThumbprint::generate(&jwk, THUMBPRINT_HASH_ALG)?;
     Ok(thumbprint.kid)
 }
 

@@ -59,7 +59,7 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
         }
 
         let config = &self.config;
-        let cert_identity = cert.extract_identity(&self.pki_env, self.config.hash_alg).await?;
+        let cert_identity = cert.extract_identity(&self.pki_env).await?;
 
         let cert_id =
             ClientId::try_from_qualified(&cert_identity.client_id).map_err(|_| CertificateError::InvalidClientId)?;
