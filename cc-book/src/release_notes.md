@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The `thumbprint` of a `WireIdentity` is now always computed with SHA-256, regardless of the ciphersuite. It used to be
+  computed with the ciphersuite's hash algorithm.
+
 - CoreCrypto now has support for 11 post-quantum ciphersuites, as defined by the
   [draft](https://www.ietf.org/archive/id/draft-ietf-mls-pq-ciphersuites-06.html). Specifically, support has been added
   for the 6 ciphersuites that use hybrid (post-quantum + classical) key-exchange mechanisms:
