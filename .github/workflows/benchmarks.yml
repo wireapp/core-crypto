@@ -14,7 +14,7 @@ jobs:
     uses: ./.github/workflows/benchmark-jvm.yml
     with:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
-      runs_on: '["self-hosted", "benchmark"]'
+      runs_on: '["self-hosted", "benchmark", "core-crypto"]'
     secrets:
       METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
 
@@ -23,7 +23,7 @@ jobs:
     uses: ./.github/workflows/benchmark-ts-browser.yml
     with:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
-      runs_on: '["self-hosted", "benchmark"]'
+      runs_on: '["self-hosted", "benchmark", "core-crypto"]'
     secrets:
       METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
 
@@ -32,6 +32,6 @@ jobs:
     uses: ./.github/workflows/benchmark-ts-native.yml
     with:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
-      runs_on: '["self-hosted", "benchmark"]'
+      runs_on: '["self-hosted", "benchmark", "core-crypto"]'
     secrets:
       METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}

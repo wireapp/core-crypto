@@ -23,7 +23,7 @@ env:
 jobs:
   package-ios:
     if: github.repository == 'wireapp/core-crypto'
-    runs-on: self-hosted
+    runs-on: [self-hosted, core-crypto]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/make/setup

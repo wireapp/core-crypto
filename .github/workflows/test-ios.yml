@@ -24,7 +24,7 @@ env:
 jobs:
   test-ios:
     if: github.repository == 'wireapp/core-crypto'
-    runs-on: self-hosted
+    runs-on: [self-hosted, core-crypto]
     steps:
       - uses: ./.github/actions/make/setup
 
