@@ -27,6 +27,11 @@
   Note that only 3 of the 11 ciphersuites use post-quantum signatures (ML-DSA), and that using x509 credentials with
   post-quantum signatures is not yet supported.
 
+- `e2eiIsPkiEnvSetup` has been removed. You can call `getPkiEnvironment` to see if it is set.
+
+- `e2eiIsEnabled` has been removed. You can use `findCredentials` to check whether an X509 credential for a given
+  ciphersuite exists.
+
 - `proteusNewPrekey` is deprecated; use `proteusNewPrekeyAuto` instead.
 
 - Rendering a `DeserializedClientId` (its `toString`/`Display`) now reproduces the client id it was deserialized from.
