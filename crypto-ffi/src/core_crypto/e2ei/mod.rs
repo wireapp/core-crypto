@@ -1,28 +1,12 @@
 use core_crypto::RecursiveError;
 
-use crate::{CipherSuite, ConversationId, CoreCryptoFfi, CoreCryptoResult, E2eiConversationState};
+use crate::{ConversationId, CoreCryptoFfi, CoreCryptoResult, E2eiConversationState};
 
 pub(crate) mod identities;
 
 // End-to-end identity methods
 #[uniffi::export]
 impl CoreCryptoFfi {
-    /// Returns true if the PKI environment has been set up and its provider is configured.
-    pub async fn e2ei_is_pki_env_setup(&self) -> bool {
-        self.inner.get_pki_environment().await.is_some()
-    }
-
-    /// Returns true if end-to-end identity is enabled for the given cipher_suite.
-    pub async fn e2ei_is_enabled(&self, cipher_suite: CipherSuite) -> CoreCryptoResult<bool> {
-        self.inner
-            .mls_session()
-            .await?
-            .e2ei_is_enabled(cipher_suite.into())
-            .await
-            .map_err(RecursiveError::context("checking if e2ei is enabled"))
-            .map_err(Into::into)
-    }
-
     /// Returns the end-to-end identity verification state of the given conversation.
     pub async fn e2ei_conversation_state(
         &self,

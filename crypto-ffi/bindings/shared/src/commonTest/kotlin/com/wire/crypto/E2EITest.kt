@@ -162,10 +162,4 @@ internal class E2EITest {
             assertThat(bob.transaction { ctx -> ctx.e2eiConversationState(conversationId) })
                 .isEqualTo(E2eiConversationState.NOT_ENABLED)
         }
-
-    @Test
-    fun e2ei_should_not_be_enabled_for_a_Basic_Credential() = runTest {
-        val alice = ccInit()
-        assertThat(alice.transaction { ctx -> ctx.e2eiIsEnabled(CIPHERSUITE_DEFAULT) }).isFalse()
-    }
 }
