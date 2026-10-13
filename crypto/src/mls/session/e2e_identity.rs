@@ -1,4 +1,3 @@
-use futures_util::TryFutureExt;
 use openmls::{
     prelude::{Credential, Node, group_info::VerifiableGroupInfo},
     treesync::RatchetTree,
@@ -8,51 +7,11 @@ use wire_e2e_identity::WireIdentityReader as _;
 
 use super::{Result, Session};
 use crate::{
-    CipherSuite, CredentialFindFilters, CredentialRef, CredentialType, E2eiConversationState, OpenMlsError,
-    RecursiveError,
-    mls::{credential::ext::CredentialExt as _, session::Error},
+    CredentialType, E2eiConversationState, OpenMlsError, mls::credential::ext::CredentialExt as _,
     mls_provider::AuthenticationService,
 };
 
 impl Session {
-    /// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
-    pub async fn e2ei_is_pki_env_setup(&self) -> bool {
-        self.crypto_provider.is_pki_env_setup().await
-    }
-
-    /// Returns true if end-to-end-identity is enabled for the given cipher suite.
-    ///
-    /// This is determined by checking for existence of credentials for the given cipher suite:
-    /// If there are x509 (and optionally basic) credentials -> Ok(true)
-    /// If there are no x509 but basic credentials -> Ok(false)
-    /// If there are no credentials at all for the given cipher suite ->
-    /// `Err(Error::NoCredentialWithType(CredentialType::Basic))`
-    ///
-    /// Note that the credential type named in that error is not meaningful: the condition is "no
-    /// credentials for this cipher suite", which is precisely the case in which we know nothing
-    /// about basic credentials specifically.
-    pub async fn e2ei_is_enabled(&self, cipher_suite: CipherSuite) -> Result<bool> {
-        let credentials = CredentialRef::find(
-            &self.database,
-            CredentialFindFilters::builder().cipher_suite(cipher_suite).build(),
-        )
-        .map_err(RecursiveError::context("finding credentials with filters"))
-        .await?;
-
-        let x509_credential_exists = credentials
-            .iter()
-            .any(|credential| credential.r#type() == CredentialType::X509);
-        if x509_credential_exists {
-            return Ok(true);
-        }
-
-        if !credentials.is_empty() {
-            return Ok(false);
-        }
-
-        Err(Error::NoCredentialWithType(CredentialType::Basic))
-    }
-
     /// Verifies a Group state before joining it
     pub async fn e2ei_verify_group_state(&self, group_info: VerifiableGroupInfo) -> Result<E2eiConversationState> {
         let is_sender = true; // verify the ratchet tree as sender to turn on hardened verification
