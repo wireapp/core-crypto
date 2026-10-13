@@ -333,6 +333,7 @@ mod tests {
             hpke_private_key: b"hpke private key".to_vec(),
             group_context: b"group context".to_vec(),
             targeted_message_psk: b"psk".to_vec(),
+            own_leaf_index: 0,
         }
     }
 

@@ -18,6 +18,7 @@ use crate::{
 pub struct OldEpochData {
     pub conversation_id: ConversationId,
     pub epoch: u64,
+    pub own_leaf_index: u32,
     #[sensitive]
     pub hpke_private_key: Vec<u8>,
     pub group_context: Vec<u8>,
@@ -39,6 +40,7 @@ impl OldEpochData {
         Ok(Self {
             conversation_id: row.get("conversation_id")?,
             epoch: row.get("epoch")?,
+            own_leaf_index: row.get("own_leaf_index")?,
             hpke_private_key: row.get("hpke_private_key")?,
             group_context: row.get("group_context")?,
             targeted_message_psk: row.get("targeted_message_psk")?,
@@ -83,8 +85,8 @@ impl EntityDatabaseMutation for OldEpochData {
         let conn = tx.into().conn()?;
         let mut stmt = conn.prepare_cached(formatcp!(
             "INSERT INTO {}
-                (conversation_id, epoch, hpke_private_key, group_context, targeted_message_psk)
-             VALUES (:conversation_id, :epoch, :hpke_private_key, :group_context, :targeted_message_psk)",
+                    ( conversation_id,  epoch,  hpke_private_key,  group_context,  targeted_message_psk,  own_leaf_index)
+             VALUES (:conversation_id, :epoch, :hpke_private_key, :group_context, :targeted_message_psk, :own_leaf_index)",
             OldEpochData::TABLE_NAME
         ))?;
         stmt.execute(rusqlite::named_params! {
@@ -93,6 +95,7 @@ impl EntityDatabaseMutation for OldEpochData {
             ":hpke_private_key": self.hpke_private_key,
             ":group_context": self.group_context,
             ":targeted_message_psk": self.targeted_message_psk,
+            ":own_leaf_index": self.own_leaf_index,
         })?;
         Ok(())
     }
