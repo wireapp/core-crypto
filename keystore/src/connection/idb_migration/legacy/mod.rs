@@ -14,6 +14,7 @@
 // actually used in these modules is a pain. So we avoid that by deciding we don't care.
 #![expect(unused)]
 #![allow(clippy::unused_async)]
+#![allow(clippy::allow_attributes)]
 
 pub(crate) mod connection;
 pub(crate) mod entities;
