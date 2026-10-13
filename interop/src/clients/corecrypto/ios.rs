@@ -1,5 +1,7 @@
+#[cfg(feature = "proteus")]
+use std::cell::Cell;
 use std::{
-    cell::{Cell, RefCell},
+    cell::RefCell,
     fs,
     io::{BufRead, BufReader, Read},
     process::{Child, ChildStdout, Command, Output, Stdio},
