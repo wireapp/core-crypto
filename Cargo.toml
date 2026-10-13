@@ -13,6 +13,7 @@ members = [
 resolver = "2"
 
 [workspace.lints.clippy]
+allow_attributes = "warn"
 missing_safety_doc = "deny"
 undocumented_unsafe_blocks = "deny"
 unused_async = "warn"
