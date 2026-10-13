@@ -1,0 +1,4 @@
+self-hosted-runner:
+  # Custom labels on our self-hosted runners, so actionlint accepts them in `runs-on`.
+  labels:
+    - core-crypto

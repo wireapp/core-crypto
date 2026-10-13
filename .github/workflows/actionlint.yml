@@ -6,12 +6,14 @@ concurrency:
 
 # Only the workflows and the actions they call are linted, so only changes to those can
 # break this. Note that actionlint validates workflows against action metadata, so editing
-# an action alone is enough to invalidate a workflow that calls it.
+# an action alone is enough to invalidate a workflow that calls it. The same goes for the
+# actionlint config, which declares e.g. our self-hosted runner labels.
 on:
   pull_request:
     paths:
       - ".github/workflows/**"
       - ".github/actions/**"
+      - ".github/actionlint.yaml"
 
 permissions:
   contents: read
