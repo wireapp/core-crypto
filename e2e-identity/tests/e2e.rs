@@ -204,7 +204,6 @@ async fn prepare_pki_env_and_config(
             JwsAlgorithm::P384 => Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
             JwsAlgorithm::P521 => Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
         },
-        hash_alg: HashAlgorithm::SHA256,
         display_name: "Alice Smith".into(),
         handle: "alice_wire".into(),
         client_id: client_id.clone(),
@@ -215,7 +214,7 @@ async fn prepare_pki_env_and_config(
     let wire_server_context = serde_json::json!({
         "client-id": client_id.to_uri(),
         "backend-kp": wire_server_keypair,
-        "hash-alg": config.hash_alg.to_string(),
+        "hash-alg": HashAlgorithm::SHA256.to_string(),
         "wire-server-uri": format!("{wire_server_uri}/clients/{}/access-token", device_id),
         "handle": Handle::from(config.handle.clone()).try_to_qualified(&domain).unwrap(),
         "display_name": config.display_name,

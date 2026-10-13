@@ -55,7 +55,6 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
 mod tests {
     use core_crypto_keystore::Database;
     use openmls_traits::types::Ciphersuite;
-    use rusty_jwt_tools::prelude::HashAlgorithm;
 
     use super::*;
     use crate::{
@@ -111,7 +110,6 @@ mod tests {
         let config = X509CredentialConfiguration {
             acme_directory_url: "acme.example".into(),
             cipher_suite: Ciphersuite::MLS_128_MLKEM768P256_AES128GCM_SHA256_P256,
-            hash_alg: HashAlgorithm::SHA256,
             display_name: "Alice".into(),
             client_id,
             handle: "alice".into(),

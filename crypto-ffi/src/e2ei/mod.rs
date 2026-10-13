@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use async_lock::Mutex;
 use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPair};
-use wire_e2e_identity::{CiphersuiteExt as _, HashAlgorithm, JwsAlgorithm, acquisition::states};
+use wire_e2e_identity::{CiphersuiteExt as _, JwsAlgorithm, acquisition::states};
 use x509_cert::der::Encode as _;
 
 use crate::{CipherSuite as FfiCiphersuite, ClientId, CoreCryptoError, CoreCryptoResult, Credential, PkiEnvironment};
@@ -69,7 +69,6 @@ impl X509CredentialAcquisitionConfiguration {
         Ok(wire_e2e_identity::acquisition::X509CredentialConfiguration {
             acme_directory_url: self.acme_directory_url,
             cipher_suite: self.cipher_suite.into(),
-            hash_alg: HashAlgorithm::SHA256,
             display_name: self.display_name,
             client_id: self.client_id.as_e2ei_client_id()?,
             handle: self.handle,

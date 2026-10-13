@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use jwt_simple::prelude::Jwk;
 use openmls_traits::types::{Ciphersuite, SignatureScheme};
-use rusty_jwt_tools::prelude::{ClientId, HashAlgorithm, JwsAlgorithm, Pem};
+use rusty_jwt_tools::prelude::{ClientId, JwsAlgorithm, Pem};
 use url::Url;
 
 use crate::{
@@ -31,7 +31,6 @@ pub struct X509CredentialConfiguration {
     pub acme_directory_url: String,
     /// The MLS ciphersuite the acquired credential is going to be used with.
     pub cipher_suite: Ciphersuite,
-    pub hash_alg: HashAlgorithm,
     pub display_name: String,
     #[serde(with = "ClientIdDef")]
     pub client_id: ClientId,
