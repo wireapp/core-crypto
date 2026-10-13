@@ -17,7 +17,6 @@ use crate::{
     CryptoProvider, DecryptedMessage, KeystoreError, OpenMlsError, TlsCodecError,
     mls::conversation::{
         ConversationMut, Error, MlsGroupState, Result, TargetedMessagePolicy,
-        config::{MAX_FUTURE_EPOCHS, MAX_PAST_EPOCHS},
         mutable::tnt::{ProtocolVersion, TargetedMessage, TntWireFormat},
     },
 };
@@ -38,18 +37,6 @@ impl ConversationMut {
         }
 
         let message_epoch = message.epoch.as_u64();
-        let group_epoch = mls_group.epoch().as_u64();
-        let max_future_epoch = group_epoch.saturating_add(MAX_FUTURE_EPOCHS);
-        let epochs_in_past = group_epoch.checked_sub(message_epoch);
-        if message_epoch > group_epoch && message_epoch <= max_future_epoch {
-            return Err(Error::BufferedFutureMessage { message_epoch });
-        } else if message_epoch > max_future_epoch {
-            return Err(Error::UnbufferedFarFutureMessage);
-        } else if epochs_in_past.expect("if we're in this branch, the message is from the present or past.")
-            > MAX_PAST_EPOCHS as u64
-        {
-            return Err(Error::MessageEpochTooOld);
-        }
 
         // Both transient wire formats deliberately share one rx counter table; that decision is
         // expressed inside `TntWireFormat`, so report the format the message actually arrived under.
