@@ -823,7 +823,7 @@ dependencies = [
  "sha1 0.11.0",
  "sha2 0.11.0",
  "signature 3.0.0",
- "spki 0.8.0",
+ "spki 0.8.1",
  "subtle-encoding",
  "x509-cert",
  "x509-ocsp",
@@ -992,7 +992,7 @@ checksum = "986e7713348fbe5322df18082d73a0ad53a2946dbb7a02452cf3622b83b91e7c"
 dependencies = [
  "const-oid 0.10.2",
  "der 0.8.2",
- "spki 0.8.0",
+ "spki 0.8.1",
  "x509-cert",
 ]
 
@@ -1197,7 +1197,7 @@ dependencies = [
  "signature 3.0.0",
  "smol",
  "smol-macros",
- "spki 0.8.0",
+ "spki 0.8.1",
  "tempfile",
  "thiserror 2.0.21",
  "tls_codec",
@@ -1769,7 +1769,7 @@ dependencies = [
  "elliptic-curve 0.14.1",
  "rfc6979 0.6.0",
  "signature 3.0.0",
- "spki 0.8.0",
+ "spki 0.8.1",
  "zeroize",
 ]
 
@@ -4274,7 +4274,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "451913da69c775a56034ea8d9003d27ee8948e12443eae7c038ba100a4f21cb7"
 dependencies = [
  "der 0.8.2",
- "spki 0.8.0",
+ "spki 0.8.1",
 ]
 
 [[package]]
@@ -5659,9 +5659,9 @@ dependencies = [
 
 [[package]]
 name = "spki"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d9efca8738c78ee9484207732f728b1ef517bbb1833d6fc0879ca898a522f6f"
+checksum = "7ef958a98b9d5da290cfc78946e9f3e61e1e62a18db0d92cac0b83cc161491a9"
 dependencies = [
  "base64ct",
  "der 0.8.2",
@@ -7477,7 +7477,7 @@ dependencies = [
  "serde_json",
  "shlex",
  "signature 3.0.0",
- "spki 0.8.0",
+ "spki 0.8.1",
  "testcontainers",
  "thiserror 2.0.21",
  "time",
@@ -7567,7 +7567,7 @@ dependencies = [
  "der 0.8.2",
  "sha1 0.11.0",
  "signature 3.0.0",
- "spki 0.8.0",
+ "spki 0.8.1",
  "tls_codec",
 ]
 
@@ -7578,7 +7578,7 @@ source = "git+https://github.com/RustCrypto/formats.git#f17419b70c3631cba5aa960d
 dependencies = [
  "const-oid 0.10.2",
  "der 0.8.2",
- "spki 0.8.0",
+ "spki 0.8.1",
  "x509-cert",
 ]
 
