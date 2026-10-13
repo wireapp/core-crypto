@@ -55,8 +55,6 @@ impl Session {
 
     /// Verifies a Group state before joining it
     pub async fn e2ei_verify_group_state(&self, group_info: VerifiableGroupInfo) -> Result<E2eiConversationState> {
-        let cs = group_info.ciphersuite().into();
-
         let is_sender = true; // verify the ratchet tree as sender to turn on hardened verification
         let Ok(rt) = group_info.take_ratchet_tree(&self.crypto_provider, is_sender).await else {
             return Ok(E2eiConversationState::NotVerified);
@@ -68,7 +66,6 @@ impl Session {
         });
 
         Ok(Self::compute_conversation_state(
-            cs,
             credentials,
             CredentialType::X509,
             self.crypto_provider.authentication_service(),
@@ -83,7 +80,6 @@ impl Session {
         group_info: VerifiableGroupInfo,
         credential_type: CredentialType,
     ) -> Result<E2eiConversationState> {
-        let cs = group_info.ciphersuite().into();
         // Not verifying the supplied the GroupInfo here could let attackers lure the clients about
         // the e2ei state of a conversation and as a consequence degrade this conversation for all
         // participants once joining it.
@@ -92,16 +88,10 @@ impl Session {
             .take_ratchet_tree(&self.crypto_provider, false)
             .await
             .map_err(OpenMlsError::wrap("taking ratchet tree"))?;
-        Self::get_credential_in_use_in_ratchet_tree(
-            cs,
-            rt,
-            credential_type,
-            self.crypto_provider.authentication_service(),
-        )
-        .await
+        Self::get_credential_in_use_in_ratchet_tree(rt, credential_type, self.crypto_provider.authentication_service())
+            .await
     }
     pub(crate) async fn get_credential_in_use_in_ratchet_tree(
-        cipher_suite: CipherSuite,
         ratchet_tree: RatchetTree,
         credential_type: CredentialType,
         auth_service: &AuthenticationService,
@@ -110,13 +100,12 @@ impl Session {
             Some(Node::LeafNode(ln)) => Some(ln.credential()),
             _ => None,
         });
-        Ok(Self::compute_conversation_state(cipher_suite, credentials, credential_type, auth_service).await)
+        Ok(Self::compute_conversation_state(credentials, credential_type, auth_service).await)
     }
 
     /// _credential_type will be used in the future to get the usage of VC Credentials, even Basics one.
     /// Right now though, we do not need anything other than X509 so let's keep things simple.
     pub(crate) async fn compute_conversation_state<'a>(
-        cipher_suite: CipherSuite,
         credentials: impl Iterator<Item = &'a Credential>,
         _credential_type: CredentialType,
         auth_service: &AuthenticationService,

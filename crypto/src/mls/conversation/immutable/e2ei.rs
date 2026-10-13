@@ -16,7 +16,6 @@ impl super::Conversation {
         let backend = &self.session.crypto_provider;
 
         let state = Session::compute_conversation_state(
-            self.cipher_suite(),
             self.group().await.members_credentials(),
             CredentialType::X509,
             backend.authentication_service(),

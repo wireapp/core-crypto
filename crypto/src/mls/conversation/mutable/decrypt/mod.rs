@@ -629,7 +629,6 @@ impl ConversationMut {
                 })
                 .collect();
             let state = Session::compute_conversation_state(
-                self.cipher_suite(),
                 credentials.iter(),
                 crate::CredentialType::X509,
                 backend.authentication_service(),

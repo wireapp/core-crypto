@@ -30,7 +30,6 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::context("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();
-        let cs = group_info.ciphersuite().into();
 
         let is_sender = true; // verify the ratchet tree as sender to turn on hardened verification
         let Ok(rt) = group_info
@@ -51,7 +50,7 @@ impl TransactionContext {
             _ => None,
         });
 
-        Ok(Session::compute_conversation_state(cs, credentials, CredentialType::X509, auth_service).await)
+        Ok(Session::compute_conversation_state(credentials, CredentialType::X509, auth_service).await)
     }
 
     /// See [crate::mls::session::Session::get_credential_in_use].
@@ -60,7 +59,6 @@ impl TransactionContext {
         group_info: VerifiableGroupInfo,
         credential_type: CredentialType,
     ) -> Result<E2eiConversationState> {
-        let cs = group_info.ciphersuite().into();
         // Not verifying the supplied the GroupInfo here could let attackers lure the clients about
         // the e2ei state of a conversation and as a consequence degrade this conversation for all
         // participants once joining it.
@@ -80,7 +78,7 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::context("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();
-        Session::get_credential_in_use_in_ratchet_tree(cs, rt, credential_type, auth_service)
+        Session::get_credential_in_use_in_ratchet_tree(rt, credential_type, auth_service)
             .await
             .map_err(RecursiveError::context("getting credentials in use"))
             .map_err(Into::into)
