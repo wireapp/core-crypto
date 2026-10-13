@@ -1,5 +1,4 @@
 use core_crypto_keystore::{
-    ancillary::ConversationIdRef as KeystoreConversationIdRef,
     entities::{OldEpochData, OldEpochDataPkRef, StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef},
     traits::FetchFromDatabase as _,
 };
@@ -30,7 +29,27 @@ impl ConversationMut {
         sender: &Member,
     ) -> Result<DecryptedMessage> {
         let mls_group = self.group().await;
-        if message.recipient != mls_group.own_leaf_index() {
+
+        let old_epoch_data = if message.epoch != mls_group.epoch() {
+            Some(
+                self.database()?
+                    .get_borrowed::<OldEpochData>(OldEpochDataPkRef::new(self.id.keystore(), message.epoch.as_u64()))
+                    .await
+                    .map_err(KeystoreError::wrap("fetching old epoch data"))?
+                    .ok_or(Error::MlsGroupInvalidState(
+                        "old epoch data for this conversation not found",
+                    ))?,
+            )
+        } else {
+            None
+        };
+
+        let own_leaf_index = old_epoch_data.as_deref().map_or_else(
+            || mls_group.own_leaf_index(),
+            |old_epoch_data| old_epoch_data.own_leaf_index.into(),
+        );
+
+        if message.recipient != own_leaf_index {
             return Err(Error::MlsMessageInvalidState(
                 "TargetedMessage wasn't targeted to this client",
             ));
@@ -53,7 +72,14 @@ impl ConversationMut {
         let crypto_provider = self.crypto_provider().await?;
         let cipher_suite = &self.cipher_suite();
         let (context_data, decryption_key) = self
-            .load_hpke_decryption_data(&mls_group, &crypto_provider, &message, policy, protocol_version)
+            .load_hpke_decryption_data(
+                &mls_group,
+                &crypto_provider,
+                &message,
+                policy,
+                protocol_version,
+                old_epoch_data.as_deref(),
+            )
             .await?;
         let aad = message
             .counter
@@ -96,8 +122,10 @@ impl ConversationMut {
         message: &TargetedMessage,
         policy: TargetedMessagePolicy,
         protocol_version: ProtocolVersion,
+        old_epoch_data: Option<&OldEpochData>,
     ) -> Result<(HpkeContextData, HpkePrivateKey), Error> {
-        if message.epoch == mls_group.epoch() {
+        let Some(old_epoch_data) = old_epoch_data else {
+            // if old_epoch_data is None then the message epoch matches the group epoch
             let context = TargetedMessageContext::new(
                 protocol_version,
                 policy,
@@ -108,20 +136,10 @@ impl ConversationMut {
             let context_data = extract_hpke_context_data(crypto_provider, &context, mls_group)?;
             let decryption_key = self.load_decryption_key(mls_group).await?;
             return Ok((context_data, decryption_key));
-        }
+        };
 
-        let database = self.database()?;
-        let key = OldEpochDataPkRef::new(
-            KeystoreConversationIdRef::new(mls_group.group_id().as_slice()),
-            message.epoch.as_u64(),
-        );
-        let secret = database
-            .get_borrowed::<OldEpochData>(key)
-            .await
-            .map_err(KeystoreError::wrap("loading tnt secret"))?
-            .ok_or(Error::MlsGroupInvalidState("tnt secret is missing"))?;
-        let group_context = GroupContext::tls_deserialize(&mut secret.group_context.as_slice())
-            .map_err(TlsCodecError::deserialize("TntSecret GroupContext"))?;
+        let group_context = GroupContext::tls_deserialize_exact(&old_epoch_data.group_context)
+            .map_err(TlsCodecError::deserialize("OldEpochData GroupContext"))?;
         let context = TargetedMessageContext::new_with_current_protocol_version(
             policy,
             &group_context,
@@ -134,12 +152,12 @@ impl ConversationMut {
         let psk_id = PskId::new(mls_group.group_id().clone(), message.epoch)
             .tls_serialize_detached()
             .map_err(TlsCodecError::serialize("PskId"))?;
-        let decryption_key = core_crypto_keystore::deser(&secret.hpke_private_key)
+        let decryption_key = core_crypto_keystore::deser(&old_epoch_data.hpke_private_key)
             .map_err(KeystoreError::wrap("deserializing tnt hpke private key"))?;
         let context_data = HpkeContextData {
             info,
             psk_id,
-            psk: zeroize::Zeroizing::new(secret.targeted_message_psk.clone()),
+            psk: zeroize::Zeroizing::new(old_epoch_data.targeted_message_psk.clone()),
         };
         Ok((context_data, decryption_key))
     }
