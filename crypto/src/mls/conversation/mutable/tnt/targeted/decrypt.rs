@@ -151,6 +151,7 @@ impl ConversationMut {
         let crypto_provider = self.crypto_provider().await?;
         let hpke_private_key = self.load_decryption_key(mls_group).await?;
         let targeted_message_psk = derive_targeted_message_psk(&crypto_provider, mls_group)?;
+        let own_leaf_index = mls_group.own_leaf_index().u32();
 
         Ok(OldEpochData {
             conversation_id: mls_group.group_id().as_slice().into(),
@@ -162,6 +163,7 @@ impl ConversationMut {
                 .tls_serialize_detached()
                 .map_err(TlsCodecError::serialize("TntSecret GroupContext"))?,
             targeted_message_psk: targeted_message_psk.to_vec(),
+            own_leaf_index,
         })
     }
 
