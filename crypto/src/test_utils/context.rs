@@ -223,7 +223,7 @@ impl SessionContext {
             assert!(pki_env.is_some());
 
             let mls_identity = certificate
-                .extract_identity(case.cipher_suite(), pki_env.as_deref())
+                .extract_identity(case.signature_scheme(), pki_env.as_deref())
                 .await
                 .unwrap();
             let client_id = mls_identity.client_id.clone().unwrap();

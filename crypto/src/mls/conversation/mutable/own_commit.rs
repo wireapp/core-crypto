@@ -94,7 +94,7 @@ impl ConversationMut {
         };
         let pki_env = self.crypto_provider().await?.authentication_service().pki_env().await;
         let identity = own_leaf_credential_with_key
-            .extract_identity(self.cipher_suite(), pki_env.as_deref())
+            .extract_identity(self.cipher_suite().signature_algorithm(), pki_env.as_deref())
             .await
             .map_err(RecursiveError::context("extracting identity"))?;
 

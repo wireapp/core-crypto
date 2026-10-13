@@ -351,7 +351,7 @@ impl ConversationMut {
         };
         let pki_env = crypto_provider.authentication_service().pki_env().await;
         let identity = sender_credential_with_key
-            .extract_identity(self.cipher_suite(), pki_env.as_deref())
+            .extract_identity(self.cipher_suite().signature_algorithm(), pki_env.as_deref())
             .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
         let sender_client_id = sender

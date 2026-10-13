@@ -50,7 +50,7 @@ impl super::Conversation {
             if device_ids.iter().any(|client_id| client_id.borrow() == id.as_slice()) {
                 identities.push(
                     credential
-                        .extract_identity(self.cipher_suite(), pki_env.as_deref())
+                        .extract_identity(self.cipher_suite().signature_algorithm(), pki_env.as_deref())
                         .await
                         .map_err(RecursiveError::context("extracting identity"))?,
                 );
@@ -95,7 +95,7 @@ impl super::Conversation {
             }
 
             let identity = credential
-                .extract_identity(self.cipher_suite(), pki_env.as_deref())
+                .extract_identity(self.cipher_suite().signature_algorithm(), pki_env.as_deref())
                 .await
                 .map_err(RecursiveError::context("extracting identity"))?;
             let value = identities.entry(*user_id).or_insert_with(Vec::new);

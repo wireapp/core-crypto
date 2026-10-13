@@ -206,7 +206,7 @@ impl PendingConversation {
         let pki_env = self.context.pki_environment().await.ok();
 
         let identity = own_leaf_credential_with_key
-            .extract_identity(conversation.cipher_suite(), pki_env.as_deref())
+            .extract_identity(conversation.cipher_suite().signature_algorithm(), pki_env.as_deref())
             .await
             .map_err(RecursiveError::context("extracting identity"))?;
 
