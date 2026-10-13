@@ -1,5 +1,3 @@
-#![allow(clippy::assign_op_pattern)]
-
 use anyhow::Result;
 use core_crypto::{CipherSuite, ClientId, mls::conversation::TargetedMessagePolicy};
 
@@ -44,7 +42,6 @@ pub(crate) trait EmulatedClient {
 }
 
 #[async_trait::async_trait(?Send)]
-#[allow(dead_code)]
 pub(crate) trait EmulatedMlsClient: EmulatedClient {
     async fn get_keypackage(&self) -> Result<Vec<u8>>;
     async fn process_welcome(&self, welcome: &[u8]) -> Result<Vec<u8>>;

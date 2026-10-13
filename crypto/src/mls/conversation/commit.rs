@@ -29,7 +29,6 @@ impl CommitBundle {
     /// 0 -> welcome
     /// 1 -> message
     /// 2 -> public group state
-    #[allow(clippy::type_complexity)]
     pub fn to_bytes_triple(self) -> Result<(Option<WelcomeMessage>, Vec<u8>, GroupInfoBundle)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let welcome = self.welcome.map(Into::into);

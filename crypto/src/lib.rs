@@ -5,7 +5,6 @@
 //! groups.
 #![doc = include_str!(env!("STRIPPED_README_PATH"))]
 #![cfg_attr(not(test), deny(missing_docs))]
-#![allow(clippy::single_component_path_imports)]
 
 #[cfg(test)]
 #[macro_use]

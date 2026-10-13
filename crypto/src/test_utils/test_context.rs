@@ -68,7 +68,6 @@ pub use crate::{CipherSuite, ConversationConfiguration, CredentialType, WirePoli
     )),
 )]
 #[test_attr(macro_rules_attribute::apply(smol_macros::test))]
-#[allow(non_snake_case)]
 pub fn all_cred_cipher(case: TestContext) {}
 
 #[derive(Debug, Clone)]

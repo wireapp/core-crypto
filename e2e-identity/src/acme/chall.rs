@@ -25,7 +25,6 @@ pub(crate) fn dpop_chall_request(
 
 /// oidc challenge request to `POST /acme/challenge/{token}`
 /// see [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1)
-#[allow(clippy::too_many_arguments)]
 pub(crate) fn oidc_chall_request(
     id_token: String,
     oidc_chall: &AcmeChallenge,

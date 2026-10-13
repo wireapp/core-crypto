@@ -23,7 +23,6 @@ impl CryptoboxLike {
         }
     }
 
-    #[allow(dead_code)]
     pub fn fingerprint(&self) -> String {
         self.identity.public_key.fingerprint()
     }
@@ -67,7 +66,6 @@ impl CryptoboxLike {
         }
     }
 
-    #[allow(dead_code)]
     pub fn session(&mut self, session_id: &str) -> &mut proteus_wasm::session::Session<IdentityKeyPair> {
         self.sessions.get_mut(session_id).unwrap()
     }

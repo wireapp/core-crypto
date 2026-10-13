@@ -1,5 +1,4 @@
 use core_crypto_keystore::Database;
-use getrandom;
 pub(crate) use rstest::*;
 pub(crate) use rstest_reuse::{self, *};
 use tempfile::NamedTempFile;
