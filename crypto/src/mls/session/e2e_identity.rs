@@ -140,7 +140,7 @@ impl Session {
 
             is_e2ei = true;
 
-            let invalid_identity = cert.extract_identity(&env, cipher_suite.e2ei_hash_alg()).await.is_err();
+            let invalid_identity = cert.extract_identity(&env).await.is_err();
 
             use openmls_x509_credential::X509Ext as _;
             let is_time_valid = cert.is_time_valid().unwrap_or(false);

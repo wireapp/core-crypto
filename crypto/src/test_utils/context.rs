@@ -234,7 +234,7 @@ impl SessionContext {
             let leaf: Vec<u8> = certificate.certificates.first().unwrap().clone().into();
             let identity = leaf
                 .as_slice()
-                .extract_identity(pki_env.as_deref().unwrap(), case.cipher_suite().e2ei_hash_alg())
+                .extract_identity(pki_env.as_deref().unwrap())
                 .await
                 .unwrap();
             let identity = WireIdentity::try_from((identity, leaf.as_slice())).unwrap();
@@ -263,10 +263,7 @@ impl SessionContext {
             );
             let chain = x509_cert::Certificate::load_pem_chain(decrypted_x509_identity.certificate.as_bytes()).unwrap();
             let leaf = chain.first().unwrap();
-            let cert_identity = leaf
-                .extract_identity(pki_env.as_deref().unwrap(), case.cipher_suite().e2ei_hash_alg())
-                .await
-                .unwrap();
+            let cert_identity = leaf.extract_identity(pki_env.as_deref().unwrap()).await.unwrap();
 
             let cert_identity = WireIdentity::try_from((cert_identity, leaf.to_der().unwrap().as_slice())).unwrap();
             assert_eq!(cert_identity.client_id, identity.client_id);

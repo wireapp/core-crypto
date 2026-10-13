@@ -4,7 +4,7 @@ use derive_more::derive;
 use openmls::prelude::Credential as MlsCredential;
 use openmls_traits::types::SignatureScheme;
 use openmls_x509_credential::CertificateKeyPair;
-use wire_e2e_identity::{HashAlgorithm, WireIdentityReader, pki_env::PkiEnvironment};
+use wire_e2e_identity::{WireIdentityReader, pki_env::PkiEnvironment};
 #[cfg(test)]
 use x509_cert::der::Encode;
 use zeroize::Zeroize;
@@ -80,19 +80,8 @@ impl CertificateBundle {
     pub async fn get_client_id(&self, pki_env: &PkiEnvironment) -> Result<ClientId> {
         let leaf = self.certificate_chain.first().ok_or(Error::InvalidIdentity)?;
 
-        let hash_alg = match self.signature_scheme {
-            SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ED25519 => HashAlgorithm::SHA256,
-            SignatureScheme::ECDSA_SECP384R1_SHA384 => HashAlgorithm::SHA384,
-            SignatureScheme::ED448 | SignatureScheme::ECDSA_SECP521R1_SHA512 => HashAlgorithm::SHA512,
-            SignatureScheme::MLDSA44 | SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87 => {
-                // TODO: use SHA-256 for the time being; thumbprints are soon going to be
-                // ciphersuite-independent at which point this whole block will go away.
-                HashAlgorithm::SHA256
-            }
-        };
-
         let identity = leaf
-            .extract_identity(pki_env, hash_alg)
+            .extract_identity(pki_env)
             .await
             .map_err(|_| Error::InvalidIdentity)?;
 

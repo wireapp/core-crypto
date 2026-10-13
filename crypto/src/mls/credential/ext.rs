@@ -1,8 +1,6 @@
 use openmls::prelude::{Credential, CredentialWithKey};
-use openmls_traits::types::{HashType, SignatureScheme};
-use wire_e2e_identity::{
-    HashAlgorithm, IdentityStatus, JwsAlgorithm, compute_raw_key_thumbprint, pki_env::PkiEnvironment,
-};
+use openmls_traits::types::SignatureScheme;
+use wire_e2e_identity::{IdentityStatus, JwsAlgorithm, compute_raw_key_thumbprint, pki_env::PkiEnvironment};
 use x509_cert::{Certificate, der::Decode};
 
 use super::{Error, Result};
@@ -42,7 +40,7 @@ impl CredentialExt for CredentialWithKey {
                     })
                     .ok();
 
-                let thumbprint = compute_thumbprint(cs, self.signature_key.as_slice())?;
+                let thumbprint = compute_thumbprint(cs.signature_algorithm(), self.signature_key.as_slice())?;
 
                 Ok(WireIdentity {
                     client_id,
@@ -111,10 +109,7 @@ impl CredentialExt for openmls::prelude::Certificate {
         let leaf = self.certificates.first().ok_or(Error::InvalidIdentity)?;
         let leaf = leaf.as_slice();
         use wire_e2e_identity::WireIdentityReader as _;
-        let identity = leaf
-            .extract_identity(env, cs.e2ei_hash_alg())
-            .await
-            .map_err(|_| Error::InvalidIdentity)?;
+        let identity = leaf.extract_identity(env).await.map_err(|_| Error::InvalidIdentity)?;
         let identity = WireIdentity::try_from((identity, leaf)).map_err(|_| Error::InvalidIdentity)?;
         Ok(identity)
     }
@@ -146,26 +141,20 @@ fn compute_thumbprint_mldsa(scheme: SignatureScheme, key: &[u8]) -> String {
     hasher.finalize().to_string()
 }
 
-fn compute_thumbprint(cs: CipherSuite, raw_key: &[u8]) -> Result<String> {
-    let sign_alg = match cs.signature_algorithm() {
+fn compute_thumbprint(signature_scheme: SignatureScheme, raw_key: &[u8]) -> Result<String> {
+    let sign_alg = match signature_scheme {
         SignatureScheme::ED25519 => JwsAlgorithm::Ed25519,
         SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::P256,
         SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::P384,
         SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::P521,
         SignatureScheme::ED448 => return Err(Error::UnsupportedAlgorithm),
         scheme @ (SignatureScheme::MLDSA44 | SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87) => {
-            // There is no JOSE key type for ML-DSA yet.
-            // We're going to change the way we compute thumbprints anyway, but for the time being
-            // just provide something sensible.
+            // There is no JOSE key type for ML-DSA yet, so we can't compute a JWK thumbprint.
+            // Until there is, just provide something sensible.
             return Ok(compute_thumbprint_mldsa(scheme, raw_key));
         }
     };
-    let hash_alg = match cs.hash_algorithm() {
-        HashType::Sha2_256 => HashAlgorithm::SHA256,
-        HashType::Sha2_384 => HashAlgorithm::SHA384,
-        HashType::Sha2_512 => HashAlgorithm::SHA512,
-    };
 
     // return an empty string when it fails. Not worth failing for this, it's just informative
-    Ok(compute_raw_key_thumbprint(sign_alg, hash_alg, raw_key).unwrap_or_default())
+    Ok(compute_raw_key_thumbprint(sign_alg, raw_key).unwrap_or_default())
 }
