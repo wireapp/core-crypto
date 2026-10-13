@@ -786,7 +786,7 @@ mod hpke_core {
         })
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub(crate) fn hpke_gen_keypair<Kem: hpke::Kem>(
         csprng: &mut impl rand_core::CryptoRng,
     ) -> Result<HpkeKeyPair, CryptoError> {

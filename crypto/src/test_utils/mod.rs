@@ -1,6 +1,6 @@
 // disabling the requirement for documentation here because these test utils should not be held to the same standard,
 // and historically have not been.
-#![allow(missing_docs)]
+#![expect(missing_docs)]
 
 pub mod context;
 mod epoch_observer;

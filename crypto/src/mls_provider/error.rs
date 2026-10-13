@@ -12,7 +12,7 @@ pub enum Error {
     Generic(String),
 }
 
-#[allow(clippy::from_over_into)]
+#[expect(clippy::from_over_into)]
 impl Into<String> for Error {
     fn into(self) -> String {
         self.to_string()

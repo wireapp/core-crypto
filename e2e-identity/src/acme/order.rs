@@ -8,7 +8,7 @@ use crate::acme::{
 
 /// create a new order
 /// see [RFC 8555 Section 7.4](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4).
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub(crate) fn new_order_request(
     display_name: &str,
     client_id: ClientId,

@@ -7,7 +7,7 @@
 use core_crypto::SignatureScheme as MlsSignatureScheme;
 
 /// Signature schemes supported by MLS, as defined in RFC 9420.
-#[allow(non_camel_case_types)]
+#[expect(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, derive_more::TryFrom)]
 #[try_from(repr)]
 #[repr(u16)]

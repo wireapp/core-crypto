@@ -1,6 +1,6 @@
 /// Errors produced by the Proteus layer.
 #[derive(Debug, thiserror::Error, uniffi::Error)]
-#[allow(missing_docs)] // error variants are self-describing
+#[expect(missing_docs)] // error variants are self-describing
 pub enum ProteusError {
     #[error("The requested session was not found")]
     SessionNotFound,

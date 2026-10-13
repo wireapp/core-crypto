@@ -2,7 +2,7 @@ use core_crypto::InnermostErrorMessage as _;
 
 /// Errors produced by the MLS layer.
 #[derive(Debug, thiserror::Error, uniffi::Error)]
-#[allow(missing_docs)] // error variants are self-describing
+#[expect(missing_docs)] // error variants are self-describing
 pub enum MlsError {
     /// The byte vector included in this error variant is the raw conversation id.
     ///

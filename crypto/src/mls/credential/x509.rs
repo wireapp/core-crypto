@@ -168,7 +168,7 @@ fn new_rand_client(domain: Option<String>) -> (ClientId, String) {
 #[cfg(test)]
 impl CertificateBundle {
     // test functions are not held to the same standard as real functions
-    #![allow(missing_docs)]
+    #![expect(missing_docs)]
 
     /// Generates a certificate that is later turned into a [Credential]
     ///

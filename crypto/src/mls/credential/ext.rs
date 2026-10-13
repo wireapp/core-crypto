@@ -8,7 +8,7 @@ use x509_cert::{Certificate, der::Decode};
 use super::{Error, Result};
 use crate::{CipherSuite, ClientId, CredentialType, WireIdentity};
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 pub(crate) trait CredentialExt {
     fn parse_leaf_cert(&self) -> Result<Option<Certificate>>;
     fn get_type(&self) -> Result<CredentialType>;

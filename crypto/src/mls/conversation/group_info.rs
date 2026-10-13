@@ -35,7 +35,7 @@ impl GroupInfoBundle {
 #[cfg(test)]
 impl GroupInfoBundle {
     // test functions are not held to the same standard
-    #![allow(missing_docs)]
+    #![expect(missing_docs)]
 
     pub fn get_group_info(self) -> openmls::prelude::group_info::VerifiableGroupInfo {
         match self.get_payload().extract() {

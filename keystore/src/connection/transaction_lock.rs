@@ -52,7 +52,9 @@ impl TransactionLock {
     ///
     /// `database_path` is empty for in-memory databases, which no other process can reach, so
     /// those get the in-process half only.
-    pub(crate) fn new(#[allow(unused)] database_path: &str) -> CryptoKeystoreResult<Self> {
+    pub(crate) fn new(
+        #[cfg_attr(not(feature = "cross-process-lock"), expect(unused))] database_path: &str,
+    ) -> CryptoKeystoreResult<Self> {
         Ok(Self {
             semaphore: Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT)),
             #[cfg(feature = "cross-process-lock")]

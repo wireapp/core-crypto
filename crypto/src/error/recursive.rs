@@ -1,4 +1,4 @@
-#![allow(missing_docs)]
+#![expect(missing_docs)]
 
 /// Attach context to an error which [`RecursiveError`] knows how to wrap.
 ///

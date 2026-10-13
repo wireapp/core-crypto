@@ -1,7 +1,7 @@
 //! MLS credential errors
 
 // We allow missing documentation in the error module because the types are generally self-descriptive.
-#![allow(missing_docs)]
+#![expect(missing_docs)]
 
 use core_crypto_keystore::Sha256Hash;
 use openmls::prelude::SignaturePublicKey;

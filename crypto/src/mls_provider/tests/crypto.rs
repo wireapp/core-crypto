@@ -1,4 +1,4 @@
-#![allow(non_snake_case, unused_imports)]
+#![expect(non_snake_case, unused_imports)]
 
 const LEN_RANGE: std::ops::RangeInclusive<usize> = 128..=1024;
 

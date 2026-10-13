@@ -9,7 +9,7 @@ use core_crypto::{CipherSuite as CryptoCipherSuite, MlsCiphersuite as MlsCipherS
 use crate::{CoreCryptoError, CoreCryptoResult};
 
 /// MLS cipher suites
-#[allow(non_camel_case_types)]
+#[expect(non_camel_case_types)]
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::TryFrom)]
 #[try_from(repr)]
 #[repr(u16)]

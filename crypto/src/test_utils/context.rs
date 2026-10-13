@@ -18,7 +18,7 @@ use crate::{
     test_utils::{SessionContext, TestContext, x509::X509Certificate},
 };
 
-#[allow(clippy::redundant_static_lifetimes)]
+#[expect(clippy::redundant_static_lifetimes)]
 pub const TEAM: &'static str = "world";
 
 impl SessionContext {

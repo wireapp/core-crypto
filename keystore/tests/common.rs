@@ -1,4 +1,9 @@
-#![allow(dead_code, unused_macros, unused_imports)]
+#![allow(
+    dead_code,
+    unused_macros,
+    reason = "each test binary that includes this module uses a different subset of it"
+)]
+#![expect(unused_imports)]
 
 use std::{
     array,

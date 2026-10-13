@@ -72,7 +72,7 @@ pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
 struct DummyLogger;
 
 impl CoreCryptoLogger for DummyLogger {
-    #[allow(unused_variables)]
+    #[expect(unused_variables)]
     fn log(&self, level: CoreCryptoLogLevel, message: String, context: Option<String>) -> Result<(), LoggingError> {
         Ok(())
     }

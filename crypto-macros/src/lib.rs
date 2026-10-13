@@ -169,7 +169,7 @@ pub(crate) fn compile_error(mut item: TokenStream, err: syn::Error) -> TokenStre
     item
 }
 
-#[allow(clippy::type_complexity)]
+#[expect(clippy::type_complexity)]
 pub(crate) fn items(
     ast: &ItemFn,
 ) -> (

@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+#![expect(dead_code)]
 use std::net::SocketAddr;
 
 use rusty_jwt_tools::prelude::ClientId;

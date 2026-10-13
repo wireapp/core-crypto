@@ -35,13 +35,13 @@ impl TestHistoryObserver {
         Arc::new(Self(Default::default()))
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub(crate) async fn reset(&self) {
         let mut guard = self.0.lock().await;
         guard.observed_history_clients.clear();
     }
 
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     pub(crate) async fn has_changed(&self) -> bool {
         let guard = self.0.lock().await;
         !guard.observed_history_clients.is_empty()

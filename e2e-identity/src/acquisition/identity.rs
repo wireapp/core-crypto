@@ -25,7 +25,7 @@ pub struct WireIdentity {
 pub trait WireIdentityReader {
     /// Verifies a proof of identity, may it be a x509 certificate (or a Verifiable Presentation (later)).
     /// We do not verify anything else e.g. expiry, it is left to MLS implementation
-    #[allow(async_fn_in_trait)]
+    #[expect(async_fn_in_trait)]
     async fn extract_identity(&self, env: &PkiEnvironment, hash_alg: HashAlgorithm) -> Result<WireIdentity>;
 
     /// returns the 'Not Before' claim which usually matches the creation timestamp

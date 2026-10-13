@@ -128,7 +128,7 @@ pub struct CoreCrypto {
     #[cfg(feature = "proteus")]
     proteus: Mutex<Option<proteus::ProteusCentral>>,
     #[cfg(not(feature = "proteus"))]
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     proteus: (),
 }
 

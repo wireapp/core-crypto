@@ -131,7 +131,7 @@ impl CryptoKeystoreError {
 }
 
 #[cfg(target_os = "unknown")]
-#[allow(clippy::from_over_into)]
+#[expect(clippy::from_over_into)]
 impl Into<wasm_bindgen::JsValue> for CryptoKeystoreError {
     fn into(self) -> wasm_bindgen::JsValue {
         wasm_bindgen::JsValue::from_str(&self.to_string())

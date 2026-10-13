@@ -1,6 +1,6 @@
 // The functions expanded by the uniffi macro call deprecated functions, which is why we have to `allow` here. We
 // re-introduce a `#[warn(expected)]` on our impl block below to prevent masking deprecated use in our own code.
-#![allow(deprecated, reason = "UniFFI wrappers call deprecated exports")]
+#![expect(deprecated, reason = "UniFFI wrappers call deprecated exports")]
 
 use crate::{CoreCryptoContext, CoreCryptoResult, ProteusAutoPrekeyBundle, proteus_impl};
 

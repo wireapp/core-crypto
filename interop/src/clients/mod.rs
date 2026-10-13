@@ -12,7 +12,7 @@ bitflags::bitflags! {
 
 #[derive(Debug)]
 #[non_exhaustive]
-#[allow(dead_code)]
+#[cfg_attr(not(target_os = "macos"), expect(dead_code))]
 pub(crate) enum EmulatedClientType {
     Web,
     AppleiOS,
@@ -32,7 +32,7 @@ impl std::fmt::Display for EmulatedClientType {
 }
 
 #[async_trait::async_trait(?Send)]
-#[allow(dead_code)]
+#[expect(dead_code)]
 pub(crate) trait EmulatedClient {
     fn client_name(&self) -> &str;
     fn client_type(&self) -> EmulatedClientType;
@@ -59,7 +59,7 @@ pub(crate) trait EmulatedMlsClient: EmulatedClient {
 }
 
 #[async_trait::async_trait(?Send)]
-#[allow(dead_code)]
+#[expect(dead_code)]
 pub(crate) trait EmulatedProteusClient: EmulatedClient {
     async fn init(&mut self) -> Result<()> {
         Ok(())
@@ -73,7 +73,7 @@ pub(crate) trait EmulatedProteusClient: EmulatedClient {
 }
 
 #[async_trait::async_trait(?Send)]
-#[allow(dead_code)]
+#[expect(dead_code)]
 pub(crate) trait EmulatedE2eIdentityClient: EmulatedClient {
     async fn e2ei_new_enrollment(&mut self, cipher_suite: CipherSuite) -> Result<()>;
 }
