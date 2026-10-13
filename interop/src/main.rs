@@ -33,7 +33,7 @@ async fn create_mls_clients<'a>(
     vec![
         Box::new(clients::corecrypto::android::CoreCryptoAndroidClient::new().unwrap()),
         #[cfg(target_os = "macos")]
-        Box::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await.unwrap()),
+        Box::new(clients::corecrypto::ios::CoreCryptoIosClient::new().unwrap()),
         Box::new(
             clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr, web_server)
                 .await
@@ -50,7 +50,7 @@ async fn create_proteus_clients<'a>(
     vec![
         Box::new(clients::corecrypto::android::CoreCryptoAndroidClient::new().unwrap()),
         #[cfg(target_os = "macos")]
-        Box::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await.unwrap()),
+        Box::new(clients::corecrypto::ios::CoreCryptoIosClient::new().unwrap()),
         Box::new(
             clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr, web_server)
                 .await
