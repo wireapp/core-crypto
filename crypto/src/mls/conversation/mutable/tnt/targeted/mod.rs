@@ -128,8 +128,40 @@ fn derive_targeted_message_psk(
 
 #[cfg(test)]
 mod tests {
+    use openmls::prelude::{GroupEpoch, Signable as _};
+    use tls_codec::{Deserialize as _, Serialize as _};
+
     use super::TargetedMessagePolicy;
-    use crate::test_utils::*;
+    use crate::{
+        CertificateBundle, Credential, CredentialRef,
+        mls::conversation::{
+            ConversationMut, Error,
+            mutable::tnt::{TntMessage, TntMessageBody},
+        },
+        test_utils::*,
+    };
+
+    /// The leaf index `member` occupies in its own view of the conversation.
+    async fn leaf_index_of(conversation: &TestConversation<'_>, member: &SessionContext) -> u32 {
+        conversation.guard_of(member).await.group().await.own_leaf_index().u32()
+    }
+
+    /// Rewrite a targeted message so that it claims to have been sent in `epoch`, and re-sign it with the
+    /// current signature key of `signer`.
+    ///
+    /// The result carries a valid signature by `signer`. Anything which rejects it has therefore checked
+    /// the signature against someone else's key, or has not found a sender at all.
+    async fn backdate(encrypted: &[u8], epoch: u64, signer: &ConversationMut) -> Vec<u8> {
+        let TntMessage { mut content, .. } = TntMessage::tls_deserialize_exact(encrypted).unwrap();
+        let TntMessageBody::Targeted(targeted) = &mut content.body else {
+            panic!("expected a persisted targeted message");
+        };
+        targeted.epoch = GroupEpoch::from(epoch);
+
+        let credential = signer.find_current_credential().await.unwrap();
+        let resigned: TntMessage = content.sign(credential.signature_key()).unwrap();
+        resigned.tls_serialize_detached().unwrap()
+    }
 
     #[apply(all_cred_cipher)]
     async fn can_decrypt_targeted_message(case: TestContext) {
@@ -330,5 +362,356 @@ mod tests {
             .unwrap()
             .plaintext;
         assert_eq!(&decrypted, &epoch_2);
+    }
+
+    #[apply(all_cred_cipher)]
+    async fn targeted_message_survives_its_senders_leaf_being_reused(case: TestContext) {
+        let [alice, bob, charlie, dave] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
+        let charlie_id = charlie.get_client_id().await;
+        let charlie_leaf = leaf_index_of(&conversation, &charlie).await;
+
+        let message = b"sent by charlie before leaving";
+        let encrypted = conversation
+            .guard_of(&charlie)
+            .await
+            .encrypt_targeted(
+                &bob.get_client_id().await,
+                TargetedMessagePolicy::Persisted,
+                message.to_vec(),
+            )
+            .await
+            .unwrap();
+
+        let conversation = conversation.remove_notify(&charlie).await;
+        let conversation = conversation.invite_notify([&dave]).await;
+        assert_eq!(
+            leaf_index_of(&conversation, &dave).await,
+            charlie_leaf,
+            "the test is only meaningful if dave now holds charlie's old leaf"
+        );
+
+        let decrypted = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(encrypted)
+            .await
+            .unwrap()
+            .into_persisted_targeted()
+            .unwrap();
+        assert_eq!(decrypted.plaintext, message);
+        assert_eq!(
+            decrypted.sender_client_id, charlie_id,
+            "the message must be attributed to whoever held the leaf in the epoch it was sent"
+        );
+    }
+
+    #[apply(all_cred_cipher)]
+    async fn targeted_message_survives_its_senders_removal(case: TestContext) {
+        let [alice, bob, charlie] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
+        let charlie_id = charlie.get_client_id().await;
+
+        let message = b"sent by charlie before leaving";
+        let encrypted = conversation
+            .guard_of(&charlie)
+            .await
+            .encrypt_targeted(
+                &bob.get_client_id().await,
+                TargetedMessagePolicy::Persisted,
+                message.to_vec(),
+            )
+            .await
+            .unwrap();
+
+        let conversation = conversation.remove_notify(&charlie).await;
+
+        let decrypted = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(encrypted)
+            .await
+            .unwrap()
+            .into_persisted_targeted()
+            .unwrap();
+        assert_eq!(decrypted.plaintext, message);
+        assert_eq!(decrypted.sender_client_id, charlie_id);
+    }
+
+    #[apply(all_cred_cipher)]
+    async fn targeted_message_survives_its_sender_rotating_their_signature_key(case: TestContext) {
+        // Rotating a basic credential is not supported for now. A new basic credential for the same client compares
+        // equal to the old one, so `set_credential_inner` keeps the old leaf and the update commit is signed with a
+        // key that leaf does not hold.
+        if case.is_basic() {
+            return;
+        }
+
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+        let alice_id = alice.get_client_id().await;
+
+        let message = b"signed with alice's first key";
+        let encrypted = conversation
+            .guard()
+            .await
+            .encrypt_targeted(
+                &bob.get_client_id().await,
+                TargetedMessagePolicy::Persisted,
+                message.to_vec(),
+            )
+            .await
+            .unwrap();
+
+        let intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();
+        let certificate = CertificateBundle::rand(&alice_id, intermediate_ca);
+        let new_credential = Credential::x509(case.cipher_suite(), certificate).unwrap();
+        let new_credential = alice
+            .transaction
+            .add_credential_without_clientid_check(new_credential)
+            .unwrap();
+        let old_key = conversation.guard().await.find_current_credential().await.unwrap();
+        let conversation = conversation
+            .set_credential_by_ref_notify(&CredentialRef::from_credential(&new_credential))
+            .await;
+        let new_key = conversation.guard().await.find_current_credential().await.unwrap();
+        assert_ne!(
+            old_key.signature_key().public(),
+            new_key.signature_key().public(),
+            "the test is only meaningful if alice's signature key has changed"
+        );
+
+        let decrypted = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(encrypted)
+            .await
+            .unwrap()
+            .into_persisted_targeted()
+            .unwrap();
+        assert_eq!(decrypted.plaintext, message);
+        assert_eq!(
+            decrypted.sender_client_id, alice_id,
+            "the message must be attributed to the credential alice used when she sent it"
+        );
+    }
+
+    #[apply(all_cred_cipher)]
+    async fn targeted_message_survives_its_recipient_rejoining_at_another_leaf(case: TestContext) {
+        let [alice, charlie, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &charlie, &bob]).await;
+        let bob_leaf_before = leaf_index_of(&conversation, &bob).await;
+
+        let message = b"sent to bob's first leaf";
+        let encrypted = conversation
+            .guard()
+            .await
+            .encrypt_targeted(
+                &bob.get_client_id().await,
+                TargetedMessagePolicy::Persisted,
+                message.to_vec(),
+            )
+            .await
+            .unwrap();
+
+        // Charlie's departure leaves a blank leaf to the left of bob's, which bob's rejoin will take.
+        let conversation = conversation.remove_notify(&charlie).await;
+        let conversation = conversation.external_join_notify(&bob).await;
+        assert_ne!(
+            leaf_index_of(&conversation, &bob).await,
+            bob_leaf_before,
+            "the test is only meaningful if bob's rejoin moved him to another leaf"
+        );
+
+        let decrypted = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(encrypted)
+            .await
+            .unwrap()
+            .into_persisted_targeted()
+            .unwrap();
+        assert_eq!(decrypted.plaintext, message);
+    }
+
+    #[apply(all_cred_cipher)]
+    async fn targeted_message_from_the_epoch_a_rejoin_left_can_be_decrypted(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+
+        let message = b"sent in the epoch bob is about to abandon";
+        let encrypted = conversation
+            .guard()
+            .await
+            .encrypt_targeted(
+                &bob.get_client_id().await,
+                TargetedMessagePolicy::Persisted,
+                message.to_vec(),
+            )
+            .await
+            .unwrap();
+
+        let conversation = conversation.external_join_notify(&bob).await;
+
+        let decrypted = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(encrypted)
+            .await
+            .unwrap()
+            .into_persisted_targeted()
+            .unwrap();
+        assert_eq!(decrypted.plaintext, message);
+    }
+
+    #[apply(all_cred_cipher)]
+    async fn backdated_message_from_a_reused_leaf_fails_signature_verification(case: TestContext) {
+        let [alice, bob, charlie, dave] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
+        let charlie_leaf = leaf_index_of(&conversation, &charlie).await;
+        let charlies_epoch = conversation.guard().await.epoch().await;
+
+        let conversation = conversation.remove_notify(&charlie).await;
+        let conversation = conversation.invite_notify([&dave]).await;
+        assert_eq!(
+            leaf_index_of(&conversation, &dave).await,
+            charlie_leaf,
+            "the test is only meaningful if dave now holds charlie's old leaf"
+        );
+
+        let encrypted = conversation
+            .guard_of(&dave)
+            .await
+            .encrypt_targeted(
+                &bob.get_client_id().await,
+                TargetedMessagePolicy::Persisted,
+                b"dave pretending to be charlie".to_vec(),
+            )
+            .await
+            .unwrap();
+        let forged = backdate(&encrypted, charlies_epoch, &conversation.guard_of(&dave).await).await;
+
+        let error = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(forged)
+            .await
+            .unwrap_err();
+        assert!(
+            matches!(
+                error,
+                Error::OpenMls(crate::OpenMlsError {
+                    context: "verifying tnt message signature",
+                    ..
+                })
+            ),
+            "a message claiming an old epoch must be verified against that epoch's occupant of the leaf, got {error:?}"
+        );
+    }
+
+    #[apply(all_cred_cipher)]
+    async fn backdated_message_from_before_the_sender_joined_is_rejected(case: TestContext) {
+        let [alice, bob, charlie] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+        let epoch_before_charlie = conversation.guard().await.epoch().await;
+
+        let conversation = conversation.invite_notify([&charlie]).await;
+        let encrypted = conversation
+            .guard_of(&charlie)
+            .await
+            .encrypt_targeted(
+                &bob.get_client_id().await,
+                TargetedMessagePolicy::Persisted,
+                b"charlie claiming to have been here all along".to_vec(),
+            )
+            .await
+            .unwrap();
+        let forged = backdate(&encrypted, epoch_before_charlie, &conversation.guard_of(&charlie).await).await;
+
+        let error = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(forged)
+            .await
+            .unwrap_err();
+        assert!(
+            matches!(
+                error,
+                Error::MlsMessageInvalidState("old epoch member data not found for the sender")
+            ),
+            "a sender with no leaf in the claimed epoch must be rejected, got {error:?}"
+        );
+    }
+
+    #[apply(all_cred_cipher)]
+    async fn transient_targeted_message_from_a_past_epoch_is_rejected(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+
+        let encrypted = conversation
+            .guard()
+            .await
+            .encrypt_targeted(
+                &bob.get_client_id().await,
+                TargetedMessagePolicy::Transient,
+                b"only meaningful in the epoch it was sent".to_vec(),
+            )
+            .await
+            .unwrap();
+
+        let conversation = conversation.update_notify().await;
+
+        let error = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(encrypted)
+            .await
+            .unwrap_err();
+        assert!(
+            matches!(error, Error::InvalidTransientMessageEpoch { .. }),
+            "transient messages must only be decrypted in the epoch they were sent, got {error:?}"
+        );
+    }
+
+    /// A targeted message can be decrypted from a past epoch which the recipient entered by processing a commit.
+    ///
+    /// The other past-epoch tests all send in the epoch the recipient joined in, which is recorded when the
+    /// conversation is first persisted. This one sends in an epoch that only exists because of a later commit.
+    #[apply(all_cred_cipher)]
+    async fn targeted_message_from_an_epoch_entered_by_commit_can_be_decrypted_later(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+        let joined_epoch = conversation.guard_of(&bob).await.epoch().await;
+
+        let conversation = conversation.update_notify().await;
+        let sending_epoch = conversation.guard_of(&bob).await.epoch().await;
+        assert!(
+            sending_epoch > joined_epoch,
+            "the test is only meaningful if the message is sent after an epoch change"
+        );
+
+        let message = b"sent in an epoch bob entered by commit";
+        let encrypted = conversation
+            .guard()
+            .await
+            .encrypt_targeted(
+                &bob.get_client_id().await,
+                TargetedMessagePolicy::Persisted,
+                message.to_vec(),
+            )
+            .await
+            .unwrap();
+
+        let conversation = conversation.update_notify().await;
+
+        let decrypted = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(encrypted)
+            .await
+            .unwrap()
+            .into_persisted_targeted()
+            .unwrap();
+        assert_eq!(decrypted.plaintext, message);
     }
 }
