@@ -1,69 +1,69 @@
 name: Run e2e interop test via make
-description: Run the end-to-end interop test, fetching or building the web, iOS, Android and interop artifacts it drives
+description: >
+  Run the end-to-end interop test against prebuilt artifacts: the interop binary, the web bindings,
+  and the iOS and Android interop apps. They are downloaded by name, never built here.
 inputs:
   gh-token:
     required: true
   always-run:
-    description: Run the test even if dependencies haven't changed
+    description: Run the test even if it already passed with exactly these artifacts
     required: false
   artifact-generation:
     description: suffix for artifact names that allows us to easily invalidate artifacts
+  run-id:
+    description: The workflow run to download the artifacts from. Defaults to the current run.
+    required: false
+  interop-build-artifact:
+    description: Full name of the interop binary artifact
+    required: true
+  ts-browser-artifact:
+    description: Full name of the web bindings artifact
+    required: true
+  ios-app-artifact:
+    description: Full name of the iOS interop app artifact
+    required: true
+  android-app-artifact:
+    description: Full name of the Android interop app artifact
+    required: true
 
 runs:
   using: composite
 
   steps:
-    - name: download web bindings
-      uses: ./.github/actions/make/ts/browser
-      with:
-        gh-token: ${{ inputs.gh-token }}
-        artifact-generation: ${{ inputs.artifact-generation }}
-
-    - name: download artifacts for ios device
-      uses: ./.github/actions/make/ios/build
-      with:
-        gh-token: ${{ inputs.gh-token }}
-        task: ios-device
-        artifact-generation: ${{ inputs.artifact-generation }}
-
-    - name: download artifacts for ios simulator
-      uses: ./.github/actions/make/ios/build
-      with:
-        gh-token: ${{ inputs.gh-token }}
-        task: ios-simulator-arm
-        artifact-generation: ${{ inputs.artifact-generation }}
-
-    - name: download swift bindings
-      uses: ./.github/actions/make/bindings-swift
-      with:
-        gh-token: ${{ inputs.gh-token }}
-        artifact-generation: ${{ inputs.artifact-generation }}
-
-    - name: download android test binary
-      uses: ./.github/actions/make/android/lib
-      with:
-        task: android-armv8
-        gh-token: ${{ inputs.gh-token }}
-        artifact-generation: ${{ inputs.artifact-generation }}
-
-    - name: download android bindings
-      uses: ./.github/actions/make/android/bindings
-      with:
-        gh-token: ${{ inputs.gh-token }}
-        artifact-generation: ${{ inputs.artifact-generation }}
-
     - name: download interop test binary
-      uses: ./.github/actions/make/interop/build
+      uses: ./.github/actions/make/fetch-artifact
       with:
+        artifact-name: ${{ inputs.interop-build-artifact }}
+        run-id: ${{ inputs.run-id }}
         gh-token: ${{ inputs.gh-token }}
-        artifact-generation: ${{ inputs.artifact-generation }}
+
+    - name: download web bindings
+      uses: ./.github/actions/make/fetch-artifact
+      with:
+        artifact-name: ${{ inputs.ts-browser-artifact }}
+        run-id: ${{ inputs.run-id }}
+        gh-token: ${{ inputs.gh-token }}
+
+    - name: download ios interop app
+      uses: ./.github/actions/make/fetch-artifact
+      with:
+        artifact-name: ${{ inputs.ios-app-artifact }}
+        run-id: ${{ inputs.run-id }}
+        gh-token: ${{ inputs.gh-token }}
+
+    - name: download android interop app
+      uses: ./.github/actions/make/fetch-artifact
+      with:
+        artifact-name: ${{ inputs.android-app-artifact }}
+        run-id: ${{ inputs.run-id }}
+        gh-token: ${{ inputs.gh-token }}
 
     - uses: ./.github/actions/make
       env:
         RUST_LOG: interop=info
       with:
-        key: interop-test
-        make-rule: interop-test
+        key: interop-test-prebuilt
+        make-rule: interop-test-prebuilt
         always-run: ${{ inputs.always-run }}
         gh-token: ${{ inputs.gh-token }}
         artifact-generation: ${{ inputs.artifact-generation }}

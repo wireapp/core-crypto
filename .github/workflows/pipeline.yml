@@ -474,15 +474,17 @@ jobs:
   e2e-interop-test:
     needs:
       - artifact-generation
-      - build-ios
-      - bindings-swift
       - bindings-ts-browser
-      - bindings-android
-      - build-android
       - build-interop
+      - build-interop-ios-app
+      - build-interop-android-app
     uses: ./.github/workflows/interop.yml
     with:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
+      interop_build_artifact: ${{ needs.build-interop.outputs.artifact-name }}
+      ts_browser_artifact: ${{ needs.bindings-ts-browser.outputs.artifact-name }}
+      ios_app_artifact: ${{ needs.build-interop-ios-app.outputs.artifact-name }}
+      android_app_artifact: ${{ needs.build-interop-android-app.outputs.artifact-name }}
 
   deploy-docs:
     needs:
