@@ -94,7 +94,7 @@
 <a href=#94 id=94 data-nosnippet>94</a>        };
 <a href=#95 id=95 data-nosnippet>95</a>        <span class="kw">let </span>pki_env = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>.authentication_service().pki_env().<span class="kw">await</span>;
 <a href=#96 id=96 data-nosnippet>96</a>        <span class="kw">let </span>identity = own_leaf_credential_with_key
-<a href=#97 id=97 data-nosnippet>97</a>            .extract_identity(<span class="self">self</span>.cipher_suite(), pki_env.as_deref())
+<a href=#97 id=97 data-nosnippet>97</a>            .extract_identity(<span class="self">self</span>.cipher_suite().signature_algorithm(), pki_env.as_deref())
 <a href=#98 id=98 data-nosnippet>98</a>            .<span class="kw">await
 <a href=#99 id=99 data-nosnippet>99</a>            </span>.map_err(RecursiveError::context(<span class="string">"extracting identity"</span>))<span class="question-mark">?</span>;
 <a href=#100 id=100 data-nosnippet>100</a>

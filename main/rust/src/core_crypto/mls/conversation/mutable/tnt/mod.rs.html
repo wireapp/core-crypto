@@ -351,7 +351,7 @@
 <a href=#351 id=351 data-nosnippet>351</a>        };
 <a href=#352 id=352 data-nosnippet>352</a>        <span class="kw">let </span>pki_env = crypto_provider.authentication_service().pki_env().<span class="kw">await</span>;
 <a href=#353 id=353 data-nosnippet>353</a>        <span class="kw">let </span>identity = sender_credential_with_key
-<a href=#354 id=354 data-nosnippet>354</a>            .extract_identity(<span class="self">self</span>.cipher_suite(), pki_env.as_deref())
+<a href=#354 id=354 data-nosnippet>354</a>            .extract_identity(<span class="self">self</span>.cipher_suite().signature_algorithm(), pki_env.as_deref())
 <a href=#355 id=355 data-nosnippet>355</a>            .<span class="kw">await
 <a href=#356 id=356 data-nosnippet>356</a>            </span>.map_err(RecursiveError::mls_credential(<span class="string">"extracting identity"</span>))<span class="question-mark">?</span>;
 <a href=#357 id=357 data-nosnippet>357</a>        <span class="kw">let </span>sender_client_id = sender

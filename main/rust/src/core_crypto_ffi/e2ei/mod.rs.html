@@ -4,7 +4,7 @@
 <a href=#4 id=4 data-nosnippet>4</a>
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>async_lock::Mutex;
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use </span>jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPair};
-<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span>wire_e2e_identity::{CiphersuiteExt <span class="kw">as _</span>, HashAlgorithm, JwsAlgorithm, acquisition::states};
+<a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span>wire_e2e_identity::{CiphersuiteExt <span class="kw">as _</span>, JwsAlgorithm, acquisition::states};
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">use </span>x509_cert::der::Encode <span class="kw">as _</span>;
 <a href=#9 id=9 data-nosnippet>9</a>
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">use crate</span>::{CipherSuite <span class="kw">as </span>FfiCiphersuite, ClientId, CoreCryptoError, CoreCryptoResult, Credential, PkiEnvironment};
@@ -69,148 +69,147 @@
 <a href=#69 id=69 data-nosnippet>69</a>        <span class="prelude-val">Ok</span>(wire_e2e_identity::acquisition::X509CredentialConfiguration {
 <a href=#70 id=70 data-nosnippet>70</a>            acme_directory_url: <span class="self">self</span>.acme_directory_url,
 <a href=#71 id=71 data-nosnippet>71</a>            cipher_suite: <span class="self">self</span>.cipher_suite.into(),
-<a href=#72 id=72 data-nosnippet>72</a>            hash_alg: HashAlgorithm::SHA256,
-<a href=#73 id=73 data-nosnippet>73</a>            display_name: <span class="self">self</span>.display_name,
-<a href=#74 id=74 data-nosnippet>74</a>            client_id: <span class="self">self</span>.client_id.as_e2ei_client_id()<span class="question-mark">?</span>,
-<a href=#75 id=75 data-nosnippet>75</a>            handle: <span class="self">self</span>.handle,
-<a href=#76 id=76 data-nosnippet>76</a>            domain: <span class="self">self</span>.domain,
-<a href=#77 id=77 data-nosnippet>77</a>            team: <span class="self">self</span>.team,
-<a href=#78 id=78 data-nosnippet>78</a>            validity_period: std::time::Duration::from_secs(<span class="self">self</span>.validity_period_secs),
-<a href=#79 id=79 data-nosnippet>79</a>        })
-<a href=#80 id=80 data-nosnippet>80</a>    }
-<a href=#81 id=81 data-nosnippet>81</a>}
-<a href=#82 id=82 data-nosnippet>82</a>
-<a href=#83 id=83 data-nosnippet>83</a><span class="doccomment">/// X509 credential acquisition flow.
-<a href=#84 id=84 data-nosnippet>84</a>///
-<a href=#85 id=85 data-nosnippet>85</a>/// This allows acquiring a X509 credential for a CoreCrypto client.
-<a href=#86 id=86 data-nosnippet>86</a></span><span class="attr">#[derive(uniffi::Object)]
-<a href=#87 id=87 data-nosnippet>87</a></span><span class="kw">pub struct </span>X509CredentialAcquisition {
-<a href=#88 id=88 data-nosnippet>88</a>    state: Mutex&lt;AcquisitionState&gt;,
-<a href=#89 id=89 data-nosnippet>89</a>    cipher_suite: FfiCiphersuite,
-<a href=#90 id=90 data-nosnippet>90</a>}
-<a href=#91 id=91 data-nosnippet>91</a>
-<a href=#92 id=92 data-nosnippet>92</a><span class="kw">enum </span>AcquisitionState {
-<a href=#93 id=93 data-nosnippet>93</a>    Initialized(Box&lt;wire_e2e_identity::X509CredentialAcquisition&gt;),
-<a href=#94 id=94 data-nosnippet>94</a>    DpopChallengeCompleted(Box&lt;wire_e2e_identity::X509CredentialAcquisition&lt;states::DpopChallengeCompleted&gt;&gt;),
-<a href=#95 id=95 data-nosnippet>95</a>    InProgress,
-<a href=#96 id=96 data-nosnippet>96</a>    Finalized,
-<a href=#97 id=97 data-nosnippet>97</a>}
-<a href=#98 id=98 data-nosnippet>98</a>
-<a href=#99 id=99 data-nosnippet>99</a><span class="kw">fn </span>signing_key_bytes(sign_alg: wire_e2e_identity::JwsAlgorithm, signing_key_pem: <span class="kw-2">&amp;</span>str) -&gt; CoreCryptoResult&lt;Vec&lt;u8&gt;&gt; {
-<a href=#100 id=100 data-nosnippet>100</a>    <span class="kw">match </span>sign_alg {
-<a href=#101 id=101 data-nosnippet>101</a>        JwsAlgorithm::Ed25519 =&gt; Ed25519KeyPair::from_pem(signing_key_pem).map(|key| key.to_bytes()),
-<a href=#102 id=102 data-nosnippet>102</a>        JwsAlgorithm::P256 =&gt; ES256KeyPair::from_pem(signing_key_pem).map(|key| key.to_bytes()),
-<a href=#103 id=103 data-nosnippet>103</a>        JwsAlgorithm::P384 =&gt; ES384KeyPair::from_pem(signing_key_pem).map(|key| key.to_bytes()),
-<a href=#104 id=104 data-nosnippet>104</a>        JwsAlgorithm::P521 =&gt; ES512KeyPair::from_pem(signing_key_pem).map(|key| key.to_bytes()),
-<a href=#105 id=105 data-nosnippet>105</a>    }
-<a href=#106 id=106 data-nosnippet>106</a>    .map_err(CoreCryptoError::generic())
-<a href=#107 id=107 data-nosnippet>107</a>}
-<a href=#108 id=108 data-nosnippet>108</a>
-<a href=#109 id=109 data-nosnippet>109</a><span class="kw">fn </span>credential_from_acquisition_result(
-<a href=#110 id=110 data-nosnippet>110</a>    cipher_suite: FfiCiphersuite,
-<a href=#111 id=111 data-nosnippet>111</a>    signing_key_pem: <span class="kw-2">&amp;</span>str,
-<a href=#112 id=112 data-nosnippet>112</a>    certificate_chain: Vec&lt;x509_cert::Certificate&gt;,
-<a href=#113 id=113 data-nosnippet>113</a>) -&gt; CoreCryptoResult&lt;Credential&gt; {
-<a href=#114 id=114 data-nosnippet>114</a>    <span class="kw">let </span>signing_key = signing_key_bytes(jws_algorithm(cipher_suite)<span class="question-mark">?</span>, signing_key_pem)<span class="question-mark">?</span>;
-<a href=#115 id=115 data-nosnippet>115</a>    <span class="kw">let </span>certificate_chain = certificate_chain
-<a href=#116 id=116 data-nosnippet>116</a>        .into_iter()
-<a href=#117 id=117 data-nosnippet>117</a>        .map(|cert| {
-<a href=#118 id=118 data-nosnippet>118</a>            cert.to_der().map_err(|err| CoreCryptoError::E2ei {
-<a href=#119 id=119 data-nosnippet>119</a>                e2ei_error: err.to_string(),
-<a href=#120 id=120 data-nosnippet>120</a>            })
-<a href=#121 id=121 data-nosnippet>121</a>        })
-<a href=#122 id=122 data-nosnippet>122</a>        .collect::&lt;CoreCryptoResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
-<a href=#123 id=123 data-nosnippet>123</a>
-<a href=#124 id=124 data-nosnippet>124</a>    <span class="kw">let </span>certificate_bundle = core_crypto::CertificateBundle::from_raw(
-<a href=#125 id=125 data-nosnippet>125</a>        certificate_chain,
-<a href=#126 id=126 data-nosnippet>126</a>        signing_key,
-<a href=#127 id=127 data-nosnippet>127</a>        core_crypto::CipherSuite::from(cipher_suite).signature_algorithm(),
-<a href=#128 id=128 data-nosnippet>128</a>    );
-<a href=#129 id=129 data-nosnippet>129</a>
-<a href=#130 id=130 data-nosnippet>130</a>    core_crypto::Credential::x509(cipher_suite.into(), certificate_bundle)
-<a href=#131 id=131 data-nosnippet>131</a>        .map(Credential)
-<a href=#132 id=132 data-nosnippet>132</a>        .map_err(Into::into)
-<a href=#133 id=133 data-nosnippet>133</a>}
-<a href=#134 id=134 data-nosnippet>134</a>
-<a href=#135 id=135 data-nosnippet>135</a><span class="attr">#[uniffi::export]
-<a href=#136 id=136 data-nosnippet>136</a></span><span class="kw">impl </span>X509CredentialAcquisition {
-<a href=#137 id=137 data-nosnippet>137</a>    <span class="doccomment">/// Create a new credential acquisition
-<a href=#138 id=138 data-nosnippet>138</a>    </span><span class="attr">#[uniffi::constructor]
-<a href=#139 id=139 data-nosnippet>139</a>    </span><span class="kw">pub fn </span>new(
-<a href=#140 id=140 data-nosnippet>140</a>        pki_environment: Arc&lt;PkiEnvironment&gt;,
-<a href=#141 id=141 data-nosnippet>141</a>        config: X509CredentialAcquisitionConfiguration,
-<a href=#142 id=142 data-nosnippet>142</a>    ) -&gt; CoreCryptoResult&lt;<span class="self">Self</span>&gt; {
-<a href=#143 id=143 data-nosnippet>143</a>        <span class="kw">let </span>cipher_suite = config.cipher_suite;
-<a href=#144 id=144 data-nosnippet>144</a>        <span class="kw">let </span>inner = wire_e2e_identity::X509CredentialAcquisition::try_new(
-<a href=#145 id=145 data-nosnippet>145</a>            pki_environment.clone_inner(),
-<a href=#146 id=146 data-nosnippet>146</a>            config.try_into_core()<span class="question-mark">?</span>,
-<a href=#147 id=147 data-nosnippet>147</a>        )<span class="question-mark">?</span>;
-<a href=#148 id=148 data-nosnippet>148</a>
-<a href=#149 id=149 data-nosnippet>149</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-<a href=#150 id=150 data-nosnippet>150</a>            state: Mutex::new(AcquisitionState::Initialized(inner.into())),
-<a href=#151 id=151 data-nosnippet>151</a>            cipher_suite,
-<a href=#152 id=152 data-nosnippet>152</a>        })
-<a href=#153 id=153 data-nosnippet>153</a>    }
-<a href=#154 id=154 data-nosnippet>154</a>
-<a href=#155 id=155 data-nosnippet>155</a>    <span class="doccomment">/// Deserialize a credential acquisition flow.
-<a href=#156 id=156 data-nosnippet>156</a>    </span><span class="attr">#[uniffi::constructor(name = <span class="string">"fromBytes"</span>)]
-<a href=#157 id=157 data-nosnippet>157</a>    </span><span class="kw">pub fn </span>from_bytes(pki_environment: Arc&lt;PkiEnvironment&gt;, bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; CoreCryptoResult&lt;<span class="self">Self</span>&gt; {
-<a href=#158 id=158 data-nosnippet>158</a>        <span class="kw">let </span>snapshot = wire_e2e_identity::X509CredentialAcquisition::&lt;states::DpopChallengeCompleted&gt;::deserialize(
-<a href=#159 id=159 data-nosnippet>159</a>            pki_environment.clone_inner(),
-<a href=#160 id=160 data-nosnippet>160</a>            bytes,
-<a href=#161 id=161 data-nosnippet>161</a>        )
-<a href=#162 id=162 data-nosnippet>162</a>        .map_err(CoreCryptoError::generic())<span class="question-mark">?</span>;
-<a href=#163 id=163 data-nosnippet>163</a>
-<a href=#164 id=164 data-nosnippet>164</a>        <span class="kw">let </span>cipher_suite = snapshot.cipher_suite().into();
-<a href=#165 id=165 data-nosnippet>165</a>
-<a href=#166 id=166 data-nosnippet>166</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-<a href=#167 id=167 data-nosnippet>167</a>            state: Mutex::new(AcquisitionState::DpopChallengeCompleted(snapshot.into())),
-<a href=#168 id=168 data-nosnippet>168</a>            cipher_suite,
-<a href=#169 id=169 data-nosnippet>169</a>        })
-<a href=#170 id=170 data-nosnippet>170</a>    }
-<a href=#171 id=171 data-nosnippet>171</a>
-<a href=#172 id=172 data-nosnippet>172</a>    <span class="doccomment">/// Complete the DPoP and OIDC challenges and return the acquired X509 credential.
-<a href=#173 id=173 data-nosnippet>173</a>    </span><span class="kw">pub async fn </span>finalize(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;Credential&gt; {
-<a href=#174 id=174 data-nosnippet>174</a>        <span class="kw">let </span>state = {
-<a href=#175 id=175 data-nosnippet>175</a>            <span class="kw">let </span><span class="kw-2">mut </span>state = <span class="self">self</span>.state.lock().<span class="kw">await</span>;
-<a href=#176 id=176 data-nosnippet>176</a>            std::mem::replace(<span class="kw-2">&amp;mut *</span>state, AcquisitionState::InProgress)
-<a href=#177 id=177 data-nosnippet>177</a>        };
-<a href=#178 id=178 data-nosnippet>178</a>
-<a href=#179 id=179 data-nosnippet>179</a>        <span class="kw">let </span>result = <span class="kw">match </span>state {
-<a href=#180 id=180 data-nosnippet>180</a>            AcquisitionState::Initialized(inner) =&gt; inner
-<a href=#181 id=181 data-nosnippet>181</a>                .complete_dpop_challenge()
-<a href=#182 id=182 data-nosnippet>182</a>                .<span class="kw">await
-<a href=#183 id=183 data-nosnippet>183</a>                </span>.map_err(|err| CoreCryptoError::E2ei {
-<a href=#184 id=184 data-nosnippet>184</a>                    e2ei_error: err.to_string(),
-<a href=#185 id=185 data-nosnippet>185</a>                })<span class="question-mark">?
-<a href=#186 id=186 data-nosnippet>186</a>                </span>.complete_oidc_challenge()
-<a href=#187 id=187 data-nosnippet>187</a>                .<span class="kw">await
-<a href=#188 id=188 data-nosnippet>188</a>                </span>.map_err(|err| CoreCryptoError::E2ei {
-<a href=#189 id=189 data-nosnippet>189</a>                    e2ei_error: err.to_string(),
-<a href=#190 id=190 data-nosnippet>190</a>                }),
-<a href=#191 id=191 data-nosnippet>191</a>            AcquisitionState::DpopChallengeCompleted(inner) =&gt; {
-<a href=#192 id=192 data-nosnippet>192</a>                inner
-<a href=#193 id=193 data-nosnippet>193</a>                    .complete_oidc_challenge()
-<a href=#194 id=194 data-nosnippet>194</a>                    .<span class="kw">await
-<a href=#195 id=195 data-nosnippet>195</a>                    </span>.map_err(|err| CoreCryptoError::E2ei {
-<a href=#196 id=196 data-nosnippet>196</a>                        e2ei_error: err.to_string(),
-<a href=#197 id=197 data-nosnippet>197</a>                    })
-<a href=#198 id=198 data-nosnippet>198</a>            }
-<a href=#199 id=199 data-nosnippet>199</a>            AcquisitionState::InProgress =&gt; {
-<a href=#200 id=200 data-nosnippet>200</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(CoreCryptoError::ad_hoc(
-<a href=#201 id=201 data-nosnippet>201</a>                    <span class="string">"x509 credential acquisition is already in progress"</span>,
-<a href=#202 id=202 data-nosnippet>202</a>                ));
-<a href=#203 id=203 data-nosnippet>203</a>            }
-<a href=#204 id=204 data-nosnippet>204</a>            AcquisitionState::Finalized =&gt; {
-<a href=#205 id=205 data-nosnippet>205</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(CoreCryptoError::ad_hoc(
-<a href=#206 id=206 data-nosnippet>206</a>                    <span class="string">"x509 credential acquisition has already been finalized"</span>,
-<a href=#207 id=207 data-nosnippet>207</a>                ));
-<a href=#208 id=208 data-nosnippet>208</a>            }
-<a href=#209 id=209 data-nosnippet>209</a>        };
-<a href=#210 id=210 data-nosnippet>210</a>
-<a href=#211 id=211 data-nosnippet>211</a>        <span class="kw-2">*</span><span class="self">self</span>.state.lock().<span class="kw">await </span>= AcquisitionState::Finalized;
-<a href=#212 id=212 data-nosnippet>212</a>        <span class="kw">let </span>(signing_key_pem, certificate_chain) = result<span class="question-mark">?</span>;
-<a href=#213 id=213 data-nosnippet>213</a>        credential_from_acquisition_result(<span class="self">self</span>.cipher_suite, signing_key_pem.as_str(), certificate_chain)
-<a href=#214 id=214 data-nosnippet>214</a>    }
-<a href=#215 id=215 data-nosnippet>215</a>}
+<a href=#72 id=72 data-nosnippet>72</a>            display_name: <span class="self">self</span>.display_name,
+<a href=#73 id=73 data-nosnippet>73</a>            client_id: <span class="self">self</span>.client_id.as_e2ei_client_id()<span class="question-mark">?</span>,
+<a href=#74 id=74 data-nosnippet>74</a>            handle: <span class="self">self</span>.handle,
+<a href=#75 id=75 data-nosnippet>75</a>            domain: <span class="self">self</span>.domain,
+<a href=#76 id=76 data-nosnippet>76</a>            team: <span class="self">self</span>.team,
+<a href=#77 id=77 data-nosnippet>77</a>            validity_period: std::time::Duration::from_secs(<span class="self">self</span>.validity_period_secs),
+<a href=#78 id=78 data-nosnippet>78</a>        })
+<a href=#79 id=79 data-nosnippet>79</a>    }
+<a href=#80 id=80 data-nosnippet>80</a>}
+<a href=#81 id=81 data-nosnippet>81</a>
+<a href=#82 id=82 data-nosnippet>82</a><span class="doccomment">/// X509 credential acquisition flow.
+<a href=#83 id=83 data-nosnippet>83</a>///
+<a href=#84 id=84 data-nosnippet>84</a>/// This allows acquiring a X509 credential for a CoreCrypto client.
+<a href=#85 id=85 data-nosnippet>85</a></span><span class="attr">#[derive(uniffi::Object)]
+<a href=#86 id=86 data-nosnippet>86</a></span><span class="kw">pub struct </span>X509CredentialAcquisition {
+<a href=#87 id=87 data-nosnippet>87</a>    state: Mutex&lt;AcquisitionState&gt;,
+<a href=#88 id=88 data-nosnippet>88</a>    cipher_suite: FfiCiphersuite,
+<a href=#89 id=89 data-nosnippet>89</a>}
+<a href=#90 id=90 data-nosnippet>90</a>
+<a href=#91 id=91 data-nosnippet>91</a><span class="kw">enum </span>AcquisitionState {
+<a href=#92 id=92 data-nosnippet>92</a>    Initialized(Box&lt;wire_e2e_identity::X509CredentialAcquisition&gt;),
+<a href=#93 id=93 data-nosnippet>93</a>    DpopChallengeCompleted(Box&lt;wire_e2e_identity::X509CredentialAcquisition&lt;states::DpopChallengeCompleted&gt;&gt;),
+<a href=#94 id=94 data-nosnippet>94</a>    InProgress,
+<a href=#95 id=95 data-nosnippet>95</a>    Finalized,
+<a href=#96 id=96 data-nosnippet>96</a>}
+<a href=#97 id=97 data-nosnippet>97</a>
+<a href=#98 id=98 data-nosnippet>98</a><span class="kw">fn </span>signing_key_bytes(sign_alg: wire_e2e_identity::JwsAlgorithm, signing_key_pem: <span class="kw-2">&amp;</span>str) -&gt; CoreCryptoResult&lt;Vec&lt;u8&gt;&gt; {
+<a href=#99 id=99 data-nosnippet>99</a>    <span class="kw">match </span>sign_alg {
+<a href=#100 id=100 data-nosnippet>100</a>        JwsAlgorithm::Ed25519 =&gt; Ed25519KeyPair::from_pem(signing_key_pem).map(|key| key.to_bytes()),
+<a href=#101 id=101 data-nosnippet>101</a>        JwsAlgorithm::P256 =&gt; ES256KeyPair::from_pem(signing_key_pem).map(|key| key.to_bytes()),
+<a href=#102 id=102 data-nosnippet>102</a>        JwsAlgorithm::P384 =&gt; ES384KeyPair::from_pem(signing_key_pem).map(|key| key.to_bytes()),
+<a href=#103 id=103 data-nosnippet>103</a>        JwsAlgorithm::P521 =&gt; ES512KeyPair::from_pem(signing_key_pem).map(|key| key.to_bytes()),
+<a href=#104 id=104 data-nosnippet>104</a>    }
+<a href=#105 id=105 data-nosnippet>105</a>    .map_err(CoreCryptoError::generic())
+<a href=#106 id=106 data-nosnippet>106</a>}
+<a href=#107 id=107 data-nosnippet>107</a>
+<a href=#108 id=108 data-nosnippet>108</a><span class="kw">fn </span>credential_from_acquisition_result(
+<a href=#109 id=109 data-nosnippet>109</a>    cipher_suite: FfiCiphersuite,
+<a href=#110 id=110 data-nosnippet>110</a>    signing_key_pem: <span class="kw-2">&amp;</span>str,
+<a href=#111 id=111 data-nosnippet>111</a>    certificate_chain: Vec&lt;x509_cert::Certificate&gt;,
+<a href=#112 id=112 data-nosnippet>112</a>) -&gt; CoreCryptoResult&lt;Credential&gt; {
+<a href=#113 id=113 data-nosnippet>113</a>    <span class="kw">let </span>signing_key = signing_key_bytes(jws_algorithm(cipher_suite)<span class="question-mark">?</span>, signing_key_pem)<span class="question-mark">?</span>;
+<a href=#114 id=114 data-nosnippet>114</a>    <span class="kw">let </span>certificate_chain = certificate_chain
+<a href=#115 id=115 data-nosnippet>115</a>        .into_iter()
+<a href=#116 id=116 data-nosnippet>116</a>        .map(|cert| {
+<a href=#117 id=117 data-nosnippet>117</a>            cert.to_der().map_err(|err| CoreCryptoError::E2ei {
+<a href=#118 id=118 data-nosnippet>118</a>                e2ei_error: err.to_string(),
+<a href=#119 id=119 data-nosnippet>119</a>            })
+<a href=#120 id=120 data-nosnippet>120</a>        })
+<a href=#121 id=121 data-nosnippet>121</a>        .collect::&lt;CoreCryptoResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
+<a href=#122 id=122 data-nosnippet>122</a>
+<a href=#123 id=123 data-nosnippet>123</a>    <span class="kw">let </span>certificate_bundle = core_crypto::CertificateBundle::from_raw(
+<a href=#124 id=124 data-nosnippet>124</a>        certificate_chain,
+<a href=#125 id=125 data-nosnippet>125</a>        signing_key,
+<a href=#126 id=126 data-nosnippet>126</a>        core_crypto::CipherSuite::from(cipher_suite).signature_algorithm(),
+<a href=#127 id=127 data-nosnippet>127</a>    );
+<a href=#128 id=128 data-nosnippet>128</a>
+<a href=#129 id=129 data-nosnippet>129</a>    core_crypto::Credential::x509(cipher_suite.into(), certificate_bundle)
+<a href=#130 id=130 data-nosnippet>130</a>        .map(Credential)
+<a href=#131 id=131 data-nosnippet>131</a>        .map_err(Into::into)
+<a href=#132 id=132 data-nosnippet>132</a>}
+<a href=#133 id=133 data-nosnippet>133</a>
+<a href=#134 id=134 data-nosnippet>134</a><span class="attr">#[uniffi::export]
+<a href=#135 id=135 data-nosnippet>135</a></span><span class="kw">impl </span>X509CredentialAcquisition {
+<a href=#136 id=136 data-nosnippet>136</a>    <span class="doccomment">/// Create a new credential acquisition
+<a href=#137 id=137 data-nosnippet>137</a>    </span><span class="attr">#[uniffi::constructor]
+<a href=#138 id=138 data-nosnippet>138</a>    </span><span class="kw">pub fn </span>new(
+<a href=#139 id=139 data-nosnippet>139</a>        pki_environment: Arc&lt;PkiEnvironment&gt;,
+<a href=#140 id=140 data-nosnippet>140</a>        config: X509CredentialAcquisitionConfiguration,
+<a href=#141 id=141 data-nosnippet>141</a>    ) -&gt; CoreCryptoResult&lt;<span class="self">Self</span>&gt; {
+<a href=#142 id=142 data-nosnippet>142</a>        <span class="kw">let </span>cipher_suite = config.cipher_suite;
+<a href=#143 id=143 data-nosnippet>143</a>        <span class="kw">let </span>inner = wire_e2e_identity::X509CredentialAcquisition::try_new(
+<a href=#144 id=144 data-nosnippet>144</a>            pki_environment.clone_inner(),
+<a href=#145 id=145 data-nosnippet>145</a>            config.try_into_core()<span class="question-mark">?</span>,
+<a href=#146 id=146 data-nosnippet>146</a>        )<span class="question-mark">?</span>;
+<a href=#147 id=147 data-nosnippet>147</a>
+<a href=#148 id=148 data-nosnippet>148</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+<a href=#149 id=149 data-nosnippet>149</a>            state: Mutex::new(AcquisitionState::Initialized(inner.into())),
+<a href=#150 id=150 data-nosnippet>150</a>            cipher_suite,
+<a href=#151 id=151 data-nosnippet>151</a>        })
+<a href=#152 id=152 data-nosnippet>152</a>    }
+<a href=#153 id=153 data-nosnippet>153</a>
+<a href=#154 id=154 data-nosnippet>154</a>    <span class="doccomment">/// Deserialize a credential acquisition flow.
+<a href=#155 id=155 data-nosnippet>155</a>    </span><span class="attr">#[uniffi::constructor(name = <span class="string">"fromBytes"</span>)]
+<a href=#156 id=156 data-nosnippet>156</a>    </span><span class="kw">pub fn </span>from_bytes(pki_environment: Arc&lt;PkiEnvironment&gt;, bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; CoreCryptoResult&lt;<span class="self">Self</span>&gt; {
+<a href=#157 id=157 data-nosnippet>157</a>        <span class="kw">let </span>snapshot = wire_e2e_identity::X509CredentialAcquisition::&lt;states::DpopChallengeCompleted&gt;::deserialize(
+<a href=#158 id=158 data-nosnippet>158</a>            pki_environment.clone_inner(),
+<a href=#159 id=159 data-nosnippet>159</a>            bytes,
+<a href=#160 id=160 data-nosnippet>160</a>        )
+<a href=#161 id=161 data-nosnippet>161</a>        .map_err(CoreCryptoError::generic())<span class="question-mark">?</span>;
+<a href=#162 id=162 data-nosnippet>162</a>
+<a href=#163 id=163 data-nosnippet>163</a>        <span class="kw">let </span>cipher_suite = snapshot.cipher_suite().into();
+<a href=#164 id=164 data-nosnippet>164</a>
+<a href=#165 id=165 data-nosnippet>165</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+<a href=#166 id=166 data-nosnippet>166</a>            state: Mutex::new(AcquisitionState::DpopChallengeCompleted(snapshot.into())),
+<a href=#167 id=167 data-nosnippet>167</a>            cipher_suite,
+<a href=#168 id=168 data-nosnippet>168</a>        })
+<a href=#169 id=169 data-nosnippet>169</a>    }
+<a href=#170 id=170 data-nosnippet>170</a>
+<a href=#171 id=171 data-nosnippet>171</a>    <span class="doccomment">/// Complete the DPoP and OIDC challenges and return the acquired X509 credential.
+<a href=#172 id=172 data-nosnippet>172</a>    </span><span class="kw">pub async fn </span>finalize(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;Credential&gt; {
+<a href=#173 id=173 data-nosnippet>173</a>        <span class="kw">let </span>state = {
+<a href=#174 id=174 data-nosnippet>174</a>            <span class="kw">let </span><span class="kw-2">mut </span>state = <span class="self">self</span>.state.lock().<span class="kw">await</span>;
+<a href=#175 id=175 data-nosnippet>175</a>            std::mem::replace(<span class="kw-2">&amp;mut *</span>state, AcquisitionState::InProgress)
+<a href=#176 id=176 data-nosnippet>176</a>        };
+<a href=#177 id=177 data-nosnippet>177</a>
+<a href=#178 id=178 data-nosnippet>178</a>        <span class="kw">let </span>result = <span class="kw">match </span>state {
+<a href=#179 id=179 data-nosnippet>179</a>            AcquisitionState::Initialized(inner) =&gt; inner
+<a href=#180 id=180 data-nosnippet>180</a>                .complete_dpop_challenge()
+<a href=#181 id=181 data-nosnippet>181</a>                .<span class="kw">await
+<a href=#182 id=182 data-nosnippet>182</a>                </span>.map_err(|err| CoreCryptoError::E2ei {
+<a href=#183 id=183 data-nosnippet>183</a>                    e2ei_error: err.to_string(),
+<a href=#184 id=184 data-nosnippet>184</a>                })<span class="question-mark">?
+<a href=#185 id=185 data-nosnippet>185</a>                </span>.complete_oidc_challenge()
+<a href=#186 id=186 data-nosnippet>186</a>                .<span class="kw">await
+<a href=#187 id=187 data-nosnippet>187</a>                </span>.map_err(|err| CoreCryptoError::E2ei {
+<a href=#188 id=188 data-nosnippet>188</a>                    e2ei_error: err.to_string(),
+<a href=#189 id=189 data-nosnippet>189</a>                }),
+<a href=#190 id=190 data-nosnippet>190</a>            AcquisitionState::DpopChallengeCompleted(inner) =&gt; {
+<a href=#191 id=191 data-nosnippet>191</a>                inner
+<a href=#192 id=192 data-nosnippet>192</a>                    .complete_oidc_challenge()
+<a href=#193 id=193 data-nosnippet>193</a>                    .<span class="kw">await
+<a href=#194 id=194 data-nosnippet>194</a>                    </span>.map_err(|err| CoreCryptoError::E2ei {
+<a href=#195 id=195 data-nosnippet>195</a>                        e2ei_error: err.to_string(),
+<a href=#196 id=196 data-nosnippet>196</a>                    })
+<a href=#197 id=197 data-nosnippet>197</a>            }
+<a href=#198 id=198 data-nosnippet>198</a>            AcquisitionState::InProgress =&gt; {
+<a href=#199 id=199 data-nosnippet>199</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(CoreCryptoError::ad_hoc(
+<a href=#200 id=200 data-nosnippet>200</a>                    <span class="string">"x509 credential acquisition is already in progress"</span>,
+<a href=#201 id=201 data-nosnippet>201</a>                ));
+<a href=#202 id=202 data-nosnippet>202</a>            }
+<a href=#203 id=203 data-nosnippet>203</a>            AcquisitionState::Finalized =&gt; {
+<a href=#204 id=204 data-nosnippet>204</a>                <span class="kw">return </span><span class="prelude-val">Err</span>(CoreCryptoError::ad_hoc(
+<a href=#205 id=205 data-nosnippet>205</a>                    <span class="string">"x509 credential acquisition has already been finalized"</span>,
+<a href=#206 id=206 data-nosnippet>206</a>                ));
+<a href=#207 id=207 data-nosnippet>207</a>            }
+<a href=#208 id=208 data-nosnippet>208</a>        };
+<a href=#209 id=209 data-nosnippet>209</a>
+<a href=#210 id=210 data-nosnippet>210</a>        <span class="kw-2">*</span><span class="self">self</span>.state.lock().<span class="kw">await </span>= AcquisitionState::Finalized;
+<a href=#211 id=211 data-nosnippet>211</a>        <span class="kw">let </span>(signing_key_pem, certificate_chain) = result<span class="question-mark">?</span>;
+<a href=#212 id=212 data-nosnippet>212</a>        credential_from_acquisition_result(<span class="self">self</span>.cipher_suite, signing_key_pem.as_str(), certificate_chain)
+<a href=#213 id=213 data-nosnippet>213</a>    }
+<a href=#214 id=214 data-nosnippet>214</a>}
 </code></pre></div></section></main></body></html>

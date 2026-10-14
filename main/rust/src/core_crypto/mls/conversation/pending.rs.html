@@ -206,7 +206,7 @@
 <a href=#206 id=206 data-nosnippet>206</a>        <span class="kw">let </span>pki_env = <span class="self">self</span>.context.pki_environment().<span class="kw">await</span>.ok();
 <a href=#207 id=207 data-nosnippet>207</a>
 <a href=#208 id=208 data-nosnippet>208</a>        <span class="kw">let </span>identity = own_leaf_credential_with_key
-<a href=#209 id=209 data-nosnippet>209</a>            .extract_identity(conversation.cipher_suite(), pki_env.as_deref())
+<a href=#209 id=209 data-nosnippet>209</a>            .extract_identity(conversation.cipher_suite().signature_algorithm(), pki_env.as_deref())
 <a href=#210 id=210 data-nosnippet>210</a>            .<span class="kw">await
 <a href=#211 id=211 data-nosnippet>211</a>            </span>.map_err(RecursiveError::context(<span class="string">"extracting identity"</span>))<span class="question-mark">?</span>;
 <a href=#212 id=212 data-nosnippet>212</a>

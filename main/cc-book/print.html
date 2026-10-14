@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-65843af4.js";
+            window.path_to_searchindex_js = "searchindex-0cfdad83.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1c113b1d.js"></script>
@@ -1558,6 +1558,10 @@ log level, use the free function <code>setMaxLogLevel(level: CoreCryptoLogLevel)
 <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
 <h2 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h2>
 <ul>
+<li>
+<p>The <code>thumbprint</code> of a <code>WireIdentity</code> is now always computed with SHA-256, regardless of the ciphersuite. It used to be
+computed with the ciphersuite’s hash algorithm.</p>
+</li>
 <li>
 <p>CoreCrypto now has support for 11 post-quantum ciphersuites, as defined by the
 <a href="https://www.ietf.org/archive/id/draft-ietf-mls-pq-ciphersuites-06.html">draft</a>. Specifically, support has been added
