@@ -111,13 +111,7 @@ runs:
 
     - name: Unpack and touch downloaded files to update timestamps
       if: steps.download.outputs.found == 'true'
-      run: |
-        reference="$RUNNER_TEMP/make-artifact-mtime"
-        [ -e "$reference" ] || touch "$reference"
-
-        tar -xzf artifact.tar.gz
-        tar -tzf artifact.tar.gz | tr '\n' '\0' | xargs -0 touch -h -r "$reference"
-      shell: bash -euo pipefail {0}
+      uses: ./.github/actions/make/unpack
 
     - name: setup-and-cache-rust
       if: steps.download.outputs.found != 'true' && inputs.uses-rust == 'true'
