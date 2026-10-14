@@ -5,6 +5,11 @@ set -eo pipefail
 scripts="$(realpath "$(dirname "$0")")"
 cd "$scripts"
 
+# Gradle, the interop binary and our cleanup all talk to adb, so they need the
+# same server port as the emulator.
+# shellcheck disable=SC1091
+source "$scripts/adb-env.sh"
+
 TARGET_NAME="$1"
 
 OS="$(uname -s)"

@@ -2,15 +2,16 @@
 
 set -euo pipefail
 
+# shellcheck disable=SC1091
+source "$(dirname "${BASH_SOURCE[0]}")/adb-env.sh"
+
 # The name of the Android Virtual Device we're going to use.
 AVD_NAME=test-phone
 
 # Choose a port for the emulator to use to communicate with adb (Android
-# debugger). Since the adb server is system-wide, any user can see any other
-# user's devices, which is a problem when running under CI, where there may be
-# multiple jobs running at the same time, all using the same adb server, and
-# therefore seeing the same emulator devices. To avoid that, just pick a port
-# based on current user's ID.
+# debugger). Several runner users share each of our self-hosted machines, and
+# outside CI they may also share an adb server (see `adb-env.sh`), so the port
+# is based on the current user's ID to keep their emulators apart.
 PORT=$((27000 + $(id -u)))
 ADB_DEVICE=emulator-$PORT
 
@@ -42,9 +43,14 @@ if [ "${RUNNER_ENVIRONMENT-}" = github-hosted ]; then
 fi
 
 # Make sure that the adb server is running before starting the emulator,
-# otherwise the emulator will not start correctly. Notably, the adb server may
-# not be running on our self-hosted runners.
-adb start-server
+# otherwise the emulator will not start correctly. If it's already running,
+# this does nothing.
+#
+# The server is meant to outlive this job, so the next job on this runner
+# doesn't have to start it again. GitHub kills every process that carries the
+# job's RUNNER_TRACKING_ID when the job ends, and the server inherits our
+# environment, so clear that variable to keep the server out of the cleanup.
+RUNNER_TRACKING_ID="" adb start-server
 
 emulator -avd $AVD_NAME -port $PORT -no-window -gpu swiftshader_indirect \
          -no-snapshot -noaudio -no-boot-anim -no-metrics >"$logfile" 2>&1 &

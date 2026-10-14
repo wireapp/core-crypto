@@ -4,6 +4,11 @@
 set -eo pipefail
 cd "$(realpath "$(dirname "$0")")"
 
+# Gradle and our cleanup talk to adb, so they need the same server port as the
+# emulator.
+# shellcheck disable=SC1091
+source ./adb-env.sh
+
 if [[ "${GITHUB_ACTIONS}" == "true" ]]; then
     sh ./setup-android-emulator.sh
 fi
