@@ -446,6 +446,9 @@ jobs:
       - build-android
       - bindings-android
     runs-on: ubuntu-latest
+    env:
+      # The interop runner's emulator is arm64, not this runner's x86_64.
+      INTEROP_APK_ALL_ABIS: 1
     outputs:
       artifact-name: ${{ steps.build.outputs.artifact-name }}
     steps:
