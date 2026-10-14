@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, path::PathBuf};
+use std::{io, net::SocketAddr, path::PathBuf, sync::mpsc, time::Duration};
 
 use anyhow::Result;
 use core_crypto::{CommitBundle as CcCommitBundle, HistorySecret, MlsTransport};
@@ -7,6 +7,58 @@ use openmls::prelude::MlsMessageOut;
 use spinoff::Spinner;
 use tokio::sync::RwLock;
 use which::which;
+
+/// The lines a child process writes to stdout, read on a background thread.
+///
+/// Reading a pipe directly blocks until the next line arrives, possibly forever if the app on the other end has
+/// hung. Reading through a channel instead lets every wait time out, and shows a closed pipe as an error rather
+/// than as an endless run of empty lines.
+#[derive(Debug)]
+pub(crate) struct ChildLines {
+    lines: mpsc::Receiver<io::Result<String>>,
+}
+
+impl ChildLines {
+    pub(crate) fn new(output: impl io::Read + Send + 'static) -> Self {
+        use io::BufRead as _;
+
+        let (sender, lines) = mpsc::channel();
+        std::thread::spawn(move || {
+            for line in io::BufReader::new(output).lines() {
+                if sender.send(line).is_err() {
+                    // nobody is listening anymore
+                    break;
+                }
+            }
+        });
+        Self { lines }
+    }
+
+    /// Wait up to `timeout` for the next line, without its line terminator.
+    pub(crate) fn next_line(&self, timeout: Duration) -> Result<String> {
+        use mpsc::RecvTimeoutError;
+
+        match self.lines.recv_timeout(timeout) {
+            Ok(line) => Ok(line?),
+            Err(RecvTimeoutError::Timeout) => anyhow::bail!("no output within {timeout:?}"),
+            Err(RecvTimeoutError::Disconnected) => anyhow::bail!("the output stream closed"),
+        }
+    }
+
+    /// Wait until a line containing `needle` arrives, and return it.
+    ///
+    /// Lines before it are discarded. Fails if no such line arrives within `timeout`.
+    pub(crate) fn wait_for(&self, needle: &str, timeout: Duration) -> Result<String> {
+        let deadline = std::time::Instant::now() + timeout;
+        loop {
+            let remaining = deadline.saturating_duration_since(std::time::Instant::now());
+            let line = self.next_line(remaining)?;
+            if line.contains(needle) {
+                return Ok(line);
+            }
+        }
+    }
+}
 
 pub(crate) struct RunningProcess {
     spinner: Option<Spinner>,

@@ -1,13 +1,12 @@
 #[cfg(feature = "proteus")]
 use std::cell::Cell;
 use std::{
-    cell::RefCell,
-    io::{BufRead as _, BufReader, Read as _},
-    process::{Child, ChildStdout, Command, Stdio},
+    io::Read as _,
+    process::{Child, Command, Stdio},
     time::Duration,
 };
 
-use anyhow::Result;
+use anyhow::{Context as _, Result};
 use base64::{Engine as _, engine::general_purpose};
 use core_crypto::{ClientId, KeyPackageIn, Keypackage, mls::conversation::TargetedMessagePolicy};
 use tls_codec::Deserialize as _;
@@ -15,13 +14,19 @@ use tls_codec::Deserialize as _;
 use crate::{
     CIPHERSUITE_IN_USE,
     clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
+    util::ChildLines,
 };
+
+/// How long the app may take to print its ready signal after launching.
+const READY_TIMEOUT: Duration = Duration::from_secs(60);
+/// How long the app may take to answer a single action. Real actions take well under a second.
+const ACTION_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Debug)]
 struct SimulatorDriver {
     device: String,
     process: Child,
-    output: RefCell<BufReader<ChildStdout>>,
+    output: ChildLines,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -41,16 +46,16 @@ struct SimulatorDriverError {
 
 impl SimulatorDriver {
     fn new(device: String, application: String) -> Self {
-        let application = Self::launch_application(&device, &application).expect("Failed to launch application");
+        let (process, output) = Self::launch_application(&device, &application).expect("Failed to launch application");
 
         Self {
             device,
-            process: application.0,
-            output: RefCell::new(application.1),
+            process,
+            output,
         }
     }
 
-    fn launch_application(device: &str, application: &str) -> Result<(Child, BufReader<ChildStdout>)> {
+    fn launch_application(device: &str, application: &str) -> Result<(Child, ChildLines)> {
         log::info!("launching application: {} on {}", application, device);
 
         let activity = format!("{}/.MainActivity", application);
@@ -79,6 +84,7 @@ impl SimulatorDriver {
             .expect("pidof output is not valid utf8")
             .trim()
             .to_string();
+        anyhow::ensure!(!pid.is_empty(), "{application} is not running after `am start`");
         log::info!("retrieved {} pid", pid);
 
         // Start monitoring the system output of our application
@@ -101,7 +107,7 @@ impl SimulatorDriver {
             .spawn()
             .expect("Failed to launch application");
 
-        let mut output = BufReader::new(
+        let output = ChildLines::new(
             process
                 .stdout
                 .take()
@@ -127,13 +133,9 @@ impl SimulatorDriver {
         log::info!("waiting for ready signal on system.out");
 
         // Waiting for confirmation that the application has launched.
-        let mut line = String::new();
-        while !line.contains("Ready") {
-            line.clear();
-            output
-                .read_line(&mut line)
-                .expect("was expecting ready signal on stdout");
-        }
+        let line = output
+            .wait_for("Ready", READY_TIMEOUT)
+            .context("waiting for the Android app's ready signal")?;
 
         log::info!("application launched: {}", line);
         Ok((process, output))
@@ -154,15 +156,22 @@ impl SimulatorDriver {
 
         log::info!("adb {}", args.join(" "));
 
-        Command::new("adb")
+        let adb = Command::new("adb")
             .args(args)
             .output()
-            .expect("Failed to execute action");
+            .context("running adb to send an action to the Android app")?;
+        // If the intent never reached the app, there's no reply to wait for.
+        anyhow::ensure!(
+            adb.status.success(),
+            "adb failed to send an action to the Android app ({}): {}",
+            adb.status,
+            String::from_utf8_lossy(&adb.stderr).trim()
+        );
 
-        let mut result = String::new();
-        let mut output = self.output.try_borrow_mut()?;
-
-        output.read_line(&mut result)?;
+        let result = self
+            .output
+            .next_line(ACTION_TIMEOUT)
+            .context("waiting for the Android app to answer an action")?;
 
         log::info!("{}", result);
 

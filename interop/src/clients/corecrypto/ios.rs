@@ -1,14 +1,13 @@
 #[cfg(feature = "proteus")]
 use std::cell::Cell;
 use std::{
-    cell::RefCell,
     fs,
-    io::{BufRead, BufReader, Read},
-    process::{Child, ChildStdout, Command, Output, Stdio},
+    io::Read,
+    process::{Child, Command, Output, Stdio},
     time::Duration,
 };
 
-use anyhow::Result;
+use anyhow::{Context as _, Result};
 use base64::{Engine as _, engine::general_purpose};
 use core_crypto::{ClientId, KeyPackageIn, Keypackage, mls::conversation::TargetedMessagePolicy};
 use thiserror::Error;
@@ -17,13 +16,19 @@ use tls_codec::Deserialize;
 use crate::{
     CIPHERSUITE_IN_USE,
     clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
+    util::ChildLines,
 };
+
+/// How long the app may take to print its ready signal after launching.
+const READY_TIMEOUT: Duration = Duration::from_secs(60);
+/// How long the app may take to answer a single action. Real actions take well under a second.
+const ACTION_TIMEOUT: Duration = Duration::from_secs(30);
 
 #[derive(Debug)]
 struct SimulatorDriver {
     device: String,
     process: Child,
-    output: RefCell<BufReader<ChildStdout>>,
+    output: ChildLines,
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -42,12 +47,13 @@ struct SimulatorDriverError {
 
 impl SimulatorDriver {
     fn new(device: String, application: String) -> Self {
-        let application = Self::launch_application(&device, &application, true).expect("Failed ot launch application");
+        let (process, output) =
+            Self::launch_application(&device, &application, true).expect("Failed ot launch application");
 
         Self {
             device,
-            process: application.0,
-            output: RefCell::new(application.1),
+            process,
+            output,
         }
     }
 
@@ -55,11 +61,7 @@ impl SimulatorDriver {
         Command::new("xcrun").args(["simctl", "boot", device]).output()
     }
 
-    fn launch_application(
-        device: &str,
-        application: &str,
-        boot_device: bool,
-    ) -> Result<(Child, BufReader<ChildStdout>)> {
+    fn launch_application(device: &str, application: &str, boot_device: bool) -> Result<(Child, ChildLines)> {
         log::info!("launching application: {} on {}", application, device);
 
         let mut process = Command::new("xcrun")
@@ -76,7 +78,7 @@ impl SimulatorDriver {
             .spawn()
             .expect("Failed to launch application");
 
-        let mut output = BufReader::new(
+        let output = ChildLines::new(
             process
                 .stdout
                 .take()
@@ -106,13 +108,9 @@ impl SimulatorDriver {
         }
 
         // Waiting for confirmation that the application has launched.
-        let mut line = String::new();
-        while !line.contains("Ready") {
-            line.clear();
-            output
-                .read_line(&mut line)
-                .expect("was expecting ready signal on stdout");
-        }
+        let line = output
+            .wait_for("Ready", READY_TIMEOUT)
+            .context("waiting for the iOS app's ready signal")?;
 
         log::info!("application launched: {}", line);
         Ok((process, output))
@@ -121,7 +119,7 @@ impl SimulatorDriver {
     fn execute(&self, action: String) -> Result<String> {
         log::info!("interop://{}", action);
 
-        Command::new("xcrun")
+        let simctl = Command::new("xcrun")
             .args([
                 "simctl",
                 "openurl",
@@ -129,12 +127,19 @@ impl SimulatorDriver {
                 format!("interop://{}", action).as_str(),
             ])
             .output()
-            .expect("Failed to execute action");
+            .context("running simctl to send an action to the iOS app")?;
+        // If the URL never reached the app, there's no reply to wait for.
+        anyhow::ensure!(
+            simctl.status.success(),
+            "simctl failed to send an action to the iOS app ({}): {}",
+            simctl.status,
+            String::from_utf8_lossy(&simctl.stderr).trim()
+        );
 
-        let mut result = String::new();
-        let mut output = self.output.try_borrow_mut()?;
-
-        output.read_line(&mut result)?;
+        let result = self
+            .output
+            .next_line(ACTION_TIMEOUT)
+            .context("waiting for the iOS app to answer an action")?;
 
         log::info!("{}", result);
 
