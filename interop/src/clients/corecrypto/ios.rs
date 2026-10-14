@@ -186,7 +186,6 @@ impl CoreCryptoIosClient {
     }
 }
 
-#[async_trait::async_trait(?Send)]
 impl EmulatedClient for CoreCryptoIosClient {
     fn client_name(&self) -> &str {
         "CoreCrypto::ios"
@@ -202,10 +201,6 @@ impl EmulatedClient for CoreCryptoIosClient {
 
     fn client_protocol(&self) -> EmulatedClientProtocol {
         EmulatedClientProtocol::MLS | EmulatedClientProtocol::PROTEUS
-    }
-
-    async fn wipe(&mut self) -> Result<()> {
-        Ok(())
     }
 }
 

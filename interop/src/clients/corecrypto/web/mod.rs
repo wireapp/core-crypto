@@ -108,7 +108,6 @@ impl CoreCryptoWebClient {
     }
 }
 
-#[async_trait::async_trait(?Send)]
 impl EmulatedClient for CoreCryptoWebClient {
     fn client_name(&self) -> &str {
         "CoreCrypto::wasm"
@@ -124,24 +123,6 @@ impl EmulatedClient for CoreCryptoWebClient {
 
     fn client_protocol(&self) -> EmulatedClientProtocol {
         EmulatedClientProtocol::MLS | EmulatedClientProtocol::PROTEUS
-    }
-
-    async fn wipe(&mut self) -> Result<()> {
-        let user_id = self.client_id.deserialize()?.user_id;
-        let database_name = format!("db-{}", user_id.as_hyphenated());
-        self.browser
-            .execute_async(
-                r#"
-    const [databaseName, callback] = arguments;
-    const result = window.indexedDB.deleteDatabase(databaseName);
-    result.onsuccess = callback;
-    result.onfailure = callback;
-    "#,
-                vec![serde_json::json!(database_name)],
-            )
-            .await?;
-
-        Ok(())
     }
 }
 

@@ -31,14 +31,12 @@ impl std::fmt::Display for EmulatedClientType {
     }
 }
 
-#[async_trait::async_trait(?Send)]
 #[expect(dead_code)]
 pub(crate) trait EmulatedClient {
     fn client_name(&self) -> &str;
     fn client_type(&self) -> EmulatedClientType;
     fn client_id(&self) -> &ClientId;
     fn client_protocol(&self) -> EmulatedClientProtocol;
-    async fn wipe(&mut self) -> Result<()>;
 }
 
 #[async_trait::async_trait(?Send)]

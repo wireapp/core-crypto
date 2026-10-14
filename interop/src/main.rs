@@ -344,12 +344,6 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
     }
     spinner.success(format!("{} [OK]", STEP_5_MESSAGE));
 
-    let spinner = util::RunningProcess::new("[MLS] Step 6: Deleting clients...", true);
-    for client in &mut clients {
-        client.wipe().await?;
-    }
-    spinner.success("[MLS] Step 6: Deleting clients [OK]");
-
     Ok(())
 }
 
@@ -478,12 +472,6 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server:
     spinner.success(format!(
         "[Proteus] Step 3: Roundtripping {ROUNDTRIP_MSG_COUNT} messages... [OK]"
     ));
-
-    let spinner = util::RunningProcess::new("[Proteus] Step 4: Deleting clients...", true);
-    for client in &mut clients {
-        client.wipe().await?;
-    }
-    spinner.success("[Proteus] Step 4: Deleting clients [OK]");
 
     Ok(())
 }
