@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-0cfdad83.js";
+            window.path_to_searchindex_js = "searchindex-d8057e24.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1c113b1d.js"></script>
@@ -1584,6 +1584,13 @@ for the 6 ciphersuites that use hybrid (post-quantum + classical) key-exchange m
 </ul>
 <p>Note that only 3 of the 11 ciphersuites use post-quantum signatures (ML-DSA), and that using x509 credentials with
 post-quantum signatures is not yet supported.</p>
+</li>
+<li>
+<p><code>e2eiIsPkiEnvSetup</code> has been removed. You can call <code>getPkiEnvironment</code> to see if it is set.</p>
+</li>
+<li>
+<p><code>e2eiIsEnabled</code> has been removed. You can use <code>findCredentials</code> to check whether an X509 credential for a given
+ciphersuite exists.</p>
 </li>
 <li>
 <p><code>proteusNewPrekey</code> is deprecated; use <code>proteusNewPrekeyAuto</code> instead.</p>

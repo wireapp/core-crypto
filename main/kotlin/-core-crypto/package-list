@@ -195,7 +195,6 @@ $dokka.location:com.wire.crypto/CoreCryptoContext/decryptMessage/#com.wire.crypt
 $dokka.location:com.wire.crypto/CoreCryptoContext/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/destroy.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/disableHistorySharing/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/disable-history-sharing.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/e2eiConversationState/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/e2ei-conversation-state.html
-$dokka.location:com.wire.crypto/CoreCryptoContext/e2eiIsEnabled/#com.wire.crypto.CipherSuite/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/e2ei-is-enabled.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/enableHistorySharing/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/enable-history-sharing.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/encryptMessage/#com.wire.crypto.ConversationId#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/encrypt-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/encryptTargetedMessage/#com.wire.crypto.ConversationId#com.wire.crypto.ClientId#com.wire.crypto.TargetedMessagePolicy#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context/encrypt-targeted-message.html
@@ -251,7 +250,6 @@ $dokka.location:com.wire.crypto/CoreCryptoContextInterface/createConversation/#c
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/decryptMessage/#com.wire.crypto.ConversationId#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/decrypt-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/disableHistorySharing/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/disable-history-sharing.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/e2eiConversationState/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/e2ei-conversation-state.html
-$dokka.location:com.wire.crypto/CoreCryptoContextInterface/e2eiIsEnabled/#com.wire.crypto.CipherSuite/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/e2ei-is-enabled.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/enableHistorySharing/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/enable-history-sharing.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/encryptMessage/#com.wire.crypto.ConversationId#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/encrypt-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContextInterface/encryptTargetedMessage/#com.wire.crypto.ConversationId#com.wire.crypto.ClientId#com.wire.crypto.TargetedMessagePolicy#kotlin.ByteArray/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-context-interface/encrypt-targeted-message.html
@@ -333,8 +331,6 @@ $dokka.location:com.wire.crypto/CoreCryptoFfi/conversationEpoch/#com.wire.crypto
 $dokka.location:com.wire.crypto/CoreCryptoFfi/conversationExists/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/conversation-exists.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/destroy/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/destroy.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/e2eiConversationState/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/e2ei-conversation-state.html
-$dokka.location:com.wire.crypto/CoreCryptoFfi/e2eiIsEnabled/#com.wire.crypto.CipherSuite/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/e2ei-is-enabled.html
-$dokka.location:com.wire.crypto/CoreCryptoFfi/e2eiIsPkiEnvSetup/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/e2ei-is-pki-env-setup.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/exportSecretKey/#com.wire.crypto.ConversationId#kotlin.UInt/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/export-secret-key.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/findCredentials/#com.wire.crypto.ClientId?#kotlin.ByteArray?#com.wire.crypto.CipherSuite?#com.wire.crypto.CredentialType?#kotlin.ULong?/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/find-credentials.html
 $dokka.location:com.wire.crypto/CoreCryptoFfi/getClientIds/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi/get-client-ids.html
@@ -362,8 +358,6 @@ $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/conversationCredential/#c
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/conversationEpoch/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/conversation-epoch.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/conversationExists/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/conversation-exists.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/e2eiConversationState/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/e2ei-conversation-state.html
-$dokka.location:com.wire.crypto/CoreCryptoFfiInterface/e2eiIsEnabled/#com.wire.crypto.CipherSuite/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/e2ei-is-enabled.html
-$dokka.location:com.wire.crypto/CoreCryptoFfiInterface/e2eiIsPkiEnvSetup/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/e2ei-is-pki-env-setup.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/exportSecretKey/#com.wire.crypto.ConversationId#kotlin.UInt/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/export-secret-key.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/findCredentials/#com.wire.crypto.ClientId?#kotlin.ByteArray?#com.wire.crypto.CipherSuite?#com.wire.crypto.CredentialType?#kotlin.ULong?/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/find-credentials.html
 $dokka.location:com.wire.crypto/CoreCryptoFfiInterface/getClientIds/#com.wire.crypto.ConversationId/PointingToDeclaration/-core-crypto/com.wire.crypto/-core-crypto-ffi-interface/get-client-ids.html

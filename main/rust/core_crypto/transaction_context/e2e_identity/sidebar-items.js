@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["enabled"]};
+window.SIDEBAR_ITEMS = {};
