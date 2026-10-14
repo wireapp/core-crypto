@@ -22,7 +22,7 @@
 <a href=#22 id=22 data-nosnippet>22</a>}
 <a href=#23 id=23 data-nosnippet>23</a>
 <a href=#24 id=24 data-nosnippet>24</a><span class="doccomment">/// see [RFC 8555 Section 7.4.2](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2)
-<a href=#25 id=25 data-nosnippet>25</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>certificate_response(response: String, order: AcmeOrder) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Certificate&gt;&gt; {
+<a href=#25 id=25 data-nosnippet>25</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>certificate_response(response: String, order: <span class="kw-2">&amp;</span>AcmeOrder) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Certificate&gt;&gt; {
 <a href=#26 id=26 data-nosnippet>26</a>    order.verify()<span class="question-mark">?</span>;
 <a href=#27 id=27 data-nosnippet>27</a>    <span class="kw">let </span>pems: Vec&lt;pem::Pem&gt; = pem::parse_many(response)<span class="question-mark">?</span>;
 <a href=#28 id=28 data-nosnippet>28</a>
