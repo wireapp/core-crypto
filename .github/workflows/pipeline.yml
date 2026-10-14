@@ -406,6 +406,29 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
+  # Built on a hosted runner, so the self-hosted interop runner only has to
+  # install it.
+  build-interop-ios-app:
+    needs:
+      - artifact-generation
+      - build-ios
+      - bindings-swift
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: macos-latest
+    steps:
+      # Needed for parity between github and self-hosted runner
+      - run: brew install make
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/make/setup
+      - name: setup Xcode
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
+        with:
+          xcode-version: '26.3.0'
+      - uses: ./.github/actions/make/interop/ios-app
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
+
   e2e-interop-test:
     needs:
       - artifact-generation

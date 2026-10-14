@@ -1,0 +1,32 @@
+name: Fetch or make the iOS interop app
+description: Fetch or build the iOS interop app for the simulator, fetching or building the simulator library and Swift bindings it links
+inputs:
+  gh-token:
+    required: true
+  artifact-generation:
+    description: suffix for artifact names that allows us to easily invalidate artifacts
+
+runs:
+  using: composite
+
+  steps:
+    - name: download artifacts for ios simulator
+      uses: ./.github/actions/make/ios/build
+      with:
+        gh-token: ${{ inputs.gh-token }}
+        task: ios-simulator-arm
+        artifact-generation: ${{ inputs.artifact-generation }}
+
+    - name: download swift bindings
+      uses: ./.github/actions/make/bindings-swift
+      with:
+        gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
+
+    - uses: ./.github/actions/make
+      with:
+        key: interop-ios-app
+        make-rule: interop-ios-app
+        target-path: interop/src/clients/InteropClient/Products/Applications/InteropClient.app
+        gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
