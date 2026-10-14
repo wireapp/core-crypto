@@ -48,6 +48,28 @@ $(STAMPS)/interop-ios-app: $(interop-ios-app-deps)
 .PHONY: interop-ios-app
 interop-ios-app: $(STAMPS)/interop-ios-app ## Build the iOS interop app for the simulator (macOS only)
 
+# The Android interop app. CI builds it on Linux but installs it on an arm64
+# emulator on macOS, so it bundles the libraries for every Android ABI rather
+# than only the host's (see `coreCryptoAndroidBuildAllAbis` in
+# `crypto-ffi/bindings/android/build.gradle.kts`).
+INTEROP_APK := interop/src/clients/android-interop/build/outputs/apk/$(RELEASE_MODE)/android-interop-$(RELEASE_MODE).apk
+
+# Besides the Kotlin sources and Gradle scripts, the app's manifest and the
+# Gradle settings, wrappers and version catalogs of both builds.
+INTEROP_ANDROID_APP_SOURCES := $(shell fd --type f \
+	. interop/src/clients/android-interop interop/src/clients/gradle crypto-ffi/bindings/gradle | LC_ALL=C sort) \
+	interop/src/clients/gradle.properties crypto-ffi/bindings/gradle.properties crypto-ffi/bindings/android/gradle.properties
+
+interop-android-app-deps := $(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) $(UNIFFI_ANDROID_OUTPUT) \
+	$(KT_FILES) $(KT_GRADLE_FILES) $(INTEROP_ANDROID_APP_SOURCES)
+
+$(INTEROP_APK): $(interop-android-app-deps)
+	cd interop/src/clients && \
+	./gradlew android-interop:assemble$(GRADLE_BUILD_TYPE) -DcoreCryptoAndroidBuildAllAbis=true
+
+.PHONY: interop-android-app
+interop-android-app: $(INTEROP_APK) ## Build the Android interop app, with the libraries for every Android ABI
+
 interop-test-deps := $(INTEROP_OUT) $(BROWSER_OUT) $(ANDROID_TEST_LIB) $(UNIFFI_ANDROID_OUTPUT) $(KT_FILES) $(KT_GRADLE_FILES)
 ifeq ($(UNAME_S),Darwin)
 interop-test-deps := $(interop-test-deps) $(IOS_SIMULATOR_ARM) $(UNIFFI_SWIFT_OUTPUT) $(SWIFT_FILES)
