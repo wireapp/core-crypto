@@ -103,20 +103,11 @@ runs:
     - name: Unpack and touch downloaded files to update timestamps
       if: steps.download.outputs.found == 'true'
       run: |
-        tar -xzf artifact.tar.gz
-        # This is necessary because the github checkout action doesn't preserve
-        # timestamps on checked out files.
-        while read -r dir; do
-          [[ -z "$dir" ]] && continue
+        reference="$RUNNER_TEMP/make-artifact-mtime"
+        [ -e "$reference" ] || touch "$reference"
 
-          if [ -d "$dir" ]; then
-            find "$dir" -type f -exec touch {} +
-          elif [ -f "$dir" ]; then
-            touch "$dir"
-          fi
-        done <<< "$TARGET_PATH"
-      env:
-        TARGET_PATH: ${{ inputs.target-path }}
+        tar -xzf artifact.tar.gz
+        tar -tzf artifact.tar.gz | tr '\n' '\0' | xargs -0 touch -h -r "$reference"
       shell: bash -euo pipefail {0}
 
     - name: setup-and-cache-rust
