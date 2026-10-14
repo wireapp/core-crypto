@@ -34,6 +34,15 @@ inputs:
     description: suffix for artifact names that allows us to easily invalidate artifacts
     required: true
 
+outputs:
+  artifact-name:
+    description: >
+      The full name of the artifact, including the hash of its inputs and the generation. When
+      this action finishes, an artifact of that name exists in the current workflow run, whether
+      it was built here or found elsewhere, so a later job in the run can download it by name
+      without having to compute the key itself, which would need all the inputs.
+    value: ${{ steps.compute-key.outputs.key }}
+
 runs:
   using: composite
   steps:
