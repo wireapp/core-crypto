@@ -15,25 +15,18 @@ AVD_NAME=test-phone
 PORT=$((27000 + $(id -u)))
 ADB_DEVICE=emulator-$PORT
 
+# The system image the AVD is built from. Keep this in line with what
+# `setup-android-emulator.sh` installs.
+ANDROID_API_LEVEL=32
+case "$(uname -s)" in
+    Darwin) ANDROID_ARCH=arm64-v8a ;;
+    Linux) ANDROID_ARCH=x86_64 ;;
+    *) echo "Unsupported OS: $(uname -s)" >&2; exit 1 ;;
+esac
+SYSTEM_IMAGE="system-images;android-$ANDROID_API_LEVEL;default;$ANDROID_ARCH"
+
 # PATH updates
 export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH
-
-# Create an AVD if it does not exist
-if ! avdmanager list avd | grep -q "^Name: $AVD_NAME"; then
-    package="$(sdkmanager --list_installed | cut -f1 -d'|' | grep system-images | tr -d ' ' | tail -n 1)"
-    echo "Creating AVD $AVD_NAME using $package..."
-    echo "no" | avdmanager create avd -n $AVD_NAME --package "$package" --force
-fi
-
-# If there's an emulator instance running with our AVD, shut it down first.
-if [ "$(adb -s $ADB_DEVICE emu avd name | head -n1 | sed 's/[[:space:]]*$//')" = "$AVD_NAME" ]; then
-    echo An emulator is already running. Going to shut it down.
-    adb -s $ADB_DEVICE emu kill
-fi
-
-# Launch the emulator
-echo "Launching emulator on $AVD_NAME..."
-logfile=$(mktemp)
 
 if [ "${RUNNER_ENVIRONMENT-}" = github-hosted ]; then
     # For some reason avdmanager on github runners puts newly created AVDs under
@@ -50,7 +43,35 @@ fi
 # doesn't have to start it again. GitHub kills every process that carries the
 # job's RUNNER_TRACKING_ID when the job ends, and the server inherits our
 # environment, so clear that variable to keep the server out of the cleanup.
+#
+# This has to come before any other adb command: those start a server too if
+# none is running, and that one would not escape the cleanup.
 RUNNER_TRACKING_ID="" adb start-server
+
+# If there's an emulator instance running with our AVD, shut it down first. It
+# would hold the AVD we're about to recreate.
+if [ "$(adb -s $ADB_DEVICE emu avd name 2>/dev/null | head -n1 | sed 's/[[:space:]]*$//')" = "$AVD_NAME" ]; then
+    echo An emulator is already running. Going to shut it down.
+    adb -s $ADB_DEVICE emu kill
+fi
+
+# Recreate the AVD on every run, even if it exists. That gives every run the
+# same fresh device, built from the image above rather than from whatever an
+# earlier run left behind.
+#
+# Don't use `grep -q` here: it would exit at the first match, and pipefail would
+# then report sdkmanager's SIGPIPE as a failure.
+if ! sdkmanager --list_installed 2>/dev/null | cut -f1 -d'|' | tr -d ' ' | grep -xF "$SYSTEM_IMAGE" >/dev/null; then
+    echo "System image $SYSTEM_IMAGE is not installed. Install it with:" >&2
+    echo "    sdkmanager --install '$SYSTEM_IMAGE'" >&2
+    exit 1
+fi
+echo "Creating AVD $AVD_NAME using $SYSTEM_IMAGE..."
+echo "no" | avdmanager create avd -n $AVD_NAME --package "$SYSTEM_IMAGE" --force
+
+# Launch the emulator
+echo "Launching emulator on $AVD_NAME..."
+logfile=$(mktemp)
 
 emulator -avd $AVD_NAME -port $PORT -no-window -gpu swiftshader_indirect \
          -no-snapshot -noaudio -no-boot-anim -no-metrics >"$logfile" 2>&1 &
