@@ -6,6 +6,11 @@ inputs:
   artifact-generation:
     description: suffix for artifact names that allows us to easily invalidate artifacts
 
+outputs:
+  artifact-name:
+    description: The full name of the Android interop app artifact in the current run
+    value: ${{ steps.interop-android-app.outputs.artifact-name }}
+
 runs:
   using: composite
   steps:
@@ -36,7 +41,8 @@ runs:
         gh-token: ${{ inputs.gh-token }}
         artifact-generation: ${{ inputs.artifact-generation }}
 
-    - uses: ./.github/actions/make
+    - id: interop-android-app
+      uses: ./.github/actions/make
       with:
         key: interop-android-app
         make-rule: interop-android-app

@@ -6,6 +6,11 @@ inputs:
   artifact-generation:
     description: suffix for artifact names that allows us to easily invalidate artifacts
 
+outputs:
+  artifact-name:
+    description: The full name of the iOS interop app artifact in the current run
+    value: ${{ steps.interop-ios-app.outputs.artifact-name }}
+
 runs:
   using: composite
 
@@ -23,7 +28,8 @@ runs:
         gh-token: ${{ inputs.gh-token }}
         artifact-generation: ${{ inputs.artifact-generation }}
 
-    - uses: ./.github/actions/make
+    - id: interop-ios-app
+      uses: ./.github/actions/make
       with:
         key: interop-ios-app
         make-rule: interop-ios-app

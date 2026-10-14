@@ -7,6 +7,11 @@ inputs:
     description: suffix for artifact names that allows us to easily invalidate artifacts
     required: true
 
+outputs:
+  artifact-name:
+    description: The full name of the TypeScript wrapper artifact (`ts-browser`) in the current run
+    value: ${{ steps.ts-browser.outputs.artifact-name }}
+
 runs:
   using: composite
 
@@ -58,6 +63,7 @@ runs:
           artifact-generation: ${{ inputs.artifact-generation }}
 
       - name: transpile js to ts
+        id: ts-browser
         uses: ./.github/actions/make
         with:
           key: ts-browser

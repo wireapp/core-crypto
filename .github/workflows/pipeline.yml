@@ -259,6 +259,8 @@ jobs:
   bindings-ts-browser:
     needs: artifact-generation
     runs-on: ubuntu-latest
+    outputs:
+      artifact-name: ${{ steps.build-ts.outputs.artifact-name }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/make/setup
@@ -266,6 +268,7 @@ jobs:
         with:
           bun-version: 1.3.12
       - name: build ts
+        id: build-ts
         uses: ./.github/actions/make/ts/browser
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
@@ -396,12 +399,15 @@ jobs:
     needs: artifact-generation
     if: github.repository == 'wireapp/core-crypto'
     runs-on: macos-latest
+    outputs:
+      artifact-name: ${{ steps.build.outputs.artifact-name }}
     steps:
       # Needed for parity between github and self-hosted runner
       - run: brew install make
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/make/setup
-      - uses: ./.github/actions/make/interop/build
+      - id: build
+        uses: ./.github/actions/make/interop/build
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
@@ -415,6 +421,8 @@ jobs:
       - bindings-swift
     if: github.repository == 'wireapp/core-crypto'
     runs-on: macos-latest
+    outputs:
+      artifact-name: ${{ steps.build.outputs.artifact-name }}
     steps:
       # Needed for parity between github and self-hosted runner
       - run: brew install make
@@ -424,7 +432,8 @@ jobs:
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: '26.3.0'
-      - uses: ./.github/actions/make/interop/ios-app
+      - id: build
+        uses: ./.github/actions/make/interop/ios-app
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
@@ -437,6 +446,8 @@ jobs:
       - build-android
       - bindings-android
     runs-on: ubuntu-latest
+    outputs:
+      artifact-name: ${{ steps.build.outputs.artifact-name }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/make/setup
@@ -451,7 +462,8 @@ jobs:
           cache-provider: basic
       - name: setup android sdk
         uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
-      - uses: ./.github/actions/make/interop/android-app
+      - id: build
+        uses: ./.github/actions/make/interop/android-app
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
