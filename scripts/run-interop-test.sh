@@ -20,10 +20,7 @@ cleanup() {
     "$scripts/delete-ios-sim-device.sh" "$simulator_id"
   fi
 
-  if [ -n "${ADB_DEVICE-}" ]; then
-    echo "Shutting down Android emulator via adb"
-    adb -s "$ADB_DEVICE" emu kill
-  fi
+  "$scripts/delete-android-emulator.sh"
 }
 
 trap cleanup EXIT

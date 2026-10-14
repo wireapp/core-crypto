@@ -77,9 +77,12 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
-        # we separate shutdown from deletion to make sure the device is always removed, even when shutdown failed
-      - name: delete ios simulator and kill android emulator
+        # The test script cleans up after itself, but not when the job is
+        # cancelled or times out. This step runs even then. The Android cleanup
+        # comes first because it never fails, so it runs even if simctl does.
+      - name: delete ios simulator and android emulator
         if: always()
         run: |
+          scripts/delete-android-emulator.sh
           xcrun simctl delete all
           rm -rf ~/Library/Developer/CoreSimulator

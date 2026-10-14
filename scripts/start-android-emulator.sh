@@ -2,18 +2,9 @@
 
 set -euo pipefail
 
+# Sets AVD_NAME, EMULATOR_PORT and ADB_DEVICE, and the PATH for the SDK tools.
 # shellcheck disable=SC1091
 source "$(dirname "${BASH_SOURCE[0]}")/adb-env.sh"
-
-# The name of the Android Virtual Device we're going to use.
-AVD_NAME=test-phone
-
-# Choose a port for the emulator to use to communicate with adb (Android
-# debugger). Several runner users share each of our self-hosted machines, and
-# outside CI they may also share an adb server (see `adb-env.sh`), so the port
-# is based on the current user's ID to keep their emulators apart.
-PORT=$((27000 + $(id -u)))
-ADB_DEVICE=emulator-$PORT
 
 # The system image the AVD is built from. Keep this in line with what
 # `setup-android-emulator.sh` installs.
@@ -24,16 +15,6 @@ case "$(uname -s)" in
     *) echo "Unsupported OS: $(uname -s)" >&2; exit 1 ;;
 esac
 SYSTEM_IMAGE="system-images;android-$ANDROID_API_LEVEL;default;$ANDROID_ARCH"
-
-# PATH updates
-export PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH
-
-if [ "${RUNNER_ENVIRONMENT-}" = github-hosted ]; then
-    # For some reason avdmanager on github runners puts newly created AVDs under
-    # the following dir. So point ANDROID_AVD_HOME to it so the emulator can find
-    # the AVD.
-    export ANDROID_AVD_HOME=~/.config/.android/avd
-fi
 
 # Make sure that the adb server is running before starting the emulator,
 # otherwise the emulator will not start correctly. If it's already running,
@@ -50,9 +31,9 @@ RUNNER_TRACKING_ID="" adb start-server
 
 # If there's an emulator instance running with our AVD, shut it down first. It
 # would hold the AVD we're about to recreate.
-if [ "$(adb -s $ADB_DEVICE emu avd name 2>/dev/null | head -n1 | sed 's/[[:space:]]*$//')" = "$AVD_NAME" ]; then
+if [ "$(adb -s "$ADB_DEVICE" emu avd name 2>/dev/null | head -n1 | sed 's/[[:space:]]*$//')" = "$AVD_NAME" ]; then
     echo An emulator is already running. Going to shut it down.
-    adb -s $ADB_DEVICE emu kill
+    adb -s "$ADB_DEVICE" emu kill
 fi
 
 # Recreate the AVD on every run, even if it exists. That gives every run the
@@ -67,14 +48,17 @@ if ! sdkmanager --list_installed 2>/dev/null | cut -f1 -d'|' | tr -d ' ' | grep 
     exit 1
 fi
 echo "Creating AVD $AVD_NAME using $SYSTEM_IMAGE..."
-echo "no" | avdmanager create avd -n $AVD_NAME --package "$SYSTEM_IMAGE" --force
+echo "no" | avdmanager create avd -n "$AVD_NAME" --package "$SYSTEM_IMAGE" --force
 
 # Launch the emulator
 echo "Launching emulator on $AVD_NAME..."
-logfile=$(mktemp)
+logfile="$(mktemp)"
 
-emulator -avd $AVD_NAME -port $PORT -no-window -gpu swiftshader_indirect \
-         -no-snapshot -noaudio -no-boot-anim -no-metrics >"$logfile" 2>&1 &
+# With the image's default userdata partition, the emulator refuses to boot
+# unless 12 GiB of disk are free. Our test apps need very little space, so ask
+# for a 2 GiB partition instead.
+emulator -avd "$AVD_NAME" -port "$EMULATOR_PORT" -no-window -gpu swiftshader_indirect \
+         -no-snapshot -noaudio -no-boot-anim -no-metrics -partition-size 2048 >"$logfile" 2>&1 &
 EMULATOR_PID=$!
 
 echo "Emulator log file: $logfile"
@@ -97,7 +81,7 @@ fail_boot() {
 echo "Waiting up to ${BOOT_TIMEOUT_SECONDS}s for Android emulator to be fully booted..."
 
 deadline=$((SECONDS + BOOT_TIMEOUT_SECONDS))
-until [ "$(adb -s $ADB_DEVICE shell getprop sys.boot_completed 2>/dev/null | tr -d '[:space:]')" = 1 ]; do
+until [ "$(adb -s "$ADB_DEVICE" shell getprop sys.boot_completed 2>/dev/null | tr -d '[:space:]')" = 1 ]; do
   if ! kill -0 "$EMULATOR_PID" 2>/dev/null; then
     fail_boot "The emulator process exited before the device finished booting."
   fi
