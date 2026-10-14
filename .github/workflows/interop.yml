@@ -12,7 +12,30 @@ on:
           invoked directly.
         required: false
         type: string
+      interop_build_artifact:
+        description: Full name of the interop binary artifact in the calling run
+        required: true
+        type: string
+      ts_browser_artifact:
+        description: Full name of the web bindings artifact in the calling run
+        required: true
+        type: string
+      ios_app_artifact:
+        description: Full name of the iOS interop app artifact in the calling run
+        required: true
+        type: string
+      android_app_artifact:
+        description: Full name of the Android interop app artifact in the calling run
+        required: true
+        type: string
   workflow_dispatch:
+    inputs:
+      run_id:
+        description: >
+          The id of a pipeline run whose artifacts to test. It must have built the interop
+          binary, the web bindings and both interop apps.
+        required: true
+        type: string
 
 env:
   RELEASE: 1
@@ -29,29 +52,19 @@ jobs:
 
       - uses: ./.github/actions/make/setup
 
+      # sdkmanager and avdmanager, which set up the emulator, need Java.
       - name: set up jdk 25
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
           java-version: 25
           distribution: temurin
-      - name: gradle setup
-        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
-        with:
-          cache-provider: basic
 
       - name: setup android sdk
         uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
         with:
-          # Don't download unnecessary packages.
-          # We only need sdkmanager for the next step.
+          # Don't download unnecessary packages. The emulator and its system
+          # image are already installed on our runners.
           packages: ''
-
-      - name: install ndk and set up environment
-        run: |
-          ndk_version=$(cat crypto-ffi/bindings/android/ndk.version)
-          echo "y" | sdkmanager --install "ndk;$ndk_version"
-          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$ndk_version" >> "$GITHUB_ENV"
-          echo "ANDROID_NDK_ROOT=$ANDROID_NDK_HOME" >> "$GITHUB_ENV"
 
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
@@ -70,12 +83,56 @@ jobs:
           bun x @puppeteer/browsers install chromedriver@latest --path "$PWD"
           echo "CHROMEDRIVER_PATH=$(echo "$PWD"/chromedriver/*/*/chromedriver)" >> "$GITHUB_ENV"
 
+      # When called from the pipeline, we're given the artifacts' names. A
+      # dispatch only names a run, so find each artifact in it by its key. The
+      # names are `<key>-<sha256 of the inputs>-<generation>`; matching the hash
+      # as well keeps `ts-browser` from also matching `ts-browser-test`.
+      - name: find the artifacts to test
+        id: artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ inputs.run_id || github.run_id }}
+          INTEROP_BUILD: ${{ inputs.interop_build_artifact }}
+          TS_BROWSER: ${{ inputs.ts_browser_artifact }}
+          IOS_APP: ${{ inputs.ios_app_artifact }}
+          ANDROID_APP: ${{ inputs.android_app_artifact }}
+        run: |
+          set -euo pipefail
+
+          resolve() {
+            local output="$1" given="$2" key="$3" matches count
+            if [ -n "$given" ]; then
+              echo "$output=$given" >> "$GITHUB_OUTPUT"
+              return
+            fi
+            matches="$(gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts" \
+              --jq '.artifacts[] | select(.expired | not) | .name' | grep -E "^$key-[0-9a-f]{64}-" || true)"
+            count="$(printf '%s' "$matches" | grep -c . || true)"
+            if [ "$count" -ne 1 ]; then
+              # Annotations only show their first line, so list the matches on one.
+              echo "::error::Expected exactly one '$key' artifact in run $RUN_ID, found $count: $(printf '%s' "${matches:-none}" | tr '\n' ' ')"
+              exit 1
+            fi
+            echo "$output=$matches" >> "$GITHUB_OUTPUT"
+          }
+
+          resolve interop-build "$INTEROP_BUILD" interop-build
+          resolve ts-browser "$TS_BROWSER" ts-browser
+          resolve ios-app "$IOS_APP" interop-ios-app
+          resolve android-app "$ANDROID_APP" interop-android-app
+          echo "run-id=$RUN_ID" >> "$GITHUB_OUTPUT"
+
       - name: Run e2e interop test
         uses: ./.github/actions/make/interop/test
         with:
           always-run: ${{ github.event_name == 'workflow_dispatch' || github.ref_name == 'main' }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
+          run-id: ${{ steps.artifacts.outputs.run-id }}
+          interop-build-artifact: ${{ steps.artifacts.outputs.interop-build }}
+          ts-browser-artifact: ${{ steps.artifacts.outputs.ts-browser }}
+          ios-app-artifact: ${{ steps.artifacts.outputs.ios-app }}
+          android-app-artifact: ${{ steps.artifacts.outputs.android-app }}
 
         # The test script cleans up after itself, but not when the job is
         # cancelled or times out. This step runs even then. The Android cleanup
