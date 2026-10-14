@@ -17,11 +17,9 @@ CRATE_MANIFESTS := $(addsuffix /Cargo.toml,$(CRATES))
 # Enumerate all .rs files not ignored by our `.gitignore` (`fd` default behavior)
 RUST_RS_FILES := $(shell fd --type f --extension rs | LC_ALL=C sort)
 
-# Files relevant to build interop
-INTEROP_RS_FILES := $(shell fd --type f --extension rs . interop | LC_ALL=C sort)
+# Files relevant to build interop, beyond the `.rs` files in `RUST_SOURCES`
 INTEROP_TS_FILES := $(shell fd --type f --extension ts . interop | LC_ALL=C sort)
 INTEROP_MANIFEST := interop/Cargo.toml
-INTEROP_SOURCES := $(INTEROP_RS_FILES) $(INTEROP_TS_FILES) $(INTEROP_MANIFEST)
 
 # Complete dependency set for FFI-related Cargo builds
 RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES)
