@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-set -e
+# pipefail matters: without it, a failure in `start-android-emulator.sh` is
+# hidden behind `tee`'s exit status and we carry on with no emulator.
+set -eo pipefail
 scripts="$(realpath "$(dirname "$0")")"
 cd "$scripts"
 
@@ -13,8 +15,10 @@ cleanup() {
     "$scripts/delete-ios-sim-device.sh" "$simulator_id"
   fi
 
-  echo "Shutting down Android emulator via adb"
-  adb -s "$ADB_DEVICE" emu kill
+  if [ -n "${ADB_DEVICE-}" ]; then
+    echo "Shutting down Android emulator via adb"
+    adb -s "$ADB_DEVICE" emu kill
+  fi
 }
 
 trap cleanup EXIT

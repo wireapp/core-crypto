@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 set -euo pipefail
 
 # The name of the Android Virtual Device we're going to use.
@@ -45,13 +47,36 @@ fi
 adb start-server
 
 emulator -avd $AVD_NAME -port $PORT -no-window -gpu swiftshader_indirect \
-         -no-snapshot -noaudio -no-boot-anim -no-metrics >$logfile &
+         -no-snapshot -noaudio -no-boot-anim -no-metrics >"$logfile" 2>&1 &
 EMULATOR_PID=$!
 
-echo Emulator log file: $logfile
-echo "Waiting for Android emulator to be fully booted..."
+echo "Emulator log file: $logfile"
 
-until adb -s $ADB_DEVICE shell getprop sys.boot_completed | grep -qm 1 '1'; do
+# How long to wait for the emulator to boot before giving up. A healthy cold
+# boot takes between 15 and 80 seconds on our runners.
+BOOT_TIMEOUT_SECONDS=${BOOT_TIMEOUT_SECONDS:-300}
+
+# Print the emulator log and fail. Everything goes to stderr, because callers
+# capture our stdout.
+fail_boot() {
+  echo "$1" >&2
+  echo "--- emulator log ($logfile) ---" >&2
+  cat "$logfile" >&2
+  echo "--- end of emulator log ---" >&2
+  kill "$EMULATOR_PID" 2>/dev/null || true
+  exit 1
+}
+
+echo "Waiting up to ${BOOT_TIMEOUT_SECONDS}s for Android emulator to be fully booted..."
+
+deadline=$((SECONDS + BOOT_TIMEOUT_SECONDS))
+until [ "$(adb -s $ADB_DEVICE shell getprop sys.boot_completed 2>/dev/null | tr -d '[:space:]')" = 1 ]; do
+  if ! kill -0 "$EMULATOR_PID" 2>/dev/null; then
+    fail_boot "The emulator process exited before the device finished booting."
+  fi
+  if [ "$SECONDS" -ge "$deadline" ]; then
+    fail_boot "The emulator did not finish booting within ${BOOT_TIMEOUT_SECONDS}s."
+  fi
   sleep 1
 done
 
