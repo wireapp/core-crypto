@@ -1,0 +1,21 @@
+name: Unpack a downloaded make artifact
+description: Unpack an artifact archive created by the make action, and give everything in it one timestamp per job
+inputs:
+  archive:
+    description: The archive to unpack. It is left in place, so it can be uploaded again.
+    required: false
+    default: artifact.tar.gz
+
+runs:
+  using: composite
+  steps:
+    - name: Unpack and give the downloaded files one timestamp
+      run: |
+        reference="$RUNNER_TEMP/make-artifact-mtime"
+        [ -e "$reference" ] || touch "$reference"
+
+        tar -xzf "$ARCHIVE"
+        tar -tzf "$ARCHIVE" | tr '\n' '\0' | xargs -0 touch -h -r "$reference"
+      env:
+        ARCHIVE: ${{ inputs.archive }}
+      shell: bash -euo pipefail {0}

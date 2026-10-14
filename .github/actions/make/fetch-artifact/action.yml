@@ -1,0 +1,36 @@
+name: Fetch a make artifact by name
+description: >
+  Download an artifact uploaded by the make action from a single workflow run, by its full name,
+  and unpack it. Unlike the make action, this never builds anything, so a job that only consumes
+  artifacts needs neither the inputs nor the toolchains to build them.
+inputs:
+  artifact-name:
+    description: The full name of the artifact, as reported by the make action's `artifact-name` output
+    required: true
+  run-id:
+    description: The workflow run to download from. Defaults to the current run.
+    required: false
+  gh-token:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Download ${{ inputs.artifact-name }}
+      run: |
+        run_id="${RUN_ID:-$GITHUB_RUN_ID}"
+        if ! gh run download "$run_id" -n "$ARTIFACT_NAME"; then
+          echo "::error::Artifact '$ARTIFACT_NAME' wasn't found in run $run_id. The job that builds it should have uploaded it there; check that job, and that this job needs it."
+          exit 1
+        fi
+      env:
+        ARTIFACT_NAME: ${{ inputs.artifact-name }}
+        RUN_ID: ${{ inputs.run-id }}
+        GITHUB_TOKEN: ${{ inputs.gh-token }}
+      shell: bash -euo pipefail {0}
+
+    - uses: ./.github/actions/make/unpack
+
+    - name: Cleanup
+      run: rm artifact.tar.gz
+      shell: bash -euo pipefail {0}
