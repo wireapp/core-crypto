@@ -10,9 +10,8 @@ interop-build: $(INTEROP_OUT)  ## Build the interop test binary (in debug mode, 
 
 # The interop binary is the native client in the test, so it links all of
 # core-crypto, not only the `interop` crate. Its artifact must be rebuilt
-# whenever any of that changes. `RUST_SOURCES` already covers the `.rs` files
-# under `interop/`.
-interop-build-deps := $(RUST_SOURCES) $(INTEROP_TS_FILES) $(INTEROP_MANIFEST)
+# whenever any of that changes, as well as when the `interop` crate does.
+interop-build-deps := $(RUST_SOURCES) $(INTEROP_RS_FILES) $(INTEROP_TS_FILES) $(INTEROP_MANIFEST)
 
 $(INTEROP_OUT): $(interop-build-deps)
 	cargo build --bin interop

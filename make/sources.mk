@@ -14,20 +14,29 @@ WORKSPACE_CARGO_FILES := Cargo.toml Cargo.lock
 # Per-crate manifests
 CRATE_MANIFESTS := $(addsuffix /Cargo.toml,$(CRATES))
 
-# Enumerate all .rs files not ignored by our `.gitignore` (`fd` default behavior)
-RUST_RS_FILES := $(shell fd --type f --extension rs | LC_ALL=C sort)
+# Enumerate the .rs files of the crates above, skipping anything ignored by our
+# `.gitignore` (`fd` default behavior). Other workspace members, such as
+# `interop`, aren't part of the FFI library, so changing them must not
+# invalidate its artifacts.
+RUST_RS_FILES := $(shell fd --type f --extension rs . $(CRATES) | LC_ALL=C sort)
 
 # The keystore compiles its SQL migrations and the composite schema into the
 # library (`embed_migrations!` and `include_str!`), so a change to any of them
 # changes the build even when no `.rs` file does.
 KEYSTORE_SQL_FILES := $(shell fd --type f --extension sql . keystore/src | LC_ALL=C sort)
 
-# Files relevant to build interop, beyond the `.rs` files in `RUST_SOURCES`
+# Files relevant to build interop, beyond `RUST_SOURCES`
+INTEROP_RS_FILES := $(shell fd --type f --extension rs . interop | LC_ALL=C sort)
 INTEROP_TS_FILES := $(shell fd --type f --extension ts . interop | LC_ALL=C sort)
 INTEROP_MANIFEST := interop/Cargo.toml
 
 # Complete dependency set for FFI-related Cargo builds
 RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES) $(KEYSTORE_SQL_FILES)
+
+# Dependency set for tasks that run cargo over the whole workspace (formatting,
+# linting, docs), so they need to see every member's .rs files
+WORKSPACE_RS_FILES := $(shell fd --type f --extension rs | LC_ALL=C sort)
+WORKSPACE_RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(WORKSPACE_RS_FILES) $(KEYSTORE_SQL_FILES)
 
 # Uniffi binding configs; `--config` files are merged over each crate's own `uniffi.toml`
 UNIFFI_TOML := crypto-ffi/uniffi.toml

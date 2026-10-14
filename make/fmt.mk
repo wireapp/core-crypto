@@ -4,14 +4,14 @@
 
 # Rust
 
-$(STAMPS)/rust-fmt: $(RUST_SOURCES)
+$(STAMPS)/rust-fmt: $(WORKSPACE_RUST_SOURCES)
 	cargo +nightly fmt --all
 	$(TOUCH_STAMP)
 
 .PHONY: rust-fmt
 rust-fmt: $(STAMPS)/rust-fmt ## Format Rust files via cargo fmt
 
-$(STAMPS)/rust-check: $(RUST_SOURCES)
+$(STAMPS)/rust-check: $(WORKSPACE_RUST_SOURCES)
 	cargo +nightly fmt --all -- --check && \
 	cargo check --locked --all-targets && \
 	cargo check --locked --target wasm32-unknown-unknown && \

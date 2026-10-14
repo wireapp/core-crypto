@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------
 
 # Rust generic docs
-$(STAMPS)/docs-rust-generic: $(RUST_SOURCES)
+$(STAMPS)/docs-rust-generic: $(WORKSPACE_RUST_SOURCES)
 	cargo doc --no-deps
 	$(TOUCH_STAMP)
 
@@ -11,7 +11,7 @@ $(STAMPS)/docs-rust-generic: $(RUST_SOURCES)
 docs-rust-generic: $(STAMPS)/docs-rust-generic ## Generate Rust docs for the host platform's default target ("generic")
 
 # Rust WASM docs
-$(STAMPS)/docs-rust-wasm: $(RUST_SOURCES)
+$(STAMPS)/docs-rust-wasm: $(WORKSPACE_RUST_SOURCES)
 	cargo doc --no-deps --target=wasm32-unknown-unknown
 	$(TOUCH_STAMP)
 
