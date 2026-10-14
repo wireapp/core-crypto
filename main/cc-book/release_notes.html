@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-d22ab2a3.js";
+            window.path_to_searchindex_js = "searchindex-65843af4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1c113b1d.js"></script>
@@ -178,6 +178,29 @@
                         <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
 <h2 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h2>
 <ul>
+<li>
+<p>CoreCrypto now has support for 11 post-quantum ciphersuites, as defined by the
+<a href="https://www.ietf.org/archive/id/draft-ietf-mls-pq-ciphersuites-06.html">draft</a>. Specifically, support has been added
+for the 6 ciphersuites that use hybrid (post-quantum + classical) key-exchange mechanisms:</p>
+<ul>
+<li><code>MLS_128_MLKEM768X25519_AES128GCM_SHA256_Ed25519</code></li>
+<li><code>MLS_128_MLKEM768X25519_AES256GCM_SHA384_Ed25519</code></li>
+<li><code>MLS_128_MLKEM768P256_AES128GCM_SHA256_P256</code></li>
+<li><code>MLS_128_MLKEM768P256_AES256GCM_SHA384_P256</code></li>
+<li><code>MLS_128_MLKEM768X25519_CHACHA20POLY1305_SHA384_MLDSA44</code></li>
+<li><code>MLS_192_MLKEM1024P384_AES256GCM_SHA384_P384</code></li>
+</ul>
+<p>as well as the 5 ciphersuites that use pure post-quantum key-exchange mechanisms:</p>
+<ul>
+<li><code>MLS_128_MLKEM768_AES256GCM_SHA384_Ed25519</code></li>
+<li><code>MLS_128_MLKEM768_AES256GCM_SHA384_P256</code></li>
+<li><code>MLS_192_MLKEM1024_AES256GCM_SHA384_P384</code></li>
+<li><code>MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65</code></li>
+<li><code>MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87</code></li>
+</ul>
+<p>Note that only 3 of the 11 ciphersuites use post-quantum signatures (ML-DSA), and that using x509 credentials with
+post-quantum signatures is not yet supported.</p>
+</li>
 <li>
 <p><code>proteusNewPrekey</code> is deprecated; use <code>proteusNewPrekeyAuto</code> instead.</p>
 </li>
