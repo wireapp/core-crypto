@@ -133,7 +133,13 @@ runs:
         MAKE_RULE: ${{ inputs.make-rule }}
       shell: bash -euo pipefail {0}
 
+    # Only pack a new archive if make ran and we're going to upload. If we
+    # downloaded the artifact and didn't rebuild it, the downloaded
+    # `artifact.tar.gz` is still here and gets uploaded as it is.
     - name: Prepare artifact
+      if: >-
+        (steps.download.outputs.found != 'true' || inputs.always-run == 'true')
+        && steps.download.outputs.found_in_this_run != 'true'
       run: |
         mkdir -p .stamps
         printf '%s\n' "$TARGET_PATH" | tar -czf artifact.tar.gz -T - .stamps
@@ -147,6 +153,7 @@ runs:
       with:
         name: ${{ steps.compute-key.outputs.key }}
         path: artifact.tar.gz
+        if-no-files-found: error
         retention-days: ${{ github.ref_name == 'main' && 7 || 2 }}
 
     - name: Cleanup
