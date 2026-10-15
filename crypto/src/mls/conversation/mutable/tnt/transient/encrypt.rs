@@ -64,7 +64,7 @@ impl ConversationMut {
         let sender = mls_group.own_leaf_index();
         let group_context = mls_group.export_group_context().clone();
 
-        let transient_message = TransientMessage::new(sender, counter, group_context, payload);
+        let transient_message = TransientMessage::new(group_context, sender, counter, payload);
         Ok(transient_message)
     }
 }
