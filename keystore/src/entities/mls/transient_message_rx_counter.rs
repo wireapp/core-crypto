@@ -140,7 +140,7 @@ impl EntityDeleteBorrowed for TransientMessageRxCounter {
     }
 }
 
-impl SearchableEntity<ConversationEpochsOlderThan> for TransientMessageRxCounter {
+impl SearchableEntity<ConversationEpochsOlderThan<'_>> for TransientMessageRxCounter {
     fn find_all_matching(
         conn: &rusqlite::Connection,
         conversation_epoch: &ConversationEpochsOlderThan,
@@ -158,11 +158,11 @@ impl SearchableEntity<ConversationEpochsOlderThan> for TransientMessageRxCounter
     }
 
     fn matches(&self, conversation_epoch: &ConversationEpochsOlderThan) -> bool {
-        self.conversation_id == conversation_epoch.conversation_id && self.epoch < conversation_epoch.epoch
+        &self.conversation_id == conversation_epoch.conversation_id && self.epoch < conversation_epoch.epoch
     }
 }
 
-impl DeletableBySearchKey<ConversationEpochsOlderThan> for TransientMessageRxCounter {
+impl DeletableBySearchKey<ConversationEpochsOlderThan<'_>> for TransientMessageRxCounter {
     fn delete_all_matching<'a, Tx>(
         tx: &'a Tx,
         conversation_epoch: &ConversationEpochsOlderThan,

@@ -156,7 +156,7 @@ impl EntityDeleteBorrowed for TntSecret {
     }
 }
 
-impl SearchableEntity<ConversationEpochsOlderThan> for TntSecret {
+impl SearchableEntity<ConversationEpochsOlderThan<'_>> for TntSecret {
     fn find_all_matching(
         conn: &rusqlite::Connection,
         conversation_epoch: &ConversationEpochsOlderThan,
@@ -174,11 +174,11 @@ impl SearchableEntity<ConversationEpochsOlderThan> for TntSecret {
     }
 
     fn matches(&self, conversation_epoch: &ConversationEpochsOlderThan) -> bool {
-        self.conversation_id == conversation_epoch.conversation_id && self.epoch < conversation_epoch.epoch
+        &self.conversation_id == conversation_epoch.conversation_id && self.epoch < conversation_epoch.epoch
     }
 }
 
-impl DeletableBySearchKey<ConversationEpochsOlderThan> for TntSecret {
+impl DeletableBySearchKey<ConversationEpochsOlderThan<'_>> for TntSecret {
     fn delete_all_matching<'a, Tx>(
         tx: &'a Tx,
         conversation_epoch: &ConversationEpochsOlderThan,
