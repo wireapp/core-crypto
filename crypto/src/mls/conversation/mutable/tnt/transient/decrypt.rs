@@ -2,7 +2,7 @@ use openmls::prelude::{Member, OpenMlsCrypto};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Deserialize as _, Serialize, VLBytes};
 
-use super::{Error, Result};
+use super::Result;
 use crate::{
     DecryptedMessage, OpenMlsError, TlsCodecError,
     mls::conversation::{
@@ -19,14 +19,7 @@ impl ConversationMut {
         sender: &Member,
     ) -> Result<DecryptedMessage> {
         let mls_group = self.group().await;
-        let message_epoch = message.epoch().as_u64();
         let group_epoch = mls_group.epoch().as_u64();
-        if message_epoch != group_epoch {
-            return Err(Error::InvalidTransientMessageEpoch {
-                group_epoch,
-                message_epoch,
-            });
-        }
 
         let message_sender = message.sender();
         let message_counter = message.counter;

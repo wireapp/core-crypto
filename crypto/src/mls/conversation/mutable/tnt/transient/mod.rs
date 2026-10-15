@@ -9,7 +9,7 @@ use openmls::{
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{SecretVLBytes, Serialize as _, TlsDeserialize, TlsSerialize, TlsSize};
 
-use super::{Error, Result};
+use super::Result;
 use crate::{
     OpenMlsError, TlsCodecError,
     mls::{
