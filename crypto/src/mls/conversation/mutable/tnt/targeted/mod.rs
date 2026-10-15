@@ -566,6 +566,48 @@ mod tests {
         assert_eq!(decrypted.plaintext, message);
     }
 
+    /// A rejoin must not lose the epoch it leaves, even when the recipient entered that epoch by commit and did
+    /// nothing else in it.
+    ///
+    /// Unlike the epoch a conversation is created in, an epoch entered by commit has no other chance to be recorded
+    /// before the rejoin replaces the group.
+    #[apply(all_cred_cipher)]
+    async fn targeted_message_from_an_epoch_entered_by_commit_survives_a_rejoin(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+        let joined_epoch = conversation.guard_of(&bob).await.epoch().await;
+
+        let conversation = conversation.update_notify().await;
+        assert!(
+            conversation.guard_of(&bob).await.epoch().await > joined_epoch,
+            "the test is only meaningful if bob entered the sending epoch by commit"
+        );
+
+        let message = b"sent in an epoch bob entered by commit and is about to abandon";
+        let encrypted = conversation
+            .guard()
+            .await
+            .encrypt_targeted(
+                &bob.get_client_id().await,
+                TargetedMessagePolicy::Persisted,
+                message.to_vec(),
+            )
+            .await
+            .unwrap();
+
+        let conversation = conversation.external_join_notify(&bob).await;
+
+        let decrypted = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(encrypted)
+            .await
+            .unwrap()
+            .into_persisted_targeted()
+            .unwrap();
+        assert_eq!(decrypted.plaintext, message);
+    }
+
     #[apply(all_cred_cipher)]
     async fn backdated_message_from_a_reused_leaf_fails_signature_verification(case: TestContext) {
         let [alice, bob, charlie, dave] = case.sessions().await;
