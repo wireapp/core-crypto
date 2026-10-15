@@ -1,7 +1,10 @@
+use core_crypto_keystore::{
+    ancillary::ConversationEpochsNewerThan, entities::OldEpochData, traits::DeletableBySearchKey as _,
+};
 use openmls::{group::MlsGroup, prelude::Welcome};
 
 use crate::{
-    ConversationConfiguration, ConversationId, OpenMlsError, RecursiveError,
+    ConversationConfiguration, ConversationId, KeystoreError, OpenMlsError, RecursiveError,
     mls::conversation::{Conversation, ConversationMut, Error as ConversationError, MlsGroupState},
     transaction_context::{Error, Result, TransactionContext},
 };
@@ -48,6 +51,14 @@ impl TransactionContext {
         // so we can use it for the initial epoch data recording
         // (the call path in `mutate_group` only ever handle subsequent epochs, not the initial)
         {
+            // we've just created the group, so if there exists any existing state at or after the
+            // group's epoch, that history must be replaced.
+            OldEpochData::delete_all_matching(
+                self.inner()?.transaction(),
+                &ConversationEpochsNewerThan::new(conversation.id().keystore(), conversation.epoch().await),
+            )
+            .map_err(KeystoreError::wrap("deleting any epoch data from a potential fork"))?;
+
             let group_state = conversation.group().await;
             conversation
                 .record_epoch_data(group_state.mls_group())
