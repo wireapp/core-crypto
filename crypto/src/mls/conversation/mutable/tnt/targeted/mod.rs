@@ -657,6 +657,96 @@ mod tests {
         assert_eq!(decrypted.plaintext, message);
     }
 
+    /// A rejoin landing on an epoch number the recipient already has a record of must replace that record.
+    ///
+    /// Epoch numbers only identify an epoch within one history of the group. Here bob follows a fork of the group
+    /// which charlie never sees, then rejoins from charlie's state. The epoch number bob rejoins at is one he already
+    /// recorded in the fork, and that record describes the wrong epoch.
+    #[apply(all_cred_cipher)]
+    async fn targeted_message_survives_a_rejoin_onto_an_epoch_number_seen_in_a_fork(case: TestContext) {
+        let [alice, bob, charlie] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
+        let conversation = conversation.acting_as(&charlie).await;
+        let charlies_group_info = conversation.export_group_info().await;
+
+        // Alice's commit reaches bob but never charlie, so alice and bob are now on a fork of charlie's group.
+        let conversation = conversation
+            .acting_as(&alice)
+            .await
+            .update()
+            .await
+            .notify_member(&bob)
+            .await
+            .finish();
+        let forked_epoch = conversation.guard_of(&bob).await.epoch().await;
+
+        // Bob acts in the fork, so it is recorded however recording on entry to an epoch turns out.
+        conversation
+            .guard_of(&bob)
+            .await
+            .encrypt_targeted(
+                &alice.get_client_id().await,
+                TargetedMessagePolicy::Persisted,
+                b"recorded in the fork".to_vec(),
+            )
+            .await
+            .unwrap();
+        let forked_record = bob
+            .database()
+            .get_borrowed::<OldEpochData>(OldEpochDataPkRef::new(conversation.id().keystore(), forked_epoch))
+            .await
+            .unwrap();
+        assert!(
+            forked_record.is_some(),
+            "the test is only meaningful if bob recorded the forked epoch"
+        );
+
+        let conversation = conversation
+            .acting_as(&charlie)
+            .await
+            .external_join_via_group_info(&bob, charlies_group_info)
+            .await
+            .notify_member(&charlie)
+            .await
+            .finish();
+        assert_eq!(
+            conversation.guard_of(&bob).await.epoch().await,
+            forked_epoch,
+            "the test is only meaningful if bob rejoined at the epoch number he recorded in the fork"
+        );
+
+        let message = b"sent in the epoch bob rejoined at";
+        let encrypted = conversation
+            .guard_of(&charlie)
+            .await
+            .encrypt_targeted(
+                &bob.get_client_id().await,
+                TargetedMessagePolicy::Persisted,
+                message.to_vec(),
+            )
+            .await
+            .unwrap();
+
+        let conversation = conversation
+            .acting_as(&charlie)
+            .await
+            .update()
+            .await
+            .notify_member(&bob)
+            .await
+            .finish();
+
+        let decrypted = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(encrypted)
+            .await
+            .unwrap()
+            .into_persisted_targeted()
+            .unwrap();
+        assert_eq!(decrypted.plaintext, message);
+    }
+
     #[apply(all_cred_cipher)]
     async fn backdated_message_from_a_reused_leaf_fails_signature_verification(case: TestContext) {
         let [alice, bob, charlie, dave] = case.sessions().await;
