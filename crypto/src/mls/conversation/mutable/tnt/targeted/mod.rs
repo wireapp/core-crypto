@@ -130,6 +130,10 @@ fn derive_targeted_message_psk(
 
 #[cfg(test)]
 mod tests {
+    use core_crypto_keystore::{
+        entities::{OldEpochData, OldEpochDataPkRef},
+        traits::{EntityDeleteBorrowed as _, FetchFromDatabase as _},
+    };
     use openmls::prelude::{GroupEpoch, Signable as _};
     use tls_codec::{Deserialize as _, Serialize as _};
 
@@ -584,6 +588,51 @@ mod tests {
         );
 
         let message = b"sent in an epoch bob entered by commit and is about to abandon";
+        let encrypted = conversation
+            .guard()
+            .await
+            .encrypt_targeted(
+                &bob.get_client_id().await,
+                TargetedMessagePolicy::Persisted,
+                message.to_vec(),
+            )
+            .await
+            .unwrap();
+
+        let conversation = conversation.external_join_notify(&bob).await;
+
+        let decrypted = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(encrypted)
+            .await
+            .unwrap()
+            .into_persisted_targeted()
+            .unwrap();
+        assert_eq!(decrypted.plaintext, message);
+    }
+
+    /// A rejoin must not lose the epoch it leaves, even when nothing about that epoch was recorded yet.
+    ///
+    /// This is the state of every conversation which existed before old epoch data was introduced: its current epoch
+    /// has no row until something records one. Deleting the row reproduces that.
+    #[apply(all_cred_cipher)]
+    async fn targeted_message_from_an_unrecorded_epoch_survives_a_rejoin(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+
+        let epoch = conversation.guard_of(&bob).await.epoch().await;
+        let deleted = OldEpochData::delete_borrowed(
+            bob.transaction.inner().unwrap().transaction(),
+            OldEpochDataPkRef::new(conversation.id().keystore(), epoch),
+        )
+        .unwrap();
+        assert!(
+            deleted,
+            "the test is only meaningful if bob's current epoch was recorded"
+        );
+
+        let message = b"sent in an epoch bob has no record of";
         let encrypted = conversation
             .guard()
             .await
