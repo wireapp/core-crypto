@@ -92,6 +92,17 @@ impl TransactionContext {
             ..Default::default()
         };
 
+        let id = ConversationIdRef::new(group_info.group_id().as_slice());
+        if self.conversation_exists(id).await? {
+            // rejoining replaces the group without going through `mutate_group`, so we have to
+            // capture epoch data from an existing group here
+            let conversation = self.conversation(id).await?;
+            conversation
+                .record_epoch_data(conversation.group().await.mls_group())
+                .await
+                .map_err(RecursiveError::context("recording epoch data before rejoin"))?;
+        }
+
         let (group, commit, group_info) = MlsGroup::join_by_external_commit(
             &mls_provider,
             &credential.signature_key_pair,
@@ -115,7 +126,7 @@ impl TransactionContext {
         let group_info = GroupInfoBundle::try_new_full_plaintext(group_info)
             .map_err(RecursiveError::context("trying new full plaintext group info bundle"))?;
 
-        let new_group_id = group.group_id().to_vec();
+        let id = ConversationId::from(group.group_id().as_slice());
 
         let pending_conversation = PendingConversation::from_mls_group(group, self.clone())
             .await
@@ -127,8 +138,6 @@ impl TransactionContext {
             group_info,
             encrypted_message: None,
         };
-
-        let id = ConversationId::from(new_group_id);
 
         Ok((commit_bundle, id, pending_conversation))
     }
