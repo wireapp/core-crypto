@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-d8057e24.js";
+            window.path_to_searchindex_js = "searchindex-eb9d350a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-1c113b1d.js"></script>
@@ -184,10 +184,28 @@
 <li><a href="https://www.npmjs.com/package/@wireapp/core-crypto-native">@wireapp/core-crypto-native</a> for native javascript
 runtimes.</li>
 </ul>
-<h2 id="jvm--kmp"><a class="header" href="#jvm--kmp">JVM / KMP</a></h2>
-<p>Java bindings are published <a href="https://central.sonatype.com/artifact/com.wire/core-crypto-jvm">on Sonatype</a>.</p>
-<h2 id="android"><a class="header" href="#android">Android</a></h2>
-<p>Android bindings are published <a href="https://central.sonatype.com/artifact/com.wire/core-crypto-android">on Sonatype</a>.</p>
+<h2 id="kotlin-jvm--android--kmp"><a class="header" href="#kotlin-jvm--android--kmp">Kotlin (JVM / Android / KMP)</a></h2>
+<p>Kotlin bindings are published to Wire’s Maven repository, <a href="https://maven.wire.com">https://maven.wire.com</a>, in the <code>com.wire</code> group:</p>
+<ul>
+<li><code>core-crypto-jvm</code> for the JVM</li>
+<li><code>core-crypto-android</code> for Android</li>
+<li><code>core-crypto-kmp</code> for Kotlin Multiplatform</li>
+</ul>
+<p>Add the repository to your build:</p>
+<pre><code class="language-kotlin">repositories {
+    maven { url = uri("https://maven.wire.com") }
+}
+</code></pre>
+<p>or, for Maven:</p>
+<pre><code class="language-xml">&lt;repositories&gt;
+    &lt;repository&gt;
+        &lt;id&gt;wire&lt;/id&gt;
+        &lt;url&gt;https://maven.wire.com&lt;/url&gt;
+    &lt;/repository&gt;
+&lt;/repositories&gt;
+</code></pre>
+<p>Earlier releases were published to Maven Central, where they remain; keep <code>mavenCentral()</code> among your repositories to
+resolve them.</p>
 <h2 id="swift"><a class="header" href="#swift">Swift</a></h2>
 <p>Swift bindings are published as a pair of <code>.xcframework.zip</code> files on the
 <a href="https://github.com/wireapp/core-crypto/releases/latest">Github release</a>.</p>
