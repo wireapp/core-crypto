@@ -24,6 +24,6 @@ jobs:
         uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
         with:
           tool: nextest
-      - run: cargo nextest run --locked --all-features --no-fail-fast --retries 5
+      - run: cargo nextest run --release --locked --all-features --no-fail-fast --retries 5
         # certain tests are flaky when run in parallel like this, but
         # experiments suggest 5 is enough retries that they'll generally pass eventually
