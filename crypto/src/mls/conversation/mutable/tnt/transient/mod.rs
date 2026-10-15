@@ -146,7 +146,41 @@ fn transient_message_secrets(
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::*;
+    use tls_codec::{Deserialize as _, Serialize as _};
+
+    use crate::{
+        mls::conversation::mutable::tnt::{TntMessage, TntMessageBody},
+        test_utils::*,
+    };
+
+    /// The spec embeds the AAD at the start of the signed content, so the serialized AAD must be a prefix of the
+    /// serialized message.
+    #[apply(all_cred_cipher)]
+    async fn transient_message_aad_is_prefix_of_wire_format(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+
+        let encrypted = conversation
+            .guard()
+            .await
+            .encrypt_transient(b"This is a transient message".to_vec())
+            .await
+            .unwrap();
+
+        let TntMessage { content, .. } = TntMessage::tls_deserialize_exact(&encrypted).unwrap();
+        let TntMessageBody::Transient(transient) = &content.body else {
+            panic!("expected a transient message");
+        };
+        let aad = transient
+            .aad(content.protocol_version)
+            .tls_serialize_detached()
+            .unwrap();
+
+        assert!(
+            encrypted.starts_with(&aad),
+            "the serialized AAD must be a prefix of the serialized transient message"
+        );
+    }
 
     #[apply(all_cred_cipher)]
     async fn can_decrypt_transient_message(case: TestContext) {
