@@ -211,6 +211,9 @@ mod tests_impl {
             StoredEpochEncryptionKeypair { conversation_id, .. } => {
                 Some(conversation_id.clone())
             },
+            MlsPendingMessage { conversation_id, .. } => {
+                Some(conversation_id.clone())
+            },
             ||=> None,
         });
 
@@ -320,6 +323,9 @@ mod tests_impl {
                 Some(conversation_id.clone())
             },
             StoredEpochEncryptionKeypair { conversation_id, .. } => {
+                Some(conversation_id.clone())
+            },
+            MlsPendingMessage { conversation_id, .. } => {
                 Some(conversation_id.clone())
             },
             ||=> None,
@@ -481,6 +487,9 @@ mod tests_impl {
                     Some(conversation_id.clone())
                 },
                 StoredEpochEncryptionKeypair { conversation_id, .. } => {
+                    Some(conversation_id.clone())
+                },
+                MlsPendingMessage { conversation_id, .. } => {
                     Some(conversation_id.clone())
                 },
                 ||=> None,

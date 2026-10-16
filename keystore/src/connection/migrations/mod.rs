@@ -276,6 +276,19 @@ pub(crate) mod test {
         schema_version: u16,
         seed: impl FnOnce(&rusqlite::Connection),
     ) -> std::sync::Arc<Database> {
+        seed_then_migrate_to(path, key, schema_version, MigrationTarget::Latest, seed).await
+    }
+
+    /// Like [`seed_then_migrate`], but stops migrating at `target`.
+    ///
+    /// For tests of one migration's behaviour which a later migration deliberately changes.
+    async fn seed_then_migrate_to(
+        path: &str,
+        key: &DatabaseKey,
+        schema_version: u16,
+        target: MigrationTarget,
+        seed: impl FnOnce(&rusqlite::Connection),
+    ) -> std::sync::Arc<Database> {
         {
             let db = Database::open_at_schema_version(path, key, MigrationTarget::Version(schema_version))
                 .await
@@ -283,7 +296,10 @@ pub(crate) mod test {
             let conn = db.conn().await;
             seed(&conn);
         }
-        Database::open(path, key).await.expect("reopening fully migrated")
+        Database::open_at_schema_version(path, key, target)
+            .await
+            .expect("reopening migrated to the target version")
+            .into()
     }
 
     /// The storage class and length of a stored key, so that a failure says *why* it failed.
@@ -696,8 +712,12 @@ r9IJmL6kDQ==
                 .expect("inserting a pre-migration pending message");
             }
 
-            // reopening runs V31, which must backfill a primary key the entity agrees with
-            let db = Database::open(path, &key).await.unwrap();
+            // reopening runs V31, which must backfill a primary key the entity agrees with.
+            // Stop there: the V39 meta migration drops the group, whose dummy state can't be
+            // deserialized, and V44 then drops the message along with it.
+            let db = Database::open_at_schema_version(path, &key, MigrationTarget::Version(31))
+                .await
+                .unwrap();
             let conn = db.conn().await;
 
             let migrated = MlsPendingMessage::load_all(&conn).expect("loading migrated pending messages");
@@ -739,6 +759,9 @@ r9IJmL6kDQ==
     /// The seed plants one the same way, by turning foreign keys off for the insert. There is no other way
     /// to create a row which the pre-V31 schema forbids, which is the point: what the schema forbade is
     /// exactly what the code above it was trying to store.
+    ///
+    /// The test stops at V31. V44 deliberately drops a message like this one if its conversation is absent
+    /// from `mls_groups`, because by then nothing can reach it.
     #[test]
     fn v31_migrates_a_pending_message_whose_conversation_is_not_a_pending_group() {
         const CONVERSATION_ID: &[u8] = b"an established conversation, absent from mls_pending_groups";
@@ -748,7 +771,7 @@ r9IJmL6kDQ==
         let path = db_file.path().to_str().unwrap();
 
         smol::block_on(async {
-            let db = seed_then_migrate(path, &key, 30, |conn| {
+            let db = seed_then_migrate_to(path, &key, 30, MigrationTarget::Version(31), |conn| {
                 conn.pragma_update(None, "foreign_keys", "OFF")
                     .expect("disabling foreign keys so that the orphan row can be planted at all");
                 conn.execute(
@@ -792,7 +815,7 @@ r9IJmL6kDQ==
         let path = db_file.path().to_str().unwrap();
 
         smol::block_on(async {
-            let db = seed_then_migrate(path, &key, 30, |conn| {
+            let db = seed_then_migrate_to(path, &key, 30, MigrationTarget::Version(31), |conn| {
                 // V7's foreign key is still in force at this version, so the parent row has to exist.
                 conn.execute(
                     "INSERT INTO mls_pending_groups (id, state, cfg) VALUES (?, ?, ?)",
