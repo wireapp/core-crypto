@@ -289,7 +289,7 @@ impl PendingConversation {
         }
 
         // cleanup the pending group we no longer need
-        self.clear().await?;
+        self.clear()?;
 
         Ok(pending_messages)
     }
@@ -300,7 +300,7 @@ impl PendingConversation {
     ///
     /// # Errors
     /// Errors resulting from the KeyStore calls
-    pub(crate) async fn clear(&mut self) -> Result<()> {
+    pub(crate) fn clear(&mut self) -> Result<()> {
         let context = self
             .context
             .inner()
@@ -354,7 +354,7 @@ mod tests {
             assert_eq!(counts.pending_messages, 1, "Alice's message must have been buffered");
 
             // The DS rejects Bob's commit, so he gives up on the join.
-            pending_conversation.clear().await.unwrap();
+            pending_conversation.clear().unwrap();
 
             drop(conversation);
             bob.commit_transaction().await;

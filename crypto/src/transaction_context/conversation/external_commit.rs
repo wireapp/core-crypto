@@ -322,7 +322,7 @@ mod tests {
             let (_, mut pending_conversation) = conversation.external_join_unmerged(&bob).await;
 
             // But for some reason, Bob wants to abort joining the group
-            pending_conversation.clear().await.unwrap();
+            pending_conversation.clear().unwrap();
 
             let final_count = alice.transaction.count_entities().await;
             assert_eq!(initial_count, final_count);
