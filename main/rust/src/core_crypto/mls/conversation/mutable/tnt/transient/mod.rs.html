@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crypto/src/mls/conversation/mutable/tnt/transient/mod.rs`."><title>mod.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../../../static.files/rustdoc-0c87338a.css"><meta name="rustdoc-vars" data-root-path="../../../../../../../" data-static-root-path="../../../../../../../static.files/" data-current-crate="core_crypto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.99.0 (b940084d7 2026-09-28)" data-channel="1.99.0" data-search-js="search-cf4fc35e.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../../../src-files.js"></script><script defer src="../../../../../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core_crypto/mls/conversation/mutable/tnt/transient/</div>mod.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">mod </span>decrypt;
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crypto/src/mls/conversation/mutable/tnt/transient/mod.rs`."><title>mod.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../../../static.files/rustdoc-0c87338a.css"><meta name="rustdoc-vars" data-root-path="../../../../../../../" data-static-root-path="../../../../../../../static.files/" data-current-crate="core_crypto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.99.1 (58cf8f9c3 2026-10-13)" data-channel="1.99.1" data-search-js="search-cf4fc35e.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../../../src-files.js"></script><script defer src="../../../../../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core_crypto/mls/conversation/mutable/tnt/transient/</div>mod.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">mod </span>decrypt;
 <a href=#2 id=2 data-nosnippet>2</a><span class="kw">mod </span>encrypt;
 <a href=#3 id=3 data-nosnippet>3</a>
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use </span>const_format::concatcp;
@@ -9,7 +9,7 @@
 <a href=#9 id=9 data-nosnippet>9</a><span class="kw">use </span>openmls_traits::OpenMlsCryptoProvider;
 <a href=#10 id=10 data-nosnippet>10</a><span class="kw">use </span>tls_codec::{SecretVLBytes, Serialize <span class="kw">as _</span>, TlsDeserialize, TlsSerialize, TlsSize};
 <a href=#11 id=11 data-nosnippet>11</a>
-<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
+<a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span><span class="kw">super</span>::Result;
 <a href=#13 id=13 data-nosnippet>13</a><span class="kw">use crate</span>::{
 <a href=#14 id=14 data-nosnippet>14</a>    OpenMlsError, TlsCodecError,
 <a href=#15 id=15 data-nosnippet>15</a>    mls::{
@@ -23,11 +23,11 @@
 <a href=#23 id=23 data-nosnippet>23</a></span><span class="kw">struct </span>TransientMessageAad {
 <a href=#24 id=24 data-nosnippet>24</a>    protocol_version: ProtocolVersion,
 <a href=#25 id=25 data-nosnippet>25</a>    wire_format: TntWireFormat,
-<a href=#26 id=26 data-nosnippet>26</a>    sender: LeafNodeIndex,
-<a href=#27 id=27 data-nosnippet>27</a>    counter: TntMessageCounter,
-<a href=#28 id=28 data-nosnippet>28</a>    <span class="doccomment">/// The mls group context (&lt;https://www.rfc-editor.org/info/rfc9420/#name-group-context&gt;) contains the epoch and
-<a href=#29 id=29 data-nosnippet>29</a>    /// group id, so we don't need those in additional fields here.
-<a href=#30 id=30 data-nosnippet>30</a>    </span>group_context: GroupContext,
+<a href=#26 id=26 data-nosnippet>26</a>    <span class="doccomment">/// The mls group context (&lt;https://www.rfc-editor.org/info/rfc9420/#name-group-context&gt;) contains the epoch and
+<a href=#27 id=27 data-nosnippet>27</a>    /// group id, so we don't need those in additional fields here.
+<a href=#28 id=28 data-nosnippet>28</a>    </span>group_context: GroupContext,
+<a href=#29 id=29 data-nosnippet>29</a>    sender: LeafNodeIndex,
+<a href=#30 id=30 data-nosnippet>30</a>    counter: TntMessageCounter,
 <a href=#31 id=31 data-nosnippet>31</a>}
 <a href=#32 id=32 data-nosnippet>32</a>
 <a href=#33 id=33 data-nosnippet>33</a><span class="kw">impl </span>TransientMessageAad {
@@ -53,11 +53,11 @@
 <a href=#53 id=53 data-nosnippet>53</a>/// mls-rs, we're going to use mls-rs types.
 <a href=#54 id=54 data-nosnippet>54</a></span><span class="attr">#[derive(TlsSize, TlsSerialize, TlsDeserialize, derive_more::Constructor)]
 <a href=#55 id=55 data-nosnippet>55</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>TransientMessage {
-<a href=#56 id=56 data-nosnippet>56</a>    sender: LeafNodeIndex,
-<a href=#57 id=57 data-nosnippet>57</a>    counter: TntMessageCounter,
-<a href=#58 id=58 data-nosnippet>58</a>    <span class="doccomment">/// The mls group context (&lt;https://www.rfc-editor.org/info/rfc9420/#name-group-context&gt;) contains the epoch and
-<a href=#59 id=59 data-nosnippet>59</a>    /// group id, so we don't need those in additional fields here.
-<a href=#60 id=60 data-nosnippet>60</a>    </span>group_context: GroupContext,
+<a href=#56 id=56 data-nosnippet>56</a>    <span class="doccomment">/// The mls group context (&lt;https://www.rfc-editor.org/info/rfc9420/#name-group-context&gt;) contains the epoch and
+<a href=#57 id=57 data-nosnippet>57</a>    /// group id, so we don't need those in additional fields here.
+<a href=#58 id=58 data-nosnippet>58</a>    </span>group_context: GroupContext,
+<a href=#59 id=59 data-nosnippet>59</a>    sender: LeafNodeIndex,
+<a href=#60 id=60 data-nosnippet>60</a>    counter: TntMessageCounter,
 <a href=#61 id=61 data-nosnippet>61</a>    <span class="doccomment">/// AEAD-encrypted with an MLS exporter secret. An additional authentication layer is
 <a href=#62 id=62 data-nosnippet>62</a>    /// provided by the signature over the entire message. Before encryption, the plaintext is padded.
 <a href=#63 id=63 data-nosnippet>63</a>    </span>payload: Vec&lt;u8&gt;,
@@ -80,7 +80,7 @@
 <a href=#80 id=80 data-nosnippet>80</a>        }
 <a href=#81 id=81 data-nosnippet>81</a>    }
 <a href=#82 id=82 data-nosnippet>82</a>
-<a href=#83 id=83 data-nosnippet>83</a>    <span class="kw">fn </span>epoch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; GroupEpoch {
+<a href=#83 id=83 data-nosnippet>83</a>    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>epoch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; GroupEpoch {
 <a href=#84 id=84 data-nosnippet>84</a>        <span class="self">self</span>.group_context.epoch()
 <a href=#85 id=85 data-nosnippet>85</a>    }
 <a href=#86 id=86 data-nosnippet>86</a>
@@ -146,68 +146,102 @@
 <a href=#146 id=146 data-nosnippet>146</a>
 <a href=#147 id=147 data-nosnippet>147</a><span class="attr">#[cfg(test)]
 <a href=#148 id=148 data-nosnippet>148</a></span><span class="kw">mod </span>tests {
-<a href=#149 id=149 data-nosnippet>149</a>    <span class="kw">use </span><span class="kw">crate</span>::test_utils::<span class="kw-2">*</span>;
+<a href=#149 id=149 data-nosnippet>149</a>    <span class="kw">use </span>tls_codec::{Deserialize <span class="kw">as _</span>, Serialize <span class="kw">as _</span>};
 <a href=#150 id=150 data-nosnippet>150</a>
-<a href=#151 id=151 data-nosnippet>151</a>    <span class="attr">#[apply(all_cred_cipher)]
-<a href=#152 id=152 data-nosnippet>152</a>    </span><span class="kw">async fn </span>can_decrypt_transient_message(case: TestContext) {
-<a href=#153 id=153 data-nosnippet>153</a>        <span class="kw">let </span>[alice, bob] = case.sessions().<span class="kw">await</span>;
-<a href=#154 id=154 data-nosnippet>154</a>        <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>bob]).<span class="kw">await</span>;
+<a href=#151 id=151 data-nosnippet>151</a>    <span class="kw">use crate</span>::{
+<a href=#152 id=152 data-nosnippet>152</a>        mls::conversation::mutable::tnt::{TntMessage, TntMessageBody},
+<a href=#153 id=153 data-nosnippet>153</a>        test_utils::<span class="kw-2">*</span>,
+<a href=#154 id=154 data-nosnippet>154</a>    };
 <a href=#155 id=155 data-nosnippet>155</a>
-<a href=#156 id=156 data-nosnippet>156</a>        <span class="kw">let </span>message = <span class="string">b"This is a transient message"</span>;
-<a href=#157 id=157 data-nosnippet>157</a>        <span class="kw">let </span>encrypted = conversation
-<a href=#158 id=158 data-nosnippet>158</a>            .guard()
-<a href=#159 id=159 data-nosnippet>159</a>            .<span class="kw">await
-<a href=#160 id=160 data-nosnippet>160</a>            </span>.encrypt_transient(message.to_vec())
-<a href=#161 id=161 data-nosnippet>161</a>            .<span class="kw">await
-<a href=#162 id=162 data-nosnippet>162</a>            </span>.unwrap();
-<a href=#163 id=163 data-nosnippet>163</a>        <span class="macro">assert_ne!</span>(<span class="kw-2">&amp;</span>message, <span class="kw-2">&amp;</span>encrypted.as_slice());
-<a href=#164 id=164 data-nosnippet>164</a>
-<a href=#165 id=165 data-nosnippet>165</a>        <span class="kw">let </span>decrypted = conversation
-<a href=#166 id=166 data-nosnippet>166</a>            .guard_of(<span class="kw-2">&amp;</span>bob)
+<a href=#156 id=156 data-nosnippet>156</a>    <span class="doccomment">/// The spec embeds the AAD at the start of the signed content, so the serialized AAD must be a prefix of the
+<a href=#157 id=157 data-nosnippet>157</a>    /// serialized message.
+<a href=#158 id=158 data-nosnippet>158</a>    </span><span class="attr">#[apply(all_cred_cipher)]
+<a href=#159 id=159 data-nosnippet>159</a>    </span><span class="kw">async fn </span>transient_message_aad_is_prefix_of_wire_format(case: TestContext) {
+<a href=#160 id=160 data-nosnippet>160</a>        <span class="kw">let </span>[alice, bob] = case.sessions().<span class="kw">await</span>;
+<a href=#161 id=161 data-nosnippet>161</a>        <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>bob]).<span class="kw">await</span>;
+<a href=#162 id=162 data-nosnippet>162</a>
+<a href=#163 id=163 data-nosnippet>163</a>        <span class="kw">let </span>encrypted = conversation
+<a href=#164 id=164 data-nosnippet>164</a>            .guard()
+<a href=#165 id=165 data-nosnippet>165</a>            .<span class="kw">await
+<a href=#166 id=166 data-nosnippet>166</a>            </span>.encrypt_transient(<span class="string">b"This is a transient message"</span>.to_vec())
 <a href=#167 id=167 data-nosnippet>167</a>            .<span class="kw">await
-<a href=#168 id=168 data-nosnippet>168</a>            </span>.decrypt_message(encrypted)
-<a href=#169 id=169 data-nosnippet>169</a>            .<span class="kw">await
-<a href=#170 id=170 data-nosnippet>170</a>            </span>.unwrap()
-<a href=#171 id=171 data-nosnippet>171</a>            .into_transient()
-<a href=#172 id=172 data-nosnippet>172</a>            .unwrap()
-<a href=#173 id=173 data-nosnippet>173</a>            .plaintext;
-<a href=#174 id=174 data-nosnippet>174</a>
-<a href=#175 id=175 data-nosnippet>175</a>        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>decrypted, <span class="kw-2">&amp;</span>message);
-<a href=#176 id=176 data-nosnippet>176</a>    }
-<a href=#177 id=177 data-nosnippet>177</a>
-<a href=#178 id=178 data-nosnippet>178</a>    <span class="attr">#[apply(all_cred_cipher)]
-<a href=#179 id=179 data-nosnippet>179</a>    </span><span class="kw">async fn </span>cant_decrypt_same_transient_message_twice(case: TestContext) {
-<a href=#180 id=180 data-nosnippet>180</a>        <span class="kw">let </span>[alice, bob] = case.sessions().<span class="kw">await</span>;
-<a href=#181 id=181 data-nosnippet>181</a>        <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>bob]).<span class="kw">await</span>;
-<a href=#182 id=182 data-nosnippet>182</a>
-<a href=#183 id=183 data-nosnippet>183</a>        <span class="kw">let </span>message = <span class="string">b"This is a transient message"</span>;
-<a href=#184 id=184 data-nosnippet>184</a>        <span class="kw">let </span>encrypted = conversation
-<a href=#185 id=185 data-nosnippet>185</a>            .guard()
-<a href=#186 id=186 data-nosnippet>186</a>            .<span class="kw">await
-<a href=#187 id=187 data-nosnippet>187</a>            </span>.encrypt_transient(message.to_vec())
-<a href=#188 id=188 data-nosnippet>188</a>            .<span class="kw">await
-<a href=#189 id=189 data-nosnippet>189</a>            </span>.unwrap();
-<a href=#190 id=190 data-nosnippet>190</a>        <span class="macro">assert_ne!</span>(<span class="kw-2">&amp;</span>message, <span class="kw-2">&amp;</span>encrypted.as_slice());
-<a href=#191 id=191 data-nosnippet>191</a>
-<a href=#192 id=192 data-nosnippet>192</a>        <span class="kw">let </span>decrypted = conversation
-<a href=#193 id=193 data-nosnippet>193</a>            .guard_of(<span class="kw-2">&amp;</span>bob)
-<a href=#194 id=194 data-nosnippet>194</a>            .<span class="kw">await
-<a href=#195 id=195 data-nosnippet>195</a>            </span>.decrypt_message(<span class="kw-2">&amp;</span>encrypted)
-<a href=#196 id=196 data-nosnippet>196</a>            .<span class="kw">await
-<a href=#197 id=197 data-nosnippet>197</a>            </span>.unwrap()
-<a href=#198 id=198 data-nosnippet>198</a>            .into_transient()
-<a href=#199 id=199 data-nosnippet>199</a>            .unwrap()
-<a href=#200 id=200 data-nosnippet>200</a>            .plaintext;
-<a href=#201 id=201 data-nosnippet>201</a>
-<a href=#202 id=202 data-nosnippet>202</a>        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>decrypted, <span class="kw-2">&amp;</span>message);
-<a href=#203 id=203 data-nosnippet>203</a>
-<a href=#204 id=204 data-nosnippet>204</a>        <span class="kw">let </span>error = conversation
-<a href=#205 id=205 data-nosnippet>205</a>            .guard_of(<span class="kw-2">&amp;</span>bob)
-<a href=#206 id=206 data-nosnippet>206</a>            .<span class="kw">await
-<a href=#207 id=207 data-nosnippet>207</a>            </span>.decrypt_message(encrypted)
-<a href=#208 id=208 data-nosnippet>208</a>            .<span class="kw">await
-<a href=#209 id=209 data-nosnippet>209</a>            </span>.unwrap_err();
-<a href=#210 id=210 data-nosnippet>210</a>        <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, <span class="kw">crate</span>::mls::conversation::Error::DuplicateMessage));
-<a href=#211 id=211 data-nosnippet>211</a>    }
-<a href=#212 id=212 data-nosnippet>212</a>}
+<a href=#168 id=168 data-nosnippet>168</a>            </span>.unwrap();
+<a href=#169 id=169 data-nosnippet>169</a>
+<a href=#170 id=170 data-nosnippet>170</a>        <span class="kw">let </span>TntMessage { content, .. } = TntMessage::tls_deserialize_exact(<span class="kw-2">&amp;</span>encrypted).unwrap();
+<a href=#171 id=171 data-nosnippet>171</a>        <span class="kw">let </span>TntMessageBody::Transient(transient) = <span class="kw-2">&amp;</span>content.body <span class="kw">else </span>{
+<a href=#172 id=172 data-nosnippet>172</a>            <span class="macro">panic!</span>(<span class="string">"expected a transient message"</span>);
+<a href=#173 id=173 data-nosnippet>173</a>        };
+<a href=#174 id=174 data-nosnippet>174</a>        <span class="kw">let </span>aad = transient
+<a href=#175 id=175 data-nosnippet>175</a>            .aad(content.protocol_version)
+<a href=#176 id=176 data-nosnippet>176</a>            .tls_serialize_detached()
+<a href=#177 id=177 data-nosnippet>177</a>            .unwrap();
+<a href=#178 id=178 data-nosnippet>178</a>
+<a href=#179 id=179 data-nosnippet>179</a>        <span class="macro">assert!</span>(
+<a href=#180 id=180 data-nosnippet>180</a>            encrypted.starts_with(<span class="kw-2">&amp;</span>aad),
+<a href=#181 id=181 data-nosnippet>181</a>            <span class="string">"the serialized AAD must be a prefix of the serialized transient message"
+<a href=#182 id=182 data-nosnippet>182</a>        </span>);
+<a href=#183 id=183 data-nosnippet>183</a>    }
+<a href=#184 id=184 data-nosnippet>184</a>
+<a href=#185 id=185 data-nosnippet>185</a>    <span class="attr">#[apply(all_cred_cipher)]
+<a href=#186 id=186 data-nosnippet>186</a>    </span><span class="kw">async fn </span>can_decrypt_transient_message(case: TestContext) {
+<a href=#187 id=187 data-nosnippet>187</a>        <span class="kw">let </span>[alice, bob] = case.sessions().<span class="kw">await</span>;
+<a href=#188 id=188 data-nosnippet>188</a>        <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>bob]).<span class="kw">await</span>;
+<a href=#189 id=189 data-nosnippet>189</a>
+<a href=#190 id=190 data-nosnippet>190</a>        <span class="kw">let </span>message = <span class="string">b"This is a transient message"</span>;
+<a href=#191 id=191 data-nosnippet>191</a>        <span class="kw">let </span>encrypted = conversation
+<a href=#192 id=192 data-nosnippet>192</a>            .guard()
+<a href=#193 id=193 data-nosnippet>193</a>            .<span class="kw">await
+<a href=#194 id=194 data-nosnippet>194</a>            </span>.encrypt_transient(message.to_vec())
+<a href=#195 id=195 data-nosnippet>195</a>            .<span class="kw">await
+<a href=#196 id=196 data-nosnippet>196</a>            </span>.unwrap();
+<a href=#197 id=197 data-nosnippet>197</a>        <span class="macro">assert_ne!</span>(<span class="kw-2">&amp;</span>message, <span class="kw-2">&amp;</span>encrypted.as_slice());
+<a href=#198 id=198 data-nosnippet>198</a>
+<a href=#199 id=199 data-nosnippet>199</a>        <span class="kw">let </span>decrypted = conversation
+<a href=#200 id=200 data-nosnippet>200</a>            .guard_of(<span class="kw-2">&amp;</span>bob)
+<a href=#201 id=201 data-nosnippet>201</a>            .<span class="kw">await
+<a href=#202 id=202 data-nosnippet>202</a>            </span>.decrypt_message(encrypted)
+<a href=#203 id=203 data-nosnippet>203</a>            .<span class="kw">await
+<a href=#204 id=204 data-nosnippet>204</a>            </span>.unwrap()
+<a href=#205 id=205 data-nosnippet>205</a>            .into_transient()
+<a href=#206 id=206 data-nosnippet>206</a>            .unwrap()
+<a href=#207 id=207 data-nosnippet>207</a>            .plaintext;
+<a href=#208 id=208 data-nosnippet>208</a>
+<a href=#209 id=209 data-nosnippet>209</a>        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>decrypted, <span class="kw-2">&amp;</span>message);
+<a href=#210 id=210 data-nosnippet>210</a>    }
+<a href=#211 id=211 data-nosnippet>211</a>
+<a href=#212 id=212 data-nosnippet>212</a>    <span class="attr">#[apply(all_cred_cipher)]
+<a href=#213 id=213 data-nosnippet>213</a>    </span><span class="kw">async fn </span>cant_decrypt_same_transient_message_twice(case: TestContext) {
+<a href=#214 id=214 data-nosnippet>214</a>        <span class="kw">let </span>[alice, bob] = case.sessions().<span class="kw">await</span>;
+<a href=#215 id=215 data-nosnippet>215</a>        <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice, <span class="kw-2">&amp;</span>bob]).<span class="kw">await</span>;
+<a href=#216 id=216 data-nosnippet>216</a>
+<a href=#217 id=217 data-nosnippet>217</a>        <span class="kw">let </span>message = <span class="string">b"This is a transient message"</span>;
+<a href=#218 id=218 data-nosnippet>218</a>        <span class="kw">let </span>encrypted = conversation
+<a href=#219 id=219 data-nosnippet>219</a>            .guard()
+<a href=#220 id=220 data-nosnippet>220</a>            .<span class="kw">await
+<a href=#221 id=221 data-nosnippet>221</a>            </span>.encrypt_transient(message.to_vec())
+<a href=#222 id=222 data-nosnippet>222</a>            .<span class="kw">await
+<a href=#223 id=223 data-nosnippet>223</a>            </span>.unwrap();
+<a href=#224 id=224 data-nosnippet>224</a>        <span class="macro">assert_ne!</span>(<span class="kw-2">&amp;</span>message, <span class="kw-2">&amp;</span>encrypted.as_slice());
+<a href=#225 id=225 data-nosnippet>225</a>
+<a href=#226 id=226 data-nosnippet>226</a>        <span class="kw">let </span>decrypted = conversation
+<a href=#227 id=227 data-nosnippet>227</a>            .guard_of(<span class="kw-2">&amp;</span>bob)
+<a href=#228 id=228 data-nosnippet>228</a>            .<span class="kw">await
+<a href=#229 id=229 data-nosnippet>229</a>            </span>.decrypt_message(<span class="kw-2">&amp;</span>encrypted)
+<a href=#230 id=230 data-nosnippet>230</a>            .<span class="kw">await
+<a href=#231 id=231 data-nosnippet>231</a>            </span>.unwrap()
+<a href=#232 id=232 data-nosnippet>232</a>            .into_transient()
+<a href=#233 id=233 data-nosnippet>233</a>            .unwrap()
+<a href=#234 id=234 data-nosnippet>234</a>            .plaintext;
+<a href=#235 id=235 data-nosnippet>235</a>
+<a href=#236 id=236 data-nosnippet>236</a>        <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>decrypted, <span class="kw-2">&amp;</span>message);
+<a href=#237 id=237 data-nosnippet>237</a>
+<a href=#238 id=238 data-nosnippet>238</a>        <span class="kw">let </span>error = conversation
+<a href=#239 id=239 data-nosnippet>239</a>            .guard_of(<span class="kw-2">&amp;</span>bob)
+<a href=#240 id=240 data-nosnippet>240</a>            .<span class="kw">await
+<a href=#241 id=241 data-nosnippet>241</a>            </span>.decrypt_message(encrypted)
+<a href=#242 id=242 data-nosnippet>242</a>            .<span class="kw">await
+<a href=#243 id=243 data-nosnippet>243</a>            </span>.unwrap_err();
+<a href=#244 id=244 data-nosnippet>244</a>        <span class="macro">assert!</span>(<span class="macro">matches!</span>(error, <span class="kw">crate</span>::mls::conversation::Error::DuplicateMessage));
+<a href=#245 id=245 data-nosnippet>245</a>    }
+<a href=#246 id=246 data-nosnippet>246</a>}
 </code></pre></div></section></main></body></html>

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["ConversationEpochsOlderThan","ConversationId","ConversationIdRef","MessageRxCounterPk","MessageRxCounterPkRef"]};
+window.SIDEBAR_ITEMS = {"struct":["ConversationEpochsNewerThan","ConversationEpochsOlderThan","ConversationId","ConversationIdRef","MessageRxCounterPk","MessageRxCounterPkRef"]};
