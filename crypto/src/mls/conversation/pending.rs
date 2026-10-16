@@ -321,14 +321,8 @@ mod tests {
 
     /// Abandoning an external join abandons the messages buffered while it was pending.
     ///
-    /// [`PendingConversation::clear`] deletes the pending group and nothing else. It is what runs when the
-    /// delivery service rejects our external join commit, and any message buffered while we waited for
-    /// that answer outlives the pending conversation it was buffered for. The row is then unreachable:
-    /// buffered messages are only ever read on behalf of a conversation, and neither a pending nor an
-    /// established one exists under this id.
-    ///
-    /// This is the same defect as `wipe_abandons_buffered_messages`, on the other kind of conversation
-    /// deletion. Both are worth pinning, because the two deletion paths share no code.
+    /// [`PendingConversation::clear`] deletes the pending group and cascades to several dependent tables.
+    /// Ensure those deletions propagate.
     #[apply(all_cred_cipher)]
     async fn abandoning_an_external_join_abandons_buffered_messages(case: TestContext) {
         let [alice, mut bob] = case.sessions().await;
