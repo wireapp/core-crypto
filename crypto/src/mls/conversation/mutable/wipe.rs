@@ -57,16 +57,6 @@ mod tests {
     use crate::{mls::conversation::Error, test_utils::*};
 
     /// Wiping a conversation abandons the messages it had buffered.
-    ///
-    /// [`ConversationMut::wipe`] deletes the group and nothing else, so a message buffered for a future
-    /// epoch outlives the conversation it was buffered for. That row is then unreachable: every route to
-    /// a buffered message runs through a conversation, and this conversation no longer exists. It can
-    /// never be restored, and nothing will ever delete it, so the keystore carries it forever.
-    ///
-    /// Nothing in the schema prevents this. `mls_pending_messages.conversation_id` has no foreign key —
-    /// V31 dropped the one it used to have, because a buffered message's conversation may not have a row
-    /// in `mls_groups` at all yet (it arrived before the conversation's own row was persisted) — so
-    /// keeping buffered messages in step with the conversations they belong to is this layer's job.
     #[apply(all_cred_cipher)]
     async fn wipe_abandons_buffered_messages(case: TestContext) {
         Box::pin(async move {
@@ -117,11 +107,6 @@ mod tests {
     }
 
     /// Wiping a conversation abandons the commit it had buffered.
-    ///
-    /// The same defect as [`wipe_abandons_buffered_messages`], one table over: `mls_buffered_commits` is
-    /// keyed by conversation id and is not cleaned up when the conversation is deleted. It gets its own
-    /// test because the two tables are written and cleared by entirely separate code paths, so covering
-    /// one says nothing about the other.
     #[apply(all_cred_cipher)]
     async fn wipe_abandons_buffered_commits(case: TestContext) {
         Box::pin(async move {
