@@ -14,6 +14,8 @@ export class X509CredentialAcquisition extends X509CredentialAcquisitionFfi {
      *
      * Provide `coreCryptoDatabase` if you're using distinct DB instances for `PkiEnvironment` and `CoreCrypto`.
      * Otherwise, the `PkiEnvironment`'s DB will be used to load the full credential.
+     *
+     * @deprecated this function reuses key material. Prefer `new X509CredentialAcquisition(pkiEnvironment, config)`.
      */
     // We're overriding this because UBRN currently doesn't support default parameters, and we want `coreCryptoDatabase`
     // to be optional.
