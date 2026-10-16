@@ -1,7 +1,7 @@
-# Migrating from v10.3.0 or later to Unreleased
+# Migrating from v10 to v11
 
-> [!NOTE]
-> These changes will be relevant with the next release of CoreCrypto.
+This page covers changes that apply to all platforms. Some changes only affect one platform; they are covered on the
+[TypeScript](migration/typescript.md), [Swift](migration/swift.md) and [Kotlin](migration/kotlin.md) pages.
 
 ## DecryptedMessage
 
@@ -81,3 +81,21 @@ when (decryptedMessage) {
 ```
 
 <!-- langtabs-end -->
+
+## Other
+
+1. `e2eiIsPkiEnvSetup` has been removed. You can call `getPkiEnvironment` to see if it is set.
+
+1. `e2eiIsEnabled` has been removed. You can use `findCredentials` to check whether an X509 credential for a given
+   cipher suite exists.
+
+1. `proteusNewPrekey` is deprecated; use `proteusNewPrekeyAuto` instead.
+
+1. `ClientId.deserialize` can now fail. Calling `deserialize` on history client ids throws a `CoreCryptoError`.
+
+1. The documentation for `addCredential` previously stated that credentials registered with a single client must be
+   distinct in credential type, signature scheme, and creation timestamp, and that you therefore had to wait a full
+   second between registrations. This was never true of any released version; we fixed it before releasing 10.0.0. If
+   you added a delay between `addCredential` calls to comply, you can remove it.
+
+1. `CoreCryptoContext.setData` is now a synchronous function, not async.
