@@ -59,15 +59,8 @@ Prekeys are the mechanism that allows a sender to open a Proteus session with a 
 publishes a set of one-time prekey bundles to the delivery service in advance; the sender fetches one and uses it to
 bootstrap the session.
 
-CoreCrypto provides two ways to generate prekeys:
-
-**`proteusNewPrekey(id)`** — Generates a prekey with an explicit numeric ID (a `u16`). Use this when your app manages
-the prekey ID space itself.
-
-**`proteusNewPrekeyAuto()`** — Generates a prekey with an automatically incremented ID and returns both the ID and the
-serialized bundle. Prefer this unless you have a specific reason to control IDs manually.
-
-Both return a CBOR-serialized prekey bundle ready to upload to the delivery service.
+To generate a prekey, call **`proteusNewPrekeyAuto()`**. It picks the prekey ID automatically and returns both the ID
+and a CBOR-serialized prekey bundle, ready to upload to the delivery service.
 
 ### The Last Resort Prekey
 

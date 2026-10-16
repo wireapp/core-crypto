@@ -145,12 +145,12 @@ device:
 <!-- langtabs-start -->
 
 ```typescript
-await ctx.setData(bytes)
+ctx.setData(bytes)
 const bytes = await ctx.getData()
 ```
 
 ```swift
-try await ctx.setData(data: bytes)
+try ctx.setData(data: bytes)
 let bytes = try await ctx.getData()
 ```
 

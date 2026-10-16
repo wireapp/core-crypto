@@ -61,8 +61,9 @@ the platform's secure credential storage.
 All platforms define an async `Database.open` static method accepting a location and key. On platforms with an OS, the
 location is a filesystem path. On WASM, the location is the IndexedDB store name.
 
-All platforms define an async static method to open a transient database in memory. On WASM, this is
-`Database.inMemory`. For Kotlin and Swift, this is an overload of `Database.open`.
+All platforms can also open a transient database in memory. In-memory databases are never encrypted, so they take no
+key. In TypeScript, this is `Database.inMemory()`. For Kotlin and Swift, this is an overload of `Database.open` without
+arguments.
 
 ## Key Rotation
 
@@ -85,14 +86,6 @@ db.updateKey(newKey)
 <!-- langtabs-end -->
 
 This re-encrypts all stored data in place.
-
-## Lifetime and Closing
-
-On browser platforms, explicitly close the database when tearing down:
-
-```typescript
-await db.close()
-```
 
 ## Single-Transaction Constraint
 
