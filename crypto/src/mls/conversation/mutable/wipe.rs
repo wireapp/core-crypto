@@ -48,15 +48,6 @@ impl ConversationMut {
         // transaction context, and holding this guard across it would deadlock.
         drop(conversation_cache);
 
-        // Any message or commit this conversation had buffered is unreachable now that the
-        // conversation is gone, so it has to go with it.
-        self.tx_context
-            .clear_orphaned_conversation_buffers(id)
-            .await
-            .map_err(RecursiveError::context(
-                "clearing buffered messages and commits of a wiped conversation",
-            ))?;
-
         Ok(())
     }
 }
