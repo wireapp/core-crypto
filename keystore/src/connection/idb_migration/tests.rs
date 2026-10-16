@@ -539,12 +539,18 @@ async fn assert_imported_and_migrated(db: &Database, credential_created_at: u64)
         .expect("the intermediate certificate survives the import");
     assert_eq!(intermediate.content, seed::INTERMEDIATE_CERT);
 
+    // Like the epoch keypair below, the pending message belongs to the group family, so it only survives as far
+    // as the V22 checkpoint. V39 drops its pending conversation because the state is opaque bytes, and V44 then
+    // discards the message along with it. `imports_a_database_captured_from_v9_3_4` covers the surviving case,
+    // against a captured pending join whose state really does deserialize.
     let pending_messages = db
         .search::<MlsPendingMessage, _>(ConversationIdRef::new(seed::PENDING_GROUP_ID))
         .await
         .unwrap();
-    assert_eq!(pending_messages.len(), 1, "the pending message survives the import");
-    assert_eq!(pending_messages[0].message, seed::PENDING_MESSAGE);
+    assert!(
+        pending_messages.is_empty(),
+        "V39 drops this pending conversation, so V44 must not leave its pending message behind"
+    );
 
     let credential = db
         .get::<StoredCredential>(&StoredCredentialPk::new(

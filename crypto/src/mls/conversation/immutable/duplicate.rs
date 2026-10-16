@@ -98,7 +98,7 @@ mod tests {
             // an external commit to verify that we can still detect wrong epoch correctly
             let (commit_guard, mut pending_conversation) = conversation.external_join_unmerged(&bob).await;
             let unknown_ext_commit = commit_guard.message();
-            pending_conversation.clear().await.unwrap();
+            pending_conversation.clear().unwrap();
             let conversation = commit_guard.finish();
 
             let commit_guard = conversation.external_join(&bob).await;

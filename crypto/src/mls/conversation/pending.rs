@@ -289,7 +289,7 @@ impl PendingConversation {
         }
 
         // cleanup the pending group we no longer need
-        self.clear().await?;
+        self.clear()?;
 
         Ok(pending_messages)
     }
@@ -300,7 +300,7 @@ impl PendingConversation {
     ///
     /// # Errors
     /// Errors resulting from the KeyStore calls
-    pub(crate) async fn clear(&mut self) -> Result<()> {
+    pub(crate) fn clear(&mut self) -> Result<()> {
         let context = self
             .context
             .inner()
@@ -309,16 +309,6 @@ impl PendingConversation {
         let group_id = self.id();
         PersistedMlsGroup::delete_if_pending(tx, group_id.keystore())
             .map_err(KeystoreError::wrap("deleting pending group by id"))?;
-
-        // Messages buffered while this join was pending are unreachable once it is abandoned, so
-        // they have to go with it. They survive when this conversation also exists as an
-        // established one, which is the case when the abandoned join was an attempt to rejoin.
-        self.context
-            .clear_orphaned_conversation_buffers(self.id())
-            .await
-            .map_err(RecursiveError::context(
-                "clearing buffered messages of an abandoned pending conversation",
-            ))?;
 
         Ok(())
     }
@@ -331,14 +321,8 @@ mod tests {
 
     /// Abandoning an external join abandons the messages buffered while it was pending.
     ///
-    /// [`PendingConversation::clear`] deletes the pending group and nothing else. It is what runs when the
-    /// delivery service rejects our external join commit, and any message buffered while we waited for
-    /// that answer outlives the pending conversation it was buffered for. The row is then unreachable:
-    /// buffered messages are only ever read on behalf of a conversation, and neither a pending nor an
-    /// established one exists under this id.
-    ///
-    /// This is the same defect as `wipe_abandons_buffered_messages`, on the other kind of conversation
-    /// deletion. Both are worth pinning, because the two deletion paths share no code.
+    /// [`PendingConversation::clear`] deletes the pending group and cascades to several dependent tables.
+    /// Ensure those deletions propagate.
     #[apply(all_cred_cipher)]
     async fn abandoning_an_external_join_abandons_buffered_messages(case: TestContext) {
         let [alice, mut bob] = case.sessions().await;
@@ -370,7 +354,7 @@ mod tests {
             assert_eq!(counts.pending_messages, 1, "Alice's message must have been buffered");
 
             // The DS rejects Bob's commit, so he gives up on the join.
-            pending_conversation.clear().await.unwrap();
+            pending_conversation.clear().unwrap();
 
             drop(conversation);
             bob.commit_transaction().await;

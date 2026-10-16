@@ -162,11 +162,17 @@ mod tests {
     use futures_lite::future;
 
     use super::*;
-    use crate::{Database, traits::FetchFromDatabase as _};
+    use crate::{
+        Database,
+        entities::{PersistedMlsGroup, StoredCredential},
+        traits::FetchFromDatabase as _,
+    };
 
     const CONVERSATION_ID: &[u8] = b"conversation which buffers a message";
     const CONVERSATION_ID_REF: &ConversationIdRef = ConversationIdRef::new(CONVERSATION_ID);
     const MESSAGE: &[u8] = b"a message which arrived before we could decrypt it";
+    const OWN_PUBLIC_KEY: &[u8] = b"the public key of the credential the conversation was created with";
+    const OWN_CREDENTIAL_TYPE: u16 = 1;
 
     fn pending_message() -> MlsPendingMessage {
         MlsPendingMessage {
@@ -175,25 +181,56 @@ mod tests {
         }
     }
 
-    /// A buffered message can be committed for a conversation with no row in `mls_groups` at all yet.
+    /// Save an established conversation with id [`CONVERSATION_ID`], which pending messages can refer to.
+    fn save_conversation<'a, Tx>(tx: &'a Tx)
+    where
+        &'a Tx: Into<Transactionlike<'a>>,
+    {
+        StoredCredential {
+            session_id: b"session id".to_vec(),
+            credential: b"our own credential".to_vec(),
+            created_at: 0,
+            ciphersuite: 1,
+            public_key: OWN_PUBLIC_KEY.to_vec(),
+            credential_type: OWN_CREDENTIAL_TYPE,
+            private_key: b"private key".to_vec(),
+        }
+        .save(tx)
+        .unwrap();
+        PersistedMlsGroup {
+            id: CONVERSATION_ID.into(),
+            state: b"group state".to_vec(),
+            epoch: 1,
+            ciphersuite: 1,
+            credential_id: Sha256Hash::hash_from(OWN_PUBLIC_KEY),
+            credential_type: OWN_CREDENTIAL_TYPE,
+            own_leaf_index: 0,
+            is_pending: false,
+            tnt_tx_counter: 0,
+        }
+        .save(tx)
+        .unwrap();
+    }
+
+    /// A buffered message can be committed for a conversation which is established, not pending.
     ///
     /// This table serves two unrelated callers. One is a conversation joined by external commit and not
     /// yet merged; the other is a fully established conversation buffering a message from epoch `n + 1`.
     /// Up to and including V30 the table carried a foreign key onto the then-separate `mls_pending_groups`,
     /// which the second caller could never satisfy, so its saves failed at commit with `FOREIGN KEY
-    /// constraint failed`. V31 drops that constraint, and its comment explains why at length.
+    /// constraint failed`. V31 dropped that constraint, and V44 restored one onto `mls_groups`, which holds
+    /// both kinds of conversation.
     ///
-    /// Every other test here now exercises the same conversation shape, so this property is covered
-    /// several times over. It gets a test of its own regardless: nothing in the schema records the
-    /// relationship between a buffered message and its conversation any more, so this is the only place
-    /// which states that a conversation absent from `mls_groups` is legitimate.
+    /// Every other test here exercises the same conversation shape, so this property is covered several
+    /// times over. It gets a test of its own regardless, because it is the case the old constraint broke.
     #[test]
-    fn can_save_a_pending_message_for_a_conversation_which_is_not_a_pending_group() {
+    fn can_save_a_pending_message_for_an_established_conversation() {
         future::block_on(async {
             let store = Database::open_in_memory().unwrap();
             let primary_key = pending_message().primary_key();
 
             let tx = store.new_transaction().await.unwrap();
+            save_conversation(&*tx);
             pending_message().save(&*tx).unwrap();
             tx.commit().await.unwrap();
 
@@ -218,6 +255,7 @@ mod tests {
             let primary_key = expected.primary_key();
 
             let tx = store.new_transaction().await.unwrap();
+            save_conversation(&*tx);
             pending_message().save(&*tx).unwrap();
             tx.commit().await.unwrap();
 
@@ -246,6 +284,7 @@ mod tests {
             let sibling_key = sibling.primary_key();
 
             let tx = store.new_transaction().await.unwrap();
+            save_conversation(&*tx);
             pending_message().save(&*tx).unwrap();
             sibling.save(&*tx).unwrap();
             tx.commit().await.unwrap();
@@ -277,6 +316,7 @@ mod tests {
             let store = Database::open_in_memory().unwrap();
 
             let tx = store.new_transaction().await.unwrap();
+            save_conversation(&*tx);
             pending_message().save(&*tx).unwrap();
             MlsPendingMessage {
                 conversation_id: CONVERSATION_ID.into(),
@@ -308,6 +348,7 @@ mod tests {
             let primary_key = pending_message().primary_key();
 
             let tx = store.new_transaction().await.unwrap();
+            save_conversation(&*tx);
             pending_message().save(&*tx).unwrap();
             MlsPendingMessage::delete_all_matching(&*tx, CONVERSATION_ID_REF).unwrap();
             tx.commit().await.unwrap();
@@ -340,6 +381,7 @@ mod tests {
 
             // persist a message in an earlier transaction, so the bulk deletion has something to do
             let tx = store.new_transaction().await.unwrap();
+            save_conversation(&*tx);
             stale.save(&*tx).unwrap();
             tx.commit().await.unwrap();
 
@@ -374,6 +416,7 @@ mod tests {
 
             // persist the message in an earlier transaction, so it is on disk rather than cached
             let tx = store.new_transaction().await.unwrap();
+            save_conversation(&*tx);
             pending_message().save(&*tx).unwrap();
             tx.commit().await.unwrap();
 
