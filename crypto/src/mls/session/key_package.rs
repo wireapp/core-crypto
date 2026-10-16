@@ -21,8 +21,7 @@ impl Session {
             .map_err(KeystoreError::wrap("finding all keypackages"))?;
 
         let keypackages = stored_keypackages
-            .iter()
-            .cloned()
+            .into_iter()
             .map(from_stored)
             // if any ref from loading all fails to load now, skip it
             // strictly we could panic, but this is safer--maybe someone removed it concurrently
