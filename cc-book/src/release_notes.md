@@ -1,13 +1,15 @@
 # Release Notes
 
-## Unreleased
+## CoreCrypto 11
 
-- The `thumbprint` of a `WireIdentity` is now always computed with SHA-256, regardless of the ciphersuite. It used to be
-  computed with the ciphersuite's hash algorithm.
+### Unreleased
 
-- CoreCrypto now has support for 11 post-quantum ciphersuites, as defined by the
+- The `thumbprint` of a `WireIdentity` is now always computed with SHA-256, regardless of the cipher suite. It used to
+  be computed with the cipher suite's hash algorithm.
+
+- CoreCrypto now has support for 11 post-quantum cipher suites, as defined by the
   [draft](https://www.ietf.org/archive/id/draft-ietf-mls-pq-ciphersuites-06.html). Specifically, support has been added
-  for the 6 ciphersuites that use hybrid (post-quantum + classical) key-exchange mechanisms:
+  for the 6 cipher suites that use hybrid (post-quantum + classical) key-exchange mechanisms:
 
   - `MLS_128_MLKEM768X25519_AES128GCM_SHA256_Ed25519`
   - `MLS_128_MLKEM768X25519_AES256GCM_SHA384_Ed25519`
@@ -16,7 +18,7 @@
   - `MLS_128_MLKEM768X25519_CHACHA20POLY1305_SHA384_MLDSA44`
   - `MLS_192_MLKEM1024P384_AES256GCM_SHA384_P384`
 
-  as well as the 5 ciphersuites that use pure post-quantum key-exchange mechanisms:
+  as well as the 5 cipher suites that use pure post-quantum key-exchange mechanisms:
 
   - `MLS_128_MLKEM768_AES256GCM_SHA384_Ed25519`
   - `MLS_128_MLKEM768_AES256GCM_SHA384_P256`
@@ -24,13 +26,13 @@
   - `MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65`
   - `MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87`
 
-  Note that only 3 of the 11 ciphersuites use post-quantum signatures (ML-DSA), and that using x509 credentials with
+  Note that only 3 of the 11 cipher suites use post-quantum signatures (ML-DSA), and that using x509 credentials with
   post-quantum signatures is not yet supported.
 
 - `e2eiIsPkiEnvSetup` has been removed. You can call `getPkiEnvironment` to see if it is set.
 
-- `e2eiIsEnabled` has been removed. You can use `findCredentials` to check whether an X509 credential for a given
-  ciphersuite exists.
+- `e2eiIsEnabled` has been removed. You can use `findCredentials` to check whether an X509 credential for a given cipher
+  suite exists.
 
 - `proteusNewPrekey` is deprecated; use `proteusNewPrekeyAuto` instead.
 
@@ -41,27 +43,6 @@
   a client id is not a hex-encoded binary value, and only the unpadded form appears in a client id.
 
 - `ClientId.deserialize` can now fail. Calling `deserialize` on history client ids throws a `CoreCryptoError`.
-
-- `reseed` now requires the entropy seed to be exactly 32 bytes long. It previously accepted any seed of at least 32
-  bytes and silently used only the first 32, discarding the rest; a caller who gathered more entropy than CoreCrypto
-  consumes had no way to discover that most of it was ignored. Seeds shorter than 32 bytes were already rejected, and a
-  32-byte seed behaves exactly as before, so only callers who were passing a longer seed are affected. Note also that
-  `reseed` replaces the CSPRNG's state outright rather than mixing the new seed into it.
-
-- TypeScript: browser and native packages are now released separately under `@wireapp/core-crypto` and
-  `@wireapp/core-crypto-native`, respectively.
-
-- iOS/macOS: The keystore path is no longer required to stay the same across CoreCrypto instances. In previous versions
-  of CoreCrypto, the keystore path was used to look up salt values for the database encryption. This is no longer the
-  case, and the salt values are now stored in a file in the same directory as the CoreCrypto database. For existing
-  clients the database must be opened once with the old path in order for a migration to be performed.
-
-- Kotlin: Timestamps (Instant) are now using `kotlin.time` instead of `kotlinx.datetime`.
-
-- Kotlin: transactions are now cancellable. This applies to all Kotlin bindings: jvm, android and kmp.
-
-- Kotlin(iOS): The macos/ios targets now have a file lock guarding against concurrent access from separate CoreCrypto
-  instances.
 
 - CoreCrypto now supports encrypting and decrypting transient messages. Transient messages are encrypted and decrypted
   for/from group members without affecting the cryptographic state of the group, which enables their use case: to be
@@ -76,7 +57,43 @@
   second between registrations. This was never true of any released version; we fixed it before releasing 10.0.0. If you
   added a delay between `addCredential` calls to comply, you can remove it.
 
-- `CoreCryptoContext.setData` and `Database.openInMemory` are now synchronous functions, not async.
+- `CoreCryptoContext.setData` is now a synchronous function, not async.
+
+#### TypeScript
+
+- browser and native packages are now released separately under `@wireapp/core-crypto` and
+  `@wireapp/core-crypto-native`, respectively.
+
+- `Database.inMemory` is now a synchronous function, not async.
+
+- `Database.close()` is deprecated.
+
+- Browser: `reseed` now requires the entropy seed to be exactly 32 bytes long. It previously accepted any seed of at
+  least 32 bytes and silently used only the first 32, discarding the rest; a caller who gathered more entropy than
+  CoreCrypto consumes had no way to discover that portions were ignored. Seeds shorter than 32 bytes were already
+  rejected, and a 32-byte seed behaves exactly as before, so only callers who were passing a longer seed are affected.
+  Note also that `reseed` replaces the CSPRNG's state outright rather than mixing the new seed into it.
+
+#### iOS/Swift
+
+- The database path is no longer required to stay the same across CoreCrypto instances. In previous versions of
+  CoreCrypto, the database path was used to look up salt values for the database encryption. This is no longer the case,
+  and the salt values are now stored in a file in the same directory as the CoreCrypto database. For existing clients
+  the database must be opened once with the old path in order for a migration to be performed.
+
+#### Kotlin
+
+- the JVM, Android and KMP packages are now published to Wire's Maven repository, <https://maven.wire.com>, instead of
+  Maven Central. Add `maven { url = uri("https://maven.wire.com") }` to your repositories. Earlier releases remain on
+  Maven Central.
+
+- Timestamps (Instant) are now using `kotlin.time` instead of `kotlinx.datetime`.
+
+- transactions are now cancellable. This applies to all Kotlin bindings: jvm, android and kmp.
+
+- The macos/ios targets now have a file lock guarding against concurrent access from separate CoreCrypto instances.
+
+#### Bug Fixes
 
 - Fixed a bug in the data migrations. This applies to clients upgrading from v9. The bug caused exactly one credential
   to be migrated to the v10 data format, effectively at random. The fix causes them all to be propagated.
@@ -84,10 +101,6 @@
 - Fixed a bug in the data migrations. This applies to clients upgrading from v9. This bug caused e2ei-enrolled clients
   to lose all credentials for which both the basic and x509 versions were present in the database, causing them to
   additionally lose all conversations using those credentials.
-
-- Kotlin: the JVM, Android and KMP packages are now published to Wire's Maven repository, <https://maven.wire.com>,
-  instead of Maven Central. Add `maven { url = uri("https://maven.wire.com") }` to your repositories. Earlier releases
-  remain on Maven Central.
 
 ## CoreCrypto 10
 
