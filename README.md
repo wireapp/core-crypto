@@ -87,6 +87,18 @@ express prior written consent of Wire Swiss GmbH.
   [sign commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits)
 - fd: <https://github.com/sharkdp/fd>
 
+#### Nix development shell<a name="nix-development-shell"></a>
+
+On Linux, enter the Nix development shell with:
+
+```sh
+nix develop
+```
+
+The shell provides Rustup, which selects the pinned toolchain and targets from `rust-toolchain.toml`, along with the
+native build tools used by the Rust workspace. It also includes `cargo-nextest`. Platform SDKs and tools for Android,
+iOS, JVM, and browser testing still need to be installed separately as described below.
+
 #### Pre-commit<a name="pre-commit"></a>
 
 - Install the [`pre-commit` framework](https://pre-commit.com/)
