@@ -1,4 +1,4 @@
-# Migrating to Unreleased: TypeScript
+# Migrating to CC 11: TypeScript
 
 See the [common migration guide](../migration-guide.md) for changes that apply to all platforms.
 
@@ -22,3 +22,9 @@ import { ... } from "@wireapp/core-crypto-native";
 
 Deprecated `Database.close()`. Database references are now automatically destroyed when the garbage collector cleans up
 the object. If you need to explicitly close the database, you can call `uniffiDestroy()` on the `Database` instance.
+
+`Database.inMemory()` is now a synchronous function, not async.
+
+## Reseed (Browser)
+
+`CoreCrypto.reseed` now requires exactly 32 bytes. Callers that pass a longer seed will now get an error.
