@@ -19,14 +19,6 @@
   - [Kotlin](cc11/migration/kotlin.md)
   - [Coming from v9](cc11/coming-from-v9.md)
 
-# CoreCrypto 10
-
-- [What's New](cc10/whats-new.md)
-- [Migration Guide](cc10/migration-guide.md)
-  - [TypeScript](cc10/migration/typescript.md)
-  - [Swift](cc10/migration/swift.md)
-  - [Kotlin](cc10/migration/kotlin.md)
-
 # Releases
 
 - [Release Notes](release_notes.md)
