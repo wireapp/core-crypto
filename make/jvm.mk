@@ -38,7 +38,7 @@ else
 $(error Unsupported host platform for jvm: $(UNAME_S))
 endif
 
-jvm-test-deps := $(JVM_LIB) $(UNIFFI_JVM_OUTPUT) $(KT_FILES)
+jvm-test-deps := $(JVM_LIB) $(UNIFFI_JVM_OUTPUT) $(KT_FILES) $(KT_BUILD_FILES)
 
 $(STAMPS)/jvm-test: $(jvm-test-deps)
 	cd crypto-ffi/bindings && \
@@ -74,7 +74,7 @@ jvm-bench: $(jvm-test-deps) $(KT_BENCHMARKS) ## Run the JVM benchmarks
 # KMP (Kotlin Multiplatform) builds
 #-------------------------------------------------------------------------------
 
-kmp-jvm-test-deps := $(FFI_LIBRARY) $(JVM_LIB) $(KT_FILES)
+kmp-jvm-test-deps := $(FFI_LIBRARY) $(JVM_LIB) $(KT_FILES) $(KT_BUILD_FILES)
 
 $(STAMPS)/kmp-jvm-test: $(kmp-jvm-test-deps)
 	cd crypto-ffi/bindings && \

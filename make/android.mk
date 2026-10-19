@@ -72,7 +72,7 @@ else
 $(error Unsupported host platform for android-test-lib: $(UNAME_S))
 endif
 
-android-test-deps := $(ANDROID_TEST_LIB) $(UNIFFI_ANDROID_OUTPUT) $(KT_FILES)
+android-test-deps := $(ANDROID_TEST_LIB) $(UNIFFI_ANDROID_OUTPUT) $(KT_FILES) $(KT_BUILD_FILES)
 
 $(STAMPS)/android-test: $(android-test-deps)
 	$(SHELL) scripts/run-android-tests.sh

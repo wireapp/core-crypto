@@ -59,6 +59,11 @@ KT_TESTS = $(BINDINGS_DIR)/shared/src/commonTest
 KT_BENCHMARKS = $(BINDINGS_DIR)/jvm/src/jmh/
 KT_FILES := $(shell fd --type f --extension kt . | LC_ALL=C sort)
 KT_GRADLE_FILES = $(shell fd --type f --extension kts . | LC_ALL=C sort)
+# Everything that configures the Gradle build, so that test results are invalidated when the build changes
+KT_BUILD_FILES = $(KT_GRADLE_FILES) \
+  $(shell fd --type f --glob gradle.properties crypto-ffi/bindings | LC_ALL=C sort) \
+  crypto-ffi/bindings/gradle/libs.versions.toml \
+  crypto-ffi/bindings/gradle/wrapper/gradle-wrapper.properties
 KT_DETEKT_CONFIG = $(BINDINGS_DIR)/detekt.yml
 
 #-------------------------------------------------------------------------------
