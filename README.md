@@ -607,9 +607,9 @@ The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.or
    - baz
    ```
 
-1. In [index.md](docs/index.md), copy the commented-out table row from the bottom of the file to the appropriate place
-   in the table, ordering by version number, descending. Search and replace the first 5 occurrences of `x.x.x` with
-   `X.Y.Z`.
+1. In [index.md](docs/index.md), copy the commented-out table row template and paste to the appropriate place in the
+   table, ordering by version number, descending. Replace its occurrences of `x.x.x` with `X.Y.Z`. If this is the first
+   release of a new major version, also add it to the list of book editions.
 
 1. Commit your changes and retain the commit hash for later.
 
