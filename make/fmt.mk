@@ -48,7 +48,7 @@ $(STAMPS)/kotlin-fmt: $(KT_FILES) $(KT_GRADLE_FILES)
 .PHONY: kotlin-fmt
 kotlin-fmt: $(STAMPS)/kotlin-fmt ## Format Kotlin files via ktlint
 
-$(STAMPS)/kotlin-check: $(KT_FILES) $(KT_GRADLE_FILES) $(KT_DETEKT_CONFIG) $(JVM_LIB) $(UNIFFI_JVM_OUTPUT)
+$(STAMPS)/kotlin-check: $(KT_FILES) $(KT_GRADLE_FILES) $(KT_DETEKT_CONFIG) $(UNIFFI_JVM_OUTPUT)
 	ktlint $(KT_FILES) $(KT_GRADLE_FILES) && \
 	cd crypto-ffi/bindings && \
 	./gradlew jvm:detektMain jvm:detektTest jvm:detektJmh ## runs detekt with type resolution for the given source set
