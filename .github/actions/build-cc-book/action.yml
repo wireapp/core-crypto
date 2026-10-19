@@ -9,9 +9,9 @@ runs:
       uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
       with:
         tool: |
-          mdbook
-          mdbook-langtabs
-          mdbook-mermaid
+          mdbook@0.5.4
+          mdbook-langtabs@0.2.0
+          mdbook-mermaid@0.17.0
 
     - name: Install mdBook plugins
       shell: bash
