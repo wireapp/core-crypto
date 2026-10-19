@@ -36,10 +36,10 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-eb9d350a.js";
+            window.path_to_searchindex_js = "../../searchindex-0f44ce11.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../../toc-1c113b1d.js"></script>
+        <script src="../../toc-e64f8d46.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -175,52 +175,28 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="migrating-to-cc-10-kotlin"><a class="header" href="#migrating-to-cc-10-kotlin">Migrating to CC 10: Kotlin</a></h1>
+                        <h1 id="migrating-to-cc-11-kotlin"><a class="header" href="#migrating-to-cc-11-kotlin">Migrating to CC 11: Kotlin</a></h1>
 <p>See the <a href="../migration-guide.html">common migration guide</a> for changes that apply to all platforms.</p>
-<h2 id="renames-and-moves"><a class="header" href="#renames-and-moves">Renames and Moves</a></h2>
-<ol>
-<li>
-<p><code>CoreCryptoClient</code> has been renamed to <code>CoreCrypto</code>.</p>
-</li>
-<li>
-<p><code>historyClient(historySecret: HistorySecret)</code> has been moved into <code>CoreCrypto</code> Companion functions.</p>
-</li>
-</ol>
-<h2 id="corecrypto-instantiation"><a class="header" href="#corecrypto-instantiation">CoreCrypto Instantiation</a></h2>
-<ol>
-<li>
-<p>The <code>CoreCrypto</code> constructor now takes a <code>Database</code> instance instead of a <code>DatabaseKey</code> and a path. To instantiate a
-database, call the <code>Database.open()</code> static method.</p>
-</li>
-<li>
-<p>Deferred init is now the only way to instantiate <code>CoreCrypto</code>. Instead of calling <code>deferredInit()</code>, call the
-<code>CoreCrypto</code> constructor. As before, call <code>mlsInit()</code> in a transaction to initialize MLS.</p>
-</li>
-</ol>
-<h2 id="higher-level-newtypes"><a class="header" href="#higher-level-newtypes">Higher-Level Newtypes</a></h2>
-<p><code>CoreCryptoContext.getExternalSender()</code> now returns an <code>ExternalSenderKey</code> object instead of a byte array. To access the
-raw bytes, call <code>externalSenderKey.copyBytes()</code>.</p>
-<h2 id="logging"><a class="header" href="#logging">Logging</a></h2>
-<ol>
-<li>We <strong>removed</strong> <code>level</code> parameter from <code>setLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel)</code>. To set the
-log level, use the free function <code>setMaxLogLevel(level: CoreCryptoLogLevel)</code>.</li>
-<li>We <strong>removed</strong> <code>setLoggerOnly</code>.</li>
-</ol>
-<h2 id="other"><a class="header" href="#other">Other</a></h2>
-<ol>
-<li>Removed <code>CoreCryptoFfi.reseedRng()</code> and <code>CoreCryptoFfi.randomBytes()</code>.</li>
-<li>Removed <code>String.toClientId()</code>. Use the regular <code>ClientId</code> constructor to get a <code>ClientId</code>.</li>
-</ol>
+<h2 id="maven-repository"><a class="header" href="#maven-repository">Maven Repository</a></h2>
+<p>The JVM, Android and KMP packages are now published to Wire’s Maven repository, <a href="https://maven.wire.com">https://maven.wire.com</a>, instead of
+Maven Central. Add <code>maven { url = uri("https://maven.wire.com") }</code> to your repositories. Earlier releases remain on
+Maven Central.</p>
+<h2 id="timestamps"><a class="header" href="#timestamps">Timestamps</a></h2>
+<p>Timestamps now use <code>kotlin.time.Instant</code> instead of <code>kotlinx.datetime.Instant</code>. This affects <code>X509Identity.notBefore</code>
+and <code>X509Identity.notAfter</code>.</p>
+<h2 id="database-salt-on-ios"><a class="header" href="#database-salt-on-ios">Database Salt on iOS</a></h2>
+<p>On the iOS targets, the database salt has moved from the keychain into a file next to the database. See the
+<a href="swift.html#database-path-and-salt">Swift migration guide</a> for what this means for existing clients.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../../cc10/migration/swift.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../../cc11/migration/swift.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../../release_notes.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../../cc11/coming-from-v9.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -230,11 +206,11 @@ log level, use the free function <code>setMaxLogLevel(level: CoreCryptoLogLevel)
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../../cc10/migration/swift.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../../cc11/migration/swift.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../../release_notes.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../../cc11/coming-from-v9.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

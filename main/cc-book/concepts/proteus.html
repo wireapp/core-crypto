@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-eb9d350a.js";
+            window.path_to_searchindex_js = "../searchindex-0f44ce11.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-1c113b1d.js"></script>
+        <script src="../toc-e64f8d46.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -225,12 +225,8 @@ without opening a session. Useful for verifying a peer’s identity before estab
 <p>Prekeys are the mechanism that allows a sender to open a Proteus session with a recipient who is offline. The recipient
 publishes a set of one-time prekey bundles to the delivery service in advance; the sender fetches one and uses it to
 bootstrap the session.</p>
-<p>CoreCrypto provides two ways to generate prekeys:</p>
-<p><strong><code>proteusNewPrekey(id)</code></strong> — Generates a prekey with an explicit numeric ID (a <code>u16</code>). Use this when your app manages
-the prekey ID space itself.</p>
-<p><strong><code>proteusNewPrekeyAuto()</code></strong> — Generates a prekey with an automatically incremented ID and returns both the ID and the
-serialized bundle. Prefer this unless you have a specific reason to control IDs manually.</p>
-<p>Both return a CBOR-serialized prekey bundle ready to upload to the delivery service.</p>
+<p>To generate a prekey, call <strong><code>proteusNewPrekeyAuto()</code></strong>. It picks the prekey ID automatically and returns both the ID
+and a CBOR-serialized prekey bundle, ready to upload to the delivery service.</p>
 <h3 id="the-last-resort-prekey"><a class="header" href="#the-last-resort-prekey">The Last Resort Prekey</a></h3>
 <p>Proteus reserves prekey ID 65535 (<code>u16::MAX</code>) as a last resort prekey. Unlike one-time prekeys, the last resort prekey
 is never consumed — it stays in the keystore indefinitely so that a sender can always open a session even when all

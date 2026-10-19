@@ -36,10 +36,10 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-eb9d350a.js";
+            window.path_to_searchindex_js = "../../searchindex-0f44ce11.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../../toc-1c113b1d.js"></script>
+        <script src="../../toc-e64f8d46.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -231,8 +231,9 @@ the platform’s secure credential storage.</p>
 <h2 id="opening-the-database"><a class="header" href="#opening-the-database">Opening the Database</a></h2>
 <p>All platforms define an async <code>Database.open</code> static method accepting a location and key. On platforms with an OS, the
 location is a filesystem path. On WASM, the location is the IndexedDB store name.</p>
-<p>All platforms define an async static method to open a transient database in memory. On WASM, this is
-<code>Database.inMemory</code>. For Kotlin and Swift, this is an overload of <code>Database.open</code>.</p>
+<p>All platforms can also open a transient database in memory. In-memory databases are never encrypted, so they take no
+key. In TypeScript, this is <code>Database.inMemory()</code>. For Kotlin and Swift, this is an overload of <code>Database.open</code> without
+arguments.</p>
 <h2 id="key-rotation"><a class="header" href="#key-rotation">Key Rotation</a></h2>
 <p>The database can be re-encrypted with a new key without closing and reopening it:</p>
 <div class="langtabs">
@@ -256,10 +257,6 @@ location is a filesystem path. On WASM, the location is the IndexedDB store name
 </div>
 
 <p>This re-encrypts all stored data in place.</p>
-<h2 id="lifetime-and-closing"><a class="header" href="#lifetime-and-closing">Lifetime and Closing</a></h2>
-<p>On browser platforms, explicitly close the database when tearing down:</p>
-<pre><code class="language-typescript">await db.close()
-</code></pre>
 <h2 id="single-transaction-constraint"><a class="header" href="#single-transaction-constraint">Single-Transaction Constraint</a></h2>
 <p>Only one transaction may write to the database at a time. If a transaction is requested while another transaction is in
 flight, the call will block until the first transaction concludes.</p>

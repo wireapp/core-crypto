@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-eb9d350a.js";
+            window.path_to_searchindex_js = "searchindex-0f44ce11.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-1c113b1d.js"></script>
+        <script src="toc-e64f8d46.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -176,16 +176,17 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
-<h2 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h2>
+<h2 id="corecrypto-11"><a class="header" href="#corecrypto-11">CoreCrypto 11</a></h2>
+<h3 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h3>
 <ul>
 <li>
-<p>The <code>thumbprint</code> of a <code>WireIdentity</code> is now always computed with SHA-256, regardless of the ciphersuite. It used to be
-computed with the ciphersuite’s hash algorithm.</p>
+<p>The <code>thumbprint</code> of a <code>WireIdentity</code> is now always computed with SHA-256, regardless of the cipher suite. It used to
+be computed with the cipher suite’s hash algorithm.</p>
 </li>
 <li>
-<p>CoreCrypto now has support for 11 post-quantum ciphersuites, as defined by the
+<p>CoreCrypto now has support for 11 post-quantum cipher suites, as defined by the
 <a href="https://www.ietf.org/archive/id/draft-ietf-mls-pq-ciphersuites-06.html">draft</a>. Specifically, support has been added
-for the 6 ciphersuites that use hybrid (post-quantum + classical) key-exchange mechanisms:</p>
+for the 6 cipher suites that use hybrid (post-quantum + classical) key-exchange mechanisms:</p>
 <ul>
 <li><code>MLS_128_MLKEM768X25519_AES128GCM_SHA256_Ed25519</code></li>
 <li><code>MLS_128_MLKEM768X25519_AES256GCM_SHA384_Ed25519</code></li>
@@ -194,7 +195,7 @@ for the 6 ciphersuites that use hybrid (post-quantum + classical) key-exchange m
 <li><code>MLS_128_MLKEM768X25519_CHACHA20POLY1305_SHA384_MLDSA44</code></li>
 <li><code>MLS_192_MLKEM1024P384_AES256GCM_SHA384_P384</code></li>
 </ul>
-<p>as well as the 5 ciphersuites that use pure post-quantum key-exchange mechanisms:</p>
+<p>as well as the 5 cipher suites that use pure post-quantum key-exchange mechanisms:</p>
 <ul>
 <li><code>MLS_128_MLKEM768_AES256GCM_SHA384_Ed25519</code></li>
 <li><code>MLS_128_MLKEM768_AES256GCM_SHA384_P256</code></li>
@@ -202,15 +203,15 @@ for the 6 ciphersuites that use hybrid (post-quantum + classical) key-exchange m
 <li><code>MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65</code></li>
 <li><code>MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87</code></li>
 </ul>
-<p>Note that only 3 of the 11 ciphersuites use post-quantum signatures (ML-DSA), and that using x509 credentials with
+<p>Note that only 3 of the 11 cipher suites use post-quantum signatures (ML-DSA), and that using x509 credentials with
 post-quantum signatures is not yet supported.</p>
 </li>
 <li>
 <p><code>e2eiIsPkiEnvSetup</code> has been removed. You can call <code>getPkiEnvironment</code> to see if it is set.</p>
 </li>
 <li>
-<p><code>e2eiIsEnabled</code> has been removed. You can use <code>findCredentials</code> to check whether an X509 credential for a given
-ciphersuite exists.</p>
+<p><code>e2eiIsEnabled</code> has been removed. You can use <code>findCredentials</code> to check whether an X509 credential for a given cipher
+suite exists.</p>
 </li>
 <li>
 <p><code>proteusNewPrekey</code> is deprecated; use <code>proteusNewPrekeyAuto</code> instead.</p>
@@ -224,33 +225,6 @@ a client id is not a hex-encoded binary value, and only the unpadded form appear
 </li>
 <li>
 <p><code>ClientId.deserialize</code> can now fail. Calling <code>deserialize</code> on history client ids throws a <code>CoreCryptoError</code>.</p>
-</li>
-<li>
-<p><code>reseed</code> now requires the entropy seed to be exactly 32 bytes long. It previously accepted any seed of at least 32
-bytes and silently used only the first 32, discarding the rest; a caller who gathered more entropy than CoreCrypto
-consumes had no way to discover that most of it was ignored. Seeds shorter than 32 bytes were already rejected, and a
-32-byte seed behaves exactly as before, so only callers who were passing a longer seed are affected. Note also that
-<code>reseed</code> replaces the CSPRNG’s state outright rather than mixing the new seed into it.</p>
-</li>
-<li>
-<p>TypeScript: browser and native packages are now released separately under <code>@wireapp/core-crypto</code> and
-<code>@wireapp/core-crypto-native</code>, respectively.</p>
-</li>
-<li>
-<p>iOS/macOS: The keystore path is no longer required to stay the same across CoreCrypto instances. In previous versions
-of CoreCrypto, the keystore path was used to look up salt values for the database encryption. This is no longer the
-case, and the salt values are now stored in a file in the same directory as the CoreCrypto database. For existing
-clients the database must be opened once with the old path in order for a migration to be performed.</p>
-</li>
-<li>
-<p>Kotlin: Timestamps (Instant) are now using <code>kotlin.time</code> instead of <code>kotlinx.datetime</code>.</p>
-</li>
-<li>
-<p>Kotlin: transactions are now cancellable. This applies to all Kotlin bindings: jvm, android and kmp.</p>
-</li>
-<li>
-<p>Kotlin(iOS): The macos/ios targets now have a file lock guarding against concurrent access from separate CoreCrypto
-instances.</p>
 </li>
 <li>
 <p>CoreCrypto now supports encrypting and decrypting transient messages. Transient messages are encrypted and decrypted
@@ -269,8 +243,55 @@ second between registrations. This was never true of any released version; we fi
 added a delay between <code>addCredential</code> calls to comply, you can remove it.</p>
 </li>
 <li>
-<p><code>CoreCryptoContext.setData</code> and <code>Database.openInMemory</code> are now synchronous functions, not async.</p>
+<p><code>CoreCryptoContext.setData</code> is now a synchronous function, not async.</p>
 </li>
+</ul>
+<h4 id="typescript"><a class="header" href="#typescript">TypeScript</a></h4>
+<ul>
+<li>
+<p>browser and native packages are now released separately under <code>@wireapp/core-crypto</code> and
+<code>@wireapp/core-crypto-native</code>, respectively.</p>
+</li>
+<li>
+<p><code>Database.inMemory</code> is now a synchronous function, not async.</p>
+</li>
+<li>
+<p><code>Database.close()</code> is deprecated.</p>
+</li>
+<li>
+<p>Browser: <code>reseed</code> now requires the entropy seed to be exactly 32 bytes long. It previously accepted any seed of at
+least 32 bytes and silently used only the first 32, discarding the rest; a caller who gathered more entropy than
+CoreCrypto consumes had no way to discover that portions were ignored. Seeds shorter than 32 bytes were already
+rejected, and a 32-byte seed behaves exactly as before, so only callers who were passing a longer seed are affected.
+Note also that <code>reseed</code> replaces the CSPRNG’s state outright rather than mixing the new seed into it.</p>
+</li>
+</ul>
+<h4 id="iosswift"><a class="header" href="#iosswift">iOS/Swift</a></h4>
+<ul>
+<li>The database path is no longer required to stay the same across CoreCrypto instances. In previous versions of
+CoreCrypto, the database path was used to look up salt values for the database encryption. This is no longer the case,
+and the salt values are now stored in a file in the same directory as the CoreCrypto database. For existing clients
+the database must be opened once with the old path in order for a migration to be performed.</li>
+</ul>
+<h4 id="kotlin"><a class="header" href="#kotlin">Kotlin</a></h4>
+<ul>
+<li>
+<p>the JVM, Android and KMP packages are now published to Wire’s Maven repository, <a href="https://maven.wire.com">https://maven.wire.com</a>, instead of
+Maven Central. Add <code>maven { url = uri("https://maven.wire.com") }</code> to your repositories. Earlier releases remain on
+Maven Central.</p>
+</li>
+<li>
+<p>Timestamps (Instant) are now using <code>kotlin.time</code> instead of <code>kotlinx.datetime</code>.</p>
+</li>
+<li>
+<p>transactions are now cancellable. This applies to all Kotlin bindings: jvm, android and kmp.</p>
+</li>
+<li>
+<p>The macos/ios targets now have a file lock guarding against concurrent access from separate CoreCrypto instances.</p>
+</li>
+</ul>
+<h4 id="bug-fixes"><a class="header" href="#bug-fixes">Bug Fixes</a></h4>
+<ul>
 <li>
 <p>Fixed a bug in the data migrations. This applies to clients upgrading from v9. The bug caused exactly one credential
 to be migrated to the v10 data format, effectively at random. The fix causes them all to be propagated.</p>
@@ -279,11 +300,6 @@ to be migrated to the v10 data format, effectively at random. The fix causes the
 <p>Fixed a bug in the data migrations. This applies to clients upgrading from v9. This bug caused e2ei-enrolled clients
 to lose all credentials for which both the basic and x509 versions were present in the database, causing them to
 additionally lose all conversations using those credentials.</p>
-</li>
-<li>
-<p>Kotlin: the JVM, Android and KMP packages are now published to Wire’s Maven repository, <a href="https://maven.wire.com">https://maven.wire.com</a>,
-instead of Maven Central. Add <code>maven { url = uri("https://maven.wire.com") }</code> to your repositories. Earlier releases
-remain on Maven Central.</p>
 </li>
 </ul>
 <h2 id="corecrypto-10"><a class="header" href="#corecrypto-10">CoreCrypto 10</a></h2>
@@ -523,7 +539,7 @@ platforms.</p>
 </code></pre>
 </li>
 </ul>
-<h4 id="bug-fixes"><a class="header" href="#bug-fixes">Bug Fixes</a></h4>
+<h4 id="bug-fixes-1"><a class="header" href="#bug-fixes-1">Bug Fixes</a></h4>
 <ul>
 <li>Web: fixed the abort reason of an <code>MlsTransportResponse</code> not being forwarded to rust.</li>
 </ul>
@@ -541,7 +557,7 @@ Affected platforms: web</li>
 <p>Affected platforms: Android</p>
 </li>
 </ul>
-<h4 id="bug-fixes-1"><a class="header" href="#bug-fixes-1">Bug Fixes</a></h4>
+<h4 id="bug-fixes-2"><a class="header" href="#bug-fixes-2">Bug Fixes</a></h4>
 <ul>
 <li>Kotlin documentation is now correctly generated and deployed.</li>
 </ul>
@@ -808,12 +824,12 @@ immediate access of the byte vector.</p>
 <h2 id="corecrypto-7"><a class="header" href="#corecrypto-7">CoreCrypto 7</a></h2>
 <h3 id="v702---2025-07-07"><a class="header" href="#v702---2025-07-07">v7.0.2 - 2025-07-07</a></h3>
 <p>Upgrade OpenMLS to fix a bug where the ratchet tree would sometimes become corrupt leading to broken MLS groups.</p>
-<h4 id="bug-fixes-2"><a class="header" href="#bug-fixes-2">Bug Fixes</a></h4>
+<h4 id="bug-fixes-3"><a class="header" href="#bug-fixes-3">Bug Fixes</a></h4>
 <ul>
 <li>update openmls [WPB-18569] (7ca7ba7)</li>
 </ul>
 <h3 id="v701---2025-06-02"><a class="header" href="#v701---2025-06-02">v7.0.1 - 2025-06-02</a></h3>
-<h4 id="bug-fixes-3"><a class="header" href="#bug-fixes-3">Bug Fixes</a></h4>
+<h4 id="bug-fixes-4"><a class="header" href="#bug-fixes-4">Bug Fixes</a></h4>
 <ul>
 <li>initWasm was being called with the wrong property field. (ca1706d)</li>
 <li>allow registering epoch observer before calling mls_init (3f0605a)</li>
@@ -834,7 +850,7 @@ function.</p>
 <li>add <code>fn history_client(HistorySecret) -&gt; CoreCrypto</code> (8b7b7d4)</li>
 <li>add <code>fn generate_history_secret</code> (a998dec)</li>
 </ul>
-<h4 id="bug-fixes-4"><a class="header" href="#bug-fixes-4">Bug Fixes</a></h4>
+<h4 id="bug-fixes-5"><a class="header" href="#bug-fixes-5">Bug Fixes</a></h4>
 <ul>
 <li>crypto-ffi: fix naming and attributes of WelcomeBundle fields on Wasm (1b2e88b)</li>
 <li>prevent cancellations during transactions (Kotlin) (75217d5)</li>
@@ -842,7 +858,7 @@ function.</p>
 </ul>
 <h2 id="corecrypto-6"><a class="header" href="#corecrypto-6">CoreCrypto 6</a></h2>
 <h3 id="v601---2025-05-07"><a class="header" href="#v601---2025-05-07">v6.0.1 - 2025-05-07</a></h3>
-<h4 id="bug-fixes-5"><a class="header" href="#bug-fixes-5">Bug Fixes</a></h4>
+<h4 id="bug-fixes-6"><a class="header" href="#bug-fixes-6">Bug Fixes</a></h4>
 <ul>
 <li>swift publishing CI action (d1030e1)</li>
 </ul>
@@ -870,19 +886,19 @@ key.</p>
 as <a href="https://mozilla.github.io/uniffi-rs/latest/futures.html#cancelling-async-code">required by Uniffi</a>. This prevents a
 category of bug where Kotlin thinks a transaction has been cancelled, while Rust thinks it is still running.</p>
 <h3 id="v530--2025-04-29"><a class="header" href="#v530--2025-04-29">v5.3.0- 2025-04-29</a></h3>
-<h4 id="bug-fixes-6"><a class="header" href="#bug-fixes-6">Bug Fixes</a></h4>
+<h4 id="bug-fixes-7"><a class="header" href="#bug-fixes-7">Bug Fixes</a></h4>
 <ul>
 <li>re-throw inner error which cancelled the transaction (Swift) (0c282b2)</li>
 </ul>
 <h3 id="v520---2025-04-15"><a class="header" href="#v520---2025-04-15">v5.2.0 - 2025-04-15</a></h3>
-<h4 id="bug-fixes-7"><a class="header" href="#bug-fixes-7">Bug Fixes</a></h4>
+<h4 id="bug-fixes-8"><a class="header" href="#bug-fixes-8">Bug Fixes</a></h4>
 <ul>
 <li>add registerEpochObserver to CoreCryptoProtocol (eadf388)</li>
 <li>create an interface for <code>ConversationConfiguration</code> (b1e82bf)</li>
 <li>swift publishing failing due to not running on latest macos runner (dcc1890)</li>
 </ul>
 <h3 id="v510---2025-04-03"><a class="header" href="#v510---2025-04-03">v5.1.0 - 2025-04-03</a></h3>
-<h4 id="bug-fixes-8"><a class="header" href="#bug-fixes-8">Bug Fixes</a></h4>
+<h4 id="bug-fixes-9"><a class="header" href="#bug-fixes-9">Bug Fixes</a></h4>
 <ul>
 <li>broken swift bindings by publishing uniffi framework separately (2b950cc)</li>
 <li>don’t refer to the internal uniffi EpochObserver type in the public API (7833300)</li>
@@ -1117,7 +1133,7 @@ pub enum MlsError {
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="cc10/migration/kotlin.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="cc11/coming-from-v9.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
@@ -1131,7 +1147,7 @@ pub enum MlsError {
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="cc10/migration/kotlin.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="cc11/coming-from-v9.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 

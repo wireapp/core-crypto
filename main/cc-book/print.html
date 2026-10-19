@@ -37,10 +37,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-eb9d350a.js";
+            window.path_to_searchindex_js = "searchindex-0f44ce11.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-1c113b1d.js"></script>
+        <script src="toc-e64f8d46.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -232,12 +232,8 @@ without opening a session. Useful for verifying a peer’s identity before estab
 <p>Prekeys are the mechanism that allows a sender to open a Proteus session with a recipient who is offline. The recipient
 publishes a set of one-time prekey bundles to the delivery service in advance; the sender fetches one and uses it to
 bootstrap the session.</p>
-<p>CoreCrypto provides two ways to generate prekeys:</p>
-<p><strong><code>proteusNewPrekey(id)</code></strong> — Generates a prekey with an explicit numeric ID (a <code>u16</code>). Use this when your app manages
-the prekey ID space itself.</p>
-<p><strong><code>proteusNewPrekeyAuto()</code></strong> — Generates a prekey with an automatically incremented ID and returns both the ID and the
-serialized bundle. Prefer this unless you have a specific reason to control IDs manually.</p>
-<p>Both return a CBOR-serialized prekey bundle ready to upload to the delivery service.</p>
+<p>To generate a prekey, call <strong><code>proteusNewPrekeyAuto()</code></strong>. It picks the prekey ID automatically and returns both the ID
+and a CBOR-serialized prekey bundle, ready to upload to the delivery service.</p>
 <h3 id="the-last-resort-prekey"><a class="header" href="#the-last-resort-prekey">The Last Resort Prekey</a></h3>
 <p>Proteus reserves prekey ID 65535 (<code>u16::MAX</code>) as a last resort prekey. Unlike one-time prekeys, the last resort prekey
 is never consumed — it stays in the keystore indefinitely so that a sender can always open a session even when all
@@ -581,8 +577,9 @@ the platform’s secure credential storage.</p>
 <h2 id="opening-the-database"><a class="header" href="#opening-the-database">Opening the Database</a></h2>
 <p>All platforms define an async <code>Database.open</code> static method accepting a location and key. On platforms with an OS, the
 location is a filesystem path. On WASM, the location is the IndexedDB store name.</p>
-<p>All platforms define an async static method to open a transient database in memory. On WASM, this is
-<code>Database.inMemory</code>. For Kotlin and Swift, this is an overload of <code>Database.open</code>.</p>
+<p>All platforms can also open a transient database in memory. In-memory databases are never encrypted, so they take no
+key. In TypeScript, this is <code>Database.inMemory()</code>. For Kotlin and Swift, this is an overload of <code>Database.open</code> without
+arguments.</p>
 <h2 id="key-rotation"><a class="header" href="#key-rotation">Key Rotation</a></h2>
 <p>The database can be re-encrypted with a new key without closing and reopening it:</p>
 <div class="langtabs">
@@ -606,10 +603,6 @@ location is a filesystem path. On WASM, the location is the IndexedDB store name
 </div>
 
 <p>This re-encrypts all stored data in place.</p>
-<h2 id="lifetime-and-closing"><a class="header" href="#lifetime-and-closing">Lifetime and Closing</a></h2>
-<p>On browser platforms, explicitly close the database when tearing down:</p>
-<pre><code class="language-typescript">await db.close()
-</code></pre>
 <h2 id="single-transaction-constraint"><a class="header" href="#single-transaction-constraint">Single-Transaction Constraint</a></h2>
 <p>Only one transaction may write to the database at a time. If a transaction is requested while another transaction is in
 flight, the call will block until the first transaction concludes.</p>
@@ -765,13 +758,13 @@ device:</p>
 <div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
 <div class="langtabs-content">
 <div class="langtabs-code active" data-lang="typescript-0">
-<pre><code class="language-typescript">await ctx.setData(bytes)
+<pre><code class="language-typescript">ctx.setData(bytes)
 const bytes = await ctx.getData()
 </code></pre>
 </div>
 
 <div class="langtabs-code" data-lang="swift-1">
-<pre><code class="language-swift">try await ctx.setData(data: bytes)
+<pre><code class="language-swift">try ctx.setData(data: bytes)
 let bytes = try await ctx.getData()
 </code></pre>
 </div>
@@ -847,11 +840,68 @@ so both slots are cleared before dropping the context that releases the semaphor
 cannot observe the previous transaction’s token. If cancellation wins a callback race, dropping the Rust future also
 causes UniFFI’s generated foreign-language binding to cancel the task executing that callback.</p>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="migrating-from-v1030-or-later-to-unreleased"><a class="header" href="#migrating-from-v1030-or-later-to-unreleased">Migrating from v10.3.0 or later to Unreleased</a></h1>
+<h1 id="whats-new-in-cc-11"><a class="header" href="#whats-new-in-cc-11">What’s New in CC 11</a></h1>
+<p>CC 11 adds two new kinds of MLS message and a set of post-quantum cipher suites. It also includes various smaller
+changes.</p>
 <blockquote class="blockquote-tag blockquote-tag-note">
 <p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
-<p>These changes will be relevant with the next release of CoreCrypto.</p>
+<p>Some of these changes break existing code. We provide a <a href="#migrating-from-v10-to-v11">migration guide</a>.</p>
 </blockquote>
+<h2 id="transient-and-targeted-messages"><a class="header" href="#transient-and-targeted-messages">Transient and Targeted Messages</a></h2>
+<p>Regular MLS application messages go to every member of a conversation and advance the group’s cryptographic state.
+That’s the right choice for chat messages, but it’s a poor fit for content that only matters to some members or only
+matters right now. CC 11 adds two new kinds of message for these cases. Neither of them changes the group’s
+cryptographic state.</p>
+<h3 id="transient-messages"><a class="header" href="#transient-messages">Transient messages</a></h3>
+<p><code>encryptTransientMessage(conversationId, message)</code> encrypts a message for all members of a conversation. Transient
+messages are meant to go only to members who are online at the time they are sent.</p>
+<h3 id="targeted-messages"><a class="header" href="#targeted-messages">Targeted messages</a></h3>
+<p><code>encryptTargetedMessage(conversationId, recipient, policy, message)</code> encrypts a message for a single member of a
+conversation, identified by their <code>ClientId</code>. This is what makes read receipts possible in MLS conversations: sending
+each receipt as a regular MLS message would flood every member with messages that only matter to one of them.</p>
+<p>The <code>policy</code> argument tells the delivery service how to handle the message:</p>
+<ul>
+<li><code>TargetedMessagePolicy.Transient</code>: delivered only to the recipient if they are online, and dropped otherwise.</li>
+<li><code>TargetedMessagePolicy.Persisted</code>: may be stored by the delivery service, so a recipient who is offline still gets it
+later.</li>
+</ul>
+<h3 id="receiving"><a class="header" href="#receiving">Receiving</a></h3>
+<p>There is no new decryption API. <code>decryptMessage</code> handles all of these messages and returns them as the new
+<code>DecryptedMessage.Transient</code>, <code>DecryptedMessage.TransientTargeted</code> and <code>DecryptedMessage.PersistedTargeted</code> variants.
+Each one carries the plaintext, the sender’s client id and the sender’s identity, just like
+<code>DecryptedMessage.ApplicationMessage</code>. The <a href="#decryptedmessage">migration guide</a> shows how to match on
+them.</p>
+<blockquote class="blockquote-tag blockquote-tag-warning">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Warning</p>
+<p>Transient and targeted messages have weaker security guarantees than regular MLS application messages. Any feature
+built on them must explain why that is acceptable for its use case, or how the difference is mitigated.</p>
+</blockquote>
+<h2 id="post-quantum-cipher-suites"><a class="header" href="#post-quantum-cipher-suites">Post-Quantum Cipher Suites</a></h2>
+<p>CoreCrypto now supports 11 post-quantum cipher suites, as defined in the
+<a href="https://www.ietf.org/archive/id/draft-ietf-mls-pq-ciphersuites-06.html">MLS post-quantum cipher suites draft</a>.</p>
+<p>Six of them use a hybrid key exchange, combining ML-KEM with a classical algorithm:</p>
+<ul>
+<li><code>MLS_128_MLKEM768X25519_AES128GCM_SHA256_Ed25519</code></li>
+<li><code>MLS_128_MLKEM768X25519_AES256GCM_SHA384_Ed25519</code></li>
+<li><code>MLS_128_MLKEM768P256_AES128GCM_SHA256_P256</code></li>
+<li><code>MLS_128_MLKEM768P256_AES256GCM_SHA384_P256</code></li>
+<li><code>MLS_128_MLKEM768X25519_CHACHA20POLY1305_SHA384_MLDSA44</code></li>
+<li><code>MLS_192_MLKEM1024P384_AES256GCM_SHA384_P384</code></li>
+</ul>
+<p>The other five use a pure post-quantum key exchange:</p>
+<ul>
+<li><code>MLS_128_MLKEM768_AES256GCM_SHA384_Ed25519</code></li>
+<li><code>MLS_128_MLKEM768_AES256GCM_SHA384_P256</code></li>
+<li><code>MLS_192_MLKEM1024_AES256GCM_SHA384_P384</code></li>
+<li><code>MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65</code></li>
+<li><code>MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87</code></li>
+</ul>
+<p>Only the three suites ending in <code>MLDSA*</code> also use post-quantum signatures. The others keep a classical signature scheme.</p>
+<p>X509 credentials don’t work yet with post-quantum signatures, so the <code>MLDSA*</code> suites only support basic credentials.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="migrating-from-v10-to-v11"><a class="header" href="#migrating-from-v10-to-v11">Migrating from v10 to v11</a></h1>
+<p>This page covers changes that apply to all platforms. Some changes only affect one platform; they are covered on the
+<a href="#migrating-to-cc-11-typescript">TypeScript</a>, <a href="#migrating-to-cc-11-swift">Swift</a> and <a href="#migrating-to-cc-11-kotlin">Kotlin</a> pages.</p>
 <h2 id="decryptedmessage"><a class="header" href="#decryptedmessage">DecryptedMessage</a></h2>
 <p><code>DecryptedMessage.Text</code> and <code>BufferedDecryptedMessage.Text</code> have been renamed to <code>DecryptedMessage.ApplicationMessage</code>
 and <code>BufferedDecryptedMessage.ApplicationMessage</code>, respectively. Both enums now also include <code>Transient</code>,
@@ -933,9 +983,34 @@ case let .persistedTargeted(plaintext, senderClientId, identity):
 </div>
 </div>
 
+<h2 id="other"><a class="header" href="#other">Other</a></h2>
+<ol>
+<li>
+<p><code>e2eiIsPkiEnvSetup</code> has been removed. You can call <code>getPkiEnvironment</code> to see if it is set.</p>
+</li>
+<li>
+<p><code>e2eiIsEnabled</code> has been removed. You can use <code>findCredentials</code> to check whether an X509 credential for a given
+cipher suite exists.</p>
+</li>
+<li>
+<p><code>proteusNewPrekey</code> is deprecated; use <code>proteusNewPrekeyAuto</code> instead.</p>
+</li>
+<li>
+<p><code>ClientId.deserialize</code> can now fail. Calling <code>deserialize</code> on history client ids throws a <code>CoreCryptoError</code>.</p>
+</li>
+<li>
+<p>The documentation for <code>addCredential</code> previously stated that credentials registered with a single client must be
+distinct in credential type, signature scheme, and creation timestamp, and that you therefore had to wait a full
+second between registrations. This was never true of any released version; we fixed it before releasing 10.0.0. If
+you added a delay between <code>addCredential</code> calls to comply, you can remove it.</p>
+</li>
+<li>
+<p><code>CoreCryptoContext.setData</code> is now a synchronous function, not async.</p>
+</li>
+</ol>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="migrating-to-unreleased-typescript"><a class="header" href="#migrating-to-unreleased-typescript">Migrating to Unreleased: TypeScript</a></h1>
-<p>See the <a href="unreleased/migration-guide.html">common migration guide</a> for changes that apply to all platforms.</p>
+<h1 id="migrating-to-cc-11-typescript"><a class="header" href="#migrating-to-cc-11-typescript">Migrating to CC 11: TypeScript</a></h1>
+<p>See the <a href="#migrating-from-v10-to-v11">common migration guide</a> for changes that apply to all platforms.</p>
 <h2 id="browser-and-native-packages"><a class="header" href="#browser-and-native-packages">Browser and Native Packages</a></h2>
 <p>Browser bindings are published as <code>@wireapp/core-crypto</code>. The <code>@wireapp/core-crypto/browser</code> import remains available as
 an alias. Native bindings are published separately as <code>@wireapp/core-crypto-native</code>, which automatically installs its
@@ -950,622 +1025,97 @@ import { ... } from "@wireapp/core-crypto-native";
 <h2 id="database"><a class="header" href="#database">Database</a></h2>
 <p>Deprecated <code>Database.close()</code>. Database references are now automatically destroyed when the garbage collector cleans up
 the object. If you need to explicitly close the database, you can call <code>uniffiDestroy()</code> on the <code>Database</code> instance.</p>
+<p><code>Database.inMemory()</code> is now a synchronous function, not async.</p>
+<h2 id="reseed-browser"><a class="header" href="#reseed-browser">Reseed (Browser)</a></h2>
+<p><code>CoreCrypto.reseed</code> now requires exactly 32 bytes. Callers that pass a longer seed will now get an error.</p>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="whats-new-in-cc-10"><a class="header" href="#whats-new-in-cc-10">What’s New in CC 10</a></h1>
-<h2 id="new-apis"><a class="header" href="#new-apis">New APIs</a></h2>
-<p>With CC10 we introduce multiple new types that provide their own new API.</p>
-<h3 id="database-api"><a class="header" href="#database-api">Database API</a></h3>
-<ul>
-<li>
-<p><code>Database.getLocation()</code> allows getting the location of a persistent database instance. It returns <code>null</code> if the
-database is in-memory.</p>
-</li>
-<li>
-<p>added <code>Database.open(location: String, key: DatabaseKey)</code> as a static method to construct a persistent database
-instance, and <code>Database.open(key: DatabaseKey)</code> / <code>Database.inMemory(key: DatabaseKey)</code> to construct an in-memory
-database instance.</p>
-</li>
-<li>
-<p><strong>Typescript Only</strong>: Added <code>Database.close()</code> and <strong>removed</strong> <code>CoreCrypto.close()</code>. A <code>Database</code> should be closed if
-it is not used anymore. Closing a database makes any <code>PkiEnvironment</code> or <code>CoreCrypto</code> instance unusable. Calls to
-these instances will return a <code>CoreCryptoError.Other</code>. <code>CoreCrypto</code> instances do not need to be closed anymore.</p>
-</li>
-<li>
-<p>It is now safer to close a <code>Database</code>: instead of depending on a unique reference to the instance, it will just
-invalidate all other references to that instance.</p>
-</li>
-</ul>
-<h3 id="pki-environment-api"><a class="header" href="#pki-environment-api">PKI Environment API</a></h3>
-<ul>
-<li>Added <code>PkiEnvironment</code> constructed via
-<ul>
-<li><code>PkiEnvironment(database: Database, hooks: PkiEnvironmentHooks)</code> (swift)</li>
-<li><code>PkiEnvironment.new(database: Database, hooks: PkiEnvironmentHooks)</code> (kotlin)</li>
-<li><code>PkiEnvironment.create(database: Database, hooks: PkiEnvironmentHooks)</code> (ts)</li>
-</ul>
-</li>
-<li>Added <code>PkiEnvironmentHooks</code> interface which has to be implemented by a client and will be used by CoreCrypto during
-e2ei flow</li>
-<li>Added <code>CoreCrypto.setPkiEnvironment()</code> to set a PkiEnvironment on a <code>CoreCrypto</code> instance</li>
-<li>Added <code>CoreCrypto.getPkiEnvironment()</code> to get the PkiEnvironment of a <code>CoreCrypto</code> instance</li>
-</ul>
-<h3 id="credential-api"><a class="header" href="#credential-api">Credential API</a></h3>
-<p><code>Credential</code> is now a first-class type representing a cryptographic identity. A credential can be created at any time,
-lives in memory, and is independent of any client instance or storage. There are two variants: basic credentials,
-created with the <code>Credential.basic</code> static method, and X509 credentials, obtained through the acquisition flow described
-in the <a href="#x509-credential-acquisition">X509 Credential Acquisition</a> section of the migration guide.</p>
-<p>Initializing an MLS client no longer automatically generates any credentials; instead, any previously stored credentials
-are loaded automatically on MLS init. To put a freshly created credential to use, register it with <code>addCredential</code> on a
-transaction context, which stores it and adds it to the working set. This explicit model is considerably more flexible
-than before: rather than CoreCrypto implicitly selecting the most recent credential of a given type and cipher suite,
-clients now choose exactly which credential each operation should use.</p>
-<p>Registering a credential returns a <code>CredentialRef</code>: a compact, stable handle that uniquely identifies a single stored
-credential without shuttling the full credential data back and forth across the FFI boundary. A <code>CredentialRef</code> carries
-basic metadata about the credential it points to — client id, credential type, signature scheme, cipher suite, earliest
-validity, and the hash of its public key — and is the value you pass throughout the rest of the credential API.</p>
-<p>Two transaction-context methods recover these references for credentials already known to a client: <code>getCredentials</code>
-returns a <code>CredentialRef</code> for every credential, and <code>findCredentials</code> does the same while efficiently filtering by
-criteria you specify. To delete a credential, pass its <code>CredentialRef</code> to <code>removeCredential</code>; this verifies the
-credential is not in use by any conversation, removes every key package derived from it, and deletes it from both the
-working set and the keystore.</p>
-<blockquote class="blockquote-tag blockquote-tag-note">
-<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
-<p>CC v10.0 introduces lots of changes. We provide a <a href="#migration-guide">migration guide</a>.</p>
-</blockquote>
-<h2 id="new-platform-ts-native"><a class="header" href="#new-platform-ts-native">New Platform: TS Native</a></h2>
-<p>With CC 10 we are expanding the set of supported bindings. In addition to the existing browser bindings–now published
-as <code>@wireapp/core-crypto/browser</code>–we are also publishing bindings for Node and other native platforms, as
-<code>@wireapp/core-crypto/native</code>.</p>
-<p>These new bindings are conceptually more similar to <a href="https://kotlinlang.org/multiplatform/">KMP</a> than to the browser
-bindings: under the hood, they are not compiled to WASM at all. Instead, they call directly into a <code>.so</code> or <code>.dylib</code>
-library according to the relevant system.</p>
-<p>While the mechanics of the library’s implementation are different, the actual API will be very familiar; we’ve
-intentionally minimized the differences between the native and browser implementations.</p>
-<p>The most visible difference is initialization. The browser bindings require you to <code>await initWasmModule()</code> before
-constructing any types, but the native bindings have no such step; import and start using the API directly.</p>
-<p>The native package runs on Node and Bun, and currently ships prebuilt libraries for macOS (Apple Silicon) and Linux
-(x86_64, glibc); the appropriate one is selected automatically at runtime. Other platforms—including Intel macOS, ARM
-Linux, musl-based distributions, and Windows—are not currently prebuilt.</p>
-<blockquote class="blockquote-tag blockquote-tag-note">
-<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
-<p>When using <code>@wireapp/core-crypto/native</code> you need to install two additional dependencies: <code>@ubjs/node</code> and
-<code>@ubjs/core</code>. In CC 11 we will split the npm package into two separate npm packages. The native package will then
-include these dependencies.</p>
-</blockquote>
-<h3 id="removing-non-browser-wasm-support"><a class="header" href="#removing-non-browser-wasm-support">Removing non-browser WASM support</a></h3>
-<p>In 9.x it was possible to instantiate WASM clients in a node-like runtime, though without persistence. With the addition
-of the TS Native bindings, this is no longer supported. The TS Native bindings enable fully-persistent usage patterns
-outside the browser and should replace all usage of the WASM bindings outside the browser.</p>
+<h1 id="migrating-to-cc-11-swift"><a class="header" href="#migrating-to-cc-11-swift">Migrating to CC 11: Swift</a></h1>
+<p>See the <a href="#migrating-from-v10-to-v11">common migration guide</a> for changes that apply to all platforms.</p>
+<h2 id="database-path-and-salt"><a class="header" href="#database-path-and-salt">Database Path and Salt</a></h2>
+<p>The database path is no longer required to stay the same across CoreCrypto instances. In previous versions of
+CoreCrypto, the database path was used to look up salt values for the database encryption. This is no longer the case,
+and the salt values are now stored in a file in the same directory as the CoreCrypto database. For existing clients the
+database must be opened once with the old path in order for a migration to be performed.</p>
+<p>The salt file is named after the database, with a <code>.salt</code> suffix: <code>&lt;database path&gt;.salt</code>. The database can’t be
+decrypted without it, so whenever you move, back up or delete the database, do the same with the salt file.</p>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="migration-guide"><a href="#migration-guide" class="header">Migration Guide</a></h1>
-<h2 id="migrating-from-v100-to-v1030"><a class="header" href="#migrating-from-v100-to-v1030">Migrating from v10.0 to v10.3.0</a></h2>
-<h3 id="database-1"><a class="header" href="#database-1">Database</a></h3>
-<ol>
-<li>
-<p>Deprecated the <code>key</code> parameter from in-memory Database constructor. In-memory databases are never encrypted.</p>
-</li>
-<li>
-<p><code>Database.getLocation</code> now returns the absolute path to the database file for non-web platforms.</p>
-</li>
-</ol>
-<h3 id="decryptedmessage-1"><a class="header" href="#decryptedmessage-1">DecryptedMessage</a></h3>
-<p><code>DecryptedMessage</code> is now an enum with <code>Text</code>, <code>Commit</code>, and <code>Proposal</code> variants. Data that was previously exposed
-through optional properties is now carried by the corresponding variant. Match on the variant before accessing its data:</p>
-<div class="langtabs">
-<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
-<div class="langtabs-content">
-<div class="langtabs-code active" data-lang="typescript-0">
-<pre><code class="language-typescript">if (DecryptedMessage.Text.instanceOf(decryptedMessage)) {
-    const { plaintext, senderClientId, identity } = decryptedMessage.inner;
-    // Handle the application message.
-} else if (DecryptedMessage.Commit.instanceOf(decryptedMessage)) {
-    // Handle the commit.
-    const { isActive, bufferedMessages, identity } = decryptedMessage.inner;
-} else if (DecryptedMessage.Proposal.instanceOf(decryptedMessage)) {
-    const { delay, identity } = decryptedMessage.inner;
-    // Handle the proposal.
-}
-</code></pre>
-</div>
-
-<div class="langtabs-code" data-lang="swift-1">
-<pre><code class="language-swift">switch decryptedMessage {
-case let .text(plaintext, senderClientId, identity):
-    // Handle the application message.
-case let .commit(isActive, bufferedMessages, identity):
-    // Handle the commit.
-case let .proposal(delay, identity):
-    // Handle the proposal.
-}
-</code></pre>
-</div>
-
-<div class="langtabs-code" data-lang="kotlin-2">
-<pre><code class="language-kotlin">when (decryptedMessage) {
-    is DecryptedMessage.Text -&gt; {
-        val (plaintext, senderClientId, identity) = decryptedMessage
-        // Handle the application message.
-    }
-    is DecryptedMessage.Commit -&gt; {
-        val (isActive, bufferedMessages, identity) = decryptedMessage
-        // Handle the commit.
-    }
-    is DecryptedMessage.Proposal -&gt; {
-        val (delay, identity) = decryptedMessage
-        // Handle the proposal.
-    }
-}
-</code></pre>
-</div>
-</div>
-</div>
-
-<h2 id="migrating-from-v9x-to-v100"><a class="header" href="#migrating-from-v9x-to-v100">Migrating from v9.x to v10.0</a></h2>
-<p>This page covers breaking changes that are identical across all platforms. For platform-specific migration steps, see
-the sub-pages:</p>
-<ul>
-<li><a href="#migrating-to-cc-10-typescript">TypeScript</a></li>
-<li><a href="#migrating-to-cc-10-swift">Swift</a></li>
-<li><a href="#migrating-to-cc-10-kotlin">Kotlin</a></li>
-</ul>
-<h2 id="credentials"><a class="header" href="#credentials">Credentials</a></h2>
-<p>CC10 introduces first-class <code>Credential</code> and <code>CredentialRef</code> types. Previously, credentials were implicit: <code>mlsInit()</code>
-created a basic credential for each cipher suite automatically, and every operation that needed a credential selected
-one by taking a <code>(cipherSuite, credentialType)</code> pair. In CC10 you construct credentials explicitly and refer to them by
-<code>CredentialRef</code>. The <code>(cipherSuite, credentialType)</code> selector has been removed from every call site.</p>
-<p>This makes credential operations much more flexible: whereas in the past CC would always implicitly choose the most
-recent credential of a given type and cipher suite, clients can simply choose the appropriate credential.</p>
-<h3 id="creating-and-registering-credentials"><a class="header" href="#creating-and-registering-credentials">Creating and registering credentials</a></h3>
-<ol>
-<li>
-<p><code>mlsInit()</code> no longer creates any credential or key packages. After initializing MLS, create at least one credential
-yourself. See also <a href="#mls-initialization">MLS Initialization</a> and <a href="#key-packages">Key Packages</a>.</p>
-</li>
-<li>
-<p>Create a basic credential with the <code>Credential.basic(cipherSuite, clientId)</code> static method. To obtain an X509
-credential, use the acquisition flow described in <a href="#x509-credential-acquisition">X509 Credential Acquisition</a>. A
-<code>Credential</code> lives in memory and is independent of any client instance.</p>
-</li>
-<li>
-<p>Register the credential with <code>transactionContext.addCredential(credential)</code>. This persists it and returns a
-<code>CredentialRef</code>: a compact, stable handle you pass to the rest of the API in place of the old selector pair.</p>
-</li>
-<li>
-<p>On MLS initialization, previously stored credentials are loaded automatically. Enumerate them with
-<code>getCredentials()</code>, or filter with <code>findCredentials(...)</code>, to recover their <code>CredentialRef</code>s.</p>
-</li>
-</ol>
-<h3 id="passing-credentials-to-operations"><a class="header" href="#passing-credentials-to-operations">Passing credentials to operations</a></h3>
-<p>Replace the old <code>(cipherSuite, credentialType)</code> arguments with a <code>CredentialRef</code>:</p>
+<h1 id="migrating-to-cc-11-kotlin"><a class="header" href="#migrating-to-cc-11-kotlin">Migrating to CC 11: Kotlin</a></h1>
+<p>See the <a href="#migrating-from-v10-to-v11">common migration guide</a> for changes that apply to all platforms.</p>
+<h2 id="maven-repository"><a class="header" href="#maven-repository">Maven Repository</a></h2>
+<p>The JVM, Android and KMP packages are now published to Wire’s Maven repository, <a href="https://maven.wire.com">https://maven.wire.com</a>, instead of
+Maven Central. Add <code>maven { url = uri("https://maven.wire.com") }</code> to your repositories. Earlier releases remain on
+Maven Central.</p>
+<h2 id="timestamps"><a class="header" href="#timestamps">Timestamps</a></h2>
+<p>Timestamps now use <code>kotlin.time.Instant</code> instead of <code>kotlinx.datetime.Instant</code>. This affects <code>X509Identity.notBefore</code>
+and <code>X509Identity.notAfter</code>.</p>
+<h2 id="database-salt-on-ios"><a class="header" href="#database-salt-on-ios">Database Salt on iOS</a></h2>
+<p>On the iOS targets, the database salt has moved from the keychain into a file next to the database. See the
+<a href="#database-path-and-salt">Swift migration guide</a> for what this means for existing clients.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="coming-from-v9"><a class="header" href="#coming-from-v9">Coming from v9</a></h1>
+<p>If you are still on CoreCrypto 9, you can upgrade straight to CC 11. Follow the
+<a href="https://wireapp.github.io/core-crypto/v10.5.3/cc-book/cc10/migration-guide.html">CC 10 migration guide</a> first, and then
+the <a href="#migrating-from-v10-to-v11">CC 11 migration guide</a>. Some steps in the CC 10 guide were changed again in CC 11, so you can
+skip them or take a shorter path. This page lists those steps.</p>
+<p>Upgrading straight to CC 11 also gets you the fixes for the v9 data migration. Some clients that upgraded from v9 to v10
+lost credentials, and with them their conversations. CC 11 fixes this. See the <a href="#release-notes">release notes</a> for
+details.</p>
+<h2 id="decryptedmessage-1"><a class="header" href="#decryptedmessage-1">DecryptedMessage</a></h2>
+<p>In v10.3.0, <code>DecryptedMessage</code> changed from a struct with optional fields to an enum with <code>Text</code>, <code>Commit</code> and
+<code>Proposal</code> variants. CC 11 renames <code>Text</code> to <code>ApplicationMessage</code> and adds three more variants. Skip the <code>Text</code> step and
+go straight to the CC 11 enum, as shown in the <a href="#decryptedmessage">CC 11 migration guide</a>.</p>
+<p>The v9 fields map onto the variants as follows:</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Operation</th><th>v9.x</th><th>v10.0</th></tr>
+<tr><th>v9 field</th><th>CC 11</th></tr>
 </thead>
 <tbody>
-<tr><td>Create a conversation</td><td><code>createConversation(id, creatorCredentialType, config)</code></td><td><code>createConversation(id, credentialRef, externalSender?)</code></td></tr>
-<tr><td>Join by external commit</td><td><code>joinByExternalCommit(groupInfo, config, credentialType)</code></td><td><code>joinByExternalCommit(groupInfo, credentialRef)</code></td></tr>
-<tr><td>Generate key packages</td><td><code>clientKeypackages(cipherSuite, credentialType, amount)</code></td><td>repeated <code>generateKeyPackage(credentialRef)</code></td></tr>
-<tr><td>Switch a conversation’s credential</td><td><code>e2eiRotate(conversationId)</code></td><td><code>setConversationCredential(conversationId, credentialRef)</code></td></tr>
+<tr><td><code>message</code></td><td><code>ApplicationMessage.plaintext</code></td></tr>
+<tr><td><code>senderClientId</code></td><td><code>ApplicationMessage.senderClientId</code></td></tr>
+<tr><td><code>isActive</code>, <code>bufferedMessages</code></td><td><code>Commit.isActive</code>, <code>Commit.bufferedMessages</code></td></tr>
+<tr><td><code>commitDelay</code></td><td><code>Proposal.delay</code></td></tr>
+<tr><td><code>identity</code></td><td><code>identity</code> on every variant</td></tr>
+<tr><td><code>hasEpochChanged</code></td><td>removed in CC 10, use the <code>EpochObserver</code> interface</td></tr>
 </tbody>
 </table>
 </div>
-<p>A conversation’s cipher suite is now derived from its credential, so <code>createConversation()</code> no longer accepts a separate
-cipher suite.</p>
-<p>To remove a credential, call <code>removeCredential(credentialRef)</code>. This checks that the credential is not in use by any
-conversation, removes every key package derived from it, and deletes it from both the working set and the keystore.</p>
-<h3 id="public-keys"><a class="header" href="#public-keys">Public keys</a></h3>
-<p>A <code>Credential</code> carries a public key but exposes no method to export it. To read the public key, register the credential
-with <code>addCredential</code> to obtain a <code>CredentialRef</code>, then call <code>coreCrypto.publicKey(credentialRef)</code> returns the raw public
-key bytes. This replaces v9.x’s <code>clientPublicKey(cipherSuite, credentialType)</code>.</p>
-<p>There also exist other helpers to work with public keys:</p>
+<h2 id="e2ei-checks"><a class="header" href="#e2ei-checks">E2EI Checks</a></h2>
+<p>The CC 10 guide says that <code>e2eiIsPkiEnvSetup</code> can no longer throw. You can skip that step: CC 11 removes the function
+completely, along with <code>e2eiIsEnabled</code>. Replace both v9 calls directly:</p>
 <ul>
-<li><code>credentialRef.publicKeyHash()</code> returns the SHA256 hash of the public key.</li>
-<li><code>coreCrypto.exportCredentialPem(credentialRef)</code> serializes the public key of a credential into PEM format</li>
+<li><code>e2eiIsPkiEnvSetup</code>: call <code>getPkiEnvironment</code> and check whether it returns an environment.</li>
+<li><code>e2eiIsEnabled</code>: call <code>findCredentials</code> and check whether an X509 credential for the cipher suite exists.</li>
 </ul>
-<h2 id="x509-credential-acquisition"><a class="header" href="#x509-credential-acquisition">X509 Credential Acquisition</a></h2>
-<p>The enrollment API that previously drove the ACME and OIDC exchanges step-by-step from the client has been <strong>removed</strong>.
-The whole ACME / DPoP / OIDC sequence is now hidden behind a single object, <code>X509CredentialAcquisition</code>, which the
-client constructs once and then calls <code>finalize()</code> on to obtain a <code>Credential</code>. CoreCrypto reaches back into the client
-only via well-defined hook points; the client no longer threads nonces, account responses, order requests, or challenge
-payloads through its own code.</p>
-<p>Where you previously called <code>e2eiNewEnrollment</code>, <code>e2eiNewActivationEnrollment</code>, <code>e2eiNewRotateEnrollment</code>,
-<code>directoryResponse</code>, <code>newAccountRequest</code>/<code>Response</code>, <code>newOrderRequest</code>/<code>Response</code>, <code>newAuthzRequest</code>/<code>Response</code>,
-<code>createDpopToken</code>, <code>newDpopChallengeRequest</code>/<code>Response</code>, <code>newOidcChallengeRequest</code>/<code>Response</code>,
-<code>checkOrderRequest</code>/<code>Response</code>, <code>finalizeRequest</code>/<code>Response</code>, or <code>certificateRequest</code> — delete all of it. The new flow
-replaces every one of those calls.</p>
-<h3 id="acquiring-an-x509-credential"><a class="header" href="#acquiring-an-x509-credential">Acquiring an X509 credential</a></h3>
-<ol>
-<li>
-<p><strong>Implement <code>PkiEnvironmentHooks</code></strong>. CoreCrypto will call these hooks during acquisition:</p>
-<ul>
-<li><code>httpRequest</code> — perform HTTP requests against the ACME server, CRL distributors, and similar.</li>
-<li><code>authenticate</code> — drive the IdP authorization code flow with PKCE and return the resulting ID token.</li>
-<li><code>getBackendNonce</code> — obtain a nonce from the Wire backend.</li>
-<li><code>fetchBackendAccessToken</code> — exchange the DPoP token for a backend access token.</li>
-</ul>
-</li>
-<li>
-<p><strong>Create a <code>PkiEnvironment</code></strong> with <code>PkiEnvironment.new(hooks, database)</code> (TypeScript) or
-<code>createPkiEnvironment(hooks, database)</code> (Swift/Kotlin). The <code>Database</code> can be the same used by the <code>CoreCrypto</code>
-instance or distinct; they use unrelated tables. That said, it is typically more convenient to use a single database.</p>
-</li>
-<li>
-<p><strong>Build an <code>X509CredentialAcquisitionConfiguration</code></strong> describing the certificate you want:</p>
-<ul>
-<li><code>acmeUrl</code> - the URL of the ACME server</li>
-<li><code>cipher_suite</code> — must be one of the four with a JWS-compatible signature scheme: Ed25519, P256, P384, or P521.
-Other cipher suites will fail at construction.</li>
-<li><code>displayName</code>, <code>clientId</code>, <code>handle</code>, <code>domain</code>, optional <code>team</code></li>
-<li><code>validityPeriodSecs</code></li>
-</ul>
-</li>
-<li>
-<p><strong>Construct the acquisition</strong>: <code>X509CredentialAcquisition.new(pkiEnvironment, configuration)</code>.</p>
-</li>
-<li>
-<p><strong>Call <code>await acquisition.finalize()</code></strong>. This drives the DPoP and OIDC challenges to completion, calling your hooks
-as needed, and returns the acquired <code>Credential</code>. The acquisition can only be finalized once; a second call throws.</p>
-</li>
-<li>
-<p><strong>Attach the credential</strong> to the client with <code>transactionContext.addCredential(credential)</code>, exactly as for a basic
-credential. This persists it to the internal database and returns a <code>CredentialRef</code>.</p>
-</li>
-</ol>
-<h3 id="pausing-across-the-idp-redirect"><a class="header" href="#pausing-across-the-idp-redirect">Pausing across the IdP redirect</a></h3>
-<p>The IdP authentication flow typically requires an external redirect, after which the app may have been suspended,
-backgrounded, or restarted. To support this, the <code>authenticate</code> hook receives an <code>acquisitionSnapshot: bytes</code> parameter
-capturing the acquisition state at the point the DPoP challenge has completed and OIDC is about to begin. Persist these
-bytes to encrypted storage before launching the IdP flow.</p>
-<p>When the app resumes and is ready to complete acquisition, reconstruct the acquisition from the snapshot with
-<code>X509CredentialAcquisition.fromBytes(pkiEnvironment, snapshot)</code> and call <code>finalize()</code> on the reconstructed instance.
-There is no client-visible serialization method on <code>X509CredentialAcquisition</code> itself; the snapshot bytes are delivered
-to you exclusively through the <code>authenticate</code> hook’s <code>acquisitionSnapshot</code> parameter.</p>
-<h3 id="checking-for-expiration-and-revocation"><a class="header" href="#checking-for-expiration-and-revocation">Checking for expiration and revocation</a></h3>
-<p>Call <code>checkCredentials</code> at least once every 24 hours to check all X509 credentials for expiration and revocation. It is
-recommended to do this during an idle period, because HTTP requests are done to fetch new certificate revocation lists.</p>
-<h2 id="key-packages"><a class="header" href="#key-packages">Key Packages</a></h2>
-<ol>
-<li>
-<p>We <strong>removed</strong> <code>CoreCryptoContext.clientKeypackages()</code>. To generate a desired amount of key packages, make repeated
-calls to <code>CoreCryptoContext.generateKeyPackage()</code>.</p>
-</li>
-<li>
-<p>We <strong>removed</strong> <code>CoreCryptoContext.clientValidKeypackagesCount()</code>. To count remaining key packages, call
-<code>CoreCryptoContext.getKeyPackages()</code>, filter the results as desired, and count the remaining items.</p>
-</li>
-<li>
-<p>We aligned key package spelling to <code>KeyPackage</code>:</p>
-<ul>
-<li>renamed <code>Keypackage</code> → <code>KeyPackage</code></li>
-<li>renamed <code>KeypackageRef</code> → <code>KeyPackageRef</code></li>
-<li>renamed <code>generateKeypackage</code> → <code>generateKeyPackage</code></li>
-<li>renamed <code>getKeypackages</code> → <code>getKeyPackages</code></li>
-<li>renamed <code>removeKeypackage</code> → <code>removeKeyPackage</code></li>
-<li>renamed <code>removeKeypackagesFor</code> → <code>removeKeyPackagesFor</code></li>
-</ul>
-</li>
-</ol>
-<h2 id="mls-initialization"><a class="header" href="#mls-initialization">MLS Initialization</a></h2>
-<ol>
-<li>
-<p><code>mlsInit()</code> was decoupled from key package creation. To create key packages after initializing MLS, call
-<code>CoreCryptoContext.generateKeyPackage()</code> in a transaction.</p>
-</li>
-<li>
-<p>Removed <code>CoreCrypto.provideTransport()</code>, added <code>transport</code> parameter to <code>CoreCryptoContext.mlsInit()</code>. Instead of
-providing transport separately from MLS initialization, provide it when calling <code>mlsInit()</code>.</p>
-</li>
-</ol>
-<h2 id="validated-input-types"><a class="header" href="#validated-input-types">Validated Input Types</a></h2>
-<p>In several instances we have replaced parameters which used to be parsed at call time with exported types which are
-parsed at instantiation. This simplifies error propagation, because clients now receive parse errors directly at
-instantiation. It also simplifies call sites, because they can no longer return parse errors.</p>
-<ol>
-<li>
-<p><code>GroupInfo.new()</code> and <code>Welcome.new()</code> are now <strong>fallible</strong> constructors. Previously, both accepted any byte sequence
-unconditionally. They now validate the input as a TLS-encoded MLS structure at construction time and throw if the
-bytes are malformed.</p>
-</li>
-<li>
-<p>We <strong>removed</strong> <code>GroupInfo.copyBytes()</code> and <code>Welcome.copyBytes()</code>. The underlying types no longer store raw bytes and
-cannot be round-tripped back to a byte array.</p>
-</li>
-<li>
-<p>Added <code>Welcome.serialize()</code>, which recovers the TLS-serialized bytes (replacing the removed <code>copyBytes()</code>). It is
-fallible and throws if serialization fails.</p>
-</li>
-<li>
-<p><code>GroupInfo</code> and <code>Welcome</code> no longer support equality comparisons, hashing, or hex string display in generated
-bindings.</p>
-</li>
-<li>
-<p><code>createConversation()</code> now takes a single optional, parsed <code>ExternalSender</code> object instead of a list of raw
-external-sender byte arrays carried on the conversation configuration. Parse the external sender ahead of time with:</p>
-<ul>
-<li><code>ExternalSender.parseJwk(jwk)</code> for the JWK form,</li>
-<li><code>ExternalSender.parsePublicKey(key, signatureScheme)</code> for the legacy raw public-key form, or</li>
-<li><code>ExternalSender.parse(key, signatureScheme)</code> to try the JWK form first and fall back to the raw public-key form.</li>
-</ul>
-<p>Parse errors are reported at parse time rather than during conversation creation. Call <code>externalSender.serialize()</code>
-to recover the raw public-key bytes; these match the <code>parsePublicKey</code> form and the <code>ExternalSenderKey</code> returned by
-<code>getExternalSender()</code>. Note that <code>ExternalSender</code> (the parsed input type) is distinct from <code>ExternalSenderKey</code> (the
-raw key type that <code>getExternalSender()</code> returns).</p>
-</li>
-</ol>
-<h2 id="no-more-buffering-of-unmerged-changes-while-decrypting"><a class="header" href="#no-more-buffering-of-unmerged-changes-while-decrypting">No More Buffering of Unmerged Changes While Decrypting</a></h2>
-<p>During decryption, CoreCrypto would previously automatically replay previously executed but unmerged (i.e., not yet
-accepted by the delivery service) operations. This behavior has changed: the responsibility of replaying any unmerged
-operations is delegated to the consumer.</p>
-<h2 id="mlstransport-interface"><a class="header" href="#mlstransport-interface">MlsTransport Interface</a></h2>
-<ol>
-<li>
-<p>Instead of returning an <code>MlsTransportResponse</code> to communicate the reason why a message was rejected by the DS, throw
-an <code>MlsTransportError</code> instead. <code>MlsTransportResponse</code> was removed.</p>
-</li>
-<li>
-<p>Removed <code>sendMessage</code> method from <code>MlsTransport</code> interface. This wasn’t well-documented and wasn’t being used in any
-case. We remove it for the purpose of making life easier for everyone.</p>
-</li>
-</ol>
-<h2 id="renaming-ciphersuite-to-cipher-suite"><a class="header" href="#renaming-ciphersuite-to-cipher-suite">Renaming “Ciphersuite” to “Cipher Suite”</a></h2>
-<p>We aligned cipher suite spelling to <code>CipherSuite</code>:</p>
-<ul>
-<li>renamed <code>Ciphersuite</code> → <code>CipherSuite</code></li>
-<li>renamed <code>ciphersuiteFromU16</code> → <code>cipherSuiteFromU16</code></li>
-<li>renamed <code>ciphersuiteDefault</code> → <code>cipherSuiteDefault</code></li>
-<li>renamed <code>conversationCiphersuite</code> → <code>conversationCipherSuite</code></li>
-<li>renamed any parameters and fields <code>ciphersuite</code> → <code>cipherSuite</code></li>
-</ul>
-<h2 id="client-id-initialization"><a class="header" href="#client-id-initialization">Client ID initialization</a></h2>
-<p>Previously, initialization was done via <code>ClientId.new(bytes)</code>, where bytes was a string of a specific format with a user
-id, device id, and domain. The new constructor takes care of this for you and ensures all client ids conform to this
-fomat: <code>ClientId.new(userId, deviceId, domain)</code>. <code>userId</code> must be an instance of the newly added type <code>Uuid</code>, and
-<code>deviceId</code> a <code>DeviceId</code>.</p>
-<h2 id="other-changes"><a class="header" href="#other-changes">Other Changes</a></h2>
-<ol>
-<li>
-<p><code>CoreCrypto.e2eiIsEnvSetup()</code> can’t throw anymore and will always return a boolean.</p>
-</li>
-<li>
-<p>removed <code>.proteusFingerprintPrekeybundle()</code> and <code>.proteusLastResortPrekeyId()</code> from <code>CoreCryptoContext</code>. Both are
-available as static methods on <code>CoreCrypto</code>.</p>
-</li>
-<li>
-<p>removed <code>CoreCryptoContext.proteusReloadSessions()</code>. Proteus sessions are now loaded on demand by the new per-session
-cache, so explicit reloads are no longer needed. Delete any call sites.</p>
-</li>
-<li>
-<p><code>GroupInfoBundle.payload</code> now contains a byte array instead of a class instance.</p>
-</li>
-<li>
-<p>The <code>updateDatabaseKey</code> function has been moved; it is now a static method <code>Database.updateKey</code>.</p>
-</li>
-<li>
-<p>removed <code>CoreCryptoContext.markConversationAsChildOf()</code>. No client should actually be using this function and all
-existing references to it should be removed.</p>
-</li>
-<li>
-<p>The duplicate signature error when adding members to a conversation now contain debug information about which members
-had duplicate signatures.</p>
-</li>
-<li>
-<p>Removed <code>WelcomeBundle</code> type that was returned from <code>processWelcomeMessage()</code> and <code>joinByExternalCommit()</code>. They
-return a <code>ConversationId</code> now only.</p>
-</li>
-<li>
-<p>Removed previously deprecated field <code>hasEpochChanged</code> from <code>DecryptedMessage</code>. Use the <code>EpochObserver</code> interface.</p>
-</li>
-</ol>
-<div style="break-before: page; page-break-before: always;"></div>
-<h1 id="migrating-to-cc-10-typescript"><a class="header" href="#migrating-to-cc-10-typescript">Migrating to CC 10: TypeScript</a></h1>
-<p>See the <a href="#migration-guide">common migration guide</a> for changes that apply to all platforms.</p>
-<h2 id="browser-module-location"><a class="header" href="#browser-module-location">Browser Module Location</a></h2>
-<p>We want to prepare the ground for a native module, which runs on node or bun. Therefore, the browser module is now
-exported as <code>@wireapp/core-crypto/browser</code>. Update your imports:</p>
-<pre><code class="language-typescript">// before
-import { ... } from "@wireapp/core-crypto";
-
-// after
-import { ... } from "@wireapp/core-crypto/browser";
-</code></pre>
-<h2 id="corecrypto-instantiation"><a class="header" href="#corecrypto-instantiation">CoreCrypto Instantiation</a></h2>
-<ol>
-<li>
-<p>The <code>CoreCrypto</code> constructor now takes a <code>Database</code> instance instead of a <code>DatabaseKey</code> and a path. To instantiate a
-database, call <code>openDatabase()</code>.</p>
-</li>
-<li>
-<p>Deferred init is now the only way to instantiate <code>CoreCrypto</code>. We <strong>replaced</strong> <code>CoreCrypto.init(database: Database)</code>
-with the static function <code>CoreCrypto.new(database: Database)</code>. Instead of calling <code>CoreCrypto.deferredInit()</code>, call
-<code>CoreCrypto.new()</code>. As before, call <code>mlsInit()</code> in a transaction to initialize MLS.</p>
-</li>
-</ol>
-<h2 id="logging"><a class="header" href="#logging">Logging</a></h2>
-<ol>
-<li>
-<p>We <strong>removed</strong> <code>CoreCrypto.setLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel)</code> and
-<code>CoreCrypto.setMaxLogLevel(level: CoreCryptoLogLevel)</code>, as logging is configured globally and not tied to a
-<code>CoreCrypto</code> instance. To set the log level, use the free function <code>setMaxLogLevel(level: CoreCryptoLogLevel)</code>.</p>
-</li>
-<li>
-<p>We <strong>renamed</strong> <code>setLoggerOnly(logger: CoreCryptoLogger)</code> to <code>setLogger(logger: CoreCryptoLogger)</code>.</p>
-</li>
-</ol>
-<h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
-<h3 id="error-structure"><a class="header" href="#error-structure">Error Structure</a></h3>
-<p>We adjusted the TypeScript error structure. Whenever matching on errors using version <code>&gt;= 9.1.0</code> type guards, update
-their usage as shown in the examples below.</p>
-<blockquote class="blockquote-tag blockquote-tag-note">
-<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
-<p>For more info, see
-<a href="https://jhugman.github.io/uniffi-bindgen-react-native/idioms/errors.html#enums-as-errors">the corresponding section of the ubrn docs</a></p>
-</blockquote>
-<p><strong>Extracting the abort reason given via throwing an <code>MlsTransportError</code>:</strong></p>
-<pre><code class="language-typescript">import { CoreCryptoError, MlsError } from "core-crypto";
-
-try {
-    // send a commit that is rejected by the DS
-} catch (err) {
-  if (CoreCryptoError.Mls.instanceOf(err) &amp;&amp;
-      MlsError.MessageRejected.instanceOf(err.inner.mlsError)) {
-    const rejectReason = err.inner.mlsError.inner.reason;
-    // other things you want to do with this error...
-  } else {
-      // log error
-  }
-}
-</code></pre>
-<p><strong>Optional: use <code>switch</code> to handle multiple errors in one go:</strong></p>
-<pre><code class="language-typescript">import { CoreCryptoError, MlsError, MlsError_Tags } from "core-crypto";
-
-try {
-    // send a commit that is rejected by the DS
-} catch (err) {
-    if (CoreCryptoError.Mls.instanceOf(err)) {
-        switch (err.inner.mlsError.tag) {
-            case MlsError_Tags.MessageRejected: {
-                const rejectedReason = err.inner.mlsError.inner.reason;
-                // other things you want to do with this error...
-                break;
-            }
-
-            // handle other mls errors
-        }
-    }
-}
-</code></pre>
-<p><strong>Catch a proteus error:</strong></p>
-<pre><code class="language-typescript">import { CoreCryptoError, ProteusError } from "core-crypto";
-
-try {
-    // look for a proteus session that doesn't exist
-} catch (err) {
-  if (CoreCryptoError.Proteus.instanceOf(err) &amp;&amp;
-      ProteusError.SessionNotFound.instanceOf(err.inner.exception)) {
-     let message = err.inner.exception.message;
-     // other things you want to do with this error...
-  } else {
-      // log error
-  }
-}
-</code></pre>
-<h3 id="proteus-error-codes"><a class="header" href="#proteus-error-codes">Proteus Error Codes</a></h3>
-<p>The <code>proteusErrorCode</code> field was removed from the root error type. There is a deterministic mapping from error code to
-error type. If you were using the error code, use the error type instead (see above). See
-<a href="https://github.com/wireapp/proteus/blob/develop/crates/proteus-traits/src/lib.rs">the proteus-traits error table</a> for
-the mapping.</p>
-<h2 id="other"><a class="header" href="#other">Other</a></h2>
-<ol>
-<li>
-<p><code>CoreCryptoContext.generateKeyPackage()</code> now returns a <code>KeyPackage</code> instance instead of an <code>Uint8Array</code>. If you need
-the underlying <code>Uint8Array</code>, call the <code>serialize</code> property on the <code>KeyPackage</code>.</p>
-</li>
-<li>
-<p><code>CustomConfiguration.keyRotationSpan</code> now defines milliseconds instead of seconds.</p>
-</li>
-<li>
-<p>renamed <code>CoreCrypto.reseedRng()</code> to <code>CoreCrypto.reseed()</code></p>
-</li>
-<li>
-<p>In versions <code>9.x</code>, it was possible to instantiate wasm clients in a node-like runtime (without persistence, though).
-This is no longer supported. Use <code>@wireapp/core-crypto/native</code> instead for fully featured CoreCrypto with
-persistence.</p>
-</li>
-</ol>
-<div style="break-before: page; page-break-before: always;"></div>
-<h1 id="migrating-to-cc-10-swift"><a class="header" href="#migrating-to-cc-10-swift">Migrating to CC 10: Swift</a></h1>
-<p>See the <a href="#migration-guide">common migration guide</a> for changes that apply to all platforms.</p>
-<h2 id="corecrypto-instantiation-1"><a class="header" href="#corecrypto-instantiation-1">CoreCrypto Instantiation</a></h2>
-<ol>
-<li>
-<p>The <code>CoreCrypto</code> constructor now takes a <code>Database</code> instance instead of a <code>DatabaseKey</code> and a path. To instantiate a
-database, call the <code>Database.open()</code> static method.</p>
-</li>
-<li>
-<p>Deferred init is now the only way to instantiate <code>CoreCrypto</code>. Instead of calling <code>deferredInit()</code>, call the
-<code>CoreCrypto</code> constructor. As before, call <code>mlsInit()</code> in a transaction to initialize MLS.</p>
-</li>
-</ol>
-<h2 id="higher-level-newtypes"><a class="header" href="#higher-level-newtypes">Higher-Level Newtypes</a></h2>
-<p><code>CoreCryptoContext.getExternalSender()</code> now returns an <code>ExternalSenderKey</code> object instead of a byte array. To access the
-raw bytes, call <code>externalSenderKey.copyBytes()</code>.</p>
-<h2 id="logging-1"><a class="header" href="#logging-1">Logging</a></h2>
-<ol>
-<li>
-<p>We <strong>removed</strong> <code>CoreCrypto.setLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel)</code> and
-<code>CoreCrypto.setMaxLogLevel(level: CoreCryptoLogLevel)</code>, as logging is configured globally and not tied to a
-<code>CoreCrypto</code> instance. To set the log level, use the free function <code>setMaxLogLevel(level: CoreCryptoLogLevel)</code>.</p>
-</li>
-<li>
-<p>We <strong>renamed</strong> <code>setLoggerOnly(logger: CoreCryptoLogger)</code> to <code>setLogger(logger: CoreCryptoLogger)</code>.</p>
-</li>
-</ol>
-<h2 id="other-1"><a class="header" href="#other-1">Other</a></h2>
-<ol>
-<li>
-<p>Removed <code>CoreCryptoFfi.reseedRng()</code> and <code>CoreCryptoFfi.randomBytes()</code>.</p>
-</li>
-<li>
-<p><code>DatabaseKey</code> constructor parameter is now named <code>bytes</code> not <code>key</code></p>
-</li>
-<li>
-<p>Removed the following static methods from <code>CoreCrypto</code> that were globally available:</p>
-<ul>
-<li><code>version()</code></li>
-<li><code>buildMetadata()</code></li>
-</ul>
-</li>
-</ol>
-<div style="break-before: page; page-break-before: always;"></div>
-<h1 id="migrating-to-cc-10-kotlin"><a class="header" href="#migrating-to-cc-10-kotlin">Migrating to CC 10: Kotlin</a></h1>
-<p>See the <a href="#migration-guide">common migration guide</a> for changes that apply to all platforms.</p>
-<h2 id="renames-and-moves"><a class="header" href="#renames-and-moves">Renames and Moves</a></h2>
-<ol>
-<li>
-<p><code>CoreCryptoClient</code> has been renamed to <code>CoreCrypto</code>.</p>
-</li>
-<li>
-<p><code>historyClient(historySecret: HistorySecret)</code> has been moved into <code>CoreCrypto</code> Companion functions.</p>
-</li>
-</ol>
-<h2 id="corecrypto-instantiation-2"><a class="header" href="#corecrypto-instantiation-2">CoreCrypto Instantiation</a></h2>
-<ol>
-<li>
-<p>The <code>CoreCrypto</code> constructor now takes a <code>Database</code> instance instead of a <code>DatabaseKey</code> and a path. To instantiate a
-database, call the <code>Database.open()</code> static method.</p>
-</li>
-<li>
-<p>Deferred init is now the only way to instantiate <code>CoreCrypto</code>. Instead of calling <code>deferredInit()</code>, call the
-<code>CoreCrypto</code> constructor. As before, call <code>mlsInit()</code> in a transaction to initialize MLS.</p>
-</li>
-</ol>
-<h2 id="higher-level-newtypes-1"><a class="header" href="#higher-level-newtypes-1">Higher-Level Newtypes</a></h2>
-<p><code>CoreCryptoContext.getExternalSender()</code> now returns an <code>ExternalSenderKey</code> object instead of a byte array. To access the
-raw bytes, call <code>externalSenderKey.copyBytes()</code>.</p>
-<h2 id="logging-2"><a class="header" href="#logging-2">Logging</a></h2>
-<ol>
-<li>We <strong>removed</strong> <code>level</code> parameter from <code>setLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel)</code>. To set the
-log level, use the free function <code>setMaxLogLevel(level: CoreCryptoLogLevel)</code>.</li>
-<li>We <strong>removed</strong> <code>setLoggerOnly</code>.</li>
-</ol>
-<h2 id="other-2"><a class="header" href="#other-2">Other</a></h2>
-<ol>
-<li>Removed <code>CoreCryptoFfi.reseedRng()</code> and <code>CoreCryptoFfi.randomBytes()</code>.</li>
-<li>Removed <code>String.toClientId()</code>. Use the regular <code>ClientId</code> constructor to get a <code>ClientId</code>.</li>
-</ol>
+<h2 id="typescript-1"><a class="header" href="#typescript-1">TypeScript</a></h2>
+<h3 id="imports"><a class="header" href="#imports">Imports</a></h3>
+<p>CC 10 moved the browser bindings to <code>@wireapp/core-crypto/browser</code>. In CC 11, <code>@wireapp/core-crypto</code> contains the
+browser bindings again, so you can keep your v9 imports.</p>
+<h3 id="running-outside-the-browser"><a class="header" href="#running-outside-the-browser">Running outside the browser</a></h3>
+<p>If you ran the wasm bindings in Node or another non-browser runtime under v9, switch to <code>@wireapp/core-crypto-native</code>.
+You don’t need the <code>@wireapp/core-crypto/native</code> subpath from CC 10. The new package also installs its <code>@ubjs/core</code> and
+<code>@ubjs/node</code> dependencies, so you don’t need to add them yourself.</p>
+<h3 id="closing-a-database"><a class="header" href="#closing-a-database">Closing a Database</a></h3>
+<p>CC 10 removed <code>CoreCrypto.close()</code> and added <code>Database.close()</code>. CC 11 deprecates <code>Database.close()</code> again, because
+database references are now destroyed when they are garbage-collected. Remove your v9 <code>close()</code> calls, and don’t adopt
+<code>Database.close()</code>. If you need to close a database explicitly without relying on the garbage collector, call
+<code>uniffiDestroy()</code> on the <code>Database</code> instance.</p>
+<h3 id="reseeding"><a class="header" href="#reseeding">Reseeding</a></h3>
+<p>CC 10 renamed <code>reseedRng()</code> to <code>reseed()</code>. In CC 11, <code>reseed()</code> also requires the seed to be exactly 32 bytes long. Make
+both changes at once.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
-<h2 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h2>
+<h2 id="corecrypto-11"><a class="header" href="#corecrypto-11">CoreCrypto 11</a></h2>
+<h3 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h3>
 <ul>
 <li>
-<p>The <code>thumbprint</code> of a <code>WireIdentity</code> is now always computed with SHA-256, regardless of the ciphersuite. It used to be
-computed with the ciphersuite’s hash algorithm.</p>
+<p>The <code>thumbprint</code> of a <code>WireIdentity</code> is now always computed with SHA-256, regardless of the cipher suite. It used to
+be computed with the cipher suite’s hash algorithm.</p>
 </li>
 <li>
-<p>CoreCrypto now has support for 11 post-quantum ciphersuites, as defined by the
+<p>CoreCrypto now has support for 11 post-quantum cipher suites, as defined by the
 <a href="https://www.ietf.org/archive/id/draft-ietf-mls-pq-ciphersuites-06.html">draft</a>. Specifically, support has been added
-for the 6 ciphersuites that use hybrid (post-quantum + classical) key-exchange mechanisms:</p>
+for the 6 cipher suites that use hybrid (post-quantum + classical) key-exchange mechanisms:</p>
 <ul>
 <li><code>MLS_128_MLKEM768X25519_AES128GCM_SHA256_Ed25519</code></li>
 <li><code>MLS_128_MLKEM768X25519_AES256GCM_SHA384_Ed25519</code></li>
@@ -1574,7 +1124,7 @@ for the 6 ciphersuites that use hybrid (post-quantum + classical) key-exchange m
 <li><code>MLS_128_MLKEM768X25519_CHACHA20POLY1305_SHA384_MLDSA44</code></li>
 <li><code>MLS_192_MLKEM1024P384_AES256GCM_SHA384_P384</code></li>
 </ul>
-<p>as well as the 5 ciphersuites that use pure post-quantum key-exchange mechanisms:</p>
+<p>as well as the 5 cipher suites that use pure post-quantum key-exchange mechanisms:</p>
 <ul>
 <li><code>MLS_128_MLKEM768_AES256GCM_SHA384_Ed25519</code></li>
 <li><code>MLS_128_MLKEM768_AES256GCM_SHA384_P256</code></li>
@@ -1582,15 +1132,15 @@ for the 6 ciphersuites that use hybrid (post-quantum + classical) key-exchange m
 <li><code>MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65</code></li>
 <li><code>MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87</code></li>
 </ul>
-<p>Note that only 3 of the 11 ciphersuites use post-quantum signatures (ML-DSA), and that using x509 credentials with
+<p>Note that only 3 of the 11 cipher suites use post-quantum signatures (ML-DSA), and that using x509 credentials with
 post-quantum signatures is not yet supported.</p>
 </li>
 <li>
 <p><code>e2eiIsPkiEnvSetup</code> has been removed. You can call <code>getPkiEnvironment</code> to see if it is set.</p>
 </li>
 <li>
-<p><code>e2eiIsEnabled</code> has been removed. You can use <code>findCredentials</code> to check whether an X509 credential for a given
-ciphersuite exists.</p>
+<p><code>e2eiIsEnabled</code> has been removed. You can use <code>findCredentials</code> to check whether an X509 credential for a given cipher
+suite exists.</p>
 </li>
 <li>
 <p><code>proteusNewPrekey</code> is deprecated; use <code>proteusNewPrekeyAuto</code> instead.</p>
@@ -1604,33 +1154,6 @@ a client id is not a hex-encoded binary value, and only the unpadded form appear
 </li>
 <li>
 <p><code>ClientId.deserialize</code> can now fail. Calling <code>deserialize</code> on history client ids throws a <code>CoreCryptoError</code>.</p>
-</li>
-<li>
-<p><code>reseed</code> now requires the entropy seed to be exactly 32 bytes long. It previously accepted any seed of at least 32
-bytes and silently used only the first 32, discarding the rest; a caller who gathered more entropy than CoreCrypto
-consumes had no way to discover that most of it was ignored. Seeds shorter than 32 bytes were already rejected, and a
-32-byte seed behaves exactly as before, so only callers who were passing a longer seed are affected. Note also that
-<code>reseed</code> replaces the CSPRNG’s state outright rather than mixing the new seed into it.</p>
-</li>
-<li>
-<p>TypeScript: browser and native packages are now released separately under <code>@wireapp/core-crypto</code> and
-<code>@wireapp/core-crypto-native</code>, respectively.</p>
-</li>
-<li>
-<p>iOS/macOS: The keystore path is no longer required to stay the same across CoreCrypto instances. In previous versions
-of CoreCrypto, the keystore path was used to look up salt values for the database encryption. This is no longer the
-case, and the salt values are now stored in a file in the same directory as the CoreCrypto database. For existing
-clients the database must be opened once with the old path in order for a migration to be performed.</p>
-</li>
-<li>
-<p>Kotlin: Timestamps (Instant) are now using <code>kotlin.time</code> instead of <code>kotlinx.datetime</code>.</p>
-</li>
-<li>
-<p>Kotlin: transactions are now cancellable. This applies to all Kotlin bindings: jvm, android and kmp.</p>
-</li>
-<li>
-<p>Kotlin(iOS): The macos/ios targets now have a file lock guarding against concurrent access from separate CoreCrypto
-instances.</p>
 </li>
 <li>
 <p>CoreCrypto now supports encrypting and decrypting transient messages. Transient messages are encrypted and decrypted
@@ -1649,8 +1172,55 @@ second between registrations. This was never true of any released version; we fi
 added a delay between <code>addCredential</code> calls to comply, you can remove it.</p>
 </li>
 <li>
-<p><code>CoreCryptoContext.setData</code> and <code>Database.openInMemory</code> are now synchronous functions, not async.</p>
+<p><code>CoreCryptoContext.setData</code> is now a synchronous function, not async.</p>
 </li>
+</ul>
+<h4 id="typescript-2"><a class="header" href="#typescript-2">TypeScript</a></h4>
+<ul>
+<li>
+<p>browser and native packages are now released separately under <code>@wireapp/core-crypto</code> and
+<code>@wireapp/core-crypto-native</code>, respectively.</p>
+</li>
+<li>
+<p><code>Database.inMemory</code> is now a synchronous function, not async.</p>
+</li>
+<li>
+<p><code>Database.close()</code> is deprecated.</p>
+</li>
+<li>
+<p>Browser: <code>reseed</code> now requires the entropy seed to be exactly 32 bytes long. It previously accepted any seed of at
+least 32 bytes and silently used only the first 32, discarding the rest; a caller who gathered more entropy than
+CoreCrypto consumes had no way to discover that portions were ignored. Seeds shorter than 32 bytes were already
+rejected, and a 32-byte seed behaves exactly as before, so only callers who were passing a longer seed are affected.
+Note also that <code>reseed</code> replaces the CSPRNG’s state outright rather than mixing the new seed into it.</p>
+</li>
+</ul>
+<h4 id="iosswift"><a class="header" href="#iosswift">iOS/Swift</a></h4>
+<ul>
+<li>The database path is no longer required to stay the same across CoreCrypto instances. In previous versions of
+CoreCrypto, the database path was used to look up salt values for the database encryption. This is no longer the case,
+and the salt values are now stored in a file in the same directory as the CoreCrypto database. For existing clients
+the database must be opened once with the old path in order for a migration to be performed.</li>
+</ul>
+<h4 id="kotlin-1"><a class="header" href="#kotlin-1">Kotlin</a></h4>
+<ul>
+<li>
+<p>the JVM, Android and KMP packages are now published to Wire’s Maven repository, <a href="https://maven.wire.com">https://maven.wire.com</a>, instead of
+Maven Central. Add <code>maven { url = uri("https://maven.wire.com") }</code> to your repositories. Earlier releases remain on
+Maven Central.</p>
+</li>
+<li>
+<p>Timestamps (Instant) are now using <code>kotlin.time</code> instead of <code>kotlinx.datetime</code>.</p>
+</li>
+<li>
+<p>transactions are now cancellable. This applies to all Kotlin bindings: jvm, android and kmp.</p>
+</li>
+<li>
+<p>The macos/ios targets now have a file lock guarding against concurrent access from separate CoreCrypto instances.</p>
+</li>
+</ul>
+<h4 id="bug-fixes"><a class="header" href="#bug-fixes">Bug Fixes</a></h4>
+<ul>
 <li>
 <p>Fixed a bug in the data migrations. This applies to clients upgrading from v9. The bug caused exactly one credential
 to be migrated to the v10 data format, effectively at random. The fix causes them all to be propagated.</p>
@@ -1659,11 +1229,6 @@ to be migrated to the v10 data format, effectively at random. The fix causes the
 <p>Fixed a bug in the data migrations. This applies to clients upgrading from v9. This bug caused e2ei-enrolled clients
 to lose all credentials for which both the basic and x509 versions were present in the database, causing them to
 additionally lose all conversations using those credentials.</p>
-</li>
-<li>
-<p>Kotlin: the JVM, Android and KMP packages are now published to Wire’s Maven repository, <a href="https://maven.wire.com">https://maven.wire.com</a>,
-instead of Maven Central. Add <code>maven { url = uri("https://maven.wire.com") }</code> to your repositories. Earlier releases
-remain on Maven Central.</p>
 </li>
 </ul>
 <h2 id="corecrypto-10"><a class="header" href="#corecrypto-10">CoreCrypto 10</a></h2>
@@ -1903,7 +1468,7 @@ platforms.</p>
 </code></pre>
 </li>
 </ul>
-<h4 id="bug-fixes"><a class="header" href="#bug-fixes">Bug Fixes</a></h4>
+<h4 id="bug-fixes-1"><a class="header" href="#bug-fixes-1">Bug Fixes</a></h4>
 <ul>
 <li>Web: fixed the abort reason of an <code>MlsTransportResponse</code> not being forwarded to rust.</li>
 </ul>
@@ -1921,7 +1486,7 @@ Affected platforms: web</li>
 <p>Affected platforms: Android</p>
 </li>
 </ul>
-<h4 id="bug-fixes-1"><a class="header" href="#bug-fixes-1">Bug Fixes</a></h4>
+<h4 id="bug-fixes-2"><a class="header" href="#bug-fixes-2">Bug Fixes</a></h4>
 <ul>
 <li>Kotlin documentation is now correctly generated and deployed.</li>
 </ul>
@@ -2188,12 +1753,12 @@ immediate access of the byte vector.</p>
 <h2 id="corecrypto-7"><a class="header" href="#corecrypto-7">CoreCrypto 7</a></h2>
 <h3 id="v702---2025-07-07"><a class="header" href="#v702---2025-07-07">v7.0.2 - 2025-07-07</a></h3>
 <p>Upgrade OpenMLS to fix a bug where the ratchet tree would sometimes become corrupt leading to broken MLS groups.</p>
-<h4 id="bug-fixes-2"><a class="header" href="#bug-fixes-2">Bug Fixes</a></h4>
+<h4 id="bug-fixes-3"><a class="header" href="#bug-fixes-3">Bug Fixes</a></h4>
 <ul>
 <li>update openmls [WPB-18569] (7ca7ba7)</li>
 </ul>
 <h3 id="v701---2025-06-02"><a class="header" href="#v701---2025-06-02">v7.0.1 - 2025-06-02</a></h3>
-<h4 id="bug-fixes-3"><a class="header" href="#bug-fixes-3">Bug Fixes</a></h4>
+<h4 id="bug-fixes-4"><a class="header" href="#bug-fixes-4">Bug Fixes</a></h4>
 <ul>
 <li>initWasm was being called with the wrong property field. (ca1706d)</li>
 <li>allow registering epoch observer before calling mls_init (3f0605a)</li>
@@ -2214,7 +1779,7 @@ function.</p>
 <li>add <code>fn history_client(HistorySecret) -&gt; CoreCrypto</code> (8b7b7d4)</li>
 <li>add <code>fn generate_history_secret</code> (a998dec)</li>
 </ul>
-<h4 id="bug-fixes-4"><a class="header" href="#bug-fixes-4">Bug Fixes</a></h4>
+<h4 id="bug-fixes-5"><a class="header" href="#bug-fixes-5">Bug Fixes</a></h4>
 <ul>
 <li>crypto-ffi: fix naming and attributes of WelcomeBundle fields on Wasm (1b2e88b)</li>
 <li>prevent cancellations during transactions (Kotlin) (75217d5)</li>
@@ -2222,7 +1787,7 @@ function.</p>
 </ul>
 <h2 id="corecrypto-6"><a class="header" href="#corecrypto-6">CoreCrypto 6</a></h2>
 <h3 id="v601---2025-05-07"><a class="header" href="#v601---2025-05-07">v6.0.1 - 2025-05-07</a></h3>
-<h4 id="bug-fixes-5"><a class="header" href="#bug-fixes-5">Bug Fixes</a></h4>
+<h4 id="bug-fixes-6"><a class="header" href="#bug-fixes-6">Bug Fixes</a></h4>
 <ul>
 <li>swift publishing CI action (d1030e1)</li>
 </ul>
@@ -2250,19 +1815,19 @@ key.</p>
 as <a href="https://mozilla.github.io/uniffi-rs/latest/futures.html#cancelling-async-code">required by Uniffi</a>. This prevents a
 category of bug where Kotlin thinks a transaction has been cancelled, while Rust thinks it is still running.</p>
 <h3 id="v530--2025-04-29"><a class="header" href="#v530--2025-04-29">v5.3.0- 2025-04-29</a></h3>
-<h4 id="bug-fixes-6"><a class="header" href="#bug-fixes-6">Bug Fixes</a></h4>
+<h4 id="bug-fixes-7"><a class="header" href="#bug-fixes-7">Bug Fixes</a></h4>
 <ul>
 <li>re-throw inner error which cancelled the transaction (Swift) (0c282b2)</li>
 </ul>
 <h3 id="v520---2025-04-15"><a class="header" href="#v520---2025-04-15">v5.2.0 - 2025-04-15</a></h3>
-<h4 id="bug-fixes-7"><a class="header" href="#bug-fixes-7">Bug Fixes</a></h4>
+<h4 id="bug-fixes-8"><a class="header" href="#bug-fixes-8">Bug Fixes</a></h4>
 <ul>
 <li>add registerEpochObserver to CoreCryptoProtocol (eadf388)</li>
 <li>create an interface for <code>ConversationConfiguration</code> (b1e82bf)</li>
 <li>swift publishing failing due to not running on latest macos runner (dcc1890)</li>
 </ul>
 <h3 id="v510---2025-04-03"><a class="header" href="#v510---2025-04-03">v5.1.0 - 2025-04-03</a></h3>
-<h4 id="bug-fixes-8"><a class="header" href="#bug-fixes-8">Bug Fixes</a></h4>
+<h4 id="bug-fixes-9"><a class="header" href="#bug-fixes-9">Bug Fixes</a></h4>
 <ul>
 <li>broken swift bindings by publishing uniffi framework separately (2b950cc)</li>
 <li>don’t refer to the internal uniffi EpochObserver type in the public API (7833300)</li>
@@ -2495,7 +2060,7 @@ pub enum MlsError {
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="release-artifacts"><a class="header" href="#release-artifacts">Release Artifacts</a></h1>
 <p>Core-Crypto publishes releases to a variety of platforms.</p>
-<h2 id="typescript-1"><a class="header" href="#typescript-1">Typescript</a></h2>
+<h2 id="typescript-3"><a class="header" href="#typescript-3">Typescript</a></h2>
 <p>TypeScript releases are published on NPM as separate packages:</p>
 <ul>
 <li><a href="https://www.npmjs.com/package/@wireapp/core-crypto">@wireapp/core-crypto</a> for browsers.</li>
@@ -2610,7 +2175,7 @@ binary for browser and a native binary for native TS from our UniFFI bindings.</
 <h2 id="corecrypto-1"><a class="header" href="#corecrypto-1">CoreCrypto</a></h2>
 <p>CoreCrypto provides a unified abstraction layer over MLS and Proteus. It exposes a simplified interface built around
 application-level entities rather than protocol-specific concepts.</p>
-<h2 id="database-2"><a class="header" href="#database-2">Database</a></h2>
+<h2 id="database-1"><a class="header" href="#database-1">Database</a></h2>
 <p>Encrypted Keystore powered by SQLCipher on native platforms. WASM uses an IndexedDB-backed, encrypted store with
 AES256-GCM. It provides a persistent data storage layer with encryption at-rest.</p>
 <h3 id="native-ios-android-ts-native"><a class="header" href="#native-ios-android-ts-native">Native (iOS, Android, Ts-Native)</a></h3>

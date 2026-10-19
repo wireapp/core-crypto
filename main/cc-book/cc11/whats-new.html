@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>TypeScript - CoreCrypto Book</title>
+        <title>What&#x27;s New - CoreCrypto Book</title>
 
 
         <!-- Custom HTML head -->
@@ -12,34 +12,34 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="../../favicon-de23e50b.svg">
-        <link rel="shortcut icon" href="../../favicon-8114d1fc.png">
-        <link rel="stylesheet" href="../../css/variables-8adf115d.css">
-        <link rel="stylesheet" href="../../css/general-e96d0476.css">
-        <link rel="stylesheet" href="../../css/chrome-d279d366.css">
-        <link rel="stylesheet" href="../../css/print-9e4910d8.css" media="print">
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../css/chrome-d279d366.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="../../fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="../../highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../../tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../../ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="../../langtabs-0bb573a3.css">
+        <link rel="stylesheet" href="../langtabs-0bb573a3.css">
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "../../";
+            const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-eb9d350a.js";
+            window.path_to_searchindex_js = "../searchindex-0f44ce11.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../../toc-1c113b1d.js"></script>
+        <script src="../toc-e64f8d46.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -106,7 +106,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -141,7 +141,7 @@
                     <h1 class="menu-title">CoreCrypto Book</h1>
 
                     <div class="right-buttons">
-                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
@@ -175,131 +175,74 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="migrating-to-cc-10-typescript"><a class="header" href="#migrating-to-cc-10-typescript">Migrating to CC 10: TypeScript</a></h1>
-<p>See the <a href="../migration-guide.html">common migration guide</a> for changes that apply to all platforms.</p>
-<h2 id="browser-module-location"><a class="header" href="#browser-module-location">Browser Module Location</a></h2>
-<p>We want to prepare the ground for a native module, which runs on node or bun. Therefore, the browser module is now
-exported as <code>@wireapp/core-crypto/browser</code>. Update your imports:</p>
-<pre><code class="language-typescript">// before
-import { ... } from "@wireapp/core-crypto";
-
-// after
-import { ... } from "@wireapp/core-crypto/browser";
-</code></pre>
-<h2 id="corecrypto-instantiation"><a class="header" href="#corecrypto-instantiation">CoreCrypto Instantiation</a></h2>
-<ol>
-<li>
-<p>The <code>CoreCrypto</code> constructor now takes a <code>Database</code> instance instead of a <code>DatabaseKey</code> and a path. To instantiate a
-database, call <code>openDatabase()</code>.</p>
-</li>
-<li>
-<p>Deferred init is now the only way to instantiate <code>CoreCrypto</code>. We <strong>replaced</strong> <code>CoreCrypto.init(database: Database)</code>
-with the static function <code>CoreCrypto.new(database: Database)</code>. Instead of calling <code>CoreCrypto.deferredInit()</code>, call
-<code>CoreCrypto.new()</code>. As before, call <code>mlsInit()</code> in a transaction to initialize MLS.</p>
-</li>
-</ol>
-<h2 id="logging"><a class="header" href="#logging">Logging</a></h2>
-<ol>
-<li>
-<p>We <strong>removed</strong> <code>CoreCrypto.setLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel)</code> and
-<code>CoreCrypto.setMaxLogLevel(level: CoreCryptoLogLevel)</code>, as logging is configured globally and not tied to a
-<code>CoreCrypto</code> instance. To set the log level, use the free function <code>setMaxLogLevel(level: CoreCryptoLogLevel)</code>.</p>
-</li>
-<li>
-<p>We <strong>renamed</strong> <code>setLoggerOnly(logger: CoreCryptoLogger)</code> to <code>setLogger(logger: CoreCryptoLogger)</code>.</p>
-</li>
-</ol>
-<h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
-<h3 id="error-structure"><a class="header" href="#error-structure">Error Structure</a></h3>
-<p>We adjusted the TypeScript error structure. Whenever matching on errors using version <code>&gt;= 9.1.0</code> type guards, update
-their usage as shown in the examples below.</p>
+                        <h1 id="whats-new-in-cc-11"><a class="header" href="#whats-new-in-cc-11">What’s New in CC 11</a></h1>
+<p>CC 11 adds two new kinds of MLS message and a set of post-quantum cipher suites. It also includes various smaller
+changes.</p>
 <blockquote class="blockquote-tag blockquote-tag-note">
 <p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
-<p>For more info, see
-<a href="https://jhugman.github.io/uniffi-bindgen-react-native/idioms/errors.html#enums-as-errors">the corresponding section of the ubrn docs</a></p>
+<p>Some of these changes break existing code. We provide a <a href="migration-guide.html">migration guide</a>.</p>
 </blockquote>
-<p><strong>Extracting the abort reason given via throwing an <code>MlsTransportError</code>:</strong></p>
-<pre><code class="language-typescript">import { CoreCryptoError, MlsError } from "core-crypto";
-
-try {
-    // send a commit that is rejected by the DS
-} catch (err) {
-  if (CoreCryptoError.Mls.instanceOf(err) &amp;&amp;
-      MlsError.MessageRejected.instanceOf(err.inner.mlsError)) {
-    const rejectReason = err.inner.mlsError.inner.reason;
-    // other things you want to do with this error...
-  } else {
-      // log error
-  }
-}
-</code></pre>
-<p><strong>Optional: use <code>switch</code> to handle multiple errors in one go:</strong></p>
-<pre><code class="language-typescript">import { CoreCryptoError, MlsError, MlsError_Tags } from "core-crypto";
-
-try {
-    // send a commit that is rejected by the DS
-} catch (err) {
-    if (CoreCryptoError.Mls.instanceOf(err)) {
-        switch (err.inner.mlsError.tag) {
-            case MlsError_Tags.MessageRejected: {
-                const rejectedReason = err.inner.mlsError.inner.reason;
-                // other things you want to do with this error...
-                break;
-            }
-
-            // handle other mls errors
-        }
-    }
-}
-</code></pre>
-<p><strong>Catch a proteus error:</strong></p>
-<pre><code class="language-typescript">import { CoreCryptoError, ProteusError } from "core-crypto";
-
-try {
-    // look for a proteus session that doesn't exist
-} catch (err) {
-  if (CoreCryptoError.Proteus.instanceOf(err) &amp;&amp;
-      ProteusError.SessionNotFound.instanceOf(err.inner.exception)) {
-     let message = err.inner.exception.message;
-     // other things you want to do with this error...
-  } else {
-      // log error
-  }
-}
-</code></pre>
-<h3 id="proteus-error-codes"><a class="header" href="#proteus-error-codes">Proteus Error Codes</a></h3>
-<p>The <code>proteusErrorCode</code> field was removed from the root error type. There is a deterministic mapping from error code to
-error type. If you were using the error code, use the error type instead (see above). See
-<a href="https://github.com/wireapp/proteus/blob/develop/crates/proteus-traits/src/lib.rs">the proteus-traits error table</a> for
-the mapping.</p>
-<h2 id="other"><a class="header" href="#other">Other</a></h2>
-<ol>
-<li>
-<p><code>CoreCryptoContext.generateKeyPackage()</code> now returns a <code>KeyPackage</code> instance instead of an <code>Uint8Array</code>. If you need
-the underlying <code>Uint8Array</code>, call the <code>serialize</code> property on the <code>KeyPackage</code>.</p>
-</li>
-<li>
-<p><code>CustomConfiguration.keyRotationSpan</code> now defines milliseconds instead of seconds.</p>
-</li>
-<li>
-<p>renamed <code>CoreCrypto.reseedRng()</code> to <code>CoreCrypto.reseed()</code></p>
-</li>
-<li>
-<p>In versions <code>9.x</code>, it was possible to instantiate wasm clients in a node-like runtime (without persistence, though).
-This is no longer supported. Use <code>@wireapp/core-crypto/native</code> instead for fully featured CoreCrypto with
-persistence.</p>
-</li>
-</ol>
+<h2 id="transient-and-targeted-messages"><a class="header" href="#transient-and-targeted-messages">Transient and Targeted Messages</a></h2>
+<p>Regular MLS application messages go to every member of a conversation and advance the group’s cryptographic state.
+That’s the right choice for chat messages, but it’s a poor fit for content that only matters to some members or only
+matters right now. CC 11 adds two new kinds of message for these cases. Neither of them changes the group’s
+cryptographic state.</p>
+<h3 id="transient-messages"><a class="header" href="#transient-messages">Transient messages</a></h3>
+<p><code>encryptTransientMessage(conversationId, message)</code> encrypts a message for all members of a conversation. Transient
+messages are meant to go only to members who are online at the time they are sent.</p>
+<h3 id="targeted-messages"><a class="header" href="#targeted-messages">Targeted messages</a></h3>
+<p><code>encryptTargetedMessage(conversationId, recipient, policy, message)</code> encrypts a message for a single member of a
+conversation, identified by their <code>ClientId</code>. This is what makes read receipts possible in MLS conversations: sending
+each receipt as a regular MLS message would flood every member with messages that only matter to one of them.</p>
+<p>The <code>policy</code> argument tells the delivery service how to handle the message:</p>
+<ul>
+<li><code>TargetedMessagePolicy.Transient</code>: delivered only to the recipient if they are online, and dropped otherwise.</li>
+<li><code>TargetedMessagePolicy.Persisted</code>: may be stored by the delivery service, so a recipient who is offline still gets it
+later.</li>
+</ul>
+<h3 id="receiving"><a class="header" href="#receiving">Receiving</a></h3>
+<p>There is no new decryption API. <code>decryptMessage</code> handles all of these messages and returns them as the new
+<code>DecryptedMessage.Transient</code>, <code>DecryptedMessage.TransientTargeted</code> and <code>DecryptedMessage.PersistedTargeted</code> variants.
+Each one carries the plaintext, the sender’s client id and the sender’s identity, just like
+<code>DecryptedMessage.ApplicationMessage</code>. The <a href="migration-guide.html#decryptedmessage">migration guide</a> shows how to match on
+them.</p>
+<blockquote class="blockquote-tag blockquote-tag-warning">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Warning</p>
+<p>Transient and targeted messages have weaker security guarantees than regular MLS application messages. Any feature
+built on them must explain why that is acceptable for its use case, or how the difference is mitigated.</p>
+</blockquote>
+<h2 id="post-quantum-cipher-suites"><a class="header" href="#post-quantum-cipher-suites">Post-Quantum Cipher Suites</a></h2>
+<p>CoreCrypto now supports 11 post-quantum cipher suites, as defined in the
+<a href="https://www.ietf.org/archive/id/draft-ietf-mls-pq-ciphersuites-06.html">MLS post-quantum cipher suites draft</a>.</p>
+<p>Six of them use a hybrid key exchange, combining ML-KEM with a classical algorithm:</p>
+<ul>
+<li><code>MLS_128_MLKEM768X25519_AES128GCM_SHA256_Ed25519</code></li>
+<li><code>MLS_128_MLKEM768X25519_AES256GCM_SHA384_Ed25519</code></li>
+<li><code>MLS_128_MLKEM768P256_AES128GCM_SHA256_P256</code></li>
+<li><code>MLS_128_MLKEM768P256_AES256GCM_SHA384_P256</code></li>
+<li><code>MLS_128_MLKEM768X25519_CHACHA20POLY1305_SHA384_MLDSA44</code></li>
+<li><code>MLS_192_MLKEM1024P384_AES256GCM_SHA384_P384</code></li>
+</ul>
+<p>The other five use a pure post-quantum key exchange:</p>
+<ul>
+<li><code>MLS_128_MLKEM768_AES256GCM_SHA384_Ed25519</code></li>
+<li><code>MLS_128_MLKEM768_AES256GCM_SHA384_P256</code></li>
+<li><code>MLS_192_MLKEM1024_AES256GCM_SHA384_P384</code></li>
+<li><code>MLS_192_MLKEM768_AES256GCM_SHA384_MLDSA65</code></li>
+<li><code>MLS_256_MLKEM1024_AES256GCM_SHA384_MLDSA87</code></li>
+</ul>
+<p>Only the three suites ending in <code>MLDSA*</code> also use post-quantum signatures. The others keep a classical signature scheme.</p>
+<p>X509 credentials don’t work yet with post-quantum signatures, so the <code>MLDSA*</code> suites only support basic credentials.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../../cc10/migration-guide.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../concepts/client/transactions.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../../cc10/migration/swift.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../cc11/migration-guide.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -309,11 +252,11 @@ persistence.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../../cc10/migration-guide.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../concepts/client/transactions.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../../cc10/migration/swift.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../cc11/migration-guide.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -333,18 +276,18 @@ persistence.</p>
         </script>
 
 
-        <script src="../../elasticlunr-ef4e11c1.min.js"></script>
-        <script src="../../mark-09e88c2c.min.js"></script>
-        <script src="../../searcher-09f2665d.js"></script>
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
 
-        <script src="../../clipboard-1626706a.min.js"></script>
-        <script src="../../highlight-abc7f01d.js"></script>
-        <script src="../../book-609e4cb8.js"></script>
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="../../langtabs-57c6b578.js"></script>
-        <script src="../../mermaid-eefea253.min.js"></script>
-        <script src="../../mermaid-init-ccf746f1.js"></script>
+        <script src="../langtabs-57c6b578.js"></script>
+        <script src="../mermaid-eefea253.min.js"></script>
+        <script src="../mermaid-init-ccf746f1.js"></script>
 
 
 
