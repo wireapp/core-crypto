@@ -150,7 +150,6 @@ jobs:
       - artifact-generation
       - bindings-jvm
       - build-jvm-linux
-      - build-jvm-darwin
     uses: ./.github/workflows/test-jvm.yml
     with:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
@@ -159,8 +158,6 @@ jobs:
     needs:
       - artifact-generation
       - bindings-jvm
-      - build-jvm-linux
-      - build-jvm-darwin
     uses: ./.github/workflows/kotlin-check.yml
     with:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
@@ -169,7 +166,6 @@ jobs:
     needs:
       - artifact-generation
       - bindings-jvm
-      - build-jvm-linux
     uses: ./.github/workflows/docs-jvm.yml
     with:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
@@ -179,7 +175,6 @@ jobs:
       - artifact-generation
       - bindings-jvm
       - build-jvm-linux
-      - build-jvm-darwin
     uses: ./.github/workflows/benchmark-jvm.yml
     with:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
