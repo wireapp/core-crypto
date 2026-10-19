@@ -37,34 +37,65 @@ dependencies {
 
 val buildType = if (System.getenv("RELEASE") == "1") "release" else "debug"
 
-// This is the base directory under `build` that holds all libraries, organized by
-// the build type (debug or release) and the target (linux-x86-64 etc.).
-val ffiLibsBase = layout.buildDirectory.dir("ffiLibs").get().asFile
+// A native library we can bundle. `jnaPrefix` is the classpath directory JNA searches
+// for the library on that platform, and `makeRule` is the rule that builds it.
+data class FfiTarget(val rustTarget: String, val jnaPrefix: String, val ext: String, val makeRule: String)
 
-val copyFfiLibrary by tasks.registering {
-    doLast {
-        val libs = listOf(
-            Triple("x86_64-unknown-linux-gnu", "linux-x86-64", "so"),
-            Triple("aarch64-apple-darwin", "darwin-aarch64", "dylib")
-        )
-        libs.forEach { (rustTarget, jvmTarget, ext) ->
-            val libName = "libcore_crypto_ffi.$ext"
-            val src = projectDir.resolve("../../../target/$rustTarget/$buildType/$libName")
-            val dest = ffiLibsBase.resolve("$buildType/$jvmTarget/$libName")
-            // We try to copy all libraries. If a library does not exist and
-            // we're not on CI, just skip it (presumably it does not exist because
-            // we're on a different platform). However, if we're on CI, always try
-            // to copy the library, which will fail if it does not exist, indicating
-            // a bug in the CI setup.
-            if (src.exists() || System.getenv("CI") != null) {
-                src.copyTo(dest, overwrite = true)
+val ffiTargets = listOf(
+    FfiTarget("x86_64-unknown-linux-gnu", "linux-x86-64", "so", "jvm-linux"),
+    FfiTarget("aarch64-apple-darwin", "darwin-aarch64", "dylib", "jvm-darwin"),
+)
+
+// One copy task per target. Each one places its library at `<jnaPrefix>/<libName>` under
+// its own output directory, so that directory can go straight onto a classpath or into a jar.
+// A missing library is always an error: nothing asks for a library it doesn't need.
+val copyFfiLibrary = ffiTargets.associate { target ->
+    val libName = "libcore_crypto_ffi.${target.ext}"
+    val src = projectDir.resolve("../../../target/${target.rustTarget}/$buildType/$libName").normalize()
+    val outDir = layout.buildDirectory.dir("ffiLibs/$buildType/${target.jnaPrefix}")
+    target.jnaPrefix to tasks.register("copyFfiLibrary-${target.jnaPrefix}") {
+        // `files` rather than `file`: Gradle rejects a missing `file` input before the task runs,
+        // and we want the check below, which says how to build it.
+        inputs.files(src).withPropertyName("ffiLibrary")
+        outputs.dir(outDir)
+        doFirst {
+            if (!src.exists()) {
+                throw GradleException("$src does not exist; build it with `make ${target.makeRule}`")
             }
+        }
+        doLast {
+            src.copyTo(outDir.get().asFile.resolve("${target.jnaPrefix}/$libName"), overwrite = true)
         }
     }
 }
 
-tasks.named("compileKotlin") {
-    dependsOn(copyFfiLibrary)
+// The JNA prefix of the machine running the build, or null if we don't build a library for it.
+val hostJnaPrefix: String? = run {
+    val os = System.getProperty("os.name").lowercase()
+    val arch = System.getProperty("os.arch")
+    when {
+        os.startsWith("linux") && arch == "amd64" -> "linux-x86-64"
+        os.startsWith("mac") && arch == "aarch64" -> "darwin-aarch64"
+        else -> null
+    }
+}
+
+// Tests and benchmarks only need the library for the machine they run on.
+dependencies {
+    hostJnaPrefix?.let { prefix ->
+        val hostLib = files(copyFfiLibrary.getValue(prefix))
+        testRuntimeOnly(hostLib)
+        "jmhRuntimeOnly"(hostLib)
+    }
+}
+
+// The published jar bundles the libraries for every platform.
+//
+// This only stays out of tests, detekt and benchmarks because `gradle.properties` sets
+// `kotlin.build.archivesTaskOutputAsFriendModule=false`. Without it, compiling the test
+// and jmh sources depends on this jar, and so on every library.
+tasks.jar {
+    copyFfiLibrary.values.forEach { from(it) }
 }
 
 sourceSets {
@@ -72,9 +103,6 @@ sourceSets {
         kotlin {
             srcDir(sharedSources.resolve("kotlin"))
             srcDir(projectDir.resolve("src/main/uniffi"))
-        }
-        resources {
-            srcDirs(ffiLibsBase.resolve(buildType))
         }
     }
     test {
