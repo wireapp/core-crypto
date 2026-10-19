@@ -14,19 +14,13 @@ use crate::{
 /// A message is buffered when it cannot be decrypted yet, which happens in two unrelated situations: the
 /// conversation was joined by external commit and that join has not been merged, or the conversation is
 /// fully established but the message belongs to epoch `n + 1` while we are still in epoch `n`. Both kinds
-/// of conversation are rows in `mls_groups`, but a message can arrive and be buffered before its
-/// conversation is persisted, so `conversation_id` holds no foreign key.
+/// of conversation are rows in `mls_groups`.
 ///
 /// This entity cannot be updated in the DB: the primary key is formed of a hash of all the rest
 /// of the data, so duplicate save attempts silently succeed without changing anything.
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
 #[zeroize(drop)]
 pub struct MlsPendingMessage {
-    /// Note that in SQL we do not have a foreign key constraint from `conversation_id` to the group table.
-    /// This is because we can't avoid the possibility of out-of-order delivery from the DS.
-    /// If we receive a pending message from a group that we haven't joined yet, followed by the commit which
-    /// adds us to that group, then we need to still store that message, and that means that a foreign key
-    /// would be inappropriate here.
     pub conversation_id: ConversationId,
     #[sensitive]
     pub message: Vec<u8>,
