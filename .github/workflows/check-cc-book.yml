@@ -7,7 +7,6 @@ on:
     paths:
       - "cc-book/**"
       - ".github/workflows/check-cc-book.yml"
-      - ".github/workflows/docs-cc-book.yml"
       - ".github/actions/build-cc-book/action.yml"
 
 jobs:

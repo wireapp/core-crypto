@@ -23,9 +23,25 @@ jobs:
     - name: download pre-rendered docs
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
-        pattern: '{cc-book,typescript,swift,kotlin,rust}'
+        pattern: '{typescript,swift,kotlin,rust}'
         path: "./target/doc/${{ env.GIT_TAG }}"
         merge-multiple: false
+
+    # The book is published separately to `book/<slot>/` by `publish-cc-book.yml`. This deploy
+    # replaces all of `main/`, so the redirect from the book's old location is recreated each time.
+    - name: redirect old main book location
+      if: github.ref == 'refs/heads/main'
+      run: |
+        mkdir -p target/doc/main/cc-book
+        cat > target/doc/main/cc-book/index.html <<'EOF'
+        <!doctype html>
+        <meta charset="utf-8">
+        <title>CoreCrypto Book</title>
+        <meta http-equiv="refresh" content="0; url=../../book/main/">
+        <link rel="canonical" href="https://wireapp.github.io/core-crypto/book/main/">
+        <script>location.replace("../../book/main/" + location.hash)</script>
+        <p>The CoreCrypto Book has moved to <a href="../../book/main/">a new location</a>.</p>
+        EOF
 
     - name: prepare static files
       if: github.ref == 'refs/heads/main'
