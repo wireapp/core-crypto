@@ -1,0 +1,130 @@
+name: publish cc-book
+
+# Each branch publishes its own book to `book/<slot>/` on gh-pages, independently of releases.
+#
+# - `release/N.x` publishes to `book/vN`.
+# - `main` publishes to `book/main`. Until `release/M.x` is forked, where `M` is the major
+#   version in `main`'s `crypto/Cargo.toml`, `main` also publishes the same build to `book/vM`.
+#
+# Forking `release/M.x` therefore leaves `book/vM` holding `main`'s book as of the fork, which is
+# also the new branch's book, so nothing needs to run at that point.
+on:
+  push:
+    branches:
+      - main
+      - "release/*"
+    paths:
+      - "cc-book/**"
+      - "crypto/Cargo.toml"
+      - ".github/workflows/publish-cc-book.yml"
+      - ".github/actions/build-cc-book/**"
+  workflow_dispatch:
+
+# One group per branch: GitHub keeps only the newest pending run in a group, so sharing a group
+# across branches would let one branch's pending run cancel another's, losing that update.
+# Within a branch, the newest run is the right one to keep.
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    shell: bash -euo pipefail {0}
+
+jobs:
+  publish-cc-book:
+    if: >-
+      github.repository == 'wireapp/core-crypto'
+      && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: determine slots
+        id: slots
+        run: |
+          case "$GITHUB_REF_NAME" in
+            main)
+              major="$(yq '.package.version | split(".") | .[0]' crypto/Cargo.toml)"
+              slots="main"
+              # `--exit-code` exits with 2 when nothing matches. Anything else is a real failure,
+              # and must not be mistaken for "not forked yet", or we would publish `main` as `vM`.
+              rc=0
+              git ls-remote --exit-code --heads origin "refs/heads/release/${major}.x" > /dev/null || rc=$?
+              case "$rc" in
+                0) ;;
+                2) slots="$slots v${major}" ;;
+                *) echo "::error::git ls-remote failed with exit code $rc"; exit 1 ;;
+              esac
+              ;;
+            release/*.x)
+              major="${GITHUB_REF_NAME#release/}"
+              major="${major%.x}"
+              slots="v${major}"
+              ;;
+            *)
+              echo "::error::cannot publish the book from $GITHUB_REF_NAME"
+              exit 1
+              ;;
+          esac
+
+          if ! [[ "$major" =~ ^[0-9]+$ ]]; then
+            echo "::error::could not determine a major version, got '$major'"
+            exit 1
+          fi
+
+          echo "publishing to: $slots"
+          echo "slots=$slots" >> "$GITHUB_OUTPUT"
+
+      - uses: ./.github/actions/build-cc-book
+
+      # Only `book/` is checked out: the rest of gh-pages holds every release's API docs.
+      - name: checkout gh-pages
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: gh-pages
+          path: gh-pages
+          sparse-checkout: book
+
+      # Runs on other branches deploy other slots, so a push can be rejected because gh-pages
+      # moved underneath us. Rather than rebasing, start over from the new tip: the deploy only
+      # replaces our own slots, so redoing it is cheap and always applies cleanly.
+      - name: deploy
+        working-directory: gh-pages
+        env:
+          SLOTS: ${{ steps.slots.outputs.slots }}
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR_ID+$GITHUB_ACTOR@users.noreply.github.com"
+
+          for attempt in 1 2 3 4 5; do
+            if [ "$attempt" -gt 1 ]; then
+              sleep $((attempt * 5))
+              git fetch --depth 1 origin gh-pages
+              git reset --hard FETCH_HEAD
+            fi
+
+            for slot in $SLOTS; do
+              mkdir -p "book/$slot"
+              rsync -a --delete ../cc-book/book/ "book/$slot/"
+            done
+
+            git add -A book
+            if git diff --cached --quiet; then
+              echo "book unchanged, nothing to deploy"
+              exit 0
+            fi
+            git commit --quiet -m "deploy cc-book to ${SLOTS// /, } from $GITHUB_REF_NAME@$GITHUB_SHA"
+
+            if git push origin HEAD:gh-pages; then
+              exit 0
+            fi
+            echo "push rejected on attempt $attempt"
+          done
+
+          echo "::error::could not push to gh-pages"
+          exit 1
