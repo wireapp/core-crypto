@@ -19,7 +19,7 @@ pub use self::entities::{DummyStoreValue, DummyValue};
 pub use self::{
     connection::{Database, deser, ser},
     database_key::DatabaseKey,
-    error::{CryptoKeystoreError, CryptoKeystoreResult},
+    error::{CryptoKeystoreError, CryptoKeystoreResult, RusqliteError, RusqliteErrorCode},
     transaction::Transaction,
     transactionlike::Transactionlike,
 };

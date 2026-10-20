@@ -1,3 +1,5 @@
+pub use rusqlite::{Error as RusqliteError, ErrorCode as RusqliteErrorCode};
+
 /// Error type to represent various errors that can happen in the KeyStore
 #[derive(Debug, thiserror::Error)]
 pub enum CryptoKeystoreError {
@@ -44,7 +46,7 @@ pub enum CryptoKeystoreError {
     #[error("{0}")]
     SerdeWasmBindgenError(String),
     #[error(transparent)]
-    DbError(#[from] rusqlite::Error),
+    DbError(#[from] RusqliteError),
     #[error(transparent)]
     DbMigrationError(#[from] Box<refinery::Error>),
     #[cfg(test)]
