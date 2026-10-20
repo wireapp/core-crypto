@@ -7,8 +7,9 @@
 use std::sync::Arc;
 
 use core_crypto_keystore::{
+    Transaction,
     entities::{StoredCredential, StoredCredentialPk},
-    traits::FetchFromDatabase,
+    traits::{EntityDatabaseMutation as _, FetchFromDatabase},
 };
 
 use super::super::{Error, Result};
@@ -49,5 +50,15 @@ impl CredentialRef {
                 std::mem::take(&mut stored_credential.public_key)
             })
             .map_err(Into::into)
+    }
+
+    /// Delete this credential from the database.
+    ///
+    /// This doesn't consume the reference, because for now we need to keep it around to delete keypackages.
+    /// But once those propagate automatically, it should consume this reference so we don't keep stale refs around.
+    /// See WPB-29471.
+    pub(crate) fn delete(&self, tx: &Transaction) -> Result<bool, KeystoreError> {
+        StoredCredential::delete(tx, &StoredCredentialPk::new(self.public_key_hash, self.r#type.into()))
+            .map_err(KeystoreError::wrap("deleting credential"))
     }
 }

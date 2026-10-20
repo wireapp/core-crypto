@@ -55,15 +55,4 @@ impl super::Conversation {
             })
             .collect()
     }
-
-    pub(crate) async fn own_mls_credential(&self) -> Result<MlsCredential> {
-        let credential = self
-            .group()
-            .await
-            .own_leaf_node()
-            .ok_or(Error::MlsGroupInvalidState("own_leaf_node not present in group"))?
-            .credential()
-            .to_owned();
-        Ok(credential)
-    }
 }

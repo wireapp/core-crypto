@@ -81,17 +81,4 @@ impl Credential {
 
         Ok(CredentialRef::from_credential(self))
     }
-
-    /// Delete this credential from the database
-    pub(crate) fn delete(self, tx: &Transaction) -> Result<bool> {
-        StoredCredential::delete(
-            tx,
-            &StoredCredentialPk::new(
-                Sha256Hash::hash_from(self.signature_key_pair.public()),
-                self.credential_type.into(),
-            ),
-        )
-        .map_err(KeystoreError::wrap("deleting credential"))
-        .map_err(Into::into)
-    }
 }
