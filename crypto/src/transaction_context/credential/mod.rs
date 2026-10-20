@@ -88,3 +88,108 @@ impl TransactionContext {
             .map_err(Into::into)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use core_crypto_keystore::{
+        Sha256Hash,
+        entities::{StoredCredential, StoredCredentialPk, StoredKeyPackage},
+        traits::FetchFromDatabase as _,
+    };
+    use openmls::prelude::KeyPackage;
+
+    use super::*;
+    use crate::{CertificateBundle, test_utils::*};
+
+    async fn credential_is_stored(session: &SessionContext, credential: &CredentialRef) -> bool {
+        session
+            .transaction
+            .database()
+            .unwrap()
+            .get::<StoredCredential>(&StoredCredentialPk::new(
+                credential.public_key_hash(),
+                credential.r#type().into(),
+            ))
+            .await
+            .unwrap()
+            .is_some()
+    }
+
+    /// How many stored key packages were generated from `credential`.
+    async fn count_key_packages_for(session: &SessionContext, credential: &CredentialRef) -> usize {
+        session
+            .transaction
+            .database()
+            .unwrap()
+            .load_all::<StoredKeyPackage>()
+            .await
+            .unwrap()
+            .into_iter()
+            .map(|stored| core_crypto_keystore::deser::<KeyPackage>(&stored.key_package).unwrap())
+            .filter(|key_package| {
+                Sha256Hash::hash_from(key_package.leaf_node().signature_key().as_slice())
+                    == credential.public_key_hash()
+            })
+            .count()
+    }
+
+    /// A credential a conversation still uses cannot be removed, and the refused removal writes nothing: neither the
+    /// credential nor the key packages generated from it go missing. Once the conversation moves on to another
+    /// credential, the old one can be removed.
+    #[apply(all_cred_cipher)]
+    async fn credential_in_use_by_a_conversation_cannot_be_removed(case: TestContext) {
+        const KEY_PACKAGES: usize = 2;
+
+        let [alice] = case.sessions().await;
+        let conversation = case.create_conversation([&alice]).await;
+        let credential = alice.initial_credential.clone();
+
+        for _ in 0..KEY_PACKAGES {
+            alice.new_keypackage_from_ref(credential.clone(), None).await;
+        }
+        assert_eq!(count_key_packages_for(&alice, &credential).await, KEY_PACKAGES);
+
+        let result = alice.transaction.remove_credential(&credential).await;
+        assert!(
+            matches!(result, Err(Error::CredentialStillInUse(_))),
+            "removing a credential in use must fail with `CredentialStillInUse`, but got {result:?}"
+        );
+
+        // The caller may catch the error and carry on with this transaction, so the failed removal must not have
+        // written anything.
+        assert!(
+            credential_is_stored(&alice, &credential).await,
+            "a refused removal must keep the credential"
+        );
+        assert_eq!(
+            count_key_packages_for(&alice, &credential).await,
+            KEY_PACKAGES,
+            "a refused removal must keep the key packages generated from the credential"
+        );
+
+        // A basic credential is just our client id, so a "new" one for the same client compares equal to the old one
+        // and openmls declines to rotate anything. Only x509 can rotate here.
+        if !case.is_x509() {
+            return;
+        }
+
+        let intermediate_ca = alice.x509_chain_unchecked().find_local_intermediate_ca();
+        let certificate = CertificateBundle::new_with_default_values(intermediate_ca, None);
+        let new_credential = Credential::x509(case.cipher_suite(), certificate).unwrap();
+        alice
+            .transaction
+            .add_credential_without_clientid_check(new_credential.clone())
+            .unwrap();
+        let new_credential = CredentialRef::from_credential(&new_credential);
+        conversation.set_credential_by_ref_notify(&new_credential).await;
+
+        let removed = alice
+            .transaction
+            .remove_credential(&credential)
+            .await
+            .expect("a credential no conversation uses any more can be removed");
+        assert!(removed, "removal must report that the credential was deleted");
+        assert!(!credential_is_stored(&alice, &credential).await);
+        assert_eq!(count_key_packages_for(&alice, &credential).await, 0);
+    }
+}
