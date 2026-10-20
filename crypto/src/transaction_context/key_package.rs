@@ -3,6 +3,7 @@
 use std::time::Duration;
 
 use core_crypto_keystore::{
+    Sha256Hash,
     entities::{StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeyPackage},
     traits::EntityDeleteBorrowed as _,
 };
@@ -110,13 +111,6 @@ impl TransactionContext {
     /// if removing one returns an error. In that case, only the first produced error is returned.
     /// This helps ensure that as many keypackages for the given credential ref are removed as possible.
     pub async fn remove_key_packages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
-        let inner = self.inner()?;
-        let credential = credential_ref
-            .load(&inner.transaction)
-            .await
-            .map_err(RecursiveError::context("loading credential"))?;
-        let signature_public_key = credential.signature_key_pair.public();
-
         let mut first_err = None;
         macro_rules! try_retain_err {
             ($e:expr) => {
@@ -138,7 +132,10 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::context("loading key packages"))?
             .into_iter()
-            .filter(|keypackage| keypackage.leaf_node().signature_key().as_slice() == signature_public_key)
+            .filter(|keypackage| {
+                Sha256Hash::hash_from(keypackage.leaf_node().signature_key().as_slice())
+                    == credential_ref.public_key_hash()
+            })
         {
             let kp_ref = try_retain_err!(keypackage.make_ref());
             try_retain_err!(self.remove_key_package(&kp_ref).await);
