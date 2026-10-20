@@ -32,6 +32,9 @@ ignore = [
   # and will be in rsa v0.10, once that comes out of the eternal
   # pre-release state. We need to update it via our rusty-jwt-simple.
   "RUSTSEC-2023-0071",
+  # We can't fix this until we update Gobley;
+  # see WPB-29524
+  "RUSTSEC-2026-0374",
 ]
 
 [bans]
