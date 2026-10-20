@@ -16,7 +16,7 @@
 <a href=#16 id=16 data-nosnippet>16</a>///
 <a href=#17 id=17 data-nosnippet>17</a>/// This type enables this use case with the new entity traits.
 <a href=#18 id=18 data-nosnippet>18</a></span><span class="attr">#[derive(
-<a href=#19 id=19 data-nosnippet>19</a>    Debug,
+<a href=#19 id=19 data-nosnippet>19</a>    derive_more::Debug,
 <a href=#20 id=20 data-nosnippet>20</a>    Default,
 <a href=#21 id=21 data-nosnippet>21</a>    Clone,
 <a href=#22 id=22 data-nosnippet>22</a>    Copy,
@@ -33,7 +33,7 @@
 <a href=#33 id=33 data-nosnippet>33</a>    serde::Deserialize,
 <a href=#34 id=34 data-nosnippet>34</a>)]
 <a href=#35 id=35 data-nosnippet>35</a>#[as_ref(forward)]
-<a href=#36 id=36 data-nosnippet>36</a></span><span class="kw">pub struct </span>Sha256Hash([u8; <span class="number">32</span>]);
+<a href=#36 id=36 data-nosnippet>36</a></span><span class="kw">pub struct </span>Sha256Hash(<span class="attr">#[debug(<span class="string">"{}"</span>, hex::encode(_0))] </span>[u8; <span class="number">32</span>]);
 <a href=#37 id=37 data-nosnippet>37</a>
 <a href=#38 id=38 data-nosnippet>38</a><span class="kw">impl </span>Sha256Hash {
 <a href=#39 id=39 data-nosnippet>39</a>    <span class="doccomment">/// How many bytes are in this hash.
