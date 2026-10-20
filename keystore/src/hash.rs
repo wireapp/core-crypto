@@ -16,7 +16,7 @@ pub(crate) fn sha256(data: &[u8]) -> String {
 ///
 /// This type enables this use case with the new entity traits.
 #[derive(
-    Debug,
+    derive_more::Debug,
     Default,
     Clone,
     Copy,
@@ -33,7 +33,7 @@ pub(crate) fn sha256(data: &[u8]) -> String {
     serde::Deserialize,
 )]
 #[as_ref(forward)]
-pub struct Sha256Hash([u8; 32]);
+pub struct Sha256Hash(#[debug("{}", hex::encode(_0))] [u8; 32]);
 
 impl Sha256Hash {
     /// How many bytes are in this hash.
