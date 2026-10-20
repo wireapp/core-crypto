@@ -11,6 +11,8 @@ pub(crate) mod managed_connection;
 mod migrations;
 mod mls;
 #[cfg(target_os = "unknown")]
+mod opfs_vfs;
+#[cfg(target_os = "unknown")]
 mod os_unknown;
 mod transaction;
 mod transaction_lock;
@@ -24,6 +26,10 @@ use rusqlite::trace::{TraceEvent, TraceEventCodes};
 
 #[cfg(target_os = "unknown")]
 pub use self::idb_migration::{delete_legacy_idb, legacy_idb_exists};
+/// Used by `core_crypto_macros::jspi_wasm_bindgen_test`.
+#[cfg(target_os = "unknown")]
+#[doc(hidden)]
+pub use self::opfs_vfs::defer;
 use self::transaction_lock::TransactionLock;
 pub(crate) use self::{
     filesystem::Filesystem,
