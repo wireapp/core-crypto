@@ -36,6 +36,7 @@ jspi = { exclude = [
   "Welcome",
   "ClientId",
   "Uuid",
+  "Database.inMemory",
   "DeviceId",
   "DeserializedClientId",
   "ConversationId",
