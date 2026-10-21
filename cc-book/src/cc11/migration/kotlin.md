@@ -17,3 +17,7 @@ and `X509Identity.notAfter`.
 
 On the iOS targets, the database salt has moved from the keychain into a file next to the database. See the
 [Swift migration guide](swift.md#database-path-and-salt) for what this means for existing clients.
+
+## Other
+
+1. `CoreCryptoContext.setData` is now a synchronous function, not async.
