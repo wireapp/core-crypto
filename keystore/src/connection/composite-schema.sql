@@ -1,21 +1,3 @@
-CREATE TABLE proteus_prekeys (id INT UNIQUE, KEY BLOB);
-
-CREATE TABLE proteus_identities (sk BLOB, pk BLOB);
-
-CREATE TABLE proteus_sessions (id VARCHAR(255) UNIQUE, SESSION BLOB);
-
-CREATE TABLE "mls_encryption_keypairs" (
-  pk_sha256 TEXT UNIQUE,
-  pk BLOB,
-  sk BLOB
-);
-
-CREATE TABLE "mls_psk_bundles" (
-  id_sha256 TEXT UNIQUE,
-  psk_id BLOB,
-  psk BLOB
-);
-
 CREATE TABLE consumer_data (
   id INTEGER PRIMARY KEY CHECK (id = 0),
   content BLOB
@@ -174,6 +156,30 @@ CREATE TABLE "mls_key_packages" (
 
 CREATE INDEX idx_mls_key_packages_credential_fk ON mls_key_packages (credential_id, credential_type);
 
+CREATE INDEX idx_mls_groups_credential_fk ON mls_groups (credential_id, credential_type);
+
+CREATE TABLE "proteus_prekeys" (
+  id INTEGER PRIMARY KEY,
+  KEY BLOB NOT NULL
+);
+
+CREATE TABLE "proteus_identities" (
+  id INT NOT NULL DEFAULT 0 PRIMARY KEY CHECK (id = 0),
+  sk BLOB NOT NULL,
+  pk BLOB NOT NULL
+);
+
+CREATE TABLE "proteus_sessions" (
+  id TEXT NOT NULL PRIMARY KEY,
+  SESSION BLOB NOT NULL
+);
+
+CREATE TABLE "mls_encryption_keypairs" (
+  pk_sha256 BLOB NOT NULL PRIMARY KEY,
+  pk BLOB NOT NULL,
+  sk BLOB NOT NULL
+);
+
 CREATE TRIGGER delete_key_package_leaf_keypair
 AFTER
   DELETE ON mls_key_packages
@@ -184,4 +190,8 @@ WHERE
   pk_sha256 = OLD.leaf_encryption_key_hash;
 END;
 
-CREATE INDEX idx_mls_groups_credential_fk ON mls_groups (credential_id, credential_type);
+CREATE TABLE "mls_psk_bundles" (
+  id_sha256 BLOB NOT NULL PRIMARY KEY,
+  psk_id BLOB NOT NULL,
+  psk BLOB NOT NULL
+);
