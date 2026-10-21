@@ -2,7 +2,7 @@ use zeroize::Zeroize;
 
 use crate::{
     CryptoKeystoreError, Transactionlike,
-    traits::{Entity, PrimaryKey, UniqueEntity},
+    traits::{PrimaryKey, UniqueEntity},
 };
 
 #[derive(core_crypto_macros::Debug, Clone, Zeroize, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -103,11 +103,9 @@ impl crate::traits::EntityDatabaseMutation for ProteusIdentity {
         &'a Tx: Into<Transactionlike<'a>>,
     {
         let conn = tx.into().conn()?;
-        if Self::get(&conn, &())?.is_some() {
-            return Err(CryptoKeystoreError::AlreadyExists(Self::TABLE_NAME));
-        }
-        let mut stmt = conn.prepare_cached("INSERT INTO proteus_identities (sk, pk) VALUES (?, ?)")?;
-        stmt.execute(rusqlite::params![self.sk, self.pk])?;
+        conn.prepare_cached("INSERT INTO proteus_identities (sk, pk) VALUES (?, ?)")?
+            .execute(rusqlite::params![self.sk, self.pk])
+            .map_err(CryptoKeystoreError::map_already_exists("proteus_identities"))?;
         Ok(())
     }
 
