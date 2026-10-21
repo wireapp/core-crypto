@@ -16,8 +16,11 @@ use crate::{
         },
         traits::EntityBase as _,
     },
-    entities::{ProteusPrekey, ProteusSession, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle},
-    migrations::{LegacyPersistedMlsGroup, StoredSignatureKeypair, V5Credential, V33StoredEpochEncryptionKeypair},
+    entities::{ProteusPrekey, ProteusSession, StoredEncryptionKeyPair, StoredPskBundle},
+    migrations::{
+        LegacyPersistedMlsGroup, StoredHpkePrivateKeyV45, StoredSignatureKeypair, V5Credential,
+        V33StoredEpochEncryptionKeypair,
+    },
 };
 
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
@@ -39,7 +42,7 @@ pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
                 .add_index(IndexBuilder::new("signature_pk".into(), KeyPath::new_single("pk"))),
         )
         .add_object_store(
-            ObjectStoreBuilder::new(StoredHpkePrivateKey::TABLE_NAME)
+            ObjectStoreBuilder::new(StoredHpkePrivateKeyV45::TABLE_NAME)
                 .auto_increment(false)
                 .add_index(IndexBuilder::new("pk".into(), KeyPath::new_single("pk")).unique(true)),
         )
