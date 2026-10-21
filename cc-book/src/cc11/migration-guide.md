@@ -98,4 +98,4 @@ when (decryptedMessage) {
    second between registrations. This was never true of any released version; we fixed it before releasing 10.0.0. If
    you added a delay between `addCredential` calls to comply, you can remove it.
 
-1. `CoreCryptoContext.setData` is now a synchronous function, not async.
+1. iOS, Android: `CoreCryptoContext.setData` is now a synchronous function, not async.
