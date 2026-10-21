@@ -1,110 +1,145 @@
-use zeroize::Zeroize;
+use const_format::formatcp;
+use rusqlite::{Connection, OptionalExtension as _, Row, named_params, params};
+use zeroize::ZeroizeOnDrop;
 
 use crate::{
-    Transactionlike,
-    traits::{BorrowPrimaryKey, PrimaryKey},
+    CryptoKeystoreError, CryptoKeystoreResult, Sha256Hash, Transactionlike,
+    entities::StoredKeyPackage,
+    traits::{Entity, EntityDatabaseMutation, PrimaryKey},
 };
 
-/// Entity representing a persisted `HpkePrivateKey` (related to LeafNode Private keys that the client is aware of)
+/// Entity representing a persisted `HpkePrivateKey` (related to keypackage init keys that the client is aware of)
 ///
-/// This entity cannot be updated in the DB: the primary key is the public half of the keypair whose
+/// This entity cannot be updated in the DB: the primary key is the hashed public half of the keypair whose
 /// private half it stores, and OpenMLS only ever writes one at key package generation, from a
 /// freshly generated pair. A second save under the same public key with a different secret would
-/// mean the two halves had come apart, so it reports
-/// [`CryptoKeystoreError::AlreadyExists`][crate::CryptoKeystoreError::AlreadyExists] rather than
+/// mean the two halves had come apart, so it reports [`CryptoKeystoreError::AlreadyExists`] rather than
 /// overwriting.
-#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
-#[zeroize(drop)]
-#[sensitive]
+///
+/// This entity doesn't have in independent existence; it shares a table with [`StoredKeyPackage`].
+#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, ZeroizeOnDrop)]
 pub struct StoredHpkePrivateKey {
-    pub sk: Vec<u8>,
-    pub pk: Vec<u8>,
+    #[zeroize(skip)]
+    pub public_key_hash: Sha256Hash,
+    #[sensitive]
+    pub secret_key: Vec<u8>,
+}
+
+impl StoredHpkePrivateKey {
+    const PK_HASH_FIELD: &str = "hpke_init_public_key_hash";
+    const SK_FIELD: &str = "hpke_init_private_key";
+
+    const QUERY_ALL: &str = formatcp!(
+        "SELECT {pk_hash}, {sk} FROM {table_name} WHERE {sk} IS NOT NULL",
+        pk_hash = StoredHpkePrivateKey::PK_HASH_FIELD,
+        sk = StoredHpkePrivateKey::SK_FIELD,
+        table_name = StoredHpkePrivateKey::TABLE_NAME,
+    );
+
+    const QUERY_ONE: &str = formatcp!(
+        "{query_all} AND {pk_hash} = ?",
+        query_all = StoredHpkePrivateKey::QUERY_ALL,
+        pk_hash = StoredHpkePrivateKey::PK_HASH_FIELD,
+    );
+
+    fn from_row(row: &Row<'_>) -> rusqlite::Result<Self> {
+        Ok(Self {
+            public_key_hash: row.get(Self::PK_HASH_FIELD)?,
+            secret_key: row.get(Self::SK_FIELD)?,
+        })
+    }
 }
 
 impl PrimaryKey for StoredHpkePrivateKey {
-    type PrimaryKey = Vec<u8>;
+    type PrimaryKey = Sha256Hash;
 
-    fn primary_key(&self) -> Vec<u8> {
-        self.pk.clone()
+    fn primary_key(&self) -> Sha256Hash {
+        self.public_key_hash
     }
 }
 
-impl BorrowPrimaryKey for StoredHpkePrivateKey {
-    type BorrowedPrimaryKey<'a> = &'a [u8];
+impl Entity for StoredHpkePrivateKey {
+    const TABLE_NAME: &'static str = StoredKeyPackage::TABLE_NAME;
 
-    fn borrow_primary_key(&self) -> Self::BorrowedPrimaryKey<'_> {
-        &self.pk
+    fn get(conn: &Connection, key: &Sha256Hash) -> CryptoKeystoreResult<Option<Self>> {
+        conn.prepare_cached(Self::QUERY_ONE)?
+            .query_row(params![key], Self::from_row)
+            .optional()
+            .map_err(Into::into)
+    }
+
+    fn count(conn: &Connection) -> CryptoKeystoreResult<u32> {
+        conn.prepare_cached(formatcp!(
+            "SELECT count(*) FROM {table_name} WHERE {sk} IS NOT NULL",
+            table_name = StoredHpkePrivateKey::TABLE_NAME,
+            sk = StoredHpkePrivateKey::SK_FIELD,
+        ))?
+        .query_one([], |row| row.get(0))
+        .map_err(Into::into)
+    }
+
+    fn load_all(conn: &Connection) -> CryptoKeystoreResult<Vec<Self>> {
+        conn.prepare_cached(Self::QUERY_ALL)?
+            .query_map([], Self::from_row)?
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
     }
 }
 
-impl crate::traits::Entity for StoredHpkePrivateKey {
-    const TABLE_NAME: &'static str = "mls_hpke_private_keys";
-
-    fn get(conn: &rusqlite::Connection, key: &Vec<u8>) -> crate::CryptoKeystoreResult<Option<Self>> {
-        let hash = crate::Sha256Hash::hash_from(key);
-        crate::ancillary::helpers::get_helper(conn, "pk_sha256", hash, |row| {
-            Ok(Self {
-                pk: row.get("pk")?,
-                sk: row.get("sk")?,
-            })
-        })
-    }
-
-    fn count(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<u32> {
-        crate::ancillary::helpers::count_helper::<Self>(conn)
-    }
-
-    fn load_all(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<Vec<Self>> {
-        crate::ancillary::helpers::load_all_helper(conn, |row| {
-            Ok(Self {
-                pk: row.get("pk")?,
-                sk: row.get("sk")?,
-            })
-        })
-    }
-}
-
-impl crate::traits::EntityGetBorrowed for StoredHpkePrivateKey {
-    fn get_borrowed(conn: &rusqlite::Connection, key: &[u8]) -> crate::CryptoKeystoreResult<Option<Self>> {
-        let hash = crate::Sha256Hash::hash_from(key);
-        crate::ancillary::helpers::get_helper(conn, "pk_sha256", hash, |row| {
-            Ok(Self {
-                pk: row.get("pk")?,
-                sk: row.get("sk")?,
-            })
-        })
-    }
-}
-
-impl crate::traits::EntityDatabaseMutation for StoredHpkePrivateKey {
-    fn save<'a, Tx>(&self, tx: &'a Tx) -> crate::CryptoKeystoreResult<()>
+impl EntityDatabaseMutation for StoredHpkePrivateKey {
+    fn save<'a, Tx>(&self, tx: &'a Tx) -> CryptoKeystoreResult<()>
     where
         &'a Tx: Into<Transactionlike<'a>>,
     {
-        let hash = crate::Sha256Hash::hash_from(&self.pk);
         let conn = tx.into().conn()?;
-        let mut stmt = conn.prepare_cached("INSERT INTO mls_hpke_private_keys (pk_sha256, pk, sk) VALUES (?, ?, ?)")?;
-        stmt.execute(rusqlite::params![hash, self.pk, self.sk]).map_err(
-            crate::CryptoKeystoreError::map_already_exists(<Self as crate::traits::Entity>::TABLE_NAME),
-        )?;
+        let changed = conn
+            .prepare_cached(formatcp!(
+                "UPDATE {table_name}
+                SET {sk} = :secret_key
+                WHERE {sk} IS NULL
+                AND {pk_hash} = :public_key_hash",
+                table_name = StoredHpkePrivateKey::TABLE_NAME,
+                sk = StoredHpkePrivateKey::SK_FIELD,
+                pk_hash = StoredHpkePrivateKey::PK_HASH_FIELD,
+            ))?
+            .execute(named_params! {
+                ":secret_key": self.secret_key,
+                ":public_key_hash": self.public_key_hash,
+            })?;
+
+        if changed == 0 {
+            // Either no key package has this init key, or it already has its private key.
+            let key_package_exists = conn
+                .prepare_cached(formatcp!(
+                    "SELECT EXISTS (SELECT 1 FROM {table_name} WHERE {pk_hash} = ?)",
+                    table_name = StoredHpkePrivateKey::TABLE_NAME,
+                    pk_hash = StoredHpkePrivateKey::PK_HASH_FIELD
+                ))?
+                .query_one([self.public_key_hash], |row| row.get::<_, bool>(0))?;
+            return Err(if key_package_exists {
+                CryptoKeystoreError::AlreadyExists(Self::TABLE_NAME)
+            } else {
+                CryptoKeystoreError::NotFound("key package for HPKE init key", hex::encode(self.public_key_hash))
+            });
+        }
         Ok(())
     }
 
-    fn delete<'a, Tx>(tx: &'a Tx, id: &Vec<u8>) -> crate::CryptoKeystoreResult<bool>
+    fn delete<'a, Tx>(tx: &'a Tx, id: &Sha256Hash) -> CryptoKeystoreResult<bool>
     where
         &'a Tx: Into<Transactionlike<'a>>,
     {
-        let hash = crate::Sha256Hash::hash_from(id);
-        crate::ancillary::helpers::delete_helper::<Self, _>(tx, "pk_sha256", hash)
-    }
-}
-
-impl crate::traits::EntityDeleteBorrowed for StoredHpkePrivateKey {
-    fn delete_borrowed<'a, Tx>(tx: &'a Tx, id: &[u8]) -> crate::CryptoKeystoreResult<bool>
-    where
-        &'a Tx: Into<Transactionlike<'a>>,
-    {
-        let hash = crate::Sha256Hash::hash_from(id);
-        crate::ancillary::helpers::delete_helper::<Self, _>(tx, "pk_sha256", hash)
+        let conn = tx.into().conn()?;
+        let changed = conn
+            .prepare_cached(formatcp!(
+                "UPDATE {table_name}
+                SET {sk} = NULL
+                WHERE {sk} IS NOT NULL AND {pk_hash} = ?",
+                table_name = StoredHpkePrivateKey::TABLE_NAME,
+                sk = StoredHpkePrivateKey::SK_FIELD,
+                pk_hash = StoredHpkePrivateKey::PK_HASH_FIELD,
+            ))?
+            .execute(params![id])?;
+        Ok(changed > 0)
     }
 }
