@@ -135,8 +135,8 @@ mod tests_impl {
     use core_crypto_keystore::{
         CryptoKeystoreError, Transactionlike,
         entities::{
-            MlsPendingMessage, PersistedMlsGroup, StoredCredential, StoredEpochEncryptionKeypair,
-            TargetedMessageRxCounter, TransientMessageRxCounter,
+            MlsPendingMessage, PersistedMlsGroup, StoredCredential, StoredCredentialPk, StoredEpochEncryptionKeypair,
+            StoredHpkePrivateKey, StoredKeyPackage, TargetedMessageRxCounter, TransientMessageRxCounter,
         },
         traits::{
             Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, FetchFromDatabase as _,
@@ -179,17 +179,47 @@ mod tests_impl {
     where
         &'a Tx: Into<Transactionlike<'a>>,
     {
+        let credential = save_valid_credential(tx);
+        assert_eq!(
+            group.credential_type, 1,
+            "groups should always generate with basic credential refs for the purpose of this test"
+        );
+        group.credential_id = credential.public_key_hash;
+    }
+
+    /// Save a fresh credential, returning its primary key.
+    fn save_valid_credential<'a, Tx>(tx: &'a Tx) -> StoredCredentialPk
+    where
+        &'a Tx: Into<Transactionlike<'a>>,
+    {
         let credential = StoredCredential::random();
         credential.save(tx).unwrap();
         assert_eq!(
             credential.credential_type, 1,
             "credentials should always generate as basic for the purpose of this test"
         );
-        assert_eq!(
-            group.credential_type, 1,
-            "groups should always generate with basic credential refs for the purpose of this test"
-        );
-        group.credential_id = credential.primary_key().public_key_hash;
+        credential.primary_key()
+    }
+
+    /// Save whatever a key package or HPKE init key needs behind it.
+    ///
+    /// `mls_key_packages.(credential_id, credential_type)` is a foreign key onto `mls_credentials`, so a
+    /// key package needs a real credential. An HPKE init private key is stored on the row of the key
+    /// package which owns it, so it can only be saved once that key package exists.
+    fn satisfy_key_package_dependencies<'a, Tx>(tx: &'a Tx, entity: &mut dyn Any)
+    where
+        &'a Tx: Into<Transactionlike<'a>>,
+    {
+        if let Some(key_package) = entity.downcast_mut::<StoredKeyPackage>() {
+            key_package.credential = save_valid_credential(tx);
+        }
+
+        if let Some(private_key) = entity.downcast_ref::<StoredHpkePrivateKey>() {
+            let mut key_package = StoredKeyPackage::random();
+            key_package.credential = save_valid_credential(tx);
+            key_package.hpke_init_public_key_hash = private_key.public_key_hash;
+            key_package.save(tx).unwrap();
+        }
     }
 
     pub(crate) async fn can_save_entity<E>(store: &Arc<CryptoKeystore>) -> E
@@ -228,6 +258,7 @@ mod tests_impl {
             // normally we'd avoid mutating the entity under test, but reversing sha256 is out of scope for this test
             attach_valid_credential(&*tx, group);
         }
+        satisfy_key_package_dependencies(&*tx, any_e);
 
         entity.save(&*tx).unwrap();
         tx.commit().await.unwrap();
@@ -309,6 +340,7 @@ mod tests_impl {
         if let Some(group) = (&mut entity as &mut dyn Any).downcast_mut::<PersistedMlsGroup>() {
             attach_valid_credential(&*tx, group);
         }
+        satisfy_key_package_dependencies(&*tx, &mut entity);
 
         let primary_key = entity.primary_key();
         let borrowed_primary_key = entity.borrow_primary_key();
@@ -505,6 +537,7 @@ mod tests_impl {
             if let Some(group) = any_e.downcast_mut::<PersistedMlsGroup>() {
                 attach_valid_credential(&*tx, group);
             }
+            satisfy_key_package_dependencies(&*tx, any_e);
 
             entity.save(&*tx).unwrap();
         }
@@ -543,7 +576,7 @@ mod tests {
     test_for_entity!(test_mls_psk_bundle, StoredPskBundle no_upsert:true);
     test_for_entity!(test_mls_encryption_keypair, StoredEncryptionKeyPair no_upsert:true);
     test_for_entity!(test_mls_epoch_encryption_keypair, StoredEpochEncryptionKeypair);
-    test_for_entity!(test_mls_hpke_private_key, StoredHpkePrivateKey no_upsert:true);
+    test_for_entity!(test_mls_hpke_private_key, StoredHpkePrivateKey no_upsert:true no_borrowed_key:true);
     test_for_entity!(test_e2ei_intermediate_cert, X509IntermediateCert);
     test_for_entity!(test_e2ei_crl, X509Crl);
     test_for_entity!(test_e2ei_acme_ca, X509TrustAnchor ignore_entity_count:true no_upsert:true ignore_find_many:true no_borrowed_key:true);
@@ -598,9 +631,9 @@ pub mod utils {
     use core_crypto_keystore::{
         ancillary::ConversationId,
         entities::{
-            MlsPendingMessage, PersistedMlsGroup, ProteusSession, StoredCredential, StoredEncryptionKeyPair,
-            StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
-            TargetedMessageRxCounter, TransientMessageRxCounter, X509TrustAnchor,
+            MlsPendingMessage, PersistedMlsGroup, ProteusSession, StoredCredential, StoredCredentialPk,
+            StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage,
+            StoredPskBundle, TargetedMessageRxCounter, TransientMessageRxCounter, X509TrustAnchor,
         },
     };
     use rand::{RngExt as _, distr::SampleString};
@@ -727,9 +760,7 @@ pub mod utils {
                 };
             }
 
-    impl_entity_random_update_ext!(StoredKeyPackage, blob_fields=[key_package,], additional_fields=[(key_package_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
     impl_entity_random_update_ext!(StoredCredential, blob_fields=[credential,public_key,private_key,], additional_fields=[(session_id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),(ciphersuite: rand::random()),(credential_type: 1),]);
-    impl_entity_random_update_ext!(StoredHpkePrivateKey, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredPskBundle, blob_fields=[psk,psk_id id_like:true,]);
     impl_entity_random_update_ext!(TargetedMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);
@@ -840,6 +871,51 @@ pub mod utils {
             }
         }
     };
+
+    fn random_sha256() -> core_crypto_keystore::Sha256Hash {
+        let mut hash = [0; core_crypto_keystore::Sha256Hash::BYTES];
+        rand::fill(&mut hash);
+        hash.into()
+    }
+
+    // The hashes are arbitrary: the keystore stores them without ever deriving them from the key package
+    // blob. The credential is a placeholder, which the tests replace with one they have saved, because
+    // `mls_key_packages` has a foreign key onto `mls_credentials`.
+    impl EntityRandomExt for StoredKeyPackage {
+        fn random() -> Self {
+            Self {
+                key_package_ref: uuid::Uuid::new_v4().hyphenated().to_string().into(),
+                key_package: random_blob(),
+                credential: StoredCredentialPk {
+                    public_key_hash: random_sha256(),
+                    credential_type: 1, // type of basic credential
+                },
+                hpke_init_public_key_hash: random_sha256(),
+                leaf_encryption_key_hash: random_sha256(),
+            }
+        }
+    }
+
+    impl EntityRandomUpdateExt for StoredKeyPackage {
+        fn random_update(&mut self) {
+            self.key_package = random_blob();
+        }
+    }
+
+    impl EntityRandomExt for StoredHpkePrivateKey {
+        fn random() -> Self {
+            Self {
+                public_key_hash: random_sha256(),
+                secret_key: random_blob(),
+            }
+        }
+    }
+
+    impl EntityRandomUpdateExt for StoredHpkePrivateKey {
+        fn random_update(&mut self) {
+            self.secret_key = random_blob();
+        }
+    }
 
     impl EntityRandomExt for StoredEpochEncryptionKeypair {
         fn random() -> Self {

@@ -258,8 +258,7 @@ pub(crate) mod test {
         ancillary::ConversationIdRef,
         connection::{Database, DatabaseKey, migrate_db_key_type_to_bytes, migrations::MigrationTarget},
         entities::{
-            MlsPendingMessage, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair,
-            StoredHpkePrivateKey, StoredPskBundle,
+            MlsPendingMessage, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredPskBundle,
         },
         traits::{Entity, EntityGetBorrowed as _, PrimaryKey as _, SearchableEntity as _},
     };
@@ -899,6 +898,10 @@ r9IJmL6kDQ==
     }
 
     /// The V31 meta migration repairs `mls_hpke_private_keys.pk_sha256` keys backfilled by V12.
+    ///
+    /// V46 folds the private keys into `mls_key_packages` and drops this table, so the test stops at
+    /// V45 and checks the table directly, binding the key the way the entity did while the table
+    /// existed.
     #[test]
     fn v31_meta_migration_repairs_v12_hpke_private_key_keys() {
         const PK: &[u8] = b"an HPKE public key predating V12";
@@ -908,24 +911,30 @@ r9IJmL6kDQ==
         let path = db_file.path().to_str().unwrap();
 
         smol::block_on(async {
-            let db = seed_then_migrate(path, &key, 11, |conn| {
+            let db = seed_then_migrate_to(path, &key, 11, MigrationTarget::Version(45), |conn| {
                 conn.execute("INSERT INTO mls_hpke_private_keys (pk, sk) VALUES (?, ?)", (PK, SK))
                     .expect("inserting a pre-V12 HPKE private key");
             })
             .await;
             let conn = db.conn().await;
 
-            assert_eq!(
-                StoredHpkePrivateKey::count(&conn).unwrap(),
-                1,
-                "the migration must not lose the private key"
-            );
+            let count: u32 = conn
+                .query_row("SELECT count(*) FROM mls_hpke_private_keys", [], |row| row.get(0))
+                .unwrap();
+            assert_eq!(count, 1, "the migration must not lose the private key");
 
             let encoding = stored_key_encoding(&conn, "mls_hpke_private_keys", "pk_sha256");
+            let found: bool = conn
+                .query_row(
+                    "SELECT EXISTS (SELECT 1 FROM mls_hpke_private_keys WHERE pk_sha256 = ?)",
+                    [Sha256Hash::hash_from(PK)],
+                    |row| row.get(0),
+                )
+                .unwrap();
             assert!(
-                StoredHpkePrivateKey::get_borrowed(&conn, PK).unwrap().is_some(),
-                "a migrated HPKE private key must be gettable by its public key, but `pk_sha256` is stored \
-                 as {encoding:?} while `Sha256Hash` binds 32 raw bytes"
+                found,
+                "a migrated HPKE private key must be findable by the hash of its public key, but `pk_sha256` is \
+                 stored as {encoding:?} while `Sha256Hash` binds 32 raw bytes"
             );
         });
     }
@@ -1081,7 +1090,11 @@ r9IJmL6kDQ==
         smol::block_on(migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key)).unwrap();
 
         smol::block_on(async {
-            let db = Database::open(path, &new_key).await.unwrap();
+            // V46 folds `mls_hpke_private_keys` into `mls_key_packages` and drops it, so stop at V45 to
+            // check every table V31 repaired.
+            let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(45))
+                .await
+                .unwrap();
             let conn = db.conn().await;
 
             let mut rows_checked = 0;
