@@ -178,6 +178,7 @@ fn run_meta_migration(version: i32, conn: &mut rusqlite::Connection) -> CryptoKe
         meta_migrations::v34::VERSION => meta_migrations::v34::meta_migration(&tx)?,
         meta_migrations::v37::VERSION => meta_migrations::v37::meta_migration(&tx)?,
         meta_migrations::v39::VERSION => meta_migrations::v39::meta_migration(&tx)?,
+        meta_migrations::v45::VERSION => meta_migrations::v45::meta_migration(&tx)?,
         _ => {}
     }
 
@@ -381,6 +382,8 @@ pub(crate) mod test {
             (42, 3642602498038214093),
             (43, 7019178301151360528),
             (44, 9343802733246156539),
+            (45, 11852759019974572996),
+            (46, 5473226583050100681),
         ];
 
         let runner = super::migrations::runner();
