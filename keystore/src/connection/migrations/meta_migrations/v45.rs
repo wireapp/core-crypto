@@ -109,7 +109,7 @@ pub(crate) fn meta_migration(tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreRe
                 warn!(
                     "keypackage with ref {} references a leaf keypair which does not exist (pk_sha256 = {})",
                     hex::encode(&kp_ref),
-                    hex::encode(&leaf_encryption_key_hash)
+                    hex::encode(leaf_encryption_key_hash)
                 );
             }
 
