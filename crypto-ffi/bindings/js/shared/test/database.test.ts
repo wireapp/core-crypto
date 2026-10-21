@@ -34,6 +34,22 @@ describe("database", () => {
         expect(result).to.contain(location);
     });
 
+    it("in-memory database stores data", async () => {
+        const result = await runOnPlatform(async () => {
+            const database = ccModule.Database.inMemory();
+            const cc = await helpers.ccInit({ database });
+            await cc.transaction(async (ctx) => {
+                await ctx.setData(new Uint8Array([1, 2, 3]));
+            });
+            const data = await cc.transaction(async (ctx) => {
+                return Array.from((await ctx.getData())!);
+            });
+            return { data };
+        });
+
+        expect(result).to.deep.equal({ data: [1, 2, 3] });
+    });
+
     it("key must have correct length", async () => {
         const result = await runOnPlatform(async () => {
             try {
