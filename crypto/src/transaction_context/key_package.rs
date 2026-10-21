@@ -2,11 +2,7 @@
 
 use std::time::Duration;
 
-use core_crypto_keystore::{
-    Sha256Hash,
-    entities::{StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeyPackage},
-    traits::EntityDeleteBorrowed as _,
-};
+use core_crypto_keystore::{Sha256Hash, entities::StoredKeyPackage, traits::EntityDeleteBorrowed as _};
 use openmls::prelude::{CryptoConfig, Lifetime};
 
 use super::{Error, Result, TransactionContext};
@@ -77,28 +73,12 @@ impl TransactionContext {
     /// Remove one [`Keypackage`] from the database.
     ///
     /// Succeeds silently if the keypackage does not exist in the database.
-    ///
-    /// Implementation note: this must first load and deserialize the keypackage,
-    /// then remove items from three distinct tables.
     pub async fn remove_key_package(&self, kp_ref: &KeypackageRef) -> Result<()> {
-        let Some(kp) = self
-            .session()
-            .await?
-            .load_key_package(kp_ref)
-            .await
-            .map_err(RecursiveError::context("loading key packages on session"))?
-        else {
-            return Ok(());
-        };
-
         let inner = self.inner()?;
         let tx = inner.transaction();
+
         StoredKeyPackage::delete_borrowed(tx, kp_ref.hash_ref())
             .map_err(KeystoreError::wrap("removing key package from keystore"))?;
-        StoredHpkePrivateKey::delete_borrowed(tx, kp.hpke_init_key().as_slice())
-            .map_err(KeystoreError::wrap("removing private key from keystore"))?;
-        StoredEncryptionKeyPair::delete_borrowed(tx, kp.leaf_node().encryption_key().as_slice())
-            .map_err(KeystoreError::wrap("removing encryption keypair from keystore"))?;
 
         Ok(())
     }

@@ -39,16 +39,6 @@ impl Session {
             .map(|keypackage| keypackage.make_ref().map_err(Into::into))
             .collect()
     }
-
-    /// Load one [`Keypackage`] from its [`KeypackageRef`]
-    pub(crate) async fn load_key_package(&self, kp_ref: &KeypackageRef) -> Result<Option<Keypackage>> {
-        self.database
-            .get_borrowed::<StoredKeyPackage>(kp_ref.hash_ref())
-            .await
-            .map_err(KeystoreError::wrap("loading keypackage from database"))?
-            .map(from_stored)
-            .transpose()
-    }
 }
 
 #[cfg(test)]
@@ -113,27 +103,5 @@ mod tests {
             );
         })
         .await
-    }
-
-    #[apply(all_cred_cipher)]
-    async fn can_store_and_load_key_packages(case: TestContext) {
-        let [cc] = case.sessions().await;
-
-        // generate a keypackage; automatically saves it
-        let kp = cc.new_keypackage(&case).await;
-
-        let all_keypackages = cc.session.read().await.get_key_packages().await.unwrap();
-        assert_eq!(all_keypackages[0], kp);
-
-        let kp_ref = kp.make_ref().unwrap();
-        let by_ref = cc
-            .session
-            .read()
-            .await
-            .load_key_package(&kp_ref)
-            .await
-            .unwrap()
-            .unwrap();
-        assert_eq!(kp, by_ref);
     }
 }
