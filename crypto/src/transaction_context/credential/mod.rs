@@ -73,11 +73,9 @@ impl TransactionContext {
 #[cfg(test)]
 mod tests {
     use core_crypto_keystore::{
-        Sha256Hash,
         entities::{StoredCredential, StoredCredentialPk, StoredKeyPackage},
         traits::FetchFromDatabase as _,
     };
-    use openmls::prelude::KeyPackage;
 
     use super::*;
     use crate::{CertificateBundle, test_utils::*};
@@ -102,16 +100,10 @@ mod tests {
             .transaction
             .database()
             .unwrap()
-            .load_all::<StoredKeyPackage>()
+            .search::<StoredKeyPackage, _>(&credential.keystore_pk())
             .await
             .unwrap()
-            .into_iter()
-            .map(|stored| core_crypto_keystore::deser::<KeyPackage>(&stored.key_package).unwrap())
-            .filter(|key_package| {
-                Sha256Hash::hash_from(key_package.leaf_node().signature_key().as_slice())
-                    == credential.public_key_hash()
-            })
-            .count()
+            .len()
     }
 
     /// A credential a conversation still uses cannot be removed, and the refused removal writes nothing: neither the
