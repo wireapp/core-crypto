@@ -425,3 +425,84 @@ pub(crate) struct V33StoredEpochEncryptionKeypair {
     pub(crate) id: Vec<u8>,
     pub(crate) keypairs: Vec<u8>,
 }
+
+/// [`StoredHpkePrivateKey`][crate::entities::StoredHpkePrivateKey] as it appeared prior to v46, when HPKE init
+/// keys had a table of their own
+///
+/// The legacy IndexedDB import writes into the schema as of V22, so it needs this shape rather than the current one.
+#[cfg(target_os = "unknown")]
+#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+#[zeroize(drop)]
+#[sensitive]
+pub(crate) struct StoredHpkePrivateKeyV45 {
+    pub(crate) sk: Vec<u8>,
+    pub(crate) pk: Vec<u8>,
+}
+
+#[cfg(target_os = "unknown")]
+impl crate::traits::PrimaryKey for StoredHpkePrivateKeyV45 {
+    type PrimaryKey = Vec<u8>;
+
+    fn primary_key(&self) -> Vec<u8> {
+        self.pk.clone()
+    }
+}
+
+#[cfg(target_os = "unknown")]
+impl crate::traits::BorrowPrimaryKey for StoredHpkePrivateKeyV45 {
+    type BorrowedPrimaryKey<'a> = &'a [u8];
+
+    fn borrow_primary_key(&self) -> Self::BorrowedPrimaryKey<'_> {
+        &self.pk
+    }
+}
+
+#[cfg(target_os = "unknown")]
+impl crate::traits::Entity for StoredHpkePrivateKeyV45 {
+    const TABLE_NAME: &'static str = "mls_hpke_private_keys";
+
+    fn get(conn: &rusqlite::Connection, key: &Vec<u8>) -> CryptoKeystoreResult<Option<Self>> {
+        crate::ancillary::helpers::get_helper(conn, "pk_sha256", Sha256Hash::hash_from(key), |row| {
+            Ok(Self {
+                pk: row.get("pk")?,
+                sk: row.get("sk")?,
+            })
+        })
+    }
+
+    fn count(conn: &rusqlite::Connection) -> CryptoKeystoreResult<u32> {
+        crate::ancillary::helpers::count_helper::<Self>(conn)
+    }
+
+    fn load_all(conn: &rusqlite::Connection) -> CryptoKeystoreResult<Vec<Self>> {
+        crate::ancillary::helpers::load_all_helper(conn, |row| {
+            Ok(Self {
+                pk: row.get("pk")?,
+                sk: row.get("sk")?,
+            })
+        })
+    }
+}
+
+#[cfg(target_os = "unknown")]
+impl crate::traits::EntityDatabaseMutation for StoredHpkePrivateKeyV45 {
+    fn save<'a, Tx>(&self, tx: &'a Tx) -> CryptoKeystoreResult<()>
+    where
+        &'a Tx: Into<Transactionlike<'a>>,
+    {
+        let conn = tx.into().conn()?;
+        conn.prepare_cached("INSERT INTO mls_hpke_private_keys (pk_sha256, pk, sk) VALUES (?, ?, ?)")?
+            .execute(rusqlite::params![Sha256Hash::hash_from(&self.pk), self.pk, self.sk])
+            .map_err(CryptoKeystoreError::map_already_exists(
+                <Self as crate::traits::Entity>::TABLE_NAME,
+            ))?;
+        Ok(())
+    }
+
+    fn delete<'a, Tx>(tx: &'a Tx, id: &Vec<u8>) -> CryptoKeystoreResult<bool>
+    where
+        &'a Tx: Into<Transactionlike<'a>>,
+    {
+        crate::ancillary::helpers::delete_helper::<Self, _>(tx, "pk_sha256", Sha256Hash::hash_from(id))
+    }
+}
