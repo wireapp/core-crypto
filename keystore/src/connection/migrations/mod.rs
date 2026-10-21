@@ -1342,4 +1342,266 @@ r9IJmL6kDQ==
             );
         });
     }
+
+    /// V45, its meta migration, and V46 together move each key package's key material into its own row, and make
+    /// that row cascade from its credential.
+    ///
+    /// This runs over the bundled v10002003 dump, whose key packages are real, with a few rows altered at V44 to
+    /// exercise each case the meta migration handles. Every expected value is derived here by parsing the key
+    /// packages independently, not by trusting the columns under test.
+    #[test]
+    fn v45_through_v46_move_key_package_key_material_into_mls_key_packages() {
+        use std::collections::HashMap;
+
+        use openmls::prelude::KeyPackage;
+
+        const UNPARSEABLE_REF: &[u8] = b"ref of a key package which does not deserialize";
+        const UNPARSEABLE_KEY_PACKAGE: &[u8] = b"not a serialized key package";
+        const UNRELATED_LEAF_PK: &[u8] = b"public half of a leaf key no key package owns";
+        const UNRELATED_LEAF_SK: &[u8] = b"secret half of a leaf key no key package owns";
+
+        fn parse(key_package: &[u8]) -> KeyPackage {
+            crate::deser(key_package).expect("the bundled key packages deserialize")
+        }
+        fn credential_of(key_package: &KeyPackage) -> (Sha256Hash, u16) {
+            let leaf_node = key_package.leaf_node();
+            (
+                Sha256Hash::hash_from(leaf_node.signature_key().as_slice()),
+                leaf_node.credential().credential_type().into(),
+            )
+        }
+        fn init_key_hash(key_package: &KeyPackage) -> Sha256Hash {
+            Sha256Hash::hash_from(key_package.hpke_init_key().as_slice())
+        }
+        fn leaf_key_hash(key_package: &KeyPackage) -> Sha256Hash {
+            Sha256Hash::hash_from(key_package.leaf_node().encryption_key().as_slice())
+        }
+        fn leaf_keypair_exists(conn: &rusqlite::Connection, leaf_key_hash: Sha256Hash) -> bool {
+            conn.query_row(
+                "SELECT EXISTS (SELECT 1 FROM mls_encryption_keypairs WHERE pk_sha256 = ?)",
+                [leaf_key_hash],
+                |row| row.get(0),
+            )
+            .unwrap()
+        }
+
+        let mut db_file = NamedTempFile::new().unwrap();
+        db_file.write_all(DB).unwrap();
+        let path = db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode");
+        let key = DatabaseKey::generate();
+        smol::block_on(migrate_db_key_type_to_bytes(path, OLD_KEY, &key)).unwrap();
+
+        smol::block_on(async {
+            // Before V45: record what each key package should end up with, then alter a few rows.
+            let (original_count, init_private_keys, missing_init_key, missing_credential, missing_leaf_keypair) = {
+                let db = Database::open_at_schema_version(path, &key, MigrationTarget::Version(44))
+                    .await
+                    .unwrap();
+                let conn = db.conn().await;
+
+                let key_packages: Vec<(Vec<u8>, Vec<u8>)> = conn
+                    .prepare("SELECT key_package_ref, key_package FROM mls_key_packages ORDER BY key_package_ref")
+                    .unwrap()
+                    .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+                    .unwrap()
+                    .collect::<Result<_, _>>()
+                    .unwrap();
+                assert!(
+                    key_packages.len() > 3,
+                    "the bundled database needs a few key packages to spare for the altered rows"
+                );
+
+                let init_private_keys: HashMap<Vec<u8>, Vec<u8>> = conn
+                    .prepare("SELECT pk_sha256, sk FROM mls_hpke_private_keys")
+                    .unwrap()
+                    .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+                    .unwrap()
+                    .collect::<Result<_, _>>()
+                    .unwrap();
+
+                // a key package which no longer deserializes
+                conn.execute(
+                    "INSERT INTO mls_key_packages (key_package_ref, key_package) VALUES (?, ?)",
+                    (UNPARSEABLE_REF, UNPARSEABLE_KEY_PACKAGE),
+                )
+                .unwrap();
+
+                // a key package whose init private key has gone missing
+                let (missing_init_key_ref, key_package) = &key_packages[0];
+                let missing_init_key = parse(key_package);
+                conn.execute(
+                    "DELETE FROM mls_hpke_private_keys WHERE pk_sha256 = ?",
+                    [init_key_hash(&missing_init_key)],
+                )
+                .unwrap();
+
+                // A key package whose credential the keystore never held. Rewriting its signature key in place
+                // leaves it deserializable, because nothing on the way checks the signature.
+                let (missing_credential_ref, key_package) = &key_packages[1];
+                let original = parse(key_package);
+                let signature_key = original.leaf_node().signature_key().as_slice();
+                let mut occurrences = key_package
+                    .windows(signature_key.len())
+                    .enumerate()
+                    .filter(|(_, window)| *window == signature_key)
+                    .map(|(position, _)| position);
+                let position = occurrences
+                    .next()
+                    .expect("the signature key is in the serialized key package");
+                assert!(
+                    occurrences.next().is_none(),
+                    "the signature key must appear exactly once to be rewritten safely"
+                );
+                let mut altered = key_package.clone();
+                for byte in &mut altered[position..position + signature_key.len()] {
+                    *byte ^= 0xff;
+                }
+                let missing_credential = parse(&altered);
+                assert_ne!(credential_of(&missing_credential), credential_of(&original));
+                assert_eq!(leaf_key_hash(&missing_credential), leaf_key_hash(&original));
+                conn.execute(
+                    "UPDATE mls_key_packages SET key_package = ? WHERE key_package_ref = ?",
+                    (&altered, missing_credential_ref),
+                )
+                .unwrap();
+
+                // a key package whose leaf keypair has gone missing
+                let (missing_leaf_keypair_ref, key_package) = &key_packages[2];
+                conn.execute(
+                    "DELETE FROM mls_encryption_keypairs WHERE pk_sha256 = ?",
+                    [leaf_key_hash(&parse(key_package))],
+                )
+                .unwrap();
+
+                // a leaf keypair no key package owns, standing in for the leaf key of a pending group update
+                conn.execute(
+                    "INSERT INTO mls_encryption_keypairs (pk_sha256, pk, sk) VALUES (?, ?, ?)",
+                    (
+                        Sha256Hash::hash_from(UNRELATED_LEAF_PK),
+                        UNRELATED_LEAF_PK,
+                        UNRELATED_LEAF_SK,
+                    ),
+                )
+                .unwrap();
+
+                (
+                    key_packages.len(),
+                    init_private_keys,
+                    (missing_init_key_ref.clone(), missing_init_key),
+                    (missing_credential_ref.clone(), missing_credential),
+                    missing_leaf_keypair_ref.clone(),
+                )
+            };
+
+            let db = Database::open_at_schema_version(path, &key, MigrationTarget::Version(46))
+                .await
+                .unwrap();
+            let conn = db.conn().await;
+
+            let hpke_table_exists: bool = conn
+                .query_row(
+                    "SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'mls_hpke_private_keys')",
+                    [],
+                    |row| row.get(0),
+                )
+                .unwrap();
+            assert!(!hpke_table_exists, "V46 retires `mls_hpke_private_keys`");
+
+            struct MigratedKeyPackage {
+                key_package_ref: Vec<u8>,
+                key_package: Vec<u8>,
+                credential_id: Sha256Hash,
+                credential_type: u16,
+                hpke_init_public_key_hash: Sha256Hash,
+                hpke_init_private_key: Vec<u8>,
+                leaf_encryption_key_hash: Sha256Hash,
+            }
+            let migrated: Vec<MigratedKeyPackage> = conn
+                .prepare(
+                    "SELECT key_package_ref, key_package, credential_id, credential_type,
+                        hpke_init_public_key_hash, hpke_init_private_key, leaf_encryption_key_hash
+                    FROM mls_key_packages",
+                )
+                .unwrap()
+                .query_map([], |row| {
+                    Ok(MigratedKeyPackage {
+                        key_package_ref: row.get(0)?,
+                        key_package: row.get(1)?,
+                        credential_id: row.get(2)?,
+                        credential_type: row.get(3)?,
+                        hpke_init_public_key_hash: row.get(4)?,
+                        hpke_init_private_key: row.get(5)?,
+                        leaf_encryption_key_hash: row.get(6)?,
+                    })
+                })
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap();
+
+            let has_ref = |key_package_ref: &[u8]| migrated.iter().any(|row| row.key_package_ref == key_package_ref);
+            assert!(
+                !has_ref(UNPARSEABLE_REF),
+                "a key package which does not deserialize is dropped"
+            );
+            assert!(
+                !has_ref(&missing_init_key.0),
+                "a key package without its init private key is dropped"
+            );
+            assert!(
+                !has_ref(&missing_credential.0),
+                "a key package without its credential is dropped"
+            );
+            assert!(
+                has_ref(&missing_leaf_keypair),
+                "a missing leaf keypair alone is not reason enough to drop a key package"
+            );
+            assert_eq!(migrated.len(), original_count - 2, "every other key package survives");
+
+            for row in &migrated {
+                let key_package = parse(&row.key_package);
+                assert_eq!(
+                    (row.credential_id, row.credential_type),
+                    credential_of(&key_package),
+                    "the credential columns name the key package's own credential"
+                );
+                assert_eq!(row.hpke_init_public_key_hash, init_key_hash(&key_package));
+                assert_eq!(row.leaf_encryption_key_hash, leaf_key_hash(&key_package));
+                assert_eq!(
+                    Some(&row.hpke_init_private_key),
+                    init_private_keys.get(init_key_hash(&key_package).as_ref()),
+                    "the init private key is carried over from `mls_hpke_private_keys`"
+                );
+            }
+
+            // A dropped key package takes its leaf keypair with it, while a leaf keypair which belongs to no
+            // key package is left alone.
+            assert!(!leaf_keypair_exists(&conn, leaf_key_hash(&missing_init_key.1)));
+            assert!(!leaf_keypair_exists(&conn, leaf_key_hash(&missing_credential.1)));
+            assert!(leaf_keypair_exists(&conn, Sha256Hash::hash_from(UNRELATED_LEAF_PK)));
+
+            // Deleting the credential now takes its key packages, and their leaf keypairs, with it. The bundled
+            // conversation still uses that credential, which restricts deleting it, so the conversation goes first.
+            conn.execute("DELETE FROM mls_groups", []).unwrap();
+            conn.execute("DELETE FROM mls_credentials", []).unwrap();
+            let remaining_key_packages: u32 = conn
+                .query_row("SELECT count(*) FROM mls_key_packages", [], |row| row.get(0))
+                .unwrap();
+            assert_eq!(remaining_key_packages, 0, "key packages cascade from their credential");
+            let remaining_leaf_keypairs: Vec<Vec<u8>> = conn
+                .prepare("SELECT pk FROM mls_encryption_keypairs")
+                .unwrap()
+                .query_map([], |row| row.get(0))
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap();
+            assert_eq!(
+                remaining_leaf_keypairs,
+                [UNRELATED_LEAF_PK],
+                "every key package's leaf keypair goes with it, and nothing else does"
+            );
+        });
+    }
 }
