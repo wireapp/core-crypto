@@ -90,6 +90,9 @@
   and the salt values are now stored in a file in the same directory as the CoreCrypto database. For existing clients
   the database must be opened once with the old path in order for a migration to be performed.
 
+- `CoreCryptoContext.removeKeyPackage` and `CoreCryptoContext.removeKeyPackageFor` are now synchronous functions, not
+  async.
+
 #### Kotlin
 
 - the JVM, Android and KMP packages are now published to Wire's Maven repository, <https://maven.wire.com>, instead of
@@ -101,6 +104,9 @@
 - transactions are now cancellable. This applies to all Kotlin bindings: jvm, android and kmp.
 
 - The macos/ios targets now have a file lock guarding against concurrent access from separate CoreCrypto instances.
+
+- `CoreCryptoContext.removeKeyPackage` and `CoreCryptoContext.removeKeyPackageFor` are now synchronous functions, not
+  async.
 
 #### Bug Fixes
 
