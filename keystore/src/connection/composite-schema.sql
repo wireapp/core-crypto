@@ -183,3 +183,5 @@ DELETE FROM
 WHERE
   pk_sha256 = OLD.leaf_encryption_key_hash;
 END;
+
+CREATE INDEX idx_mls_groups_credential_fk ON mls_groups (credential_id, credential_type);
