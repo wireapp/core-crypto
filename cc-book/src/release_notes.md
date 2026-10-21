@@ -59,6 +59,9 @@
 
 - `CoreCryptoContext.setData` is now a synchronous function, not async.
 
+- `CoreCryptoContext.removeKeyPackage` and `CoreCryptoContext.removeKeyPackageFor` are now synchronous functions, not
+  async.
+
 #### TypeScript
 
 - browser and native packages are now released separately under `@wireapp/core-crypto` and
