@@ -208,6 +208,12 @@ extension X509CredentialAcquisition {
     ///
     /// Provide `coreCryptoDatabase` if you're using distinct DB instances for `PkiEnvironment` and `CoreCrypto`.
     /// Otherwise, the `PkiEnvironment`'s DB will be used to load the full credential.
+    @available(
+        *, deprecated,
+        message:
+            "this function reuses key material. "
+            + "Prefer `X509CredentialAcquisition.init(pkiEnvironment:config:)`"
+    )
     public static func newFromCredentialRef(
         pkiEnvironment: PkiEnvironment,
         config: X509CredentialAcquisitionConfiguration,
