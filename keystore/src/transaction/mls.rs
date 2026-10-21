@@ -85,11 +85,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for Transaction {
                 ));
             }
             MlsEntityId::KeyPackage => {
-                StoredKeyPackage {
-                    key_package_ref: id.into(),
-                    key_package: data,
-                }
-                .save(self)?;
+                StoredKeyPackage::from_openmls(id, data, value).save(self)?;
             }
             MlsEntityId::HpkePrivateKey => {
                 StoredHpkePrivateKey {
