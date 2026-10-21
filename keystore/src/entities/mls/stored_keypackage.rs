@@ -8,7 +8,10 @@ use crate::{
     CryptoKeystoreResult, Sha256Hash, Transactionlike,
     ancillary::helpers,
     entities::StoredCredentialPk,
-    traits::{BorrowPrimaryKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed, EntityGetBorrowed, PrimaryKey},
+    traits::{
+        BorrowPrimaryKey, DeletableBySearchKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed,
+        EntityGetBorrowed, PrimaryKey, SearchableEntity,
+    },
 };
 
 /// Entity representing a persisted `KeyPackage`
@@ -50,6 +53,16 @@ impl StoredKeyPackage {
     const QUERY_ONE: &str = formatcp!(
         "{query_all} WHERE key_package_ref = ?",
         query_all = StoredKeyPackage::QUERY_ALL
+    );
+
+    const QUERY_BY_CREDENTIAL: &str = formatcp!(
+        "{query_all} WHERE credential_id = :credential_id AND credential_type = :credential_type",
+        query_all = StoredKeyPackage::QUERY_ALL,
+    );
+
+    const DELETE_BY_CREDENTIAL: &str = formatcp!(
+        "DELETE FROM {table_name} WHERE credential_id = :credential_id AND credential_type = :credential_type",
+        table_name = StoredKeyPackage::TABLE_NAME,
     );
 
     /// Construct an instance from a pre-computed id, serialization, and a dynamic openmls entity
@@ -199,5 +212,39 @@ impl EntityDeleteBorrowed for StoredKeyPackage {
         &'a Tx: Into<Transactionlike<'a>>,
     {
         helpers::delete_helper::<Self, _>(tx, "key_package_ref", id)
+    }
+}
+
+impl SearchableEntity<StoredCredentialPk> for StoredKeyPackage {
+    fn find_all_matching(conn: &Connection, search_key: &StoredCredentialPk) -> CryptoKeystoreResult<Vec<Self>> {
+        conn.prepare_cached(Self::QUERY_BY_CREDENTIAL)?
+            .query_map(
+                named_params! {
+                    ":credential_id": search_key.public_key_hash,
+                    ":credential_type": search_key.credential_type,
+                },
+                Self::from_row,
+            )?
+            .collect::<Result<_, _>>()
+            .map_err(Into::into)
+    }
+
+    fn matches(&self, search_key: &StoredCredentialPk) -> bool {
+        self.credential == *search_key
+    }
+}
+
+impl DeletableBySearchKey<StoredCredentialPk> for StoredKeyPackage {
+    fn delete_all_matching<'a, Tx>(tx: &'a Tx, search_key: &StoredCredentialPk) -> CryptoKeystoreResult<()>
+    where
+        &'a Tx: Into<Transactionlike<'a>>,
+    {
+        let conn = tx.into().conn()?;
+        conn.prepare_cached(Self::DELETE_BY_CREDENTIAL)?
+            .execute(named_params! {
+                ":credential_id": search_key.public_key_hash,
+                ":credential_type": search_key.credential_type,
+            })?;
+        Ok(())
     }
 }
