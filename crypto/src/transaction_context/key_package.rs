@@ -73,7 +73,7 @@ impl TransactionContext {
     /// Remove one [`Keypackage`] from the database.
     ///
     /// Succeeds silently if the keypackage does not exist in the database.
-    pub async fn remove_key_package(&self, kp_ref: &KeypackageRef) -> Result<()> {
+    pub fn remove_key_package(&self, kp_ref: &KeypackageRef) -> Result<()> {
         let inner = self.inner()?;
         let tx = inner.transaction();
 
@@ -84,7 +84,7 @@ impl TransactionContext {
     }
 
     /// Remove all keypackages associated with this credential.
-    pub async fn remove_key_packages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
+    pub fn remove_key_packages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
         let inner = self.inner()?;
         let tx = inner.transaction();
 
