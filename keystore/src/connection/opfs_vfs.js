@@ -76,22 +76,29 @@ function workerMain() {
     }
 
     const files = new OpfsFiles();
-    // Requests are sequential from the caller's side; this queue only guards against interleaving `await`s.
+    // Callers send one request at a time, but they can give up on a call (e.g. on worker error) and send the next
+    // one before this side has finished. The queue keeps operations in arrival order regardless.
     let queue = Promise.resolve();
 
     self.onmessage = ({ data: { seq, op, args } }) => {
-        queue = queue.then(async () => {
-            try {
-                // Own prototype methods only, so that names like `toString` aren't callable.
-                if (op === "constructor" || !Object.hasOwn(OpfsFiles.prototype, op)) {
-                    throw new Error(`unknown OPFS worker operation: ${op}`);
+        queue = queue
+            .then(async () => {
+                try {
+                    // Own prototype methods only, so that names like `toString` aren't callable.
+                    if (op === "constructor" || !Object.hasOwn(OpfsFiles.prototype, op)) {
+                        throw new Error(`unknown OPFS worker operation: ${op}`);
+                    }
+                    const value = await files[op](...args);
+                    self.postMessage(
+                        { seq, value },
+                        value instanceof Uint8Array ? [value.buffer] : [],
+                    );
+                } catch (error) {
+                    self.postMessage({ seq, error: { name: error.name, message: error.message } });
                 }
-                const value = await files[op](...args);
-                self.postMessage({ seq, value }, value instanceof Uint8Array ? [value.buffer] : []);
-            } catch (error) {
-                self.postMessage({ seq, error: { name: error.name, message: error.message } });
-            }
-        });
+            })
+            // A rejected queue would skip every later operation.
+            .catch((error) => console.error("OPFS worker failed to reply", error));
     };
 }
 
