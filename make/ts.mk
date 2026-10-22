@@ -115,6 +115,36 @@ define check-wasm-cc
 fi
 endef
 
+# The wasm-bindgen CLI must exactly match the `wasm-bindgen` crate in `Cargo.lock`. Its schema
+# version check only catches some mismatches; others fail later, e.g. with "failed to instrument
+# module for JSPI" when the CLI expects runtime symbols from a newer crate. In `Cargo.lock`, each
+# package's `version` line directly follows its `name` line.
+WASM_BINDGEN_LOCKED_VERSION = $(shell cargo metadata --format-version 1 --locked 2>/dev/null | jq -r '.packages[] | select(.name == "wasm-bindgen") | .version')
+
+define check-wasm-bindgen
+@locked='$(WASM_BINDGEN_LOCKED_VERSION)'; \
+if ! installed=$$(wasm-bindgen --version 2>/dev/null); then \
+	installed='not installed'; \
+else \
+	installed=$${installed#wasm-bindgen }; \
+fi; \
+if [ "$$installed" != "$$locked" ]; then \
+	printf '%s\n' \
+	  '' \
+	  "wasm-bindgen CLI version mismatch: Cargo.lock has $$locked, the CLI is $$installed" \
+	  '' \
+	  'The CLI version must exactly match the wasm-bindgen crate. Install the matching version:' \
+	  "  cargo install wasm-bindgen-cli --version $$locked --locked" \
+	  '' \
+	  >&2; \
+	exit 1; \
+fi
+endef
+
+.PHONY: check-wasm-bindgen
+check-wasm-bindgen: ## Check that the wasm-bindgen CLI matches the version in Cargo.lock
+	$(check-wasm-bindgen)
+
 $(WASM_FILE): $(RUST_MODULES_CARGO_LOCK) $(RUST_MODULES_STAMP) $(JS_DIR)/Cargo.rust-modules.toml
 	$(check-wasm-cc)
 	cd $(RUST_MODULES_WASM) && \
@@ -147,6 +177,11 @@ $(WASM_GEN) &: $(wasm-build-deps)
 # With Rust 1.97's v0 mangling, wasm-bindgen's demangler can map distinct symbols to
 # the same generated export name. Stable Rust cannot opt back into legacy mangling.
 # See https://blog.rust-lang.org/2026/07/09/Rust-1.97.0/#symbol-mangling-v0-enabled-by-default
+#
+# The CLI check is in the recipe, not a prerequisite, for the same reason: runners which restore
+# these outputs need not have wasm-bindgen installed. It runs first so that a mismatch fails before
+# the long wasm build.
+	$(check-wasm-bindgen)
 	$(check-wasm-cc)
 	$(MAKE) $(WASM_FILE)
 	cd $(JS_DIR) && \
@@ -272,7 +307,8 @@ ts-browser-test-deps := $(BROWSER_OUT) $(TS_BROWSER_TEST_FILES)
 # run browser-oriented TypeScript tests (WebDriver + Bun wasm)
 # `chrome-headless-shell` is order-only: it has to be satisfied before the tests run, but being
 # phony it would otherwise count as perpetually newer than the stamp and defeat `LAZY_MAKE`.
-$(STAMPS)/ts-browser-test: $(ts-browser-test-deps) | chrome-headless-shell
+# `check-wasm-bindgen` is order-only for the same reason.
+$(STAMPS)/ts-browser-test: $(ts-browser-test-deps) | chrome-headless-shell check-wasm-bindgen
 	@set -euo pipefail; \
 	cd $(JS_DIR) && \
 	if [ -n "$(TEST)" ]; then \
