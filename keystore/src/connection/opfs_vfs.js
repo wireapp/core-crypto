@@ -104,19 +104,23 @@ function workerMain() {
 
 let worker;
 let nextSeq = 0;
-const pending = new Map();
+// Callers hold `SqliteGuard` and block on each reply, so at most one call is in flight.
+let inflight;
 
 function rpc(op, args, transfer = []) {
+    // Throwing in the executor rejects the promise, so the error reaches Rust as a `VfsError`.
     return new Promise((resolve, reject) => {
+        if (inflight !== undefined)
+            throw new Error(`OPFS worker call overlaps call ${inflight.seq}`);
         const seq = nextSeq++;
         worker.postMessage({ seq, op, args }, transfer);
-        pending.set(seq, { resolve, reject });
+        inflight = { seq, resolve, reject };
     });
 }
 
-function failAll(error) {
-    for (const { reject } of pending.values()) reject(error);
-    pending.clear();
+function fail(error) {
+    inflight?.reject(error);
+    inflight = undefined;
 }
 
 export async function start(directory) {
@@ -135,13 +139,16 @@ export async function start(directory) {
         URL.revokeObjectURL(url);
     }
     worker.onmessage = ({ data: { seq, value, error } }) => {
-        const call = pending.get(seq);
-        pending.delete(seq);
+        // A reply can outlive its call, e.g. once `fail` has rejected it. The sequence number keeps it from
+        // settling a later call.
+        if (inflight?.seq !== seq) return;
+        const call = inflight;
+        inflight = undefined;
         if (error) call.reject(new DOMException(error.message, error.name));
         else call.resolve(value);
     };
-    worker.onerror = (event) => failAll(new Error(event.message || "OPFS worker failed"));
-    worker.onmessageerror = () => failAll(new Error("OPFS worker message could not be decoded"));
+    worker.onerror = (event) => fail(new Error(event.message || "OPFS worker failed"));
+    worker.onmessageerror = () => fail(new Error("OPFS worker message could not be decoded"));
     try {
         await rpc("init", [directory]);
     } catch (error) {
