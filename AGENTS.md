@@ -106,11 +106,14 @@ release (`cc-book/src/unreleased/`). `README.md` covers platform setup in detail
 - Rust tests: `cargo nextest run`. Add `--features test-all-cipher` to run every ciphersuite. It's slow, so only do this
   when the change is ciphersuite-specific.
 - Keystore on wasm: `wasm-pack test --headless --chrome -- ./keystore --locked`. nextest doesn't work with the wasm
-  runner.
+  runner. The legacy IndexedDB import only compiles for wasm, so a native build never checks it. After changing a
+  keystore entity, also run `cargo check -p core-crypto-keystore --target wasm32-unknown-unknown`.
 - Bindings: `make help` lists the targets, e.g. `make jvm-test`, `make ts-test`, `make android-test`. `make ios-test`
   only works on macOS.
 - Formatting and lints: `make fmt` and `make check`, or a single language, e.g. `make rust-fmt` or `make rust-check`.
-  Markdown goes through `mdformat` with a 120 column wrap, TOML through `taplo`.
+  Markdown goes through `mdformat` with a 120 column wrap, TOML through `taplo`. Rust formatting uses nightly
+  (`cargo +nightly fmt`), because `.rustfmt.toml` sets nightly-only options. Plain `cargo fmt` on the pinned stable
+  toolchain ignores them and formats differently.
 
 Don't run `make all` or the full binding suite unless asked: it takes a long time and needs platform toolchains that may
 not be installed.
@@ -163,6 +166,17 @@ entry there. Most small changes, including deprecations with a mechanical replac
 - The workspace denies undocumented `unsafe` blocks and missing safety docs. Every `unsafe` block needs a `// SAFETY:`
   comment.
 
+### openmls
+
+- We depend on Wire's fork of openmls (`wireapp/openmls`, pinned by `rev` in the workspace `Cargo.toml`), and we want to
+  move back to upstream. Every edit to the fork is one more divergence to carry or unwind. Prefer a workaround in
+  core-crypto, and only propose a change to the fork when there's no local alternative.
+- The fork still uses the older `OpenMlsKeyStore` trait, not upstream's `StorageProvider`. Our implementation is in
+  `keystore/src/transaction/mls.rs`. openmls calls it with only a key and a serialized value, so the keystore can't
+  always tell what a value belongs to. A leaf keypair, for example, may belong to a key package or to a group update.
+- Don't call `MlsEntity::downcast`. Its default implementation calls itself forever when the types match, and no entity
+  overrides it.
+
 ### Doc comments
 
 These rules apply everywhere, and matter most in `crypto-ffi`, because those docs end up in the Kotlin, Swift and
@@ -210,12 +224,27 @@ TypeScript API references.
   plain `sqlite3` CLI can't apply them.
 - `keystore/src/connection/composite-schema.sql` is generated. CI fails if it's stale. Regenerate it with
   `compile-schema` after changing migrations. Never edit it by hand, and never add comments to it.
+- `released_migration_checksums_are_unchanged` pins every migration's checksum. Append an entry when you add a
+  migration; the failing test prints the tuple to add. Editing an unreleased migration means updating its entry. For a
+  released migration, a failure here is the test telling you to fix forward instead.
+- When a migration meets a row that breaks the new invariants, such as a stray `NULL`, a value of the wrong type, or a
+  dangling reference, drop the row and let the migration succeed. A failed migration means the consumer can't open the
+  database at all, and they have no way to recover. Rows like that were already unreachable or unloadable, so dropping
+  them loses nothing usable. In a table rebuild, guard the `INSERT … SELECT` with a `WHERE`. In a meta migration, log a
+  warning and delete the row. Say in a comment that this is deliberate.
 - Much of what the keystore stores is opaque bytes: group state, key packages, key material, serialized credentials and
   so on. Keystore tests, including migration tests, only need to show those bytes survive exactly, so arbitrary bytes
   are fine. Building real values (an `MlsGroup` and matching credential, say) usually needs a crypto provider the
   keystore crate doesn't have. Only do it if it covers a gap no other test covers, and say which gap.
+- The exception is a blob some meta migration parses, as V39 does with group state. That migration drops rows it can't
+  read, so arbitrary bytes don't survive to the latest schema. To test such a migration, run it over the bundled real
+  database `crypto-ffi/bindings/jvm/src/test/resources/db-v10002003.sqlite` (the `DB` constant in the migration tests)
+  rather than building values.
 - `keystore/src/connection/idb_migration/legacy/` exists only to move old IndexedDB data into SQLite once. It's in
   minimal-maintenance mode. If a change there works, it ships. Don't propose style or fidelity cleanups.
+- The import writes into the schema as of V22, through each entity's `save`. When an entity's shape changes, the import
+  needs a frozen copy of the old shape, like `StoredCredentialV36` or `V33StoredEpochEncryptionKeypair` in
+  `keystore/src/migrations.rs`.
 
 ### Transactions and errors
 
