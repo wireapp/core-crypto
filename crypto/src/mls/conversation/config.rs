@@ -235,10 +235,10 @@ mod tests {
             let sc = case.signature_scheme();
 
             let alg = match sc {
-                SignatureScheme::ED25519 => JwsAlgorithm::Ed25519,
-                SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::P256,
-                SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::P384,
-                SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::P521,
+                SignatureScheme::ED25519 => JwsAlgorithm::EdDSA,
+                SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::ES256,
+                SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::ES384,
+                SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::ES512,
                 // no JWK algorithm for these yet, so nothing to test here
                 SignatureScheme::ED448
                 | SignatureScheme::MLDSA44

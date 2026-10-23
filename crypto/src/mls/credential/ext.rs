@@ -159,10 +159,10 @@ fn compute_thumbprint_mldsa(scheme: SignatureScheme, key: &[u8]) -> String {
 
 fn compute_thumbprint(signature_scheme: SignatureScheme, raw_key: &[u8]) -> Result<String> {
     let sign_alg = match signature_scheme {
-        SignatureScheme::ED25519 => JwsAlgorithm::Ed25519,
-        SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::P256,
-        SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::P384,
-        SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::P521,
+        SignatureScheme::ED25519 => JwsAlgorithm::EdDSA,
+        SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::ES256,
+        SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::ES384,
+        SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::ES512,
         SignatureScheme::ED448 => return Err(Error::UnsupportedAlgorithm),
         scheme @ (SignatureScheme::MLDSA44 | SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87) => {
             // There is no JOSE key type for ML-DSA yet, so we can't compute a JWK thumbprint.

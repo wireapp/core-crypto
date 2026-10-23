@@ -49,10 +49,10 @@ pub trait CiphersuiteExt {
 impl CiphersuiteExt for Ciphersuite {
     fn jws_algorithm(&self) -> Option<JwsAlgorithm> {
         match self.signature_algorithm() {
-            SignatureScheme::ED25519 => Some(JwsAlgorithm::Ed25519),
-            SignatureScheme::ECDSA_SECP256R1_SHA256 => Some(JwsAlgorithm::P256),
-            SignatureScheme::ECDSA_SECP384R1_SHA384 => Some(JwsAlgorithm::P384),
-            SignatureScheme::ECDSA_SECP521R1_SHA512 => Some(JwsAlgorithm::P521),
+            SignatureScheme::ED25519 => Some(JwsAlgorithm::EdDSA),
+            SignatureScheme::ECDSA_SECP256R1_SHA256 => Some(JwsAlgorithm::ES256),
+            SignatureScheme::ECDSA_SECP384R1_SHA384 => Some(JwsAlgorithm::ES384),
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => Some(JwsAlgorithm::ES512),
             // There is no JWS algorithm for Ed448.
             SignatureScheme::ED448
             // We don't yet support ML-DSA signatures with x509 credentials.

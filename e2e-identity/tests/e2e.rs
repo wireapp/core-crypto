@@ -199,10 +199,10 @@ async fn prepare_pki_env_and_config(
         acme_directory_url: acme_url,
         // the classical ciphersuite using `sign_alg`
         cipher_suite: match sign_alg {
-            JwsAlgorithm::Ed25519 => Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
-            JwsAlgorithm::P256 => Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
-            JwsAlgorithm::P384 => Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
-            JwsAlgorithm::P521 => Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+            JwsAlgorithm::EdDSA => Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+            JwsAlgorithm::ES256 => Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
+            JwsAlgorithm::ES384 => Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
+            JwsAlgorithm::ES512 => Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
         },
         display_name: "Alice Smith".into(),
         handle: "alice_wire".into(),
@@ -249,10 +249,10 @@ async fn prepare_pki_env_and_config(
 // @SF.PROVISIONING @TSFI.E2EI-PKI-Admin @S8
 #[tokio::test]
 #[rstest]
-#[case(JwsAlgorithm::P256)]
-#[case(JwsAlgorithm::P384)]
-#[case(JwsAlgorithm::P521)]
-#[case(JwsAlgorithm::Ed25519)]
+#[case(JwsAlgorithm::ES256)]
+#[case(JwsAlgorithm::ES384)]
+#[case(JwsAlgorithm::ES512)]
+#[case(JwsAlgorithm::EdDSA)]
 async fn x509_cert_acquisition_works(test_env: TestEnvironment, #[case] sign_alg: JwsAlgorithm) {
     let (pki_env, config, _) = prepare_pki_env_and_config(&test_env, sign_alg).await;
     let acq = X509CredentialAcquisition::try_new(Arc::new(pki_env), config).unwrap();
@@ -267,10 +267,10 @@ async fn x509_cert_acquisition_works(test_env: TestEnvironment, #[case] sign_alg
 
 #[tokio::test]
 #[rstest]
-#[case(JwsAlgorithm::P256)]
-#[case(JwsAlgorithm::P384)]
-#[case(JwsAlgorithm::P521)]
-#[case(JwsAlgorithm::Ed25519)]
+#[case(JwsAlgorithm::ES256)]
+#[case(JwsAlgorithm::ES384)]
+#[case(JwsAlgorithm::ES512)]
+#[case(JwsAlgorithm::EdDSA)]
 async fn fetching_crls_works(test_env: TestEnvironment, #[case] sign_alg: JwsAlgorithm) {
     let (pki_env, config, _) = prepare_pki_env_and_config(&test_env, sign_alg).await;
     let pki_env = Arc::new(pki_env);
@@ -316,7 +316,7 @@ async fn fetching_crls_works(test_env: TestEnvironment, #[case] sign_alg: JwsAlg
 #[rstest]
 #[tokio::test]
 async fn should_fail_without_trust_anchor(test_env: TestEnvironment) {
-    let (pki_env, config, tx) = prepare_pki_env_and_config(&test_env, JwsAlgorithm::P256).await;
+    let (pki_env, config, tx) = prepare_pki_env_and_config(&test_env, JwsAlgorithm::ES256).await;
 
     let certs = pki_env.get_trust_anchors().await;
     assert_eq!(certs.len(), 1);

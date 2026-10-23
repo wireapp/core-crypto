@@ -13,10 +13,10 @@ const THUMBPRINT_HASH_ALG: HashAlgorithm = HashAlgorithm::SHA256;
 /// Used to compute the MLS thumbprint of a Basic Credential
 pub fn compute_raw_key_thumbprint(sign_alg: JwsAlgorithm, signature_public_key: &[u8]) -> acme::Result<String> {
     let jwk = match sign_alg {
-        JwsAlgorithm::Ed25519 => Ed25519PublicKey::from_bytes(signature_public_key)?.try_into_jwk()?,
-        JwsAlgorithm::P256 => ES256PublicKey::from_bytes(signature_public_key)?.try_into_jwk()?,
-        JwsAlgorithm::P384 => ES384PublicKey::from_bytes(signature_public_key)?.try_into_jwk()?,
-        JwsAlgorithm::P521 => ES512PublicKey::from_bytes(signature_public_key)?.try_into_jwk()?,
+        JwsAlgorithm::EdDSA => Ed25519PublicKey::from_bytes(signature_public_key)?.try_into_jwk()?,
+        JwsAlgorithm::ES256 => ES256PublicKey::from_bytes(signature_public_key)?.try_into_jwk()?,
+        JwsAlgorithm::ES384 => ES384PublicKey::from_bytes(signature_public_key)?.try_into_jwk()?,
+        JwsAlgorithm::ES512 => ES512PublicKey::from_bytes(signature_public_key)?.try_into_jwk()?,
     };
     let thumbprint = JwkThumbprint::generate(&jwk, THUMBPRINT_HASH_ALG)?;
     Ok(thumbprint.kid)
