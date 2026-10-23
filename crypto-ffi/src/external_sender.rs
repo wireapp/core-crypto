@@ -18,7 +18,7 @@ impl ExternalSender {
 
     /// Parse an external sender given a JWK.
     ///
-    /// This expects a raw json serialized JWK. It works with any Signature scheme.
+    /// This expects a raw json serialized JWK of an Ed25519 key, or of an ECDSA key on P-256, P-384 or P-521.
     #[uniffi::constructor(name = "parse_jwk")]
     pub fn parse_jwk(jwk: &[u8]) -> CoreCryptoResult<Self> {
         core_crypto::ExternalSender::parse_jwk(jwk)

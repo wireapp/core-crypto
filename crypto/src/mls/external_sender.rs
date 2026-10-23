@@ -2,7 +2,14 @@ use openmls::{
     extensions::ExternalSender as MlsExternalSender,
     prelude::{Credential as MlsCredential, OpenMlsCrypto as _, OpenMlsSignaturePublicKey, SignatureScheme},
 };
-use rusty_jwt_tools::prelude::parse_json_jwk;
+use rusty_jwt_tools::{
+    jsonwebtoken::{
+        DecodingKey,
+        errors::Error as JsonWebTokenError,
+        jwk::{AlgorithmParameters, EllipticCurve, Jwk},
+    },
+    prelude::RustyJwtError,
+};
 
 use crate::{Error, OpenMlsError, Result, mls_provider::CRYPTO};
 
@@ -26,10 +33,27 @@ impl ExternalSender {
 
     /// Parse an external sender given a JWK.
     ///
-    /// This expects a raw json serialized JWK. It works with any Signature scheme.
+    /// This expects a raw json serialized JWK of an Ed25519 key, or of an ECDSA key on P-256, P-384 or P-521.
     pub fn parse_jwk(jwk: &[u8]) -> Result<ExternalSender> {
-        let pk = parse_json_jwk(jwk)?;
-        Ok(MlsExternalSender::new(pk.into(), MlsCredential::new_basic(WIRE_SERVER_IDENTITY.into())).into())
+        let jwk = serde_json::from_slice::<Jwk>(jwk)
+            .map_err(JsonWebTokenError::from)
+            .map_err(RustyJwtError::from)?;
+        let signature_scheme = match &jwk.algorithm {
+            AlgorithmParameters::EllipticCurve(params) => match params.curve {
+                EllipticCurve::P256 => SignatureScheme::ECDSA_SECP256R1_SHA256,
+                EllipticCurve::P384 => SignatureScheme::ECDSA_SECP384R1_SHA384,
+                EllipticCurve::P521 => SignatureScheme::ECDSA_SECP521R1_SHA512,
+                _ => return Err(RustyJwtError::UnsupportedAlgorithm.into()),
+            },
+            AlgorithmParameters::OctetKeyPair(params) if matches!(params.curve, EllipticCurve::Ed25519) => {
+                SignatureScheme::ED25519
+            }
+            _ => return Err(RustyJwtError::UnsupportedAlgorithm.into()),
+        };
+        // ECDSA keys are uncompressed points, as RFC 9420 requires
+        let key = DecodingKey::from_jwk(&jwk).map_err(RustyJwtError::from)?;
+        let key = key.try_get_as_bytes().map_err(RustyJwtError::from)?;
+        Self::parse_public_key(key, signature_scheme)
     }
 
     /// Parse an external sender given a raw public key.

@@ -142,7 +142,7 @@ mod tests {
     use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::VerifiableCiphersuite};
     use wire_e2e_identity::SignatureSchemeExt as _;
 
-    use crate::{ConversationConfiguration, ExternalSender, test_utils::*};
+    use crate::{ConversationConfiguration, Credential, ExternalSender, test_utils::*};
 
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn group_should_have_required_capabilities() {
@@ -233,9 +233,13 @@ mod tests {
                 return;
             };
 
-            let kp = alg.generate_keypair().unwrap();
+            let [client_id] = case.client_ids();
+            let credential = Credential::basic(case.cipher_suite(), client_id).unwrap();
+            let kp = alg.keypair_from_bytes(credential.signature_key_bytes()).unwrap();
             let jwk = alg.public_jwk(&kp).unwrap();
             let external_sender = ExternalSender::parse_jwk(&serde_json::to_vec(&jwk).unwrap()).unwrap();
+            // our MLS provider generates keys in the format RFC 9420 requires, e.g. uncompressed points for ECDSA
+            assert_eq!(external_sender.serialize(), credential.signature_key().public());
             assert!(case.cfg.clone().set_external_senders([external_sender]).is_ok());
         })
         .await;
