@@ -61,20 +61,20 @@ fn generate_csr(alg: JwsAlgorithm, identifier: CanonicalIdentifier, kp: &Pem) ->
 
     let csr = match alg {
         JwsAlgorithm::EdDSA => {
-            let kp_bytes = ed25519_dalek::pkcs8::KeypairBytes::from_str(kp.as_ref())?;
+            let kp_bytes = ed25519_dalek::pkcs8::KeypairBytes::from_str(kp.as_str())?;
             let signing_key = ed25519_dalek::SigningKey::try_from(kp_bytes)?;
             builder.build(&signing_key)?
         }
         JwsAlgorithm::ES256 => {
-            let sk = p256::ecdsa::SigningKey::from_str(kp)?;
+            let sk = p256::ecdsa::SigningKey::from_str(kp.as_str())?;
             builder.build::<_, p256::ecdsa::DerSignature>(&sk)?
         }
         JwsAlgorithm::ES384 => {
-            let sk = p384::ecdsa::SigningKey::from_str(kp)?;
+            let sk = p384::ecdsa::SigningKey::from_str(kp.as_str())?;
             builder.build::<_, p384::ecdsa::DerSignature>(&sk)?
         }
         JwsAlgorithm::ES512 => {
-            let sk = p521::ecdsa::SigningKey::from_str(kp)?;
+            let sk = p521::ecdsa::SigningKey::from_str(kp.as_str())?;
             builder.build::<_, p521::ecdsa::DerSignature>(&sk)?
         }
     };
