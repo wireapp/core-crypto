@@ -1166,7 +1166,7 @@ dependencies = [
  "p256 0.14.0",
  "p384 0.14.0",
  "p521 0.14.0",
- "pem",
+ "pem 4.0.0",
  "proteus-traits",
  "proteus-wasm",
  "rand 0.10.3",
@@ -1390,6 +1390,7 @@ dependencies = [
  "hybrid-array",
  "num-traits",
  "rand_core 0.10.1",
+ "serdect",
  "subtle",
  "zeroize",
 ]
@@ -1412,6 +1413,16 @@ checksum = "ce6e4c961d6cd6c9a86db418387425e8bdeaf05b3c8bc1411e6dca4c252f1453"
 dependencies = [
  "getrandom 0.4.3",
  "hybrid-array",
+ "rand_core 0.10.1",
+]
+
+[[package]]
+name = "crypto-primes"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3633a51a39c69ebbaa4feaa694bd83d241e4093901c84a0963b19d9bb3f0cf8f"
+dependencies = [
+ "crypto-bigint 0.7.10",
  "rand_core 0.10.1",
 ]
 
@@ -3100,6 +3111,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonwebtoken"
+version = "11.1.0"
+source = "git+https://github.com/wireapp/jsonwebtoken?rev=5c0753c6051a44fc8505db04789eb9986a4d4bd0#5c0753c6051a44fc8505db04789eb9986a4d4bd0"
+dependencies = [
+ "base64 0.22.1",
+ "ed25519-dalek 3.0.0",
+ "getrandom 0.4.3",
+ "hmac 0.13.0",
+ "js-sys",
+ "p256 0.14.0",
+ "p384 0.14.0",
+ "p521 0.14.0",
+ "pem 3.0.6",
+ "rand 0.10.3",
+ "rsa 0.10.0-rc.19",
+ "serde",
+ "serde_json",
+ "sha2 0.11.1",
+ "signature 3.0.0",
+ "simple_asn1",
+ "zeroize",
+]
+
+[[package]]
 name = "jwt-simple"
 version = "0.13.0"
 source = "git+https://github.com/wireapp/rust-jwt-simple?tag=v0.13.0-pre.core-crypto-1.0.0#35201bea2ccb55cbb876be03cde2d3906f15547e"
@@ -3118,7 +3153,6 @@ dependencies = [
  "p384 0.13.1",
  "p521 0.13.3",
  "rand 0.8.6",
- "rsa",
  "serde",
  "serde_json",
  "sha-1",
@@ -3666,7 +3700,7 @@ dependencies = [
  "p256 0.13.2",
  "p384 0.13.1",
  "rand 0.8.6",
- "rsa",
+ "rsa 0.9.10",
  "serde",
  "serde-value",
  "serde_json",
@@ -3983,6 +4017,16 @@ checksum = "2ee67f1008b1ba2321834326597b8e186293b049a023cdef258527550b9935b4"
 
 [[package]]
 name = "pem"
+version = "3.0.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d30c53c26bc5b31a98cd02d20f25a7c8567146caf63ed593a9d87b2775291be"
+dependencies = [
+ "base64 0.22.1",
+ "serde_core",
+]
+
+[[package]]
+name = "pem"
 version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d354a98a3d1251555de99e8fdd8afda05573c31b82f59063a7b0a29b5527f120"
@@ -4125,6 +4169,16 @@ dependencies = [
  "der 0.7.10",
  "pkcs8 0.10.2",
  "spki 0.7.3",
+]
+
+[[package]]
+name = "pkcs1"
+version = "0.8.0-rc.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f485dbafe293ea6ccaa7d82bc591651a796eb8a9aec3df040b057b706073dbc3"
+dependencies = [
+ "der 0.8.2",
+ "spki 0.8.1",
 ]
 
 [[package]]
@@ -4715,12 +4769,30 @@ dependencies = [
  "num-bigint-dig",
  "num-integer",
  "num-traits",
- "pkcs1",
+ "pkcs1 0.7.5",
  "pkcs8 0.10.2",
  "rand_core 0.6.4",
  "signature 2.2.0",
  "spki 0.7.3",
  "subtle",
+ "zeroize",
+]
+
+[[package]]
+name = "rsa"
+version = "0.10.0-rc.19"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33405e321e16ef941ca66e254f6904c3aafd3c7ff001fb88bf11c73eb75c2b85"
+dependencies = [
+ "const-oid 0.10.2",
+ "crypto-bigint 0.7.10",
+ "crypto-primes",
+ "digest 0.11.2",
+ "pkcs1 0.8.0-rc.5",
+ "pkcs8 0.11.0",
+ "rand_core 0.10.1",
+ "signature 3.0.0",
+ "spki 0.8.1",
  "zeroize",
 ]
 
@@ -4897,21 +4969,23 @@ checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
 
 [[package]]
 name = "rusty-jwt-tools"
-version = "0.14.0"
-source = "git+https://github.com/wireapp/rusty-jwt-tools.git?tag=v0.14.0#b5de03a239d41b51e7cf9cd7c2674fa6be205134"
+version = "0.15.0"
+source = "git+https://github.com/wireapp/rusty-jwt-tools.git?tag=v0.15.0#455e65160360d9169a7a7e7bee3cd0396435670a"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.1",
  "const_format",
  "derive_more",
- "jwt-simple",
- "p256 0.13.2",
- "p384 0.13.1",
- "p521 0.13.3",
+ "ed25519-dalek 3.0.0",
+ "getrandom 0.4.3",
+ "jsonwebtoken",
+ "p256 0.14.0",
+ "p384 0.14.0",
+ "p521 0.14.0",
  "percent-encoding",
- "sec1 0.7.3",
+ "pkcs8 0.11.0",
  "serde",
  "serde_json",
- "sha2 0.10.9",
+ "sha2 0.11.1",
  "thiserror 2.0.21",
  "url",
  "uuid",
@@ -5421,6 +5495,18 @@ checksum = "28d567dcbaf0049cb8ac2608a76cd95ff9e4412e1899d389ee400918ca7537f5"
 dependencies = [
  "digest 0.11.2",
  "rand_core 0.10.1",
+]
+
+[[package]]
+name = "simple_asn1"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d585997b0ac10be3c5ee635f1bab02d512760d14b7c468801ac8a01d9ae5f1d"
+dependencies = [
+ "num-bigint",
+ "num-traits",
+ "thiserror 2.0.21",
+ "time",
 ]
 
 [[package]]
@@ -7352,7 +7438,7 @@ dependencies = [
  "p384 0.14.0",
  "p521 0.14.0",
  "password-hash",
- "pem",
+ "pem 4.0.0",
  "rand 0.10.3",
  "reqwest",
  "rstest",

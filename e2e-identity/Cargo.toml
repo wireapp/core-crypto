@@ -60,7 +60,7 @@ base64.workspace = true
 argon2 = "0.6"
 password-hash = { version = "0.6", features = ["getrandom"] }
 env_logger.workspace = true
-rusty-jwt-tools = { workspace = true, features = ["test-utils", "rsa"] }
+rusty-jwt-tools = { workspace = true, features = ["test-utils"] }
 url.workspace = true
 itertools.workspace = true
 uuid.workspace = true
