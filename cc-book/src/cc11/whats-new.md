@@ -67,3 +67,11 @@ The other five use a pure post-quantum key exchange:
 Only the three suites ending in `MLDSA*` also use post-quantum signatures. The others keep a classical signature scheme.
 
 X509 credentials don't work yet with post-quantum signatures, so the `MLDSA*` suites only support basic credentials.
+
+## SQLite via OPFS/JSPI in browsers
+
+OPFS enables running real SQLite in browsers. However, OPFS's synchronous file access is only available in web workers.
+To enable waiting on the OPFS worker without blocking the main thread, we're using _JS Promise Integration_ (JSPI), a
+relatively new feature that allows wasm to block on JS promises without blocking DOM rendering. Therefore, browsers
+using CoreCrypto must support JSPI. See the _JS Promise Integration_ row at
+<https://webassembly.org/features/?categories=browsers>.
