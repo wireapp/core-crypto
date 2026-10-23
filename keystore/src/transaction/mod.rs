@@ -58,7 +58,10 @@ pub struct Transaction {
     /// - by using the synchronous version, the compiler ensures we don't hold a guard over an await point, which would
     ///   deadlock everything
     /// - ensures that no two threads race on `conn.prepare` / `prepare_cached`
-    conn: Arc<parking_lot::Mutex<Option<MutexGuardArc<Connection>>>>,
+    ///
+    /// On Wasm, callers acquire `SqliteGuard` before this mutex: JSPI can suspend
+    /// a synchronous SQLite call while it holds the mutex.
+    conn: Arc<parking_lot::Mutex<Option<MutexGuardArc<crate::connection::ManagedConnection>>>>,
 }
 
 impl Transaction {
@@ -72,6 +75,7 @@ impl Transaction {
         let conn = database.raw_conn().await;
 
         {
+            let _sqlite = crate::connection::SqliteGuard::lock();
             // initialize the DB-level transaction before doing any construction work on the type-level
             // transaction; failure here invalidates everything to follow. We don't need to worry about
             // concurrency; we already hold the lock guard.

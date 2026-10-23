@@ -61,6 +61,14 @@
 
 #### TypeScript
 
+- TypeScript (browser): the encrypted keystore now uses SQLite on OPFS through JSPI. IndexedDB keystores (CoreCrypto
+  v9.x and earlier) migrate automatically. A temporary VFS based on IndexedDB was used in CoreCrypto 10.x, which is now
+  unsupported. Any instance initialized on CoreCrypto 10.x will result in an error. It is not migrated and must be
+  discarded.
+
+- Browsers using CoreCrypto must support JSPI. See the _JS Promise Integration_ row
+  [here](https://webassembly.org/features/?categories=browsers).
+
 - browser and native packages are now released separately under `@wireapp/core-crypto` and
   `@wireapp/core-crypto-native`, respectively.
 

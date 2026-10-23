@@ -7,8 +7,12 @@ mod legacy;
 #[cfg(test)]
 mod tests;
 
-use idb::Factory;
+use std::{cell::Cell, rc::Rc};
+
+use idb::{Database, Event as _, Factory, KeyRange, Request as _, TransactionMode};
+use js_sys::{Array, Number};
 use rusqlite::Connection;
+use wasm_bindgen::JsValue;
 
 #[cfg(feature = "proteus-keystore")]
 use self::legacy::entities::proteus::identity::LegacyProteusIdentity;
@@ -19,7 +23,7 @@ use self::legacy::{
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::{ProteusPrekey, ProteusSession};
 use crate::{
-    CryptoKeystoreResult, DatabaseKey,
+    CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
     connection::{
         idb_migration::legacy::entities::mls::{
             e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
@@ -28,12 +32,81 @@ use crate::{
             pending_message::LegacyMlsPendingMessage, stored_keypackage::StoredKeypackage,
         },
         migrations::MigrationTarget,
-        os_unknown::FsAbstraction,
     },
     entities::{StoredBufferedCommit, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle},
     migrations::{LegacyPersistedMlsGroup, StoredCredentialV36, V33StoredEpochEncryptionKeypair},
     traits::EntityDatabaseMutation as _,
 };
+
+/// The IndexedDB database used by the temporary SQLite VFS in CoreCrypto 10.x.
+const CORE_CRYPTO_10_VFS_DATABASE: &str = "core-crypto";
+/// The VFS stored every page in this object store, under the compound key `(path, offset)`.
+const CORE_CRYPTO_10_VFS_OBJECT_STORE: &str = "blocks";
+
+/// Open the IndexedDB database `name` if it exists, without creating it otherwise.
+///
+/// `upgradeneeded` only fires for a database which doesn't exist yet. Aborting its upgrade
+/// transaction fails the open, and the browser discards the new database.
+async fn open_existing_idb(factory: &Factory, name: &str) -> CryptoKeystoreResult<Option<Database>> {
+    let created = Rc::new(Cell::new(false));
+    let mut request = factory.open(name, None)?;
+    request.on_upgrade_needed({
+        let created = created.clone();
+        move |event| {
+            created.set(true);
+            if let Some(transaction) = event.target().ok().and_then(|request| request.transaction()) {
+                let _ = transaction.abort();
+            }
+        }
+    });
+    match request.await {
+        _ if created.get() => Ok(None),
+        result => result.map(Some).map_err(Into::into),
+    }
+}
+
+/// Reject a database stored by the temporary IndexedDB-backed SQLite VFS from CoreCrypto 10.x.
+///
+/// This fails closed: if IndexedDB can't be read, the open fails. Treating that as "no CoreCrypto
+/// 10.x data" would hand the client a fresh, empty keystore while its old data sits unused.
+pub(super) async fn reject_core_crypto_10_database(name: &str) -> CryptoKeystoreResult<()> {
+    if core_crypto_10_database_exists(CORE_CRYPTO_10_VFS_DATABASE, name).await? {
+        Err(CryptoKeystoreError::CoreCrypto10DatabaseUnsupported)
+    } else {
+        Ok(())
+    }
+}
+
+/// Return whether `vfs_database` contains pages for `name` in the CoreCrypto 10.x VFS layout.
+///
+/// The VFS shared one IndexedDB database between all keystores, so checking merely for the
+/// `core-crypto` database or its `blocks` store would reject unrelated CoreCrypto instances.
+async fn core_crypto_10_database_exists(vfs_database: &str, name: &str) -> CryptoKeystoreResult<bool> {
+    let Some(db) = open_existing_idb(&Factory::new()?, vfs_database).await? else {
+        return Ok(false);
+    };
+    // `Database` doesn't close on drop, and an open connection blocks deleting the database.
+    let exists = async {
+        if !db
+            .store_names()
+            .iter()
+            .any(|store| store == CORE_CRYPTO_10_VFS_OBJECT_STORE)
+        {
+            return Ok(false);
+        }
+
+        let transaction = db.transaction(&[CORE_CRYPTO_10_VFS_OBJECT_STORE], TransactionMode::ReadOnly)?;
+        let store = transaction.object_store(CORE_CRYPTO_10_VFS_OBJECT_STORE)?;
+        let lower = Array::of2(&JsValue::from_str(name), &JsValue::from_f64(0.0));
+        let upper = Array::of2(&JsValue::from_str(name), &JsValue::from_f64(Number::POSITIVE_INFINITY));
+        let range = KeyRange::bound(&lower.into(), &upper.into(), None, None)?;
+        let count = store.count(Some(range.into()))?.await?;
+        CryptoKeystoreResult::Ok(count > 0)
+    }
+    .await;
+    db.close();
+    exists
+}
 
 /// Every legacy object store which [`maybe_migrate`] copies verbatim, named by the entity type it is read as.
 ///
@@ -80,10 +153,7 @@ pub async fn legacy_idb_exists(name: &str) -> bool {
     let Ok(factory) = Factory::new() else {
         return false;
     };
-    let Ok(req) = factory.open(name, None) else {
-        return false;
-    };
-    let Ok(db) = req.await else {
+    let Ok(Some(db)) = open_existing_idb(&factory, name).await else {
         return false;
     };
     let version = db.version().unwrap_or(0);
@@ -130,8 +200,8 @@ pub(super) async fn migrate_legacy_idb_key_type_to_bytes(
 /// Judged by the schema version instead, a database at or below the import's version is one the import has not
 /// finished, so the import runs again. To make that safe the copy is a single transaction which first clears
 /// everything it is about to write, so partial state from an earlier attempt is replaced rather than duplicated.
-/// The legacy database is only deleted after that transaction has committed and its pages have reached IndexedDB
-/// (see [`FsAbstraction::flush`]), so it remains the source of truth until the copy is complete and durable.
+/// The legacy database is only deleted after that transaction has committed, which flushes its pages to OPFS,
+/// so it remains the source of truth until the copy is complete and durable.
 ///
 /// This is a no-op when:
 /// - `new_conn` is past the import's schema version, which means the import finished on an earlier open, or
@@ -140,7 +210,6 @@ pub(super) async fn maybe_migrate(
     name: &str,
     database_key: &DatabaseKey,
     new_conn: &mut Connection,
-    fs: &FsAbstraction,
 ) -> CryptoKeystoreResult<()> {
     /// This SQL database version corresponds to the final IDB version,
     /// so is what we need to perform the migration from IDB.
@@ -231,9 +300,7 @@ pub(super) async fn maybe_migrate(
 
     for_each_imported_legacy_entity!(migrate_entities);
 
-    // The commit above only queued the write of the copied data to IndexedDB. Until that write has landed, the
-    // legacy database is the only durable copy, so it must not be deleted yet.
-    fs.flush().await?;
+    // The commit above has flushed the imported data to OPFS before we delete IDB.
 
     // clients can recover independently from this; the migrations all succeeded, so no need to
     // propagate an error

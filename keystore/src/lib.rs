@@ -1,3 +1,7 @@
+// Lets `core_crypto_macros::jspi_wasm_bindgen_test` refer to this crate by name in its own unit tests.
+#[cfg(all(test, target_os = "unknown"))]
+extern crate self as core_crypto_keystore;
+
 pub mod ancillary;
 pub mod connection;
 mod database_key;

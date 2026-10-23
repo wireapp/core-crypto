@@ -4,22 +4,21 @@
 //! every other test of the new connection starts from an empty database. This is the only place the two halves
 //! meet, and so the only place which can notice that an importer writes a shape the target schema does not have.
 
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::sync::Arc;
 
-use idb::{Factory, TransactionMode};
+use idb::{Factory, KeyPath, TransactionMode, builder::ObjectStoreBuilder};
 use js_sys::{Array, Object, Reflect, Uint8Array};
 use openmls::prelude::{Credential as MlsCredential, TlsSerializeTrait as _};
 use rand::distr::{Alphanumeric, SampleString as _};
 use rusqlite::Connection;
 use wasm_bindgen::JsValue;
-use wasm_bindgen_test::wasm_bindgen_test;
 use x509_cert::der::{Decode as _, DecodePem as _, Encode as _};
 
 use super::*;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::ProteusIdentity;
 use crate::{
-    CryptoKeystoreResult, Sha256Hash,
+    Sha256Hash,
     ancillary::ConversationIdRef,
     connection::{
         Database,
@@ -648,7 +647,7 @@ async fn assert_imported_and_migrated(db: &Database, credential_created_at: u64)
 /// connection is opened exactly as `Database::open` opens it, which runs the import, then the V22 schema is
 /// checked directly, then the same connection is initialised as `Database::open` would have initialised it,
 /// and the result is checked through the public API.
-#[wasm_bindgen_test]
+#[core_crypto_macros::jspi_wasm_bindgen_test]
 async fn imports_every_legacy_entity() {
     let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
     let key = DatabaseKey::generate();
@@ -665,7 +664,10 @@ async fn imports_every_legacy_entity() {
     let (conn, fs) = os_unknown::open(&name, &key)
         .await
         .expect("opening the new database over an existing legacy database imports it");
-    assert_imported_at_v22(&conn);
+    {
+        let _sqlite = crate::connection::SqliteGuard::lock();
+        assert_imported_at_v22(&conn);
+    }
 
     // and this is the rest of `Database::open`
     let db = Database::init(conn, Box::new(fs), MigrationTarget::Latest)
@@ -682,7 +684,7 @@ async fn imports_every_legacy_entity() {
 }
 
 /// Opening a second time neither re-imports nor disturbs what the first import produced.
-#[wasm_bindgen_test]
+#[core_crypto_macros::jspi_wasm_bindgen_test]
 async fn a_second_open_after_import_is_a_no_op() {
     let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
     let key = DatabaseKey::generate();
@@ -732,6 +734,11 @@ const LEGACY_FIXTURE_V9_3_4: &str = include_str!("fixtures/legacy-idb-v9.3.4.jso
 /// kept alongside the v9.3.4 capture because the two generations keyed some rows differently, and each capture
 /// catches what the other cannot.
 const LEGACY_FIXTURE_V10_1_0: &str = include_str!("fixtures/legacy-idb-v10.1.0.json");
+
+/// An encrypted SQLite page captured after v10.5.3 initialized a keystore through the relaxed-IDB VFS.
+///
+/// See `fixtures/README.md` and `fixtures/generate-relaxed-idb-vfs-v10.5.3.rs` for its provenance.
+const RELAXED_IDB_VFS_FIXTURE_V10_5_3: &str = include_str!("fixtures/relaxed-idb-vfs-v10.5.3.json");
 
 /// What the generator put into the captured keystore; these must match `fixtures/generate-legacy-idb-v9.3.4.rs`.
 mod captured {
@@ -784,6 +791,48 @@ fn fixture_value_to_js(value: &serde_json::Value) -> JsValue {
     }
 }
 
+/// Restore the genuine relaxed-IDB VFS record captured from v10.5.3.
+async fn restore_relaxed_idb_vfs_fixture(json: &str) -> DatabaseKey {
+    let fixture = fixture(json);
+    let name = fixture["database_name"]
+        .as_str()
+        .expect("fixture records the database name");
+    let store_name = fixture["store"]
+        .as_str()
+        .expect("fixture records the object store name");
+    let row = &fixture["row"];
+    let factory = Factory::new().expect("factory");
+    factory
+        .delete(CORE_CRYPTO_10_VFS_DATABASE)
+        .expect("delete request")
+        .await
+        .expect("wiping the shared v10 VFS database");
+
+    let idb = idb::Database::builder(CORE_CRYPTO_10_VFS_DATABASE)
+        .add_object_store(ObjectStoreBuilder::new(store_name).key_path(Some(KeyPath::new_array(["path", "offset"]))))
+        .build()
+        .await
+        .expect("restoring the v10 VFS database");
+    let transaction = idb
+        .transaction(&[store_name], TransactionMode::ReadWrite)
+        .expect("opening a write transaction");
+    transaction
+        .object_store(store_name)
+        .expect("opening the blocks store")
+        .put(&fixture_value_to_js(&row["value"]), None)
+        .expect("creating the page write request")
+        .await
+        .expect("restoring the captured v10 page");
+    transaction.commit().expect("committing the page").await.unwrap();
+    idb.close();
+
+    assert_eq!(row["key"][0].as_str(), Some(name));
+    DatabaseKey::try_from(
+        hex::decode(fixture["database_key"].as_str().expect("fixture records its key")).expect("key is hex"),
+    )
+    .expect("key has the right length")
+}
+
 /// Recreate the captured legacy database under `name`, at the schema version it was captured at, and return its
 /// encryption key.
 async fn restore_legacy_fixture(name: &str, json: &str) -> DatabaseKey {
@@ -834,7 +883,7 @@ fn certificate_common_name(der: &[u8]) -> String {
 /// the whole path handles what an old client actually wrote, from IndexedDB schema version 5 through the legacy
 /// upgrade steps, the import, and every SQL migration after it. Because the rows are real, the group family can
 /// be checked through the fully migrated database here, which the seeded tests cannot do.
-#[wasm_bindgen_test]
+#[core_crypto_macros::jspi_wasm_bindgen_test]
 async fn imports_a_database_captured_from_v9_3_4() {
     let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
     let factory = Factory::new().expect("factory");
@@ -988,7 +1037,7 @@ async fn imports_a_database_captured_from_v9_3_4() {
 ///
 /// Its rows are the ones [`seed`] describes, so the shared assertions apply; the credential's `created_at` is
 /// read from the capture because that release stamped it at save time.
-#[wasm_bindgen_test]
+#[core_crypto_macros::jspi_wasm_bindgen_test]
 async fn imports_a_database_captured_from_v10_1_0() {
     let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
     let factory = Factory::new().expect("factory");
@@ -1014,6 +1063,31 @@ async fn imports_a_database_captured_from_v10_1_0() {
         .wipe()
         .await
         .expect("wiping the new database");
+}
+
+/// A keystore genuinely initialized through the v10.5.3 relaxed-IDB VFS is rejected.
+#[core_crypto_macros::jspi_wasm_bindgen_test]
+async fn rejects_a_database_captured_from_v10_5_3() {
+    let fixture = fixture(RELAXED_IDB_VFS_FIXTURE_V10_5_3);
+    let name = fixture["database_name"]
+        .as_str()
+        .expect("fixture records the database name");
+    let key = restore_relaxed_idb_vfs_fixture(RELAXED_IDB_VFS_FIXTURE_V10_5_3).await;
+
+    let error = Database::open(name, &key)
+        .await
+        .expect_err("a database initialized by CoreCrypto 10.x must be rejected");
+    assert!(matches!(
+        &error,
+        crate::CryptoKeystoreError::CoreCrypto10DatabaseUnsupported
+    ));
+
+    Factory::new()
+        .expect("factory")
+        .delete(CORE_CRYPTO_10_VFS_DATABASE)
+        .expect("delete request")
+        .await
+        .expect("wiping the shared v10 VFS database");
 }
 
 /// The key under which [`plant_corrupt_pending_message`] stores its row.
@@ -1088,7 +1162,7 @@ async fn remove_corrupt_pending_message(name: &str) {
 /// partway, what must not happen is for the next open to find the new database, conclude that the import
 /// already ran, and hand back an empty keystore while the legacy data sits unread. The import has to be
 /// retried until it succeeds, and once the cause of the failure is gone it has to succeed.
-#[wasm_bindgen_test]
+#[core_crypto_macros::jspi_wasm_bindgen_test]
 async fn a_failed_import_is_retried_on_the_next_open() {
     let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
     let key = DatabaseKey::generate();
@@ -1139,150 +1213,76 @@ async fn a_failed_import_is_retried_on_the_next_open() {
         .expect("wiping the new database");
 }
 
-/// The IndexedDB database in which the relaxed-idb VFS persists every SQLite database's pages.
-///
-/// This is the VFS name; relaxed-idb reuses it for its IndexedDB database, and keeps the pages of every file in a
-/// single object store named `blocks`.
-const VFS_INDEXEDDB_NAME: &str = "core-crypto";
-
-/// Hold a readwrite transaction on the VFS's block store open until released.
-///
-/// IndexedDB runs readwrite transactions with overlapping scope one at a time, in creation order, so for as long
-/// as this one is alive nothing the VFS queues can reach IndexedDB. An idle transaction commits on its own, so
-/// this keeps it alive by issuing one request after another until released.
-///
-/// Returns `{ release, finished }`: a function which lets the transaction end, and a promise for its end.
-const HOLD_BLOCK_STORE_JS: &str = r#"(function (name) {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(name);
-    req.onerror = () => reject(req.error);
-    req.onsuccess = () => {
-      const db = req.result;
-      const tx = db.transaction("blocks", "readwrite");
-      const store = tx.objectStore("blocks");
-      let held = true;
-      const spin = () => {
-        if (!held) return;
-        store.count().onsuccess = spin;
-      };
-      spin();
-      const finished = new Promise((done) => {
-        tx.oncomplete = () => { db.close(); done(null); };
-        tx.onabort = () => { db.close(); done(null); };
-      });
-      resolve({ release: () => { held = false; }, finished });
-    };
-  });
+// Fails the `k`th flush request to the OPFS worker by pointing it at a file id the worker doesn't know.
+// SQLite sees an `xSync` error, so it can't count on that flush having made anything durable.
+const FAIL_OPFS_FLUSH_JS: &str = r#"(function (k) {
+  let count = 0;
+  const original = Worker.prototype.postMessage;
+  Worker.prototype.postMessage = function (message, transfer) {
+    if (message?.op === 'flush' && ++count === k) message = { ...message, args: [-1] };
+    return original.call(this, message, transfer);
+  };
+  return {
+    disarm() { Worker.prototype.postMessage = original; },
+    flushes() { return count; },
+  };
 })"#;
 
-const SLEEP_JS: &str = "(ms) => new Promise((resolve) => setTimeout(resolve, ms))";
-
-async fn sleep_ms(ms: u32) {
-    let sleep: js_sys::Function = js_sys::eval(SLEEP_JS).unwrap().into();
-    let promise: js_sys::Promise = sleep
-        .call1(&JsValue::NULL, &JsValue::from_f64(ms.into()))
-        .unwrap()
-        .into();
-    wasm_bindgen_futures::JsFuture::from(promise).await.unwrap();
+struct OpfsFlushFault {
+    disarm: js_sys::Function,
+    flushes: js_sys::Function,
 }
 
-/// A held write transaction on the VFS's block store; see [`HOLD_BLOCK_STORE_JS`].
-struct BlockStoreHold {
-    release: js_sys::Function,
-    finished: js_sys::Promise,
-}
-
-impl BlockStoreHold {
-    async fn take() -> Self {
-        let hold: js_sys::Function = js_sys::eval(HOLD_BLOCK_STORE_JS).unwrap().into();
-        let promise: js_sys::Promise = hold
-            .call1(&JsValue::NULL, &JsValue::from_str(VFS_INDEXEDDB_NAME))
-            .unwrap()
-            .into();
-        let handle = wasm_bindgen_futures::JsFuture::from(promise)
-            .await
-            .expect("holding the block store");
+impl OpfsFlushFault {
+    /// Fail the `k`th flush from now on. With `k == 0`, no flush fails, but they are still counted.
+    fn arm(k: u32) -> Self {
+        let arm: js_sys::Function = js_sys::eval(FAIL_OPFS_FLUSH_JS).unwrap().into();
+        let handle = arm.call1(&JsValue::NULL, &JsValue::from_f64(k.into())).unwrap();
         Self {
-            release: Reflect::get(&handle, &JsValue::from_str("release")).unwrap().into(),
-            finished: Reflect::get(&handle, &JsValue::from_str("finished")).unwrap().into(),
+            disarm: Reflect::get(&handle, &JsValue::from_str("disarm")).unwrap().into(),
+            flushes: Reflect::get(&handle, &JsValue::from_str("flushes")).unwrap().into(),
         }
     }
 
-    async fn release(self) {
-        self.release.call0(&JsValue::NULL).unwrap();
-        wasm_bindgen_futures::JsFuture::from(self.finished)
-            .await
-            .expect("the held transaction ends");
+    /// Restore normal flushes, returning how many were requested while armed.
+    fn disarm(self) -> u32 {
+        let flushes = self.flushes.call0(&JsValue::NULL).unwrap().as_f64().unwrap() as u32;
+        self.disarm.call0(&JsValue::NULL).unwrap();
+        flushes
     }
 }
 
-/// The legacy database is only deleted once the imported data has reached IndexedDB.
+/// Opens over a fresh legacy database while the `k`th flush fails, then checks what that left behind.
 ///
-/// The VFS is relaxed about durability: a SQLite commit only queues the write of its pages to IndexedDB, and the
-/// commit returns before that write lands. The import deletes the legacy database right after its commit. If the
-/// page is unloaded in between, the new database has not been persisted and the legacy one is gone, and the user
-/// has lost everything. So an open which imports must not finish, and must not delete the legacy database, until
-/// the pages it wrote are durable.
-///
-/// This test makes IndexedDB unable to accept the pages for a while, by holding a write transaction on the VFS's
-/// block store, and checks that the open waits. No crash is needed: the window is a matter of ordering, and the
-/// hold makes the ordering observable.
-#[wasm_bindgen_test]
-async fn the_legacy_database_outlives_the_import_until_the_import_is_durable() {
+/// With the legacy database gone, nothing can import its data again, so it must already be durable.
+/// With the legacy database still there, the next open must complete the import.
+/// Returns whether the legacy database survived the failed open, and how many flushes were requested.
+async fn open_with_failed_flush(k: u32) -> (bool, u32) {
     let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
     let key = DatabaseKey::generate();
     let factory = Factory::new().expect("factory");
     factory.delete(&name).expect("delete request").await.expect("wiping db");
-
     seed_legacy_database(&name, &key).await;
-    // make sure the VFS, and so its IndexedDB database, exists before anything is held on it
-    Arc::into_inner(
-        Database::open(&format!("{name}-warmup"), &key)
-            .await
-            .expect("installing the vfs"),
-    )
-    .unwrap()
-    .wipe()
-    .await
-    .expect("wiping the warmup database");
 
-    let hold = BlockStoreHold::take().await;
+    let fault = OpfsFlushFault::arm(k);
+    let outcome = Database::open(&name, &key).await;
+    let flushes = fault.disarm();
+    drop(outcome);
 
-    // run the open in the background, so that its progress can be observed rather than awaited
-    let outcome: Rc<RefCell<Option<CryptoKeystoreResult<Arc<Database>>>>> = Rc::new(RefCell::new(None));
-    wasm_bindgen_futures::spawn_local({
-        let (name, key, outcome) = (name.clone(), key.clone(), outcome.clone());
-        async move {
-            let result = Database::open(&name, &key).await;
-            *outcome.borrow_mut() = Some(result);
-        }
-    });
-
-    // long enough that an open which does not wait for durability has certainly finished
-    sleep_ms(1_500).await;
-    assert!(
-        outcome.borrow().is_none(),
-        "the open finished while its pages could not have reached IndexedDB, so it did not wait for durability"
-    );
-    assert!(
-        legacy_idb_exists(&name).await,
-        "the legacy database must not be deleted before the imported data is durable"
-    );
-
-    hold.release().await;
-    while outcome.borrow().is_none() {
-        sleep_ms(50).await;
+    let legacy_survived = legacy_idb_exists(&name).await;
+    let db = Database::open(&name, &key)
+        .await
+        .unwrap_or_else(|error| panic!("opening after flush {k} failed: {error:?}"));
+    if !legacy_survived {
+        assert!(
+            db.get_unique::<ConsumerData>().await.unwrap().is_some(),
+            "flush {k} failed after the legacy database was deleted, but before the import was durable"
+        );
     }
-    let db = outcome
-        .borrow_mut()
-        .take()
-        .unwrap()
-        .expect("once IndexedDB accepts writes again, the open completes");
-
     assert_imported_and_migrated(&db, seed::CREDENTIAL_CREATED_AT).await;
     assert!(
         !legacy_idb_exists(&name).await,
-        "the legacy database is deleted once its data has been imported durably"
+        "the legacy database is deleted once its data has been imported"
     );
 
     Arc::into_inner(db)
@@ -1290,4 +1290,37 @@ async fn the_legacy_database_outlives_the_import_until_the_import_is_durable() {
         .wipe()
         .await
         .expect("wiping the new database");
+    (legacy_survived, flushes)
+}
+
+/// The legacy database survives until the imported data is durable.
+///
+/// Failed flush before deletion: legacy database stays. Bisect for first failed flush where it's gone. If the
+/// import is not yet durable there, it's lost and `open_with_failed_flush` panics. Bisection, not trying every
+/// flush, so the test doesn't depend on flush count.
+#[core_crypto_macros::jspi_wasm_bindgen_test]
+async fn the_legacy_database_outlives_the_import_until_the_import_is_durable() {
+    // Nothing fails here; the legacy database is gone after the last flush, at the latest.
+    let (legacy_survived, flushes) = open_with_failed_flush(0).await;
+    assert!(!legacy_survived, "an open without failures deletes the legacy database");
+    let (legacy_survived, _) = open_with_failed_flush(1).await;
+    assert!(
+        legacy_survived,
+        "the legacy database must not be deleted before the first flush"
+    );
+
+    // Invariant: failing flush `survived` leaves the legacy database; failing flush `deleted` doesn't.
+    let (mut survived, mut deleted) = (1, flushes + 1);
+    while deleted - survived > 1 {
+        let k = survived + (deleted - survived) / 2;
+        if open_with_failed_flush(k).await.0 {
+            survived = k;
+        } else {
+            deleted = k;
+        }
+    }
+    assert!(
+        deleted <= flushes,
+        "the legacy database must be deleted before the open's last flush, or this test checks nothing"
+    );
 }
