@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
-use jwt_simple::prelude::Jwk;
 use openmls_traits::types::{Ciphersuite, SignatureScheme};
-use rusty_jwt_tools::prelude::{ClientId, JwsAlgorithm, Pem};
+use rusty_jwt_tools::{
+    jsonwebtoken::jwk::Jwk,
+    prelude::{ClientId, JwsAlgorithm, Pem},
+};
 use url::Url;
 
 use crate::{

@@ -13,7 +13,7 @@ pub enum E2eIdentityError {
     #[error(transparent)]
     JwtError(#[from] rusty_jwt_tools::prelude::RustyJwtError),
     #[error(transparent)]
-    JwtSimpleError(#[from] jwt_simple::Error),
+    JsonWebTokenError(#[from] rusty_jwt_tools::jsonwebtoken::errors::Error),
     #[error(transparent)]
     PkiEnvError(#[from] crate::pki_env::Error),
     #[error(transparent)]

@@ -1,10 +1,6 @@
 use certval::ExtensionProcessing as _;
-use jwt_simple::{
-    algorithms::{ECDSAP256PublicKeyLike as _, ECDSAP384PublicKeyLike as _, ECDSAP521PublicKeyLike as _},
-    prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPair, Jwk},
-};
 use rusty_jwt_tools::{
-    jwk::TryIntoJwk as _,
+    jsonwebtoken::DecodingKey,
     prelude::{JwsAlgorithm, Pem},
 };
 use spki::AlgorithmIdentifierOwned;
@@ -13,52 +9,17 @@ use x509_cert::ext::pkix::AuthorityKeyIdentifier;
 use crate::{error::E2eIdentityResult, validation};
 
 pub fn generate_key(sign_alg: JwsAlgorithm) -> E2eIdentityResult<Pem> {
-    let pem = match sign_alg {
-        JwsAlgorithm::ES256 => ES256KeyPair::generate().to_pem()?,
-        JwsAlgorithm::ES384 => ES384KeyPair::generate().to_pem()?,
-        JwsAlgorithm::ES512 => ES512KeyPair::generate().to_pem()?,
-        JwsAlgorithm::EdDSA => Ed25519KeyPair::generate().to_pem(),
-    };
-    Ok(pem.into())
+    Ok(sign_alg.generate_keypair()?)
 }
 
 pub fn pem_from_bytes(bytes: &[u8], sign_alg: JwsAlgorithm) -> E2eIdentityResult<Pem> {
-    let pem = match sign_alg {
-        JwsAlgorithm::ES256 => ES256KeyPair::from_bytes(bytes)?.to_pem()?,
-        JwsAlgorithm::ES384 => ES384KeyPair::from_bytes(bytes)?.to_pem()?,
-        JwsAlgorithm::ES512 => ES512KeyPair::from_bytes(bytes)?.to_pem()?,
-        JwsAlgorithm::EdDSA => Ed25519KeyPair::from_bytes(bytes)?.to_pem(),
-    };
-    Ok(pem.into())
+    Ok(sign_alg.keypair_from_bytes(bytes)?)
 }
 
-pub(crate) fn public_jwk_from_pem_keypair(alg: JwsAlgorithm, keypair: &Pem) -> E2eIdentityResult<Jwk> {
-    let jwk = match alg {
-        JwsAlgorithm::ES256 => ES256KeyPair::from_pem(keypair)?.public_key().try_into_jwk()?,
-        JwsAlgorithm::ES384 => ES384KeyPair::from_pem(keypair)?.public_key().try_into_jwk()?,
-        JwsAlgorithm::ES512 => ES512KeyPair::from_pem(keypair)?.public_key().try_into_jwk()?,
-        JwsAlgorithm::EdDSA => Ed25519KeyPair::from_pem(keypair)?.public_key().try_into_jwk()?,
-    };
-    Ok(jwk)
-}
-
+/// The public key of `keypair`, as an uncompressed SEC1 point for ECDSA and as the 32 byte key for EdDSA
 pub(crate) fn public_key_bytes(alg: JwsAlgorithm, keypair: &Pem) -> E2eIdentityResult<Vec<u8>> {
-    let bytes = match alg {
-        JwsAlgorithm::ES256 => ES256KeyPair::from_pem(keypair)?
-            .public_key()
-            .public_key()
-            .to_bytes_uncompressed(),
-        JwsAlgorithm::ES384 => ES384KeyPair::from_pem(keypair)?
-            .public_key()
-            .public_key()
-            .to_bytes_uncompressed(),
-        JwsAlgorithm::ES512 => ES512KeyPair::from_pem(keypair)?
-            .public_key()
-            .public_key()
-            .to_bytes_uncompressed(),
-        JwsAlgorithm::EdDSA => Ed25519KeyPair::from_pem(keypair)?.public_key().to_bytes(),
-    };
-    Ok(bytes)
+    let jwk = alg.public_jwk(keypair)?;
+    Ok(DecodingKey::from_jwk(&jwk)?.try_get_as_bytes()?.to_vec())
 }
 
 pub(crate) fn jws_alg_to_x509_identifier(alg: JwsAlgorithm) -> AlgorithmIdentifierOwned {

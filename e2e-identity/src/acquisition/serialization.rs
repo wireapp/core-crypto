@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
-use jwt_simple::prelude::Jwk;
-use rusty_jwt_tools::prelude::{ClientId, Pem};
+use rusty_jwt_tools::{
+    jsonwebtoken::jwk::Jwk,
+    prelude::{ClientId, Pem},
+};
 use uuid::Uuid;
 
 use super::{

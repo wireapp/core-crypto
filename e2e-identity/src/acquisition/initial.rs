@@ -7,7 +7,7 @@ use super::{CiphersuiteExt as _, X509CredentialAcquisition, X509CredentialConfig
 use crate::{
     error::{E2eIdentityError, E2eIdentityResult},
     pki_env::PkiEnvironment,
-    utils::{generate_key, public_jwk_from_pem_keypair},
+    utils::generate_key,
 };
 
 impl X509CredentialAcquisition<states::Initialized> {
@@ -22,7 +22,7 @@ impl X509CredentialAcquisition<states::Initialized> {
             .ok_or(E2eIdentityError::UnsupportedCipherSuite(config.cipher_suite))?;
         let sign_kp = generate_key(sign_alg)?;
         let acme_kp = generate_key(sign_alg)?;
-        let acme_jwk = public_jwk_from_pem_keypair(sign_alg, &acme_kp)?;
+        let acme_jwk = sign_alg.public_jwk(&acme_kp)?;
 
         log::info!(
             "created acquisition({:?}), cipher_suite = {:?}, acme_url = {}",
@@ -56,7 +56,7 @@ impl X509CredentialAcquisition<states::Initialized> {
             .jws_algorithm()
             .ok_or(E2eIdentityError::UnsupportedCipherSuite(config.cipher_suite))?;
         let acme_kp = generate_key(sign_alg)?;
-        let acme_jwk = public_jwk_from_pem_keypair(sign_alg, &acme_kp)?;
+        let acme_jwk = sign_alg.public_jwk(&acme_kp)?;
         log::info!(
             "created acquisition from existing {:?}, cipher_suite = {:?}, acme_url = {}",
             Obfuscated::from(&sign_kp),
