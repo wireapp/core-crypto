@@ -233,8 +233,9 @@ mod tests {
                 return;
             };
 
-            let jwk = rusty_jwt_tools::prelude::generate_jwk(alg);
-            let external_sender = ExternalSender::parse_jwk(&jwk).unwrap();
+            let kp = alg.generate_keypair().unwrap();
+            let jwk = alg.public_jwk(&kp).unwrap();
+            let external_sender = ExternalSender::parse_jwk(&serde_json::to_vec(&jwk).unwrap()).unwrap();
             assert!(case.cfg.clone().set_external_senders([external_sender]).is_ok());
         })
         .await;
