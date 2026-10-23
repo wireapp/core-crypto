@@ -40,7 +40,6 @@ wire-e2e-identity.workspace = true
 derive_more.workspace = true
 futures-util.workspace = true
 hex.workspace = true
-jwt-simple.workspace = true
 log-reload.workspace = true
 log.workspace = true
 obfuscate = { workspace = true, features = ["openmls"] }

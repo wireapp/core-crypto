@@ -27,7 +27,6 @@ rusty-jwt-tools.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
-jwt-simple.workspace = true
 derive_more = { workspace = true, features = ["deref", "from", "into"] }
 url.workspace = true
 zeroize.workspace = true
@@ -58,6 +57,8 @@ base64.workspace = true
 
 [dev-dependencies]
 argon2 = "0.6"
+# for the RS256 key Authelia requires
+rsa = "0.10.0-rc.19"
 password-hash = { version = "0.6", features = ["getrandom"] }
 env_logger.workspace = true
 rusty-jwt-tools = { workspace = true, features = ["test-utils"] }

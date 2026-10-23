@@ -30,7 +30,8 @@ ignore = [
   "RUSTSEC-2024-0436",
   # The fix at https://github.com/RustCrypto/RSA/pull/394 is merged,
   # and will be in rsa v0.10, once that comes out of the eternal
-  # pre-release state. We need to update it via our rusty-jwt-simple.
+  # pre-release state. rsa comes in through jsonwebtoken, which
+  # rusty-jwt-tools uses. We only use RSA keys in tests.
   "RUSTSEC-2023-0071",
   # We can't fix this until we update Gobley;
   # see WPB-29524

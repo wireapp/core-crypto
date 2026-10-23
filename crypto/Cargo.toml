@@ -87,6 +87,9 @@ blake3 = "1.8"
 
 [target.'cfg(target_os = "unknown")'.dependencies]
 serde-wasm-bindgen.workspace = true
+# ahash, through schnellru, uses getrandom 0.2, which only supports wasm with its `js` feature.
+# jwt-simple used to enable it for us.
+getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
 
 [dev-dependencies]
 itertools.workspace = true
