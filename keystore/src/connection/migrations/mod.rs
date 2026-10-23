@@ -39,7 +39,10 @@ pub(super) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationT
         Ok(crate::sha256(&input_blob))
     })?;
 
-    let mut runner = migrations::runner();
+    // Wihout `set_grouped(true)`, refinery commits a migration and its history row in separate transactions. If the
+    // migration crashes in between, the next open re-applies the migration and fails. We target one version at a
+    // time, so grouping ties each migration to its history row.
+    let mut runner = migrations::runner().set_grouped(true);
     let Some(latest_migration_version) = runner
         .get_migrations()
         .iter()
