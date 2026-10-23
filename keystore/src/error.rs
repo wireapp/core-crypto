@@ -110,12 +110,18 @@ pub enum CryptoKeystoreError {
 }
 
 impl CryptoKeystoreError {
-    /// If the produced rusqlite error came from a constraint violation, then map it to our
+    /// If the produced rusqlite error came from a uniqueness violation, then map it to our
     /// AlreadyExists variant. Otherwise pass it through.
+    ///
+    /// Only `UNIQUE` and `PRIMARY KEY` conflicts count. Other constraint violations, such as a
+    /// foreign key with no parent row, mean something else went wrong.
     pub(crate) fn map_already_exists(table_name: &'static str) -> impl FnOnce(rusqlite::Error) -> Self {
         move |err| {
             if let rusqlite::Error::SqliteFailure(inner, _) = err
-                && let rusqlite::ErrorCode::ConstraintViolation = inner.code
+                && matches!(
+                    inner.extended_code,
+                    rusqlite::ffi::SQLITE_CONSTRAINT_UNIQUE | rusqlite::ffi::SQLITE_CONSTRAINT_PRIMARYKEY
+                )
             {
                 Self::AlreadyExists(table_name)
             } else {

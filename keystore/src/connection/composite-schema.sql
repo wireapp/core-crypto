@@ -1,38 +1,7 @@
-CREATE TABLE proteus_prekeys (id INT UNIQUE, KEY BLOB);
-
-CREATE TABLE proteus_identities (sk BLOB, pk BLOB);
-
-CREATE TABLE proteus_sessions (id VARCHAR(255) UNIQUE, SESSION BLOB);
-
-CREATE TABLE "mls_encryption_keypairs" (
-  pk_sha256 TEXT UNIQUE,
-  pk BLOB,
-  sk BLOB
-);
-
-CREATE TABLE "mls_hpke_private_keys" (
-  pk_sha256 TEXT UNIQUE,
-  pk BLOB,
-  sk BLOB
-);
-
-CREATE TABLE "mls_psk_bundles" (
-  id_sha256 TEXT UNIQUE,
-  psk_id BLOB,
-  psk BLOB
-);
-
 CREATE TABLE consumer_data (
   id INTEGER PRIMARY KEY CHECK (id = 0),
   content BLOB
 );
-
-CREATE TABLE "mls_key_packages" (
-  key_package_ref BLOB UNIQUE,
-  key_package BLOB
-);
-
-CREATE INDEX idx_mls_keypackages_keypackage_ref ON "mls_key_packages"(key_package_ref);
 
 CREATE TABLE x509_trust_anchor (
   fingerprint TEXT PRIMARY KEY,
@@ -168,3 +137,61 @@ CREATE TABLE "mls_pending_messages" (
 );
 
 CREATE INDEX idx_mls_pending_messages_conversation_id ON mls_pending_messages (conversation_id);
+
+CREATE TABLE "mls_key_packages" (
+  key_package_ref BLOB NOT NULL PRIMARY KEY,
+  key_package BLOB NOT NULL,
+  credential_id BLOB NOT NULL,
+  credential_type INTEGER NOT NULL,
+  hpke_init_public_key_hash BLOB NOT NULL UNIQUE,
+  leaf_encryption_key_hash BLOB NOT NULL UNIQUE,
+  -- this has to be nullable because openmls insists on filling it in a separate statement
+  -- because it thinks it's a separate entity
+  hpke_init_private_key BLOB NULL,
+  -- Deferred so that the credential only has to exist by the time the transaction commits. A history
+  -- client stores its key package before it can add the credential: it recovers the credential from
+  -- the stored key package.
+  FOREIGN KEY (credential_id, credential_type) REFERENCES mls_credentials (public_key_sha256, credential_type) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+);
+
+CREATE INDEX idx_mls_key_packages_credential_fk ON mls_key_packages (credential_id, credential_type);
+
+CREATE INDEX idx_mls_groups_credential_fk ON mls_groups (credential_id, credential_type);
+
+CREATE TABLE "proteus_prekeys" (
+  id INTEGER PRIMARY KEY,
+  KEY BLOB NOT NULL
+);
+
+CREATE TABLE "proteus_identities" (
+  id INT NOT NULL DEFAULT 0 PRIMARY KEY CHECK (id = 0),
+  sk BLOB NOT NULL,
+  pk BLOB NOT NULL
+);
+
+CREATE TABLE "proteus_sessions" (
+  id TEXT NOT NULL PRIMARY KEY,
+  SESSION BLOB NOT NULL
+);
+
+CREATE TABLE "mls_encryption_keypairs" (
+  pk_sha256 BLOB NOT NULL PRIMARY KEY,
+  pk BLOB NOT NULL,
+  sk BLOB NOT NULL
+);
+
+CREATE TRIGGER delete_key_package_leaf_keypair
+AFTER
+  DELETE ON mls_key_packages
+BEGIN
+DELETE FROM
+  mls_encryption_keypairs
+WHERE
+  pk_sha256 = OLD.leaf_encryption_key_hash;
+END;
+
+CREATE TABLE "mls_psk_bundles" (
+  id_sha256 BLOB NOT NULL PRIMARY KEY,
+  psk_id BLOB NOT NULL,
+  psk BLOB NOT NULL
+);

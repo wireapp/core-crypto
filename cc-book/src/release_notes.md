@@ -59,6 +59,9 @@
 
 - `CoreCryptoContext.setData` is now a synchronous function, not async.
 
+- `CoreCryptoContext.removeKeyPackage` and `CoreCryptoContext.removeKeyPackageFor` are now synchronous functions, not
+  async.
+
 #### TypeScript
 
 - browser and native packages are now released separately under `@wireapp/core-crypto` and
@@ -101,6 +104,9 @@
 - Fixed a bug in the data migrations. This applies to clients upgrading from v9. This bug caused e2ei-enrolled clients
   to lose all credentials for which both the basic and x509 versions were present in the database, causing them to
   additionally lose all conversations using those credentials.
+
+- `CoreCryptoContext.removeKeyPackagesFor` now more narrowly removes key packages matching the provided credential's
+  type and public key, not just its key
 
 ## CoreCrypto 10
 

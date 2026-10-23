@@ -2,7 +2,7 @@ use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 use rusqlite::Connection;
 
 use crate::{
-    CryptoKeystoreError, Transaction,
+    CryptoKeystoreError, Sha256Hash, Transaction,
     ancillary::ConversationIdRef,
     deser,
     entities::{
@@ -10,7 +10,7 @@ use crate::{
         StoredHpkePrivateKey, StoredKeyPackage, StoredPskBundle,
     },
     ser,
-    traits::{EntityDatabaseMutation as _, EntityDeleteBorrowed as _, EntityGetBorrowed as _},
+    traits::{Entity as _, EntityDatabaseMutation as _, EntityDeleteBorrowed as _, EntityGetBorrowed as _},
 };
 
 /// Implementation of the `MlsEntity::read` function; we want to share this elsewhere.
@@ -34,8 +34,10 @@ pub(crate) fn read_mls_entity<V: MlsEntity>(conn: &Connection, id: &[u8]) -> Opt
             deser(&v.key_package).ok()
         }
         MlsEntityId::HpkePrivateKey => {
-            let v = StoredHpkePrivateKey::get_borrowed(conn, id).ok().flatten()?;
-            deser(&v.sk).ok()
+            // stored HPKE private keys are now actually keyed by the _hash_ of the public key, not the key itself
+            let pub_key_hash = Sha256Hash::hash_from(id);
+            let v = StoredHpkePrivateKey::get(conn, &pub_key_hash).ok().flatten()?;
+            deser(&v.secret_key).ok()
         }
         MlsEntityId::PskBundle => {
             let v = StoredPskBundle::get_borrowed(conn, id).ok().flatten()?;
@@ -85,16 +87,12 @@ impl openmls_traits::key_store::OpenMlsKeyStore for Transaction {
                 ));
             }
             MlsEntityId::KeyPackage => {
-                StoredKeyPackage {
-                    key_package_ref: id.into(),
-                    key_package: data,
-                }
-                .save(self)?;
+                StoredKeyPackage::from_openmls(id, data, value).save(self)?;
             }
             MlsEntityId::HpkePrivateKey => {
                 StoredHpkePrivateKey {
-                    pk: id.into(),
-                    sk: data,
+                    public_key_hash: Sha256Hash::hash_from(id),
+                    secret_key: data,
                 }
                 .save(self)?;
             }
@@ -146,7 +144,7 @@ impl openmls_traits::key_store::OpenMlsKeyStore for Transaction {
                 deleting a credential."
             ),
             MlsEntityId::GroupState => PersistedMlsGroup::delete_borrowed(self, ConversationIdRef::new(id))?,
-            MlsEntityId::HpkePrivateKey => StoredHpkePrivateKey::delete_borrowed(self, id)?,
+            MlsEntityId::HpkePrivateKey => StoredHpkePrivateKey::delete(self, &Sha256Hash::hash_from(id))?,
             MlsEntityId::KeyPackage => StoredKeyPackage::delete_borrowed(self, id)?,
             MlsEntityId::PskBundle => StoredPskBundle::delete_borrowed(self, id)?,
             MlsEntityId::EncryptionKeyPair => StoredEncryptionKeyPair::delete_borrowed(self, id)?,

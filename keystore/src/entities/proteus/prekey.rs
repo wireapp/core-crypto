@@ -44,7 +44,7 @@ impl ProteusPrekey {
         /// invariant.
         const MAX_ASSIGNABLE_ID: u16 = u16::MAX - 1;
 
-        // The scan walks the index on `id` in ascending order and `LIMIT 1` stops it at the first
+        // The scan walks the table on `id` in ascending order and `LIMIT 1` stops it at the first
         // gap, so the cost tracks the position of that gap rather than the size of the table.
         // It can only find gaps above an id which is present, hence the `WHEN`: if the lowest
         // assignable id is itself free, no scan is needed. Bounding `t.id` from above keeps the

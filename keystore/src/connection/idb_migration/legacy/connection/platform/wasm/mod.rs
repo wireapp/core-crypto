@@ -17,10 +17,10 @@ use crate::{
             proteus::identity::LegacyProteusIdentity,
         },
     },
-    entities::{
-        ProteusPrekey, ProteusSession, StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle,
+    entities::{ProteusPrekey, ProteusSession, StoredCredential, StoredEncryptionKeyPair, StoredPskBundle},
+    migrations::{
+        LegacyPersistedMlsGroup, StoredCredentialV36, StoredHpkePrivateKeyV45, V33StoredEpochEncryptionKeypair,
     },
-    migrations::{LegacyPersistedMlsGroup, StoredCredentialV36, V33StoredEpochEncryptionKeypair},
 };
 
 pub(crate) mod migrations;
@@ -115,7 +115,7 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
                     new_cipher,
                     [
                         StoredCredentialV36,
-                        StoredHpkePrivateKey,
+                        StoredHpkePrivateKeyV45,
                         StoredEncryptionKeyPair,
                         V33StoredEpochEncryptionKeypair,
                         StoredPskBundle,

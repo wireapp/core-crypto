@@ -30,8 +30,10 @@ use crate::{
         migrations::MigrationTarget,
         os_unknown::FsAbstraction,
     },
-    entities::{StoredBufferedCommit, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle},
-    migrations::{LegacyPersistedMlsGroup, StoredCredentialV36, V33StoredEpochEncryptionKeypair},
+    entities::{StoredBufferedCommit, StoredEncryptionKeyPair, StoredPskBundle},
+    migrations::{
+        LegacyPersistedMlsGroup, StoredCredentialV36, StoredHpkePrivateKeyV45, V33StoredEpochEncryptionKeypair,
+    },
     traits::EntityDatabaseMutation as _,
 };
 
@@ -55,7 +57,7 @@ macro_rules! for_each_imported_legacy_entity {
             StoredCredentialV36,
             StoredEncryptionKeyPair,
             V33StoredEpochEncryptionKeypair,
-            StoredHpkePrivateKey,
+            StoredHpkePrivateKeyV45,
             StoredKeypackage,
             StoredPskBundle,
             #[cfg(feature = "proteus-keystore")]

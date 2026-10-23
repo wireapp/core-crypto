@@ -70,7 +70,7 @@ async fn main() -> anyhow::Result<()> {
         .load_all::<StoredHpkePrivateKey>()
         .await?
         .into_iter()
-        .map(|hpke_sk| postcard::from_bytes::<openmls_traits::types::HpkePrivateKey>(&hpke_sk.sk))
+        .map(|hpke_sk| postcard::from_bytes::<openmls_traits::types::HpkePrivateKey>(&hpke_sk.secret_key))
         .collect::<postcard::Result<_>>()?;
     json_map.serialize_entry("mls_hpke_private_keys", &hpke_sks)?;
 

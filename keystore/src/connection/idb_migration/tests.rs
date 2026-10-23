@@ -95,6 +95,10 @@ r9IJmL6kDQ==
     pub(super) const PSK_ID: &[u8] = b"id of a pre-shared key";
     pub(super) const PSK: &[u8] = b"a pre-shared key";
     pub(super) const KEY_PACKAGE_REF: &[u8] = b"hash reference of a key package";
+    /// Opaque, not a real `KeyPackage`. The import copies it verbatim, which is all this test asserts of it.
+    ///
+    /// V45 deserializes key packages and drops rows it cannot read, and V46 then drops the HPKE init key which
+    /// belonged to it, so both are checked at the V22 checkpoint only, never through the fully migrated database.
     pub(super) const KEY_PACKAGE: &[u8] = b"a serialized key package";
 
     pub(super) const EPOCH_KEYPAIR_OWN_LEAF_INDEX: u32 = 3;
@@ -233,7 +237,7 @@ impl Seed for V33StoredEpochEncryptionKeypair {
     }
 }
 
-impl Seed for StoredHpkePrivateKey {
+impl Seed for StoredHpkePrivateKeyV45 {
     fn seed() -> Self {
         Self {
             pk: seed::HPKE_PK.to_vec(),
@@ -574,13 +578,6 @@ async fn assert_imported_and_migrated(db: &Database, credential_created_at: u64)
         .expect("the encryption keypair survives the import");
     assert_eq!(encryption_keypair.sk, seed::ENCRYPTION_SK);
 
-    let hpke_private_key = db
-        .get_borrowed::<StoredHpkePrivateKey>(seed::HPKE_PK)
-        .await
-        .unwrap()
-        .expect("the hpke private key survives the import");
-    assert_eq!(hpke_private_key.sk, seed::HPKE_SK);
-
     let psk_bundle = db
         .get_borrowed::<StoredPskBundle>(seed::PSK_ID)
         .await
@@ -588,12 +585,24 @@ async fn assert_imported_and_migrated(db: &Database, credential_created_at: u64)
         .expect("the psk bundle survives the import");
     assert_eq!(psk_bundle.psk, seed::PSK);
 
-    let key_package = db
-        .get_borrowed::<StoredKeyPackage>(seed::KEY_PACKAGE_REF)
-        .await
-        .unwrap()
-        .expect("the key package survives the import");
-    assert_eq!(key_package.key_package, seed::KEY_PACKAGE);
+    // [`seed::KEY_PACKAGE`] explains why the key package and its HPKE init key only reach the V22 checkpoint.
+    // `assert_imported_at_v22` pins that the import copied both across, and
+    // `imports_a_database_captured_from_v9_3_4` covers the surviving case, against captured key packages
+    // which really do deserialize.
+    assert!(
+        db.get_borrowed::<StoredKeyPackage>(seed::KEY_PACKAGE_REF)
+            .await
+            .unwrap()
+            .is_none(),
+        "V45 drops a key package it cannot deserialize"
+    );
+    assert!(
+        db.get::<crate::entities::StoredHpkePrivateKey>(&Sha256Hash::hash_from(seed::HPKE_PK))
+            .await
+            .unwrap()
+            .is_none(),
+        "V46 keeps only the HPKE init keys of key packages which survived V45"
+    );
 
     // The epoch keypair belongs to the group family, and [`seed::GROUP_STATE`] explains why that family
     // only reaches the V22 checkpoint: V39 drops the conversation because its state is opaque bytes. The
@@ -922,7 +931,7 @@ async fn imports_a_database_captured_from_v9_3_4() {
         captured_row_count(LEGACY_FIXTURE_V9_3_4, "mls_encryption_keypairs")
     );
     assert_eq!(
-        db.count::<StoredHpkePrivateKey>().await.unwrap() as usize,
+        db.count::<crate::entities::StoredHpkePrivateKey>().await.unwrap() as usize,
         captured_row_count(LEGACY_FIXTURE_V9_3_4, "mls_hpke_private_keys")
     );
     assert_eq!(

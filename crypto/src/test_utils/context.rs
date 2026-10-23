@@ -4,7 +4,7 @@ use core_crypto_keystore::{
     entities::{StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeyPackage},
     traits::FetchFromDatabase,
 };
-use openmls::prelude::{Credential as MlsCredential, ExternalSender, HpkePublicKey, KeyPackage, SignaturePublicKey};
+use openmls::prelude::{Credential as MlsCredential, ExternalSender, KeyPackage, SignaturePublicKey};
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto};
 use tls_codec::Serialize;
 use uuid::Uuid;
@@ -129,16 +129,6 @@ impl SessionContext {
 
     pub async fn add_credential(&self, credential: Credential) -> Option<CredentialRef> {
         self.transaction.add_credential(credential).await.ok()
-    }
-
-    pub async fn find_hpke_private_key_from_keystore(&self, skp: &HpkePublicKey) -> Option<StoredHpkePrivateKey> {
-        self.transaction
-            .database()
-            .unwrap()
-            .get::<StoredHpkePrivateKey>(&skp.tls_serialize_detached().unwrap())
-            .await
-            .unwrap()
-            .map(Arc::unwrap_or_clone)
     }
 
     pub async fn find_credential_from_keystore(&self, cb: &Credential) -> Option<StoredCredential> {

@@ -113,7 +113,7 @@ describe("key package", () => {
                     const keyPackage =
                         await ctx.generateKeyPackage(credentialRef);
                     // now remove that keypackage
-                    await ctx.removeKeyPackage(keyPackage.ref());
+                    ctx.removeKeyPackage(keyPackage.ref());
 
                     return await ctx.getKeyPackages();
                 });
@@ -169,7 +169,7 @@ describe("key package", () => {
                     const beforeRemovalArraySize = kpsBeforeRemoval.length;
 
                     // now remove all keypackages for one of the credentials
-                    await ctx.removeKeyPackagesFor(cref1);
+                    ctx.removeKeyPackagesFor(cref1);
 
                     const kps = await ctx.getKeyPackages();
                     const afterRemovalArraySize = kps.length;

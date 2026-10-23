@@ -3,17 +3,13 @@
 use std::time::Duration;
 
 use core_crypto_keystore::{
-    Sha256Hash,
-    entities::{StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeyPackage},
-    traits::EntityDeleteBorrowed as _,
+    entities::StoredKeyPackage,
+    traits::{DeletableBySearchKey, EntityDeleteBorrowed as _},
 };
 use openmls::prelude::{CryptoConfig, Lifetime};
 
 use super::{Error, Result, TransactionContext};
-use crate::{
-    ConversationConfiguration, CredentialRef, Keypackage, KeypackageRef, KeystoreError, RecursiveError,
-    mls::key_package::KeypackageExt as _,
-};
+use crate::{ConversationConfiguration, CredentialRef, Keypackage, KeypackageRef, KeystoreError, RecursiveError};
 
 /// Default lifetime of all generated Keypackages. Matches the limit defined in openmls
 /// Default lifetime of a generated key package.
@@ -77,73 +73,24 @@ impl TransactionContext {
     /// Remove one [`Keypackage`] from the database.
     ///
     /// Succeeds silently if the keypackage does not exist in the database.
-    ///
-    /// Implementation note: this must first load and deserialize the keypackage,
-    /// then remove items from three distinct tables.
-    pub async fn remove_key_package(&self, kp_ref: &KeypackageRef) -> Result<()> {
-        let Some(kp) = self
-            .session()
-            .await?
-            .load_key_package(kp_ref)
-            .await
-            .map_err(RecursiveError::context("loading key packages on session"))?
-        else {
-            return Ok(());
-        };
-
+    pub fn remove_key_package(&self, kp_ref: &KeypackageRef) -> Result<()> {
         let inner = self.inner()?;
         let tx = inner.transaction();
+
         StoredKeyPackage::delete_borrowed(tx, kp_ref.hash_ref())
             .map_err(KeystoreError::wrap("removing key package from keystore"))?;
-        StoredHpkePrivateKey::delete_borrowed(tx, kp.hpke_init_key().as_slice())
-            .map_err(KeystoreError::wrap("removing private key from keystore"))?;
-        StoredEncryptionKeyPair::delete_borrowed(tx, kp.leaf_node().encryption_key().as_slice())
-            .map_err(KeystoreError::wrap("removing encryption keypair from keystore"))?;
 
         Ok(())
     }
 
     /// Remove all keypackages associated with this credential.
-    ///
-    /// This is fairly expensive as it must first load all keypackages, then delete those matching the credential.
-    ///
-    /// Implementation note: once it makes it as far as having a list of keypackages, does _not_ short-circuit
-    /// if removing one returns an error. In that case, only the first produced error is returned.
-    /// This helps ensure that as many keypackages for the given credential ref are removed as possible.
-    pub async fn remove_key_packages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
-        let mut first_err = None;
-        macro_rules! try_retain_err {
-            ($e:expr) => {
-                match $e {
-                    Err(err) => {
-                        if first_err.is_none() {
-                            first_err = Some(Error::from(err));
-                        }
-                        continue;
-                    }
-                    Ok(val) => val,
-                }
-            };
-        }
+    pub fn remove_key_packages_for(&self, credential_ref: &CredentialRef) -> Result<()> {
+        let inner = self.inner()?;
+        let tx = inner.transaction();
 
-        let session = self.session().await?;
-        for keypackage in session
-            .get_key_packages()
-            .await
-            .map_err(RecursiveError::context("loading key packages"))?
-            .into_iter()
-            .filter(|keypackage| {
-                Sha256Hash::hash_from(keypackage.leaf_node().signature_key().as_slice())
-                    == credential_ref.public_key_hash()
-            })
-        {
-            let kp_ref = try_retain_err!(keypackage.make_ref());
-            try_retain_err!(self.remove_key_package(&kp_ref).await);
-        }
+        StoredKeyPackage::delete_all_matching(tx, &credential_ref.keystore_pk())
+            .map_err(KeystoreError::wrap("removing key packages for credential"))?;
 
-        match first_err {
-            None => Ok(()),
-            Some(err) => Err(err),
-        }
+        Ok(())
     }
 }

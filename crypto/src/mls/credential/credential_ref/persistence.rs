@@ -16,12 +16,17 @@ use super::super::{Error, Result};
 use crate::{Credential, CredentialRef, KeystoreError, RecursiveError};
 
 impl CredentialRef {
+    /// Compute the credential's primary key as the keystore understands it.
+    pub(crate) fn keystore_pk(&self) -> StoredCredentialPk {
+        StoredCredentialPk::new(self.public_key_hash(), self.r#type().into())
+    }
+
     /// Load the credential which matches this ref from the database.
     ///
     /// Note that this does not attach the credential to any Session; it just does the data manipulation.
     pub async fn load(&self, database: &impl FetchFromDatabase) -> Result<Credential> {
         database
-            .get::<StoredCredential>(&StoredCredentialPk::new(self.public_key_hash(), self.r#type().into()))
+            .get::<StoredCredential>(&self.keystore_pk())
             .await
             .map_err(KeystoreError::wrap("finding credential"))?
             .ok_or_else(|| Error::CredentialRefNotFound(self.public_key_hash()))
@@ -40,7 +45,7 @@ impl CredentialRef {
     /// actually need the public key. We therefore offer this method to load it dynamically.
     pub async fn public_key(&self, database: &impl FetchFromDatabase) -> Result<Vec<u8>> {
         database
-            .get::<StoredCredential>(&StoredCredentialPk::new(self.public_key_hash(), self.r#type().into()))
+            .get::<StoredCredential>(&self.keystore_pk())
             .await
             .map_err(KeystoreError::wrap("finding credential"))?
             .ok_or_else(|| Error::CredentialRefNotFound(self.public_key_hash()))
@@ -58,7 +63,6 @@ impl CredentialRef {
     /// But once those propagate automatically, it should consume this reference so we don't keep stale refs around.
     /// See WPB-29471.
     pub(crate) fn delete(&self, tx: &Transaction) -> Result<bool, KeystoreError> {
-        StoredCredential::delete(tx, &StoredCredentialPk::new(self.public_key_hash, self.r#type.into()))
-            .map_err(KeystoreError::wrap("deleting credential"))
+        StoredCredential::delete(tx, &self.keystore_pk()).map_err(KeystoreError::wrap("deleting credential"))
     }
 }

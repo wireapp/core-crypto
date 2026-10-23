@@ -16,8 +16,11 @@ use crate::{
             proteus::identity::LegacyProteusIdentity,
         },
     },
-    entities::{ProteusPrekey, ProteusSession, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredPskBundle},
-    migrations::{LegacyPersistedMlsGroup, StoredSignatureKeypair, V5Credential, V33StoredEpochEncryptionKeypair},
+    entities::{ProteusPrekey, ProteusSession, StoredEncryptionKeyPair, StoredPskBundle},
+    migrations::{
+        LegacyPersistedMlsGroup, StoredHpkePrivateKeyV45, StoredSignatureKeypair, V5Credential,
+        V33StoredEpochEncryptionKeypair,
+    },
 };
 
 pub(crate) async fn migrate_db_key_type_to_bytes(
@@ -49,7 +52,7 @@ pub(crate) async fn migrate_db_key_type_to_bytes(
         [
             V5Credential,
             StoredSignatureKeypair,
-            StoredHpkePrivateKey,
+            StoredHpkePrivateKeyV45,
             StoredEncryptionKeyPair,
             V33StoredEpochEncryptionKeypair,
             StoredPskBundle,
