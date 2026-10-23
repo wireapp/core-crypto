@@ -17,6 +17,8 @@ pub enum Error {
     Acme(#[from] crate::acme::Error),
     #[error(transparent)]
     RustyJwtError(#[from] RustyJwtError),
+    #[error(transparent)]
+    JsonWebToken(#[from] rusty_jwt_tools::jsonwebtoken::errors::Error),
     /// Invalid/incomplete certificate
     #[error(transparent)]
     InvalidCertificate(#[from] CertificateError),
@@ -82,7 +84,7 @@ pub enum CertificateError {
     /// JWT error
     #[error(transparent)]
     RustyJwtError(#[from] RustyJwtError),
-    /// jwt-simple error
+    /// jsonwebtoken error
     #[error(transparent)]
-    JwtSimple(#[from] jwt_simple::Error),
+    JsonWebToken(#[from] rusty_jwt_tools::jsonwebtoken::errors::Error),
 }

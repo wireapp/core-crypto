@@ -1,8 +1,5 @@
 use obfuscate::Obfuscated;
-use rusty_jwt_tools::{
-    jwk_thumbprint::JwkThumbprint,
-    prelude::{HashAlgorithm, Pem},
-};
+use rusty_jwt_tools::{jsonwebtoken::jwk::ThumbprintHash, prelude::Pem};
 use x509_cert::Certificate;
 
 use super::{Result, X509CredentialAcquisition, states};
@@ -23,7 +20,7 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
         // Complete the OIDC challenge.
         let oidc_challenge_token = &self.data.oidc_challenge.token;
         // RFC 8555 section 8.1 mandates SHA-256 for the key authorization thumbprint.
-        let thumbprint = JwkThumbprint::generate(&self.acme_jwk, HashAlgorithm::SHA256)?.kid;
+        let thumbprint = self.acme_jwk.thumbprint(ThumbprintHash::SHA256)?;
         let key_auth = format!("{oidc_challenge_token}.{thumbprint}");
         let snapshot = serde_json::to_vec(&self)?;
 
