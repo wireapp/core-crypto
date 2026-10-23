@@ -97,5 +97,3 @@ when (decryptedMessage) {
    distinct in credential type, signature scheme, and creation timestamp, and that you therefore had to wait a full
    second between registrations. This was never true of any released version; we fixed it before releasing 10.0.0. If
    you added a delay between `addCredential` calls to comply, you can remove it.
-
-1. iOS, Android: `CoreCryptoContext.setData` is now a synchronous function, not async.

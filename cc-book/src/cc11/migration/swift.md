@@ -11,3 +11,7 @@ database must be opened once with the old path in order for a migration to be pe
 
 The salt file is named after the database, with a `.salt` suffix: `<database path>.salt`. The database can't be
 decrypted without it, so whenever you move, back up or delete the database, do the same with the salt file.
+
+## Other
+
+1. `CoreCryptoContext.setData` is now a synchronous function, not async.
