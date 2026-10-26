@@ -7,6 +7,10 @@ use openidconnect::{
     IssuerUrl, Nonce,
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
 };
+use rsa::{
+    RsaPrivateKey,
+    pkcs8::{EncodePrivateKey as _, LineEnding},
+};
 use serde_json::json;
 use testcontainers::{
     GenericImage, ImageExt,
@@ -76,11 +80,9 @@ pub(super) async fn start_server(config: &IdpServerConfig, port: u16) -> IdpServ
     )
     .unwrap();
 
-    // This is a bit unfortunate. Authelia requires at least one RS256 key and the smallest
-    // supported RSA modulus in jwt_simple is 2048. Depending on CPU and luck, it can take a couple
-    // of seconds to generate a key pair. Oh well.
-    let keypair = jwt_simple::prelude::RS256KeyPair::generate(2048).unwrap();
-    let keypair_pem = keypair.to_pem().unwrap().as_bytes().to_owned();
+    // This is a bit unfortunate. Authelia requires at least one RS256 key with at least 2048 bits.
+    let keypair = RsaPrivateKey::new(&mut rand::rng(), 2048).unwrap();
+    let keypair_pem = keypair.to_pkcs8_pem(LineEnding::LF).unwrap().as_bytes().to_owned();
 
     #[cfg(unix)]
     {
