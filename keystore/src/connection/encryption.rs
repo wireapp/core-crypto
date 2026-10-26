@@ -47,7 +47,6 @@ pub(super) fn rekey(conn: &mut rusqlite::Connection, new_key: &DatabaseKey) -> C
     set_key_pragma(conn, new_key, "rekey")
 }
 
-#[cfg(not(target_os = "unknown"))]
 /// Encrypt an unencrypted database with a key
 pub(super) fn key(conn: &mut rusqlite::Connection, key: &DatabaseKey) -> CryptoKeystoreResult<()> {
     set_key_pragma(conn, key, "key")

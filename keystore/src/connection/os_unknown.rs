@@ -45,7 +45,7 @@ pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<
     if already_exists {
         super::encryption::decrypt(&mut conn, key)?;
     } else {
-        super::encryption::rekey(&mut conn, key)?;
+        super::encryption::key(&mut conn, key)?;
     }
 
     // Not gated on `already_exists`: the file also exists after an import which failed or was interrupted,
