@@ -1,0 +1,19 @@
+{
+    // Type-checks the JS snippets that wasm-bindgen bundles. Run via `make ts-check`.
+    "compilerOptions": {
+        // `opfs_vfs.js` runs partly in a dedicated worker, and TypeScript only declares OPFS sync access handles in
+        // the WebWorker lib. The main-thread half uses nothing that a worker lacks, so that lib covers both.
+        "lib": ["ESNext", "WebWorker"],
+        "target": "ESNext",
+        "module": "ESNext",
+        "allowJs": true,
+        "noEmit": true,
+        "strict": true,
+        "noUncheckedIndexedAccess": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noImplicitReturns": true,
+        "types": []
+    },
+    "include": ["src/**/*.js"]
+}

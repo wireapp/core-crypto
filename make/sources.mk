@@ -113,3 +113,7 @@ TS_SHARED_BENCH_FILES := $(shell fd --type f --extension ts . $(TS_SHARED_DIR)/b
 TS_TEST_FILES := $(sort $(TS_NATIVE_TEST_FILES) $(TS_NATIVE_SHARED_FILES) $(TS_BROWSER_TEST_FILES) $(TS_BROWSER_SHARED_FILES) $(TS_SHARED_BENCH_FILES) $(TS_SHARED_SHARED_FILES))
 TS_BENCH_FILES := $(sort $(TS_NATIVE_BENCH_FILES) $(TS_NATIVE_SHARED_FILES) $(TS_BROWSER_BENCH_FILES) $(TS_BROWSER_SHARED_FILES) $(TS_SHARED_BENCH_FILES) $(TS_SHARED_SHARED_FILES))
 JSON_FILES := $(shell fd --type f --extension json . $(JS_DIR) | LC_ALL=C sort)
+
+# JS snippets that wasm-bindgen bundles into the keystore, type-checked by tsc
+KEYSTORE_JS_DIR := $(abspath keystore)
+KEYSTORE_JS_SRCS := $(shell fd --type f --extension js . $(KEYSTORE_JS_DIR)/src | LC_ALL=C sort)
