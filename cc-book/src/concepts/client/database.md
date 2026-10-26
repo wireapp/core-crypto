@@ -22,13 +22,8 @@ All entries are encrypted at rest using the `DatabaseKey` provided at open time.
 
 ## Backing Storage
 
-On non-browser platforms the database is backed by [SQLCipher](https://www.zetetic.net/sqlcipher/), an encrypted SQLite
-variant. On the browser, the database sits atop IndexedDB and uses item-level encryption managed by CoreCrypto. In both
-cases, data is encrypted at rest.
-
-Future work on the database is intended to unify the backing storages, such that CoreCrypto will internally see an
-encrypted SQLite connection for all platforms. That work will be part of CC 11, but not CC 10. This change should be
-invisible to clients.
+The database is backed by [SQLCipher](https://www.zetetic.net/sqlcipher/), an encrypted SQLite variant. In the browser,
+the database file is stored in OPFS. Data is encrypted at rest.
 
 ## The Database Key
 
@@ -59,7 +54,7 @@ the platform's secure credential storage.
 ## Opening the Database
 
 All platforms define an async `Database.open` static method accepting a location and key. On platforms with an OS, the
-location is a filesystem path. On WASM, the location is the IndexedDB store name.
+location is a filesystem path. On WASM, the location is the name of the database file in OPFS.
 
 All platforms can also open a transient database in memory. In-memory databases are never encrypted, so they take no
 key. In TypeScript, this is `Database.inMemory()`. For Kotlin and Swift, this is an overload of `Database.open` without
