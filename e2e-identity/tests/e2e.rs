@@ -30,7 +30,6 @@ use std::{
 };
 
 use core_crypto_keystore::{Database, Transaction, UniqueArc};
-use jwt_simple::prelude::*;
 use openmls_traits::types::Ciphersuite;
 use rstest::rstest;
 use rusty_jwt_tools::prelude::*;
@@ -140,38 +139,16 @@ async fn prepare_pki_env_and_config(
     test_env: &TestEnvironment,
     sign_alg: JwsAlgorithm,
 ) -> (PkiEnvironment, X509CredentialConfiguration, UniqueArc<Transaction>) {
-    let wire_server_keypair = wire_e2e_identity::utils::generate_key(sign_alg).unwrap();
+    let wire_server_key = JwtKey::new_key(sign_alg);
     let template = r#"{{.DeviceID}}"#;
     let wire_server_uri = test_env.wire_server.uri();
     let dpop_target_uri = format!("{wire_server_uri}/clients/{template}/access-token");
     let issuer = test_env.idp_server.issuer.clone();
     let discovery_base_url = test_env.idp_server.discovery_base_url.clone();
 
-    let wire_server_pubkey = match sign_alg {
-        JwsAlgorithm::P256 => ES256KeyPair::from_pem(&wire_server_keypair)
-            .unwrap()
-            .public_key()
-            .to_pem()
-            .unwrap(),
-        JwsAlgorithm::P384 => ES384KeyPair::from_pem(&wire_server_keypair)
-            .unwrap()
-            .public_key()
-            .to_pem()
-            .unwrap(),
-        JwsAlgorithm::P521 => ES512KeyPair::from_pem(&wire_server_keypair)
-            .unwrap()
-            .public_key()
-            .to_pem()
-            .unwrap(),
-        JwsAlgorithm::Ed25519 => Ed25519KeyPair::from_pem(&wire_server_keypair)
-            .unwrap()
-            .public_key()
-            .to_pem(),
-    };
-
     let domain = "wire.localhost".to_string();
     let ca_cfg = CaCfg {
-        sign_key: wire_server_pubkey.to_string(),
+        sign_key: wire_server_key.pk.as_str().to_owned(),
         issuer,
         audience: "wireapp".to_string(),
         discovery_base_url,
@@ -213,7 +190,7 @@ async fn prepare_pki_env_and_config(
     };
     let wire_server_context = serde_json::json!({
         "client-id": client_id.to_uri(),
-        "backend-kp": wire_server_keypair,
+        "backend-kp": wire_server_key.kp,
         "hash-alg": HashAlgorithm::SHA256.to_string(),
         "wire-server-uri": format!("{wire_server_uri}/clients/{}/access-token", device_id),
         "handle": Handle::from(config.handle.clone()).try_to_qualified(&domain).unwrap(),
