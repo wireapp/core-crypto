@@ -13,7 +13,7 @@
 <a href=#13 id=13 data-nosnippet>13</a></span><span class="attr">#[cfg(all(feature = <span class="string">"cross-process-lock"</span>, target_os = <span class="string">"unknown"</span>))]
 <a href=#14 id=14 data-nosnippet>14</a></span><span class="macro">compile_error!</span>(
 <a href=#15 id=15 data-nosnippet>15</a>    <span class="string">"the `cross-process-lock` feature locks a file in the local filesystem, which the wasm \
-<a href=#16 id=16 data-nosnippet>16</a>     keystore (backed by IndexedDB) has none of; disable it for `target_os = \"unknown\"`"
+<a href=#16 id=16 data-nosnippet>16</a>     keystore (backed by OPFS) has none of; disable it for `target_os = \"unknown\"`"
 <a href=#17 id=17 data-nosnippet>17</a></span>);
 <a href=#18 id=18 data-nosnippet>18</a>
 <a href=#19 id=19 data-nosnippet>19</a><span class="kw">use </span>std::sync::Arc;

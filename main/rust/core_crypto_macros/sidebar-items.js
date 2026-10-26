@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"attr":["dispotent","durable","idempotent"],"derive":["Debug","Entity"]};
+window.SIDEBAR_ITEMS = {"attr":["dispotent","durable","idempotent","jspi_wasm_bindgen_test"],"derive":["Debug","Entity"]};
