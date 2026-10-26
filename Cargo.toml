@@ -17,7 +17,9 @@ allow_attributes = "warn"
 missing_safety_doc = "deny"
 undocumented_unsafe_blocks = "deny"
 unused_async = "warn"
-# False positive on `derive_more::Constructor`, see https://github.com/rust-lang/rust-clippy/issues/17525
+# False positive on `derive_more::Constructor`, see https://github.com/rust-lang/rust-clippy/issues/17525.
+# The clippy issue has been resolved, it will land in the rust toolchain with version 1.101.0, so we can remove this on
+# Thursday, December 24, 2026. See https://github.com/rust-lang/rust/pull/164816.
 redundant_field_names = "allow"
 
 [workspace.lints.rust]
