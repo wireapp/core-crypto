@@ -3,7 +3,6 @@ pub(crate) mod x509_credential_acquisition_from_credential_ref;
 use std::sync::Arc;
 
 use async_lock::Mutex;
-use jwt_simple::prelude::{ES256KeyPair, ES384KeyPair, ES512KeyPair, Ed25519KeyPair};
 use wire_e2e_identity::{CiphersuiteExt as _, JwsAlgorithm, acquisition::states};
 use x509_cert::der::Encode as _;
 
@@ -95,22 +94,11 @@ enum AcquisitionState {
     Finalized,
 }
 
-fn signing_key_bytes(sign_alg: wire_e2e_identity::JwsAlgorithm, signing_key_pem: &str) -> CoreCryptoResult<Vec<u8>> {
-    match sign_alg {
-        JwsAlgorithm::Ed25519 => Ed25519KeyPair::from_pem(signing_key_pem).map(|key| key.to_bytes()),
-        JwsAlgorithm::P256 => ES256KeyPair::from_pem(signing_key_pem).map(|key| key.to_bytes()),
-        JwsAlgorithm::P384 => ES384KeyPair::from_pem(signing_key_pem).map(|key| key.to_bytes()),
-        JwsAlgorithm::P521 => ES512KeyPair::from_pem(signing_key_pem).map(|key| key.to_bytes()),
-    }
-    .map_err(CoreCryptoError::generic())
-}
-
 fn credential_from_acquisition_result(
     cipher_suite: FfiCiphersuite,
-    signing_key_pem: &str,
+    signing_key: Vec<u8>,
     certificate_chain: Vec<x509_cert::Certificate>,
 ) -> CoreCryptoResult<Credential> {
-    let signing_key = signing_key_bytes(jws_algorithm(cipher_suite)?, signing_key_pem)?;
     let certificate_chain = certificate_chain
         .into_iter()
         .map(|cert| {
@@ -209,6 +197,9 @@ impl X509CredentialAcquisition {
 
         *self.state.lock().await = AcquisitionState::Finalized;
         let (signing_key_pem, certificate_chain) = result?;
-        credential_from_acquisition_result(self.cipher_suite, signing_key_pem.as_str(), certificate_chain)
+        let signing_key = jws_algorithm(self.cipher_suite)?
+            .keypair_to_bytes(&signing_key_pem)
+            .map_err(CoreCryptoError::generic())?;
+        credential_from_acquisition_result(self.cipher_suite, signing_key.to_vec(), certificate_chain)
     }
 }
