@@ -147,7 +147,7 @@ mod tests {
     }
 
     #[core_crypto_macros::jspi_wasm_bindgen_test]
-    async fn rekey_restores_wal_and_reopens_with_the_new_key() {
+    async fn rekey_keeps_wal_and_reopens_with_the_new_key() {
         let name = format!("rekey-{}.db", uuid::Uuid::new_v4());
         let old_key = DatabaseKey::generate();
         let new_key = DatabaseKey::generate();

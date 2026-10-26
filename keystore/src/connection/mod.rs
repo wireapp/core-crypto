@@ -166,12 +166,9 @@ impl Database {
 
     /// Open an encrypted Sqlite `Database` at the provided location.
     ///
-    /// When compiled with `target_os = "unknown"`, this database is encrypted via
-    /// sqlite3-multiple-ciphers using its default encryption mechanism, stored in OPFS
-    /// via JSPI. WAL uses exclusive locking and an in-memory index.
-    ///
-    /// When compiled normally, this database is encrypted via sqlcipher at a path in the
-    /// local filesystem.
+    /// The database is encrypted via sqlcipher. When compiled with `target_os = "unknown"`,
+    /// it is stored in OPFS via JSPI, and WAL uses exclusive locking and an in-memory index.
+    /// Otherwise, it is stored at a path in the local filesystem.
     pub async fn open(path: &str, database_key: &DatabaseKey) -> CryptoKeystoreResult<Arc<Self>> {
         let (conn, filesystem) = Self::open_internal(path, database_key).await?;
         Self::init(conn, filesystem, MigrationTarget::Latest)
@@ -217,23 +214,6 @@ impl Database {
     pub async fn update_key(&self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()> {
         let mut guard = self.conn.lock().await;
         let _sqlite = SqliteGuard::lock();
-        #[cfg(target_os = "unknown")]
-        {
-            // sqlite3-multiple-ciphers cannot rekey in WAL mode. Switching to
-            // DELETE checkpoints the old WAL before rewriting encrypted pages.
-            let mode = guard.pragma_query_value(None, "journal_mode", |row| row.get::<_, String>(0))?;
-            if mode == "wal" {
-                guard.pragma_update(None, "journal_mode", "delete")?;
-                let result = encryption::rekey(&mut guard, new_key);
-                // Restore WAL on both success and failure, preserving the rekey result. DELETE mode
-                // is still correct, and the next open re-enables WAL, so a restore failure must not
-                // hide a rekey that succeeded.
-                if let Err(error) = guard.pragma_update(None, "journal_mode", "wal") {
-                    log::warn!(err:err = error; "failed to restore WAL after rekey");
-                }
-                return result;
-            }
-        }
         encryption::rekey(&mut guard, new_key)
     }
 

@@ -23,7 +23,7 @@ pub(super) fn set_pragma_unchecked(
     result
 }
 
-/// Format a key pragma according to the raw form supported by sqlcipher and sqlite3mc
+/// Format a key pragma according to the raw form supported by sqlcipher
 fn set_key_pragma(
     conn: &mut rusqlite::Connection,
     key: &DatabaseKey,

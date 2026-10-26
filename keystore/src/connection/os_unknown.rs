@@ -2,41 +2,17 @@
 //!
 //! This gives us a place to put OPFS-specific items.
 
-use std::time::Duration;
-
 use async_trait::async_trait;
 use sqlite_wasm_rs::WasmOsCallback;
 
 use super::{ManagedConnection, SqliteGuard, opfs_vfs};
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey};
 
-// To use sqlite3-multiple-ciphers, you have to prepend the VFS name with `multipleciphers-`.
-// This is true even if you use a non-default VFS name.
 const VFS_NAME: &str = "core-crypto";
-const VFS_NAME_WITH_ENCRYPTION: &str = "multipleciphers-core-crypto";
-
-// rusqlite 0.38 uses sqlite-wasm-rs 0.5, whose host implements rsqlite-vfs 0.1.
-// Adapt those same host callbacks to the new VFS API without linking two SQLite libraries.
-struct OpfsOs;
-
-impl rsqlite_vfs::OsCallback for OpfsOs {
-    fn sleep(&self, duration: Duration) {
-        <WasmOsCallback as sqlite_wasm_rs::utils::OsCallback>::sleep(duration);
-    }
-
-    fn random(&self, buf: &mut [u8]) -> usize {
-        <WasmOsCallback as sqlite_wasm_rs::utils::OsCallback>::random(buf);
-        buf.len()
-    }
-
-    fn epoch_timestamp_in_ms(&self) -> rsqlite_vfs::VfsResult<i64> {
-        Ok(<WasmOsCallback as sqlite_wasm_rs::utils::OsCallback>::epoch_timestamp_in_ms())
-    }
-}
 
 /// The caller must hold `SqliteGuard`.
 pub(super) fn ensure_vfs_installed(guard: &SqliteGuard) -> CryptoKeystoreResult<()> {
-    opfs_vfs::install(VFS_NAME, OpfsOs, guard).map_err(CryptoKeystoreError::opfs("installing the OPFS VFS"))
+    opfs_vfs::install(VFS_NAME, WasmOsCallback, guard).map_err(CryptoKeystoreError::opfs("installing the OPFS VFS"))
 }
 
 /// Open the encrypted database at the specified location, creating the database if necessary.
@@ -59,7 +35,7 @@ pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<
         rusqlite::OpenFlags::SQLITE_OPEN_CREATE
             | rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
             | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
-        VFS_NAME_WITH_ENCRYPTION,
+        VFS_NAME,
     )?);
 
     // Set before encryption, schema reads, or reopening a database already in WAL mode.
