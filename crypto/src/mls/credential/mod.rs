@@ -205,9 +205,12 @@ impl PartialEq for Credential {
 
 #[cfg(test)]
 mod tests {
+    use rusty_jwt_tools::jsonwebtoken::DecodingKey;
+    use wire_e2e_identity::CiphersuiteExt as _;
+
     use super::{x509::CertificateBundle, *};
     use crate::{
-        CredentialType, E2eiConversationState,
+        CredentialType, E2eiConversationState, MlsCiphersuite,
         mls::credential::x509::CertificatePrivateKey,
         test_utils::{
             x509::{CertificateParams, PkiKeypair, X509TestChain},
@@ -233,6 +236,28 @@ mod tests {
         let [alice, bob] = case.sessions_x509().await;
         let conversation = case.create_conversation([&alice, &bob]).await;
         assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
+    }
+
+    /// Certificate acquisition converts the raw private keys of our MLS provider to PEM with rusty-jwt-tools.
+    #[apply(all_cred_cipher)]
+    async fn signature_key_should_convert_to_pem(case: TestContext) {
+        if !case.is_basic() {
+            return;
+        }
+        // ciphersuites without a JWS algorithm don't support certificate acquisition
+        let Some(alg) = MlsCiphersuite::from(case.cipher_suite()).jws_algorithm() else {
+            return;
+        };
+        let [client_id] = case.client_ids();
+        let credential = Credential::basic(case.cipher_suite(), client_id).unwrap();
+
+        let pem = alg.keypair_from_bytes(credential.signature_key_bytes()).unwrap();
+        let jwk = alg.public_jwk(&pem).unwrap();
+        let public_key = DecodingKey::from_jwk(&jwk).unwrap();
+        assert_eq!(
+            public_key.try_get_as_bytes().unwrap(),
+            credential.signature_key().public()
+        );
     }
 
     #[apply(all_cred_cipher)]
