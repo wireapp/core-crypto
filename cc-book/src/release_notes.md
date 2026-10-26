@@ -74,7 +74,8 @@
 
 - `Database.inMemory` is now a synchronous function, not async.
 
-- `Database.close()` is deprecated.
+- `Database.close()` is deprecated. However, if you need to open a database in one place and later in another, call
+  `Database.uniffiDestroy()`. Otherwise opening a new database will cause an `SQLITE_BUSY` error.
 
 - Browser: `reseed` now requires the entropy seed to be exactly 32 bytes long. It previously accepted any seed of at
   least 32 bytes and silently used only the first 32, discarding the rest; a caller who gathered more entropy than
