@@ -134,7 +134,7 @@ pub mod utils;
 pub mod validation;
 
 pub use acquisition::{
-    CiphersuiteExt, X509CredentialAcquisition,
+    CiphersuiteExt, SignatureSchemeExt, X509CredentialAcquisition,
     identity::{WireIdentity, WireIdentityReader},
     thumbprint::compute_raw_key_thumbprint,
 };
