@@ -6,11 +6,7 @@ use keycloak::{
     KeycloakAdmin, KeycloakAdminToken,
     types::{ClientRepresentation, CredentialRepresentation, ProtocolMapperRepresentation, UserRepresentation},
 };
-use oauth2::{CsrfToken, PkceCodeChallenge, RedirectUrl, Scope};
-use openidconnect::{
-    IssuerUrl, Nonce,
-    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
-};
+use oauth2::{AuthorizationCode, CsrfToken, PkceCodeChallenge, Scope};
 use serde_json::json;
 use testcontainers::{
     Image, ImageExt, ReuseDirective,
@@ -22,7 +18,7 @@ use url::Url;
 use crate::utils::{
     NETWORK, SHM,
     ctx::{ctx_get_http_client, custom_oauth_client},
-    idp::{IdpServer, IdpServerConfig, OAUTH_CLIENT_ID, OAUTH_CLIENT_NAME, OauthCfg, OidcProvider, User},
+    idp::{IdpServer, IdpServerConfig, OAUTH_CLIENT_ID, OAUTH_CLIENT_NAME, OauthCfg, OidcProvider, User, oidc_client},
     scrap_login,
 };
 
@@ -263,18 +259,7 @@ pub(super) async fn fetch_id_token(
     keyauth: &str,
     acme_audience: &str,
 ) -> String {
-    let issuer_url = IssuerUrl::new(oidc_target.as_str().to_string()).unwrap();
-
-    let provider_metadata = CoreProviderMetadata::discover_async(issuer_url.clone(), &async |r| {
-        custom_oauth_client("discovery", ctx_get_http_client(), r).await
-    })
-    .await
-    .unwrap();
-
-    let client_id = openidconnect::ClientId::new(oauth_cfg.client_id.clone());
-    let redirect_url = RedirectUrl::new(oauth_cfg.redirect_uri.clone()).unwrap();
-    let oidc_client =
-        CoreClient::from_provider_metadata(provider_metadata, client_id, None).set_redirect_uri(redirect_url);
+    let oidc_client = oidc_client(oidc_target.as_str(), oauth_cfg).await;
 
     let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
 
@@ -287,13 +272,11 @@ pub(super) async fn fetch_id_token(
     })
     .to_string();
 
-    let (authz_url, ..) = oidc_client
-        .authorize_url(
-            CoreAuthenticationFlow::AuthorizationCode,
-            CsrfToken::new_random,
-            Nonce::new_random,
-        )
-        .add_scope(Scope::new("profile".to_string()))
+    let (authz_url, _) = oidc_client
+        .authorize_url(CsrfToken::new_random)
+        .add_scopes([Scope::new("openid".to_string()), Scope::new("profile".to_string())])
+        // see https://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
+        .add_extra_param("nonce", CsrfToken::new_random().into_secret())
         .add_extra_param("claims", extra)
         .set_pkce_challenge(pkce_challenge)
         .url();
@@ -329,8 +312,7 @@ pub(super) async fn fetch_id_token(
     let authz_code = resp.text().await.unwrap();
 
     let token_request = oidc_client
-        .exchange_code(openidconnect::AuthorizationCode::new(authz_code))
-        .unwrap()
+        .exchange_code(AuthorizationCode::new(authz_code))
         .set_pkce_verifier(pkce_verifier);
 
     // Authorization server validates Verifier & Challenge Codes
@@ -339,6 +321,5 @@ pub(super) async fn fetch_id_token(
         .await
         .unwrap();
 
-    use openidconnect::TokenResponse as _;
-    oauth_token_response.id_token().unwrap().to_string()
+    oauth_token_response.extra_fields().id_token.clone()
 }

@@ -14,7 +14,7 @@ use itertools::Itertools;
 
 use super::default_http_client;
 
-// ugly but openidconnect::Client has too many generics and it's a hell to store in a context
+// ugly but oauth2::Client has too many generics and it's a hell to store in a context
 // to pass between endpoints
 pub(crate) static CONTEXT: LazyLock<Mutex<HashMap<String, String>>> = LazyLock::new(|| Mutex::new(HashMap::new()));
 
@@ -59,7 +59,7 @@ pub(crate) async fn proxy_http_client(
     Ok(builder.body(response.bytes().await?.to_vec()).unwrap())
 }
 
-// store args for callback endpoint because openidconnect::Client is a mess to handle
+// store args for callback endpoint because oauth2::Client is a mess to handle
 pub(crate) fn ctx_store(key: impl AsRef<str>, value: impl AsRef<str>) {
     CONTEXT
         .lock()
