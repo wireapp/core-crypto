@@ -141,7 +141,7 @@ impl Database {
     ) -> CryptoKeystoreResult<Self> {
         let _sqlite = SqliteGuard::lock();
         #[cfg(feature = "log-queries")]
-        conn.trace_v2(TraceEventCodes::SQLITE_TRACE_STMT, Some(log_query));
+        conn.trace_v2(TraceEventCodes::SQLITE_TRACE_STMT, Some(log_query))?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
 
         // path is an empty string for in-memory databases
