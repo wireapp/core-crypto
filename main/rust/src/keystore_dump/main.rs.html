@@ -70,7 +70,7 @@
 <a href=#70 id=70 data-nosnippet>70</a>        .load_all::&lt;StoredHpkePrivateKey&gt;()
 <a href=#71 id=71 data-nosnippet>71</a>        .<span class="kw">await</span><span class="question-mark">?
 <a href=#72 id=72 data-nosnippet>72</a>        </span>.into_iter()
-<a href=#73 id=73 data-nosnippet>73</a>        .map(|hpke_sk| postcard::from_bytes::&lt;openmls_traits::types::HpkePrivateKey&gt;(<span class="kw-2">&amp;</span>hpke_sk.sk))
+<a href=#73 id=73 data-nosnippet>73</a>        .map(|hpke_sk| postcard::from_bytes::&lt;openmls_traits::types::HpkePrivateKey&gt;(<span class="kw-2">&amp;</span>hpke_sk.secret_key))
 <a href=#74 id=74 data-nosnippet>74</a>        .collect::&lt;postcard::Result&lt;<span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
 <a href=#75 id=75 data-nosnippet>75</a>    json_map.serialize_entry(<span class="string">"mls_hpke_private_keys"</span>, <span class="kw-2">&amp;</span>hpke_sks)<span class="question-mark">?</span>;
 <a href=#76 id=76 data-nosnippet>76</a>

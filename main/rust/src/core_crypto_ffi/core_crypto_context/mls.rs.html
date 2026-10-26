@@ -416,16 +416,15 @@
 <a href=#416 id=416 data-nosnippet>416</a>    }
 <a href=#417 id=417 data-nosnippet>417</a>
 <a href=#418 id=418 data-nosnippet>418</a>    <span class="doccomment">/// Remove a `KeyPackage` from the database.
-<a href=#419 id=419 data-nosnippet>419</a>    </span><span class="kw">pub async fn </span>remove_key_package(<span class="kw-2">&amp;</span><span class="self">self</span>, kp_ref: <span class="kw-2">&amp;</span>Arc&lt;KeyPackageRef&gt;) -&gt; CoreCryptoResult&lt;()&gt; {
-<a href=#420 id=420 data-nosnippet>420</a>        <span class="self">self</span>.inner.remove_key_package(kp_ref.as_cc()).<span class="kw">await</span>.map_err(Into::into)
+<a href=#419 id=419 data-nosnippet>419</a>    </span><span class="kw">pub fn </span>remove_key_package(<span class="kw-2">&amp;</span><span class="self">self</span>, kp_ref: <span class="kw-2">&amp;</span>Arc&lt;KeyPackageRef&gt;) -&gt; CoreCryptoResult&lt;()&gt; {
+<a href=#420 id=420 data-nosnippet>420</a>        <span class="self">self</span>.inner.remove_key_package(kp_ref.as_cc()).map_err(Into::into)
 <a href=#421 id=421 data-nosnippet>421</a>    }
 <a href=#422 id=422 data-nosnippet>422</a>
 <a href=#423 id=423 data-nosnippet>423</a>    <span class="doccomment">/// Remove all `KeyPackage`s associated with this credential ref.
-<a href=#424 id=424 data-nosnippet>424</a>    </span><span class="kw">pub async fn </span>remove_key_packages_for(<span class="kw-2">&amp;</span><span class="self">self</span>, credential_ref: <span class="kw-2">&amp;</span>Arc&lt;CredentialRef&gt;) -&gt; CoreCryptoResult&lt;()&gt; {
+<a href=#424 id=424 data-nosnippet>424</a>    </span><span class="kw">pub fn </span>remove_key_packages_for(<span class="kw-2">&amp;</span><span class="self">self</span>, credential_ref: <span class="kw-2">&amp;</span>Arc&lt;CredentialRef&gt;) -&gt; CoreCryptoResult&lt;()&gt; {
 <a href=#425 id=425 data-nosnippet>425</a>        <span class="self">self</span>.inner
 <a href=#426 id=426 data-nosnippet>426</a>            .remove_key_packages_for(<span class="kw-2">&amp;</span>credential_ref.<span class="number">0</span>)
-<a href=#427 id=427 data-nosnippet>427</a>            .<span class="kw">await
-<a href=#428 id=428 data-nosnippet>428</a>            </span>.map_err(Into::into)
-<a href=#429 id=429 data-nosnippet>429</a>    }
-<a href=#430 id=430 data-nosnippet>430</a>}
+<a href=#427 id=427 data-nosnippet>427</a>            .map_err(Into::into)
+<a href=#428 id=428 data-nosnippet>428</a>    }
+<a href=#429 id=429 data-nosnippet>429</a>}
 </code></pre></div></section></main></body></html>

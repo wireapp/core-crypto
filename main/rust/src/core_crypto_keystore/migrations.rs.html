@@ -425,4 +425,85 @@
 <a href=#425 id=425 data-nosnippet>425</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) id: Vec&lt;u8&gt;,
 <a href=#426 id=426 data-nosnippet>426</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) keypairs: Vec&lt;u8&gt;,
 <a href=#427 id=427 data-nosnippet>427</a>}
+<a href=#428 id=428 data-nosnippet>428</a>
+<a href=#429 id=429 data-nosnippet>429</a><span class="doccomment">/// [`StoredHpkePrivateKey`][crate::entities::StoredHpkePrivateKey] as it appeared prior to v46, when HPKE init
+<a href=#430 id=430 data-nosnippet>430</a>/// keys had a table of their own
+<a href=#431 id=431 data-nosnippet>431</a>///
+<a href=#432 id=432 data-nosnippet>432</a>/// The legacy IndexedDB import writes into the schema as of V22, so it needs this shape rather than the current one.
+<a href=#433 id=433 data-nosnippet>433</a></span><span class="attr">#[cfg(target_os = <span class="string">"unknown"</span>)]
+<a href=#434 id=434 data-nosnippet>434</a>#[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, Zeroize, serde::Serialize, serde::Deserialize)]
+<a href=#435 id=435 data-nosnippet>435</a>#[zeroize(drop)]
+<a href=#436 id=436 data-nosnippet>436</a>#[sensitive]
+<a href=#437 id=437 data-nosnippet>437</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>StoredHpkePrivateKeyV45 {
+<a href=#438 id=438 data-nosnippet>438</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) sk: Vec&lt;u8&gt;,
+<a href=#439 id=439 data-nosnippet>439</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) pk: Vec&lt;u8&gt;,
+<a href=#440 id=440 data-nosnippet>440</a>}
+<a href=#441 id=441 data-nosnippet>441</a>
+<a href=#442 id=442 data-nosnippet>442</a><span class="attr">#[cfg(target_os = <span class="string">"unknown"</span>)]
+<a href=#443 id=443 data-nosnippet>443</a></span><span class="kw">impl </span><span class="kw">crate</span>::traits::PrimaryKey <span class="kw">for </span>StoredHpkePrivateKeyV45 {
+<a href=#444 id=444 data-nosnippet>444</a>    <span class="kw">type </span>PrimaryKey = Vec&lt;u8&gt;;
+<a href=#445 id=445 data-nosnippet>445</a>
+<a href=#446 id=446 data-nosnippet>446</a>    <span class="kw">fn </span>primary_key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;u8&gt; {
+<a href=#447 id=447 data-nosnippet>447</a>        <span class="self">self</span>.pk.clone()
+<a href=#448 id=448 data-nosnippet>448</a>    }
+<a href=#449 id=449 data-nosnippet>449</a>}
+<a href=#450 id=450 data-nosnippet>450</a>
+<a href=#451 id=451 data-nosnippet>451</a><span class="attr">#[cfg(target_os = <span class="string">"unknown"</span>)]
+<a href=#452 id=452 data-nosnippet>452</a></span><span class="kw">impl </span><span class="kw">crate</span>::traits::BorrowPrimaryKey <span class="kw">for </span>StoredHpkePrivateKeyV45 {
+<a href=#453 id=453 data-nosnippet>453</a>    <span class="kw">type </span>BorrowedPrimaryKey&lt;<span class="lifetime">'a</span>&gt; = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8];
+<a href=#454 id=454 data-nosnippet>454</a>
+<a href=#455 id=455 data-nosnippet>455</a>    <span class="kw">fn </span>borrow_primary_key(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="self">Self</span>::BorrowedPrimaryKey&lt;<span class="lifetime">'_</span>&gt; {
+<a href=#456 id=456 data-nosnippet>456</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.pk
+<a href=#457 id=457 data-nosnippet>457</a>    }
+<a href=#458 id=458 data-nosnippet>458</a>}
+<a href=#459 id=459 data-nosnippet>459</a>
+<a href=#460 id=460 data-nosnippet>460</a><span class="attr">#[cfg(target_os = <span class="string">"unknown"</span>)]
+<a href=#461 id=461 data-nosnippet>461</a></span><span class="kw">impl </span><span class="kw">crate</span>::traits::Entity <span class="kw">for </span>StoredHpkePrivateKeyV45 {
+<a href=#462 id=462 data-nosnippet>462</a>    <span class="kw">const </span>TABLE_NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">"mls_hpke_private_keys"</span>;
+<a href=#463 id=463 data-nosnippet>463</a>
+<a href=#464 id=464 data-nosnippet>464</a>    <span class="kw">fn </span>get(conn: <span class="kw-2">&amp;</span>rusqlite::Connection, key: <span class="kw-2">&amp;</span>Vec&lt;u8&gt;) -&gt; CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
+<a href=#465 id=465 data-nosnippet>465</a>        <span class="kw">crate</span>::ancillary::helpers::get_helper(conn, <span class="string">"pk_sha256"</span>, Sha256Hash::hash_from(key), |row| {
+<a href=#466 id=466 data-nosnippet>466</a>            <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+<a href=#467 id=467 data-nosnippet>467</a>                pk: row.get(<span class="string">"pk"</span>)<span class="question-mark">?</span>,
+<a href=#468 id=468 data-nosnippet>468</a>                sk: row.get(<span class="string">"sk"</span>)<span class="question-mark">?</span>,
+<a href=#469 id=469 data-nosnippet>469</a>            })
+<a href=#470 id=470 data-nosnippet>470</a>        })
+<a href=#471 id=471 data-nosnippet>471</a>    }
+<a href=#472 id=472 data-nosnippet>472</a>
+<a href=#473 id=473 data-nosnippet>473</a>    <span class="kw">fn </span>count(conn: <span class="kw-2">&amp;</span>rusqlite::Connection) -&gt; CryptoKeystoreResult&lt;u32&gt; {
+<a href=#474 id=474 data-nosnippet>474</a>        <span class="kw">crate</span>::ancillary::helpers::count_helper::&lt;<span class="self">Self</span>&gt;(conn)
+<a href=#475 id=475 data-nosnippet>475</a>    }
+<a href=#476 id=476 data-nosnippet>476</a>
+<a href=#477 id=477 data-nosnippet>477</a>    <span class="kw">fn </span>load_all(conn: <span class="kw-2">&amp;</span>rusqlite::Connection) -&gt; CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
+<a href=#478 id=478 data-nosnippet>478</a>        <span class="kw">crate</span>::ancillary::helpers::load_all_helper(conn, |row| {
+<a href=#479 id=479 data-nosnippet>479</a>            <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+<a href=#480 id=480 data-nosnippet>480</a>                pk: row.get(<span class="string">"pk"</span>)<span class="question-mark">?</span>,
+<a href=#481 id=481 data-nosnippet>481</a>                sk: row.get(<span class="string">"sk"</span>)<span class="question-mark">?</span>,
+<a href=#482 id=482 data-nosnippet>482</a>            })
+<a href=#483 id=483 data-nosnippet>483</a>        })
+<a href=#484 id=484 data-nosnippet>484</a>    }
+<a href=#485 id=485 data-nosnippet>485</a>}
+<a href=#486 id=486 data-nosnippet>486</a>
+<a href=#487 id=487 data-nosnippet>487</a><span class="attr">#[cfg(target_os = <span class="string">"unknown"</span>)]
+<a href=#488 id=488 data-nosnippet>488</a></span><span class="kw">impl </span><span class="kw">crate</span>::traits::EntityDatabaseMutation <span class="kw">for </span>StoredHpkePrivateKeyV45 {
+<a href=#489 id=489 data-nosnippet>489</a>    <span class="kw">fn </span>save&lt;<span class="lifetime">'a</span>, Tx&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>, tx: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tx) -&gt; CryptoKeystoreResult&lt;()&gt;
+<a href=#490 id=490 data-nosnippet>490</a>    <span class="kw">where
+<a href=#491 id=491 data-nosnippet>491</a>        </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tx: Into&lt;Transactionlike&lt;<span class="lifetime">'a</span>&gt;&gt;,
+<a href=#492 id=492 data-nosnippet>492</a>    {
+<a href=#493 id=493 data-nosnippet>493</a>        <span class="kw">let </span>conn = tx.into().conn()<span class="question-mark">?</span>;
+<a href=#494 id=494 data-nosnippet>494</a>        conn.prepare_cached(<span class="string">"INSERT INTO mls_hpke_private_keys (pk_sha256, pk, sk) VALUES (?, ?, ?)"</span>)<span class="question-mark">?
+<a href=#495 id=495 data-nosnippet>495</a>            </span>.execute(<span class="macro">rusqlite::params!</span>[Sha256Hash::hash_from(<span class="kw-2">&amp;</span><span class="self">self</span>.pk), <span class="self">self</span>.pk, <span class="self">self</span>.sk])
+<a href=#496 id=496 data-nosnippet>496</a>            .map_err(CryptoKeystoreError::map_already_exists(
+<a href=#497 id=497 data-nosnippet>497</a>                &lt;<span class="self">Self </span><span class="kw">as </span><span class="kw">crate</span>::traits::Entity&gt;::TABLE_NAME,
+<a href=#498 id=498 data-nosnippet>498</a>            ))<span class="question-mark">?</span>;
+<a href=#499 id=499 data-nosnippet>499</a>        <span class="prelude-val">Ok</span>(())
+<a href=#500 id=500 data-nosnippet>500</a>    }
+<a href=#501 id=501 data-nosnippet>501</a>
+<a href=#502 id=502 data-nosnippet>502</a>    <span class="kw">fn </span>delete&lt;<span class="lifetime">'a</span>, Tx&gt;(tx: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tx, id: <span class="kw-2">&amp;</span>Vec&lt;u8&gt;) -&gt; CryptoKeystoreResult&lt;bool&gt;
+<a href=#503 id=503 data-nosnippet>503</a>    <span class="kw">where
+<a href=#504 id=504 data-nosnippet>504</a>        </span><span class="kw-2">&amp;</span><span class="lifetime">'a </span>Tx: Into&lt;Transactionlike&lt;<span class="lifetime">'a</span>&gt;&gt;,
+<a href=#505 id=505 data-nosnippet>505</a>    {
+<a href=#506 id=506 data-nosnippet>506</a>        <span class="kw">crate</span>::ancillary::helpers::delete_helper::&lt;<span class="self">Self</span>, <span class="kw">_</span>&gt;(tx, <span class="string">"pk_sha256"</span>, Sha256Hash::hash_from(id))
+<a href=#507 id=507 data-nosnippet>507</a>    }
+<a href=#508 id=508 data-nosnippet>508</a>}
 </code></pre></div></section></main></body></html>
