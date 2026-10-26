@@ -62,6 +62,15 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
+      # The next step needs to compute an artifact key in order to know what to download.
+      # Computing this key requires a bunch of files, including `node_modules/.stamp`, which
+      # is created by this step. This would run automatically, but only after the hash is
+      # required, which is why we advance it into the sequence here.
+      - name: install bun deps
+        if: ${{ inputs.prepare == true && matrix.package == 'native' }}
+        run: make bun-deps
+        shell: bash -euo pipefail {0}
+
       # Note that for make/mtime reasons, we _must_ download native apple artifacts before
       # downloading native linux artifacts, otherwise the "package" step will trigger
       # a rebuild of the linux artifacts.
