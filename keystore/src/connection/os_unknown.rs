@@ -64,7 +64,7 @@ pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<
 
     // Set before encryption, schema reads, or reopening a database already in WAL mode.
     // A second connection to this file cannot acquire its OPFS access handle, so the VFS needs no locking.
-    conn.pragma_update(None, "locking_mode", "EXCLUSIVE")?;
+    super::encryption::set_pragma_unchecked(&conn, "locking_mode", "EXCLUSIVE")?;
 
     if already_exists {
         super::encryption::decrypt(&mut conn, key)?;

@@ -212,7 +212,7 @@ pub async fn migrate_db_key_type_to_bytes(
         let transaction_lock = super::TransactionLock::new(conn.path().unwrap_or_default())?;
         let _guard = transaction_lock.acquire().await?;
 
-        conn.pragma_update(None, "key", old_key)?;
+        super::encryption::set_pragma_unchecked(&conn, "key", old_key)?;
 
         // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
         #[cfg(target_os = "ios")]
