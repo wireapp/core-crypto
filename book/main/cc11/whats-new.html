@@ -36,7 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-0f44ce11.js";
+            window.path_to_searchindex_js = "../searchindex-6d4ac06f.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-e64f8d46.js"></script>
@@ -233,6 +233,12 @@ built on them must explain why that is acceptable for its use case, or how the d
 </ul>
 <p>Only the three suites ending in <code>MLDSA*</code> also use post-quantum signatures. The others keep a classical signature scheme.</p>
 <p>X509 credentials don’t work yet with post-quantum signatures, so the <code>MLDSA*</code> suites only support basic credentials.</p>
+<h2 id="sqlite-via-opfsjspi-in-browsers"><a class="header" href="#sqlite-via-opfsjspi-in-browsers">SQLite via OPFS/JSPI in browsers</a></h2>
+<p>OPFS enables running real SQLite in browsers. However, OPFS’s synchronous file access is only available in web workers.
+To enable waiting on the OPFS worker without blocking the main thread, we’re using <em>JS Promise Integration</em> (JSPI), a
+relatively new feature that allows wasm to block on JS promises without blocking DOM rendering. Therefore, browsers
+using CoreCrypto must support JSPI. See the <em>JS Promise Integration</em> row at
+<a href="https://webassembly.org/features/?categories=browsers">https://webassembly.org/features/?categories=browsers</a>.</p>
 
                     </main>
 

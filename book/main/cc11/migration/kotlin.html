@@ -36,7 +36,7 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-0f44ce11.js";
+            window.path_to_searchindex_js = "../../searchindex-6d4ac06f.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../../toc-e64f8d46.js"></script>
@@ -187,6 +187,10 @@ and <code>X509Identity.notAfter</code>.</p>
 <h2 id="database-salt-on-ios"><a class="header" href="#database-salt-on-ios">Database Salt on iOS</a></h2>
 <p>On the iOS targets, the database salt has moved from the keychain into a file next to the database. See the
 <a href="swift.html#database-path-and-salt">Swift migration guide</a> for what this means for existing clients.</p>
+<h2 id="other"><a class="header" href="#other">Other</a></h2>
+<ol>
+<li><code>CoreCryptoContext.setData</code> is now a synchronous function, not async.</li>
+</ol>
 
                     </main>
 

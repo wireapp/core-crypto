@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-0f44ce11.js";
+            window.path_to_searchindex_js = "searchindex-6d4ac06f.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e64f8d46.js"></script>
@@ -249,6 +249,16 @@ added a delay between <code>addCredential</code> calls to comply, you can remove
 <h4 id="typescript"><a class="header" href="#typescript">TypeScript</a></h4>
 <ul>
 <li>
+<p>TypeScript (browser): the encrypted keystore now uses SQLite on OPFS through JSPI. IndexedDB keystores (CoreCrypto
+v9.x and earlier) migrate automatically. A temporary VFS based on IndexedDB was used in CoreCrypto 10.x, which is now
+unsupported. Any instance initialized on CoreCrypto 10.x will result in an error. It is not migrated and must be
+discarded.</p>
+</li>
+<li>
+<p>Browsers using CoreCrypto must support JSPI. See the <em>JS Promise Integration</em> row
+<a href="https://webassembly.org/features/?categories=browsers">here</a>.</p>
+</li>
+<li>
 <p>browser and native packages are now released separately under <code>@wireapp/core-crypto</code> and
 <code>@wireapp/core-crypto-native</code>, respectively.</p>
 </li>
@@ -256,7 +266,8 @@ added a delay between <code>addCredential</code> calls to comply, you can remove
 <p><code>Database.inMemory</code> is now a synchronous function, not async.</p>
 </li>
 <li>
-<p><code>Database.close()</code> is deprecated.</p>
+<p><code>Database.close()</code> is deprecated. However, if you need to open a database in one place and later in another, call
+<code>Database.uniffiDestroy()</code>. Otherwise opening a new database will cause an <code>SQLITE_BUSY</code> error.</p>
 </li>
 <li>
 <p>Browser: <code>reseed</code> now requires the entropy seed to be exactly 32 bytes long. It previously accepted any seed of at
