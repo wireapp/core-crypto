@@ -1,6 +1,6 @@
 use openmls::prelude::{Credential, CredentialWithKey};
 use openmls_traits::types::SignatureScheme;
-use wire_e2e_identity::{IdentityStatus, JwsAlgorithm, compute_raw_key_thumbprint, pki_env::PkiEnvironment};
+use wire_e2e_identity::{IdentityStatus, SignatureSchemeExt as _, compute_raw_key_thumbprint, pki_env::PkiEnvironment};
 use x509_cert::{Certificate, der::Decode};
 
 use super::{Error, Result};
@@ -158,18 +158,15 @@ fn compute_thumbprint_mldsa(scheme: SignatureScheme, key: &[u8]) -> String {
 }
 
 fn compute_thumbprint(signature_scheme: SignatureScheme, raw_key: &[u8]) -> Result<String> {
-    let sign_alg = match signature_scheme {
-        SignatureScheme::ED25519 => JwsAlgorithm::EdDSA,
-        SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::ES256,
-        SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::ES384,
-        SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::ES512,
-        SignatureScheme::ED448 => return Err(Error::UnsupportedAlgorithm),
-        scheme @ (SignatureScheme::MLDSA44 | SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87) => {
-            // There is no JOSE key type for ML-DSA yet, so we can't compute a JWK thumbprint.
-            // Until there is, just provide something sensible.
-            return Ok(compute_thumbprint_mldsa(scheme, raw_key));
-        }
-    };
+    if matches!(
+        signature_scheme,
+        SignatureScheme::MLDSA44 | SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87
+    ) {
+        // There is no JOSE key type for ML-DSA yet, so we can't compute a JWK thumbprint.
+        // Until there is, just provide something sensible.
+        return Ok(compute_thumbprint_mldsa(signature_scheme, raw_key));
+    }
+    let sign_alg = signature_scheme.jws_algorithm().ok_or(Error::UnsupportedAlgorithm)?;
 
     // return an empty string when it fails. Not worth failing for this, it's just informative
     Ok(compute_raw_key_thumbprint(sign_alg, raw_key).unwrap_or_default())

@@ -139,12 +139,8 @@ impl From<WirePolicy> for WireFormatPolicy {
 #[cfg(test)]
 mod tests {
     use openmls::prelude::ProtocolVersion;
-    use openmls_traits::{
-        OpenMlsCryptoProvider,
-        crypto::OpenMlsCrypto,
-        types::{SignatureScheme, VerifiableCiphersuite},
-    };
-    use wire_e2e_identity::JwsAlgorithm;
+    use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::VerifiableCiphersuite};
+    use wire_e2e_identity::SignatureSchemeExt as _;
 
     use crate::{ConversationConfiguration, ExternalSender, test_utils::*};
 
@@ -232,18 +228,9 @@ mod tests {
     #[apply(all_cred_cipher)]
     pub async fn should_support_jwk_external_sender(case: TestContext) {
         Box::pin(async move {
-            let sc = case.signature_scheme();
-
-            let alg = match sc {
-                SignatureScheme::ED25519 => JwsAlgorithm::EdDSA,
-                SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::ES256,
-                SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::ES384,
-                SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::ES512,
-                // no JWK algorithm for these yet, so nothing to test here
-                SignatureScheme::ED448
-                | SignatureScheme::MLDSA44
-                | SignatureScheme::MLDSA65
-                | SignatureScheme::MLDSA87 => return,
+            // no JWK algorithm for the others yet, so nothing to test there
+            let Some(alg) = case.signature_scheme().jws_algorithm() else {
+                return;
             };
 
             let jwk = rusty_jwt_tools::prelude::generate_jwk(alg);
