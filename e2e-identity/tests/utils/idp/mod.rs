@@ -1,9 +1,17 @@
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener};
 
+use oauth2::{
+    AuthUrl, ClientId, EndpointNotSet, EndpointSet, ExtraTokenFields, RedirectUrl, StandardRevocableToken,
+    StandardTokenResponse, TokenUrl,
+    basic::{BasicErrorResponse, BasicRevocationErrorResponse, BasicTokenIntrospectionResponse, BasicTokenType},
+};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use super::OauthCfg;
+use super::{
+    OauthCfg,
+    ctx::{ctx_get_http_client, custom_oauth_client},
+};
 
 mod authelia;
 mod keycloak;
@@ -41,6 +49,54 @@ struct IdpServerConfig {
     pub hostname: String,
     pub user: User,
     pub redirect_uri: String,
+}
+
+/// The fields of an OpenID Connect token response in addition to the OAuth2 ones
+///
+/// See <https://openid.net/specs/openid-connect-core-1_0.html#TokenResponse>
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct IdTokenFields {
+    id_token: String,
+}
+
+impl ExtraTokenFields for IdTokenFields {}
+
+/// An OAuth2 client for an OpenID provider, whose token responses include the ID token
+type OidcClient = oauth2::Client<
+    BasicErrorResponse,
+    StandardTokenResponse<IdTokenFields, BasicTokenType>,
+    BasicTokenIntrospectionResponse,
+    StandardRevocableToken,
+    BasicRevocationErrorResponse,
+    EndpointSet,
+    EndpointNotSet,
+    EndpointNotSet,
+    EndpointNotSet,
+    EndpointSet,
+>;
+
+/// The endpoints we use from the discovery document of an OpenID provider
+///
+/// See <https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata>
+#[derive(Deserialize)]
+struct ProviderMetadata {
+    authorization_endpoint: String,
+    token_endpoint: String,
+}
+
+/// Builds a client for the OpenID provider `issuer` from its discovery document
+async fn oidc_client(issuer: &str, oauth_cfg: &OauthCfg) -> OidcClient {
+    let url = format!("{}/.well-known/openid-configuration", issuer.trim_end_matches('/'));
+    let request = http::Request::get(url).body(Vec::new()).unwrap();
+    let response = custom_oauth_client("discovery", ctx_get_http_client(), request)
+        .await
+        .unwrap();
+    let metadata = serde_json::from_slice::<ProviderMetadata>(response.body()).unwrap();
+
+    oauth2::Client::new(ClientId::new(oauth_cfg.client_id.clone()))
+        .set_auth_uri(AuthUrl::new(metadata.authorization_endpoint).unwrap())
+        .set_token_uri(TokenUrl::new(metadata.token_endpoint).unwrap())
+        .set_redirect_uri(RedirectUrl::new(oauth_cfg.redirect_uri.clone()).unwrap())
 }
 
 /// Get a free port from the OS
