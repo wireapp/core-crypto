@@ -120,6 +120,9 @@
 - `CoreCryptoContext.removeKeyPackagesFor` now more narrowly removes key packages matching the provided credential's
   type and public key, not just its key
 
+- `ExternalSender.parseJwk`, and `ExternalSender.parse` when given a JWK, now return ECDSA keys (P-256, P-384 and P-521)
+  as uncompressed points, as RFC 9420 requires. They used to return compressed points, unlike for keys in raw form.
+
 ## CoreCrypto 10
 
 ### v10.5.3 - 2026-09-23
