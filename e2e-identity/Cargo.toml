@@ -68,7 +68,6 @@ uuid.workspace = true
 hex.workspace = true
 shlex = "2"
 
-openidconnect.workspace = true
 scraper.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 pem.workspace = true
