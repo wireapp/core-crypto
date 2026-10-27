@@ -214,6 +214,7 @@ ignore.build-time-only:
     - gradle
     - com.android.library
     - com.android.application
+    - com.android.kotlin.multiplatform.library
     - espresso-core
     - org.jetbrains.dokka
     - org.jetbrains.kotlin.android

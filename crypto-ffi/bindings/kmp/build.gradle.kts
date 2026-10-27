@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     kotlin("multiplatform")
-    id("com.android.library")
+    id("com.android.kotlin.multiplatform.library")
     id("maven-publish")
     id("signing")
     alias(libs.plugins.gobley.cargo)
@@ -35,8 +35,17 @@ kotlin {
     jvmToolchain(25)
 
     // Android target
-    androidTarget {
-        publishLibraryVariants("release")
+    android {
+        namespace = "com.wire.crypto"
+        compileSdk = libs.versions.sdk.compile.get().toInt()
+        minSdk = libs.versions.sdk.min.get().toInt()
+
+        withDeviceTestBuilder {
+            sourceSetTreeName = "test"
+        }.configure {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        }
+
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
         }
@@ -95,32 +104,13 @@ kotlin {
             }
         }
 
-        getByName("androidInstrumentedTest") {
+        getByName("androidDeviceTest") {
             dependencies {
                 implementation(libs.android.junit)
                 implementation(libs.espresso)
                 implementation(libs.assertj.core)
             }
         }
-    }
-}
-
-android {
-    namespace = "com.wire.crypto"
-    compileSdk = libs.versions.sdk.compile.get().toInt()
-
-    defaultConfig {
-        minSdk = libs.versions.sdk.min.get().toInt()
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        ndk {
-            abiFilters += setOf("arm64-v8a", "armeabi-v7a", "x86_64")
-        }
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
     }
 }
 
