@@ -26,7 +26,8 @@ end
 
 STORAGE["Storage"]
 block:database
-    Native["SQLite + SQLCipher"]
+    columns 4
+    Native["SQLite + SQLCipher"]:3
     Browser["SQLite + SQLCipher on OPFS"]
 end
 
