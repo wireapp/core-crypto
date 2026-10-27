@@ -14,12 +14,12 @@ kotlin {
 
 android {
     namespace = "com.wire.androidinterop"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.wire.androidinterop"
         minSdk = 30
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 1
         versionName = "1.0"
     }
