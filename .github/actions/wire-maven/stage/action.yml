@@ -43,7 +43,13 @@ runs:
         # provides without its passphrase.
         GNUPGHOME="$(mktemp -d)"
         export GNUPGHOME
-        gpg --batch --import <<< "$PGP_SIGNING_KEY"
+        if [[ "$PGP_SIGNING_KEY" == -----BEGIN* ]]; then
+          gpg --batch --import <<< "$PGP_SIGNING_KEY"
+        else
+          # The secret is stored as armour with its header, footer, CRC line and newlines
+          # stripped, which Gradle's in-memory signing accepts. gpg doesn't, so decode it.
+          base64 -d <<< "$PGP_SIGNING_KEY" | gpg --batch --import
+        fi
 
         expected=()
         for artifact in $ARTIFACTS; do
