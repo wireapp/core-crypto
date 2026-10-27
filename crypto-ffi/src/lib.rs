@@ -69,6 +69,7 @@ pub use ephemeral::{HistorySecret, core_crypto_history_client};
 pub use error::proteus::ProteusError;
 pub use error::{
     CoreCryptoError, CoreCryptoResult,
+    e2ei::E2eiError,
     mls::MlsError,
     mls_transport::{MlsTransportError, MlsTransportResult},
 };
