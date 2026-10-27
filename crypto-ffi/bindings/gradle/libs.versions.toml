@@ -6,17 +6,18 @@ jna = "5.17.0"
 assertj = "3.24.2"
 espresso = "3.6.1"
 android-junit = "1.2.1"
-android-tools = "8.12.1"
+android-tools = "9.3.1"
 sdk-compile = "35"
 sdk-min = "26"
 gradle = "9.7.0"
 dokka = "2.2.0"
 detekt = "2.0.0-alpha.3"
-agp = "8.12.3"
+agp = "9.3.1"
 gobley = "0.3.7"
 
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
 gobley-cargo = { id = "dev.gobley.cargo", version.ref = "gobley" }
