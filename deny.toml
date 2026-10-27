@@ -53,6 +53,8 @@ allow = [
   "ISC",
   "Zlib",
   "Unicode-3.0",
+  "blessing",
+  "WTFPL",
 ]
 
 [[licenses.clarify]]
