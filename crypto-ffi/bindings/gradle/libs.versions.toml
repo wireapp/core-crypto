@@ -13,16 +13,13 @@ gradle = "9.7.0"
 dokka = "2.2.0"
 detekt = "2.0.0-alpha.3"
 agp = "9.3.1"
-gobley = "0.3.7"
+oxikt = "1.4.0"
 
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
-gobley-cargo = { id = "dev.gobley.cargo", version.ref = "gobley" }
-gobley-uniffi = { id = "dev.gobley.uniffi", version.ref = "gobley" }
-gobley-rust = { id = "dev.gobley.rust", version.ref = "gobley" }
-kotlin-atomicfu = { id = "org.jetbrains.kotlin.plugin.atomicfu", version.ref = "kotlin" }
+oxikt = { id = "dev.oxikt.gradle.plugin", version.ref = "oxikt" }
 
 [libraries]
 coroutines-bom = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-bom", version.ref = "coroutines" }

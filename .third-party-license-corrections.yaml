@@ -198,14 +198,13 @@ ignore.uniffi-bindgen:
     - winnow
 
 ignore.windows-unused-abis:
-  comment: import library for a Windows ABI this project does not target (see deny.toml [graph].targets); only windows_x86_64_msvc is ever linked
+  comment: import library for a Windows ABI this project does not target (see deny.toml [graph].targets); only windows_x86_64_msvc and windows_x86_64_gnu are ever linked
   entries:
     - windows_aarch64_gnullvm
     - windows_aarch64_msvc
     - windows_i686_gnu
     - windows_i686_gnullvm
     - windows_i686_msvc
-    - windows_x86_64_gnu
     - windows_x86_64_gnullvm
 
 ignore.build-time-only:
@@ -219,6 +218,7 @@ ignore.build-time-only:
     - com.android.library
     - com.android.application
     - com.android.kotlin.multiplatform.library
+    - dev.oxikt.gradle.plugin
     - espresso-core
     - org.jetbrains.dokka
     - org.jetbrains.kotlin.android

@@ -1,9 +1,3 @@
-import gobley.gradle.GobleyHost
-import gobley.gradle.Variant
-import gobley.gradle.cargo.dsl.jvm
-import gobley.gradle.cargo.tasks.CargoBuildTask
-import gobley.gradle.rust.CrateType
-import gobley.gradle.uniffi.tasks.BuildUniffiBindingsTask
 import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.plugins.signing.Sign
@@ -14,9 +8,7 @@ plugins {
     id("com.android.kotlin.multiplatform.library")
     id("maven-publish")
     id("signing")
-    alias(libs.plugins.gobley.cargo)
-    alias(libs.plugins.gobley.uniffi)
-    alias(libs.plugins.kotlin.atomicfu)
+    id("dev.oxikt.gradle.plugin")
 }
 
 version = findProperty("VERSION_NAME") as String
@@ -28,8 +20,6 @@ val dokkaHtmlJar = tasks.register<Jar>("dokkaHtmlJar") {
     // Published as the javadoc jar required by Maven Central (see publishing block below).
     archiveClassifier.set("javadoc")
 }
-
-val buildVariant = if (System.getenv("RELEASE") == "1") Variant.Release else Variant.Debug
 
 kotlin {
     jvmToolchain(25)
@@ -114,45 +104,18 @@ kotlin {
     }
 }
 
-cargo {
-    // Point to the crypto-ffi crate directory
-    packageDirectory = layout.projectDirectory.dir("../..")
-
-    // Don't automatically install missing rust targets
-    installTargetBeforeBuild = false
-
-    jvmVariant = buildVariant
-    nativeVariant = buildVariant
-
-    // Only build JVM native libraries for the current host platform
-    // This disables cross-compilation for other JVM targets (e.g., Linux ARM64 on macOS)
-    builds.jvm {
-        embedRustLibrary = (rustTarget == GobleyHost.current.rustTarget)
+uniffi {
+    generateFromLibrary {
+        packageName = "com.wire.crypto"
     }
 }
 
-// Configure iOS build tasks with the required environment
+cargo {
+    // Point to the crypto-ffi crate directory
+    packageDirectory = layout.projectDirectory.dir("../..")
+}
+
 afterEvaluate {
-    tasks.matching { it.name.contains("cargoBuildIos") }.configureEach {
-        // Set environment via the task's additionalEnvironment if available
-        if (this is gobley.gradle.cargo.tasks.CargoBuildTask) {
-            val target = if (name.contains("Simulator")) {
-                "IPHONESIMULATOR_DEPLOYMENT_TARGET"
-            } else {
-                "IPHONEOS_DEPLOYMENT_TARGET"
-            }
-            additionalEnvironment.put(target, "16.0")
-        }
-    }
-
-    // Point the uniffi plugin to use our ffi library, which is built outside Gradle.
-    tasks.withType<BuildUniffiBindingsTask>().configureEach {
-        val ffiFile =
-            GobleyHost.current.rustTarget.outputFileName("core_crypto_ffi", CrateType.DynamicLibrary)
-                ?: throw GradleException("ffi library not defined on this platform")
-        source.set(layout.projectDirectory.dir("../../../target/$buildVariant/$ffiFile").asFile)
-    }
-
     publishing {
         publications.withType<MavenPublication>().configureEach {
             // We replace regular javadoc with dokka html docs since we are running into this bug:
@@ -198,13 +161,6 @@ afterEvaluate {
     }
 }
 
-uniffi {
-    generateFromLibrary {
-        namespace = "core_crypto_ffi"
-        packageName = "com.wire.crypto"
-    }
-}
-
 // Allows skipping signing jars published to 'MavenLocal' repository
 tasks.withType<Sign>().configureEach {
     if (System.getenv("CI") == null) {
@@ -218,41 +174,4 @@ tasks.withType<Sign>().configureEach {
 // (KGP + signing plugin interaction, https://youtrack.jetbrains.com/issue/KT-46466).
 tasks.withType<AbstractPublishToMaven>().configureEach {
     mustRunAfter(tasks.withType<Sign>())
-}
-
-// Provide our own cinterop defs files since we aren't building the ffi libraries with the cargo
-// plugin, which would otherwise generate them.
-val copyCinterop = tasks.register("copyCinteropDefinitions", Copy::class) {
-    listOf("Release", "Debug").forEach { variant ->
-        listOf(
-            "AndroidArmV7",
-            "AndroidArm64",
-            "AndroidX86",
-            "AndroidX64",
-            "IosArm64",
-            "IosSimulatorArm64",
-            "LinuxX64",
-            "MacOSArm64"
-        ).forEach { target ->
-            val outDir = "cargoBuild$target$variant"
-
-            from(layout.projectDirectory.file("cinterop/$target.def")) {
-                rename { "nativeStaticLibsDef" }
-                into(outDir)
-            }
-
-            // Generate the empty buildScriptOutputDirectories file because the cargo plugin expects it to exist
-            from(resources.text.fromString("")) {
-                rename { "buildScriptOutputDirectories" }
-                into(outDir)
-            }
-        }
-        into(layout.buildDirectory.file("taskOutputCache"))
-    }
-}
-
-// Disable building ffi libraries since they are already built & cached elsewhere in the build system.
-tasks.withType<CargoBuildTask>().configureEach {
-    dependsOn(copyCinterop)
-    enabled = false
 }
