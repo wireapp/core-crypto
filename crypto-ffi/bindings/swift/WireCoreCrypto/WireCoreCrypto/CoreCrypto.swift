@@ -168,7 +168,7 @@ extension PkiEnvironment {
     /// - Parameter database: the database to use for this environment
     public convenience init(hooks: PkiEnvironmentHooks, database: Database) async throws {
         let instance = try await createPkiEnvironment(hooks: hooks, database: database)
-        self.init(unsafeFromRawPointer: instance.uniffiClonePointer())
+        self.init(unsafeFromHandle: instance.uniffiCloneHandle())
     }
 }
 
