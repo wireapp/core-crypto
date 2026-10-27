@@ -29,7 +29,7 @@
     "packages/browser": {
       "name": "@wireapp/core-crypto",
       "version": "10.3.0",
-      "dependencies": {
+      "devDependencies": {
         "@ubjs/core": "github:wireapp/uniffi-bindgen-react-native#c31e77be44b4996c22d3a38820a448ac6aeb29ac",
       },
     },

@@ -47,7 +47,7 @@
     "publishConfig": {
         "access": "public"
     },
-    "dependencies": {
+    "devDependencies": {
         "@ubjs/core": "github:wireapp/uniffi-bindgen-react-native#c31e77be44b4996c22d3a38820a448ac6aeb29ac"
     }
 }
