@@ -1245,7 +1245,7 @@ dependencies = [
  "proteus-wasm",
  "rand 0.10.3",
  "refinery",
- "rsqlite-vfs 0.2.0",
+ "rsqlite-vfs",
  "rstest",
  "rstest_reuse",
  "rusqlite",
@@ -2281,15 +2281,6 @@ name = "hashbrown"
 version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43a3c133739dddd0d2990f9a4bdf8eb4b21ef50e4851ca85ab661199821d510e"
-
-[[package]]
-name = "hashbrown"
-version = "0.16.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "841d1cc9bed7f9236f321df977030373f4a4163ae1a7dbfe1a51a2c1a51d9100"
-dependencies = [
- "foldhash",
-]
 
 [[package]]
 name = "hashbrown"
@@ -4494,16 +4485,6 @@ dependencies = [
 
 [[package]]
 name = "rsqlite-vfs"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8a1f2315036ef6b1fbacd1972e8ee7688030b0a2121edfc2a6550febd41574d"
-dependencies = [
- "hashbrown 0.16.1",
- "thiserror 2.0.21",
-]
-
-[[package]]
-name = "rsqlite-vfs"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "353b74f9810d5b085b6c42c9d86a5f0fdb795553235cdd48753b32e3809d18a7"
@@ -5296,15 +5277,20 @@ checksum = "ab732d48ebf2a1449e94d071b26544f99845834c75c3c210e927ace097b49aa4"
 
 [[package]]
 name = "sqlite-wasm-rs"
-version = "0.5.5"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc3efc0da82635d7e1ced0053bbbfa8c7ab9645d0bf36ceb4f7127bb85315d75"
+checksum = "36bd8e29bf08189a005b2df1df99823aa0861cabe9044e5f31ed54ca292ee618"
 dependencies = [
  "cc",
- "js-sys",
- "rsqlite-vfs 0.1.0",
- "wasm-bindgen",
+ "rsqlite-vfs",
+ "sqlite3mc-src",
 ]
+
+[[package]]
+name = "sqlite3mc-src"
+version = "205.1.0+sqlite3mc-2.5.1-sqlite-3.53.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f155b7d3de6d72fb7b7c7affcba3773634c1fb2978b944b425c3d3ed5474448c"
 
 [[package]]
 name = "stable_deref_trait"

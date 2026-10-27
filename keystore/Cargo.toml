@@ -76,7 +76,7 @@ idb.workspace = true
 js-sys.workspace = true
 paste = "1.0.5"
 rsqlite-vfs = "0.2"
-sqlite-wasm-rs = { version = "0.5.5", features = ["sqlite3mc"] }
+sqlite-wasm-rs = { version = "0.6.2", features = ["sqlite3mc"] }
 time = { version = "0.3.5", features = ["wasm-bindgen"] }
 serde-wasm-bindgen.workspace = true
 wasm-bindgen.workspace = true
