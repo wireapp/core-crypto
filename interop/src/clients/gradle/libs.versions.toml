@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.3.10"
+kotlin = "2.4.0"
 coroutines = "1.10.2"
 android-tools = "8.12.3"
 agp = "8.12.3"
