@@ -1,2 +1,0 @@
-linkerOpts.android = -ldl -llog -lunwind -ldl -lm -lc
-staticLibraries = libcore_crypto_ffi.a
