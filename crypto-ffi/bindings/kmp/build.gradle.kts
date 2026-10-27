@@ -57,7 +57,7 @@ kotlin {
     macosArm64()
 
     sourceSets {
-        val commonMain by getting {
+        getByName("commonMain") {
             sourceSets {
                 kotlin.srcDir("../shared/src/commonMain/kotlin")
             }
@@ -66,7 +66,7 @@ kotlin {
             }
         }
 
-        val commonTest by getting {
+        getByName("commonTest") {
             sourceSets {
                 kotlin.srcDir("../shared/src/commonTest/kotlin")
             }
@@ -76,26 +76,26 @@ kotlin {
             }
         }
 
-        val jvmMain by getting {
+        getByName("jvmMain") {
             dependencies {
                 implementation(libs.jna)
             }
         }
 
-        val jvmTest by getting {
+        getByName("jvmTest") {
             dependencies {
                 implementation(libs.assertj.core)
             }
         }
 
-        val androidMain by getting {
+        getByName("androidMain") {
             dependencies {
                 implementation("${libs.jna.get()}@aar")
                 implementation("androidx.annotation:annotation:1.9.1")
             }
         }
 
-        val androidInstrumentedTest by getting {
+        getByName("androidInstrumentedTest") {
             dependencies {
                 implementation(libs.android.junit)
                 implementation(libs.espresso)
