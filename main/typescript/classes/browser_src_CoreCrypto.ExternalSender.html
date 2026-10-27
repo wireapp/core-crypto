@@ -185,7 +185,7 @@ and falls back to <code>parse_public_key</code> if the former method fails.</p>
 <div class="tsd-signature tsd-anchor-link" id="parsejwk-1"><span class="tsd-kind-call-signature">parseJwk</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">jwk</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Uint8Array</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <a href="" class="tsd-signature-type tsd-kind-class">ExternalSender</a><a href="#parsejwk-1" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
 <div class="tsd-comment tsd-typography"><p>Parse an external sender given a JWK.</p>
-<p>This expects a raw json serialized JWK. It works with any Signature scheme.</p>
+<p>This expects a raw json serialized JWK of an Ed25519 key, or of an ECDSA key on P-256, P-384 or P-521.</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
