@@ -74,7 +74,7 @@ jvm-bench: $(jvm-test-deps) $(KT_BENCHMARKS) ## Run the JVM benchmarks
 # KMP (Kotlin Multiplatform) builds
 #-------------------------------------------------------------------------------
 
-kmp-jvm-test-deps := $(FFI_LIBRARY) $(JVM_LIB) $(KT_FILES) $(KT_BUILD_FILES)
+kmp-jvm-test-deps := $(RUST_SOURCES) $(KT_FILES) $(KT_BUILD_FILES)
 
 $(STAMPS)/kmp-jvm-test: $(kmp-jvm-test-deps)
 	cd crypto-ffi/bindings && \
