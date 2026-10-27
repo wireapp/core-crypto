@@ -25,7 +25,7 @@ mod serialization;
 pub mod identity;
 pub mod thumbprint;
 
-pub use error::Error as AcquisitionError;
+pub use error::{CertificateError, Error as AcquisitionError};
 pub use serialization::ClientIdDef;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]

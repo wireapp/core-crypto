@@ -133,6 +133,7 @@ pub mod pki_env;
 pub mod utils;
 pub mod validation;
 
+pub use acme::Error as AcmeError;
 pub use acquisition::{
     CiphersuiteExt, SignatureSchemeExt, X509CredentialAcquisition,
     identity::{WireIdentity, WireIdentityReader},
