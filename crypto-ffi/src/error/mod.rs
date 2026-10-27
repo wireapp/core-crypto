@@ -73,6 +73,25 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn e2ei_error_maps_to_e2ei_even_when_not_innermost() {
+        // The keystore error has a source of its own, and every layer above it is transparent,
+        // so the `E2eIdentityError` is not the innermost link of the chain.
+        let keystore_error = core_crypto_keystore::CryptoKeystoreError::TransactionLock {
+            path: "test lock path".to_owned(),
+            source: std::io::Error::other("test io error"),
+        };
+        let e2ei_error = wire_e2e_identity::E2eIdentityError::PkiEnvError(
+            wire_e2e_identity::pki_env::Error::KeystoreError(keystore_error),
+        );
+
+        let mapped_error = CoreCryptoError::from(RecursiveError::context("test e2ei error")(e2ei_error));
+        assert!(
+            matches!(mapped_error, CoreCryptoError::E2ei { .. }),
+            "expected an e2ei error, got {mapped_error:?}"
+        );
+    }
+
     #[cfg(feature = "proteus")]
     #[test]
     fn test_proteus_error_mapping() {
