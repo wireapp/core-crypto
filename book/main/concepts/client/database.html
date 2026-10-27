@@ -36,7 +36,7 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-73c9d0a1.js";
+            window.path_to_searchindex_js = "../../searchindex-4c6ccd19.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../../toc-e64f8d46.js"></script>
@@ -194,12 +194,8 @@ Proteus session</li>
 </ul>
 <p>All entries are encrypted at rest using the <code>DatabaseKey</code> provided at open time.</p>
 <h2 id="backing-storage"><a class="header" href="#backing-storage">Backing Storage</a></h2>
-<p>On non-browser platforms the database is backed by <a href="https://www.zetetic.net/sqlcipher/">SQLCipher</a>, an encrypted SQLite
-variant. On the browser, the database sits atop IndexedDB and uses item-level encryption managed by CoreCrypto. In both
-cases, data is encrypted at rest.</p>
-<p>Future work on the database is intended to unify the backing storages, such that CoreCrypto will internally see an
-encrypted SQLite connection for all platforms. That work will be part of CC 11, but not CC 10. This change should be
-invisible to clients.</p>
+<p>The database is backed by <a href="https://www.zetetic.net/sqlcipher/">SQLCipher</a>, an encrypted SQLite variant. In the browser,
+the database file is stored in OPFS. Data is encrypted at rest.</p>
 <h2 id="the-database-key"><a class="header" href="#the-database-key">The Database Key</a></h2>
 <p>The <code>DatabaseKey</code> is a 32-byte symmetric key used to encrypt all data at rest. Construct it from a byte array:</p>
 <div class="langtabs">
@@ -230,7 +226,7 @@ the platform’s secure credential storage.</p>
 </blockquote>
 <h2 id="opening-the-database"><a class="header" href="#opening-the-database">Opening the Database</a></h2>
 <p>All platforms define an async <code>Database.open</code> static method accepting a location and key. On platforms with an OS, the
-location is a filesystem path. On WASM, the location is the IndexedDB store name.</p>
+location is a filesystem path. On WASM, the location is the name of the database file in OPFS.</p>
 <p>All platforms can also open a transient database in memory. In-memory databases are never encrypted, so they take no
 key. In TypeScript, this is <code>Database.inMemory()</code>. For Kotlin and Swift, this is an overload of <code>Database.open</code> without
 arguments.</p>

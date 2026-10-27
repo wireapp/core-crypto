@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-73c9d0a1.js";
+            window.path_to_searchindex_js = "searchindex-4c6ccd19.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e64f8d46.js"></script>
@@ -540,12 +540,8 @@ Proteus session</li>
 </ul>
 <p>All entries are encrypted at rest using the <code>DatabaseKey</code> provided at open time.</p>
 <h2 id="backing-storage"><a class="header" href="#backing-storage">Backing Storage</a></h2>
-<p>On non-browser platforms the database is backed by <a href="https://www.zetetic.net/sqlcipher/">SQLCipher</a>, an encrypted SQLite
-variant. On the browser, the database sits atop IndexedDB and uses item-level encryption managed by CoreCrypto. In both
-cases, data is encrypted at rest.</p>
-<p>Future work on the database is intended to unify the backing storages, such that CoreCrypto will internally see an
-encrypted SQLite connection for all platforms. That work will be part of CC 11, but not CC 10. This change should be
-invisible to clients.</p>
+<p>The database is backed by <a href="https://www.zetetic.net/sqlcipher/">SQLCipher</a>, an encrypted SQLite variant. In the browser,
+the database file is stored in OPFS. Data is encrypted at rest.</p>
 <h2 id="the-database-key"><a class="header" href="#the-database-key">The Database Key</a></h2>
 <p>The <code>DatabaseKey</code> is a 32-byte symmetric key used to encrypt all data at rest. Construct it from a byte array:</p>
 <div class="langtabs">
@@ -576,7 +572,7 @@ the platform’s secure credential storage.</p>
 </blockquote>
 <h2 id="opening-the-database"><a class="header" href="#opening-the-database">Opening the Database</a></h2>
 <p>All platforms define an async <code>Database.open</code> static method accepting a location and key. On platforms with an OS, the
-location is a filesystem path. On WASM, the location is the IndexedDB store name.</p>
+location is a filesystem path. On WASM, the location is the name of the database file in OPFS.</p>
 <p>All platforms can also open a transient database in memory. In-memory databases are never encrypted, so they take no
 key. In TypeScript, this is <code>Database.inMemory()</code>. For Kotlin and Swift, this is an overload of <code>Database.open</code> without
 arguments.</p>
@@ -2165,7 +2161,7 @@ end
 STORAGE["Storage"]
 block:database
     Native["SQLite + SQLCipher"]
-    Browser["IndexedDB"]
+    Browser["SQLite + SQLCipher on OPFS"]
 end
 
 classDef highlighted fill:#969,stroke:#333,stroke-width:3px;
@@ -2216,8 +2212,7 @@ binary for browser and a native binary for native TS from our UniFFI bindings.</
 <p>CoreCrypto provides a unified abstraction layer over MLS and Proteus. It exposes a simplified interface built around
 application-level entities rather than protocol-specific concepts.</p>
 <h2 id="database-1"><a class="header" href="#database-1">Database</a></h2>
-<p>Encrypted Keystore powered by SQLCipher on native platforms. WASM uses an IndexedDB-backed, encrypted store with
-AES256-GCM. It provides a persistent data storage layer with encryption at-rest.</p>
+<p>Encrypted Keystore powered by SQLCipher. It provides a persistent data storage layer with encryption at-rest.</p>
 <h3 id="native-ios-android-ts-native"><a class="header" href="#native-ios-android-ts-native">Native (iOS, Android, Ts-Native)</a></h3>
 <p>Pretty much everything is handed off to SQLCipher:</p>
 <ul>
@@ -2264,54 +2259,11 @@ This IV is appended at the end of each page.</li>
 each of the page.</li>
 </ul>
 <h3 id="wasm"><a class="header" href="#wasm">WASM</a></h3>
+<p>The same as native, except:</p>
 <ul>
-<li>Backing store: <code>IndexedDB</code> (with the <a href="https://crates.io/crates/idb"><code>idb</code></a> crate)</li>
-<li>Encryption: AES256-GCM Value-Level-Encryption with random, non-reused 96-bits nonces and embedded authentication tag
-(AAD) of the AEAD
-<ul>
-<li>Caveat: Primary IDs are not encrypted, as this would compromise lookup and cause whole table <br /> scans. It is thus
-not recommended to store sensitive or identifying data in the primary ID.</li>
-<li>Caveat: Indexed searches do work, in two steps, an optimistic step fetching an unencrypted record, <br /> and a
-fallback step iterating on all records, decrypting the targeted field and checking it. Worst case it will run a
-whole table scan.</li>
-</ul>
-</li>
-<li>Crypto primitives provider: RustCrypto - <a href="https://crates.io/crates/aes-gcm"><code>aes-gcm</code></a> crate</li>
-<li>PRNG provider: <a href="https://crates.io/crates/rand"><code>rand</code></a> crate with <a href="https://crates.io/crates/getrandom"><code>getrandom</code></a>
-(uses <a href="https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues">Crypto.getRandomValues</a> under the hood)</li>
-</ul>
-<pre class="mermaid">graph LR
-    direction LR
-    B(Keystore Entities)
-    C{AES-256-GCM} --&gt;|Stores| I[IndexedDB]
-    B -.-&gt;|Encrypts| C
-    C -.-&gt;|Decrypts| B
-</pre>
-
-<h4 id="how-the-value-level-encryption-works"><a class="header" href="#how-the-value-level-encryption-works">How the value-level encryption works</a></h4>
-<ul>
-<li>Consumers of the library are required to provide 32 bytes, generated by a CSPRNG or a hardware RNG, to be used as an
-AES-256 key <br /></li>
-<li>Entities (i.e. Models in an ORM environment) dictate which fields are encrypted and with which AAD <br /> through
-their implementation of the <code>Entity</code> trait.</li>
-<li>By default, the AAD is the primary ID of the IndexedDB collection (i.e Table in a SQL database environment)</li>
-<li>AES256-GCM is used to encrypt the aforementioned fields
-<ul>
-<li>A random 96-bit (12 bytes) Nonce is generated</li>
-<li>The AAD is fetched through <code>Entity::aad()</code></li>
-<li>Together they are fed to <a href="https://crates.io/crates/aes-gcm"><code>aes-gcm</code></a> to create a ciphertext with embedded
-authentication tag</li>
-</ul>
-</li>
-<li>The ciphertext is then stored along with its nonce with the following data layout:
-<ul>
-<li>Cleartext: A buffer of N bytes (<code>[u8; N]</code>)</li>
-<li>Ciphertext: <code>[12 bytes of nonce..., ...ciphertext]</code></li>
-</ul>
-</li>
-<li>When decrypting, the stored nonce is picked apart from the ciphertext, the AAD is also fetched, then the cleartext is
-<br /> decrypted and returned</li>
-<li>Note: All the fields from all entities are zeroed on drop for security reasons</li>
+<li>Backing store: a file in OPFS, accessed through a custom VFS</li>
+<li>Crypto primitives provider: <a href="https://github.com/libtom/libtomcrypt">LibTomCrypt</a></li>
+<li>PRNG provider: <a href="https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues">Crypto.getRandomValues</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="rust-crypto-dependencies"><a class="header" href="#rust-crypto-dependencies">Rust Crypto Dependencies</a></h1>
