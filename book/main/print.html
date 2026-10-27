@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-1ed28233.js";
+            window.path_to_searchindex_js = "searchindex-73c9d0a1.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e64f8d46.js"></script>
@@ -1265,6 +1265,10 @@ additionally lose all conversations using those credentials.</p>
 <li>
 <p><code>CoreCryptoContext.removeKeyPackagesFor</code> now more narrowly removes key packages matching the provided credential’s
 type and public key, not just its key</p>
+</li>
+<li>
+<p><code>ExternalSender.parseJwk</code>, and <code>ExternalSender.parse</code> when given a JWK, now return ECDSA keys (P-256, P-384 and P-521)
+as uncompressed points, as RFC 9420 requires. They used to return compressed points, unlike for keys in raw form.</p>
 </li>
 </ul>
 <h2 id="corecrypto-10"><a class="header" href="#corecrypto-10">CoreCrypto 10</a></h2>
