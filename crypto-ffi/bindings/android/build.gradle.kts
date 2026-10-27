@@ -3,7 +3,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.android.library)
-    kotlin("android")
     id("maven-publish")
     id("signing")
 }
@@ -24,7 +23,7 @@ dependencies {
     implementation(libs.kotlinx.datetime)
     implementation("androidx.annotation:annotation:1.9.1")
 
-    androidTestImplementation(kotlin("test"))
+    androidTestImplementation(kotlin("test-junit"))
     androidTestImplementation(libs.android.junit)
     androidTestImplementation(libs.espresso)
     androidTestImplementation(libs.coroutines.test)
@@ -95,6 +94,13 @@ tasks.matching { it.name == "preReleaseBuild" }.configureEach {
     }
 }
 
+kotlin {
+    jvmToolchain(25)
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
+}
+
 android {
     namespace = "com.wire.crypto"
 
@@ -109,37 +115,24 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlin {
-        jvmToolchain(25)
-        compilerOptions {
-            jvmTarget.set(JvmTarget.JVM_17)
-        }
-        sourceSets {
-            main {
-                kotlin {
-                    srcDir(projectDir.resolve("src/main/uniffi"))
-                    srcDir(sharedSources.resolve("kotlin"))
-                }
-            }
-            androidTest {
-                kotlin {
-                    srcDir(sharedTestSources.resolve("kotlin"))
-                }
-            }
-        }
-    }
-
     sourceSets {
+        getByName("main") {
+            kotlin.directories += listOf(
+                projectDir.resolve("src/main/uniffi").path,
+                sharedSources.resolve("kotlin").path,
+            )
+        }
+
+        getByName("androidTest") {
+            kotlin.directories += sharedTestSources.resolve("kotlin").path
+        }
+
         getByName("debug") {
-            jniLibs {
-                srcDirs(ffiLibsBase.resolve("debug"))
-            }
+            jniLibs.directories += ffiLibsBase.resolve("debug").path
         }
 
         getByName("release") {
-            jniLibs {
-                srcDirs(ffiLibsBase.resolve("release"))
-            }
+            jniLibs.directories += ffiLibsBase.resolve("release").path
         }
     }
 
