@@ -6,7 +6,9 @@ use async_lock::Mutex;
 use wire_e2e_identity::{CiphersuiteExt as _, JwsAlgorithm, acquisition::states};
 use x509_cert::der::Encode as _;
 
-use crate::{CipherSuite as FfiCiphersuite, ClientId, CoreCryptoError, CoreCryptoResult, Credential, PkiEnvironment};
+use crate::{
+    CipherSuite as FfiCiphersuite, ClientId, CoreCryptoError, CoreCryptoResult, Credential, E2eiError, PkiEnvironment,
+};
 
 /// The end-to-end identity verification state of a conversation.
 ///
@@ -39,7 +41,7 @@ impl From<core_crypto::E2eiConversationState> for E2eiConversationState {
 fn jws_algorithm(cipher_suite: FfiCiphersuite) -> CoreCryptoResult<JwsAlgorithm> {
     core_crypto::MlsCiphersuite::from(cipher_suite)
         .jws_algorithm()
-        .ok_or_else(|| CoreCryptoError::ad_hoc("this ciphersuite is not supported for certificate acquisition"))
+        .ok_or_else(|| E2eiError::UnsupportedCipherSuite { cipher_suite }.into())
 }
 
 /// Configuration for an X509 credential acquisition flow.
@@ -102,9 +104,8 @@ fn credential_from_acquisition_result(
     let certificate_chain = certificate_chain
         .into_iter()
         .map(|cert| {
-            cert.to_der().map_err(|err| CoreCryptoError::E2ei {
-                e2ei_error: err.to_string(),
-            })
+            cert.to_der()
+                .map_err(|err| E2eiError::InvalidCertificate { msg: err.to_string() }.into())
         })
         .collect::<CoreCryptoResult<Vec<_>>>()?;
 
@@ -145,8 +146,7 @@ impl X509CredentialAcquisition {
         let snapshot = wire_e2e_identity::X509CredentialAcquisition::<states::DpopChallengeCompleted>::deserialize(
             pki_environment.clone_inner(),
             bytes,
-        )
-        .map_err(CoreCryptoError::generic())?;
+        )?;
 
         let cipher_suite = snapshot.cipher_suite().into();
 
@@ -166,22 +166,12 @@ impl X509CredentialAcquisition {
         let result = match state {
             AcquisitionState::Initialized(inner) => inner
                 .complete_dpop_challenge()
-                .await
-                .map_err(|err| CoreCryptoError::E2ei {
-                    e2ei_error: err.to_string(),
-                })?
+                .await?
                 .complete_oidc_challenge()
                 .await
-                .map_err(|err| CoreCryptoError::E2ei {
-                    e2ei_error: err.to_string(),
-                }),
+                .map_err(CoreCryptoError::from),
             AcquisitionState::DpopChallengeCompleted(inner) => {
-                inner
-                    .complete_oidc_challenge()
-                    .await
-                    .map_err(|err| CoreCryptoError::E2ei {
-                        e2ei_error: err.to_string(),
-                    })
+                inner.complete_oidc_challenge().await.map_err(Into::into)
             }
             AcquisitionState::InProgress => {
                 return Err(CoreCryptoError::ad_hoc(
@@ -199,7 +189,7 @@ impl X509CredentialAcquisition {
         let (signing_key_pem, certificate_chain) = result?;
         let signing_key = jws_algorithm(self.cipher_suite)?
             .keypair_to_bytes(&signing_key_pem)
-            .map_err(CoreCryptoError::generic())?;
+            .map_err(|err| E2eiError::Other { msg: err.to_string() })?;
         credential_from_acquisition_result(self.cipher_suite, signing_key.to_vec(), certificate_chain)
     }
 }

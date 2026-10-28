@@ -50,10 +50,14 @@ impl From<uniffi::UnexpectedUniFFICallbackError> for CoreCryptoError {
 }
 
 impl From<wire_e2e_identity::pki_env::Error> for CoreCryptoError {
-    fn from(value: wire_e2e_identity::pki_env::Error) -> Self {
-        Self::E2ei {
-            e2ei_error: value.to_string(),
-        }
+    fn from(error: wire_e2e_identity::pki_env::Error) -> Self {
+        E2eiError::from(&error).into()
+    }
+}
+
+impl From<wire_e2e_identity::acquisition::AcquisitionError> for CoreCryptoError {
+    fn from(error: wire_e2e_identity::acquisition::AcquisitionError) -> Self {
+        E2eiError::from(&error).into()
     }
 }
 
@@ -73,17 +77,13 @@ impl From<RecursiveError> for CoreCryptoError {
                 if let Some(inner) = inner.downcast_ref::<core_crypto::ProteusErrorKind>() {
                     return ProteusError::from(inner).into();
                 }
+                if let Some(inner) = inner.downcast_ref::<wire_e2e_identity::E2eIdentityError>() {
+                    return E2eiError::from(inner).into();
+                }
                 err = inner;
             }
             err
         };
-
-        // check if the innermost error is any kind of e2e error
-        if let Some(err) = innermost.downcast_ref::<wire_e2e_identity::E2eIdentityError>() {
-            return CoreCryptoError::E2ei {
-                e2ei_error: err.to_string(),
-            };
-        }
 
         // What now? We only really care about the innermost variants, not the error stack, but that produces
         // an arbitrary set of types. We can't match against that!
@@ -203,9 +203,7 @@ impl From<core_crypto::Error> for CoreCryptoError {
             },
             core_crypto::Error::MlsTransportNotProvided => Self::Other { msg: error.to_string() },
             core_crypto::Error::ErrorDuringMlsTransport(error_message) => Self::Other { msg: error_message },
-            core_crypto::Error::Identity(err) => Self::E2ei {
-                e2ei_error: err.to_string(),
-            },
+            core_crypto::Error::Identity(err) => E2eiError::Other { msg: err.to_string() }.into(),
             core_crypto::Error::Keystore(keystore_error) => Self::Other {
                 msg: keystore_error.innermost_error_message(),
             },
