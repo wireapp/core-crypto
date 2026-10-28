@@ -31,10 +31,8 @@ use crate::{
 ///
 /// There is one `Session` per user per device. A session can contain many MLS groups/conversations.
 ///
-/// It is cheap to clone a `Session` because everything heavy is wrapped inside an [Arc].
-///
 /// [RFC 9720]: https://www.rfc-editor.org/rfc/rfc9420.html
-#[derive(Clone, derive_more::Debug)]
+#[derive(derive_more::Debug)]
 pub struct Session {
     id: ClientId,
     pub(crate) crypto_provider: CryptoProvider,
@@ -58,8 +56,8 @@ impl Session {
         crypto_provider: CryptoProvider,
         database: ImmutableDatabase,
         transport: Arc<dyn MlsTransport>,
-    ) -> Self {
-        Self {
+    ) -> Arc<Self> {
+        Arc::new(Self {
             id,
             crypto_provider,
             transport,
@@ -67,7 +65,7 @@ impl Session {
             epoch_observer: Arc::new(RwLock::new(None)),
             history_observer: Arc::new(RwLock::new(None)),
             conversation_cache: Arc::new(Mutex::new(ConversationCache::new())),
-        }
+        })
     }
 
     /// Get an immutable view of an MLS conversation.
