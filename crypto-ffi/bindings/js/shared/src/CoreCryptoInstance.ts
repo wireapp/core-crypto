@@ -57,7 +57,13 @@ export class CoreCrypto extends CoreCryptoFfi {
      */
     public static new(database: Database): CoreCrypto {
         const ffiInstance = coreCryptoNew(database);
-        return new this(ffiInstance);
+        try {
+            return new this(ffiInstance);
+        } finally {
+            // `new this` holds its own reference to the same Rust object. Release this one now
+            // rather than waiting for the garbage collector, so the database can close.
+            ffiInstance.uniffiDestroy();
+        }
     }
 
     /**
@@ -70,7 +76,11 @@ export class CoreCrypto extends CoreCryptoFfi {
         historySecret: HistorySecret
     ): Promise<CoreCrypto> {
         const historyClient = await coreCryptoHistoryClient(historySecret);
-        return new this(historyClient);
+        try {
+            return new this(historyClient);
+        } finally {
+            historyClient.uniffiDestroy();
+        }
     }
 
     /**
