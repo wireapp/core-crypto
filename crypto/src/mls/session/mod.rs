@@ -175,4 +175,57 @@ mod tests {
             }
         }
     }
+
+    mod release_database {
+        use std::sync::Weak;
+
+        use core_crypto_keystore::Database;
+
+        use crate::{
+            CoreCrypto,
+            test_utils::{CoreCryptoTransportSuccessProvider, TestContext, conversation_id},
+        };
+
+        /// Initialize MLS on a fresh `CoreCrypto`, optionally create a conversation, then drop every handle.
+        ///
+        /// Returns a weak reference to the database, which should be dead by then.
+        async fn database_after_dropping_everything(create_conversation: bool) -> Weak<Database> {
+            let database = Database::open_in_memory().unwrap();
+            let weak_database = std::sync::Arc::downgrade(&database);
+            {
+                let case = TestContext::default();
+                let cc = CoreCrypto::new(database);
+                let context = cc.new_transaction().await.unwrap();
+                let credential = case.generate_credential().await;
+                context
+                    .mls_init(
+                        credential.client_id().to_owned(),
+                        std::sync::Arc::new(CoreCryptoTransportSuccessProvider::default()),
+                    )
+                    .await
+                    .unwrap();
+                let credential_ref = context.add_credential(credential).await.unwrap();
+                if create_conversation {
+                    context
+                        .new_conversation(&conversation_id(), &credential_ref, case.cfg.clone())
+                        .await
+                        .unwrap();
+                }
+                context.finish().await.unwrap();
+            }
+            weak_database
+        }
+
+        #[macro_rules_attribute::apply(smol_macros::test)]
+        async fn database_is_released_after_mls_init() {
+            let database = database_after_dropping_everything(false).await;
+            assert_eq!(database.strong_count(), 0);
+        }
+
+        #[macro_rules_attribute::apply(smol_macros::test)]
+        async fn database_is_released_after_creating_a_conversation() {
+            let database = database_after_dropping_everything(true).await;
+            assert_eq!(database.strong_count(), 0);
+        }
+    }
 }
