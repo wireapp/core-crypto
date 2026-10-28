@@ -2,7 +2,7 @@ use core_crypto::{InnermostErrorMessage as _, RecursiveError};
 
 #[cfg(feature = "proteus")]
 use crate::ProteusError;
-use crate::{MlsError, error::log_error};
+use crate::{E2eiError, MlsError, error::log_error};
 
 /// The primary error type returned across the CoreCrypto FFI boundary.
 #[derive(Debug, thiserror::Error, uniffi::Error)]
@@ -22,7 +22,10 @@ pub enum CoreCryptoError {
     },
     /// An error from the end-to-end identity layer.
     #[error("End to end identity error: {e2ei_error}")]
-    E2ei { e2ei_error: String },
+    E2ei {
+        #[from]
+        e2ei_error: E2eiError,
+    },
     /// An error from rusty-jwt-tools.
     #[error("rusty-jwt-tools error: {msg}")]
     RustyJwt { msg: String },
