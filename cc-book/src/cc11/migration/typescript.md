@@ -21,7 +21,13 @@ import { ... } from "@wireapp/core-crypto-native";
 ## Database
 
 Deprecated `Database.close()`. Database references are now automatically destroyed when the garbage collector cleans up
-the object. If you need to explicitly close the database, you can call `uniffiDestroy()` on the `Database` instance.
+the object. If you need to explicitly close the database, you can call `uniffiDestroy()` on the `Database` instance and
+any object holding a reference to that database, notably `CoreCrypto` and `PkiEnvironment` instances.
+
+The database is stored in OPFS. Its `location` parameter is a relative path within the `core-crypto` directory in the
+OPFS filesystem. If the `location` has more components than the filename, then deleting the parent directory within OPFS
+will clean up the database and all ancillary files. Note: this operation is only legal once the database has been
+destroyed.
 
 `Database.inMemory()` is now a synchronous function, not async.
 

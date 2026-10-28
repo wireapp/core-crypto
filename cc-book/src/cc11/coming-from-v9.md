@@ -52,7 +52,8 @@ You don't need the `@wireapp/core-crypto/native` subpath from CC 10. The new pac
 CC 10 removed `CoreCrypto.close()` and added `Database.close()`. CC 11 deprecates `Database.close()` again, because
 database references are now destroyed when they are garbage-collected. Remove your v9 `close()` calls, and don't adopt
 `Database.close()`. If you need to close a database explicitly without relying on the garbage collector, call
-`uniffiDestroy()` on the `Database` instance.
+`uniffiDestroy()` on the `Database` instance and on any `CoreCrypto` or `PkiEnvironment` instance holding a reference to
+it.
 
 ### Reseeding
 

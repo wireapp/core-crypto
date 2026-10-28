@@ -16,6 +16,11 @@ pub struct Database(Arc<core_crypto_keystore::Database>);
 #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::export)]
 impl Database {
     /// Open or create a database.
+    ///
+    /// `location` depends on the build target. On the wasm-browser build, this is a relative path inside
+    /// the `core-crypto` directory in OPFS. No element can be `.`, `..`, or blank.
+    ///
+    /// For all other build targets, the location is a path inside the filesystem; any fs-parseable path is permitted.
     #[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::constructor)]
     pub async fn open(location: &str, key: Arc<DatabaseKey>) -> CoreCryptoResult<Self> {
         core_crypto_keystore::Database::open(location, key.as_ref())
