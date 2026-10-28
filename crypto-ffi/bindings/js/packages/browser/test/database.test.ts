@@ -52,6 +52,47 @@ describe("database", () => {
         expect(result).to.equal("ok");
     });
 
+    it("can be reopened once every handle is destroyed after creating a conversation", async () => {
+        const result = await getPage().evaluate(async () => {
+            const location = crypto.randomUUID();
+            const key = helpers.newDatabaseKey();
+
+            const database = await ccModule.Database.open(location, key);
+            const cc = ccModule.CoreCrypto.new(database);
+            const clientId = helpers.newClientId();
+            await cc.transaction((ctx) =>
+                ctx.mlsInit(clientId, deliveryService)
+            );
+            const credentialRef = await cc.transaction((ctx) =>
+                ctx.addCredential(
+                    ccModule.Credential.basic(
+                        ccModule.cipherSuiteDefault(),
+                        clientId
+                    )
+                )
+            );
+            const conversationId = helpers.newConversationId();
+            await cc.transaction((ctx) =>
+                ctx.createConversation(conversationId, credentialRef)
+            );
+
+            conversationId.uniffiDestroy();
+            credentialRef.uniffiDestroy();
+            clientId.uniffiDestroy();
+            cc.uniffiDestroy();
+            database.uniffiDestroy();
+
+            try {
+                (await ccModule.Database.open(location, key)).uniffiDestroy();
+                return "ok";
+            } catch (e) {
+                const inner = (e as { inner?: unknown }).inner;
+                return `${String(e)} ${JSON.stringify(inner)}`;
+            }
+        });
+        expect(result).to.equal("ok");
+    });
+
     it("migrating key type to bytes works", async () => {
         const stores = await import("./db-v10002003-dump.json");
 
