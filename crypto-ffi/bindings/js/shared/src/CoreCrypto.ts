@@ -31,6 +31,8 @@ export {
     CoreCryptoContext,
     CoreCryptoError,
     CoreCryptoError_Tags,
+    E2eiError,
+    E2eiError_Tags,
     MlsError,
     MlsError_Tags,
     MlsTransportError,
