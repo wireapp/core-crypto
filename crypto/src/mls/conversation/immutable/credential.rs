@@ -14,7 +14,7 @@ impl super::Conversation {
         let own_leaf =
             group_metadata::current_own_leaf(&group).ok_or(Error::MlsGroupInvalidState("own leaf node not found"))?;
         let credential = self
-            .session
+            .session()?
             .load_credential(own_leaf.signature_key(), own_leaf.credential().credential_type())
             .await
             .map_err(RecursiveError::context("finding current credential"))?;

@@ -23,7 +23,7 @@ impl Conversation {
                 let group_ct = self
                     .group()
                     .await
-                    .compute_confirmation_tag(&self.session.crypto_provider)
+                    .compute_confirmation_tag(&self.session()?.crypto_provider)
                     .map_err(OpenMlsError::wrap("computing confirmation tag"))?;
                 Ok(msg_ct == &group_ct)
             }

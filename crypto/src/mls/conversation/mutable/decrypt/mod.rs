@@ -402,7 +402,7 @@ impl ConversationMut {
                             log::warn!(err:err; "failed to process buffered commit on receipt of a proposal");
 
                             {
-                                let session = &self.inner.session;
+                                let session = self.inner.session()?;
                                 let mut cache = session.conversation_cache.lock().await;
                                 cache.remove(&self.id);
                                 let from_db = Conversation::load(&session, self.id.as_ref()).await?.ok_or(

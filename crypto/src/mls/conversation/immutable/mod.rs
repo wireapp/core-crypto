@@ -184,7 +184,7 @@ impl Conversation {
         self.group()
             .await
             .export_secret(
-                &self.session.crypto_provider,
+                &self.session()?.crypto_provider,
                 EXPORTER_LABEL,
                 EXPORTER_CONTEXT,
                 key_length,
