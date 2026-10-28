@@ -19,6 +19,40 @@
 
 /** @returns {void} */
 function workerMain() {
+    /** The tip of a path: a directory handle, and filename. */
+    class FilesystemTip {
+        /** @type {FileSystemDirectoryHandle} */
+        directory;
+
+        /** @type {string} */
+        filename;
+
+        /**
+         * @param {FileSystemDirectoryHandle} directory
+         * @param {string} filename
+         */
+        constructor(directory, filename) {
+            this.directory = directory;
+            this.filename = filename;
+        }
+
+        /**
+         * @param {FileSystemGetFileOptions} [options]
+         * @returns {Promise<FileSystemFileHandle>}
+         */
+        async file(options) {
+            return await this.directory.getFileHandle(this.filename, options);
+        }
+
+        /**
+         * @param {FileSystemRemoveOptions} [options]
+         * @returns {Promise<void>}
+         */
+        async remove(options) {
+            return await this.directory.removeEntry(this.filename, options);
+        }
+    }
+
     class OpfsFiles {
         /** @type {FileSystemDirectoryHandle | undefined} */
         #root;
@@ -39,12 +73,12 @@ function workerMain() {
         }
 
         /**
-         * @param {string} name
+         * @param {string} path
          * @returns {Promise<boolean>}
          */
-        async exists(name) {
+        async exists(path) {
             try {
-                await this.#dir().getFileHandle(name);
+                await (await this.#tip(path)).file();
                 return true;
             } catch (error) {
                 if (error instanceof DOMException && error.name === "NotFoundError") return false;
@@ -53,22 +87,22 @@ function workerMain() {
         }
 
         /**
-         * @param {string} name
+         * @param {string} path
          * @param {boolean} create
          * @returns {Promise<number>}
          */
-        async open(name, create) {
-            const file = await this.#dir().getFileHandle(name, { create });
+        async open(path, create) {
+            const file = await (await this.#tip(path, create)).file({ create });
             this.#handles.set(this.#nextId, await file.createSyncAccessHandle());
             return this.#nextId++;
         }
 
         /**
-         * @param {string} name
+         * @param {string} path
          * @returns {Promise<void>}
          */
-        remove(name) {
-            return this.#dir().removeEntry(name);
+        async remove(path) {
+            return (await this.#tip(path)).remove();
         }
 
         /**
@@ -133,12 +167,6 @@ function workerMain() {
             handle.close();
         }
 
-        /** @returns {FileSystemDirectoryHandle} */
-        #dir() {
-            if (!this.#root) throw new Error("OPFS worker not initialized");
-            return this.#root;
-        }
-
         /**
          * @param {number} id
          * @returns {FileSystemSyncAccessHandle}
@@ -147,6 +175,37 @@ function workerMain() {
             const handle = this.#handles.get(id);
             if (!handle) throw new Error(`unknown OPFS file id: ${id}`);
             return handle;
+        }
+
+        /**
+         * Walk down a path and get the filename at its end, and its immediate parent's directory handle.
+         *
+         * @param {string} path
+         * @param {boolean} [create]
+         * @returns {Promise<FilesystemTip>}
+         */
+        async #tip(path, create = false) {
+            if (!this.#root) throw new Error("OPFS worker not initialized");
+
+            const elements = path.split("/");
+
+            // validate all elements before walking in a way which could potentially create a directory
+            for (const element of elements) {
+                if (["", ".", ".."].some(e => element === e)) {
+                    throw new Error(`invalid path component: "${element}"`);
+                }
+            }
+
+            // walk down the path
+            const filename = elements.pop();
+            if (filename === undefined) throw new Error("path contained no elements");
+
+            let directory = this.#root;
+            for (const part of elements) {
+                directory = await directory.getDirectoryHandle(part, { create });
+            }
+
+            return new FilesystemTip(directory, filename);
         }
     }
 

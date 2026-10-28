@@ -139,11 +139,6 @@ fn settle(promise: Promise, code: VfsErrorCode) -> VfsResult<JsValue> {
     })
 }
 
-/// Maps a flat SQLite filename injectively to a portable OPFS name.
-fn physical_name(name: &str) -> String {
-    format!("f-{}", hex::encode(name))
-}
-
 pub(super) enum WorkerFile {
     /// A file held open by the worker, by its id.
     Opfs(f64),
@@ -229,10 +224,7 @@ impl VfsStore for Store {
         let options = request.options;
         let file = match request.filename {
             Some(filename) => {
-                let id = settle(
-                    open(&physical_name(filename.path()), options.create()),
-                    VfsErrorCode::CantOpen,
-                )?;
+                let id = settle(open(filename.path(), options.create()), VfsErrorCode::CantOpen)?;
                 WorkerFile::Opfs(id.as_f64().expect("worker returns a numeric file id"))
             }
             None => WorkerFile::Memory(MemChunksFile::default()),
@@ -306,11 +298,11 @@ pub(super) fn install(name: &str, os: impl OsCallback + 'static, _guard: &Sqlite
 }
 
 pub(super) fn contains(name: &str) -> VfsResult<bool> {
-    Ok(settle(exists(&physical_name(name)), VfsErrorCode::IoAccess)?.is_truthy())
+    Ok(settle(exists(name), VfsErrorCode::IoAccess)?.is_truthy())
 }
 
 pub(super) fn delete(name: &str) -> VfsResult<()> {
-    settle(remove(&physical_name(name)), VfsErrorCode::IoDelete).map(drop)
+    settle(remove(name), VfsErrorCode::IoDelete).map(drop)
 }
 
 #[cfg(test)]
@@ -322,7 +314,23 @@ mod tests {
     async fn worker_file_passes_the_vfs_file_test_suite() {
         let sqlite = SqliteGuard::lock();
         super::super::os_unknown::ensure_vfs_installed(&sqlite).unwrap();
-        let name = physical_name(&format!("vfs-suite-{}", uuid::Uuid::new_v4()));
+        let name = format!("vfs-suite-{}", uuid::Uuid::new_v4());
+        let id = settle(open(&name, true), VfsErrorCode::CantOpen)
+            .unwrap()
+            .as_f64()
+            .unwrap();
+        let mut file = WorkerFile::Opfs(id);
+        rsqlite_vfs::test_suite::test_vfs_file(&mut file).unwrap();
+        settle(close(id), VfsErrorCode::IoClose).unwrap();
+        settle(remove(&name), VfsErrorCode::IoDelete).unwrap();
+    }
+
+    /// Runs rsqlite-vfs's file conformance checks against a real worker-backed file, outside the root directory.
+    #[core_crypto_macros::jspi_wasm_bindgen_test]
+    async fn worker_file_in_deep_path_passes_the_vfs_file_test_suite() {
+        let sqlite = SqliteGuard::lock();
+        super::super::os_unknown::ensure_vfs_installed(&sqlite).unwrap();
+        let name = format!("vfs-suite-{}/a/b/c/database", uuid::Uuid::new_v4());
         let id = settle(open(&name, true), VfsErrorCode::CantOpen)
             .unwrap()
             .as_f64()
