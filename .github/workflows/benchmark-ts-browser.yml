@@ -78,6 +78,7 @@ permissions:
 jobs:
   benchmark:
     runs-on: ${{ fromJSON(inputs.runs_on) }}
+    timeout-minutes: 180
     env:
       BENCHMARK_MESSAGE_COUNTS: ${{ inputs.benchmark_message_counts }}
       BENCHMARK_MESSAGE_SIZES: ${{ inputs.benchmark_message_sizes }}
