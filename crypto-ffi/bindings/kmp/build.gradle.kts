@@ -143,6 +143,11 @@ tasks.withType<CargoBuildTask>().configureEach {
     deploymentTargetVariable?.let { additionalEnvironment.put(it, "16.0") }
 }
 
+// Strip release libraries
+tasks.withType<CargoBuildTask>().configureEach {
+    additionalEnvironment.putAll(release.map { if (it) mapOf("CARGO_PROFILE_RELEASE_STRIP" to "symbols") else emptyMap() })
+}
+
 afterEvaluate {
     publishing {
         publications.withType<MavenPublication>().configureEach {
