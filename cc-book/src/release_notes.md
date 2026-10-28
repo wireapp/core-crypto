@@ -4,6 +4,9 @@
 
 ### Unreleased
 
+- The E2ei error type now contains typed sub errors (similar to the mls and proteus error types). Code reading
+  `CoreCryptoError.E2ei.e2eiError` as a string must now match on the `E2eiError` variants instead.
+
 - The `thumbprint` of a `WireIdentity` is now always computed with SHA-256, regardless of the cipher suite. It used to
   be computed with the cipher suite's hash algorithm.
 
