@@ -164,12 +164,11 @@ impl X509CredentialAcquisition {
         };
 
         let result = match state {
-            AcquisitionState::Initialized(inner) => inner
-                .complete_dpop_challenge()
-                .await?
-                .complete_oidc_challenge()
-                .await
-                .map_err(CoreCryptoError::from),
+            AcquisitionState::Initialized(inner) => match inner.complete_dpop_challenge().await {
+                Ok(inner) => inner.complete_oidc_challenge().await.map_err(CoreCryptoError::from),
+                // We don't want to return before setting the state to finalized below.
+                Err(err) => Err(err.into()),
+            },
             AcquisitionState::DpopChallengeCompleted(inner) => {
                 inner.complete_oidc_challenge().await.map_err(Into::into)
             }
