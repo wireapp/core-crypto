@@ -3,7 +3,7 @@ import { getPage, setupBrowser, teardownBrowser } from "../shared/utils";
 
 export async function setup() {
     // We increase the browser timeout for benchmarks
-    const protocolTimeout = 60 * 60 * 1000; // 1 hr
+    const protocolTimeout = 3 * 60 * 60 * 1000; // 3 hours
     await setupBrowser(protocolTimeout);
     await sharedSetup();
     await getPage().evaluate(async () => {
