@@ -17,6 +17,7 @@
  * @property {{ name: string, message: string }} [error]
  */
 
+/** @returns {void} */
 function workerMain() {
     class OpfsFiles {
         /** @type {FileSystemDirectoryHandle | undefined} */
@@ -25,7 +26,10 @@ function workerMain() {
         #handles = new Map();
         #nextId = 1;
 
-        /** @param {string} directory */
+        /**
+         * @param {string} directory
+         * @returns {Promise<void>}
+         */
         async init(directory) {
             let root = await navigator.storage.getDirectory();
             for (const part of directory.split("/")) {
@@ -34,7 +38,10 @@ function workerMain() {
             this.#root = root;
         }
 
-        /** @param {string} name */
+        /**
+         * @param {string} name
+         * @returns {Promise<boolean>}
+         */
         async exists(name) {
             try {
                 await this.#dir().getFileHandle(name);
@@ -48,6 +55,7 @@ function workerMain() {
         /**
          * @param {string} name
          * @param {boolean} create
+         * @returns {Promise<number>}
          */
         async open(name, create) {
             const file = await this.#dir().getFileHandle(name, { create });
@@ -55,7 +63,10 @@ function workerMain() {
             return this.#nextId++;
         }
 
-        /** @param {string} name */
+        /**
+         * @param {string} name
+         * @returns {Promise<void>}
+         */
         remove(name) {
             return this.#dir().removeEntry(name);
         }
@@ -64,6 +75,7 @@ function workerMain() {
          * @param {number} id
          * @param {number} offset
          * @param {number} length
+         * @returns {Uint8Array<ArrayBuffer>}
          */
         read(id, offset, length) {
             const buffer = new Uint8Array(length);
@@ -74,6 +86,7 @@ function workerMain() {
          * @param {number} id
          * @param {number} offset
          * @param {Uint8Array} bytes
+         * @returns {void}
          */
         write(id, offset, bytes) {
             const handle = this.#handle(id);
@@ -88,34 +101,48 @@ function workerMain() {
         /**
          * @param {number} id
          * @param {number} length
+         * @returns {void}
          */
         truncate(id, length) {
             this.#handle(id).truncate(length);
         }
 
-        /** @param {number} id */
+        /**
+         * @param {number} id
+         * @returns {number}
+         */
         size(id) {
             return this.#handle(id).getSize();
         }
 
-        /** @param {number} id */
+        /**
+         * @param {number} id
+         * @returns {void}
+         */
         flush(id) {
             this.#handle(id).flush();
         }
 
-        /** @param {number} id */
+        /**
+         * @param {number} id
+         * @returns {void}
+         */
         close(id) {
             const handle = this.#handle(id);
             this.#handles.delete(id);
             handle.close();
         }
 
+        /** @returns {FileSystemDirectoryHandle} */
         #dir() {
             if (!this.#root) throw new Error("OPFS worker not initialized");
             return this.#root;
         }
 
-        /** @param {number} id */
+        /**
+         * @param {number} id
+         * @returns {FileSystemSyncAccessHandle}
+         */
         #handle(id) {
             const handle = this.#handles.get(id);
             if (!handle) throw new Error(`unknown OPFS file id: ${id}`);
@@ -143,7 +170,7 @@ function workerMain() {
                     );
                     const value = await method.apply(files, args);
                     self.postMessage(
-                        /** @satisfies {WorkerReply} */ ({ seq, value }),
+                        /** @satisfies {WorkerReply} */({ seq, value }),
                         value instanceof Uint8Array ? [value.buffer] : [],
                     );
                 } catch (error) {
@@ -158,7 +185,7 @@ function workerMain() {
                 // error instead of waiting for its timeout.
                 try {
                     self.postMessage(
-                        /** @satisfies {WorkerReply} */ ({
+                        /** @satisfies {WorkerReply} */({
                             seq,
                             error: { name: "Error", message: `OPFS worker failed to reply: ${error}` },
                         }),
@@ -190,10 +217,15 @@ let nextSeq = 0;
 let inflight;
 
 /**
+ * Sends `op` to the worker and resolves with its reply.
+ *
+ * `T` is not checked: the worker replies with whatever `op` returned, so it's up to the caller to name that type.
+ *
+ * @template T
  * @param {string} op
  * @param {unknown[]} args
  * @param {Transferable[]} [transfer]
- * @returns {Promise<unknown>}
+ * @returns {Promise<T>}
  */
 function rpc(op, args, transfer = []) {
     // Throwing in the executor rejects the promise, so the error reaches Rust as a `VfsError`.
@@ -202,18 +234,25 @@ function rpc(op, args, transfer = []) {
             throw new Error(`OPFS worker call overlaps call ${inflight.seq}`);
         if (worker === undefined) throw new Error("OPFS worker not started");
         const seq = nextSeq++;
-        worker.postMessage(/** @satisfies {WorkerRequest} */ ({ seq, op, args }), transfer);
-        inflight = { seq, resolve, reject };
+        worker.postMessage(/** @satisfies {WorkerRequest} */({ seq, op, args }), transfer);
+        // `inflight` holds calls of every result type; the worker's reply is trusted to match `T`.
+        inflight = { seq, resolve: /** @type {(value: unknown) => void} */ (resolve), reject };
     });
 }
 
-/** @param {Error} error */
+/**
+ * @param {Error} error
+ * @returns {void}
+ */
 function fail(error) {
     inflight?.reject(error);
     inflight = undefined;
 }
 
-/** @param {string} directory */
+/**
+ * @param {string} directory
+ * @returns {Promise<void>}
+ */
 export async function start(directory) {
     if (
         !globalThis.navigator?.storage?.getDirectory ||
@@ -252,47 +291,68 @@ export async function start(directory) {
 }
 
 // Gives up on the in-flight call, e.g. after a timeout. Its late reply is then ignored.
+/** @returns {void} */
 export function abandon() {
     fail(new DOMException("OPFS worker did not reply in time", "TimeoutError"));
 }
 
-/** @param {string} name */
+/**
+ * @param {string} name
+ * @returns {Promise<boolean>}
+ */
 export const exists = (name) => rpc("exists", [name]);
 /**
  * @param {string} name
  * @param {boolean} create
+ * @returns {Promise<number>}
  */
 export const open = (name, create) => rpc("open", [name, create]);
-/** @param {string} name */
+/**
+ * @param {string} name
+ * @returns {Promise<void>}
+ */
 export const remove = (name) => rpc("remove", [name]);
 /**
  * @param {number} id
  * @param {number} offset
  * @param {number} length
+ * @returns {Promise<Uint8Array<ArrayBuffer>>}
  */
 export const read = (id, offset, length) => rpc("read", [id, offset, length]);
 /**
  * @param {number} id
  * @param {number} offset
  * @param {Uint8Array<ArrayBuffer>} bytes
+ * @returns {Promise<void>}
  */
 export const write = (id, offset, bytes) => rpc("write", [id, offset, bytes], [bytes.buffer]);
 /**
  * @param {number} id
  * @param {number} length
+ * @returns {Promise<void>}
  */
 export const truncate = (id, length) => rpc("truncate", [id, length]);
-/** @param {number} id */
+/**
+ * @param {number} id
+ * @returns {Promise<number>}
+ */
 export const size = (id) => rpc("size", [id]);
-/** @param {number} id */
+/**
+ * @param {number} id
+ * @returns {Promise<void>}
+ */
 export const flush = (id) => rpc("flush", [id]);
-/** @param {number} id */
+/**
+ * @param {number} id
+ * @returns {Promise<void>}
+ */
 export const close = (id) => rpc("close", [id]);
 
 /**
  * Runs deferred SQLite cleanup through a fresh JSPI entry.
  *
  * @param {{ core_crypto_keystore_sqlite_cleanup: Function }} exports
+ * @returns {void}
  */
 export function scheduleCleanup(exports) {
     Promise.resolve()
