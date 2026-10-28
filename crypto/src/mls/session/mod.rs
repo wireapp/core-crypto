@@ -39,9 +39,9 @@ pub struct Session {
     pub(crate) transport: Arc<dyn MlsTransport + 'static>,
     database: ImmutableDatabase,
     #[debug("EpochObserver")]
-    pub(crate) epoch_observer: Arc<RwLock<Option<Arc<dyn EpochObserver + 'static>>>>,
+    pub(crate) epoch_observer: RwLock<Option<Arc<dyn EpochObserver + 'static>>>,
     #[debug("HistoryObserver")]
-    pub(crate) history_observer: Arc<RwLock<Option<Arc<dyn HistoryObserver + 'static>>>>,
+    pub(crate) history_observer: RwLock<Option<Arc<dyn HistoryObserver + 'static>>>,
     /// LRU cache of live MLS conversations.
     ///
     /// Shared across transactions for cache reuse;
@@ -62,8 +62,8 @@ impl Session {
             crypto_provider,
             transport,
             database,
-            epoch_observer: Arc::new(RwLock::new(None)),
-            history_observer: Arc::new(RwLock::new(None)),
+            epoch_observer: RwLock::new(None),
+            history_observer: RwLock::new(None),
             conversation_cache: Arc::new(Mutex::new(ConversationCache::new())),
         })
     }
