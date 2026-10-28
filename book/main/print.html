@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-43d04374.js";
+            window.path_to_searchindex_js = "searchindex-edfe30d7.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e64f8d46.js"></script>
@@ -1121,6 +1121,10 @@ both changes at once.</p>
 <h2 id="corecrypto-11"><a class="header" href="#corecrypto-11">CoreCrypto 11</a></h2>
 <h3 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h3>
 <ul>
+<li>
+<p>The E2ei error type now contains typed sub errors (similar to the mls and proteus error types). Code reading
+<code>CoreCryptoError.E2ei.e2eiError</code> as a string must now match on the <code>E2eiError</code> variants instead.</p>
+</li>
 <li>
 <p>The <code>thumbprint</code> of a <code>WireIdentity</code> is now always computed with SHA-256, regardless of the cipher suite. It used to
 be computed with the cipher suite’s hash algorithm.</p>
