@@ -72,15 +72,15 @@ impl Session {
     ///
     /// This may be faster than
     /// [crate::transaction_context::TransactionContext::conversation].
-    pub async fn get_raw_conversation(&self, id: &ConversationIdRef) -> Result<Conversation> {
-        Conversation::load(self.clone(), id)
+    pub async fn get_raw_conversation(self: &Arc<Self>, id: &ConversationIdRef) -> Result<Conversation> {
+        Conversation::load(self, id)
             .await
             .map_err(RecursiveError::context("getting raw conversation by id"))?
             .ok_or_else(|| Error::ConversationNotFound(id.to_owned()))
     }
 
     /// Checks if a given conversation id exists locally
-    pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
+    pub async fn conversation_exists(self: &Arc<Self>, id: &ConversationIdRef) -> Result<bool> {
         match self.get_raw_conversation(id).await {
             Ok(_) => Ok(true),
             Err(Error::ConversationNotFound(_)) => Ok(false),

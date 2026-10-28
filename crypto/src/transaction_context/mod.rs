@@ -77,7 +77,7 @@ impl TransactionContext {
         })
     }
 
-    pub(crate) async fn session(&self) -> Result<Session> {
+    pub(crate) async fn session(&self) -> Result<Arc<Session>> {
         let inner = self.inner()?;
         inner.core_crypto.mls.read().await.as_ref().cloned().ok_or(
             RecursiveError::context("Getting mls session from transaction context")(
@@ -88,13 +88,13 @@ impl TransactionContext {
     }
 
     #[cfg(test)]
-    pub(crate) async fn set_session_if_exists(&self, new_session: Session) {
+    pub(crate) async fn set_session_if_exists(&self, new_session: &Arc<Session>) {
         let Ok(inner) = self.inner() else {
             return;
         };
         let mut guard = inner.core_crypto.mls.write().await;
         if guard.as_ref().is_some() {
-            *guard = Some(new_session)
+            *guard = Some(new_session.clone())
         }
     }
 
@@ -236,7 +236,7 @@ impl TransactionContext {
     }
 
     /// Set the `mls_session` Arc (also sets it on the transaction's CoreCrypto instance)
-    pub(crate) async fn set_mls_session(&self, session: Session) -> Result<()> {
+    pub(crate) async fn set_mls_session(&self, session: Arc<Session>) -> Result<()> {
         let inner = self.inner()?;
         let mut guard = inner.core_crypto.mls.write().await;
         *guard = Some(session);

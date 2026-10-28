@@ -124,7 +124,7 @@ impl MlsTransport for CoreCryptoTransportNotImplementedProvider {
 pub struct CoreCrypto {
     database: Arc<Database>,
     pki_environment: RwLock<Option<Arc<PkiEnvironment>>>,
-    mls: RwLock<Option<mls::session::Session>>,
+    mls: RwLock<Option<Arc<mls::session::Session>>>,
     #[cfg(feature = "proteus")]
     proteus: Mutex<Option<proteus::ProteusCentral>>,
     #[cfg(not(feature = "proteus"))]
@@ -158,12 +158,11 @@ impl CoreCrypto {
     }
 
     /// Get the mls session if initialized
-    pub async fn mls_session(&self) -> Result<Session> {
-        if let Some(session) = self.mls.read().await.as_ref() {
-            return Ok(session.clone());
+    pub async fn mls_session(&self) -> Result<Arc<Session>> {
+        match self.mls.read().await.as_ref() {
+            Some(session) => Ok(session.clone()),
+            None => Err(RecursiveError::context("Getting mls session")(mls::session::Error::MlsNotInitialized).into()),
         }
-        let err = Err(mls::session::Error::MlsNotInitialized);
-        err.map_err(RecursiveError::context("Getting mls session"))?
     }
 
     /// Get the database

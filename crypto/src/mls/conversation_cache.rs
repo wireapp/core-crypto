@@ -48,7 +48,7 @@ impl ConversationCache {
         &mut self,
         id: &ConversationIdRef,
         transaction: &Transaction,
-        session: Session,
+        session: &Arc<Session>,
     ) -> Result<Option<Arc<Conversation>>> {
         if let Some(entry) = self.entries.get(id) {
             return Ok(Some(entry.clone()));

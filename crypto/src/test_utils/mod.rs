@@ -89,7 +89,7 @@ use crate::{ephemeral::HistorySecret, test_utils::TestError::ImplementationError
 #[derive(Debug, Clone)]
 pub struct SessionContext {
     pub transaction: TransactionContext,
-    pub session: Arc<RwLock<Session>>,
+    pub session: Arc<RwLock<Arc<Session>>>,
     pub initial_credential: CredentialRef,
     mls_transport: Arc<RwLock<Arc<dyn MlsTransportTestExt + 'static>>>,
     x509_test_chain: Arc<Option<X509TestChain>>,
@@ -200,7 +200,7 @@ impl SessionContext {
         self.transaction.database().expect("database from transaction context")
     }
 
-    pub async fn session(&self) -> Session {
+    pub async fn session(&self) -> Arc<Session> {
         self.session.read().await.clone()
     }
 
@@ -215,7 +215,7 @@ impl SessionContext {
         let crypto_provider = session.crypto_provider.clone();
         let database = self.transaction.database().unwrap().into();
         let new_session = Session::new(self.get_client_id().await, crypto_provider, database, new_transport);
-        self.set_session(new_session).await;
+        self.set_session(&new_session).await;
     }
 
     pub async fn reinit_session(&self, session_id: ClientId) {
@@ -226,10 +226,10 @@ impl SessionContext {
 
         let session = self.transaction.session().await.unwrap();
 
-        self.set_session(session).await;
+        self.set_session(&session).await;
     }
 
-    async fn set_session(&self, session: Session) {
+    async fn set_session(&self, session: &Arc<Session>) {
         let mut guard = self.session.write().await;
         *guard = session.clone();
 

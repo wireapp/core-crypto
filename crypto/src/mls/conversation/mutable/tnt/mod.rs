@@ -479,7 +479,7 @@ mod tests {
         // load the session and mutate its group by sending a normal message
         let session = alice.session().await;
         session.conversation_cache.lock().await.clear();
-        let loaded = Conversation::load(session.clone(), conversation_id.as_ref())
+        let loaded = Conversation::load(&session, conversation_id.as_ref())
             .await
             .unwrap()
             .unwrap();

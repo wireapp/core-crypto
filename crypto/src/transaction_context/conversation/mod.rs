@@ -38,7 +38,7 @@ impl TransactionContext {
         let conversation = self
             .mls_groups()
             .await?
-            .get_or_fetch(id, &inner.transaction, session)
+            .get_or_fetch(id, &inner.transaction, &session)
             .await
             .map_err(RecursiveError::context("fetching conversation from mls groups by id"))?;
 

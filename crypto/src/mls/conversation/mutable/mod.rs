@@ -73,7 +73,7 @@ impl ConversationMut {
     }
 
     /// Get access to the MLS session for this guard
-    pub(super) async fn session(&self) -> Result<Session> {
+    pub(super) async fn session(&self) -> Result<Arc<Session>> {
         self.tx_context
             .session()
             .await
@@ -98,7 +98,7 @@ mod test_utils {
             let session = self.tx_context.session().await.unwrap();
             let id = self.id();
 
-            let conversation = Conversation::load(session, id).await.unwrap().unwrap();
+            let conversation = Conversation::load(&session, id).await.unwrap().unwrap();
             self.tx_context.mls_groups().await.unwrap().insert(conversation);
         }
     }

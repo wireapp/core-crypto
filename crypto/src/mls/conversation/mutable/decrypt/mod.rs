@@ -405,7 +405,7 @@ impl ConversationMut {
                                 let session = &self.inner.session;
                                 let mut cache = session.conversation_cache.lock().await;
                                 cache.remove(&self.id);
-                                let from_db = Conversation::load(session.clone(), self.id.as_ref()).await?.ok_or(
+                                let from_db = Conversation::load(&session, self.id.as_ref()).await?.ok_or(
                                     Error::MlsGroupInvalidState(
                                         "conversation vanished while reloading after a failed buffered commit",
                                     ),
