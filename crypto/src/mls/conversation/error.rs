@@ -88,6 +88,8 @@ pub enum Error {
     DuplicateSignature {
         affected_clients: Vec<(crate::ClientId, crate::ClientId)>,
     },
+    #[error("this conversation has been invalidated due to its `Session` reference dropping")]
+    SessionDropped,
     #[error(transparent)]
     Tls(#[from] crate::TlsCodecError),
     #[error(transparent)]

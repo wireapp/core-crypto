@@ -6,6 +6,8 @@ mod e2ei;
 mod history_sharing;
 mod persistence;
 
+use std::sync::{Arc, Weak};
+
 use async_lock::{RwLock, RwLockReadGuard};
 use core_crypto_keystore::{
     Transaction,
@@ -121,7 +123,7 @@ pub struct Conversation {
     pub(in crate::mls::conversation) id: ConversationId,
     pub(in crate::mls::conversation) group: RwLock<MlsGroupState>,
     pub(in crate::mls::conversation) configuration: ConversationConfiguration,
-    pub(in crate::mls::conversation) session: Session,
+    session: Weak<Session>,
 }
 
 impl Conversation {
@@ -157,6 +159,15 @@ impl Conversation {
             .await
             .map_err(|_| Error::IdentityInitializationError)?;
         Ok(CredentialRef::from_credential(&credential))
+    }
+
+    /// Upgrades a reference to this conversation's session.
+    ///
+    /// Be _very careful_ about cloning the returned `Arc`. A conversation only holds a weak reference to ensure
+    /// we don't form a reference cycle; don't let the produced `Arc` outlive this conversation, or these cycles
+    /// will be reintroduced.
+    pub(in crate::mls::conversation) fn session(&self) -> Result<Arc<Session>> {
+        self.session.upgrade().ok_or(Error::SessionDropped)
     }
 
     /// Derives a new key from the one in the group, to be used elsewhere.
