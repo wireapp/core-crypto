@@ -31,6 +31,27 @@ describe("database", () => {
         expect(result).to.deep.equal([1]);
     });
 
+    it("can be reopened once every handle is destroyed after a transaction", async () => {
+        const result = await getPage().evaluate(async () => {
+            const location = crypto.randomUUID();
+            const key = helpers.newDatabaseKey();
+
+            const database = await ccModule.Database.open(location, key);
+            const cc = ccModule.CoreCrypto.new(database);
+            await cc.transaction((ctx) => ctx.proteusInit());
+            cc.uniffiDestroy();
+            database.uniffiDestroy();
+
+            try {
+                (await ccModule.Database.open(location, key)).uniffiDestroy();
+                return "ok";
+            } catch (e) {
+                return String(e);
+            }
+        });
+        expect(result).to.equal("ok");
+    });
+
     it("migrating key type to bytes works", async () => {
         const stores = await import("./db-v10002003-dump.json");
 
