@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-4c6ccd19.js";
+            window.path_to_searchindex_js = "searchindex-43d04374.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e64f8d46.js"></script>
@@ -267,7 +267,9 @@ discarded.</p>
 </li>
 <li>
 <p><code>Database.close()</code> is deprecated. However, if you need to open a database in one place and later in another, call
-<code>Database.uniffiDestroy()</code>. Otherwise opening a new database will cause an <code>SQLITE_BUSY</code> error.</p>
+<code>Database.uniffiDestroy()</code>, as well as calling <code>.uniffiDestroy()</code> on any <code>CoreCrypto</code> or <code>PkiEnvironment</code> instance
+holding that databse. Otherwise opening a new database will cause an <code>SQLITE_BUSY</code> error (manifesting as
+<code>CoreCryptoError.Other</code>).</p>
 </li>
 <li>
 <p>Browser: <code>reseed</code> now requires the entropy seed to be exactly 32 bytes long. It previously accepted any seed of at

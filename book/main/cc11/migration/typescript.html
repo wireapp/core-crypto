@@ -36,7 +36,7 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-4c6ccd19.js";
+            window.path_to_searchindex_js = "../../searchindex-43d04374.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../../toc-e64f8d46.js"></script>
@@ -190,7 +190,12 @@ import { ... } from "@wireapp/core-crypto-native";
 </code></pre>
 <h2 id="database"><a class="header" href="#database">Database</a></h2>
 <p>Deprecated <code>Database.close()</code>. Database references are now automatically destroyed when the garbage collector cleans up
-the object. If you need to explicitly close the database, you can call <code>uniffiDestroy()</code> on the <code>Database</code> instance.</p>
+the object. If you need to explicitly close the database, you can call <code>uniffiDestroy()</code> on the <code>Database</code> instance and
+any object holding a reference to that database, notably <code>CoreCrypto</code> and <code>PkiEnvironment</code> instances.</p>
+<p>The database is stored in OPFS. Its <code>location</code> parameter is a relative path within the <code>core-crypto</code> directory in the
+OPFS filesystem. If the <code>location</code> has more components than the filename, then deleting the parent directory within OPFS
+will clean up the database and all ancillary files. Note: this operation is only legal once the database has been
+destroyed.</p>
 <p><code>Database.inMemory()</code> is now a synchronous function, not async.</p>
 <h2 id="reseed-browser"><a class="header" href="#reseed-browser">Reseed (Browser)</a></h2>
 <p><code>CoreCrypto.reseed</code> now requires exactly 32 bytes. Callers that pass a longer seed will now get an error.</p>

@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-4c6ccd19.js";
+            window.path_to_searchindex_js = "searchindex-43d04374.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e64f8d46.js"></script>
@@ -1023,7 +1023,12 @@ import { ... } from "@wireapp/core-crypto-native";
 </code></pre>
 <h2 id="database"><a class="header" href="#database">Database</a></h2>
 <p>Deprecated <code>Database.close()</code>. Database references are now automatically destroyed when the garbage collector cleans up
-the object. If you need to explicitly close the database, you can call <code>uniffiDestroy()</code> on the <code>Database</code> instance.</p>
+the object. If you need to explicitly close the database, you can call <code>uniffiDestroy()</code> on the <code>Database</code> instance and
+any object holding a reference to that database, notably <code>CoreCrypto</code> and <code>PkiEnvironment</code> instances.</p>
+<p>The database is stored in OPFS. Its <code>location</code> parameter is a relative path within the <code>core-crypto</code> directory in the
+OPFS filesystem. If the <code>location</code> has more components than the filename, then deleting the parent directory within OPFS
+will clean up the database and all ancillary files. Note: this operation is only legal once the database has been
+destroyed.</p>
 <p><code>Database.inMemory()</code> is now a synchronous function, not async.</p>
 <h2 id="reseed-browser"><a class="header" href="#reseed-browser">Reseed (Browser)</a></h2>
 <p><code>CoreCrypto.reseed</code> now requires exactly 32 bytes. Callers that pass a longer seed will now get an error.</p>
@@ -1106,7 +1111,8 @@ You don’t need the <code>@wireapp/core-crypto/native</code> subpath from CC 10
 <p>CC 10 removed <code>CoreCrypto.close()</code> and added <code>Database.close()</code>. CC 11 deprecates <code>Database.close()</code> again, because
 database references are now destroyed when they are garbage-collected. Remove your v9 <code>close()</code> calls, and don’t adopt
 <code>Database.close()</code>. If you need to close a database explicitly without relying on the garbage collector, call
-<code>uniffiDestroy()</code> on the <code>Database</code> instance.</p>
+<code>uniffiDestroy()</code> on the <code>Database</code> instance and on any <code>CoreCrypto</code> or <code>PkiEnvironment</code> instance holding a reference to
+it.</p>
 <h3 id="reseeding"><a class="header" href="#reseeding">Reseeding</a></h3>
 <p>CC 10 renamed <code>reseedRng()</code> to <code>reseed()</code>. In CC 11, <code>reseed()</code> also requires the seed to be exactly 32 bytes long. Make
 both changes at once.</p>
@@ -1203,7 +1209,9 @@ discarded.</p>
 </li>
 <li>
 <p><code>Database.close()</code> is deprecated. However, if you need to open a database in one place and later in another, call
-<code>Database.uniffiDestroy()</code>. Otherwise opening a new database will cause an <code>SQLITE_BUSY</code> error.</p>
+<code>Database.uniffiDestroy()</code>, as well as calling <code>.uniffiDestroy()</code> on any <code>CoreCrypto</code> or <code>PkiEnvironment</code> instance
+holding that databse. Otherwise opening a new database will cause an <code>SQLITE_BUSY</code> error (manifesting as
+<code>CoreCryptoError.Other</code>).</p>
 </li>
 <li>
 <p>Browser: <code>reseed</code> now requires the entropy seed to be exactly 32 bytes long. It previously accepted any seed of at
