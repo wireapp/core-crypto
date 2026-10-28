@@ -1,7 +1,7 @@
 /// Wrapper over a [Result] with an ACME error
 pub(crate) type Result<T> = core::result::Result<T, Error>;
 
-/// All errors which [crate::acme] might throw
+/// All errors which the `acme` module might throw
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     /// Invalid Json representation
