@@ -153,7 +153,7 @@ impl CryptoProvider {
     }
 
     /// Set pki_env to a new shared pki environment provider
-    pub async fn set_pki_environment(&mut self, pki_env: Option<Arc<PkiEnvironment>>) {
+    pub async fn set_pki_environment(&self, pki_env: Option<Arc<PkiEnvironment>>) {
         *self.auth_service.pki_env.write().await = pki_env;
     }
 
