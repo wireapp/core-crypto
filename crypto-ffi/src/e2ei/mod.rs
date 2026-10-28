@@ -193,3 +193,87 @@ impl X509CredentialAcquisition {
         credential_from_acquisition_result(self.cipher_suite, signing_key.to_vec(), certificate_chain)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use super::*;
+    use crate::{
+        Database, DeviceId, HttpHeader, HttpMethod, HttpResponse, PkiEnvironmentHooks, Uuid,
+        pki_env::PkiEnvironmentHooksError,
+    };
+
+    /// Hooks that fail every call, so the acquisition fails at its first request.
+    struct FailingHooks;
+
+    #[async_trait::async_trait]
+    impl PkiEnvironmentHooks for FailingHooks {
+        async fn http_request(
+            &self,
+            _method: HttpMethod,
+            _url: String,
+            _headers: Vec<HttpHeader>,
+            _body: Vec<u8>,
+        ) -> Result<HttpResponse, PkiEnvironmentHooksError> {
+            Err(PkiEnvironmentHooksError::Error {
+                reason: "http request failed".to_owned(),
+            })
+        }
+
+        async fn authenticate(
+            &self,
+            _idp: String,
+            _key_auth: String,
+            _acme_aud: String,
+            _acquisition_snapshot: Vec<u8>,
+        ) -> Result<String, PkiEnvironmentHooksError> {
+            unreachable!("the DPoP challenge fails before authentication")
+        }
+
+        async fn get_backend_nonce(&self) -> Result<String, PkiEnvironmentHooksError> {
+            unreachable!("the DPoP challenge fails before fetching a nonce")
+        }
+
+        async fn fetch_backend_access_token(&self, _dpop: String) -> Result<String, PkiEnvironmentHooksError> {
+            unreachable!("the DPoP challenge fails before fetching an access token")
+        }
+    }
+
+    /// A failed DPoP challenge consumes the acquisition, so it must end up finalized rather than stuck in progress.
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn failed_dpop_challenge_finalizes_the_acquisition() {
+        let database = Arc::new(Database::in_memory().unwrap());
+        let pki_environment = Arc::new(PkiEnvironment::new(Arc::new(FailingHooks), database).await.unwrap());
+        let client_id = Arc::new(ClientId::new(
+            Arc::new(Uuid::new("b01ec765-db9d-4502-9859-a9fa8c437c6f").unwrap()),
+            Arc::new(DeviceId::new(1)),
+            "wire.com".to_owned(),
+        ));
+        let config = X509CredentialAcquisitionConfiguration {
+            acme_directory_url: "https://acme.wire.com/acme/wire/directory".to_owned(),
+            cipher_suite: FfiCiphersuite::default(),
+            display_name: "Alice Smith".to_owned(),
+            client_id,
+            handle: "alice_wire".to_owned(),
+            domain: "wire.com".to_owned(),
+            team: None,
+            validity_period_secs: 3600,
+        };
+        let acquisition = X509CredentialAcquisition::new(pki_environment, config).unwrap();
+
+        acquisition
+            .finalize()
+            .await
+            .expect_err("the DPoP challenge should fail");
+
+        let err = acquisition
+            .finalize()
+            .await
+            .expect_err("a finalized acquisition can't be finalized again");
+        assert!(
+            matches!(&err, CoreCryptoError::Other { msg } if msg.contains("already been finalized")),
+            "expected the acquisition to be finalized, got {err:?}"
+        );
+    }
+}
