@@ -1,20 +1,60 @@
 use core_crypto_keystore::CryptoKeystoreError;
 
 use super::TransactionContextInner;
+use crate::{RecursiveError, mls::conversation::ConversationIdRef};
 
 impl TransactionContextInner {
     /// Run `operation` inside a savepoint of this transaction.
     ///
-    /// If `operation` fails, its database writes are rolled back.
+    /// If `operation` fails, its database writes are rolled back, and so is the in-memory state
+    /// which mirrors them: conversations it changed are reloaded from the database, and epoch
+    /// changes it queued are dropped.
+    ///
+    /// Restoring a conversation takes its group lock, so don't hold one across this call. If
+    /// restoring fails, that error is returned instead of the one from `operation`.
     pub(crate) async fn with_savepoint<T, E>(
         &self,
         savepoint_name: &str,
         operation: impl AsyncFnOnce() -> Result<T, E>,
         map_err: impl Fn(&'static str) -> Box<dyn FnOnce(CryptoKeystoreError) -> E>,
-    ) -> Result<T, E> {
-        self.transaction
+    ) -> Result<T, E>
+    where
+        E: From<RecursiveError>,
+    {
+        let epoch_changes_before = self.pending_epoch_changes.lock().await.len();
+        let touched_before = self.touched_conversations.lock().await.len();
+
+        let result = self
+            .transaction
             .with_savepoint(savepoint_name, operation, map_err)
-            .await
+            .await;
+
+        if result.is_err() {
+            self.pending_epoch_changes.lock().await.truncate(epoch_changes_before);
+            let mut touched = self.touched_conversations.lock().await.split_off(touched_before);
+            touched.sort();
+            touched.dedup();
+            let session = self.core_crypto.mls.read().await.clone();
+            if let Some(session) = session {
+                session
+                    .conversation_cache
+                    .lock()
+                    .await
+                    .restore(touched.iter().map(AsRef::as_ref))
+                    .await
+                    .map_err(RecursiveError::root(
+                        "restoring conversations after a savepoint rollback",
+                    ))?;
+            }
+        }
+
+        result
+    }
+
+    /// Note that the in-memory state of conversation `id` is about to change, so a savepoint
+    /// rollback knows to restore it.
+    pub(crate) async fn conversation_touched(&self, id: &ConversationIdRef) {
+        self.touched_conversations.lock().await.push(id.to_owned());
     }
 }
 

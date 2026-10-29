@@ -40,6 +40,7 @@ impl ConversationMut {
         let tx = context_inner.transaction();
 
         let Conversation { group, id, .. } = &*self.inner;
+        context_inner.conversation_touched(id).await;
         let mut group = group.write().await;
         self.record_epoch_data(group.mls_group()).await?;
         let epoch_before_operation = group.epoch();

@@ -4,7 +4,7 @@ use openmls::group::QueuedProposal;
 
 use crate::{
     DecryptedMessage, Proposal, RecursiveError, WireIdentity,
-    mls::conversation::{Conversation, ConversationMut, Error, Result, mutable::decrypt::RecursionPolicy},
+    mls::conversation::{ConversationMut, Error, Result, mutable::decrypt::RecursionPolicy},
 };
 
 /// Handle decryption of a proposal message.
@@ -78,11 +78,9 @@ pub(in crate::mls::conversation::mutable::decrypt) async fn handle(
                 // all other errors get the same handling:
                 //
                 // 1. log the error (because some visibility is nice)
-                // 2. reload this conversation from the DB (because try_process_buffered_commit probably altered state
-                //    somehow)
-                // 3. clear the buffered commit (because future attempts would probably run into the same error, and the
+                // 2. clear the buffered commit (because future attempts would probably run into the same error, and the
                 //    savepoint's failure restored it)
-                // 4. fall through to successfully return the `DecryptedMessage::Proposal` variant
+                // 3. fall through to successfully return the `DecryptedMessage::Proposal` variant
                 //
                 // This is correct because we have in fact correctly stored the pending proposal already,
                 // and can't do anything about the error. If they propagated, a caller has only two options:
@@ -91,18 +89,6 @@ pub(in crate::mls::conversation::mutable::decrypt) async fn handle(
                 // - catch the error, which they can't do anything about but is now mandatory
 
                 log::warn!(err:err; "failed to process buffered commit on receipt of a proposal");
-
-                {
-                    let session = conversation.inner.session()?;
-                    let mut cache = session.conversation_cache.lock().await;
-                    cache.remove(&conversation.id);
-                    let from_db = Conversation::load(&session, conversation.id.as_ref()).await?.ok_or(
-                        Error::MlsGroupInvalidState(
-                            "conversation vanished while reloading after a failed buffered commit",
-                        ),
-                    )?;
-                    *conversation.inner.group.write().await = from_db.group.into_inner();
-                }
 
                 conversation.clear_buffered_commit().map_err(RecursiveError::context(
                     "clearing buffered commit after failed application",

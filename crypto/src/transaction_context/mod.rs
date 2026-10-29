@@ -49,6 +49,9 @@ pub struct TransactionContext {
 pub(crate) struct TransactionContextInner {
     core_crypto: Arc<CoreCrypto>,
     pending_epoch_changes: Arc<Mutex<Vec<(ConversationId, u64)>>>,
+    /// Conversations whose in-memory state may have changed in this transaction, in order, with
+    /// repeats. A savepoint rollback restores the ones added after the savepoint started.
+    touched_conversations: Mutex<Vec<ConversationId>>,
     #[debug(skip)]
     transaction: UniqueArc<core_crypto_keystore::Transaction>,
 }
@@ -73,6 +76,7 @@ impl TransactionContext {
             inner: Arc::new(RwLock::new(Some(TransactionContextInner {
                 core_crypto,
                 pending_epoch_changes: Default::default(),
+                touched_conversations: Default::default(),
                 transaction,
             }))),
         })
@@ -183,6 +187,7 @@ impl TransactionContext {
             core_crypto,
             pending_epoch_changes,
             transaction: tx,
+            ..
         } = self.take_inner().await?;
 
         let commit_result = tx

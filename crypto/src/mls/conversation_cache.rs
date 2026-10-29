@@ -101,6 +101,26 @@ impl ConversationCache {
         self.entries.remove(id)
     }
 
+    /// Reload the given conversations from the database after a savepoint rollback.
+    ///
+    /// Cached ones are reloaded in place, ones no longer in the database are dropped, and uncached ones
+    /// are skipped.
+    pub(crate) async fn restore<'a>(&mut self, ids: impl IntoIterator<Item = &'a ConversationIdRef>) -> Result<()> {
+        for id in ids {
+            let Some(conversation) = self.entries.peek(id) else {
+                continue;
+            };
+            let persisted = conversation
+                .reload()
+                .await
+                .map_err(RecursiveError::context("reloading conversation from the database"))?;
+            if !persisted {
+                self.entries.remove(id);
+            }
+        }
+        Ok(())
+    }
+
     /// Empties the cache.
     ///
     /// Must be called on transaction rollback to avoid serving

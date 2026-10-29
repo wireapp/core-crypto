@@ -45,6 +45,7 @@ impl TransactionContext {
         let conversation = Conversation::new(id, group_state.into(), configuration, session);
         let mut group_store = self.mls_groups().await?;
 
+        context_inner.conversation_touched(conversation.id()).await;
         let inner = group_store.insert(conversation);
         let conversation = ConversationMut::new(inner, self.clone());
 

@@ -52,6 +52,18 @@ impl Conversation {
         Ok(Some(conversation))
     }
 
+    /// Replace the group state with the one in the database, in place, so every handle sees it.
+    ///
+    /// Returns `false`, changing nothing, if the conversation is no longer in the database.
+    pub(crate) async fn reload(&self) -> Result<bool> {
+        let session = self.session()?;
+        let Some(persisted) = Self::load(&session, self.id.as_ref()).await? else {
+            return Ok(false);
+        };
+        *self.group.write().await = persisted.group.into_inner();
+        Ok(true)
+    }
+
     /// Effectively `Database::load_all::<PersistedMlsGroup>` but with better types
     ///
     /// Skips rows marked `is_pending`, for the same reason [`Self::load`] does.
