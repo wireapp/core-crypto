@@ -39,6 +39,10 @@
 
 - `proteusNewPrekey` is deprecated; use `proteusNewPrekeyAuto` instead.
 
+- `processWelcomeMessage` now handles losing a race to create a conversation. If a conversation with the same ID already
+  exists locally at epoch 0, which means this client created it and never committed to it, it is replaced by the
+  conversation from the welcome.
+
 - Rendering a `DeserializedClientId` (its `toString`/`Display`) now reproduces the client id it was deserialized from.
   It previously rendered the device id as a fixed-width 16-character hex string, so for a device id with leading zero
   nibbles — about one in sixteen — the result did not match the client id, and did not match the `wireapp://` subject
