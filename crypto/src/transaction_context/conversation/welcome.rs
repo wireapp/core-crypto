@@ -216,4 +216,46 @@ mod tests {
             .unwrap();
         assert_eq!(decrypted.as_application_message().unwrap().plaintext, b"hello");
     }
+
+    /// Losing a race to create a group leaves our own conversation at epoch 0, which the welcome replaces.
+    #[apply(all_cred_cipher)]
+    async fn process_welcome_should_replace_own_conversation_at_epoch_0(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let commit = case.create_conversation([&alice]).await.invite([&bob]).await;
+        let id = commit.conversation().id().clone();
+
+        bob.transaction
+            .new_conversation(&id, &bob.initial_credential, case.cfg.clone())
+            .await
+            .unwrap();
+
+        let conversation = commit.notify_members().await;
+        assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
+
+        // Following Alice's next commit needs Bob's key material for the new group, so this shows the
+        // wipe didn't delete it
+        let conversation = conversation.advance_epoch().await;
+        assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
+    }
+
+    /// An external join we sent may already have been accepted, so replacing it with the welcome
+    /// could add us twice.
+    #[apply(all_cred_cipher)]
+    async fn process_welcome_should_fail_when_pending_conversation_exists(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice]).await;
+        let id = conversation.id().clone();
+
+        // Bob joins by external commit, but Alice doesn't see it and invites him instead
+        let (external_join, _pending_conversation) = conversation.external_join_unmerged(&bob).await;
+        let commit = external_join.finish().invite([&bob]).await;
+        let welcome = commit.conversation().transport().await.latest_welcome_message().await;
+
+        let join_welcome = bob.transaction.process_welcome_message(welcome).await;
+        assert!(innermost_source_matches!(
+            join_welcome.unwrap_err(),
+            super::Error::ConversationAlreadyExists(i) if i == &id
+        ));
+        assert!(bob.transaction.pending_conversation_exists(&id).await.unwrap());
+    }
 }
