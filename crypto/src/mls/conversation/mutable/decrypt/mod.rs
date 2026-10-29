@@ -10,8 +10,9 @@
 
 mod buffer_commit;
 pub(crate) mod buffer_messages;
+mod handle;
 
-use log::{debug, info};
+use log::info;
 use obfuscate::Obfuscated;
 use openmls::{
     framing::{
@@ -310,20 +311,7 @@ impl ConversationMut {
 
         let decrypted = match message.into_content() {
             ProcessedMessageContent::ApplicationMessage(app_msg) => {
-                let conversation = self;
-                let sender_client_id = sender_client_id_result?;
-                debug!(
-                    group_id = conversation.id().to_owned(),
-                    epoch = epoch.as_u64(),
-                    sender_client_id = sender_client_id;
-                    "Application message"
-                );
-
-                DecryptedMessage::ApplicationMessage(DecryptedBytes {
-                    plaintext: app_msg.into_bytes(),
-                    sender_client_id,
-                    identity,
-                })
+                handle::application(self, app_msg, epoch, identity, sender_client_id_result)?
             }
             ProcessedMessageContent::ProposalMessage(proposal) => {
                 self.mutate_group(async |_, group, id| {
