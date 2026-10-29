@@ -220,6 +220,10 @@ impl CoreCryptoContext {
 
     /// Joins a conversation by processing an MLS Welcome message, returning the new conversation's ID.
     ///
+    /// If a conversation with the same ID exists locally at epoch 0, meaning this client created it and nothing was
+    /// committed to it, it is replaced by the conversation from the welcome. This happens when several clients race to
+    /// create the same conversation. Any other conversation with the same ID raises `ConversationAlreadyExists`.
+    ///
     /// NOTE: Will retain the referenced key package in case of an error only if it was created in an earlier
     /// transaction.
     pub async fn process_welcome_message(&self, welcome_message: Arc<Welcome>) -> CoreCryptoResult<ConversationId> {

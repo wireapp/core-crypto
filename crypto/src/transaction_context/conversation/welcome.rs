@@ -3,7 +3,7 @@
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 
 use super::{Error, Result, TransactionContext};
-use crate::{ConversationConfiguration, ConversationId};
+use crate::{ConversationConfiguration, ConversationId, RecursiveError};
 
 impl TransactionContext {
     /// Create a conversation from a received MLS Welcome message
@@ -13,6 +13,11 @@ impl TransactionContext {
     ///
     /// # Return type
     /// This function will return the conversation/group id
+    ///
+    /// # Conflicting local conversation
+    /// A local conversation with the same id at epoch 0 is one we created and never committed to, typically because we
+    /// lost a race to create the group. It is wiped and replaced. Any other conflict, including a pending conversation,
+    /// returns [`Error::ConversationAlreadyExists`].
     ///
     /// # Errors
     /// Errors can be originating from the KeyStore of from OpenMls:
@@ -32,13 +37,49 @@ impl TransactionContext {
         };
 
         let inner = self.inner()?;
-        let conversation = inner
-            .transaction()
+        let transaction = inner.transaction();
+
+        // Each attempt gets its own savepoint, so a failed one restores the key package openmls consumed.
+        let join = async || {
+            transaction
+                .with_savepoint(
+                    "process_welcome_message_savepoint",
+                    async || {
+                        self.persist_conversation_from_welcome_message(welcome.clone(), configuration.clone())
+                            .await
+                    },
+                    Error::savepoint,
+                )
+                .await
+        };
+
+        // Ties the wipe to the retry: if the retry fails, the wiped conversation is restored.
+        let conversation = transaction
             .with_savepoint(
-                "process_welcome_message_savepoint",
+                "process_welcome_message_replace_savepoint",
                 async || {
-                    self.persist_conversation_from_welcome_message(welcome, configuration)
+                    let id = match join().await {
+                        Err(Error::ConversationAlreadyExists(id)) => id,
+                        result => return result,
+                    };
+
+                    // Pending conversations keep the error: `conversation_exists` doesn't count them.
+                    if !self.conversation_exists(&id).await? {
+                        return Err(Error::ConversationAlreadyExists(id));
+                    }
+                    let mut conversation = self.conversation(&id).await?;
+                    if conversation.epoch().await != 0 {
+                        return Err(Error::ConversationAlreadyExists(id));
+                    }
+
+                    // Wipe before processing the welcome again: openmls stores the new group's epoch keypairs
+                    // under the same id, and deleting the old group cascades to them.
+                    conversation
+                        .wipe()
                         .await
+                        .map_err(RecursiveError::context("wiping the conversation the welcome replaces"))?;
+
+                    join().await
                 },
                 Error::savepoint,
             )
