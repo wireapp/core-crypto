@@ -82,6 +82,14 @@ when (decryptedMessage) {
 
 <!-- langtabs-end -->
 
+## Racing to create a conversation
+
+When several clients create the same conversation at once, the ones that lose get a welcome for a conversation they
+already have locally. In v10, you had to catch `ConversationAlreadyExists`, wipe your conversation and process the
+welcome again. In v11, `processWelcomeMessage` does this itself when the local conversation is still at epoch 0, so you
+can remove that handling. For conversations past epoch 0, or with an external join in progress, it still raises
+`ConversationAlreadyExists`.
+
 ## Other
 
 1. `e2eiIsPkiEnvSetup` has been removed. You can call `getPkiEnvironment` to see if it is set.
