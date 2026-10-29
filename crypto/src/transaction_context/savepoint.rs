@@ -24,6 +24,7 @@ impl TransactionContextInner {
         let epoch_changes_before = self.pending_epoch_changes.lock().await.len();
         let touched_before = self.touched_conversations.lock().await.len();
 
+        #[expect(clippy::disallowed_methods, reason = "this is the wrapper")]
         let result = self
             .transaction
             .with_savepoint(savepoint_name, operation, map_err)
