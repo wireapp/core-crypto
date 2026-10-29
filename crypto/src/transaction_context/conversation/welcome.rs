@@ -52,7 +52,24 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::*;
+    use crate::{ConversationId, test_utils::*};
+
+    /// Create a conversation with `id` and commit to it once, so it's past epoch 0 and the welcome can't replace it.
+    async fn create_conflicting_conversation(case: &TestContext, session: &SessionContext, id: &ConversationId) {
+        session
+            .transaction
+            .new_conversation(id, &session.initial_credential, case.cfg.clone())
+            .await
+            .unwrap();
+        session
+            .transaction
+            .conversation(id)
+            .await
+            .unwrap()
+            .update_key_material()
+            .await
+            .unwrap();
+    }
 
     #[apply(all_cred_cipher)]
     async fn joining_from_welcome_should_prune_local_key_material(case: TestContext) {
@@ -81,21 +98,16 @@ mod tests {
     async fn process_welcome_should_fail_when_already_exists(case: TestContext) {
         let [alice, mut bob] = case.sessions().await;
         Box::pin(async move {
-            let credential_ref = &bob.initial_credential;
             let commit = case.create_conversation([&alice]).await.invite([&bob]).await;
             let conversation = commit.conversation();
             let id = conversation.id().clone();
+                let welcome = conversation.transport().await.latest_welcome_message().await;
+
                 // Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
-                bob
-                    .transaction
-                    .new_conversation(&id, credential_ref, case.cfg.clone())
-                    .await
-                    .unwrap();
+                create_conflicting_conversation(&case, &bob, &id).await;
 
                 // Bob's key packages before processing the welcome
                 let key_package_refs_before = bob.transaction.get_key_package_refs().await.unwrap();
-
-                let welcome = conversation.transport().await.latest_welcome_message().await;
 
                 // We need Bob's created key package to be persisted, so we can restore it on error.
                 // Assuming that key package creation happens in its own transaction matches a sufficiently large
@@ -127,19 +139,15 @@ mod tests {
     #[apply(all_cred_cipher)]
     async fn failed_welcome_should_restore_key_material_in_same_transaction(case: TestContext) {
         let [alice, bob] = case.sessions().await;
-        let credential_ref = &bob.initial_credential;
         let commit = case.create_conversation([&alice]).await.invite([&bob]).await;
         let conversation = commit.conversation();
         let id = conversation.id().clone();
 
+        let welcome = conversation.transport().await.latest_welcome_message().await;
+
         // Bob creates a conversation with the exact same id as the one he's trying to join, so
         // persisting the conversation from the welcome message is bound to fail
-        bob.transaction
-            .new_conversation(&id, credential_ref, case.cfg.clone())
-            .await
-            .unwrap();
-
-        let welcome = conversation.transport().await.latest_welcome_message().await;
+        create_conflicting_conversation(&case, &bob, &id).await;
 
         let count_before = bob.transaction.count_entities().await;
         let key_package_refs_before = bob.transaction.get_key_package_refs().await.unwrap();
