@@ -153,7 +153,7 @@
 <a href=#153 id=153 data-nosnippet>153</a>    }
 <a href=#154 id=154 data-nosnippet>154</a>
 <a href=#155 id=155 data-nosnippet>155</a>    <span class="doccomment">/// Set pki_env to a new shared pki environment provider
-<a href=#156 id=156 data-nosnippet>156</a>    </span><span class="kw">pub async fn </span>set_pki_environment(<span class="kw-2">&amp;mut </span><span class="self">self</span>, pki_env: <span class="prelude-ty">Option</span>&lt;Arc&lt;PkiEnvironment&gt;&gt;) {
+<a href=#156 id=156 data-nosnippet>156</a>    </span><span class="kw">pub async fn </span>set_pki_environment(<span class="kw-2">&amp;</span><span class="self">self</span>, pki_env: <span class="prelude-ty">Option</span>&lt;Arc&lt;PkiEnvironment&gt;&gt;) {
 <a href=#157 id=157 data-nosnippet>157</a>        <span class="kw-2">*</span><span class="self">self</span>.auth_service.pki_env.write().<span class="kw">await </span>= pki_env;
 <a href=#158 id=158 data-nosnippet>158</a>    }
 <a href=#159 id=159 data-nosnippet>159</a>

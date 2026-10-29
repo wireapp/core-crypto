@@ -73,7 +73,7 @@
 <a href=#73 id=73 data-nosnippet>73</a>    }
 <a href=#74 id=74 data-nosnippet>74</a>
 <a href=#75 id=75 data-nosnippet>75</a>    <span class="doccomment">/// Get access to the MLS session for this guard
-<a href=#76 id=76 data-nosnippet>76</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">async fn </span>session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Session&gt; {
+<a href=#76 id=76 data-nosnippet>76</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">async fn </span>session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;Session&gt;&gt; {
 <a href=#77 id=77 data-nosnippet>77</a>        <span class="self">self</span>.tx_context
 <a href=#78 id=78 data-nosnippet>78</a>            .session()
 <a href=#79 id=79 data-nosnippet>79</a>            .<span class="kw">await
@@ -98,7 +98,7 @@
 <a href=#98 id=98 data-nosnippet>98</a>            <span class="kw">let </span>session = <span class="self">self</span>.tx_context.session().<span class="kw">await</span>.unwrap();
 <a href=#99 id=99 data-nosnippet>99</a>            <span class="kw">let </span>id = <span class="self">self</span>.id();
 <a href=#100 id=100 data-nosnippet>100</a>
-<a href=#101 id=101 data-nosnippet>101</a>            <span class="kw">let </span>conversation = Conversation::load(session, id).<span class="kw">await</span>.unwrap().unwrap();
+<a href=#101 id=101 data-nosnippet>101</a>            <span class="kw">let </span>conversation = Conversation::load(<span class="kw-2">&amp;</span>session, id).<span class="kw">await</span>.unwrap().unwrap();
 <a href=#102 id=102 data-nosnippet>102</a>            <span class="self">self</span>.tx_context.mls_groups().<span class="kw">await</span>.unwrap().insert(conversation);
 <a href=#103 id=103 data-nosnippet>103</a>        }
 <a href=#104 id=104 data-nosnippet>104</a>    }

@@ -402,10 +402,10 @@
 <a href=#402 id=402 data-nosnippet>402</a>                            </span><span class="macro">log::warn!</span>(err:err; <span class="string">"failed to process buffered commit on receipt of a proposal"</span>);
 <a href=#403 id=403 data-nosnippet>403</a>
 <a href=#404 id=404 data-nosnippet>404</a>                            {
-<a href=#405 id=405 data-nosnippet>405</a>                                <span class="kw">let </span>session = <span class="kw-2">&amp;</span><span class="self">self</span>.inner.session;
+<a href=#405 id=405 data-nosnippet>405</a>                                <span class="kw">let </span>session = <span class="self">self</span>.inner.session()<span class="question-mark">?</span>;
 <a href=#406 id=406 data-nosnippet>406</a>                                <span class="kw">let </span><span class="kw-2">mut </span>cache = session.conversation_cache.lock().<span class="kw">await</span>;
 <a href=#407 id=407 data-nosnippet>407</a>                                cache.remove(<span class="kw-2">&amp;</span><span class="self">self</span>.id);
-<a href=#408 id=408 data-nosnippet>408</a>                                <span class="kw">let </span>from_db = Conversation::load(session.clone(), <span class="self">self</span>.id.as_ref()).<span class="kw">await</span><span class="question-mark">?</span>.ok_or(
+<a href=#408 id=408 data-nosnippet>408</a>                                <span class="kw">let </span>from_db = Conversation::load(<span class="kw-2">&amp;</span>session, <span class="self">self</span>.id.as_ref()).<span class="kw">await</span><span class="question-mark">?</span>.ok_or(
 <a href=#409 id=409 data-nosnippet>409</a>                                    Error::MlsGroupInvalidState(
 <a href=#410 id=410 data-nosnippet>410</a>                                        <span class="string">"conversation vanished while reloading after a failed buffered commit"</span>,
 <a href=#411 id=411 data-nosnippet>411</a>                                    ),

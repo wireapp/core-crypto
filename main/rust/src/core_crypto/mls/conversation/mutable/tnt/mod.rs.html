@@ -479,7 +479,7 @@
 <a href=#479 id=479 data-nosnippet>479</a>        <span class="comment">// load the session and mutate its group by sending a normal message
 <a href=#480 id=480 data-nosnippet>480</a>        </span><span class="kw">let </span>session = alice.session().<span class="kw">await</span>;
 <a href=#481 id=481 data-nosnippet>481</a>        session.conversation_cache.lock().<span class="kw">await</span>.clear();
-<a href=#482 id=482 data-nosnippet>482</a>        <span class="kw">let </span>loaded = Conversation::load(session.clone(), conversation_id.as_ref())
+<a href=#482 id=482 data-nosnippet>482</a>        <span class="kw">let </span>loaded = Conversation::load(<span class="kw-2">&amp;</span>session, conversation_id.as_ref())
 <a href=#483 id=483 data-nosnippet>483</a>            .<span class="kw">await
 <a href=#484 id=484 data-nosnippet>484</a>            </span>.unwrap()
 <a href=#485 id=485 data-nosnippet>485</a>            .unwrap();

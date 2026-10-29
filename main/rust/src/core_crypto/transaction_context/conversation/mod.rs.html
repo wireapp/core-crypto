@@ -38,7 +38,7 @@
 <a href=#38 id=38 data-nosnippet>38</a>        <span class="kw">let </span>conversation = <span class="self">self
 <a href=#39 id=39 data-nosnippet>39</a>            </span>.mls_groups()
 <a href=#40 id=40 data-nosnippet>40</a>            .<span class="kw">await</span><span class="question-mark">?
-<a href=#41 id=41 data-nosnippet>41</a>            </span>.get_or_fetch(id, <span class="kw-2">&amp;</span>inner.transaction, session)
+<a href=#41 id=41 data-nosnippet>41</a>            </span>.get_or_fetch(id, <span class="kw-2">&amp;</span>inner.transaction, <span class="kw-2">&amp;</span>session)
 <a href=#42 id=42 data-nosnippet>42</a>            .<span class="kw">await
 <a href=#43 id=43 data-nosnippet>43</a>            </span>.map_err(RecursiveError::context(<span class="string">"fetching conversation from mls groups by id"</span>))<span class="question-mark">?</span>;
 <a href=#44 id=44 data-nosnippet>44</a>

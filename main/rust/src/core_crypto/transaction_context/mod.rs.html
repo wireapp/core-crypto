@@ -77,7 +77,7 @@
 <a href=#77 id=77 data-nosnippet>77</a>        })
 <a href=#78 id=78 data-nosnippet>78</a>    }
 <a href=#79 id=79 data-nosnippet>79</a>
-<a href=#80 id=80 data-nosnippet>80</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Session&gt; {
+<a href=#80 id=80 data-nosnippet>80</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;Session&gt;&gt; {
 <a href=#81 id=81 data-nosnippet>81</a>        <span class="kw">let </span>inner = <span class="self">self</span>.inner()<span class="question-mark">?</span>;
 <a href=#82 id=82 data-nosnippet>82</a>        inner.core_crypto.mls.read().<span class="kw">await</span>.as_ref().cloned().ok_or(
 <a href=#83 id=83 data-nosnippet>83</a>            RecursiveError::context(<span class="string">"Getting mls session from transaction context"</span>)(
@@ -88,13 +88,13 @@
 <a href=#88 id=88 data-nosnippet>88</a>    }
 <a href=#89 id=89 data-nosnippet>89</a>
 <a href=#90 id=90 data-nosnippet>90</a>    <span class="attr">#[cfg(test)]
-<a href=#91 id=91 data-nosnippet>91</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>set_session_if_exists(<span class="kw-2">&amp;</span><span class="self">self</span>, new_session: Session) {
+<a href=#91 id=91 data-nosnippet>91</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>set_session_if_exists(<span class="kw-2">&amp;</span><span class="self">self</span>, new_session: <span class="kw-2">&amp;</span>Arc&lt;Session&gt;) {
 <a href=#92 id=92 data-nosnippet>92</a>        <span class="kw">let </span><span class="prelude-val">Ok</span>(inner) = <span class="self">self</span>.inner() <span class="kw">else </span>{
 <a href=#93 id=93 data-nosnippet>93</a>            <span class="kw">return</span>;
 <a href=#94 id=94 data-nosnippet>94</a>        };
 <a href=#95 id=95 data-nosnippet>95</a>        <span class="kw">let </span><span class="kw-2">mut </span>guard = inner.core_crypto.mls.write().<span class="kw">await</span>;
 <a href=#96 id=96 data-nosnippet>96</a>        <span class="kw">if </span>guard.as_ref().is_some() {
-<a href=#97 id=97 data-nosnippet>97</a>            <span class="kw-2">*</span>guard = <span class="prelude-val">Some</span>(new_session)
+<a href=#97 id=97 data-nosnippet>97</a>            <span class="kw-2">*</span>guard = <span class="prelude-val">Some</span>(new_session.clone())
 <a href=#98 id=98 data-nosnippet>98</a>        }
 <a href=#99 id=99 data-nosnippet>99</a>    }
 <a href=#100 id=100 data-nosnippet>100</a>
@@ -236,7 +236,7 @@
 <a href=#236 id=236 data-nosnippet>236</a>    }
 <a href=#237 id=237 data-nosnippet>237</a>
 <a href=#238 id=238 data-nosnippet>238</a>    <span class="doccomment">/// Set the `mls_session` Arc (also sets it on the transaction's CoreCrypto instance)
-<a href=#239 id=239 data-nosnippet>239</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>set_mls_session(<span class="kw-2">&amp;</span><span class="self">self</span>, session: Session) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#239 id=239 data-nosnippet>239</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>set_mls_session(<span class="kw-2">&amp;</span><span class="self">self</span>, session: Arc&lt;Session&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
 <a href=#240 id=240 data-nosnippet>240</a>        <span class="kw">let </span>inner = <span class="self">self</span>.inner()<span class="question-mark">?</span>;
 <a href=#241 id=241 data-nosnippet>241</a>        <span class="kw">let </span><span class="kw-2">mut </span>guard = inner.core_crypto.mls.write().<span class="kw">await</span>;
 <a href=#242 id=242 data-nosnippet>242</a>        <span class="kw-2">*</span>guard = <span class="prelude-val">Some</span>(session);

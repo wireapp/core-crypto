@@ -88,21 +88,23 @@
 <a href=#88 id=88 data-nosnippet>88</a>    </span>DuplicateSignature {
 <a href=#89 id=89 data-nosnippet>89</a>        affected_clients: Vec&lt;(<span class="kw">crate</span>::ClientId, <span class="kw">crate</span>::ClientId)&gt;,
 <a href=#90 id=90 data-nosnippet>90</a>    },
-<a href=#91 id=91 data-nosnippet>91</a>    <span class="attr">#[error(transparent)]
-<a href=#92 id=92 data-nosnippet>92</a>    </span>Tls(<span class="attr">#[from] </span><span class="kw">crate</span>::TlsCodecError),
+<a href=#91 id=91 data-nosnippet>91</a>    <span class="attr">#[error(<span class="string">"this conversation has been invalidated due to its `Session` reference dropping"</span>)]
+<a href=#92 id=92 data-nosnippet>92</a>    </span>SessionDropped,
 <a href=#93 id=93 data-nosnippet>93</a>    <span class="attr">#[error(transparent)]
-<a href=#94 id=94 data-nosnippet>94</a>    </span>OpenMls(<span class="attr">#[from] </span><span class="kw">crate</span>::OpenMlsError),
+<a href=#94 id=94 data-nosnippet>94</a>    </span>Tls(<span class="attr">#[from] </span><span class="kw">crate</span>::TlsCodecError),
 <a href=#95 id=95 data-nosnippet>95</a>    <span class="attr">#[error(transparent)]
-<a href=#96 id=96 data-nosnippet>96</a>    </span>Keystore(<span class="attr">#[from] </span><span class="kw">crate</span>::KeystoreError),
+<a href=#96 id=96 data-nosnippet>96</a>    </span>OpenMls(<span class="attr">#[from] </span><span class="kw">crate</span>::OpenMlsError),
 <a href=#97 id=97 data-nosnippet>97</a>    <span class="attr">#[error(transparent)]
-<a href=#98 id=98 data-nosnippet>98</a>    </span>Recursive(<span class="attr">#[from] </span><span class="kw">crate</span>::RecursiveError),
-<a href=#99 id=99 data-nosnippet>99</a>}
-<a href=#100 id=100 data-nosnippet>100</a>
-<a href=#101 id=101 data-nosnippet>101</a><span class="kw">impl </span>Error {
-<a href=#102 id=102 data-nosnippet>102</a>    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>savepoint(
-<a href=#103 id=103 data-nosnippet>103</a>        context: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
-<a href=#104 id=104 data-nosnippet>104</a>    ) -&gt; Box&lt;<span class="kw">dyn </span>FnOnce(core_crypto_keystore::CryptoKeystoreError) -&gt; <span class="self">Self</span>&gt; {
-<a href=#105 id=105 data-nosnippet>105</a>        Box::new(<span class="kw">move </span>|err| <span class="kw">crate</span>::KeystoreError::wrap(context)(err).into())
-<a href=#106 id=106 data-nosnippet>106</a>    }
-<a href=#107 id=107 data-nosnippet>107</a>}
+<a href=#98 id=98 data-nosnippet>98</a>    </span>Keystore(<span class="attr">#[from] </span><span class="kw">crate</span>::KeystoreError),
+<a href=#99 id=99 data-nosnippet>99</a>    <span class="attr">#[error(transparent)]
+<a href=#100 id=100 data-nosnippet>100</a>    </span>Recursive(<span class="attr">#[from] </span><span class="kw">crate</span>::RecursiveError),
+<a href=#101 id=101 data-nosnippet>101</a>}
+<a href=#102 id=102 data-nosnippet>102</a>
+<a href=#103 id=103 data-nosnippet>103</a><span class="kw">impl </span>Error {
+<a href=#104 id=104 data-nosnippet>104</a>    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>savepoint(
+<a href=#105 id=105 data-nosnippet>105</a>        context: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
+<a href=#106 id=106 data-nosnippet>106</a>    ) -&gt; Box&lt;<span class="kw">dyn </span>FnOnce(core_crypto_keystore::CryptoKeystoreError) -&gt; <span class="self">Self</span>&gt; {
+<a href=#107 id=107 data-nosnippet>107</a>        Box::new(<span class="kw">move </span>|err| <span class="kw">crate</span>::KeystoreError::wrap(context)(err).into())
+<a href=#108 id=108 data-nosnippet>108</a>    }
+<a href=#109 id=109 data-nosnippet>109</a>}
 </code></pre></div></section></main></body></html>
