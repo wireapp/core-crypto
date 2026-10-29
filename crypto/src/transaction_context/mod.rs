@@ -26,6 +26,7 @@ mod inner_guard;
 pub mod key_package;
 #[cfg(feature = "proteus")]
 pub mod proteus;
+mod savepoint;
 #[cfg(test)]
 pub mod test_utils;
 

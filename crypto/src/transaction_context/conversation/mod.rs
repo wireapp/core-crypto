@@ -104,7 +104,6 @@ impl TransactionContext {
         // wrapping these two operations in an explicit savepoint means that these two operations
         // are bundled together; failing to persist the group un-persists the keypairs.
         self.inner()?
-            .transaction()
             .with_savepoint(
                 "new_conversation",
                 async || {

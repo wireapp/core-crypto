@@ -42,7 +42,6 @@ pub(in crate::mls::conversation::mutable::decrypt) async fn handle(
             .map_err(RecursiveError::context(
                 "getting tx context for savepoint for processing buffered commit",
             ))?
-            .transaction()
             .with_savepoint(
                 "try_process_buffered_commit",
                 async || {

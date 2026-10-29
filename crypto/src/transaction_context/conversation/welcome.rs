@@ -33,7 +33,6 @@ impl TransactionContext {
 
         let inner = self.inner()?;
         let conversation = inner
-            .transaction()
             .with_savepoint(
                 "process_welcome_message_savepoint",
                 async || {
