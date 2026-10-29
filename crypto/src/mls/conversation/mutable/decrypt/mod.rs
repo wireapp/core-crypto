@@ -13,7 +13,6 @@ pub(crate) mod buffer_messages;
 mod handle;
 
 use log::info;
-use obfuscate::Obfuscated;
 use openmls::{
     framing::{
         MlsMessageIn, MlsMessageInBody, ProcessedMessage, ProtocolMessage,
@@ -320,20 +319,7 @@ impl ConversationMut {
                 handle::staged_commit(self, *staged_commit, identity, recursion_policy).await?
             }
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
-                self.mutate_group(async |_, group, id| {
-                    info!(
-                        group_id = id.to_owned(),
-                        sender = Obfuscated::from(proposal.sender());
-                        "Received external join proposal"
-                    );
-                    group.store_pending_proposal(*proposal);
-                    Ok(())
-                })
-                .await?;
-
-                let delay = self.compute_next_commit_delay().await;
-
-                DecryptedMessage::Proposal(Proposal { delay, identity })
+                handle::external_join_proposal(self, *proposal, identity).await?
             }
         };
 
