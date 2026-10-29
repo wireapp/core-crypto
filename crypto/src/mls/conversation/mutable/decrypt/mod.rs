@@ -247,7 +247,6 @@ impl ConversationMut {
         message: MlsMessageIn,
         recursion_policy: RecursionPolicy,
     ) -> Result<DecryptedMessage> {
-        let provider = &self.crypto_provider().await?;
         let parsed_message = self.parse_message(message.clone()).await?;
 
         let message_result = self.process_message(parsed_message).await;
@@ -294,7 +293,7 @@ impl ConversationMut {
         let credential = message.credential();
         let epoch = message.epoch();
 
-        let pki_env = provider.authentication_service().pki_env().await;
+        let pki_env = self.crypto_provider().await?.authentication_service().pki_env().await;
         let identity = credential
             .extract_identity(self.cipher_suite().signature_algorithm(), pki_env.as_deref())
             .await
