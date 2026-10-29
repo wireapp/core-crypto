@@ -248,47 +248,44 @@ impl ConversationMut {
         recursion_policy: RecursionPolicy,
     ) -> Result<DecryptedMessage> {
         let parsed_message = self.parse_message(message.clone()).await?;
+        let message = match self.process_message(parsed_message).await {
+            // Handles the case where we receive our own commits.
+            Err(Error::OpenMls(crate::OpenMlsError {
+                source:
+                    crate::OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidCommit(
+                        StageCommitError::OwnCommit,
+                    )),
+                ..
+            })) => {
+                let ct = self.extract_confirmation_tag_from_own_commit(&message).await?;
+                let mut decrypted_message = self.handle_own_commit(ct).await?;
 
-        let message_result = self.process_message(parsed_message).await;
-
-        // Handles the case where we receive our own commits.
-        if let Err(Error::OpenMls(crate::OpenMlsError {
-            source:
-                crate::OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidCommit(StageCommitError::OwnCommit)),
-            ..
-        })) = message_result
-        {
-            let ct = self.extract_confirmation_tag_from_own_commit(&message).await?;
-            let mut decrypted_message = self.handle_own_commit(ct).await?;
-
-            if let Some(decrypted_message) = decrypted_message.as_commit_mut() {
-                debug_assert!(
-                    decrypted_message.buffered_messages.is_none(),
-                    "decrypted message should be constructed with empty buffer"
-                );
-                if recursion_policy == RecursionPolicy::AsNecessary {
-                    decrypted_message.buffered_messages = self.restore_and_clear_pending_messages().await?;
+                if let Some(decrypted_message) = decrypted_message.as_commit_mut() {
+                    debug_assert!(
+                        decrypted_message.buffered_messages.is_none(),
+                        "decrypted message should be constructed with empty buffer"
+                    );
+                    if recursion_policy == RecursionPolicy::AsNecessary {
+                        decrypted_message.buffered_messages = self.restore_and_clear_pending_messages().await?;
+                    }
                 }
+
+                return Ok(decrypted_message);
             }
-
-            return Ok(decrypted_message);
-        }
-
-        // In this error case, we have a missing proposal, so we need to buffer the commit.
-        // We can't do that here--we don't have the appropriate data in scope--but we can at least
-        // produce the proper error and return that, so our caller can handle it.
-        if let Err(Error::OpenMls(crate::OpenMlsError {
-            source:
-                crate::OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidCommit(
-                    StageCommitError::MissingProposal,
-                )),
-            ..
-        })) = message_result
-        {
-            return Err(Error::BufferedCommit);
-        }
-
-        let message = message_result?;
+            // In this error case, we have a missing proposal, so we need to buffer the commit.
+            // We can't do that here--we don't have the appropriate data in scope--but we can at least
+            // produce the proper error and return that, so our caller can handle it.
+            Err(Error::OpenMls(crate::OpenMlsError {
+                source:
+                    crate::OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidCommit(
+                        StageCommitError::MissingProposal,
+                    )),
+                ..
+            })) => {
+                return Err(Error::BufferedCommit);
+            }
+            result => result?,
+        };
 
         let credential = message.credential();
         let epoch = message.epoch();
