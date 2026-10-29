@@ -1,28 +1,26 @@
 [versions]
-kotlin = "2.3.10"
+kotlin = "2.4.0"
 coroutines = "1.7.3"
 kotlinx-datetime = "0.7.1"
 jna = "5.17.0"
 assertj = "3.24.2"
 espresso = "3.6.1"
 android-junit = "1.2.1"
-android-tools = "8.12.1"
-sdk-compile = "35"
+android-tools = "9.3.1"
+sdk-compile = "37"
 sdk-min = "26"
-gradle = "9.1.0"
+gradle = "9.7.0"
 dokka = "2.2.0"
 detekt = "2.0.0-alpha.3"
-agp = "8.12.3"
-gobley = "0.3.7"
+agp = "9.3.1"
+ubique-uniffi = "1.3.2"
 
 [plugins]
 android-library = { id = "com.android.library", version.ref = "agp" }
+android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
-gobley-cargo = { id = "dev.gobley.cargo", version.ref = "gobley" }
-gobley-uniffi = { id = "dev.gobley.uniffi", version.ref = "gobley" }
-gobley-rust = { id = "dev.gobley.rust", version.ref = "gobley" }
-kotlin-atomicfu = { id = "org.jetbrains.kotlin.plugin.atomicfu", version.ref = "kotlin" }
+ubique-uniffi = { id = "ch.ubique.uniffi.plugin", version.ref = "ubique-uniffi" }
 
 [libraries]
 coroutines-bom = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-bom", version.ref = "coroutines" }
