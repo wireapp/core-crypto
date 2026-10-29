@@ -3,7 +3,6 @@ use std::{fs, io};
 use security_framework::passwords as ios_keychain;
 use sha2::Digest as _;
 
-use super::encryption::set_pragma_unchecked;
 use crate::CryptoKeystoreResult;
 
 const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
@@ -28,7 +27,7 @@ fn salt_path(path: &str) -> String {
 pub(crate) fn handle_ios_wal_compat(conn: &rusqlite::Connection, path: &str) -> CryptoKeystoreResult<()> {
     match fs::read(salt_path(path)) {
         Ok(salt) => {
-            set_pragma_unchecked(conn, "cipher_salt", &format!("x'{}'", hex::encode(salt)))?;
+            conn.pragma_update(None, "cipher_salt", format!("x'{}'", hex::encode(salt)))?;
         }
         Err(ref e) if e.kind() == io::ErrorKind::NotFound => {
             // No salt file: either this database still keeps its salt in the keychain, or it was
@@ -41,7 +40,7 @@ pub(crate) fn handle_ios_wal_compat(conn: &rusqlite::Connection, path: &str) -> 
     }
 
     // Do not encrypt first 32 bytes of the database, so the header can be read by iOS.
-    set_pragma_unchecked(conn, "cipher_plaintext_header_size", "32")?;
+    conn.pragma_update(None, "cipher_plaintext_header_size", 32)?;
 
     // cipher_plaintext_header_size operates in-memory only, until the first DB page is rewritten.
     // We can trigger such a rewrite by setting the user version, which is specified by sqlite
@@ -72,7 +71,7 @@ fn migrate_legacy_salt(conn: &rusqlite::Connection, path: &str) -> CryptoKeystor
     // Write the salt file before deleting the keychain item so that an interrupted migration
     // leaves the salt in the keychain rather than nowhere at all.
     fs::write(salt_path(path), &salt)?;
-    set_pragma_unchecked(conn, "cipher_salt", &format!("x'{}'", hex::encode(&salt)))?;
+    conn.pragma_update(None, "cipher_salt", format!("x'{}'", hex::encode(&salt)))?;
 
     // The salt now lives in the salt file, which is what we read from here on. Failing to clean up
     // the keychain item is therefore not worth failing the migration over; we'd only be denying
@@ -86,8 +85,7 @@ fn migrate_legacy_salt(conn: &rusqlite::Connection, path: &str) -> CryptoKeystor
 
 /// Persist the salt sqlcipher is currently using into a file next to the database.
 fn persist_current_salt(conn: &rusqlite::Connection, path: &str) -> CryptoKeystoreResult<()> {
-    // Not `pragma_query_value`: rusqlite rejects pragmas missing from `pragma_pragma_list`, like this one.
-    let salt = conn.query_row("PRAGMA cipher_salt", [], |r| r.get::<_, String>(0))?;
+    let salt = conn.pragma_query_value(None, "cipher_salt", |r| r.get::<_, String>(0))?;
     let mut bytes = [0u8; 16];
     hex::decode_to_slice(salt, &mut bytes).map_err(crate::CryptoKeystoreError::HexSaltDecodeError)?;
     fs::write(salt_path(path), bytes)?;
