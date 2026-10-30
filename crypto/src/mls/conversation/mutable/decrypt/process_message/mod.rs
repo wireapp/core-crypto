@@ -1,3 +1,5 @@
+mod protocol_message_ext;
+
 use openmls::{
     framing::errors::{MessageDecryptionError, SecretTreeError},
     prelude::{
@@ -6,6 +8,7 @@ use openmls::{
     },
 };
 
+use self::protocol_message_ext::ProtocolMessageExt as _;
 use crate::{
     OpenMlsError,
     mls::conversation::{ConversationMut, Error, Result, config::MAX_FUTURE_EPOCHS},
@@ -27,10 +30,7 @@ pub(super) async fn process_message(
         }
     };
 
-    let is_duplicate = match &protocol_message {
-        ProtocolMessage::PublicMessage(m) => conversation.is_duplicate_message(m).await?,
-        ProtocolMessage::PrivateMessage(_) => false,
-    };
+    let is_duplicate = protocol_message.is_duplicate(conversation).await?;
     let msg_epoch = protocol_message.epoch().as_u64();
     let content_type = protocol_message.content_type();
 
