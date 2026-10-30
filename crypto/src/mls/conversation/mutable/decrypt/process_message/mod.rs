@@ -3,8 +3,8 @@ mod protocol_message_ext;
 use openmls::{
     framing::errors::{MessageDecryptionError, SecretTreeError},
     prelude::{
-        ContentType, MlsMessageIn, MlsMessageInBody, ProcessMessageError, ProcessedMessage, ProtocolMessage,
-        ValidationError,
+        ConfirmationTag, ContentType, MlsMessageIn, MlsMessageInBody, ProcessMessageError,
+        ProcessedMessage as MlsProcessedMessage, ProtocolMessage, ValidationError,
     },
 };
 
@@ -13,6 +13,22 @@ use crate::{
     OpenMlsError,
     mls::conversation::{ConversationMut, Error, Result, config::MAX_FUTURE_EPOCHS},
 };
+
+/// A reason why processing this message had to be deferred
+pub(super) enum DeferralReason {
+    /// Message comes from a future epoch and can be processed once we arrive in that epoch
+    FutureEpoch { epoch: u64 },
+    /// Message attempts to commit a proposal by reference, but we have not yet received the referenced proposal
+    MissingProposal,
+}
+
+/// Outcome of processing a message
+#[derive(derive_more::From)]
+pub(super) enum ProcessedMessage {
+    Content(MlsProcessedMessage),
+    OwnCommit(ConfirmationTag),
+    Deferred(DeferralReason),
+}
 
 /// Parse and process a message. This is the step which actually performs decryption.
 pub(super) async fn process_message(
@@ -38,9 +54,9 @@ pub(super) async fn process_message(
     conversation
         .mutate_group(async move |_, group, _| {
             let group_epoch = group.epoch().as_u64();
-            let processed_msg = match group.process_message(&backend, protocol_message).await {
+            let processed_msg: ProcessedMessage = match group.process_message(&backend, protocol_message).await {
                 // processing message went well
-                Ok(processed) => Ok(processed),
+                Ok(processed) => Ok(processed.into()),
 
                 // Attempt to unpack whether a message was too old, too new, or duplicate.
                 // OpenMLS makes this surprisingly challenging!
