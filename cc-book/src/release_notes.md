@@ -2,7 +2,7 @@
 
 ## CoreCrypto 11
 
-### Unreleased
+### v11.0.0 - 2026-10-30
 
 - CoreCrypto now supports encrypting and decrypting transient messages. Transient messages are encrypted and decrypted
   for/from group members without affecting the cryptographic state of the group, which enables their use case: to be
