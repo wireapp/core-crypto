@@ -5,14 +5,6 @@
 WASM_TARGET_DIR := $(abspath target/wasm)
 WASM_BUILD_ENV := CARGO_TARGET_DIR=$(WASM_TARGET_DIR)
 WASM_TARGET_TRIPLE := wasm32-unknown-unknown
-# We are accepting warnings on the generated code when running `cargo check`, this is consistent with the ubrn config.
-WASM_BUILD_RUSTFLAGS := --cfg getrandom_backend=\"wasm_js\" -Awarnings
-WASM_FFI_LIB := $(WASM_TARGET_DIR)/debug/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
-RUST_MODULES_WASM := $(JS_DIR)/rust_modules/wasm
-RUST_MODULES_STAMP := $(RUST_MODULES_WASM)/Cargo.toml
-RUST_MODULES_CARGO_LOCK := $(RUST_MODULES_WASM)/Cargo.lock
-WASM_FILE := $(RUST_MODULES_WASM)/target/$(WASM_TARGET_TRIPLE)/$(RELEASE_MODE)/core_crypto_ffi_wasm.wasm
-BROWSER_TS_IMPL := $(BROWSER_GEN_DIR)/core_crypto_ffi.ts
 BROWSER_OUT_DIR := $(TS_BROWSER_DIR)/dist
 TS_NATIVE_OUT_DIR := $(TS_NATIVE_DIR)/dist
 BROWSER_OUT := $(BROWSER_OUT_DIR)/corecrypto.d.ts $(BROWSER_OUT_DIR)/corecrypto.js
@@ -60,16 +52,7 @@ ts-clean: ## Cleanup old TypeScript build outputs
 	@rm -rf $(BROWSER_OUT_DIR) $(TS_NATIVE_OUT_DIR) \
 	&& rm -rf $(BROWSER_GEN_DIR) \
 	&& rm -rf $(TS_NATIVE_GEN_DIR) \
-	&& rm -rf $(WASM_TARGET_DIR) \
-	&& rm -rf $(JS_DIR)/rust_modules
-
-ubrn-deps := $(RUST_SOURCES) $(UNIFFI_TOML) $(UBRN_CONFIG) $(BUN_LOCK) $(NODE_MODULES)
-$(WASM_FFI_LIB) $(BROWSER_TS_IMPL) $(RUST_MODULES_STAMP) &: $(ubrn-deps)
-	cd $(JS_DIR) && $(WASM_BUILD_ENV) bun ubrn build web --no-wasm-pack
-	touch $(RUST_MODULES_STAMP)
-
-$(RUST_MODULES_CARGO_LOCK): Cargo.lock $(RUST_MODULES_STAMP)
-	cp Cargo.lock $(RUST_MODULES_CARGO_LOCK)
+	&& rm -rf $(WASM_TARGET_DIR)
 
 # The wasm build compiles a C shim (sqlite-wasm-rs), so it needs a clang whose WebAssembly
 # backend was compiled in. Apple clang's was not, which is why CI restores $(WASM_GEN) from an
@@ -145,54 +128,49 @@ endef
 check-wasm-bindgen: ## Check that the wasm-bindgen CLI matches the version in Cargo.lock
 	$(check-wasm-bindgen)
 
-$(WASM_FILE): $(RUST_MODULES_CARGO_LOCK) $(RUST_MODULES_STAMP) $(JS_DIR)/Cargo.rust-modules.toml
-	$(check-wasm-cc)
-	cd $(RUST_MODULES_WASM) && \
-	CARGO_PROFILE_RELEASE_OPT_LEVEL=s RUSTFLAGS="$(WASM_BUILD_RUSTFLAGS)" cargo build --target $(WASM_TARGET_TRIPLE) $(CARGO_BUILD_ARGS)
-
-BROWSER_WASM := $(BROWSER_GEN_DIR)/wasm-bindgen/index_bg.wasm
+BROWSER_WASM := $(BROWSER_GEN_DIR)/core_crypto_ffi.wasm
 
 WASM_GEN := \
 	$(BROWSER_WASM) \
-	$(BROWSER_GEN_DIR)/wasm-bindgen/index_bg.wasm.d.ts \
-	$(BROWSER_GEN_DIR)/wasm-bindgen/index.d.ts \
-	$(BROWSER_GEN_DIR)/wasm-bindgen/index.js
+	$(BROWSER_GEN_DIR)/core_crypto_ffi_bg.js \
+	$(BROWSER_GEN_DIR)/core_crypto_ffi.ts \
+	$(BROWSER_GEN_DIR)/core_crypto_ffi-ffi.ts \
+	$(BROWSER_GEN_DIR)/index.ts \
+	$(BROWSER_GEN_DIR)/uniffi-jspi.ts \
+	$(BROWSER_GEN_DIR)/wasm-imports.ts
 
 # In release builds, shrink the generated wasm for size. wasm-opt is slow, so we only run
 # it when RELEASE is set. We use `-Os` rather than `-Oz` because the extra space savings of
 # `-Oz` don't justify the runtime performance penalty.
-WASM_OPT := $(if $(RELEASE),wasm-opt --enable-exception-handling -Os $(BROWSER_WASM) -o $(BROWSER_WASM) &&)
+WASM_OPT := $(if $(RELEASE),&& wasm-opt --enable-exception-handling -Os $(BROWSER_WASM) -o $(BROWSER_WASM))
 
-# All our actual dependencies for this step are generated, so we fake it by listing the ancestor dependencies
-wasm-build-deps := $(ubrn-deps) Cargo.lock
-# index.web.ts is generated but unused so we remove it
-# Build the temporary host library in a dedicated target dir so we do not mix
-# the shared target outputs used by ios/jvm builds.
-$(WASM_GEN) &: $(wasm-build-deps)
-# Depend on source files, not $(WASM_FILE) directly. The CI artifact system restores
-# $(WASM_GEN) outputs on macOS runners where clang cannot build wasm32-unknown-unknown.
-# Source-file deps let Make treat those restored files as up-to-date without needing
-# $(WASM_FILE) to exist; a direct prerequisite would force a rebuild attempt that fails.
+WASM_IMPORTS_SCRIPT := scripts/wasm-imports.sh
+wasm-build-deps := $(RUST_SOURCES) $(UNIFFI_TOML) $(UBRN_CONFIG) $(WASM_IMPORTS_SCRIPT) $(BUN_LOCK) $(NODE_MODULES)
+# Build the library in a dedicated target dir so we do not mix the shared target outputs used
+# by ios/jvm builds.
 #
-# With Rust 1.97's v0 mangling, wasm-bindgen's demangler can map distinct symbols to
-# the same generated export name. Stable Rust cannot opt back into legacy mangling.
-# See https://blog.rust-lang.org/2026/07/09/Rust-1.97.0/#symbol-mangling-v0-enabled-by-default
+# `ubrn build wasm2` builds core-crypto-ffi for wasm32, generates the bindings from that module,
+# and stages a copy beside them. Staging also runs wasm-bindgen over the copy, because our
+# dependencies reach wasm-bindgen; that leaves the `_bg.js` glue which the generated `index.ts`
+# imports. ubrn's `index.ts` resolves only that glue, though, so `wasm-imports.ts` lists everything
+# the module imports, including wasm-bindgen snippets, for `initWasmModule` to hand to the player.
+#
+# The CI artifact system restores $(WASM_GEN) on macOS runners, where clang cannot build
+# wasm32-unknown-unknown. Since every prerequisite here is a source file, Make treats those
+# restored outputs as up to date and never reaches this recipe there.
 #
 # The CLI check is in the recipe, not a prerequisite, for the same reason: runners which restore
 # these outputs need not have wasm-bindgen installed. It runs first so that a mismatch fails before
 # the long wasm build.
+$(WASM_GEN) &: $(wasm-build-deps)
 	$(check-wasm-bindgen)
 	$(check-wasm-cc)
-	$(MAKE) $(WASM_FILE)
 	cd $(JS_DIR) && \
-	wasm-bindgen --target web \
-	  --omit-default-module-path \
-	  --no-demangle \
-	  --out-name index \
-	  --out-dir packages/browser/src/autogenerated/wasm-bindgen \
-	  $(WASM_FILE) && \
-	$(WASM_OPT) \
-	rm src/index.web.ts
+	$(WASM_BUILD_ENV) CARGO_PROFILE_RELEASE_OPT_LEVEL=s \
+	  bun ubrn build wasm2 --config ubrn.config.yaml $(CARGO_BUILD_ARGS) \
+	  $(WASM_OPT)
+	$(SHELL) $(WASM_IMPORTS_SCRIPT) $(BROWSER_GEN_DIR) core_crypto_ffi
+	@touch $(WASM_GEN)
 .PHONY: wasm-build
 wasm-build: $(WASM_GEN)
 
@@ -206,9 +184,8 @@ $(BROWSER_OUT) &: $(ts-browser-deps)
 	  --format esm \
 	  --outdir $(BROWSER_OUT_DIR) \
 	  --entry-naming "corecrypto.[ext]" && \
-	mkdir -p $(BROWSER_OUT_DIR)/autogenerated/wasm-bindgen && \
-	cp packages/browser/src/autogenerated/wasm-bindgen/index_bg.wasm $(BROWSER_OUT_DIR)/autogenerated/wasm-bindgen/ && \
-	cp packages/browser/src/autogenerated/wasm-bindgen/index_bg.wasm.d.ts $(BROWSER_OUT_DIR)/autogenerated/wasm-bindgen/ && \
+	mkdir -p $(BROWSER_OUT_DIR)/autogenerated && \
+	cp $(BROWSER_WASM) $(BROWSER_OUT_DIR)/autogenerated/ && \
 	bun x dts-bundle-generator \
 	  --project packages/browser/tsconfig.json \
 	  -o $(BROWSER_OUT_DIR)/corecrypto.d.ts \
