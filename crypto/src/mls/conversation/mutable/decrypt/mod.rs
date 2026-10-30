@@ -15,11 +15,11 @@ mod process_message;
 
 use log::info;
 use openmls::{
-    framing::{MlsMessageIn, MlsMessageInBody, ProtocolMessage},
+    framing::MlsMessageIn,
     group::MlsGroup,
     prelude::{
-        ContentType, CredentialType, LeafNodeIndex, Member, ProcessMessageError, ProcessedMessageContent,
-        StageCommitError, StagedCommit,
+        CredentialType, LeafNodeIndex, Member, ProcessMessageError, ProcessedMessageContent, StageCommitError,
+        StagedCommit,
     },
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
@@ -28,7 +28,7 @@ use tls_codec::Deserialize as _;
 use self::process_message::process_message;
 use super::{ConversationMut, Result};
 use crate::{
-    ClientId, E2eiConversationState, OpenMlsError, RecursiveError, Session, TlsCodecError, WireIdentity,
+    ClientId, E2eiConversationState, RecursiveError, Session, TlsCodecError, WireIdentity,
     mls::{
         conversation::{
             Error,
@@ -163,12 +163,6 @@ impl From<BufferedDecryptedMessage> for DecryptedMessage {
     }
 }
 
-struct ParsedMessage {
-    is_duplicate: bool,
-    protocol_message: ProtocolMessage,
-    content_type: ContentType,
-}
-
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum RecursionPolicy {
     AsNecessary,
@@ -245,8 +239,7 @@ impl ConversationMut {
         message: MlsMessageIn,
         recursion_policy: RecursionPolicy,
     ) -> Result<DecryptedMessage> {
-        let parsed_message = self.parse_message(message.clone()).await?;
-        let message = match process_message(self, parsed_message).await {
+        let message = match process_message(self, message.clone()).await {
             // Handles the case where we receive our own commits.
             Err(Error::OpenMls(crate::OpenMlsError {
                 source:
@@ -325,32 +318,6 @@ impl ConversationMut {
             .members()
             .filter_map(|member| indices.contains(&member.index).then_some(member))
             .collect::<Vec<_>>()
-    }
-
-    async fn parse_message(&self, msg_in: MlsMessageIn) -> Result<ParsedMessage> {
-        let mut is_duplicate = false;
-
-        let (protocol_message, content_type) = match msg_in.extract() {
-            MlsMessageInBody::PublicMessage(m) => {
-                is_duplicate = self.is_duplicate_message(&m).await?;
-                let ct = m.content_type();
-                (ProtocolMessage::PublicMessage(m), ct)
-            }
-            MlsMessageInBody::PrivateMessage(m) => {
-                let ct = m.content_type();
-                (ProtocolMessage::PrivateMessage(m), ct)
-            }
-            _ => {
-                return Err(
-                    OpenMlsError::wrap("parsing inbound message")(ProcessMessageError::IncompatibleWireFormat).into(),
-                );
-            }
-        };
-        Ok(ParsedMessage {
-            is_duplicate,
-            protocol_message,
-            content_type,
-        })
     }
 
     async fn validate_commit(&self, commit: &StagedCommit) -> Result<()> {
