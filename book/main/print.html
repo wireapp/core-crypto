@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-edfe30d7.js";
+            window.path_to_searchindex_js = "searchindex-ea87d253.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e64f8d46.js"></script>
@@ -1119,15 +1119,17 @@ both changes at once.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
 <h2 id="corecrypto-11"><a class="header" href="#corecrypto-11">CoreCrypto 11</a></h2>
-<h3 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h3>
+<h3 id="v1100---2026-10-30"><a class="header" href="#v1100---2026-10-30">v11.0.0 - 2026-10-30</a></h3>
 <ul>
 <li>
-<p>The E2ei error type now contains typed sub errors (similar to the mls and proteus error types). Code reading
-<code>CoreCryptoError.E2ei.e2eiError</code> as a string must now match on the <code>E2eiError</code> variants instead.</p>
+<p>CoreCrypto now supports encrypting and decrypting transient messages. Transient messages are encrypted and decrypted
+for/from group members without affecting the cryptographic state of the group, which enables their use case: to be
+distributed only to currently online group members.</p>
 </li>
 <li>
-<p>The <code>thumbprint</code> of a <code>WireIdentity</code> is now always computed with SHA-256, regardless of the cipher suite. It used to
-be computed with the cipher suite’s hash algorithm.</p>
+<p>CoreCrypto now also supports encrypting and decrypting targeted messages. A Targeted message is encrypted for a single
+group member specifically. This enables the long-awaited read receipts feature for MLS. Regular MLS messages aren’t a
+good fit for read receipts because of the massive amount of irrelevant messages that would need to be distributed.</p>
 </li>
 <li>
 <p>CoreCrypto now has support for 11 post-quantum cipher suites, as defined by the
@@ -1153,6 +1155,14 @@ for the 6 cipher suites that use hybrid (post-quantum + classical) key-exchange 
 post-quantum signatures is not yet supported.</p>
 </li>
 <li>
+<p>The E2ei error type now contains typed sub errors (similar to the mls and proteus error types). Code reading
+<code>CoreCryptoError.E2ei.e2eiError</code> as a string must now match on the <code>E2eiError</code> variants instead.</p>
+</li>
+<li>
+<p>The <code>thumbprint</code> of a <code>WireIdentity</code> is now always computed with SHA-256, regardless of the cipher suite. It used to
+be computed with the cipher suite’s hash algorithm.</p>
+</li>
+<li>
 <p><code>e2eiIsPkiEnvSetup</code> has been removed. You can call <code>getPkiEnvironment</code> to see if it is set.</p>
 </li>
 <li>
@@ -1171,16 +1181,6 @@ a client id is not a hex-encoded binary value, and only the unpadded form appear
 </li>
 <li>
 <p><code>ClientId.deserialize</code> can now fail. Calling <code>deserialize</code> on history client ids throws a <code>CoreCryptoError</code>.</p>
-</li>
-<li>
-<p>CoreCrypto now supports encrypting and decrypting transient messages. Transient messages are encrypted and decrypted
-for/from group members without affecting the cryptographic state of the group, which enables their use case: to be
-distributed only to currently online group members.</p>
-</li>
-<li>
-<p>CoreCrypto now also supports encrypting and decrypting targeted messages. A Targeted message is encrypted for a single
-group member specifically. This enables the long-awaited read receipts feature for MLS. Regular MLS messages aren’t a
-good fit for read receipts because of the massive amount of irrelevant messages that would need to be distributed.</p>
 </li>
 <li>
 <p>The documentation for <code>addCredential</code> previously stated that credentials registered with a single client must be
