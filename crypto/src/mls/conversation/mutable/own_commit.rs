@@ -1,8 +1,6 @@
 use openmls::{
     group::MlsGroup,
-    prelude::{
-        ConfirmationTag, ContentType, CredentialWithKey, FramedContentBodyIn, MlsMessageIn, MlsMessageInBody, Sender,
-    },
+    prelude::{ConfirmationTag, CredentialWithKey},
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
 
@@ -13,39 +11,6 @@ use crate::{
 };
 
 impl ConversationMut {
-    /// Returns the confirmation tag from a public message that is an own commit.
-    /// Returns an error if the confirmation tag in the own commit is missing.
-    pub(crate) async fn extract_confirmation_tag_from_own_commit<'a>(
-        &self,
-        own_commit: &'a MlsMessageIn,
-    ) -> Result<&'a ConfirmationTag> {
-        let MlsMessageInBody::PublicMessage(msg) = own_commit.body_as_ref() else {
-            panic!(
-                "extract_confirmation_tag_from_own_commit() must always be called \
-                 with an MlsMessageIn containing an MlsMessageInBody::PublicMessage"
-            );
-        };
-
-        let is_commit = matches!(msg.content_type(), ContentType::Commit);
-        let own_index = self.group().await.own_leaf_index();
-        let is_self_sent = matches!(msg.sender(), Sender::Member(i) if i == &own_index);
-        let is_own_commit = is_commit && is_self_sent;
-
-        assert!(
-            is_own_commit,
-            "extract_confirmation_tag_from_own_commit() must always be called with an own commit."
-        );
-        assert!(
-            matches!(msg.body(), FramedContentBodyIn::Commit(_)),
-            "extract_confirmation_tag_from_own_commit() must always be called with an own commit."
-        );
-
-        msg.auth
-            .confirmation_tag
-            .as_ref()
-            .ok_or(Error::MlsMessageInvalidState("Message confirmation tag not present"))
-    }
-
     pub(crate) async fn handle_own_commit(&mut self, ct: &ConfirmationTag) -> Result<DecryptedMessage> {
         let group = self.group().await;
         if group.pending_commit().is_none() {

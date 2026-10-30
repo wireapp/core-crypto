@@ -1,4 +1,6 @@
-use openmls::prelude::{ContentType, FramedContentBodyIn, Proposal, ProtocolMessage, Sender};
+use openmls::prelude::{
+    ConfirmationTag, ContentType, FramedContentBodyIn, LeafNodeIndex, Proposal, ProtocolMessage, Sender,
+};
 
 use crate::{
     OpenMlsError,
@@ -7,6 +9,13 @@ use crate::{
 
 /// Some helper methods on `ProtocolMessage`
 pub(super) trait ProtocolMessageExt {
+    /// Extracts the confirmation tag from this message if it is a commit we created.
+    ///
+    /// If this is not a public message, or if the content type is not a commit, or if we were not the sender,
+    /// or the body data is not a commit, or the auth data somehow is missing the content tag, returns
+    /// `MlsMessageInvalidState`.
+    fn own_commit_confirmation_tag(&self, own_leaf_index: LeafNodeIndex) -> Result<&ConfirmationTag>;
+
     /// A non-exhaustive early duplicate detection mechanism.
     ///
     /// In certain scenarios, we can determine whether a message is a duplicate before processing it.
@@ -15,6 +24,28 @@ pub(super) trait ProtocolMessageExt {
 }
 
 impl ProtocolMessageExt for ProtocolMessage {
+    fn own_commit_confirmation_tag(&self, own_leaf_index: LeafNodeIndex) -> Result<&ConfirmationTag> {
+        let ProtocolMessage::PublicMessage(message) = self else {
+            return Err(Error::MlsMessageInvalidState(
+                "only public protocol messages have a confirmation tag",
+            ));
+        };
+        if !matches!(message.content_type(), ContentType::Commit)
+            || !matches!(message.body(), FramedContentBodyIn::Commit(_))
+            || !matches!(message.sender(), Sender::Member(idx) if idx == &own_leaf_index)
+        {
+            return Err(Error::MlsMessageInvalidState("this was not a commit we created"));
+        }
+
+        message
+            .auth
+            .confirmation_tag
+            .as_ref()
+            .ok_or(Error::MlsMessageInvalidState(
+                "confirmation tag missing from message auth",
+            ))
+    }
+
     async fn is_duplicate(&self, conversation: &ConversationMut) -> Result<bool> {
         match self {
             ProtocolMessage::PrivateMessage(_) => Ok(false),
