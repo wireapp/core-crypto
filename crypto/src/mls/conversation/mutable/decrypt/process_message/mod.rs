@@ -59,7 +59,10 @@ pub(super) async fn process_message(
     conversation
         .mutate_group(async move |_, group, _| {
             let group_epoch = group.epoch().as_u64();
-            let processed_msg: ProcessedMessage = match group.process_message(&backend, protocol_message).await {
+
+            match group.process_message(&backend, protocol_message).await {
+                // now that openmls has handled the message, we can return the duplicate message error
+                Ok(_) if is_duplicate => Err(Error::DuplicateMessage),
                 // processing message went well
                 Ok(processed) => Ok(processed.into()),
 
@@ -119,11 +122,7 @@ pub(super) async fn process_message(
 
                 // everything else gets a generic wrapping
                 Err(err) => Err(OpenMlsError::wrap("processing message")(err).into()),
-            }?;
-            if is_duplicate {
-                return Err(Error::DuplicateMessage);
             }
-            Ok(processed_msg)
         })
         .await
 }
