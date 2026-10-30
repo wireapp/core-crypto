@@ -1,4 +1,4 @@
-import type { ClientId, KeyPackage } from "#core-crypto-ffi";
+import type { ClientId, KeyPackage } from "#core-crypto";
 import { runOnPlatform } from "#shared-utils";
 import { runBenchmark, userBenchmarkParameters } from "./utils";
 
