@@ -6,7 +6,7 @@ Targets:
 
 - iOS (via [UniFFI](https://github.com/mozilla/uniffi-rs))
 - Android (via [UniFFI](https://github.com/mozilla/uniffi-rs))
-- WASM (via [wasm-bindgen](https://github.com/rustwasm/wasm-bindgen))
+- WASM (via [uniffi-bindgen-react-native](https://github.com/jhugman/uniffi-bindgen-react-native))
 
 ## Tests
 
