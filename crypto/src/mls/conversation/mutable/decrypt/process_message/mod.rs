@@ -107,6 +107,9 @@ pub(super) async fn process_message(
                 ))) => Err(Error::MessageEpochTooOld),
 
                 // other errors we care to unpack
+                Err(ProcessMessageError::InvalidCommit(StageCommitError::MissingProposal)) => {
+                    Ok(ProcessedMessage::Deferred(DeferralReason::MissingProposal))
+                }
                 Err(ProcessMessageError::InvalidCommit(StageCommitError::OwnCommit)) => {
                     confirmation_tag_result.map(Into::into)
                 }
