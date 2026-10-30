@@ -17,17 +17,9 @@ pub(super) async fn process_message(
     message: MlsMessageIn,
 ) -> Result<ProcessedMessage> {
     // Parse the incoming message
-    let mut is_duplicate = false;
-    let (protocol_message, content_type) = match message.extract() {
-        MlsMessageInBody::PublicMessage(m) => {
-            is_duplicate = conversation.is_duplicate_message(&m).await?;
-            let ct = m.content_type();
-            (ProtocolMessage::PublicMessage(m), ct)
-        }
-        MlsMessageInBody::PrivateMessage(m) => {
-            let ct = m.content_type();
-            (ProtocolMessage::PrivateMessage(m), ct)
-        }
+    let protocol_message: ProtocolMessage = match message.extract() {
+        MlsMessageInBody::PublicMessage(public_message_in) => public_message_in.into(),
+        MlsMessageInBody::PrivateMessage(private_message_in) => private_message_in.into(),
         _ => {
             return Err(
                 OpenMlsError::wrap("parsing inbound message")(ProcessMessageError::IncompatibleWireFormat).into(),
@@ -35,7 +27,13 @@ pub(super) async fn process_message(
         }
     };
 
+    let is_duplicate = match &protocol_message {
+        ProtocolMessage::PublicMessage(m) => conversation.is_duplicate_message(m).await?,
+        ProtocolMessage::PrivateMessage(_) => false,
+    };
     let msg_epoch = protocol_message.epoch().as_u64();
+    let content_type = protocol_message.content_type();
+
     let backend = conversation.crypto_provider().await?;
     conversation
         .mutate_group(async move |_, group, _| {
