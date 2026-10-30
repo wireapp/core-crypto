@@ -1,22 +1,40 @@
 use openmls::{
     framing::errors::{MessageDecryptionError, SecretTreeError},
-    prelude::{ContentType, ProcessMessageError, ProcessedMessage, ValidationError},
+    prelude::{
+        ContentType, MlsMessageIn, MlsMessageInBody, ProcessMessageError, ProcessedMessage, ProtocolMessage,
+        ValidationError,
+    },
 };
 
 use crate::{
     OpenMlsError,
-    mls::conversation::{ConversationMut, Error, Result, config::MAX_FUTURE_EPOCHS, mutable::decrypt::ParsedMessage},
+    mls::conversation::{ConversationMut, Error, Result, config::MAX_FUTURE_EPOCHS},
 };
 
-/// Process a parsed message. This is the step which actually performs decryption.
+/// Parse and process a message. This is the step which actually performs decryption.
 pub(super) async fn process_message(
     conversation: &mut ConversationMut,
-    ParsedMessage {
-        is_duplicate,
-        protocol_message,
-        content_type,
-    }: ParsedMessage,
+    message: MlsMessageIn,
 ) -> Result<ProcessedMessage> {
+    // Parse the incoming message
+    let mut is_duplicate = false;
+    let (protocol_message, content_type) = match message.extract() {
+        MlsMessageInBody::PublicMessage(m) => {
+            is_duplicate = conversation.is_duplicate_message(&m).await?;
+            let ct = m.content_type();
+            (ProtocolMessage::PublicMessage(m), ct)
+        }
+        MlsMessageInBody::PrivateMessage(m) => {
+            let ct = m.content_type();
+            (ProtocolMessage::PrivateMessage(m), ct)
+        }
+        _ => {
+            return Err(
+                OpenMlsError::wrap("parsing inbound message")(ProcessMessageError::IncompatibleWireFormat).into(),
+            );
+        }
+    };
+
     let msg_epoch = protocol_message.epoch().as_u64();
     let backend = conversation.crypto_provider().await?;
     conversation
