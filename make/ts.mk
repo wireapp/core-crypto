@@ -175,6 +175,9 @@ $(WASM_GEN) &: $(wasm-build-deps)
 wasm-build: $(WASM_GEN)
 
 # generate TypeScript defs only when corecrypto.js changed
+#
+# `@ubjs/core` is bundled into corecrypto.js rather than being a dependency of the published
+# package, so its types are inlined into corecrypto.d.ts too; an import of it would not resolve.
 ts-browser-deps := $(TS_BROWSER_SRCS) $(WASM_GEN) $(BUN_LOCK) $(NODE_MODULES)
 $(BROWSER_OUT) &: $(ts-browser-deps)
 	cd $(JS_DIR) && \
@@ -191,7 +194,8 @@ $(BROWSER_OUT) &: $(ts-browser-deps)
 	  -o $(BROWSER_OUT_DIR)/corecrypto.d.ts \
 	  --no-check \
 	  --export-referenced-types false \
-	  packages/browser/src/CoreCrypto.ts
+	  --external-inlines @ubjs/core \
+	  -- packages/browser/src/CoreCrypto.ts
 	@touch $@
 
 .PHONY: ts-browser
