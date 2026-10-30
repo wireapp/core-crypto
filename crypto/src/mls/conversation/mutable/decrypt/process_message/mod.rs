@@ -87,10 +87,10 @@ pub(super) async fn process_message(
                     // epoch. We can't do that here--we don't have the appropriate data in scope
                     // --but we can at least produce the proper error and return that, so our
                     // caller can handle it. Our caller needs to know about the epoch number, so
-                    // we pass it back inside the error.
-                    Err(Error::BufferedFutureMessage {
-                        message_epoch: msg_epoch,
-                    })
+                    // we pass it back inside the deferral.
+                    Ok(ProcessedMessage::Deferred(DeferralReason::FutureEpoch {
+                        epoch: msg_epoch,
+                    }))
                 }
                 Err(ProcessMessageError::ValidationError(ValidationError::WrongEpoch)) if msg_epoch < group_epoch => {
                     match content_type {
