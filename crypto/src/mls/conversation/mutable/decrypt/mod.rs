@@ -25,7 +25,7 @@ use openmls::{
 use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize as _;
 
-use self::process_message::process_message;
+use self::process_message::{DeferralReason, ProcessedMessage, process_message};
 use super::{ConversationMut, Result};
 use crate::{
     ClientId, E2eiConversationState, RecursiveError, Session, TlsCodecError, WireIdentity,
@@ -239,30 +239,7 @@ impl ConversationMut {
         message: MlsMessageIn,
         recursion_policy: RecursionPolicy,
     ) -> Result<DecryptedMessage> {
-        let message = match process_message(self, message.clone()).await {
-            // Handles the case where we receive our own commits.
-            Err(Error::OpenMls(crate::OpenMlsError {
-                source:
-                    crate::OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidCommit(
-                        StageCommitError::OwnCommit,
-                    )),
-                ..
-            })) => {
-                let ct = self.extract_confirmation_tag_from_own_commit(&message).await?;
-                let mut decrypted_message = self.handle_own_commit(ct).await?;
-
-                if let Some(decrypted_message) = decrypted_message.as_commit_mut() {
-                    debug_assert!(
-                        decrypted_message.buffered_messages.is_none(),
-                        "decrypted message should be constructed with empty buffer"
-                    );
-                    if recursion_policy == RecursionPolicy::AsNecessary {
-                        decrypted_message.buffered_messages = self.restore_and_clear_pending_messages().await?;
-                    }
-                }
-
-                return Ok(decrypted_message);
-            }
+        let processed = match process_message(self, message).await {
             // In this error case, we have a missing proposal, so we need to buffer the commit.
             // We can't do that here--we don't have the appropriate data in scope--but we can at least
             // produce the proper error and return that, so our caller can handle it.
@@ -276,6 +253,34 @@ impl ConversationMut {
                 return Err(Error::BufferedCommit);
             }
             result => result?,
+        };
+
+        let message = match processed {
+            // processing succeeded
+            ProcessedMessage::Content(message) => message,
+
+            // Handles the case where we receive our own commits.
+            ProcessedMessage::OwnCommit(confirmation_tag) => {
+                let mut decrypted_message = self.handle_own_commit(&confirmation_tag).await?;
+
+                if let Some(decrypted_message) = decrypted_message.as_commit_mut() {
+                    debug_assert!(
+                        decrypted_message.buffered_messages.is_none(),
+                        "decrypted message should be constructed with empty buffer"
+                    );
+                    if recursion_policy == RecursionPolicy::AsNecessary {
+                        decrypted_message.buffered_messages = self.restore_and_clear_pending_messages().await?;
+                    }
+                }
+
+                return Ok(decrypted_message);
+            }
+            // We can't directly buffer the commits here, but we can propagate the need to.
+            // This will change with WPB-29261 and WPB-29262.
+            ProcessedMessage::Deferred(DeferralReason::MissingProposal) => return Err(Error::BufferedCommit),
+            ProcessedMessage::Deferred(DeferralReason::FutureEpoch { epoch }) => {
+                return Err(Error::BufferedFutureMessage { message_epoch: epoch });
+            }
         };
 
         let credential = message.credential();
