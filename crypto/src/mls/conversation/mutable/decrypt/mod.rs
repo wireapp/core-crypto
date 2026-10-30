@@ -17,10 +17,7 @@ use log::info;
 use openmls::{
     framing::MlsMessageIn,
     group::MlsGroup,
-    prelude::{
-        CredentialType, LeafNodeIndex, Member, ProcessMessageError, ProcessedMessageContent, StageCommitError,
-        StagedCommit,
-    },
+    prelude::{CredentialType, LeafNodeIndex, Member, ProcessedMessageContent, StagedCommit},
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize as _;
@@ -239,23 +236,7 @@ impl ConversationMut {
         message: MlsMessageIn,
         recursion_policy: RecursionPolicy,
     ) -> Result<DecryptedMessage> {
-        let processed = match process_message(self, message).await {
-            // In this error case, we have a missing proposal, so we need to buffer the commit.
-            // We can't do that here--we don't have the appropriate data in scope--but we can at least
-            // produce the proper error and return that, so our caller can handle it.
-            Err(Error::OpenMls(crate::OpenMlsError {
-                source:
-                    crate::OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidCommit(
-                        StageCommitError::MissingProposal,
-                    )),
-                ..
-            })) => {
-                return Err(Error::BufferedCommit);
-            }
-            result => result?,
-        };
-
-        let message = match processed {
+        let message = match process_message(self, message).await? {
             // processing succeeded
             ProcessedMessage::Content(message) => message,
 
