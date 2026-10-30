@@ -64,6 +64,11 @@ tokio-util = { version = "0.7", optional = true }
 js-sys.workspace = true
 web-sys = { version = "0.3", features = ["console"] }
 console_error_panic_hook.workspace = true
+# The wasm2 player's allocator, panic hook and JSPI entry. Pinned to the same fork release as the
+# `uniffi-bindgen-react-native` npm dependency, because crates.io releases lack `export_jspi_entry!`.
+uniffi-runtime-wasm = { git = "https://github.com/wireapp/uniffi-bindgen-react-native", tag = "0.31.0-5.wire.1" }
+# JSPI needs the exporting cdylib to depend on wasm-bindgen directly.
+wasm-bindgen.workspace = true
 
 [build-dependencies]
 uniffi = { workspace = true, features = [
