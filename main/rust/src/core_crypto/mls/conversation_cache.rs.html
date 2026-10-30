@@ -101,20 +101,40 @@
 <a href=#101 id=101 data-nosnippet>101</a>        <span class="self">self</span>.entries.remove(id)
 <a href=#102 id=102 data-nosnippet>102</a>    }
 <a href=#103 id=103 data-nosnippet>103</a>
-<a href=#104 id=104 data-nosnippet>104</a>    <span class="doccomment">/// Empties the cache.
+<a href=#104 id=104 data-nosnippet>104</a>    <span class="doccomment">/// Reload the given conversations from the database after a savepoint rollback.
 <a href=#105 id=105 data-nosnippet>105</a>    ///
-<a href=#106 id=106 data-nosnippet>106</a>    /// Must be called on transaction rollback to avoid serving
-<a href=#107 id=107 data-nosnippet>107</a>    /// stale state that was mutated in-memory but never persisted.
-<a href=#108 id=108 data-nosnippet>108</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>clear(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-<a href=#109 id=109 data-nosnippet>109</a>        <span class="self">self</span>.entries.clear();
-<a href=#110 id=110 data-nosnippet>110</a>    }
-<a href=#111 id=111 data-nosnippet>111</a>}
-<a href=#112 id=112 data-nosnippet>112</a>
-<a href=#113 id=113 data-nosnippet>113</a><span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>ConversationCache {
-<a href=#114 id=114 data-nosnippet>114</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
-<a href=#115 id=115 data-nosnippet>115</a>        f.debug_struct(<span class="string">"MlsConversationCache"</span>)
-<a href=#116 id=116 data-nosnippet>116</a>            .field(<span class="string">"len"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.entries.len())
-<a href=#117 id=117 data-nosnippet>117</a>            .finish_non_exhaustive()
-<a href=#118 id=118 data-nosnippet>118</a>    }
-<a href=#119 id=119 data-nosnippet>119</a>}
+<a href=#106 id=106 data-nosnippet>106</a>    /// Cached ones are reloaded in place, ones no longer in the database are dropped, and uncached ones
+<a href=#107 id=107 data-nosnippet>107</a>    /// are skipped.
+<a href=#108 id=108 data-nosnippet>108</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>restore&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ids: <span class="kw">impl </span>IntoIterator&lt;Item = <span class="kw-2">&amp;</span><span class="lifetime">'a </span>ConversationIdRef&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#109 id=109 data-nosnippet>109</a>        <span class="kw">for </span>id <span class="kw">in </span>ids {
+<a href=#110 id=110 data-nosnippet>110</a>            <span class="kw">let </span><span class="prelude-val">Some</span>(conversation) = <span class="self">self</span>.entries.peek(id) <span class="kw">else </span>{
+<a href=#111 id=111 data-nosnippet>111</a>                <span class="kw">continue</span>;
+<a href=#112 id=112 data-nosnippet>112</a>            };
+<a href=#113 id=113 data-nosnippet>113</a>            <span class="kw">let </span>persisted = conversation
+<a href=#114 id=114 data-nosnippet>114</a>                .reload()
+<a href=#115 id=115 data-nosnippet>115</a>                .<span class="kw">await
+<a href=#116 id=116 data-nosnippet>116</a>                </span>.map_err(RecursiveError::context(<span class="string">"reloading conversation from the database"</span>))<span class="question-mark">?</span>;
+<a href=#117 id=117 data-nosnippet>117</a>            <span class="kw">if </span>!persisted {
+<a href=#118 id=118 data-nosnippet>118</a>                <span class="self">self</span>.entries.remove(id);
+<a href=#119 id=119 data-nosnippet>119</a>            }
+<a href=#120 id=120 data-nosnippet>120</a>        }
+<a href=#121 id=121 data-nosnippet>121</a>        <span class="prelude-val">Ok</span>(())
+<a href=#122 id=122 data-nosnippet>122</a>    }
+<a href=#123 id=123 data-nosnippet>123</a>
+<a href=#124 id=124 data-nosnippet>124</a>    <span class="doccomment">/// Empties the cache.
+<a href=#125 id=125 data-nosnippet>125</a>    ///
+<a href=#126 id=126 data-nosnippet>126</a>    /// Must be called on transaction rollback to avoid serving
+<a href=#127 id=127 data-nosnippet>127</a>    /// stale state that was mutated in-memory but never persisted.
+<a href=#128 id=128 data-nosnippet>128</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>clear(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#129 id=129 data-nosnippet>129</a>        <span class="self">self</span>.entries.clear();
+<a href=#130 id=130 data-nosnippet>130</a>    }
+<a href=#131 id=131 data-nosnippet>131</a>}
+<a href=#132 id=132 data-nosnippet>132</a>
+<a href=#133 id=133 data-nosnippet>133</a><span class="kw">impl </span>std::fmt::Debug <span class="kw">for </span>ConversationCache {
+<a href=#134 id=134 data-nosnippet>134</a>    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>std::fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; std::fmt::Result {
+<a href=#135 id=135 data-nosnippet>135</a>        f.debug_struct(<span class="string">"MlsConversationCache"</span>)
+<a href=#136 id=136 data-nosnippet>136</a>            .field(<span class="string">"len"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.entries.len())
+<a href=#137 id=137 data-nosnippet>137</a>            .finish_non_exhaustive()
+<a href=#138 id=138 data-nosnippet>138</a>    }
+<a href=#139 id=139 data-nosnippet>139</a>}
 </code></pre></div></section></main></body></html>
