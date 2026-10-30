@@ -4,7 +4,7 @@ use openmls::{
     framing::errors::{MessageDecryptionError, SecretTreeError},
     prelude::{
         ConfirmationTag, ContentType, MlsMessageIn, MlsMessageInBody, ProcessMessageError,
-        ProcessedMessage as MlsProcessedMessage, ProtocolMessage, ValidationError,
+        ProcessedMessage as MlsProcessedMessage, ProtocolMessage, StageCommitError, ValidationError,
     },
 };
 
@@ -49,6 +49,11 @@ pub(super) async fn process_message(
     let is_duplicate = protocol_message.is_duplicate(conversation).await?;
     let msg_epoch = protocol_message.epoch().as_u64();
     let content_type = protocol_message.content_type();
+    // we need to compute the confirmation tag now, but it's only relevant in a particular case of processing the
+    // message, so don't propagate the error yet.
+    let confirmation_tag_result = protocol_message
+        .own_commit_confirmation_tag(conversation.group().await.own_leaf_index())
+        .map(ToOwned::to_owned);
 
     let backend = conversation.crypto_provider().await?;
     conversation
@@ -102,6 +107,9 @@ pub(super) async fn process_message(
                 ))) => Err(Error::MessageEpochTooOld),
 
                 // other errors we care to unpack
+                Err(ProcessMessageError::InvalidCommit(StageCommitError::OwnCommit)) => {
+                    confirmation_tag_result.map(Into::into)
+                }
                 Err(ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
                     MessageDecryptionError::AeadError,
                 ))) => Err(Error::DecryptionError),
