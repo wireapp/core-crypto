@@ -1206,7 +1206,9 @@ dependencies = [
  "tokio-util",
  "uniffi 0.29.5",
  "uniffi 0.31.0",
+ "uniffi-runtime-wasm",
  "uuid",
+ "wasm-bindgen",
  "web-sys",
  "wire-e2e-identity",
  "x509-cert",
@@ -6136,6 +6138,11 @@ dependencies = [
  "uniffi_macros 0.31.0",
  "uniffi_pipeline 0.31.0",
 ]
+
+[[package]]
+name = "uniffi-runtime-wasm"
+version = "0.31.0-5.wire.1"
+source = "git+https://github.com/wireapp/uniffi-bindgen-react-native?tag=0.31.0-5.wire.1#d55ad748fa7d2608f88de912408c5fbae325ba81"
 
 [[package]]
 name = "uniffi_bindgen"

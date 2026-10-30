@@ -51,7 +51,7 @@
         "ts-loader": "^9.6.2",
         "typedoc": "0.28.20",
         "typescript": "^7.0.2",
-        "uniffi-bindgen-react-native": "github:wireapp/uniffi-bindgen-react-native#c31e77be44b4996c22d3a38820a448ac6aeb29ac",
+        "uniffi-bindgen-react-native": "github:wireapp/uniffi-bindgen-react-native#0.31.0-5.wire.1",
         "yarn": "^1.22.22"
     },
     "mocha": {

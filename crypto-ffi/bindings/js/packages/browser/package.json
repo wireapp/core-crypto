@@ -48,6 +48,7 @@
         "access": "public"
     },
     "devDependencies": {
-        "@ubjs/core": "github:wireapp/uniffi-bindgen-react-native#c31e77be44b4996c22d3a38820a448ac6aeb29ac"
+        "@ubjs/core": "https://github.com/wireapp/uniffi-bindgen-react-native/releases/download/0.31.0-5.wire.1/ubjs-core-0.31.0-5.wire.1.tgz",
+        "@ubjs/wasm": "https://github.com/wireapp/uniffi-bindgen-react-native/releases/download/0.31.0-5.wire.1/ubjs-wasm-0.31.0-5.wire.1.tgz"
     }
 }
