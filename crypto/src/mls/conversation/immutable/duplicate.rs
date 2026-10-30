@@ -2,52 +2,6 @@
 //! in CoreCrypto so as not to return a decryption error to the client. Remove this when this is used
 //! with a DS guaranteeing exactly once delivery semantics since the following degrades the performances
 
-use openmls::prelude::{ContentType, FramedContentBodyIn, Proposal, PublicMessageIn, Sender};
-
-use super::{Conversation, Error, Result};
-use crate::OpenMlsError;
-
-impl Conversation {
-    pub(crate) async fn is_duplicate_message(&self, msg: &PublicMessageIn) -> Result<bool> {
-        let (sender, content_type) = (msg.sender(), msg.body().content_type());
-
-        match (content_type, sender) {
-            (ContentType::Commit, Sender::Member(_) | Sender::NewMemberCommit) => {
-                // we use the confirmation tag to detect duplicate since it is issued from the GroupContext
-                // which is supposed to be unique per epoch
-                let Some(msg_ct) = msg.confirmation_tag() else {
-                    // a commit MUST have a ConfirmationTag
-                    return Err(Error::MlsGroupInvalidState("a commit must have a ConfirmationTag"));
-                };
-
-                let group_ct = self
-                    .group()
-                    .await
-                    .compute_confirmation_tag(&self.session()?.crypto_provider)
-                    .map_err(OpenMlsError::wrap("computing confirmation tag"))?;
-                Ok(msg_ct == &group_ct)
-            }
-            (ContentType::Proposal, Sender::Member(_) | Sender::NewMemberProposal) => {
-                let FramedContentBodyIn::Proposal(proposal) = msg.body() else {
-                    return Err(Error::MlsGroupInvalidState(
-                        "message body was not a proposal despite ContentType::Proposal",
-                    ));
-                };
-
-                let proposal = Proposal::from(proposal.clone()); // TODO: eventually remove this clone 😮‍💨. Tracking issue: WPB-9622
-                let already_exists = self
-                    .group()
-                    .await
-                    .pending_proposals()
-                    .any(|pp| pp.proposal() == &proposal);
-                Ok(already_exists)
-            }
-
-            (..) => Ok(false),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{mls::conversation::Error, test_utils::*};
