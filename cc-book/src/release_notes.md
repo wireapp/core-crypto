@@ -4,11 +4,13 @@
 
 ### Unreleased
 
-- The E2ei error type now contains typed sub errors (similar to the mls and proteus error types). Code reading
-  `CoreCryptoError.E2ei.e2eiError` as a string must now match on the `E2eiError` variants instead.
+- CoreCrypto now supports encrypting and decrypting transient messages. Transient messages are encrypted and decrypted
+  for/from group members without affecting the cryptographic state of the group, which enables their use case: to be
+  distributed only to currently online group members.
 
-- The `thumbprint` of a `WireIdentity` is now always computed with SHA-256, regardless of the cipher suite. It used to
-  be computed with the cipher suite's hash algorithm.
+- CoreCrypto now also supports encrypting and decrypting targeted messages. A Targeted message is encrypted for a single
+  group member specifically. This enables the long-awaited read receipts feature for MLS. Regular MLS messages aren't a
+  good fit for read receipts because of the massive amount of irrelevant messages that would need to be distributed.
 
 - CoreCrypto now has support for 11 post-quantum cipher suites, as defined by the
   [draft](https://www.ietf.org/archive/id/draft-ietf-mls-pq-ciphersuites-06.html). Specifically, support has been added
@@ -32,6 +34,12 @@
   Note that only 3 of the 11 cipher suites use post-quantum signatures (ML-DSA), and that using x509 credentials with
   post-quantum signatures is not yet supported.
 
+- The E2ei error type now contains typed sub errors (similar to the mls and proteus error types). Code reading
+  `CoreCryptoError.E2ei.e2eiError` as a string must now match on the `E2eiError` variants instead.
+
+- The `thumbprint` of a `WireIdentity` is now always computed with SHA-256, regardless of the cipher suite. It used to
+  be computed with the cipher suite's hash algorithm.
+
 - `e2eiIsPkiEnvSetup` has been removed. You can call `getPkiEnvironment` to see if it is set.
 
 - `e2eiIsEnabled` has been removed. You can use `findCredentials` to check whether an X509 credential for a given cipher
@@ -46,14 +54,6 @@
   a client id is not a hex-encoded binary value, and only the unpadded form appears in a client id.
 
 - `ClientId.deserialize` can now fail. Calling `deserialize` on history client ids throws a `CoreCryptoError`.
-
-- CoreCrypto now supports encrypting and decrypting transient messages. Transient messages are encrypted and decrypted
-  for/from group members without affecting the cryptographic state of the group, which enables their use case: to be
-  distributed only to currently online group members.
-
-- CoreCrypto now also supports encrypting and decrypting targeted messages. A Targeted message is encrypted for a single
-  group member specifically. This enables the long-awaited read receipts feature for MLS. Regular MLS messages aren't a
-  good fit for read receipts because of the massive amount of irrelevant messages that would need to be distributed.
 
 - The documentation for `addCredential` previously stated that credentials registered with a single client must be
   distinct in credential type, signature scheme, and creation timestamp, and that you therefore had to wait a full
