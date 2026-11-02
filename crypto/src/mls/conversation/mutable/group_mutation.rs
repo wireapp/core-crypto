@@ -23,13 +23,20 @@ impl ConversationMut {
     /// which calls that method on `Drop` because this way we can ensure we do _not_ automatically call it when there is
     /// an error.
     ///
+    /// `is_immutable_operation` is a check on the operation's result; if that result indicates that the group state
+    /// could not have changed, this will bypass group persistence. Use with caution, and ensure that this only returns
+    /// `true` for truly immutable operations.
+    ///
+    /// See also [`Self::mutate_group`], which is exactly as this function without the `is_immutable_operation` check.
+    ///
     /// ## Note
     ///
     /// This function requires acquiring a write lock on the immutable conversation; it will deadlock
     /// if any lock already exists on that conversation.
-    pub(super) async fn mutate_group<T>(
+    pub(super) async fn mutate_group_with_operation_check<T>(
         &mut self,
         operation: impl AsyncFnOnce(&Transaction, &mut MlsGroupState, &ConversationIdRef) -> Result<T>,
+        is_immutable_operation: impl FnOnce(&T) -> bool,
     ) -> Result<T> {
         // we can't get the transaction if the transaction context has been invalidated,
         // and we want to have that error first before evaluating anything in the operation.
@@ -47,7 +54,7 @@ impl ConversationMut {
 
         let ok_result = operation(tx, &mut *group, id).await?;
 
-        if group.state_changed() == InnerState::Persisted {
+        if group.state_changed() == InnerState::Persisted || is_immutable_operation(&ok_result) {
             return Ok(ok_result);
         }
 
@@ -70,6 +77,30 @@ impl ConversationMut {
         group.persist(tx).await?;
 
         Ok(ok_result)
+    }
+
+    /// Perform an operation on a mutable reference to the contained MLS group.
+    ///
+    /// Errors will be propagated.
+    /// When the operation does not error, the group will automatically be persisted.
+    /// This ensures that persistence cannot be forgotten.
+    ///
+    /// We choose to implement this as a closure instead of a lightweight holding a reference to the coversation
+    /// which calls that method on `Drop` because this way we can ensure we do _not_ automatically call it when there is
+    /// an error.
+    ///
+    /// See [`Self::mutate_group_with_operation_check`]. That function does the same thing, but performs an additional
+    /// check to tell whether the group state has actually changed.
+    ///
+    /// ## Note
+    ///
+    /// This function requires acquiring a write lock on the immutable conversation; it will deadlock
+    /// if any lock already exists on that conversation.
+    pub(super) async fn mutate_group<T>(
+        &mut self,
+        operation: impl AsyncFnOnce(&Transaction, &mut MlsGroupState, &ConversationIdRef) -> Result<T>,
+    ) -> Result<T> {
+        self.mutate_group_with_operation_check(operation, |_| false).await
     }
 
     /// Exactly as [`Self::mutate_group`], but accessible from anywhere in core-crypto for testing.
