@@ -3,7 +3,7 @@ use obfuscate::Obfuscated;
 use openmls::group::QueuedProposal;
 
 use crate::{
-    DecryptedMessage, Proposal, RecursiveError, WireIdentity,
+    DecryptedMessage, DecryptionOutcome, Proposal, RecursiveError, WireIdentity,
     mls::conversation::{ConversationMut, Error, Result, mutable::decrypt::RecursionPolicy},
 };
 
@@ -34,45 +34,51 @@ pub(in crate::mls::conversation::mutable::decrypt) async fn handle(
             "retrieving buffered commit while handling proposal",
         ))?
     {
-        // using a savepoint here means that a partially-applied commit doesn't affect the DB, in case
+        // Using a savepoint here means that a partially-applied commit doesn't affect the DB, in case
         // of an error.
+        // We use a custom outcome check to ensure that the savepoint is only considered successful if
+        // the outcome is a decrypted message.
         let process_result = conversation
             .tx_context
             .inner()
             .map_err(RecursiveError::context(
                 "getting tx context for savepoint for processing buffered commit",
             ))?
-            .with_savepoint(
+            .transaction()
+            .with_savepoint_with_outcome_check(
                 "try_process_buffered_commit",
                 async || {
                     conversation.clear_buffered_commit()?;
                     conversation.try_process_buffered_commit(commit, recursion_policy).await
                 },
                 Error::savepoint,
+                DecryptionOutcome::savepoint_outcome_check,
             )
             .await;
 
         match process_result {
-            Ok(_) => {
+            Ok(DecryptionOutcome::Decrypted(decrypted)) => {
                 // a successfully-processed buffered commit overrides the proposal's return value
-                return process_result;
+                return Ok(decrypted);
             }
-            Err(Error::BufferedCommit) => {
+            Ok(DecryptionOutcome::Deferred(_)) => {
                 // this is fine and we don't need error handling;
                 // fall through to returning the proposal
             }
-            Err(Error::Keystore(_)) => {
+            Err(err @ Error::Keystore(_)) => {
                 // propagation means the outer transaction probably gets rolled back, meaning
                 // that the client will eventually retry this proposal, which might succeed next time.
                 // Also in the event that the error was something like the keystore being out of space,
                 // this lets the client actually handle that appropriately.
-                return process_result;
+                return Err(err);
             }
             Err(Error::Recursive(RecursiveError::TransactionContext { ref source, .. }))
                 if matches!(&**source, crate::transaction_context::Error::InvalidTransactionContext) =>
             {
                 // in this case we also propagate because the transaction itself is gone
-                return process_result;
+                // we have to unwrap the error because we can't bind it because we need a borrowed binding for the
+                // condition, but we'd need to return the owned version
+                return Err(process_result.unwrap_err());
             }
             Err(err) => {
                 // all other errors get the same handling:

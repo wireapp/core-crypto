@@ -8,7 +8,7 @@ use core_crypto_keystore::{
     entities::MlsPendingMessage,
     traits::{DeletableBySearchKey, EntityDatabaseMutation as _, FetchFromDatabase},
 };
-use log::{error, info};
+use log::{error, info, warn};
 use openmls::{
     framing::{MlsMessageIn, MlsMessageInBody},
     prelude::ContentType,
@@ -17,7 +17,7 @@ use tls_codec::Deserialize;
 
 use super::{RecursionPolicy, Result};
 use crate::{
-    BufferedDecryptedMessage, KeystoreError, RecursiveError, TlsCodecError,
+    BufferedDecryptedMessage, DecryptionOutcome, KeystoreError, RecursiveError, TlsCodecError,
     mls::conversation::{
         ConversationMut, Error,
         mutable::tnt::{TntMessage, TntWireFormat},
@@ -136,7 +136,11 @@ impl ConversationMut {
                     PendingMessage::Tnt(tnt_message) => self.decrypt_tnt_message(*tnt_message).await,
                 };
                 let decrypted = match maybe_decrypted {
-                    Ok(decrypted) => decrypted,
+                    Ok(DecryptionOutcome::Decrypted(decrypted)) => decrypted,
+                    Ok(DecryptionOutcome::Deferred(reason)) => {
+                        warn!(reason:?; "buffered message was not ready to unbuffer");
+                        continue;
+                    }
                     Err(err) => {
                         error!(error:% = err; "failed to decrypt buffered message");
                         continue;

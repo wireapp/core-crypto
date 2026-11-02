@@ -124,3 +124,34 @@ impl From<BufferedDecryptedMessage> for DecryptedMessage {
         }
     }
 }
+
+/// A reason why processing this message had to be deferred.
+#[derive(Debug)]
+pub enum DeferralReason {
+    /// Message comes from a future epoch and can be processed once we arrive in that epoch
+    FutureEpoch {
+        /// The epoch at which this message should become decryptable.
+        epoch: u64,
+    },
+    /// Message attempts to commit a proposal by reference, but we have not yet received the referenced proposal
+    MissingProposal,
+}
+
+/// Outcome of attempting to decrypt a message.
+//
+// We don't mind the size difference between variants here; the big variant is the happy path.
+#[cfg_attr(not(target_os = "unknown"), expect(clippy::large_enum_variant))]
+#[derive(Debug, derive_more::From)]
+pub enum DecryptionOutcome {
+    /// The message was successfully decrypted.
+    Decrypted(DecryptedMessage),
+    /// The message could not be processed yet, but is expected to be processable in the future.
+    Deferred(DeferralReason),
+}
+
+impl DecryptionOutcome {
+    /// `true` when this outcome is a decrypted message; `false` otherwise
+    pub(crate) fn savepoint_outcome_check<E>(outcome: &Result<Self, E>) -> bool {
+        matches!(outcome, Ok(Self::Decrypted(_)))
+    }
+}

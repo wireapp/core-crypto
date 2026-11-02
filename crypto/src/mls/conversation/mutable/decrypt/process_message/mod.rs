@@ -9,18 +9,11 @@ use openmls::{
 };
 
 use self::protocol_message_ext::ProtocolMessageExt as _;
+use super::DeferralReason;
 use crate::{
     OpenMlsError,
     mls::conversation::{ConversationMut, Error, Result, config::MAX_FUTURE_EPOCHS},
 };
-
-/// A reason why processing this message had to be deferred
-pub(super) enum DeferralReason {
-    /// Message comes from a future epoch and can be processed once we arrive in that epoch
-    FutureEpoch { epoch: u64 },
-    /// Message attempts to commit a proposal by reference, but we have not yet received the referenced proposal
-    MissingProposal,
-}
 
 /// Outcome of processing a message
 #[derive(derive_more::From)]
@@ -84,7 +77,7 @@ pub(super) async fn process_message(
                     if msg_epoch > group_epoch && msg_epoch <= group_epoch.saturating_add(MAX_FUTURE_EPOCHS) =>
                 {
                     // limit to next epoch otherwise if we were buffering a commit for epoch + 2
-                    // we would fail when trying to decrypt it in [MlsCentral::commit_accepted]
+                    // we would fail when trying to decrypt it in mls.
 
                     // We need to buffer the message until the group has advanced to the right
                     // epoch. We can't do that here--we don't have the appropriate data in scope

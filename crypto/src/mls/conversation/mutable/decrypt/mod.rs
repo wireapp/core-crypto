@@ -23,8 +23,11 @@ use openmls::{
 use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize as _;
 
-pub use self::outputs::{BufferedCommit, BufferedDecryptedMessage, Commit, DecryptedBytes, DecryptedMessage, Proposal};
-use self::process_message::{DeferralReason, ProcessedMessage, process_message};
+pub use self::outputs::{
+    BufferedCommit, BufferedDecryptedMessage, Commit, DecryptedBytes, DecryptedMessage, DecryptionOutcome,
+    DeferralReason, Proposal,
+};
+use self::process_message::{ProcessedMessage, process_message};
 use super::{ConversationMut, Result};
 use crate::{
     E2eiConversationState, RecursiveError, Session, TlsCodecError,
@@ -84,27 +87,29 @@ impl ConversationMut {
             }
         };
 
-        // In the inner `decrypt_message` above, we raise the `BufferedCommit` or
-        // `BufferedFutureMessage` errors, but we only handle them here.
-        // That's because in the scope they're raised, we don't have access to the raw message
-        // bytes; here, we do.
-        if let Err(Error::BufferedFutureMessage { message_epoch }) = decrypt_message_result {
-            self.buffer_future_message(message.as_ref())?;
-            let conversation_id = self.id().to_owned();
-            info!(group_id = conversation_id; "Buffered future message from epoch {message_epoch}");
-        }
-        if let Err(Error::BufferedCommit) = decrypt_message_result {
-            self.buffer_commit(message)?;
-        }
+        // These will no longer map to errors with WPB-29261, but we'll still take action on them at this level.
+        let decrypted_message = match decrypt_message_result {
+            Ok(DecryptionOutcome::Decrypted(decrypted)) => decrypted,
+            Ok(DecryptionOutcome::Deferred(DeferralReason::MissingProposal)) => {
+                self.buffer_commit(message)?;
+                return Err(Error::BufferedCommit);
+            }
+            Ok(DecryptionOutcome::Deferred(DeferralReason::FutureEpoch { epoch })) => {
+                self.buffer_future_message(message)?;
+                let conversation_id = self.id().to_owned();
+                info!(group_id = conversation_id, epoch; "Buffered future message");
+                return Err(Error::BufferedFutureMessage { message_epoch: epoch });
+            }
+            Err(err) => return Err(err),
+        };
 
-        let decrypt_message = decrypt_message_result?;
-
-        if let Some(decrypted_message) = decrypt_message.as_commit()
-            && !decrypted_message.is_active
+        if let Some(commit) = decrypted_message.as_commit()
+            && !commit.is_active
         {
             self.wipe().await?;
         }
-        Ok(decrypt_message)
+
+        Ok(decrypted_message)
     }
 
     /// Decrypt a deserialized [MlsMessageIn].
@@ -112,7 +117,7 @@ impl ConversationMut {
         &mut self,
         message: MlsMessageIn,
         recursion_policy: RecursionPolicy,
-    ) -> Result<DecryptedMessage> {
+    ) -> Result<DecryptionOutcome> {
         let message = match process_message(self, message).await? {
             // processing succeeded
             ProcessedMessage::Content(message) => message,
@@ -131,14 +136,9 @@ impl ConversationMut {
                     }
                 }
 
-                return Ok(decrypted_message);
+                return Ok(decrypted_message.into());
             }
-            // We can't directly buffer the commits here, but we can propagate the need to.
-            // This will change with WPB-29261 and WPB-29262.
-            ProcessedMessage::Deferred(DeferralReason::MissingProposal) => return Err(Error::BufferedCommit),
-            ProcessedMessage::Deferred(DeferralReason::FutureEpoch { epoch }) => {
-                return Err(Error::BufferedFutureMessage { message_epoch: epoch });
-            }
+            ProcessedMessage::Deferred(reason) => return Ok(reason.into()),
         };
 
         let credential = message.credential();
@@ -173,7 +173,7 @@ impl ConversationMut {
             }
         };
 
-        Ok(decrypted)
+        Ok(decrypted.into())
     }
 
     fn members_at_indices(indices: Vec<LeafNodeIndex>, group: &MlsGroup) -> Vec<Member> {

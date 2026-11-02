@@ -22,8 +22,8 @@ pub use self::targeted::encrypt::TargetedMessagePolicy;
 pub(crate) use self::tnt_message_counter::TntMessageCounter;
 use super::Result;
 use crate::{
-    ConversationConfiguration, DecryptedBytes, DecryptedMessage, KeystoreError, OpenMlsError, RecursiveError,
-    TlsCodecError,
+    ConversationConfiguration, DecryptedBytes, DecryptionOutcome, DeferralReason, KeystoreError, OpenMlsError,
+    RecursiveError, TlsCodecError,
     mls::{
         conversation::{
             ConversationMut, Error,
@@ -262,7 +262,7 @@ impl openmls::prelude::Verifiable for TntMessage {
 
 impl ConversationMut {
     /// Verify the [TntMessage] signature, then proceed with decryption.
-    pub(super) async fn decrypt_tnt_message(&self, message: TntMessage) -> Result<DecryptedMessage> {
+    pub(super) async fn decrypt_tnt_message(&self, message: TntMessage) -> Result<DecryptionOutcome> {
         let protocol_version = message.content.protocol_version;
         // Currently, we only support `ProtocolVersion::V1`, so we're throwing an error if anyone from a future version
         // sends us a message.
@@ -284,9 +284,11 @@ impl ConversationMut {
                 ))?
         } else if message_epoch > group_epoch {
             if message_epoch <= group_epoch.saturating_add(MAX_FUTURE_EPOCHS) {
-                // returning the error here is sufficient to cause the buffering to happen,
+                // returning this outcome here is sufficient to cause the buffering to happen,
                 // and should also be ok for transient messages; transience is a backend property
-                return Err(Error::BufferedFutureMessage { message_epoch });
+                return Ok(DecryptionOutcome::Deferred(DeferralReason::FutureEpoch {
+                    epoch: message_epoch,
+                }));
             }
             return Err(Error::UnbufferedFarFutureMessage);
         } else if message.content.body.is_transient() {
@@ -334,28 +336,28 @@ impl ConversationMut {
             .map_err(OpenMlsError::wrap("verifying tnt message signature"))?;
 
         match message.content.body {
-            TntMessageBody::Transient(transient_message) => {
-                self.decrypt_transient(transient_message, protocol_version, &sender)
-                    .await
-            }
-            TntMessageBody::Targeted(targeted_message) => {
-                self.decrypt_targeted(
+            TntMessageBody::Transient(transient_message) => self
+                .decrypt_transient(transient_message, protocol_version, &sender)
+                .await
+                .map(Into::into),
+            TntMessageBody::Targeted(targeted_message) => self
+                .decrypt_targeted(
                     targeted_message,
                     TargetedMessagePolicy::Persisted,
                     protocol_version,
                     &sender,
                 )
                 .await
-            }
-            TntMessageBody::TransientTargeted(targeted_message) => {
-                self.decrypt_targeted(
+                .map(Into::into),
+            TntMessageBody::TransientTargeted(targeted_message) => self
+                .decrypt_targeted(
                     targeted_message,
                     TargetedMessagePolicy::Transient,
                     protocol_version,
                     &sender,
                 )
                 .await
-            }
+                .map(Into::into),
         }
     }
 

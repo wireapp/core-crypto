@@ -58,8 +58,8 @@ pub use crate::{
         cipher_suite::CipherSuite,
         conversation::{
             BufferedCommit, BufferedDecryptedMessage, Commit, CommitBundle, ConversationConfiguration, ConversationId,
-            DecryptedBytes, DecryptedMessage, GroupInfoBundle, GroupInfoEncryptionType, GroupInfoPayload, Proposal,
-            RatchetTreeType, WirePolicy,
+            DecryptedBytes, DecryptedMessage, DecryptionOutcome, DeferralReason, GroupInfoBundle,
+            GroupInfoEncryptionType, GroupInfoPayload, Proposal, RatchetTreeType, WirePolicy,
         },
         credential::{
             Credential, CredentialRef, CredentialType, FindFilters as CredentialFindFilters, x509::CertificateBundle,
