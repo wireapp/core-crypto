@@ -11,6 +11,7 @@
 mod buffer_commit;
 pub(crate) mod buffer_messages;
 mod handle;
+mod incoming_message;
 mod outputs;
 mod process_message;
 
