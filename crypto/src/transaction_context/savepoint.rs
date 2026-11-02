@@ -21,16 +21,36 @@ impl TransactionContextInner {
     where
         E: From<RecursiveError>,
     {
+        self.with_savepoint_with_outcome_check(savepoint_name, operation, map_err, Result::is_ok)
+            .await
+    }
+
+    /// Run `operation` inside a savepoint of this transaction, with a custom outcome check.
+    ///
+    /// See: [`Self::with_savepoint`].
+    ///
+    /// When `outcome_check` returns `true` the operation is treated as successful, and the transaction and state are
+    /// committed. Otherwise, they are rolled back.
+    pub(crate) async fn with_savepoint_with_outcome_check<T, E>(
+        &self,
+        savepoint_name: &str,
+        operation: impl AsyncFnOnce() -> Result<T, E>,
+        map_err: impl Fn(&'static str) -> Box<dyn FnOnce(CryptoKeystoreError) -> E>,
+        outcome_check: impl Fn(&Result<T, E>) -> bool,
+    ) -> Result<T, E>
+    where
+        E: From<RecursiveError>,
+    {
         let epoch_changes_before = self.pending_epoch_changes.lock().await.len();
         let touched_before = self.touched_conversations.lock().await.len();
 
         #[expect(clippy::disallowed_methods, reason = "this is the wrapper")]
         let result = self
             .transaction
-            .with_savepoint(savepoint_name, operation, map_err)
+            .with_savepoint_with_outcome_check(savepoint_name, operation, map_err, &outcome_check)
             .await;
 
-        if result.is_err() {
+        if !outcome_check(&result) {
             self.pending_epoch_changes.lock().await.truncate(epoch_changes_before);
             let mut touched = self.touched_conversations.lock().await.split_off(touched_before);
             touched.sort();

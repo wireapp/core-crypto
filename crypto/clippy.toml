@@ -1,3 +1,4 @@
 disallowed-methods = [
   { path = "core_crypto_keystore::transaction::Transaction::with_savepoint", reason = "use `TransactionContextInner::with_savepoint`, which also restores in-memory state on rollback" },
+  { path = "core_crypto_keystore::transaction::Transaction::with_savepoint_with_outcome_check", reason = "use `TransactionContextInner::with_savepoint_with_outcome_check`, which also restores in-memory state on rollback" },
 ]
