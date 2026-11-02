@@ -54,7 +54,7 @@ impl ConversationMut {
     ) -> Result<DecryptionOutcome> {
         info!(group_id = self.id().to_owned(); "attempting to process buffered commit");
 
-        let message = MlsMessageIn::tls_deserialize(&mut commit.as_ref())
+        let message = MlsMessageIn::tls_deserialize_exact(commit.as_ref())
             .map_err(TlsCodecError::deserialize("mls message in"))?;
 
         Box::pin(self.decrypt_mls_message(message, recursion_policy)).await
