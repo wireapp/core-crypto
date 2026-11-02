@@ -1,6 +1,7 @@
-use openmls::prelude::MlsMessageIn;
+use openmls::prelude::{ContentType, MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize as _;
 
+use super::{Error, Result};
 use crate::{
     TlsCodecError,
     mls::conversation::mutable::tnt::{TntMessage, TntWireFormat},
@@ -38,6 +39,22 @@ impl ParsedMessage {
         };
 
         Ok(incoming_message)
+    }
+
+    /// Get the content type of this message.
+    ///
+    /// All TNT messages have Application content type. Public and Private MLS messages take the content type from
+    /// their message bodies, and other MLS messages return an `InappropriateMessageBodyType` error.
+    pub(super) fn content_type(&self) -> Result<ContentType> {
+        let content_type = match self {
+            ParsedMessage::Tnt(_) => ContentType::Application,
+            ParsedMessage::Mls(mls_message_in) => match mls_message_in.body_as_ref() {
+                MlsMessageInBody::PublicMessage(m) => m.content_type(),
+                MlsMessageInBody::PrivateMessage(m) => m.content_type(),
+                _ => return Err(Error::InappropriateMessageBodyType),
+            },
+        };
+        Ok(content_type)
     }
 }
 

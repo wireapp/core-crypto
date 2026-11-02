@@ -100,8 +100,6 @@ impl TntWireFormat {
     pub(crate) const MIN: u16 = Self::TRANSIENT_MESSAGE.0;
     pub(crate) const MAX: u16 = Self::TRANSIENT_TARGETED_MESSAGE.0;
 
-    pub(crate) const ALL: std::ops::RangeInclusive<u16> = Self::MIN..=Self::MAX;
-
     /// The current rx counter value of the given message type, which depends on the given sender, conversation, and
     /// epoch.
     ///
