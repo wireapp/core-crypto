@@ -22,23 +22,19 @@ use openmls::{
     prelude::{CredentialType, LeafNodeIndex, Member, ProcessedMessageContent, StagedCommit},
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
-use tls_codec::Deserialize as _;
 
 pub use self::outputs::{
     BufferedCommit, BufferedDecryptedMessage, Commit, DecryptedBytes, DecryptedMessage, DecryptionOutcome,
     DeferralReason, Proposal,
 };
-use self::process_message::{ProcessedMessage, process_message};
+use self::{
+    incoming_message::{IncomingMessage, ParsedMessage},
+    process_message::{ProcessedMessage, process_message},
+};
 use super::{ConversationMut, Result};
 use crate::{
-    E2eiConversationState, RecursiveError, Session, TlsCodecError,
-    mls::{
-        conversation::{
-            Error,
-            mutable::tnt::{TntMessage, TntWireFormat},
-        },
-        credential::ext::CredentialExt as _,
-    },
+    E2eiConversationState, RecursiveError, Session,
+    mls::{conversation::Error, credential::ext::CredentialExt as _},
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -64,28 +60,13 @@ impl ConversationMut {
     /// If a message has been buffered, this will be indicated by an error.
     /// Other errors are originating from OpenMls and the KeyStore
     pub async fn decrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<DecryptedMessage> {
-        let message = message.as_ref();
-        // Bytes 0 and 1 are the protocol version, bytes 2 and 3 are the wire format.
-        let wire_format_bytes = message
-            .get(2..=3)
-            .ok_or(TlsCodecError::deserialize("u16 (wire format)")(
-                tls_codec::Error::EndOfStream,
-            ))?;
-        let wire_format =
-            u16::tls_deserialize_exact(wire_format_bytes).map_err(TlsCodecError::deserialize("u16 (wire format)"))?;
-
-        let decrypt_message_result = match wire_format {
-            TntWireFormat::MIN..=TntWireFormat::MAX => {
-                let tnt_message =
-                    TntMessage::tls_deserialize_exact(message).map_err(TlsCodecError::deserialize("TntMessage"))?;
-                self.decrypt_tnt_message(tnt_message).await
-            }
-            _ => {
-                let mls_message_in = MlsMessageIn::tls_deserialize_exact(message)
-                    .map_err(TlsCodecError::deserialize("mls message in"))?;
+        let incoming_message = IncomingMessage::parse(message.as_ref())?;
+        let decrypt_message_result = match incoming_message.parsed {
+            ParsedMessage::Mls(mls_message_in) => {
                 self.decrypt_mls_message(mls_message_in, RecursionPolicy::AsNecessary)
                     .await
             }
+            ParsedMessage::Tnt(tnt_message) => self.decrypt_tnt_message(tnt_message).await,
         };
 
         // These will no longer map to errors with WPB-29261, but we'll still take action on them at this level.
