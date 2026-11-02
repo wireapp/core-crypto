@@ -63,6 +63,15 @@ impl Transaction {
             stmt.execute([])
                 .map_err(Into::into)
                 .map_err(map_err("rolling back savepoint"))?;
+            // after rolling back, releasing the savepoint frees the name, which is not semantically necessary
+            // but keeps the amount of savepoint data in memory small
+            let mut stmt = conn
+                .prepare(&format!("RELEASE SAVEPOINT {savepoint_name}"))
+                .map_err(Into::into)
+                .map_err(map_err("creating savepoint release stmt after rollback"))?;
+            stmt.execute([])
+                .map_err(Into::into)
+                .map_err(map_err("releasing savepoint after rollback"))?;
         }
 
         outcome
