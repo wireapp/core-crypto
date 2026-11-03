@@ -11,6 +11,8 @@ use tls_codec::SecretVLBytes;
 
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 mod graviola;
+#[cfg_attr(not(test), expect(dead_code, reason = "no backend uses the HPKE core yet"))]
+pub(crate) mod hpke;
 mod rustcrypto;
 
 /// Whether the CPU we are running on has every feature graviola requires.
