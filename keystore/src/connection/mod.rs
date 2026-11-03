@@ -1,16 +1,15 @@
-mod encryption;
+pub(crate) mod encryption;
 mod fetch_from_database;
 #[cfg(feature = "cross-process-lock")]
 mod file_lock;
 mod filesystem;
 #[cfg(target_os = "unknown")]
-mod idb_migration;
+pub(crate) mod idb_migration;
 #[cfg(target_os = "ios")]
-mod ios_wal_compat;
+pub(crate) mod ios_wal_compat;
 #[cfg(target_os = "unknown")]
 mod jspi_test;
 pub(crate) mod managed_connection;
-mod migrations;
 mod mls;
 #[cfg(target_os = "unknown")]
 mod opfs_vfs;
@@ -30,19 +29,14 @@ use rusqlite::trace::{TraceEvent, TraceEventCodes};
 pub use self::idb_migration::{delete_legacy_idb, legacy_idb_exists};
 #[cfg(target_os = "unknown")]
 pub use self::jspi_test::run_in_jspi;
-use self::transaction_lock::TransactionLock;
+pub use self::mls::{deser, ser};
 pub(crate) use self::{
     filesystem::Filesystem,
     managed_connection::{ManagedConnection, SqliteGuard},
-    transaction_lock::TransactionGuard,
+    transaction_lock::{TransactionGuard, TransactionLock},
 };
-pub use self::{
-    migrations::migrate_db_key_type_to_bytes,
-    mls::{deser, ser},
-};
-use crate::{
-    CryptoKeystoreResult, DatabaseKey, Transaction, connection::migrations::MigrationTarget, unique_arc::UniqueWeak,
-};
+pub use crate::migrations::migrate_db_key_type_to_bytes;
+use crate::{CryptoKeystoreResult, DatabaseKey, Transaction, migrations::MigrationTarget, unique_arc::UniqueWeak};
 
 #[cfg(feature = "log-queries")]
 fn log_query(event: TraceEvent) {
@@ -152,7 +146,7 @@ impl Database {
             conn.pragma_update(None, "journal_mode", "wal")?;
         }
 
-        migrations::run_migrations(&mut conn, migration_target)?;
+        crate::migrations::run_migrations(&mut conn, migration_target)?;
 
         let conn = Arc::new(Mutex::new(conn));
 
@@ -328,13 +322,13 @@ mod export_test {
             let dest_path = temp_dir.path().join("test_export_dest.db");
 
             // Write test database
-            std::fs::write(&source_path, super::migrations::test::DB).unwrap();
+            std::fs::write(&source_path, crate::migrations::test::DB).unwrap();
 
             // Migrate the database to use the new key format
             let key = DatabaseKey::generate();
-            super::migrations::migrate_db_key_type_to_bytes(
+            crate::migrations::migrate_db_key_type_to_bytes(
                 source_path.to_str().unwrap(),
-                super::migrations::test::OLD_KEY,
+                crate::migrations::test::OLD_KEY,
                 &key,
             )
             .await

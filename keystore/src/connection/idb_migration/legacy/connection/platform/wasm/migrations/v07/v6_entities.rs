@@ -11,7 +11,7 @@ use crate::{
             EntityDatabaseMutation, KeyType as _,
         },
     },
-    migrations::V6Credential,
+    migrations::historical::V6Credential,
     traits::PrimaryKey,
 };
 

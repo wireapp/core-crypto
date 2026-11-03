@@ -10,7 +10,7 @@ use crate::{
             EntityDeleteBorrowed, EntityGetBorrowed,
         },
     },
-    migrations::StoredHpkePrivateKeyV45,
+    migrations::historical::StoredHpkePrivateKeyV45,
 };
 
 impl EntityBase for StoredHpkePrivateKeyV45 {

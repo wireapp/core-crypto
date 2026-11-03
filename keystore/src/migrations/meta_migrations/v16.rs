@@ -3,7 +3,7 @@ use const_format::formatcp;
 use crate::{
     CryptoKeystoreResult,
     entities::StoredCredential,
-    migrations::{StoredSignatureKeypair, V5Credential, migrate_to_new_credential},
+    migrations::historical::{StoredSignatureKeypair, V5Credential, migrate_to_new_credential},
     traits::Entity as _,
 };
 

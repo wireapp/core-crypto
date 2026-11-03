@@ -4,8 +4,8 @@ use log::warn;
 use rusqlite::named_params;
 
 use crate::{
-    CryptoKeystoreResult, entities::StoredEpochEncryptionKeypairPkRef, migrations::V33StoredEpochEncryptionKeypair,
-    traits::Entity,
+    CryptoKeystoreResult, entities::StoredEpochEncryptionKeypairPkRef,
+    migrations::historical::V33StoredEpochEncryptionKeypair, traits::Entity,
 };
 
 pub(crate) const VERSION: i32 = 34;

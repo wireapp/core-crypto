@@ -10,7 +10,7 @@ use crate::{
             EntityDatabaseMutation,
         },
     },
-    migrations::V5Credential,
+    migrations::historical::V5Credential,
     traits::PrimaryKey,
 };
 

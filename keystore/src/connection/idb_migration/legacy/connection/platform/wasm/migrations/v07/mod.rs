@@ -9,7 +9,9 @@ use crate::{
         connection::Database,
         traits::{Entity as _, EntityDatabaseMutation as _},
     },
-    migrations::{LegacyPersistedMlsGroup, StoredCredentialV36, V6Credential, make_ciphersuite_for_signature_scheme},
+    migrations::historical::{
+        LegacyPersistedMlsGroup, StoredCredentialV36, V6Credential, make_ciphersuite_for_signature_scheme,
+    },
 };
 
 /// Open IDB once with the new builder and close it, this will apply the update.

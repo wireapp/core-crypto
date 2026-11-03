@@ -12,7 +12,7 @@ use crate::{
         connection::Database,
         traits::{Entity as _, EntityBase as _},
     },
-    migrations::{
+    migrations::historical::{
         LegacyPersistedMlsGroup, StoredCredentialV36, detect_duplicate_credentials, make_least_used_ciphersuite,
     },
 };

@@ -6,7 +6,7 @@ use crate::{
         connection::KeystoreDatabaseConnection,
         traits::{DecryptData, Decryptable, Decrypting, Entity, EntityBase},
     },
-    migrations::LegacyPersistedMlsGroup,
+    migrations::historical::LegacyPersistedMlsGroup,
 };
 
 /// Entity representing a persisted `MlsGroup`

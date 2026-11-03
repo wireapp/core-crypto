@@ -5,7 +5,7 @@ use idb::builder::{DatabaseBuilder, IndexBuilder};
 use super::DB_VERSION_10;
 use crate::{
     CryptoKeystoreResult, DatabaseKey, connection::idb_migration::legacy::traits::EntityBase as _,
-    migrations::LegacyPersistedMlsGroup,
+    migrations::historical::LegacyPersistedMlsGroup,
 };
 
 /// Open IDB once with the new builder and close it, this will apply the update.

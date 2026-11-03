@@ -12,7 +12,7 @@ use crate::{
         connection::Database,
         traits::{Entity as _, EntityBase as _, EntityDatabaseMutation as _},
     },
-    migrations::{StoredSignatureKeypair, V5Credential, migrate_to_new_credential},
+    migrations::historical::{StoredSignatureKeypair, V5Credential, migrate_to_new_credential},
 };
 
 /// Open IDB once with the new builder and close it, this will apply the update.

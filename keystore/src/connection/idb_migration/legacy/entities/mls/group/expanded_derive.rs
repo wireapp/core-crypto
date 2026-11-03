@@ -13,7 +13,7 @@ use crate::{
         connection,
         traits::{self, KeyType},
     },
-    migrations::LegacyPersistedMlsGroup,
+    migrations::historical::LegacyPersistedMlsGroup,
     traits::BorrowPrimaryKey,
 };
 

@@ -1,3 +1,6 @@
+//! These entities and helpers are preserved as of a specific historical revision, for the benefit of meta-migrations
+//! and the indexeddb import.
+
 use openmls::{
     group::MlsGroup,
     prelude::{Ciphersuite, Credential as MlsCredential, MlsCredentialType, SignatureScheme, TlsDeserializeTrait as _},

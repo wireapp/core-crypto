@@ -9,7 +9,7 @@ use crate::{
             EntityDatabaseMutation,
         },
     },
-    migrations::StoredSignatureKeypair,
+    migrations::historical::StoredSignatureKeypair,
     traits::PrimaryKey,
 };
 

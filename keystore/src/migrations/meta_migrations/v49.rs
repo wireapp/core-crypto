@@ -6,7 +6,7 @@
 use log::warn;
 use rusqlite::named_params;
 
-use crate::{CryptoKeystoreResult, entities::StoredCredential, migrations::not_before_from_serialized};
+use crate::{CryptoKeystoreResult, entities::StoredCredential, migrations::historical::not_before_from_serialized};
 
 pub(crate) const VERSION: i32 = 49;
 

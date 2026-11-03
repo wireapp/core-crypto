@@ -1,3 +1,4 @@
+pub(crate) mod historical;
 mod meta_migrations;
 
 use refinery::Target;
@@ -5,9 +6,9 @@ use rusqlite::{Connection, functions::FunctionFlags};
 
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey};
 
-refinery::embed_migrations!("src/connection/migrations");
+refinery::embed_migrations!("src/migrations");
 
-const COMPOSITE_SCHEMA: &str = include_str!("../composite-schema.sql");
+const COMPOSITE_SCHEMA: &str = include_str!("composite-schema.sql");
 
 /// The `user_version` pragma; CONST here to guard against typos
 const USER_VERSION: &str = "user_version";
@@ -33,7 +34,7 @@ pub(crate) enum MigrationTarget {
     Composite,
 }
 
-pub(super) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationTarget) -> CryptoKeystoreResult<()> {
+pub(crate) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationTarget) -> CryptoKeystoreResult<()> {
     conn.create_scalar_function("sha256_blob", 1, FunctionFlags::SQLITE_DETERMINISTIC, |ctx| {
         let input_blob = ctx.get::<Vec<u8>>(0)?;
         Ok(crate::sha256(&input_blob))
@@ -212,7 +213,7 @@ fn run_meta_migration(version: i32, conn: &mut rusqlite::Connection) -> CryptoKe
 /// Migrate a database encrypted with a string key to the new raw-bytes [`DatabaseKey`].
 ///
 /// This is intended to be called only once, when migrating from CoreCrypto 5.x to 6.x, before
-/// opening the database via [`super::Database::open`].
+/// opening the database via [`crate::Database::open`].
 pub async fn migrate_db_key_type_to_bytes(
     path: &str,
     old_key: &str,
@@ -220,26 +221,26 @@ pub async fn migrate_db_key_type_to_bytes(
 ) -> CryptoKeystoreResult<()> {
     // On WASM the legacy data lives in an IndexedDB database. This rekeys that legacy store in place,
     // re-encrypting every entity from the old string-derived cipher to the new bytes key. The
-    // subsequent [`super::Database::open`] then copies the data into the unified rusqlite database.
+    // subsequent [`crate::Database::open`] then copies the data into the unified rusqlite database.
     #[cfg(target_os = "unknown")]
     {
-        super::idb_migration::migrate_legacy_idb_key_type_to_bytes(path, old_key, new_key).await
+        crate::connection::idb_migration::migrate_legacy_idb_key_type_to_bytes(path, old_key, new_key).await
     }
 
     // On native platforms we implement the migration directly.
     #[cfg(not(target_os = "unknown"))]
     {
-        use crate::CryptoKeystoreError;
+        use crate::{CryptoKeystoreError, connection};
 
         let mut conn = rusqlite::Connection::open(path)?;
-        let transaction_lock = super::TransactionLock::new(conn.path().unwrap_or_default())?;
+        let transaction_lock = connection::TransactionLock::new(conn.path().unwrap_or_default())?;
         let _guard = transaction_lock.acquire().await?;
 
         conn.pragma_update(None, "key", old_key)?;
 
         // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
         #[cfg(target_os = "ios")]
-        super::ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
+        connection::ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
 
         /// This is the latest schema version our test db dump is compatible with.
         const MAX_SUPPORTED_SCHEMA_VERSION: u8 = 15;
@@ -264,7 +265,7 @@ pub async fn migrate_db_key_type_to_bytes(
         run_migrations(&mut conn, MigrationTarget::Version(MAX_SUPPORTED_SCHEMA_VERSION as u16))?;
 
         // Rekey the database.
-        super::encryption::rekey(&mut conn, new_key)
+        connection::encryption::rekey(&mut conn, new_key)
     }
 }
 
@@ -277,12 +278,13 @@ pub(crate) mod test {
     use x509_cert::der::{DecodePem as _, Encode as _};
 
     use crate::{
-        Sha256Hash,
+        DatabaseKey, Sha256Hash,
         ancillary::ConversationIdRef,
-        connection::{Database, DatabaseKey, migrate_db_key_type_to_bytes, migrations::MigrationTarget},
+        connection::{Database, migrate_db_key_type_to_bytes},
         entities::{
             MlsPendingMessage, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredPskBundle,
         },
+        migrations::MigrationTarget,
         traits::{Entity, EntityGetBorrowed as _, PrimaryKey as _, SearchableEntity as _},
     };
 
