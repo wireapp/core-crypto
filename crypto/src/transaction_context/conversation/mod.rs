@@ -109,7 +109,7 @@ impl TransactionContext {
                 async || {
                     let group = MlsGroup::new_with_group_id(
                         &provider,
-                        &credential.signature_key_pair,
+                        &credential.signer(),
                         &config,
                         openmls::prelude::GroupId::from_slice(id.as_ref()),
                         credential.to_mls_credential_with_key(),

@@ -105,7 +105,7 @@ impl TransactionContext {
 
         let (group, commit, group_info) = MlsGroup::join_by_external_commit(
             &mls_provider,
-            &credential.signature_key_pair,
+            &credential.signer(),
             None,
             group_info,
             &configuration
@@ -410,7 +410,7 @@ mod tests {
                     let gi = group
                         .export_group_info(
                             &mls_provider,
-                            &credential.signature_key_pair,
+                            &credential.signer(),
                             // joining by external commit assumes we include a ratchet tree, but this `false`
                             // says to leave it out
                             false,

@@ -165,7 +165,7 @@ mod tests {
         targeted.epoch = GroupEpoch::from(epoch);
 
         let credential = signer.find_current_credential().await.unwrap();
-        let resigned: TntMessage = content.sign(credential.signature_key()).unwrap();
+        let resigned: TntMessage = content.sign(&credential.signer()).unwrap();
         resigned.tls_serialize_detached().unwrap()
     }
 

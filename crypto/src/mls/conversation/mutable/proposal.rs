@@ -15,11 +15,12 @@ impl ConversationMut {
     /// Used when adding or updating the history client.
     pub(crate) async fn propose_add_member(&mut self, key_package: KeyPackageIn) -> Result<MlsMessageOut> {
         let crypto_provider = self.crypto_provider().await?;
-        let signer = &self.credential().await?.signature_key_pair;
+        let credential = self.credential().await?;
+        let signer = credential.signer();
         let (proposal, _ref) = self
             .mutate_group(async |_, group, _| {
                 group
-                    .propose_add_member(&crypto_provider, signer, key_package)
+                    .propose_add_member(&crypto_provider, &signer, key_package)
                     .await
                     .map_err(OpenMlsError::wrap("propose add member"))
                     .map_err(Into::into)
@@ -31,11 +32,12 @@ impl ConversationMut {
     /// Used when updating the history client.
     pub(crate) async fn propose_remove_member(&mut self, member: LeafNodeIndex) -> Result<MlsMessageOut> {
         let crypto_provider = self.crypto_provider().await?;
-        let signer = &self.credential().await?.signature_key_pair;
+        let credential = self.credential().await?;
+        let signer = credential.signer();
         let (proposal, _ref) = self
             .mutate_group(async |_, group, _| {
                 group
-                    .propose_remove_member(&crypto_provider, signer, member)
+                    .propose_remove_member(&crypto_provider, &signer, member)
                     .map_err(OpenMlsError::wrap("propose remove member"))
                     .map_err(Into::into)
             })

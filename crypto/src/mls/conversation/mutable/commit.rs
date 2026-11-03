@@ -75,9 +75,9 @@ impl ConversationMut {
         let credential = self.credential().await?;
 
         self.mutate_group(async |_, group, _| {
-            let signer = credential.signature_key();
+            let signer = credential.signer();
             let (commit, welcome, group_info) = group
-                .add_members(&backend, signer, key_packages.clone())
+                .add_members(&backend, &signer, key_packages.clone())
                 .await
                 .map_err(|err| {
                     if Self::err_is_duplicate_signature_key(&err) {
@@ -150,7 +150,7 @@ impl ConversationMut {
         self.ensure_no_pending_commit().await?;
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
-        let signer = credential.signature_key();
+        let signer = credential.signer();
         let (commit, welcome, group_info) = self
             .mutate_group(async |_, group, _| {
                 let members = group
@@ -163,7 +163,7 @@ impl ConversationMut {
                     })
                     .collect::<Vec<_>>();
                 group
-                    .remove_members(&backend, signer, &members)
+                    .remove_members(&backend, &signer, &members)
                     .await
                     .map_err(OpenMlsError::wrap("group remove members"))
                     .map_err(Into::into)
@@ -225,7 +225,7 @@ impl ConversationMut {
             };
 
             let (commit, welcome, group_info) = group
-                .explicit_self_update(&backend, &credential.signature_key_pair, updated_leaf_node)
+                .explicit_self_update(&backend, &credential.signer(), updated_leaf_node)
                 .await
                 .map_err(OpenMlsError::wrap("group self update"))?;
 
@@ -263,9 +263,9 @@ impl ConversationMut {
 
         let (commit, welcome, openmls_group_info) = self
             .mutate_group(async |_, group, _| {
-                let signer = &credential.signature_key_pair;
+                let signer = credential.signer();
                 group
-                    .commit_to_pending_proposals(&crypto_provider, signer)
+                    .commit_to_pending_proposals(&crypto_provider, &signer)
                     .await
                     .map_err(OpenMlsError::wrap("group commit to pending proposals"))
                     .map_err(Into::into)
@@ -296,9 +296,9 @@ impl ConversationMut {
 
         let (commit, welcome, openmls_group_info) = self
             .mutate_group(async |_, group, _| {
-                let signer = &credential.signature_key_pair;
+                let signer = credential.signer();
                 group
-                    .commit_to_inline_proposals(provider, signer, proposals)
+                    .commit_to_inline_proposals(provider, &signer, proposals)
                     .await
                     .map_err(OpenMlsError::wrap("group commit to pending proposals"))
                     .map_err(Into::into)

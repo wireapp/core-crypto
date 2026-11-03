@@ -101,14 +101,8 @@ impl<'a> TestConversation<'a> {
 
         let group_id = openmls::group::GroupId::from_slice(self.id().as_ref().as_ref());
         let epoch = self.guard().await.epoch().await;
-        let proposal = ExternalProposal::new_remove(
-            to_remove_index,
-            group_id,
-            epoch.into(),
-            &cb.signature_key_pair,
-            sender_index,
-        )
-        .unwrap();
+        let proposal =
+            ExternalProposal::new_remove(to_remove_index, group_id, epoch.into(), &cb.signer(), sender_index).unwrap();
         OperationGuard::new(TestOperation::Remove(to_remove), proposal, self, [])
     }
 }
