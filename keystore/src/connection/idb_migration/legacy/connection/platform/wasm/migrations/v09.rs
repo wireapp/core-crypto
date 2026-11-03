@@ -11,7 +11,7 @@ use crate::{
         connection::{Database, platform::wasm::WasmStorageTransaction},
         traits::{Encrypting as _, Entity as _, EntityBase as _},
     },
-    migrations::StoredCredentialV36,
+    migrations::historical::StoredCredentialV36,
 };
 
 /// Open IDB once with the new builder and close it, this will apply the update.

@@ -18,7 +18,7 @@ use crate::{
         },
     },
     entities::{ProteusPrekey, ProteusSession, StoredCredential, StoredEncryptionKeyPair, StoredPskBundle},
-    migrations::{
+    migrations::historical::{
         LegacyPersistedMlsGroup, StoredCredentialV36, StoredHpkePrivateKeyV45, V33StoredEpochEncryptionKeypair,
     },
 };

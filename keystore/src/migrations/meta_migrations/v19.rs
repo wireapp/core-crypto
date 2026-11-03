@@ -5,7 +5,8 @@ use log::info;
 use rusqlite::named_params;
 
 use crate::{
-    CryptoKeystoreError, CryptoKeystoreResult, Sha256Hash, migrations::StoredCredentialV36, traits::Entity as _,
+    CryptoKeystoreError, CryptoKeystoreResult, Sha256Hash, migrations::historical::StoredCredentialV36,
+    traits::Entity as _,
 };
 
 pub(crate) const VERSION: i32 = 19;

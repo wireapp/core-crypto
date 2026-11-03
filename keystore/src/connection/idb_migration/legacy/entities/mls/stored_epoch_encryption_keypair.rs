@@ -10,7 +10,7 @@
 
 use crate::{
     connection::idb_migration::legacy::{self, traits::KeyType},
-    migrations::V33StoredEpochEncryptionKeypair,
+    migrations::historical::V33StoredEpochEncryptionKeypair,
     traits::BorrowPrimaryKey,
 };
 

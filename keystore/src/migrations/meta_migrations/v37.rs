@@ -1,6 +1,6 @@
 use crate::{
     CryptoKeystoreResult,
-    migrations::{StoredCredentialV36, credential_type_from_serialized},
+    migrations::historical::{StoredCredentialV36, credential_type_from_serialized},
     traits::PrimaryKey as _,
 };
 

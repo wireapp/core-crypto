@@ -13,7 +13,7 @@ use crate::{
         connection::storage::WasmStorageWrapper,
         traits::{Decryptable, Decrypting, EntityBase, KeyType, SearchableEntity},
     },
-    migrations::LegacyPersistedMlsGroup,
+    migrations::historical::LegacyPersistedMlsGroup,
 };
 
 /// This type exists so that we can efficiently search for the children of a given group.

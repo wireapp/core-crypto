@@ -24,18 +24,18 @@ use self::legacy::{
 use crate::entities::{ProteusPrekey, ProteusSession};
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
-    connection::{
-        idb_migration::legacy::entities::mls::{
-            e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
-            group::legacy_persisted_mls_pending_group::LegacyPersistedMlsPendingGroup,
-            pending_group::PersistedMlsPendingGroup as IdbPersistedMlsPendingGroup,
-            pending_message::LegacyMlsPendingMessage, stored_keypackage::StoredKeypackage,
-        },
-        migrations::MigrationTarget,
+    connection::idb_migration::legacy::entities::mls::{
+        e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
+        group::legacy_persisted_mls_pending_group::LegacyPersistedMlsPendingGroup,
+        pending_group::PersistedMlsPendingGroup as IdbPersistedMlsPendingGroup,
+        pending_message::LegacyMlsPendingMessage, stored_keypackage::StoredKeypackage,
     },
     entities::{StoredBufferedCommit, StoredEncryptionKeyPair, StoredPskBundle},
     migrations::{
-        LegacyPersistedMlsGroup, StoredCredentialV36, StoredHpkePrivateKeyV45, V33StoredEpochEncryptionKeypair,
+        MigrationTarget,
+        historical::{
+            LegacyPersistedMlsGroup, StoredCredentialV36, StoredHpkePrivateKeyV45, V33StoredEpochEncryptionKeypair,
+        },
     },
     traits::EntityDatabaseMutation as _,
 };
@@ -177,7 +177,7 @@ pub async fn delete_legacy_idb(name: &str) -> CryptoKeystoreResult<()> {
 ///
 /// As a straight passthrough to a `pub(crate)` function, this really only exists so that its caller in the
 /// parent module has a nicer call path.
-pub(super) async fn migrate_legacy_idb_key_type_to_bytes(
+pub(crate) async fn migrate_legacy_idb_key_type_to_bytes(
     name: &str,
     old_key: &str,
     new_key: &DatabaseKey,
@@ -235,7 +235,7 @@ pub(super) async fn maybe_migrate(
     let mut legacy_conn = KeystoreDatabaseConnection::open(name, database_key).await?;
 
     // Migrate the new connection to the version corresponding to the final IDB migration version.
-    super::migrations::run_migrations(
+    crate::migrations::run_migrations(
         new_conn,
         MigrationTarget::Version(SQL_DATABASE_VERSION_AS_OF_FINAL_IDB_VERSION),
     )?;

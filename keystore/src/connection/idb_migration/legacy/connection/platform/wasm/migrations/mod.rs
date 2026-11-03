@@ -138,7 +138,7 @@ mod tests {
             traits::{Entity, EntityBase as _, EntityDatabaseMutation as _},
         },
         entities::ProteusPrekey,
-        migrations::StoredCredentialV36,
+        migrations::historical::StoredCredentialV36,
     };
 
     pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(DatabaseKey::generate);
