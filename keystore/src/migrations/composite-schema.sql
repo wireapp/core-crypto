@@ -195,3 +195,21 @@ CREATE TABLE "mls_psk_bundles" (
   psk_id BLOB NOT NULL,
   psk BLOB NOT NULL
 );
+
+CREATE TABLE mls_inbox (
+  conversation_id BLOB NOT NULL,
+  message BLOB NOT NULL,
+  message_hash BLOB NOT NULL CHECK (length(message_hash) = 32),  -- sha256sum(message); so the PK index doesn't store the whole message
+  content_type INTEGER NOT NULL,  -- mls content type, used for ordering the messages for replay
+  waiting_for INTEGER NOT NULL CHECK (waiting_for IN (1, 2, 3)),  -- what we are fundamentally waiting for
+  epoch INTEGER NOT NULL CHECK (epoch >= 0),  -- the epoch of the message
+  arrival_sequence INTEGER NOT NULL UNIQUE,  -- we have to provide this ourselves
+  PRIMARY KEY (conversation_id, message_hash),  -- one identical message per conversation
+  CHECK (
+    content_type = 3
+    OR waiting_for <> 3
+  ),  -- a missing proposal row is always a commit
+  FOREIGN KEY (conversation_id) REFERENCES mls_groups (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_mls_inbox_conversation_id_waiting_for_epoch ON mls_inbox (conversation_id, waiting_for, epoch);
