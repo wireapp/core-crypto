@@ -54,7 +54,7 @@
 <a href=#54 id=54 data-nosnippet>54</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;DecryptionOutcome&gt; {
 <a href=#55 id=55 data-nosnippet>55</a>        <span class="macro">info!</span>(group_id = <span class="self">self</span>.id().to_owned(); <span class="string">"attempting to process buffered commit"</span>);
 <a href=#56 id=56 data-nosnippet>56</a>
-<a href=#57 id=57 data-nosnippet>57</a>        <span class="kw">let </span>message = MlsMessageIn::tls_deserialize(<span class="kw-2">&amp;mut </span>commit.as_ref())
+<a href=#57 id=57 data-nosnippet>57</a>        <span class="kw">let </span>message = MlsMessageIn::tls_deserialize_exact(commit.as_ref())
 <a href=#58 id=58 data-nosnippet>58</a>            .map_err(TlsCodecError::deserialize(<span class="string">"mls message in"</span>))<span class="question-mark">?</span>;
 <a href=#59 id=59 data-nosnippet>59</a>
 <a href=#60 id=60 data-nosnippet>60</a>        Box::pin(<span class="self">self</span>.decrypt_mls_message(message, recursion_policy)).<span class="kw">await
