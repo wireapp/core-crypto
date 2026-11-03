@@ -9,6 +9,7 @@ mod error;
 mod export_pem;
 pub(crate) mod ext;
 mod persistence;
+mod signer;
 pub(crate) mod x509;
 
 use std::sync::Arc;
@@ -19,12 +20,12 @@ use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::crypto::OpenMlsCrypto;
 use tls_codec::Deserialize as _;
 
-pub(crate) use self::error::Result;
 pub use self::{
     credential_ref::{CredentialRef, FindFilters, FindFiltersBuilder},
     credential_type::CredentialType,
     error::Error,
 };
+pub(crate) use self::{error::Result, signer::ProviderSigner};
 use crate::{CipherSuite, ClientId, ClientIdRef, OpenMlsError, RecursiveError, TlsCodecError, mls_provider::CRYPTO};
 
 /// A cryptographic credential.
@@ -143,6 +144,11 @@ impl Credential {
     /// Get a reference to the `SignatureKeyPair`.
     pub(crate) fn signature_key(&self) -> &SignatureKeyPair {
         &self.signature_key_pair
+    }
+
+    /// The signer to hand to openmls, which signs through our crypto provider.
+    pub(crate) fn signer(&self) -> ProviderSigner<'_> {
+        ProviderSigner(&self.signature_key_pair)
     }
 
     /// The **private** half of this credential's signature key.
