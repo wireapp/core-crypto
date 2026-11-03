@@ -6,7 +6,7 @@
 
 use graviola::{
     aead::{AesGcm, ChaCha20Poly1305},
-    hashing::{Hash as _, Sha256, Sha384, Sha512},
+    hashing::{Hash, HashOutput, Sha256, Sha384, Sha512, hmac::Hmac},
     key_agreement,
     signing::{
         ecdsa,
@@ -15,6 +15,8 @@ use graviola::{
 };
 use openmls_traits::types::{AeadType, CryptoError, HashType, SignatureScheme};
 use rand::Rng as _;
+use tls_codec::SecretVLBytes;
+use zeroize::{Zeroize as _, Zeroizing};
 
 use super::rustcrypto;
 
@@ -23,6 +25,80 @@ pub(crate) fn hash(hash_type: HashType, data: &[u8]) -> Result<Vec<u8>, CryptoEr
         HashType::Sha2_256 => Ok(Sha256::hash(data).as_ref().to_vec()),
         HashType::Sha2_384 => Ok(Sha384::hash(data).as_ref().to_vec()),
         HashType::Sha2_512 => Ok(Sha512::hash(data).as_ref().to_vec()),
+    }
+}
+
+/// HKDF-Extract (RFC 5869, section 2.2), which is HMAC keyed with the salt.
+///
+/// An empty salt needs no special case: HMAC pads its key with zeros to the block size, so it
+/// is the same as the `HashLen` zero bytes the RFC substitutes.
+pub(crate) fn hkdf_extract(hash_type: HashType, salt: &[u8], ikm: &[u8]) -> Result<SecretVLBytes, CryptoError> {
+    fn extract<H: Hash>(salt: &[u8], ikm: &[u8]) -> SecretVLBytes {
+        let mut mac = Hmac::<H>::new(salt);
+        mac.update(ikm);
+        let mut prk = mac.finish();
+        let out = prk.as_ref().into();
+        prk.as_mut().zeroize();
+        out
+    }
+
+    Ok(match hash_type {
+        HashType::Sha2_256 => extract::<Sha256>(salt, ikm),
+        HashType::Sha2_384 => extract::<Sha384>(salt, ikm),
+        HashType::Sha2_512 => extract::<Sha512>(salt, ikm),
+    })
+}
+
+/// HKDF-Expand (RFC 5869, section 2.3).
+///
+/// Rejects the same inputs as the `hkdf` crate does, with the same error: a PRK shorter than the
+/// hash output, and more than 255 blocks of output.
+pub(crate) fn hkdf_expand(
+    hash_type: HashType,
+    prk: &[u8],
+    info: &[u8],
+    okm_len: usize,
+) -> Result<SecretVLBytes, CryptoError> {
+    fn expand<H: Hash + Clone>(
+        hash_len: usize,
+        prk: &[u8],
+        info: &[u8],
+        okm_len: usize,
+    ) -> Result<SecretVLBytes, CryptoError> {
+        if prk.len() < hash_len || okm_len > 255 * hash_len {
+            return Err(CryptoError::HkdfOutputLengthInvalid);
+        }
+
+        // Keying HMAC hashes the key once; every block starts from a copy of that state.
+        let keyed = Hmac::<H>::new(prk);
+        let mut okm = Zeroizing::new(Vec::with_capacity(okm_len));
+        let mut previous: Option<HashOutput> = None;
+        for counter in 1..=okm_len.div_ceil(hash_len) {
+            // T(i) = HMAC(PRK, T(i-1) || info || i), with T(0) empty.
+            let mut mac = keyed.clone();
+            if let Some(previous) = &previous {
+                mac.update(previous);
+            }
+            mac.update(info);
+            mac.update([counter as u8]);
+            let block = mac.finish();
+
+            let take = (okm_len - okm.len()).min(hash_len);
+            okm.extend_from_slice(&block.as_ref()[..take]);
+            if let Some(mut previous) = previous.replace(block) {
+                previous.as_mut().zeroize();
+            }
+        }
+        if let Some(mut previous) = previous {
+            previous.as_mut().zeroize();
+        }
+        Ok(std::mem::take(&mut *okm).into())
+    }
+
+    match hash_type {
+        HashType::Sha2_256 => expand::<Sha256>(32, prk, info, okm_len),
+        HashType::Sha2_384 => expand::<Sha384>(48, prk, info, okm_len),
+        HashType::Sha2_512 => expand::<Sha512>(64, prk, info, okm_len),
     }
 }
 

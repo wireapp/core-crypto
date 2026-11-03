@@ -2,7 +2,6 @@ use std::sync::{Arc, LazyLock, PoisonError, RwLock, RwLockWriteGuard};
 
 use crypto_common::KeySizeUser as _;
 use elliptic_curve::sec1;
-use hkdf::Hkdf;
 use openmls::prelude::HpkeCiphertext;
 use openmls_traits::{
     crypto::OpenMlsCrypto,
@@ -14,7 +13,6 @@ use openmls_traits::{
 };
 use rand::Rng as _;
 use rand_core::SeedableRng as _;
-use sha2::{Sha256, Sha384, Sha512};
 use signature::digest::typenum::Unsigned;
 use tls_codec::SecretVLBytes;
 
@@ -250,11 +248,7 @@ impl OpenMlsCrypto for RustCrypto {
     }
 
     fn hkdf_extract(&self, hash_type: HashType, salt: &[u8], ikm: &[u8]) -> Result<SecretVLBytes, CryptoError> {
-        match hash_type {
-            HashType::Sha2_256 => Ok(Hkdf::<Sha256>::extract(Some(salt), ikm).0.as_slice().into()),
-            HashType::Sha2_384 => Ok(Hkdf::<Sha384>::extract(Some(salt), ikm).0.as_slice().into()),
-            HashType::Sha2_512 => Ok(Hkdf::<Sha512>::extract(Some(salt), ikm).0.as_slice().into()),
-        }
+        backend::hkdf_extract(hash_type, salt, ikm)
     }
 
     fn hkdf_expand(
@@ -264,35 +258,7 @@ impl OpenMlsCrypto for RustCrypto {
         info: &[u8],
         okm_len: usize,
     ) -> Result<SecretVLBytes, CryptoError> {
-        match hash_type {
-            HashType::Sha2_256 => {
-                let hkdf = Hkdf::<Sha256>::from_prk(prk).map_err(|_| CryptoError::HkdfOutputLengthInvalid)?;
-
-                let mut okm = vec![0u8; okm_len];
-                hkdf.expand(info, &mut okm)
-                    .map_err(|_| CryptoError::HkdfOutputLengthInvalid)?;
-
-                Ok(okm.into())
-            }
-            HashType::Sha2_384 => {
-                let hkdf = Hkdf::<Sha384>::from_prk(prk).map_err(|_| CryptoError::HkdfOutputLengthInvalid)?;
-
-                let mut okm = vec![0u8; okm_len];
-                hkdf.expand(info, &mut okm)
-                    .map_err(|_| CryptoError::HkdfOutputLengthInvalid)?;
-
-                Ok(okm.into())
-            }
-            HashType::Sha2_512 => {
-                let hkdf = Hkdf::<Sha512>::from_prk(prk).map_err(|_| CryptoError::HkdfOutputLengthInvalid)?;
-
-                let mut okm = vec![0u8; okm_len];
-                hkdf.expand(info, &mut okm)
-                    .map_err(|_| CryptoError::HkdfOutputLengthInvalid)?;
-
-                Ok(okm.into())
-            }
-        }
+        backend::hkdf_expand(hash_type, prk, info, okm_len)
     }
 
     fn hash(&self, hash_type: HashType, data: &[u8]) -> Result<Vec<u8>, CryptoError> {

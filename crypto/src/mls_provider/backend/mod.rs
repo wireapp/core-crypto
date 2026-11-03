@@ -7,6 +7,7 @@
 //! [graviola]: https://github.com/ctz/graviola
 
 use openmls_traits::types::{AeadType, CryptoError, HashType, SignatureScheme};
+use tls_codec::SecretVLBytes;
 
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 mod graviola;
@@ -61,6 +62,19 @@ macro_rules! dispatch {
 
 pub(super) fn hash(hash_type: HashType, data: &[u8]) -> Result<Vec<u8>, CryptoError> {
     dispatch!(hash(hash_type, data))
+}
+
+pub(super) fn hkdf_extract(hash_type: HashType, salt: &[u8], ikm: &[u8]) -> Result<SecretVLBytes, CryptoError> {
+    dispatch!(hkdf_extract(hash_type, salt, ikm))
+}
+
+pub(super) fn hkdf_expand(
+    hash_type: HashType,
+    prk: &[u8],
+    info: &[u8],
+    okm_len: usize,
+) -> Result<SecretVLBytes, CryptoError> {
+    dispatch!(hkdf_expand(hash_type, prk, info, okm_len))
 }
 
 pub(super) fn aead_encrypt(
@@ -158,6 +172,141 @@ mod tests {
                     rustcrypto::hash(hash_type, data),
                     "{hash_type:?} over {} bytes",
                     data.len()
+                );
+            }
+        }
+    }
+
+    /// `(ikm, salt, info, prk, okm)`
+    type HkdfVector = (Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>);
+
+    /// The SHA-256 test cases from RFC 5869, appendix A.
+    fn rfc5869_vectors() -> [HkdfVector; 3] {
+        let range = |r: std::ops::Range<u8>| r.collect::<Vec<u8>>();
+        [
+            (
+                vec![0x0b; 22],
+                range(0x00..0x0d),
+                range(0xf0..0xfa),
+                hex::decode("077709362c2e32df0ddc3f0dc47bba6390b6c73bb50f9c3122ec844ad7c2b3e5").unwrap(),
+                hex::decode("3cb25f25faacd57a90434f64d0362f2a2d2d0a90cf1a5a4c5db02d56ecc4c5bf34007208d5b887185865")
+                    .unwrap(),
+            ),
+            (
+                range(0x00..0x50),
+                range(0x60..0xb0),
+                (0xb0..=0xff).collect(),
+                hex::decode("06a6b88c5853361a06104c9ceb35b45cef760014904671014a193f40c15fc244").unwrap(),
+                hex::decode(
+                    "b11e398dc80327a1c8e7f78c596a49344f012eda2d4efad8a050cc4c19afa97c\
+                     59045a99cac7827271cb41c65e590e09da3275600c2f09b8367793a9aca3db71\
+                     cc30c58179ec3e87c14c01d5c1f3434f1d87",
+                )
+                .unwrap(),
+            ),
+            (
+                vec![0x0b; 22],
+                Vec::new(),
+                Vec::new(),
+                hex::decode("19ef24a32c717b167f33a91d6f648bdf96596776afdb6377ac434c1c293ccb04").unwrap(),
+                hex::decode("8da4e775a563c18f715f802a063c5a31b8a11f5c5ee1879ec3454e5f3c738d2d9d201395faa4b61a96c8")
+                    .unwrap(),
+            ),
+        ]
+    }
+
+    #[test]
+    fn hkdf_matches_rfc5869_on_both_backends() {
+        if !both_backends_available() {
+            return;
+        }
+        for (case, (ikm, salt, info, prk, okm)) in rfc5869_vectors().into_iter().enumerate() {
+            for (backend, extract, expand) in [
+                (
+                    "graviola",
+                    graviola::hkdf_extract as ExtractFn,
+                    graviola::hkdf_expand as ExpandFn,
+                ),
+                ("rustcrypto", rustcrypto::hkdf_extract, rustcrypto::hkdf_expand),
+            ] {
+                let got_prk = extract(HashType::Sha2_256, &salt, &ikm).unwrap();
+                assert_eq!(got_prk.as_slice(), prk, "{backend}, case {}: prk", case + 1);
+                let got_okm = expand(HashType::Sha2_256, &prk, &info, okm.len()).unwrap();
+                assert_eq!(got_okm.as_slice(), okm, "{backend}, case {}: okm", case + 1);
+            }
+        }
+    }
+
+    type ExtractFn = fn(HashType, &[u8], &[u8]) -> Result<tls_codec::SecretVLBytes, CryptoError>;
+    type ExpandFn = fn(HashType, &[u8], &[u8], usize) -> Result<tls_codec::SecretVLBytes, CryptoError>;
+
+    const HASHES: [(HashType, usize); 3] = [
+        (HashType::Sha2_256, 32),
+        (HashType::Sha2_384, 48),
+        (HashType::Sha2_512, 64),
+    ];
+
+    #[test]
+    fn hkdf_output_is_identical_on_both_backends() {
+        if !both_backends_available() {
+            return;
+        }
+        let long = vec![0x5a; 300];
+        for (hash_type, hash_len) in HASHES {
+            for (salt, ikm) in [(&[][..], &b"ikm"[..]), (b"salt", &long), (&long, b"")] {
+                assert_eq!(
+                    graviola::hkdf_extract(hash_type, salt, ikm),
+                    rustcrypto::hkdf_extract(hash_type, salt, ikm),
+                    "{hash_type:?}: extract, salt {} bytes, ikm {} bytes",
+                    salt.len(),
+                    ikm.len()
+                );
+            }
+            let prk = rustcrypto::hkdf_extract(hash_type, b"salt", b"ikm").unwrap();
+            // A PRK longer than the block size is hashed down before keying HMAC.
+            for prk in [prk.as_slice(), &long] {
+                for okm_len in [
+                    0,
+                    1,
+                    hash_len - 1,
+                    hash_len,
+                    hash_len + 1,
+                    3 * hash_len + 7,
+                    255 * hash_len,
+                ] {
+                    assert_eq!(
+                        graviola::hkdf_expand(hash_type, prk, b"info", okm_len),
+                        rustcrypto::hkdf_expand(hash_type, prk, b"info", okm_len),
+                        "{hash_type:?}: expand {okm_len} bytes from a {}-byte prk",
+                        prk.len()
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn hkdf_expand_rejects_bad_input_identically() {
+        if !both_backends_available() {
+            return;
+        }
+        for (hash_type, hash_len) in HASHES {
+            let prk = vec![0x42; hash_len];
+            for (case, prk, okm_len) in [
+                ("short prk", &prk[..hash_len - 1], hash_len),
+                ("empty prk", &[][..], hash_len),
+                ("too much output", &prk[..], 255 * hash_len + 1),
+            ] {
+                let expected = rustcrypto::hkdf_expand(hash_type, prk, b"info", okm_len);
+                assert_eq!(
+                    expected,
+                    Err(CryptoError::HkdfOutputLengthInvalid),
+                    "{hash_type:?}, {case}: rustcrypto"
+                );
+                assert_eq!(
+                    graviola::hkdf_expand(hash_type, prk, b"info", okm_len),
+                    expected,
+                    "{hash_type:?}, {case}"
                 );
             }
         }

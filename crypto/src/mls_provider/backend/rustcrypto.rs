@@ -9,12 +9,14 @@ use aes_gcm::{
 use chacha20poly1305::ChaCha20Poly1305;
 use crypto_common::KeySizeUser as _;
 use elliptic_curve::Generate as _;
+use hkdf::Hkdf;
 use ml_dsa::{MlDsa44, MlDsa65, MlDsa87};
 use openmls_traits::{
     mldsa,
     types::{AeadType, CryptoError, HashType, SignatureScheme},
 };
 use sha2::{Digest as _, Sha256, Sha384, Sha512};
+use tls_codec::SecretVLBytes;
 
 pub(crate) fn hash(hash_type: HashType, data: &[u8]) -> Result<Vec<u8>, CryptoError> {
     match hash_type {
@@ -91,6 +93,51 @@ pub(crate) fn aead_decrypt(
                 .decrypt(&nonce, Payload { msg: ct_tag, aad })
                 .map(|r| r.as_slice().into())
                 .map_err(|_| CryptoError::AeadDecryptionError)
+        }
+    }
+}
+
+pub(crate) fn hkdf_extract(hash_type: HashType, salt: &[u8], ikm: &[u8]) -> Result<SecretVLBytes, CryptoError> {
+    match hash_type {
+        HashType::Sha2_256 => Ok(Hkdf::<Sha256>::extract(Some(salt), ikm).0.as_slice().into()),
+        HashType::Sha2_384 => Ok(Hkdf::<Sha384>::extract(Some(salt), ikm).0.as_slice().into()),
+        HashType::Sha2_512 => Ok(Hkdf::<Sha512>::extract(Some(salt), ikm).0.as_slice().into()),
+    }
+}
+
+pub(crate) fn hkdf_expand(
+    hash_type: HashType,
+    prk: &[u8],
+    info: &[u8],
+    okm_len: usize,
+) -> Result<SecretVLBytes, CryptoError> {
+    match hash_type {
+        HashType::Sha2_256 => {
+            let hkdf = Hkdf::<Sha256>::from_prk(prk).map_err(|_| CryptoError::HkdfOutputLengthInvalid)?;
+
+            let mut okm = vec![0u8; okm_len];
+            hkdf.expand(info, &mut okm)
+                .map_err(|_| CryptoError::HkdfOutputLengthInvalid)?;
+
+            Ok(okm.into())
+        }
+        HashType::Sha2_384 => {
+            let hkdf = Hkdf::<Sha384>::from_prk(prk).map_err(|_| CryptoError::HkdfOutputLengthInvalid)?;
+
+            let mut okm = vec![0u8; okm_len];
+            hkdf.expand(info, &mut okm)
+                .map_err(|_| CryptoError::HkdfOutputLengthInvalid)?;
+
+            Ok(okm.into())
+        }
+        HashType::Sha2_512 => {
+            let hkdf = Hkdf::<Sha512>::from_prk(prk).map_err(|_| CryptoError::HkdfOutputLengthInvalid)?;
+
+            let mut okm = vec![0u8; okm_len];
+            hkdf.expand(info, &mut okm)
+                .map_err(|_| CryptoError::HkdfOutputLengthInvalid)?;
+
+            Ok(okm.into())
         }
     }
 }
