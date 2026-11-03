@@ -341,8 +341,8 @@ impl OpenMlsCrypto for RustCrypto {
         backend::verify_signature(alg, data, pk, signature)
     }
 
-    fn sign(&self, _alg: SignatureScheme, _data: &[u8], _key: &[u8]) -> Result<Vec<u8>, CryptoError> {
-        unimplemented!("This is never used by openmls, so we don't make the effort of implementing it.");
+    fn sign(&self, alg: SignatureScheme, data: &[u8], key: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        backend::sign(alg, data, key)
     }
 
     fn hpke_seal(

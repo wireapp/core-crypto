@@ -198,3 +198,55 @@ pub(crate) fn verify_signature(
         _ => rustcrypto::verify_signature(alg, data, pk, signature),
     }
 }
+
+/// Sign `data` with the private key `key`, in the same encodings as [`rustcrypto::sign`].
+///
+/// One difference: graviola's ECDSA is RFC 6979 with added randomness from the system RNG, so
+/// unlike rustcrypto's its signatures are not deterministic. Both verify the same way.
+pub(crate) fn sign(alg: SignatureScheme, data: &[u8], key: &[u8]) -> Result<Vec<u8>, CryptoError> {
+    match alg {
+        SignatureScheme::ECDSA_SECP256R1_SHA256 => {
+            let sk = ecdsa::SigningKey::<ecdsa::P256> {
+                private_key: key_agreement::p256::StaticPrivateKey::from_bytes(key)
+                    .map_err(|_| CryptoError::InvalidKey)?,
+            };
+            ecdsa_sign_asn1(|buf| sk.sign_asn1::<Sha256>(&[data], buf))
+        }
+        SignatureScheme::ECDSA_SECP384R1_SHA384 => {
+            let sk = ecdsa::SigningKey::<ecdsa::P384> {
+                private_key: key_agreement::p384::StaticPrivateKey::from_bytes(key)
+                    .map_err(|_| CryptoError::InvalidKey)?,
+            };
+            ecdsa_sign_asn1(|buf| sk.sign_asn1::<Sha384>(&[data], buf))
+        }
+        SignatureScheme::ED25519 => {
+            // As in rustcrypto, accept the legacy `seed || public key` encoding, after checking
+            // that the public half belongs to the seed.
+            let (seed, public) = match key.len() {
+                32 => (key, None),
+                64 => {
+                    let (seed, public) = key.split_at(32);
+                    (seed, Some(public))
+                }
+                _ => return Err(CryptoError::InvalidKey),
+            };
+            let sk = Ed25519SigningKey::from_bytes(seed).map_err(|_| CryptoError::InvalidKey)?;
+            if public.is_some_and(|public| public != sk.public_key().as_bytes()) {
+                return Err(CryptoError::InvalidKey);
+            }
+            Ok(sk.sign(data).to_vec())
+        }
+        _ => rustcrypto::sign(alg, data, key),
+    }
+}
+
+/// Run an ASN.1 ECDSA signing operation with a large enough output buffer.
+fn ecdsa_sign_asn1(
+    sign: impl for<'a> FnOnce(&'a mut [u8]) -> Result<&'a [u8], graviola::Error>,
+) -> Result<Vec<u8>, CryptoError> {
+    // An ASN.1 ECDSA signature is a sequence of two integers, each at most one byte longer than
+    // the scalar, plus a few bytes of framing; P384's fits comfortably in 128 bytes.
+    let mut buf = [0u8; 128];
+    let signature = sign(&mut buf).map_err(|_| CryptoError::CryptoLibraryError)?;
+    Ok(signature.to_vec())
+}

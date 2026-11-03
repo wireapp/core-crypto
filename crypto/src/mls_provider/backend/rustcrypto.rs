@@ -205,3 +205,86 @@ pub(crate) fn verify_signature(
         _ => Err(CryptoError::UnsupportedSignatureScheme),
     }
 }
+
+/// Sign `data` with the private key `key`.
+///
+/// This is the signer from openmls' `DefaultSigner`, which used to do all our signing, so the
+/// output is unchanged: ECDSA signatures are deterministic (RFC 6979) and DER-encoded, and Ed25519
+/// accepts both a 32-byte seed and the legacy 64-byte `seed || public key` encoding.
+pub(crate) fn sign(alg: SignatureScheme, data: &[u8], key: &[u8]) -> Result<Vec<u8>, CryptoError> {
+    use signature::Signer as _;
+    match alg {
+        SignatureScheme::ECDSA_SECP256R1_SHA256 => {
+            let k = p256::ecdsa::SigningKey::from_slice(key).map_err(|_| CryptoError::InvalidKey)?;
+            let signature: p256::ecdsa::Signature = k.try_sign(data).map_err(|_| CryptoError::CryptoLibraryError)?;
+            Ok(signature.to_der().to_bytes().into())
+        }
+        SignatureScheme::ECDSA_SECP384R1_SHA384 => {
+            let k = p384::ecdsa::SigningKey::from_slice(key).map_err(|_| CryptoError::InvalidKey)?;
+            let signature: p384::ecdsa::Signature = k.try_sign(data).map_err(|_| CryptoError::CryptoLibraryError)?;
+            Ok(signature.to_der().to_bytes().into())
+        }
+        SignatureScheme::ECDSA_SECP521R1_SHA512 => {
+            let k = p521::ecdsa::SigningKey::from_slice(key).map_err(|_| CryptoError::InvalidKey)?;
+            let signature: p521::ecdsa::Signature = k.try_sign(data).map_err(|_| CryptoError::CryptoLibraryError)?;
+            Ok(signature.to_der().to_bytes().into())
+        }
+        SignatureScheme::ED25519 => {
+            let k = ed25519_signing_key(key)?;
+            let signature = k.try_sign(data).map_err(|_| CryptoError::CryptoLibraryError)?;
+            Ok(signature.to_bytes().into())
+        }
+        SignatureScheme::MLDSA44 => mldsa::sign::<MlDsa44>(data, key),
+        SignatureScheme::MLDSA65 => mldsa::sign::<MlDsa65>(data, key),
+        SignatureScheme::MLDSA87 => mldsa::sign::<MlDsa87>(data, key),
+        _ => Err(CryptoError::UnsupportedSignatureScheme),
+    }
+}
+
+/// Load an Ed25519 signing key from either a 32-byte seed or the legacy 64-byte
+/// `seed || public key` encoding, which older keystores still contain.
+fn ed25519_signing_key(key: &[u8]) -> Result<ed25519_dalek::SigningKey, CryptoError> {
+    match key.len() {
+        ed25519_dalek::KEYPAIR_LENGTH => {
+            let mut keypair = zeroize::Zeroizing::new([0u8; ed25519_dalek::KEYPAIR_LENGTH]);
+            keypair.copy_from_slice(key);
+            ed25519_dalek::SigningKey::from_keypair_bytes(&keypair).map_err(|_| CryptoError::InvalidKey)
+        }
+        ed25519_dalek::SECRET_KEY_LENGTH => {
+            let mut seed = zeroize::Zeroizing::new([0u8; ed25519_dalek::SECRET_KEY_LENGTH]);
+            seed.copy_from_slice(key);
+            Ok(ed25519_dalek::SigningKey::from_bytes(&seed))
+        }
+        _ => Err(CryptoError::InvalidKey),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use openmls_basic_credential::SignatureKeyPair;
+    use openmls_traits::{signatures::Signer as _, types::SignatureScheme};
+    use rand_core::SeedableRng as _;
+
+    /// Signing used to go through openmls' `DefaultSigner`. Every scheme we support signs
+    /// deterministically there, so moving signing into the provider must not change a single byte.
+    #[test]
+    fn sign_matches_openmls_default_signer() {
+        let message = b"a message which gets signed";
+        for scheme in [
+            SignatureScheme::ECDSA_SECP256R1_SHA256,
+            SignatureScheme::ECDSA_SECP384R1_SHA384,
+            SignatureScheme::ECDSA_SECP521R1_SHA512,
+            SignatureScheme::ED25519,
+            SignatureScheme::MLDSA44,
+            SignatureScheme::MLDSA65,
+            SignatureScheme::MLDSA87,
+        ] {
+            let mut rng = rand_chacha::ChaCha20Rng::from_seed([9; 32]);
+            let (sk, pk) = super::signature_key_gen(scheme, &mut rng).unwrap();
+            let expected = SignatureKeyPair::from_raw(scheme, sk.clone(), pk)
+                .sign(message)
+                .unwrap();
+            assert_eq!(super::sign(scheme, message, &sk).unwrap(), expected, "{scheme:?}");
+        }
+    }
+}

@@ -103,6 +103,10 @@ pub(super) fn verify_signature(
     dispatch!(verify_signature(alg, data, pk, signature))
 }
 
+pub(super) fn sign(alg: SignatureScheme, data: &[u8], key: &[u8]) -> Result<Vec<u8>, CryptoError> {
+    dispatch!(sign(alg, data, key))
+}
+
 /// The two backends are interchangeable at runtime, chosen by the CPU we happen to run on, so
 /// anything one produces the other must accept, and where both reject an input they must agree
 /// on why. These tests hold that contract; they run only where both backends are available.
@@ -349,6 +353,94 @@ mod tests {
     }
 
     #[test]
+    fn signatures_from_either_backend_verify_on_both() {
+        if !both_backends_available() {
+            return;
+        }
+        for scheme in SCHEMES {
+            let (sk, pk) = rustcrypto::signature_key_gen(scheme, &mut rng(5)).unwrap();
+            let signatures = [
+                ("graviola", graviola::sign(scheme, MESSAGE, &sk).unwrap()),
+                ("rustcrypto", rustcrypto::sign(scheme, MESSAGE, &sk).unwrap()),
+            ];
+            for (origin, signature) in signatures {
+                let context = format!("{scheme:?}, signed by {origin}");
+                assert_eq!(
+                    graviola::verify_signature(scheme, MESSAGE, &pk, &signature),
+                    Ok(()),
+                    "{context}: graviola verifies"
+                );
+                assert_eq!(
+                    rustcrypto::verify_signature(scheme, MESSAGE, &pk, &signature),
+                    Ok(()),
+                    "{context}: rustcrypto verifies"
+                );
+            }
+        }
+    }
+
+    /// Keystores written by older versions hold Ed25519 private keys as `seed || public key`.
+    #[test]
+    fn legacy_ed25519_keypair_encoding_signs_on_both_backends() {
+        if !both_backends_available() {
+            return;
+        }
+        let scheme = SignatureScheme::ED25519;
+        let (seed, pk) = rustcrypto::signature_key_gen(scheme, &mut rng(6)).unwrap();
+        let legacy = [&seed[..], &pk[..]].concat();
+        let (_, other_pk) = rustcrypto::signature_key_gen(scheme, &mut rng(7)).unwrap();
+        let mismatched = [&seed[..], &other_pk[..]].concat();
+
+        // Ed25519 is deterministic, so a backend loading the key correctly reproduces the
+        // signature made from the bare seed.
+        let expected = rustcrypto::sign(scheme, MESSAGE, &seed).unwrap();
+        assert_eq!(graviola::sign(scheme, MESSAGE, &legacy).as_ref(), Ok(&expected));
+        assert_eq!(rustcrypto::sign(scheme, MESSAGE, &legacy).as_ref(), Ok(&expected));
+
+        assert_eq!(
+            rustcrypto::sign(scheme, MESSAGE, &mismatched),
+            Err(CryptoError::InvalidKey)
+        );
+        assert_eq!(
+            graviola::sign(scheme, MESSAGE, &mismatched),
+            Err(CryptoError::InvalidKey)
+        );
+    }
+
+    #[test]
+    fn signing_rejects_bad_keys_identically() {
+        if !both_backends_available() {
+            return;
+        }
+        for scheme in SCHEMES {
+            let (sk, _) = rustcrypto::signature_key_gen(scheme, &mut rng(8)).unwrap();
+            let zero = vec![0; sk.len()];
+            // A key a few bytes short is left out on purpose: RustCrypto's ECDSA `from_slice`
+            // left-pads it with zeros and signs, while graviola rejects it. Our keys are always
+            // full length, so only a corrupted key could tell the two apart.
+            for (case, key) in [("empty key", &[][..]), ("long key", &[&sk[..], &[0]].concat())] {
+                let expected = rustcrypto::sign(scheme, MESSAGE, key);
+                assert_eq!(expected, Err(CryptoError::InvalidKey), "{scheme:?}, {case}: rustcrypto");
+                assert_eq!(graviola::sign(scheme, MESSAGE, key), expected, "{scheme:?}, {case}");
+            }
+            // Zero is not a valid ECDSA scalar. (It is a valid Ed25519 seed.)
+            if scheme != SignatureScheme::ED25519 {
+                let expected = rustcrypto::sign(scheme, MESSAGE, &zero);
+                assert_eq!(
+                    expected,
+                    Err(CryptoError::InvalidKey),
+                    "{scheme:?}, zero scalar: rustcrypto"
+                );
+                assert_eq!(
+                    graviola::sign(scheme, MESSAGE, &zero),
+                    expected,
+                    "{scheme:?}, zero scalar"
+                );
+            }
+        }
+    }
+
+    #[test]
     fn unsupported_signature_scheme_is_rejected_identically() {
         if !both_backends_available() {
             return;
@@ -365,6 +457,10 @@ mod tests {
         assert_eq!(
             graviola::verify_signature(scheme, MESSAGE, &[0; 57], &[0; 114]),
             rustcrypto::verify_signature(scheme, MESSAGE, &[0; 57], &[0; 114])
+        );
+        assert_eq!(
+            graviola::sign(scheme, MESSAGE, &[0; 57]),
+            rustcrypto::sign(scheme, MESSAGE, &[0; 57])
         );
     }
 }
