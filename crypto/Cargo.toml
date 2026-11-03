@@ -115,6 +115,11 @@ macro_rules_attribute.workspace = true
 wasm-bindgen-test.workspace = true
 openmls.workspace = true
 hex-literal = "1.1"
+# For an HPKE reference implementation independent of the `hpke` crate's, in the HPKE core's tests.
+x25519-dalek = { version = "3", features = ["static_secrets"] }
+p256 = { workspace = true, features = ["ecdh"] }
+p384 = { workspace = true, features = ["ecdh"] }
+p521 = { workspace = true, features = ["ecdh"] }
 der.workspace = true
 spki.workspace = true
 sha1.workspace = true

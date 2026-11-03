@@ -1177,6 +1177,7 @@ dependencies = [
  "wasm-bindgen-test",
  "web-time",
  "wire-e2e-identity",
+ "x25519-dalek 3.0.0",
  "x509-cert",
  "zeroize",
 ]
