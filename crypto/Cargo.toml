@@ -91,6 +91,12 @@ serde-wasm-bindgen.workspace = true
 # jwt-simple used to enable it for us.
 getrandom_02 = { package = "getrandom", version = "0.2", features = ["js"] }
 
+# Everywhere but the browser we prefer the crypto implementations in aws-lc-rs, which are fast.
+# The rust-crypto implementations above are always built: they are the fallback in the browser,
+# where aws-lc cannot be built, and for what aws-lc-rs does not offer.
+[target.'cfg(not(target_os = "unknown"))'.dependencies]
+aws-lc-rs = { version = "1.19", default-features = false, features = ["aws-lc-sys", "alloc"] }
+
 [dev-dependencies]
 itertools.workspace = true
 uuid = { workspace = true, features = ["v4", "js"] }
@@ -108,6 +114,11 @@ macro_rules_attribute.workspace = true
 wasm-bindgen-test.workspace = true
 openmls.workspace = true
 hex-literal = "1.1"
+# For an HPKE reference implementation independent of the `hpke` crate's, in the HPKE core's tests.
+x25519-dalek = { version = "3", features = ["static_secrets"] }
+p256 = { workspace = true, features = ["ecdh"] }
+p384 = { workspace = true, features = ["ecdh"] }
+p521 = { workspace = true, features = ["ecdh"] }
 der.workspace = true
 spki.workspace = true
 sha1.workspace = true
