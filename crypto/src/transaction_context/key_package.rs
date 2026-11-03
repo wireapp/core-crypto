@@ -53,7 +53,7 @@ impl TransactionContext {
             .build(
                 config,
                 &self.crypto_provider().await?,
-                &credential.signature_key_pair,
+                &credential.signer(),
                 credential.to_mls_credential_with_key(),
             )
             .await

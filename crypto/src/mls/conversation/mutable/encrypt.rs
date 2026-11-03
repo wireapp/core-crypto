@@ -35,11 +35,11 @@ impl ConversationMut {
 
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
-        let signer = credential.signature_key();
+        let signer = credential.signer();
 
         self.mutate_group(async |_, group, _| {
             let encrypted = group
-                .create_message(&backend, signer, message.as_ref())
+                .create_message(&backend, &signer, message.as_ref())
                 .map_err(OpenMlsError::wrap("creating encrypted message"))?;
             // all application messages must be encrypted
             debug_assert!(matches!(encrypted.body, MlsMessageOutBody::PrivateMessage(_)));

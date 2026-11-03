@@ -362,10 +362,8 @@ impl ConversationMut {
     /// The final steps of each tnt message encryption procedure: sign, format as [TntMessage] and serialize.
     async fn sign_tnt_message(&self, tbs: TntMessageTBS) -> Result<Vec<u8>> {
         let credential = self.find_current_credential().await?;
-        let signature_key = credential.signature_key();
-        let signed_message: TntMessage = tbs
-            .sign(signature_key)
-            .map_err(OpenMlsError::wrap("signing TntMessageTBS"))?;
+        let signer = credential.signer();
+        let signed_message: TntMessage = tbs.sign(&signer).map_err(OpenMlsError::wrap("signing TntMessageTBS"))?;
 
         signed_message
             .tls_serialize_detached()

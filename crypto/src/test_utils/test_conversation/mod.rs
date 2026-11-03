@@ -91,7 +91,7 @@ impl<'a> TestConversation<'a> {
         let gi = group
             .export_group_info(
                 &self.actor().session().await.crypto_provider,
-                &credential.signature_key_pair,
+                &credential.signer(),
                 true,
             )
             .unwrap();
