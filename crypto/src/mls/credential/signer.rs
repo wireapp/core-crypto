@@ -1,7 +1,6 @@
 use openmls::prelude::SignatureScheme;
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{
-    crypto::OpenMlsCrypto as _,
     signatures::{DefaultSigner as _, Signer},
     types::Error,
 };
@@ -19,7 +18,7 @@ impl Signer for ProviderSigner<'_> {
     fn sign(&self, payload: &[u8]) -> Result<Vec<u8>, Error> {
         let scheme = self.0.signature_scheme();
         CRYPTO
-            .sign(scheme, payload, self.0.private_key())
+            .sign_with_public_key(scheme, payload, self.0.private_key(), self.0.public())
             // Report errors as openmls' own signer did.
             .map_err(|err| match scheme {
                 SignatureScheme::MLDSA44 | SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87 => {

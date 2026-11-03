@@ -23,6 +23,10 @@ use tls_codec::SecretVLBytes;
 
 use super::hpke::Psk;
 
+#[cfg_attr(
+    not(any(test, target_os = "unknown")),
+    expect(dead_code, reason = "aws-lc-rs covers this everywhere but the browser")
+)]
 pub(crate) fn hash(hash_type: HashType, data: &[u8]) -> Result<Vec<u8>, CryptoError> {
     match hash_type {
         HashType::Sha2_256 => Ok(Sha256::digest(data).as_slice().into()),
@@ -31,6 +35,10 @@ pub(crate) fn hash(hash_type: HashType, data: &[u8]) -> Result<Vec<u8>, CryptoEr
     }
 }
 
+#[cfg_attr(
+    not(any(test, target_os = "unknown")),
+    expect(dead_code, reason = "aws-lc-rs covers this everywhere but the browser")
+)]
 pub(crate) fn aead_encrypt(
     alg: AeadType,
     key: &[u8],
@@ -68,6 +76,10 @@ pub(crate) fn aead_encrypt(
     }
 }
 
+#[cfg_attr(
+    not(any(test, target_os = "unknown")),
+    expect(dead_code, reason = "aws-lc-rs covers this everywhere but the browser")
+)]
 pub(crate) fn aead_decrypt(
     alg: AeadType,
     key: &[u8],
@@ -102,6 +114,10 @@ pub(crate) fn aead_decrypt(
     }
 }
 
+#[cfg_attr(
+    not(any(test, target_os = "unknown")),
+    expect(dead_code, reason = "aws-lc-rs covers this everywhere but the browser")
+)]
 pub(crate) fn hkdf_extract(hash_type: HashType, salt: &[u8], ikm: &[u8]) -> Result<SecretVLBytes, CryptoError> {
     match hash_type {
         HashType::Sha2_256 => Ok(Hkdf::<Sha256>::extract(Some(salt), ikm).0.as_slice().into()),
@@ -110,6 +126,10 @@ pub(crate) fn hkdf_extract(hash_type: HashType, salt: &[u8], ikm: &[u8]) -> Resu
     }
 }
 
+#[cfg_attr(
+    not(any(test, target_os = "unknown")),
+    expect(dead_code, reason = "aws-lc-rs covers this everywhere but the browser")
+)]
 pub(crate) fn hkdf_expand(
     hash_type: HashType,
     prk: &[u8],

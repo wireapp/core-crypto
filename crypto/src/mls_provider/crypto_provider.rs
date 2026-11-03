@@ -69,6 +69,20 @@ impl RustCrypto {
         Ok(())
     }
 
+    /// Sign `data` as [`OpenMlsCrypto::sign`] does, given the key pair's public key as well.
+    ///
+    /// Some backends sign faster when they don't have to derive the public key themselves.
+    /// `public_key` should belong to `key`. If it doesn't, the signature is the one `sign` makes.
+    pub(crate) fn sign_with_public_key(
+        &self,
+        alg: SignatureScheme,
+        data: &[u8],
+        key: &[u8],
+        public_key: &[u8],
+    ) -> Result<Vec<u8>, CryptoError> {
+        backend::sign_with_public_key(alg, data, key, public_key)
+    }
+
     #[expect(clippy::too_many_arguments)]
     pub(crate) fn hpke_seal_psk(
         &self,
