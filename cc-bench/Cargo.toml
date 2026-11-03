@@ -1,0 +1,30 @@
+[package]
+name = "cc-bench"
+version = "0.1.0"
+edition = "2024"
+license = "GPL-3.0-only"
+publish = false
+
+# Deliberately not a member of the core-crypto workspace: `build-variants.sh` copies this crate into
+# worktrees of different revisions, and building it there must not change those revisions' workspace.
+[workspace]
+
+[dependencies]
+core-crypto = { path = "../crypto" }
+openmls_traits = { git = "https://github.com/wireapp/openmls", rev = "c660b9c07bba129a60090d45e54dadd12176aa58" }
+openmls_basic_credential = { git = "https://github.com/wireapp/openmls", rev = "c660b9c07bba129a60090d45e54dadd12176aa58" }
+tls_codec = "0.5"
+anyhow = "1"
+async-trait = "0.1"
+clap = { version = "4", features = ["derive"] }
+tokio = { version = "1", features = ["rt", "macros", "sync"] }
+uuid = { version = "1", features = ["v4"] }
+
+# Mirrors the core-crypto workspace, so the library is built exactly as it ships.
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+
+[patch.crates-io]
+x509-ocsp = { git = "https://github.com/RustCrypto/formats.git", package = "x509-ocsp", version = "0.3.0-pre" }
