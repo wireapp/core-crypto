@@ -429,6 +429,7 @@ IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
             (48, 15131338238207930367),
             (49, 1202272748319186004),
             (50, 4292486588344934490),
+            (51, 6769583600770212455),
         ];
 
         let runner = super::migrations::runner();
