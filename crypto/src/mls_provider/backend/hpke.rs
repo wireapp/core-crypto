@@ -747,12 +747,15 @@ pub(crate) mod tests {
     /// The first encryption and every export of the RFC 9180 test vectors (appendix A) for the
     /// configurations we support, in base and PSK modes. RFC 9180 has no vectors for P-384, which
     /// [`agrees_with_the_hpke_crate`] covers.
-    pub(crate) fn check_rfc9180_vectors<P: HpkePrimitives>() {
+    pub(crate) fn check_rfc9180_vectors<P: HpkePrimitives>(supports: impl Fn(Dhkem) -> bool) {
         let vectors = load_vectors();
         assert_eq!(vectors.len(), 8);
         for vector in vectors {
             let config = config_for(&vector);
             let suite = Suite::from_config(&config).unwrap();
+            if !supports(suite.kem) {
+                continue;
+            }
             let context = format!("{config:?}, mode {}", vector.mode);
             let psk = (vector.mode == 1).then_some((&vector.psk[..], &vector.psk_id[..]));
             let encryption = &vector.encryptions[0];
@@ -819,19 +822,20 @@ pub(crate) mod tests {
     }
 
     /// What this module produces, the `hpke` crate accepts, and the other way around. The
-    /// provider's RustCrypto backend uses the `hpke` crate, so this is the contract between it and
-    /// every backend using this module.
-    pub(crate) fn check_agreement_with_the_hpke_crate<P: HpkePrimitives>() {
-        let crypto = crate::RustCrypto::default();
+    /// rustcrypto backend uses the `hpke` crate, so this is the contract between it and every
+    /// backend using this module. Calls the rustcrypto backend directly, not the provider, which
+    /// may itself be using this module.
+    pub(crate) fn check_agreement_with_the_hpke_crate<P: HpkePrimitives>(supports: impl Fn(Dhkem) -> bool) {
         let mut rng = rand_chacha::ChaCha20Rng::from_seed([3; 32]);
         let psk = [0x77; 32];
         for config in configs() {
             let suite = Suite::from_config(&config).unwrap();
+            if !supports(suite.kem) {
+                continue;
+            }
             let ikm = [0x42; 64];
             let ours = derive_keypair::<P>(suite, &ikm).unwrap();
-            let theirs =
-                openmls_traits::crypto::OpenMlsCrypto::derive_hpke_keypair(&crypto, config_clone(&config), &ikm)
-                    .unwrap();
+            let theirs = rustcrypto::hpke_derive_keypair(&config, &ikm).unwrap();
             assert_eq!(&*ours.private, &*theirs.private, "{config:?}: derived private key");
             assert_eq!(ours.public, theirs.public, "{config:?}: derived public key");
             let (sk, pk) = (&*ours.private, &ours.public[..]);
@@ -839,9 +843,17 @@ pub(crate) mod tests {
             for psk in [None, Some((&psk[..], &b"psk id"[..]))] {
                 let context = format!("{config:?}, psk: {}", psk.is_some());
                 let ours = seal::<P>(suite, pk, b"info", b"aad", psk, b"plaintext", &mut rng).unwrap();
-                let theirs = hpke_crate_seal(&crypto, &config, pk, psk);
+                let theirs = rustcrypto::hpke_seal(&config, pk, b"info", b"aad", psk, b"plaintext", &mut rng).unwrap();
 
-                let opened = hpke_crate_open(&crypto, &config, &ours, sk, psk);
+                let opened = rustcrypto::hpke_open(
+                    &config,
+                    sk,
+                    ours.kem_output.as_slice(),
+                    b"info",
+                    b"aad",
+                    psk,
+                    ours.ciphertext.as_slice(),
+                );
                 assert_eq!(
                     opened,
                     Ok(b"plaintext".to_vec()),
@@ -860,77 +872,17 @@ pub(crate) mod tests {
             }
 
             let (enc, ours) = export_tx::<P>(suite, pk, b"info", b"context", 42, &mut rng).unwrap();
-            let theirs = openmls_traits::crypto::OpenMlsCrypto::hpke_setup_receiver_and_export(
-                &crypto,
-                config_clone(&config),
-                &enc,
-                sk,
-                b"info",
-                b"context",
-                42,
-            )
-            .unwrap();
+            let theirs = rustcrypto::hpke_export_rx(&config, &enc, sk, b"info", b"context", 42).unwrap();
             assert_eq!(
-                ours, &*theirs,
+                ours, theirs,
                 "{config:?}: the hpke crate's receiver exports our sender's secret"
             );
-            let (enc, theirs) = openmls_traits::crypto::OpenMlsCrypto::hpke_setup_sender_and_export(
-                &crypto,
-                config_clone(&config),
-                pk,
-                b"info",
-                b"context",
-                42,
-            )
-            .unwrap();
+            let (enc, theirs) = rustcrypto::hpke_export_tx(&config, pk, b"info", b"context", 42, &mut rng).unwrap();
             let ours = export_rx::<P>(suite, &enc, sk, b"info", b"context", 42).unwrap();
             assert_eq!(
-                ours, &*theirs,
+                ours, theirs,
                 "{config:?}: our receiver exports the hpke crate's sender's secret"
             );
-        }
-    }
-
-    fn config_clone(config: &HpkeConfig) -> HpkeConfig {
-        HpkeConfig(config.0, config.1, config.2)
-    }
-
-    fn hpke_crate_seal(crypto: &crate::RustCrypto, config: &HpkeConfig, pk: &[u8], psk: Psk<'_>) -> HpkeCiphertext {
-        match psk {
-            None => openmls_traits::crypto::OpenMlsCrypto::hpke_seal(
-                crypto,
-                config_clone(config),
-                pk,
-                b"info",
-                b"aad",
-                b"plaintext",
-            ),
-            Some((psk, psk_id)) => {
-                crypto.hpke_seal_psk(config_clone(config), pk, b"info", b"aad", psk, psk_id, b"plaintext")
-            }
-        }
-        .unwrap()
-    }
-
-    fn hpke_crate_open(
-        crypto: &crate::RustCrypto,
-        config: &HpkeConfig,
-        ciphertext: &HpkeCiphertext,
-        sk: &[u8],
-        psk: Psk<'_>,
-    ) -> Result<Vec<u8>, CryptoError> {
-        match psk {
-            None => openmls_traits::crypto::OpenMlsCrypto::hpke_open(
-                crypto,
-                config_clone(config),
-                ciphertext,
-                sk,
-                b"info",
-                b"aad",
-            ),
-            Some((psk, psk_id)) => {
-                crypto.hpke_open_psk(config_clone(config), ciphertext, sk, b"info", b"aad", psk, psk_id)
-            }
         }
     }
 
@@ -938,10 +890,13 @@ pub(crate) mod tests {
     type OpenCase<'a> = (&'a str, &'a [u8], &'a [u8], &'a [u8], &'a [u8], Psk<'a>);
 
     /// Malformed input fails, with the error the `hpke`-crate path reports for it.
-    pub(crate) fn check_rejections<P: HpkePrimitives>() {
+    pub(crate) fn check_rejections<P: HpkePrimitives>(supports: impl Fn(Dhkem) -> bool) {
         let mut rng = rand_chacha::ChaCha20Rng::from_seed([4; 32]);
         for config in configs() {
             let suite = Suite::from_config(&config).unwrap();
+            if !supports(suite.kem) {
+                continue;
+            }
             let keypair = derive_keypair::<P>(suite, &[0x24; 64]).unwrap();
             let (sk, pk) = (&*keypair.private, &keypair.public[..]);
             let sealed = seal::<P>(suite, pk, b"info", b"aad", None, b"plaintext", &mut rng).unwrap();
@@ -1000,17 +955,17 @@ pub(crate) mod tests {
 
     #[test]
     fn matches_rfc9180_vectors() {
-        check_rfc9180_vectors::<RustCryptoDh>();
+        check_rfc9180_vectors::<RustCryptoDh>(|_| true);
     }
 
     #[test]
     fn agrees_with_the_hpke_crate() {
-        check_agreement_with_the_hpke_crate::<RustCryptoDh>();
+        check_agreement_with_the_hpke_crate::<RustCryptoDh>(|_| true);
     }
 
     #[test]
     fn rejects_malformed_input() {
-        check_rejections::<RustCryptoDh>();
+        check_rejections::<RustCryptoDh>(|_| true);
     }
 
     /// The all-zero X25519 public key is of small order, so the shared secret is zero.

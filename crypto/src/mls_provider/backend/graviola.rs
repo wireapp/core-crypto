@@ -13,12 +13,17 @@ use graviola::{
         eddsa::{Ed25519SigningKey, Ed25519VerifyingKey},
     },
 };
-use openmls_traits::types::{AeadType, CryptoError, HashType, SignatureScheme};
+use openmls_traits::types::{
+    AeadType, CryptoError, HashType, HpkeCiphertext, HpkeConfig, HpkeKeyPair, SignatureScheme,
+};
 use rand::Rng as _;
 use tls_codec::SecretVLBytes;
 use zeroize::{Zeroize as _, Zeroizing};
 
-use super::rustcrypto;
+use super::{
+    hpke::{self, Dhkem, HpkePrimitives, Psk, Suite},
+    rustcrypto,
+};
 
 pub(crate) fn hash(hash_type: HashType, data: &[u8]) -> Result<Vec<u8>, CryptoError> {
     match hash_type {
@@ -325,4 +330,148 @@ fn ecdsa_sign_asn1(
     let mut buf = [0u8; 128];
     let signature = sign(&mut buf).map_err(|_| CryptoError::CryptoLibraryError)?;
     Ok(signature.to_vec())
+}
+
+/// graviola's primitives, for the HPKE core.
+///
+/// graviola has no P-521, so [`hpke_suite`] never hands this a P-521 suite.
+pub(crate) struct Graviola;
+
+impl HpkePrimitives for Graviola {
+    fn hkdf_extract(hash: HashType, salt: &[u8], ikm: &[u8]) -> Result<SecretVLBytes, CryptoError> {
+        hkdf_extract(hash, salt, ikm)
+    }
+
+    fn hkdf_expand(hash: HashType, prk: &[u8], info: &[u8], len: usize) -> Result<SecretVLBytes, CryptoError> {
+        hkdf_expand(hash, prk, info, len)
+    }
+
+    fn aead_encrypt(alg: AeadType, key: &[u8], data: &[u8], nonce: &[u8], aad: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        aead_encrypt(alg, key, data, nonce, aad)
+    }
+
+    fn aead_decrypt(alg: AeadType, key: &[u8], ct: &[u8], nonce: &[u8], aad: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        aead_decrypt(alg, key, ct, nonce, aad)
+    }
+
+    fn dh_public_key(kem: Dhkem, sk: &[u8]) -> Result<Vec<u8>, CryptoError> {
+        // The NIST curve keys reject a zero or out-of-range scalar.
+        match kem {
+            Dhkem::X25519 => Ok(x25519_private_key(sk)?.public_key().as_bytes().to_vec()),
+            Dhkem::P256 => Ok(key_agreement::p256::StaticPrivateKey::from_bytes(sk)
+                .map_err(|_| CryptoError::InvalidKey)?
+                .public_key_uncompressed()
+                .to_vec()),
+            Dhkem::P384 => Ok(key_agreement::p384::StaticPrivateKey::from_bytes(sk)
+                .map_err(|_| CryptoError::InvalidKey)?
+                .public_key_uncompressed()
+                .to_vec()),
+            Dhkem::P521 => Err(CryptoError::UnsupportedKem),
+        }
+    }
+
+    fn dh(kem: Dhkem, sk: &[u8], pk: &[u8]) -> Result<Zeroizing<Vec<u8>>, CryptoError> {
+        // `from_x962_uncompressed` checks that the point is on the curve, as the trait requires.
+        // graviola's X25519 also rejects the all-zero output itself.
+        match kem {
+            Dhkem::X25519 => {
+                let pk: &[u8; 32] = pk.try_into().map_err(|_| CryptoError::InvalidKey)?;
+                let shared = x25519_private_key(sk)?
+                    .diffie_hellman(&key_agreement::x25519::PublicKey::from_array(pk))
+                    .map_err(|_| CryptoError::CryptoLibraryError)?;
+                Ok(Zeroizing::new(shared.0.to_vec()))
+            }
+            Dhkem::P256 => {
+                let sk = key_agreement::p256::StaticPrivateKey::from_bytes(sk).map_err(|_| CryptoError::InvalidKey)?;
+                let pk =
+                    key_agreement::p256::PublicKey::from_x962_uncompressed(pk).map_err(|_| CryptoError::InvalidKey)?;
+                let shared = sk.diffie_hellman(&pk).map_err(|_| CryptoError::CryptoLibraryError)?;
+                Ok(Zeroizing::new(shared.0.to_vec()))
+            }
+            Dhkem::P384 => {
+                let sk = key_agreement::p384::StaticPrivateKey::from_bytes(sk).map_err(|_| CryptoError::InvalidKey)?;
+                let pk =
+                    key_agreement::p384::PublicKey::from_x962_uncompressed(pk).map_err(|_| CryptoError::InvalidKey)?;
+                let shared = sk.diffie_hellman(&pk).map_err(|_| CryptoError::CryptoLibraryError)?;
+                Ok(Zeroizing::new(shared.0.to_vec()))
+            }
+            Dhkem::P521 => Err(CryptoError::UnsupportedKem),
+        }
+    }
+}
+
+fn x25519_private_key(sk: &[u8]) -> Result<key_agreement::x25519::StaticPrivateKey, CryptoError> {
+    let sk: &[u8; 32] = sk.try_into().map_err(|_| CryptoError::InvalidKey)?;
+    Ok(key_agreement::x25519::StaticPrivateKey::from_array(sk))
+}
+
+/// The suite graviola runs through the HPKE core, or `None` if `config` must go to the
+/// rustcrypto backend: P-521, the post-quantum KEMs, and anything unsupported.
+fn hpke_suite(config: &HpkeConfig) -> Option<Suite> {
+    Suite::from_config(config).filter(|suite| suite.kem != Dhkem::P521)
+}
+
+pub(crate) fn hpke_seal(
+    config: &HpkeConfig,
+    pk_r: &[u8],
+    info: &[u8],
+    aad: &[u8],
+    psk: Psk<'_>,
+    ptxt: &[u8],
+    rng: &mut rand_chacha::ChaCha20Rng,
+) -> Result<HpkeCiphertext, CryptoError> {
+    match hpke_suite(config) {
+        Some(suite) => hpke::seal::<Graviola>(suite, pk_r, info, aad, psk, ptxt, rng),
+        None => rustcrypto::hpke_seal(config, pk_r, info, aad, psk, ptxt, rng),
+    }
+}
+
+pub(crate) fn hpke_open(
+    config: &HpkeConfig,
+    sk_r: &[u8],
+    enc: &[u8],
+    info: &[u8],
+    aad: &[u8],
+    psk: Psk<'_>,
+    ciphertext: &[u8],
+) -> Result<Vec<u8>, CryptoError> {
+    match hpke_suite(config) {
+        Some(suite) => hpke::open::<Graviola>(suite, sk_r, enc, info, aad, psk, ciphertext),
+        None => rustcrypto::hpke_open(config, sk_r, enc, info, aad, psk, ciphertext),
+    }
+}
+
+pub(crate) fn hpke_export_tx(
+    config: &HpkeConfig,
+    pk_r: &[u8],
+    info: &[u8],
+    exporter_context: &[u8],
+    len: usize,
+    rng: &mut rand_chacha::ChaCha20Rng,
+) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
+    match hpke_suite(config) {
+        Some(suite) => hpke::export_tx::<Graviola>(suite, pk_r, info, exporter_context, len, rng),
+        None => rustcrypto::hpke_export_tx(config, pk_r, info, exporter_context, len, rng),
+    }
+}
+
+pub(crate) fn hpke_export_rx(
+    config: &HpkeConfig,
+    enc: &[u8],
+    sk_r: &[u8],
+    info: &[u8],
+    exporter_context: &[u8],
+    len: usize,
+) -> Result<Vec<u8>, CryptoError> {
+    match hpke_suite(config) {
+        Some(suite) => hpke::export_rx::<Graviola>(suite, enc, sk_r, info, exporter_context, len),
+        None => rustcrypto::hpke_export_rx(config, enc, sk_r, info, exporter_context, len),
+    }
+}
+
+pub(crate) fn hpke_derive_keypair(config: &HpkeConfig, ikm: &[u8]) -> Result<HpkeKeyPair, CryptoError> {
+    match hpke_suite(config) {
+        Some(suite) => hpke::derive_keypair::<Graviola>(suite, ikm),
+        None => rustcrypto::hpke_derive_keypair(config, ikm),
+    }
 }

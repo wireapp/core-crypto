@@ -6,12 +6,17 @@
 //!
 //! [graviola]: https://github.com/ctz/graviola
 
-use openmls_traits::types::{AeadType, CryptoError, HashType, SignatureScheme};
+use openmls_traits::types::{
+    AeadType, CryptoError, HashType, HpkeCiphertext, HpkeConfig, HpkeKeyPair, SignatureScheme,
+};
 use tls_codec::SecretVLBytes;
 
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 mod graviola;
-#[cfg_attr(not(test), expect(dead_code, reason = "no backend uses the HPKE core yet"))]
+#[cfg_attr(
+    not(any(test, target_arch = "aarch64", target_arch = "x86_64")),
+    expect(dead_code, reason = "only graviola uses the HPKE core")
+)]
 pub(crate) mod hpke;
 mod rustcrypto;
 
@@ -123,6 +128,56 @@ pub(super) fn sign(alg: SignatureScheme, data: &[u8], key: &[u8]) -> Result<Vec<
     dispatch!(sign(alg, data, key))
 }
 
+pub(super) fn hpke_seal(
+    config: &HpkeConfig,
+    pk_r: &[u8],
+    info: &[u8],
+    aad: &[u8],
+    psk: hpke::Psk<'_>,
+    ptxt: &[u8],
+    rng: &mut rand_chacha::ChaCha20Rng,
+) -> Result<HpkeCiphertext, CryptoError> {
+    dispatch!(hpke_seal(config, pk_r, info, aad, psk, ptxt, rng))
+}
+
+pub(super) fn hpke_open(
+    config: &HpkeConfig,
+    sk_r: &[u8],
+    enc: &[u8],
+    info: &[u8],
+    aad: &[u8],
+    psk: hpke::Psk<'_>,
+    ciphertext: &[u8],
+) -> Result<Vec<u8>, CryptoError> {
+    dispatch!(hpke_open(config, sk_r, enc, info, aad, psk, ciphertext))
+}
+
+pub(super) fn hpke_export_tx(
+    config: &HpkeConfig,
+    pk_r: &[u8],
+    info: &[u8],
+    exporter_context: &[u8],
+    len: usize,
+    rng: &mut rand_chacha::ChaCha20Rng,
+) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
+    dispatch!(hpke_export_tx(config, pk_r, info, exporter_context, len, rng))
+}
+
+pub(super) fn hpke_export_rx(
+    config: &HpkeConfig,
+    enc: &[u8],
+    sk_r: &[u8],
+    info: &[u8],
+    exporter_context: &[u8],
+    len: usize,
+) -> Result<Vec<u8>, CryptoError> {
+    dispatch!(hpke_export_rx(config, enc, sk_r, info, exporter_context, len))
+}
+
+pub(super) fn hpke_derive_keypair(config: &HpkeConfig, ikm: &[u8]) -> Result<HpkeKeyPair, CryptoError> {
+    dispatch!(hpke_derive_keypair(config, ikm))
+}
+
 /// The two backends are interchangeable at runtime, chosen by the CPU we happen to run on, so
 /// anything one produces the other must accept, and where both reject an input they must agree
 /// on why. These tests hold that contract; they run only where both backends are available.
@@ -132,7 +187,7 @@ mod tests {
     use rand_core::SeedableRng as _;
     use signature::Signer as _;
 
-    use super::{graviola, graviola_supported, rustcrypto};
+    use super::{graviola, graviola_supported, hpke, rustcrypto};
 
     /// Returns `false`, after saying so, when this CPU lacks what graviola needs.
     /// Calling graviola in that case would panic.
@@ -590,6 +645,92 @@ mod tests {
             }
         }
     }
+
+    /// graviola has no P-521; for that KEM it goes to the rustcrypto backend instead.
+    fn graviola_has(kem: hpke::Dhkem) -> bool {
+        kem != hpke::Dhkem::P521
+    }
+
+    #[test]
+    fn hpke_on_graviola_matches_rfc9180_vectors() {
+        if !both_backends_available() {
+            return;
+        }
+        hpke::tests::check_rfc9180_vectors::<graviola::Graviola>(graviola_has);
+    }
+
+    #[test]
+    fn hpke_on_graviola_agrees_with_the_hpke_crate() {
+        if !both_backends_available() {
+            return;
+        }
+        hpke::tests::check_agreement_with_the_hpke_crate::<graviola::Graviola>(graviola_has);
+    }
+
+    #[test]
+    fn hpke_on_graviola_rejects_malformed_input() {
+        if !both_backends_available() {
+            return;
+        }
+        hpke::tests::check_rejections::<graviola::Graviola>(graviola_has);
+    }
+
+    /// Through the backends' public HPKE functions, including those configurations graviola hands
+    /// to the rustcrypto backend: each backend opens what the other sealed, and derives the same
+    /// key pairs.
+    #[test]
+    fn hpke_is_interchangeable_between_backends() {
+        if !both_backends_available() {
+            return;
+        }
+        let mut rng = rng(10);
+        let psk = [0x77; 32];
+        for config in hpke::tests::configs() {
+            let graviola_keys = graviola::hpke_derive_keypair(&config, &[0x42; 64]).unwrap();
+            let rustcrypto_keys = rustcrypto::hpke_derive_keypair(&config, &[0x42; 64]).unwrap();
+            assert_eq!(
+                &*graviola_keys.private, &*rustcrypto_keys.private,
+                "{config:?}: private key"
+            );
+            assert_eq!(graviola_keys.public, rustcrypto_keys.public, "{config:?}: public key");
+            let (sk, pk) = (&*graviola_keys.private, &graviola_keys.public[..]);
+
+            for psk in [None, Some((&psk[..], &b"psk id"[..]))] {
+                let from_graviola = graviola::hpke_seal(&config, pk, b"info", b"aad", psk, b"pt", &mut rng).unwrap();
+                let from_rustcrypto =
+                    rustcrypto::hpke_seal(&config, pk, b"info", b"aad", psk, b"pt", &mut rng).unwrap();
+                for (opener, open, sealed) in [
+                    ("rustcrypto", rustcrypto::hpke_open as HpkeOpenFn, &from_graviola),
+                    ("graviola", graviola::hpke_open, &from_rustcrypto),
+                ] {
+                    assert_eq!(
+                        open(
+                            &config,
+                            sk,
+                            sealed.kem_output.as_slice(),
+                            b"info",
+                            b"aad",
+                            psk,
+                            sealed.ciphertext.as_slice()
+                        ),
+                        Ok(b"pt".to_vec()),
+                        "{config:?}, psk: {}: {opener} opens",
+                        psk.is_some()
+                    );
+                }
+            }
+        }
+    }
+
+    type HpkeOpenFn = fn(
+        &openmls_traits::types::HpkeConfig,
+        &[u8],
+        &[u8],
+        &[u8],
+        &[u8],
+        hpke::Psk<'_>,
+        &[u8],
+    ) -> Result<Vec<u8>, CryptoError>;
 
     #[test]
     fn unsupported_signature_scheme_is_rejected_identically() {

@@ -6,10 +6,7 @@ use openmls::prelude::HpkeCiphertext;
 use openmls_traits::{
     crypto::OpenMlsCrypto,
     random::OpenMlsRand,
-    types::{
-        self, AeadType, Ciphersuite, CryptoError, ExporterSecret, HashType, HpkeAeadType, HpkeConfig, HpkeKdfType,
-        HpkeKemType, SignatureScheme,
-    },
+    types::{self, AeadType, Ciphersuite, CryptoError, ExporterSecret, HashType, HpkeConfig, SignatureScheme},
 };
 use rand::Rng as _;
 use rand_core::SeedableRng as _;
@@ -38,57 +35,6 @@ impl Default for RustCrypto {
         getrandom::fill(&mut seed).expect("system RNG has to work");
         Self::new_with_seed(EntropySeed::from_raw(seed))
     }
-}
-
-macro_rules! hpke_dispatch {
-    ($config:expr, $f:ident $(, $arg:expr)* $(,)?) => {
-        match $config {
-            HpkeConfig(HpkeKemType::DhKem25519, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) =>
-                hpke_core::$f::<hpke::aead::AesGcm128, hpke::kdf::HkdfSha256, hpke::kem::X25519HkdfSha256>($($arg),*),
-            HpkeConfig(HpkeKemType::DhKem25519, HpkeKdfType::HkdfSha256, HpkeAeadType::ChaCha20Poly1305) =>
-                hpke_core::$f::<hpke::aead::ChaCha20Poly1305, hpke::kdf::HkdfSha256, hpke::kem::X25519HkdfSha256>($($arg),*),
-            HpkeConfig(HpkeKemType::DhKemP256, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) =>
-                hpke_core::$f::<hpke::aead::AesGcm128, hpke::kdf::HkdfSha256, hpke::kem::DhP256HkdfSha256>($($arg),*),
-            HpkeConfig(HpkeKemType::DhKemP384, HpkeKdfType::HkdfSha384, HpkeAeadType::AesGcm256) =>
-                hpke_core::$f::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha384, hpke::kem::DhP384HkdfSha384>($($arg),*),
-            HpkeConfig(HpkeKemType::DhKemP521, HpkeKdfType::HkdfSha512, HpkeAeadType::AesGcm256) =>
-                hpke_core::$f::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha512, hpke::kem::DhP521HkdfSha512>($($arg),*),
-            HpkeConfig(HpkeKemType::MlKem768X25519, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) =>
-                hpke_core::$f::<hpke::aead::AesGcm128, hpke::kdf::HkdfSha256, hpke::kem::XWing>($($arg),*),
-            HpkeConfig(HpkeKemType::MlKem768X25519, HpkeKdfType::HkdfSha384, HpkeAeadType::AesGcm256) =>
-                hpke_core::$f::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha384, hpke::kem::XWing>($($arg),*),
-            HpkeConfig(HpkeKemType::MlKem768X25519, HpkeKdfType::HkdfSha384, HpkeAeadType::ChaCha20Poly1305) =>
-                hpke_core::$f::<hpke::aead::ChaCha20Poly1305, hpke::kdf::HkdfSha384, hpke::kem::XWing>($($arg),*),
-            HpkeConfig(HpkeKemType::MlKem768P256, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) =>
-                hpke_core::$f::<hpke::aead::AesGcm128, hpke::kdf::HkdfSha256, hpke::kem::MlKem768P256>($($arg),*),
-            HpkeConfig(HpkeKemType::MlKem768P256, HpkeKdfType::HkdfSha384, HpkeAeadType::AesGcm256) =>
-                hpke_core::$f::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha384, hpke::kem::MlKem768P256>($($arg),*),
-            HpkeConfig(HpkeKemType::MlKem1024P384, HpkeKdfType::HkdfSha384, HpkeAeadType::AesGcm256) =>
-                hpke_core::$f::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha384, hpke::kem::MlKem1024P384>($($arg),*),
-            HpkeConfig(HpkeKemType::MlKem768, HpkeKdfType::HkdfSha384, HpkeAeadType::AesGcm256) =>
-                hpke_core::$f::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha384, hpke::kem::MlKem768>($($arg),*),
-            HpkeConfig(HpkeKemType::MlKem1024, HpkeKdfType::HkdfSha384, HpkeAeadType::AesGcm256) =>
-                hpke_core::$f::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha384, hpke::kem::MlKem1024>($($arg),*),
-            _ => Err(CryptoError::UnsupportedKem),
-        }
-    };
-}
-
-macro_rules! hpke_kem_dispatch {
-    ($kem:expr, $f:ident $(, $arg:expr)* $(,)?) => {
-        match $kem {
-            HpkeKemType::DhKem25519 => hpke_core::$f::<hpke::kem::X25519HkdfSha256>($($arg),*),
-            HpkeKemType::DhKemP256 => hpke_core::$f::<hpke::kem::DhP256HkdfSha256>($($arg),*),
-            HpkeKemType::DhKemP384 => hpke_core::$f::<hpke::kem::DhP384HkdfSha384>($($arg),*),
-            HpkeKemType::DhKemP521 => hpke_core::$f::<hpke::kem::DhP521HkdfSha512>($($arg),*),
-            HpkeKemType::MlKem768X25519 => hpke_core::$f::<hpke::kem::XWing>($($arg),*),
-            HpkeKemType::MlKem768P256 => hpke_core::$f::<hpke::kem::MlKem768P256>($($arg),*),
-            HpkeKemType::MlKem1024P384 => hpke_core::$f::<hpke::kem::MlKem1024P384>($($arg),*),
-            HpkeKemType::MlKem768 => hpke_core::$f::<hpke::kem::MlKem768>($($arg),*),
-            HpkeKemType::MlKem1024 => hpke_core::$f::<hpke::kem::MlKem1024>($($arg),*),
-            HpkeKemType::DhKem448 => Err(CryptoError::UnsupportedKem),
-        }
-    };
 }
 
 impl RustCrypto {
@@ -136,7 +82,7 @@ impl RustCrypto {
     ) -> Result<HpkeCiphertext, CryptoError> {
         validate_psk(psk, psk_id)?;
         let mut rng = self.rng();
-        hpke_dispatch!(config, hpke_seal_psk, pk_r, info, aad, psk, psk_id, ptxt, &mut *rng)
+        backend::hpke_seal(&config, pk_r, info, aad, Some((psk, psk_id)), ptxt, &mut rng)
     }
 
     #[expect(clippy::too_many_arguments)]
@@ -151,15 +97,13 @@ impl RustCrypto {
         psk_id: &[u8],
     ) -> Result<Vec<u8>, CryptoError> {
         validate_psk(psk, psk_id)?;
-        hpke_dispatch!(
-            config,
-            hpke_open_psk,
+        backend::hpke_open(
+            &config,
             sk_r,
             input.kem_output.as_slice(),
             info,
             aad,
-            psk,
-            psk_id,
+            Some((psk, psk_id)),
             input.ciphertext.as_slice(),
         )
     }
@@ -320,7 +264,7 @@ impl OpenMlsCrypto for RustCrypto {
         ptxt: &[u8],
     ) -> Result<types::HpkeCiphertext, CryptoError> {
         let mut rng = self.rng();
-        hpke_dispatch!(config, hpke_seal, pk_r, info, aad, ptxt, &mut *rng)
+        backend::hpke_seal(&config, pk_r, info, aad, None, ptxt, &mut rng)
     }
 
     fn hpke_open(
@@ -331,13 +275,13 @@ impl OpenMlsCrypto for RustCrypto {
         info: &[u8],
         aad: &[u8],
     ) -> Result<Vec<u8>, CryptoError> {
-        hpke_dispatch!(
-            config,
-            hpke_open,
+        backend::hpke_open(
+            &config,
             sk_r,
             input.kem_output.as_slice(),
             info,
             aad,
+            None,
             input.ciphertext.as_slice(),
         )
     }
@@ -351,15 +295,8 @@ impl OpenMlsCrypto for RustCrypto {
         exporter_length: usize,
     ) -> Result<(Vec<u8>, ExporterSecret), CryptoError> {
         let mut rng = self.rng();
-        let (kem_output, export) = hpke_dispatch!(
-            config,
-            hpke_export_tx,
-            pk_r,
-            info,
-            exporter_context,
-            exporter_length,
-            &mut *rng,
-        )?;
+        let (kem_output, export) =
+            backend::hpke_export_tx(&config, pk_r, info, exporter_context, exporter_length, &mut rng)?;
 
         debug_assert_eq!(export.len(), exporter_length);
 
@@ -375,15 +312,7 @@ impl OpenMlsCrypto for RustCrypto {
         exporter_context: &[u8],
         exporter_length: usize,
     ) -> Result<ExporterSecret, CryptoError> {
-        let export = hpke_dispatch!(
-            config,
-            hpke_export_rx,
-            enc,
-            sk_r,
-            info,
-            exporter_context,
-            exporter_length,
-        )?;
+        let export = backend::hpke_export_rx(&config, enc, sk_r, info, exporter_context, exporter_length)?;
 
         debug_assert_eq!(export.len(), exporter_length);
 
@@ -391,162 +320,7 @@ impl OpenMlsCrypto for RustCrypto {
     }
 
     fn derive_hpke_keypair(&self, config: HpkeConfig, ikm: &[u8]) -> Result<types::HpkeKeyPair, CryptoError> {
-        hpke_kem_dispatch!(config.0, hpke_derive_keypair, ikm)
-    }
-}
-
-mod hpke_core {
-    use hpke::PskBundle;
-    use openmls_traits::types::{CryptoError, HpkeCiphertext, HpkeKeyPair};
-
-    pub(crate) fn hpke_open<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
-        private_key: &[u8],
-        kem_output: &[u8],
-        info: &[u8],
-        aad: &[u8],
-        ciphertext: &[u8],
-    ) -> Result<Vec<u8>, CryptoError> {
-        use hpke::Deserializable as _;
-        let encapped_key = Kem::EncappedKey::from_bytes(kem_output).map_err(|_| CryptoError::HpkeDecryptionError)?;
-        let key = Kem::PrivateKey::from_bytes(private_key).map_err(|_| CryptoError::HpkeDecryptionError)?;
-        let plaintext =
-            hpke::single_shot_open::<Aead, Kdf, Kem>(&hpke::OpModeR::Base, &key, &encapped_key, info, ciphertext, aad)
-                .map_err(|_| CryptoError::HpkeDecryptionError)?;
-
-        Ok(plaintext)
-    }
-
-    pub(crate) fn hpke_open_psk<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
-        private_key: &[u8],
-        kem_output: &[u8],
-        info: &[u8],
-        aad: &[u8],
-        psk: &[u8],
-        psk_id: &[u8],
-        ciphertext: &[u8],
-    ) -> Result<Vec<u8>, CryptoError> {
-        use hpke::Deserializable as _;
-        let encapped_key = Kem::EncappedKey::from_bytes(kem_output).map_err(|_| CryptoError::HpkeDecryptionError)?;
-        let key = Kem::PrivateKey::from_bytes(private_key).map_err(|_| CryptoError::HpkeDecryptionError)?;
-        let psk_bundle = PskBundle::new(psk, psk_id).map_err(|_| CryptoError::HpkeDecryptionError)?;
-        let plaintext = hpke::single_shot_open::<Aead, Kdf, Kem>(
-            &hpke::OpModeR::Psk(psk_bundle),
-            &key,
-            &encapped_key,
-            info,
-            ciphertext,
-            aad,
-        )
-        .map_err(|_| CryptoError::HpkeDecryptionError)?;
-
-        Ok(plaintext)
-    }
-
-    pub(crate) fn hpke_seal<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
-        public_key: &[u8],
-        info: &[u8],
-        aad: &[u8],
-        plaintext: &[u8],
-        csprng: &mut impl rand_core::CryptoRng,
-    ) -> Result<HpkeCiphertext, CryptoError> {
-        use hpke::{Deserializable as _, Serializable as _};
-        let key = Kem::PublicKey::from_bytes(public_key).map_err(|_| CryptoError::HpkeEncryptionError)?;
-        let (encapped, ciphertext) =
-            hpke::single_shot_seal_with_rng::<Aead, Kdf, Kem>(&hpke::OpModeS::Base, &key, info, plaintext, aad, csprng)
-                .map_err(|_| CryptoError::HpkeEncryptionError)?;
-
-        Ok(HpkeCiphertext {
-            kem_output: encapped.to_bytes().to_vec().into(),
-            ciphertext: ciphertext.into(),
-        })
-    }
-
-    pub(crate) fn hpke_seal_psk<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
-        public_key: &[u8],
-        info: &[u8],
-        aad: &[u8],
-        psk: &[u8],
-        psk_id: &[u8],
-        plaintext: &[u8],
-        csprng: &mut impl rand_core::CryptoRng,
-    ) -> Result<HpkeCiphertext, CryptoError> {
-        use hpke::{Deserializable as _, Serializable as _};
-        let key = Kem::PublicKey::from_bytes(public_key).map_err(|_| CryptoError::HpkeEncryptionError)?;
-        let psk_bundle = PskBundle::new(psk, psk_id).map_err(|_| CryptoError::HpkeEncryptionError)?;
-        let (encapped, ciphertext) = hpke::single_shot_seal_with_rng::<Aead, Kdf, Kem>(
-            &hpke::OpModeS::Psk(psk_bundle),
-            &key,
-            info,
-            plaintext,
-            aad,
-            csprng,
-        )
-        .map_err(|_| CryptoError::HpkeEncryptionError)?;
-
-        Ok(HpkeCiphertext {
-            kem_output: encapped.to_bytes().to_vec().into(),
-            ciphertext: ciphertext.into(),
-        })
-    }
-
-    #[expect(dead_code)]
-    pub(crate) fn hpke_gen_keypair<Kem: hpke::Kem>(
-        csprng: &mut impl rand_core::CryptoRng,
-    ) -> Result<HpkeKeyPair, CryptoError> {
-        use hpke::Serializable as _;
-        let (sk, pk) = Kem::gen_keypair_with_rng(csprng);
-        let (private, public) = (sk.to_bytes().to_vec().into(), pk.to_bytes().to_vec());
-
-        Ok(HpkeKeyPair { private, public })
-    }
-
-    pub(crate) fn hpke_derive_keypair<Kem: hpke::Kem>(ikm: &[u8]) -> Result<HpkeKeyPair, CryptoError> {
-        use hpke::Serializable as _;
-        let (sk, pk) = Kem::derive_keypair(ikm);
-        let (private, public) = (sk.to_bytes().to_vec().into(), pk.to_bytes().to_vec());
-
-        Ok(HpkeKeyPair { private, public })
-    }
-
-    pub(crate) fn hpke_export_rx<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
-        encapped_key: &[u8],
-        rx_private_key: &[u8],
-        info: &[u8],
-        export_info: &[u8],
-        export_len: usize,
-    ) -> Result<Vec<u8>, CryptoError> {
-        use hpke::Deserializable as _;
-        let key = Kem::PrivateKey::from_bytes(rx_private_key).map_err(|_| CryptoError::ReceiverSetupError)?;
-        let encapped_key = Kem::EncappedKey::from_bytes(encapped_key).map_err(|_| CryptoError::ReceiverSetupError)?;
-        let ctx = hpke::setup_receiver::<Aead, Kdf, Kem>(&hpke::OpModeR::Base, &key, &encapped_key, info)
-            .map_err(|_| CryptoError::ReceiverSetupError)?;
-
-        let mut export = vec![0u8; export_len];
-
-        ctx.export(export_info, &mut export)
-            .map_err(|_| CryptoError::ExporterError)?;
-
-        Ok(export)
-    }
-
-    pub(crate) fn hpke_export_tx<Aead: hpke::aead::Aead, Kdf: hpke::kdf::Kdf, Kem: hpke::Kem>(
-        tx_public_key: &[u8],
-        info: &[u8],
-        export_info: &[u8],
-        export_len: usize,
-        csprng: &mut impl rand_core::CryptoRng,
-    ) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
-        use hpke::{Deserializable as _, Serializable as _};
-        let key = Kem::PublicKey::from_bytes(tx_public_key).map_err(|_| CryptoError::SenderSetupError)?;
-        let (kem_output, ctx) = hpke::setup_sender_with_rng::<Aead, Kdf, Kem>(&hpke::OpModeS::Base, &key, info, csprng)
-            .map_err(|_| CryptoError::SenderSetupError)?;
-
-        let mut export = vec![0u8; export_len];
-
-        ctx.export(export_info, &mut export)
-            .map_err(|_| CryptoError::ExporterError)?;
-
-        Ok((kem_output.to_bytes().to_vec(), export))
+        backend::hpke_derive_keypair(&config, ikm)
     }
 }
 
