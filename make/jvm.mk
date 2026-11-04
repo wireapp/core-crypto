@@ -74,6 +74,21 @@ jvm-bench: $(jvm-test-deps) $(KT_BENCHMARKS) ## Run the JVM benchmarks
 # KMP (Kotlin Multiplatform) builds
 #-------------------------------------------------------------------------------
 
+# The uniffi plugin builds the Rust libraries itself. Release builds cover every release target:
+# macOS, Linux and Windows for the JVM, three Android ABIs, and the Apple targets.
+KMP_GRADLE_ARGS := $(if $(RELEASE),-PreleaseBuild=true)
+
+# What the package publishes. Not `assemble`, which also compiles the tests for the native targets,
+# and those use JVM-only APIs.
+KMP_ARTIFACT_TASKS := allMetadataJar jvmJar bundleAndroidMainAar iosArm64MainKlibrary \
+	iosSimulatorArm64MainKlibrary macosArm64MainKlibrary
+
+.PHONY: kmp
+kmp-deps := $(RUST_SOURCES) $(KT_FILES) $(KT_BUILD_FILES)
+kmp: ## Build the Kotlin multi-platform package
+	cd crypto-ffi/bindings && \
+	./gradlew $(addprefix core-crypto-kmp:,$(KMP_ARTIFACT_TASKS)) $(KMP_GRADLE_ARGS)
+
 kmp-jvm-test-deps := $(RUST_SOURCES) $(KT_FILES) $(KT_BUILD_FILES)
 
 $(STAMPS)/kmp-jvm-test: $(kmp-jvm-test-deps)
