@@ -179,19 +179,19 @@ fn parse_tnt_epoch(wire_format: u16, message: &[u8]) -> Option<u64> {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use rstest::rstest;
 
     use super::*;
 
     /// `field` with a one-byte variable-length prefix; `field` must be shorter than 64 bytes.
-    fn short_field(field: &[u8]) -> Vec<u8> {
+    pub(crate) fn short_field(field: &[u8]) -> Vec<u8> {
         assert!(field.len() < 64, "a one-byte prefix only holds lengths up to 63");
         [&[field.len() as u8], field].concat()
     }
 
     /// A transient TNT message, up to and including its epoch, followed by bytes the parser must ignore.
-    fn transient_message(epoch: u64) -> Vec<u8> {
+    pub(crate) fn transient_message(epoch: u64) -> Vec<u8> {
         [
             &[0x00, 0x01][..],      // tnt protocol version
             &[0xF0, 0x00],          // wire format: transient
@@ -206,7 +206,7 @@ mod tests {
 
     /// A targeted TNT message of the given wire format, up to and including its epoch, followed by bytes the parser
     /// must ignore.
-    fn targeted_message(wire_format: u16, epoch: u64) -> Vec<u8> {
+    pub(crate) fn targeted_message(wire_format: u16, epoch: u64) -> Vec<u8> {
         [
             &[0x00, 0x01][..],          // tnt protocol version
             &wire_format.to_be_bytes(), // wire format
@@ -223,16 +223,21 @@ mod tests {
     /// An MLS `PrivateMessage` with the given content type and epoch.
     ///
     /// Only the header is plaintext, and parsing never decrypts, so the encrypted fields can be any bytes.
-    fn private_message(content_type: u8, epoch: u64) -> Vec<u8> {
+    pub(crate) fn private_message(content_type: u8, epoch: u64) -> Vec<u8> {
+        private_message_with_ciphertext(content_type, epoch, b"ciphertext of whatever")
+    }
+
+    /// Like [`private_message`], but with the given ciphertext, so that several messages can share a header.
+    pub(crate) fn private_message_with_ciphertext(content_type: u8, epoch: u64, ciphertext: &[u8]) -> Vec<u8> {
         [
-            &[0x00, 0x01][..],                       // mls protocol version
-            &[0x00, 0x02],                           // wire format: private message
-            &short_field(b"group"),                  // group id
-            &epoch.to_be_bytes(),                    // epoch
-            &[content_type],                         // content type
-            &short_field(b""),                       // authenticated data
-            &short_field(b"encrypted sender data"),  // encrypted sender data
-            &short_field(b"ciphertext of whatever"), // ciphertext
+            &[0x00, 0x01][..],                      // mls protocol version
+            &[0x00, 0x02],                          // wire format: private message
+            &short_field(b"group"),                 // group id
+            &epoch.to_be_bytes(),                   // epoch
+            &[content_type],                        // content type
+            &short_field(b""),                      // authenticated data
+            &short_field(b"encrypted sender data"), // encrypted sender data
+            &short_field(ciphertext),               // ciphertext
         ]
         .concat()
     }
@@ -241,7 +246,7 @@ mod tests {
     ///
     /// `content` is the content type followed by its body. Nothing verifies the signature or the tags while parsing,
     /// so they can be any bytes.
-    fn public_message(epoch: u64, content: &[u8], is_commit: bool) -> Vec<u8> {
+    pub(crate) fn public_message(epoch: u64, content: &[u8], is_commit: bool) -> Vec<u8> {
         // commits carry a confirmation tag; nothing else does
         let confirmation_tag = if is_commit {
             short_field(b"confirmation tag")
@@ -264,10 +269,10 @@ mod tests {
     }
 
     /// A commit with no proposals and no update path: content type 3, an empty proposal list, and an absent path.
-    const EMPTY_COMMIT: &[u8] = &[0x03, 0x00, 0x00];
+    pub(crate) const EMPTY_COMMIT: &[u8] = &[0x03, 0x00, 0x00];
 
     /// A proposal removing the member at leaf index 2: content type 2, proposal type 3 (remove), then the leaf index.
-    const REMOVE_PROPOSAL: &[u8] = &[0x02, 0x00, 0x03, 0, 0, 0, 2];
+    pub(crate) const REMOVE_PROPOSAL: &[u8] = &[0x02, 0x00, 0x03, 0, 0, 0, 2];
 
     #[rstest]
     #[case::one_byte_prefix(&[0x03, b'a', b'b', b'c'], 0, Some(4))]
