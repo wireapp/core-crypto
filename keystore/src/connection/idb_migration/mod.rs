@@ -28,9 +28,10 @@ use crate::{
         e2ei_acme_ca::E2eiAcmeCA, e2ei_crl::E2eiCrl, e2ei_intermediate_cert::E2eiIntermediateCert,
         group::legacy_persisted_mls_pending_group::LegacyPersistedMlsPendingGroup,
         pending_group::PersistedMlsPendingGroup as IdbPersistedMlsPendingGroup,
-        pending_message::LegacyMlsPendingMessage, stored_keypackage::StoredKeypackage,
+        pending_message::LegacyMlsPendingMessage, stored_buffered_commit::LegacyStoredBufferedCommit,
+        stored_keypackage::StoredKeypackage,
     },
-    entities::{StoredBufferedCommit, StoredEncryptionKeyPair, StoredPskBundle},
+    entities::{StoredEncryptionKeyPair, StoredPskBundle},
     migrations::{
         MigrationTarget,
         historical::{
@@ -126,7 +127,7 @@ macro_rules! for_each_imported_legacy_entity {
             E2eiIntermediateCert,
             LegacyMlsPendingMessage,
             LegacyPersistedMlsGroup,
-            StoredBufferedCommit,
+            LegacyStoredBufferedCommit,
             StoredCredentialV36,
             StoredEncryptionKeyPair,
             V33StoredEpochEncryptionKeypair,
