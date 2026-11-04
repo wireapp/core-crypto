@@ -1,6 +1,5 @@
 mod e2ei_crl;
 mod inbox;
-mod mls_pending_message;
 mod old_epoch_data;
 mod old_epoch_member_data;
 mod persisted_mls_group;
@@ -17,7 +16,6 @@ mod x509_trust_anchor;
 
 pub use e2ei_crl::X509Crl;
 pub use inbox::{InboxMessage, InboxMessagePk, InboxMessagePkRef, WaitingFor};
-pub use mls_pending_message::MlsPendingMessage;
 pub use old_epoch_data::{OldEpochData, OldEpochDataPk, OldEpochDataPkRef};
 pub use old_epoch_member_data::{OldEpochMemberData, OldEpochMemberDataPk, OldEpochMemberDataPkRef};
 pub use persisted_mls_group::PersistedMlsGroup;

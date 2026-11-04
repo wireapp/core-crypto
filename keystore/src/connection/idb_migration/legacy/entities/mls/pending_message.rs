@@ -19,9 +19,8 @@ use crate::{
 
 /// A buffered message as stored by the final legacy IndexedDB schema and SQL schema V22.
 ///
-/// V31 rebuilt `mls_pending_messages` around a hash primary key, and
-/// [`MlsPendingMessage`][crate::entities::MlsPendingMessage] writes that shape. The import targets V22, where
-/// the table is still `(id, message)`, so it needs a writer of its own.
+/// V31 rebuilt `mls_pending_messages` around a hash primary key, and V50 dropped the table in favour of
+/// `mls_inbox`. The import targets V22, where the table is still `(id, message)`, so it needs a writer of its own.
 #[derive(core_crypto_macros::Debug)]
 pub(crate) struct LegacyMlsPendingMessage {
     pub(crate) conversation_id: Vec<u8>,
@@ -43,7 +42,8 @@ impl LegacyMlsPendingMessage {
 impl PrimaryKey for LegacyMlsPendingMessage {
     type PrimaryKey = Sha256Hash;
 
-    /// Derived as [`MlsPendingMessage`][crate::entities::MlsPendingMessage] derives its key.
+    /// Derived as V31 derived the primary key of `mls_pending_messages`: a hash of the length-prefixed
+    /// conversation id followed by the message.
     fn primary_key(&self) -> Self::PrimaryKey {
         let conversation_id_len = (self.conversation_id.len() as u64).to_be_bytes();
         Sha256Hash::hash_from_many([conversation_id_len.as_slice(), &self.conversation_id, &self.message])

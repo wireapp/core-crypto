@@ -5,10 +5,6 @@ use rusqlite::{
 };
 
 /// Type-safe reference to a conversation id.
-///
-/// [`MlsPendingMessage`][crate::entities::MlsPendingMessage]s are keyed individually by a hash of their contents, but
-/// callers almost always want every buffered message of one conversation at once. This type is the search key
-/// which makes that possible.
 #[derive(
     core_crypto_macros::Debug,
     Clone,
