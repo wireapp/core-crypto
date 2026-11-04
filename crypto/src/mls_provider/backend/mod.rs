@@ -732,6 +732,109 @@ mod tests {
         &[u8],
     ) -> Result<Vec<u8>, CryptoError>;
 
+    /// rustcrypto verifies Ed25519 with dalek's `verify_strict`, which rejects signatures a less
+    /// careful verifier accepts: under a small-order public key, where a forged `(R, S)` satisfies
+    /// the verification equation for any message, and with a non-canonical `S`, which makes
+    /// signatures malleable. graviola must reject them the same way.
+    #[test]
+    fn ed25519_rejects_weak_keys_and_malleable_signatures_identically() {
+        if !both_backends_available() {
+            return;
+        }
+        let scheme = SignatureScheme::ED25519;
+        let mut identity = [0u8; 32];
+        identity[0] = 1;
+        let order_2 = hex::decode("ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f").unwrap();
+        let forged = [&identity[..], &[0u8; 32]].concat();
+
+        let (sk, pk) = rustcrypto::signature_key_gen(scheme, &mut rng(11)).unwrap();
+        let signature = rustcrypto::sign(scheme, MESSAGE, &sk).unwrap();
+        let non_canonical_s = [&signature[..32], &add_group_order(&signature[32..])].concat();
+
+        let cases: [VerifyCase; 3] = [
+            ("identity public key, forged signature", MESSAGE, &identity, &forged),
+            ("order-2 public key, forged signature", MESSAGE, &order_2, &forged),
+            ("S plus the group order", MESSAGE, &pk, &non_canonical_s),
+        ];
+        // Collect every disagreement before failing, so one run shows all of them.
+        let mut disagreements = Vec::new();
+        for (case, message, pk, signature) in cases {
+            let expected = rustcrypto::verify_signature(scheme, message, pk, signature);
+            assert!(expected.is_err(), "{case}: rustcrypto must reject this");
+            let got = graviola::verify_signature(scheme, message, pk, signature);
+            if got != expected {
+                disagreements.push(format!("verify, {case}: graviola {got:?}, rustcrypto {expected:?}"));
+            }
+        }
+        for (case, pk) in [("identity", &identity[..]), ("order 2", &order_2)] {
+            let expected = rustcrypto::validate_signature_key(scheme, pk);
+            let got = graviola::validate_signature_key(scheme, pk);
+            if got != expected {
+                disagreements.push(format!("validate, {case}: graviola {got:?}, rustcrypto {expected:?}"));
+            }
+        }
+        assert!(disagreements.is_empty(), "{disagreements:#?}");
+    }
+
+    /// `S + L`, little-endian, where `L` is the order of the Ed25519 base point. `S < L < 2^253`,
+    /// so this does not overflow.
+    fn add_group_order(s: &[u8]) -> [u8; 32] {
+        let order = hex::decode("edd3f55c1a631258d69cf7a2def9de1400000000000000000000000000000010").unwrap();
+        let mut out = [0u8; 32];
+        let mut carry = 0u16;
+        for i in 0..32 {
+            let sum = u16::from(s[i]) + u16::from(order[i]) + carry;
+            out[i] = sum as u8;
+            carry = sum >> 8;
+        }
+        out
+    }
+
+    /// Every encoding on the small-order list in `graviola`, with either sign bit, is one dalek
+    /// also considers weak, and an ordinary key is not on it. That the list is complete rests on
+    /// libsodium, where it comes from; the forged-signature cases above exercise it.
+    #[test]
+    fn ed25519_small_order_list_matches_dalek() {
+        if !both_backends_available() {
+            return;
+        }
+        let mut weak = 0;
+        for entry in small_order_list() {
+            for sign in [0x00, 0x80] {
+                let mut encoding = entry;
+                encoding[31] |= sign;
+                assert!(graviola::is_small_order_ed25519_for_tests(&encoding), "{encoding:02x?}");
+                if let Ok(key) = ed25519_dalek::VerifyingKey::from_bytes(&encoding) {
+                    assert!(key.is_weak(), "dalek: {encoding:02x?} is not weak");
+                    weak += 1;
+                }
+            }
+        }
+        assert!(weak >= 8, "only {weak} of the listed encodings decode");
+
+        let (_, pk) = rustcrypto::signature_key_gen(SignatureScheme::ED25519, &mut rng(12)).unwrap();
+        assert!(
+            !graviola::is_small_order_ed25519_for_tests(&pk),
+            "an ordinary key is not on the list"
+        );
+    }
+
+    /// The entries of the small-order list, in canonical form, as dalek sees them.
+    fn small_order_list() -> Vec<[u8; 32]> {
+        [
+            "0000000000000000000000000000000000000000000000000000000000000000",
+            "0100000000000000000000000000000000000000000000000000000000000000",
+            "26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05",
+            "c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a",
+            "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+            "edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+            "eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+        ]
+        .iter()
+        .map(|entry| hex::decode(entry).unwrap().try_into().unwrap())
+        .collect()
+    }
+
     #[test]
     fn unsupported_signature_scheme_is_rejected_identically() {
         if !both_backends_available() {

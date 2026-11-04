@@ -274,10 +274,70 @@ pub(crate) fn verify_signature(
         }
         SignatureScheme::ED25519 => {
             let k = Ed25519VerifyingKey::from_bytes(pk).map_err(|_| CryptoError::CryptoLibraryError)?;
+            // graviola's Ed25519 accepts a public key or `R` of small order, under which a forged
+            // signature verifies for any message. rustcrypto, which the browser uses, verifies
+            // with dalek's `verify_strict`, which rejects both. The backends must agree on what is
+            // valid, or members of one conversation on different platforms could disagree about a
+            // message or commit.
+            if is_small_order_ed25519(pk) || signature.get(..32).is_some_and(is_small_order_ed25519) {
+                return Err(CryptoError::InvalidSignature);
+            }
             k.verify(signature, data).map_err(|_| CryptoError::InvalidSignature)
         }
         _ => rustcrypto::verify_signature(alg, data, pk, signature),
     }
+}
+
+/// Whether `point` is an encoding of one of the eight Ed25519 points of small order.
+///
+/// This is libsodium's `has_small_order` list: the canonical encodings of those points, plus the
+/// non-canonical encodings `p` and `p + 1` of 0 and 1. The sign bit is ignored, which covers
+/// the remaining encodings. All of these are public, so the comparison need not be constant-time.
+fn is_small_order_ed25519(point: &[u8]) -> bool {
+    const SMALL_ORDER: [[u8; 32]; 7] = [
+        // 0, order 4
+        [0; 32],
+        // 1, the identity
+        [
+            0x01, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        ],
+        // order 8
+        [
+            0x26, 0xe8, 0x95, 0x8f, 0xc2, 0xb2, 0x27, 0xb0, 0x45, 0xc3, 0xf4, 0x89, 0xf2, 0xef, 0x98, 0xf0, 0xd5, 0xdf,
+            0xac, 0x05, 0xd3, 0xc6, 0x33, 0x39, 0xb1, 0x38, 0x02, 0x88, 0x6d, 0x53, 0xfc, 0x05,
+        ],
+        // order 8
+        [
+            0xc7, 0x17, 0x6a, 0x70, 0x3d, 0x4d, 0xd8, 0x4f, 0xba, 0x3c, 0x0b, 0x76, 0x0d, 0x10, 0x67, 0x0f, 0x2a, 0x20,
+            0x53, 0xfa, 0x2c, 0x39, 0xcc, 0xc6, 0x4e, 0xc7, 0xfd, 0x77, 0x92, 0xac, 0x03, 0x7a,
+        ],
+        // p - 1, order 2
+        [
+            0xec, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f,
+        ],
+        // p, a non-canonical 0
+        [
+            0xed, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f,
+        ],
+        // p + 1, a non-canonical 1
+        [
+            0xee, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+            0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f,
+        ],
+    ];
+    let Ok(point) = <&[u8; 32]>::try_from(point) else {
+        return false;
+    };
+    SMALL_ORDER
+        .iter()
+        .any(|entry| entry[..31] == point[..31] && entry[31] == point[31] & 0x7f)
+}
+
+#[cfg(test)]
+pub(crate) fn is_small_order_ed25519_for_tests(point: &[u8]) -> bool {
+    is_small_order_ed25519(point)
 }
 
 /// Sign `data` with the private key `key`, in the same encodings as [`rustcrypto::sign`].
