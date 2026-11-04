@@ -169,7 +169,6 @@ impl From<&CertificateError> for E2eiError {
             CertificateError::InvalidFormat
             | CertificateError::AlgorithmMismatch
             | CertificateError::KeyMismatch
-            | CertificateError::InvalidSigningKeypair
             | CertificateError::UnsupportedPublicKey => Self::InvalidCertificate { msg: value.to_string() },
             CertificateError::Validation(err) => err.into(),
             CertificateError::Acme(err) => err.into(),
