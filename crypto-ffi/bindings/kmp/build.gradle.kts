@@ -116,6 +116,9 @@ cargo {
     // Point to the crypto-ffi crate directory
     packageDirectory = layout.projectDirectory.dir("../..")
 
+    // make passes the libraries it built, so that they aren't built twice.
+    prebuiltLibraries = providers.gradleProperty("prebuiltLibraries").map { layout.projectDirectory.dir(it) }
+
     // The Kotlin wrapper in `shared` uses the cancellable transaction API.
     features.add("cancellable-transactions")
 
