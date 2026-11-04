@@ -177,3 +177,163 @@ fn parse_tnt_epoch(wire_format: u16, message: &[u8]) -> Option<u64> {
     }
     message.get(offset..offset + 8)?.try_into().ok().map(u64::from_be_bytes)
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+
+    use super::*;
+
+    /// `field` with a one-byte variable-length prefix; `field` must be shorter than 64 bytes.
+    fn short_field(field: &[u8]) -> Vec<u8> {
+        assert!(field.len() < 64, "a one-byte prefix only holds lengths up to 63");
+        [&[field.len() as u8], field].concat()
+    }
+
+    /// A transient TNT message, up to and including its epoch, followed by bytes the parser must ignore.
+    fn transient_message(epoch: u64) -> Vec<u8> {
+        [
+            &[0x00, 0x01][..],      // tnt protocol version
+            &[0xF0, 0x00],          // wire format: transient
+            &[0x00, 0x01],          // group context: mls protocol version
+            &[0x00, 0x01],          // group context: ciphersuite
+            &short_field(b"group"), // group context: group id
+            &epoch.to_be_bytes(),   // group context: epoch
+            b"the rest of the group context, then sender, counter, payload, and signature",
+        ]
+        .concat()
+    }
+
+    /// A targeted TNT message of the given wire format, up to and including its epoch, followed by bytes the parser
+    /// must ignore.
+    fn targeted_message(wire_format: u16, epoch: u64) -> Vec<u8> {
+        [
+            &[0x00, 0x01][..],          // tnt protocol version
+            &wire_format.to_be_bytes(), // wire format
+            &[0, 0, 0, 7],              // counter
+            &[0, 0, 0, 1],              // sender
+            &[0, 0, 0, 2],              // recipient
+            &short_field(b"bob"),       // recipient id
+            &epoch.to_be_bytes(),       // epoch
+            b"group id, payload, and signature",
+        ]
+        .concat()
+    }
+
+    /// An MLS `PrivateMessage` with the given content type and epoch.
+    ///
+    /// Only the header is plaintext, and parsing never decrypts, so the encrypted fields can be any bytes.
+    fn private_message(content_type: u8, epoch: u64) -> Vec<u8> {
+        [
+            &[0x00, 0x01][..],                       // mls protocol version
+            &[0x00, 0x02],                           // wire format: private message
+            &short_field(b"group"),                  // group id
+            &epoch.to_be_bytes(),                    // epoch
+            &[content_type],                         // content type
+            &short_field(b""),                       // authenticated data
+            &short_field(b"encrypted sender data"),  // encrypted sender data
+            &short_field(b"ciphertext of whatever"), // ciphertext
+        ]
+        .concat()
+    }
+
+    /// An MLS `PublicMessage` from a member, with the given epoch and content.
+    ///
+    /// `content` is the content type followed by its body. Nothing verifies the signature or the tags while parsing,
+    /// so they can be any bytes.
+    fn public_message(epoch: u64, content: &[u8], is_commit: bool) -> Vec<u8> {
+        // commits carry a confirmation tag; nothing else does
+        let confirmation_tag = if is_commit {
+            short_field(b"confirmation tag")
+        } else {
+            Vec::new()
+        };
+        [
+            &[0x00, 0x01][..],              // mls protocol version
+            &[0x00, 0x01],                  // wire format: public message
+            &short_field(b"group"),         // group id
+            &epoch.to_be_bytes(),           // epoch
+            &[0x01, 0, 0, 0, 1],            // sender: member at leaf index 1
+            &short_field(b""),              // authenticated data
+            content,                        // content type and body
+            &short_field(b"the signature"), // signature
+            &confirmation_tag,
+            &short_field(b"membership tag"), // a member sender carries a membership tag
+        ]
+        .concat()
+    }
+
+    /// A commit with no proposals and no update path: content type 3, an empty proposal list, and an absent path.
+    const EMPTY_COMMIT: &[u8] = &[0x03, 0x00, 0x00];
+
+    /// A proposal removing the member at leaf index 2: content type 2, proposal type 3 (remove), then the leaf index.
+    const REMOVE_PROPOSAL: &[u8] = &[0x02, 0x00, 0x03, 0, 0, 0, 2];
+
+    #[rstest]
+    #[case::one_byte_prefix(&[0x03, b'a', b'b', b'c'], 0, Some(4))]
+    #[case::empty_field(&[0x00], 0, Some(1))]
+    #[case::trailing_bytes_ignored(&[0x01, b'a', b'b', b'c'], 0, Some(2))]
+    #[case::nonzero_offset(&[b'x', b'y', 0x01, b'a'], 2, Some(2))]
+    #[case::two_byte_prefix(&[&[0x40, 0x40][..], &[0; 64]].concat(), 0, Some(66))]
+    #[case::four_byte_prefix(&[&[0x80, 0x00, 0x40, 0x00][..], &[0; 0x4000]].concat(), 0, Some(0x4004))]
+    #[case::eight_byte_prefix(&[0xC0, 0, 0, 0, 0, 0, 0, 0], 0, None)]
+    #[case::truncated_prefix(&[0x40], 0, None)]
+    #[case::field_overruns_message(&[0x05, b'a', b'b'], 0, None)]
+    #[case::offset_past_end(&[0x00], 1, None)]
+    fn vlbytes_field_length_measures_prefix_and_field(
+        #[case] message: &[u8],
+        #[case] offset: usize,
+        #[case] expected: Option<usize>,
+    ) {
+        assert_eq!(vlbytes_field_length(offset, message), expected);
+    }
+
+    #[rstest]
+    #[case::transient(TRANSIENT_WIRE_FORMAT, transient_message(0x0102_0304_0506_0708))]
+    #[case::targeted(TARGETED_WIRE_FORMAT, targeted_message(TARGETED_WIRE_FORMAT, 0x0102_0304_0506_0708))]
+    #[case::transient_targeted(
+        TRANSIENT_TARGETED_WIRE_FORMAT,
+        targeted_message(TRANSIENT_TARGETED_WIRE_FORMAT, 0x0102_0304_0506_0708)
+    )]
+    fn parse_tnt_epoch_reads_the_epoch(#[case] wire_format: u16, #[case] message: Vec<u8>) {
+        assert_eq!(parse_tnt_epoch(wire_format, &message), Some(0x0102_0304_0506_0708));
+    }
+
+    #[rstest]
+    #[case::transient_cut_short(TRANSIENT_WIRE_FORMAT, transient_message(5))]
+    #[case::targeted_cut_short(TARGETED_WIRE_FORMAT, targeted_message(TARGETED_WIRE_FORMAT, 5))]
+    fn parse_tnt_epoch_rejects_a_message_which_ends_inside_the_epoch(
+        #[case] wire_format: u16,
+        #[case] message: Vec<u8>,
+    ) {
+        // keep everything up to the last byte of the epoch, and drop that byte
+        let epoch_end = message.len() - message.iter().rev().position(|&b| b == 5).unwrap();
+        assert_eq!(parse_tnt_epoch(wire_format, &message[..epoch_end - 1]), None);
+    }
+
+    #[test]
+    fn parse_tnt_epoch_rejects_an_unknown_wire_format() {
+        assert_eq!(parse_tnt_epoch(0xF003, &targeted_message(0xF003, 5)), None);
+    }
+
+    #[rstest]
+    #[case::private_application(private_message(1, 4), Some((ContentType::Application, 4)))]
+    #[case::private_proposal(private_message(2, 4), Some((ContentType::Proposal, 4)))]
+    #[case::private_commit(private_message(3, 4), Some((ContentType::Commit, 4)))]
+    #[case::public_commit(public_message(4, EMPTY_COMMIT, true), Some((ContentType::Commit, 4)))]
+    #[case::public_proposal(public_message(4, REMOVE_PROPOSAL, false), Some((ContentType::Proposal, 4)))]
+    #[case::transient(transient_message(4), Some((ContentType::Application, 4)))]
+    #[case::targeted(targeted_message(TARGETED_WIRE_FORMAT, 4), Some((ContentType::Application, 4)))]
+    #[case::too_short_for_a_wire_format(vec![0x00, 0x01, 0x00], None)]
+    #[case::not_a_message(b"not a message at all".to_vec(), None)]
+    #[case::trailing_bytes_after_mls(
+        [private_message(1, 4), b"trailing".to_vec()].concat(),
+        None
+    )]
+    fn parse_message_recovers_content_type_and_epoch(
+        #[case] message: Vec<u8>,
+        #[case] expected: Option<(ContentType, u64)>,
+    ) {
+        assert_eq!(parse_message(&message), expected);
+    }
+}
