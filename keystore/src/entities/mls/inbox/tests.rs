@@ -27,6 +27,20 @@ fn inbox_message(conversation_id: &[u8], message: &[u8], arrival_sequence: u64) 
     }
 }
 
+/// The message bytes of every inbox message in the store, sorted.
+async fn stored_messages(store: &Database) -> Vec<Vec<u8>> {
+    let mut messages = store
+        .load_all::<InboxMessage>()
+        .await
+        .unwrap()
+        .into_iter()
+        .map(std::sync::Arc::unwrap_or_clone)
+        .map(|inbox_message| inbox_message.message)
+        .collect::<Vec<_>>();
+    messages.sort();
+    messages
+}
+
 /// The primary key of an inbox message, derived independently of [`InboxMessage::primary_key`].
 fn primary_key(conversation_id: &[u8], message: &[u8]) -> InboxMessagePk {
     InboxMessagePk::new(conversation_id.into(), Sha256Hash::hash_from(message))
@@ -198,5 +212,296 @@ fn can_delete_all_inbox_messages_of_a_conversation() {
             store.get::<InboxMessage>(&survivor_key).await.unwrap().is_some(),
             "clearing one conversation must not touch another conversation's messages"
         );
+    });
+}
+
+/// Saving a message which is already in the inbox leaves the stored row exactly as it was.
+///
+/// A redelivered message must keep its original place in the replay order and its original reason for waiting; it is
+/// the same message, not a new arrival.
+#[test]
+fn saving_a_duplicate_inbox_message_changes_nothing() {
+    smol::block_on(async {
+        let store = Database::open_in_memory().unwrap();
+        let original = InboxMessage {
+            conversation_id: CONVERSATION_ID.into(),
+            message: MESSAGE.to_vec(),
+            content_type: ContentType::Application,
+            waiting_for: WaitingFor::Epoch,
+            epoch: 2,
+            arrival_sequence: 1,
+        };
+        let redelivered = InboxMessage {
+            conversation_id: CONVERSATION_ID.into(),
+            message: MESSAGE.to_vec(),
+            content_type: ContentType::Application,
+            waiting_for: WaitingFor::PendingJoin,
+            epoch: 7,
+            arrival_sequence: 5,
+        };
+
+        let tx = store.new_transaction().await.unwrap();
+        save_credential(&*tx);
+        save_conversation(&*tx, CONVERSATION_ID, false);
+        original.save(&*tx).unwrap();
+        redelivered
+            .save(&*tx)
+            .expect("saving a duplicate must succeed without writing anything");
+        tx.commit().await.unwrap();
+
+        assert_eq!(
+            store
+                .get::<InboxMessage>(&primary_key(CONVERSATION_ID, MESSAGE))
+                .await
+                .unwrap()
+                .as_deref(),
+            Some(&original),
+            "the first copy of a message must keep its arrival sequence, reason and epoch"
+        );
+    });
+}
+
+/// Taking messages by reason and epoch returns exactly the matching ones, in replay order, and removes them.
+///
+/// Replay order is application messages, then proposals, then commits, and within each content type the order of
+/// arrival. The messages here are saved out of that order, so that sorting by either key alone gives a different
+/// result. Every other row differs from the taken ones in exactly one respect, and must stay behind.
+#[test]
+fn take_removes_matching_inbox_messages_and_returns_them_in_replay_order() {
+    smol::block_on(async {
+        let store = Database::open_in_memory().unwrap();
+        let commit = InboxMessage {
+            conversation_id: CONVERSATION_ID.into(),
+            message: b"commit".to_vec(),
+            content_type: ContentType::Commit,
+            waiting_for: WaitingFor::Epoch,
+            epoch: 2,
+            arrival_sequence: 1,
+        };
+        let late_application = InboxMessage {
+            conversation_id: CONVERSATION_ID.into(),
+            message: b"later application message".to_vec(),
+            content_type: ContentType::Application,
+            waiting_for: WaitingFor::Epoch,
+            epoch: 2,
+            arrival_sequence: 4,
+        };
+        let proposal = InboxMessage {
+            conversation_id: CONVERSATION_ID.into(),
+            message: b"proposal".to_vec(),
+            content_type: ContentType::Proposal,
+            waiting_for: WaitingFor::Epoch,
+            epoch: 2,
+            arrival_sequence: 3,
+        };
+        let early_application = InboxMessage {
+            conversation_id: CONVERSATION_ID.into(),
+            message: b"earlier application message".to_vec(),
+            content_type: ContentType::Application,
+            waiting_for: WaitingFor::Epoch,
+            epoch: 2,
+            arrival_sequence: 2,
+        };
+        let other_epoch = InboxMessage {
+            conversation_id: CONVERSATION_ID.into(),
+            message: b"waiting for another epoch".to_vec(),
+            content_type: ContentType::Application,
+            waiting_for: WaitingFor::Epoch,
+            epoch: 3,
+            arrival_sequence: 5,
+        };
+        let other_reason = InboxMessage {
+            conversation_id: CONVERSATION_ID.into(),
+            message: b"waiting for a proposal".to_vec(),
+            content_type: ContentType::Commit,
+            waiting_for: WaitingFor::Proposal,
+            epoch: 2,
+            arrival_sequence: 6,
+        };
+        let other_conversation = InboxMessage {
+            conversation_id: OTHER_CONVERSATION_ID.into(),
+            message: b"waiting in another conversation".to_vec(),
+            content_type: ContentType::Application,
+            waiting_for: WaitingFor::Epoch,
+            epoch: 2,
+            arrival_sequence: 7,
+        };
+
+        let tx = store.new_transaction().await.unwrap();
+        save_credential(&*tx);
+        save_conversation(&*tx, CONVERSATION_ID, false);
+        save_conversation(&*tx, OTHER_CONVERSATION_ID, false);
+        for inbox_message in [
+            &commit,
+            &late_application,
+            &proposal,
+            &early_application,
+            &other_epoch,
+            &other_reason,
+            &other_conversation,
+        ] {
+            inbox_message.save(&*tx).unwrap();
+        }
+        let taken = InboxMessage::take(
+            &*tx,
+            ConversationIdRef::new(CONVERSATION_ID),
+            WaitingFor::Epoch,
+            Some(2),
+        )
+        .unwrap();
+        tx.commit().await.unwrap();
+
+        assert_eq!(
+            taken,
+            [early_application, late_application, proposal, commit],
+            "take must return the matching messages by content type, then by arrival"
+        );
+
+        let mut expected_remaining = [other_epoch, other_reason, other_conversation].map(|m| m.message);
+        expected_remaining.sort();
+        assert_eq!(
+            stored_messages(&store).await,
+            expected_remaining,
+            "take must remove the messages it returns, and only those"
+        );
+    });
+}
+
+/// Taking messages without an epoch returns every message waiting for that reason, whatever its epoch.
+///
+/// Messages waiting for a pending join can carry any epoch, and all of them become ready when the join is merged.
+#[test]
+fn take_without_an_epoch_returns_inbox_messages_from_every_epoch() {
+    smol::block_on(async {
+        let store = Database::open_in_memory().unwrap();
+        let waiting_for_join = [0, 5, 9].map(|epoch| InboxMessage {
+            conversation_id: CONVERSATION_ID.into(),
+            message: format!("buffered at epoch {epoch}").into_bytes(),
+            content_type: ContentType::Application,
+            waiting_for: WaitingFor::PendingJoin,
+            epoch,
+            arrival_sequence: epoch + 1,
+        });
+        let other_reason = InboxMessage {
+            conversation_id: CONVERSATION_ID.into(),
+            message: b"waiting for an epoch".to_vec(),
+            content_type: ContentType::Application,
+            waiting_for: WaitingFor::Epoch,
+            epoch: 5,
+            arrival_sequence: 20,
+        };
+
+        let tx = store.new_transaction().await.unwrap();
+        save_credential(&*tx);
+        save_conversation(&*tx, CONVERSATION_ID, true);
+        for inbox_message in waiting_for_join.iter().chain([&other_reason]) {
+            inbox_message.save(&*tx).unwrap();
+        }
+        let taken = InboxMessage::take(
+            &*tx,
+            ConversationIdRef::new(CONVERSATION_ID),
+            WaitingFor::PendingJoin,
+            None,
+        )
+        .unwrap();
+        tx.commit().await.unwrap();
+
+        assert_eq!(
+            taken, waiting_for_join,
+            "take without an epoch must return the messages from every epoch"
+        );
+        assert_eq!(
+            stored_messages(&store).await,
+            [other_reason.message],
+            "take without an epoch must still only remove messages waiting for the given reason"
+        );
+    });
+}
+
+/// Dropping stale messages removes those waiting for an epoch or a proposal from before the new epoch, and nothing
+/// else.
+///
+/// Messages waiting for a pending join are kept whatever their epoch: they wait for the merge, not for an epoch.
+#[rstest]
+#[case::epoch_before(CONVERSATION_ID, ContentType::Application, WaitingFor::Epoch, 1, true)]
+#[case::proposal_before(CONVERSATION_ID, ContentType::Commit, WaitingFor::Proposal, 1, true)]
+#[case::epoch_reached(CONVERSATION_ID, ContentType::Application, WaitingFor::Epoch, 2, false)]
+#[case::proposal_reached(CONVERSATION_ID, ContentType::Commit, WaitingFor::Proposal, 2, false)]
+#[case::epoch_after(CONVERSATION_ID, ContentType::Application, WaitingFor::Epoch, 3, false)]
+#[case::pending_join_before(CONVERSATION_ID, ContentType::Application, WaitingFor::PendingJoin, 1, false)]
+#[case::other_conversation(OTHER_CONVERSATION_ID, ContentType::Application, WaitingFor::Epoch, 1, false)]
+fn drop_stale_removes_only_stale_inbox_messages(
+    #[case] conversation_id: &[u8],
+    #[case] content_type: ContentType,
+    #[case] waiting_for: WaitingFor,
+    #[case] epoch: u64,
+    #[case] is_stale: bool,
+) {
+    smol::block_on(async {
+        let store = Database::open_in_memory().unwrap();
+        let inbox_message = InboxMessage {
+            conversation_id: conversation_id.into(),
+            message: MESSAGE.to_vec(),
+            content_type,
+            waiting_for,
+            epoch,
+            arrival_sequence: 1,
+        };
+
+        let tx = store.new_transaction().await.unwrap();
+        save_credential(&*tx);
+        save_conversation(&*tx, CONVERSATION_ID, false);
+        save_conversation(&*tx, OTHER_CONVERSATION_ID, false);
+        inbox_message.save(&*tx).unwrap();
+        let dropped = InboxMessage::drop_stale(&*tx, ConversationIdRef::new(CONVERSATION_ID), 2).unwrap();
+        tx.commit().await.unwrap();
+
+        assert_eq!(
+            dropped,
+            usize::from(is_stale),
+            "drop_stale must report how many messages it dropped"
+        );
+        assert_eq!(
+            store.count::<InboxMessage>().await.unwrap(),
+            u32::from(!is_stale),
+            "drop_stale must remove the message if and only if it is stale"
+        );
+    });
+}
+
+/// The maximum arrival sequence is 0 for an empty inbox, and otherwise the largest sequence number stored.
+///
+/// It must be the largest, not the latest: messages can be saved with an explicit, older sequence number when they
+/// are put back.
+#[test]
+fn max_arrival_sequence_is_the_largest_stored() {
+    smol::block_on(async {
+        let store = Database::open_in_memory().unwrap();
+
+        let tx = store.new_transaction().await.unwrap();
+        assert_eq!(
+            InboxMessage::max_arrival_sequence(&tx.conn().unwrap()).unwrap(),
+            0,
+            "an empty inbox has no arrivals"
+        );
+
+        save_credential(&*tx);
+        save_conversation(&*tx, CONVERSATION_ID, false);
+        for arrival_sequence in [3, 7, 5] {
+            inbox_message(
+                CONVERSATION_ID,
+                format!("arrival {arrival_sequence}").as_bytes(),
+                arrival_sequence,
+            )
+            .save(&*tx)
+            .unwrap();
+        }
+
+        assert_eq!(
+            InboxMessage::max_arrival_sequence(&tx.conn().unwrap()).unwrap(),
+            7,
+            "the maximum is the largest sequence number, not the most recently saved one"
+        );
+        tx.commit().await.unwrap();
     });
 }
