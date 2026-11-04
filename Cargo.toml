@@ -144,12 +144,18 @@ proteus-wasm = { git = "https://github.com/wireapp/proteus", tag = "v3.0.1" }
 [profile.release]
 codegen-units = 1
 lto = true
-opt-level = "s"
+# Used on non-browser platforms. Browser uses release-small (see below)
+opt-level = 3
 # ! Important: Do NOT enable stripping.
 # ! This will cause the FFI to stop working because UniFFI stores the Rust <-> cdylib mapping
 # ! in the `.strtab` section of the executable. Stripping this causes everything to stop functioning.
 strip = false
 # panic = "abort"
+
+# Used by browser builds
+[profile.release-small]
+inherits = "release"
+opt-level = "s"
 
 [profile.dev.package.backtrace]
 opt-level = 3
