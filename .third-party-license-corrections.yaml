@@ -26,6 +26,26 @@ overrides:
     license: Apache-2.0
     author: JetBrains s.r.o. and contributors
 
+  # The uniffi KMP plugin's runtime POMs name their license `License`. The project is licensed
+  # under MPL-2.0. Remove these overrides once its POMs name the license correctly.
+  - name: runtime
+    license: MPL-2.0
+
+  - name: runtime-android
+    license: MPL-2.0
+
+  - name: runtime-iosarm64
+    license: MPL-2.0
+
+  - name: runtime-iossimulatorarm64
+    license: MPL-2.0
+
+  - name: runtime-jvm
+    license: MPL-2.0
+
+  - name: runtime-macosarm64
+    license: MPL-2.0
+
 subfolders:
   - crypto-ffi
   - crypto-ffi/bindings
