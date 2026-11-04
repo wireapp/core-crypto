@@ -3,8 +3,8 @@
 ## CoreCrypto Book
 
 - [main](./book/main/)
-- [v10](./book/v10/)
 - [v11](./book/v11/)
+- [v10](./book/v10/)
 
 ## API Documentation
 
