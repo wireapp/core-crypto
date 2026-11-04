@@ -48,8 +48,8 @@ impl X509CredentialAcquisition<states::DpopChallengeCompleted> {
 
         // Make sure that the public key in the certificate matches the one from the signing keypair.
         // Note that we expect to always get proper PEM data here since that data is generated
-        // internally, when starting acquisition; if the expect fails, that means the implementation is
-        // broken.
+        // internally, when starting acquisition (see [`X509CredentialAcquisition::try_new`]);
+        // if the expect fails, that means the implementation is broken.
         let sign_kp_bytes =
             crate::utils::public_key_bytes(self.sign_alg, &self.sign_kp).expect("sign_kp must be valid PEM");
         let cert_pubkey_bytes = cert
