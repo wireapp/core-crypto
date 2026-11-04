@@ -8,11 +8,13 @@ SHELL := /usr/bin/env bash
 # This will also optimize the Wasm binary.
 ifeq ($(RELEASE),)
   CARGO_BUILD_ARGS :=
+  UBRN_BUILD_ARGS := --profile debug
   XCODE_CONFIG := Debug
   GRADLE_BUILD_TYPE := Debug
   RELEASE_MODE := debug
 else
   CARGO_BUILD_ARGS := --release
+  UBRN_BUILD_ARGS := --profile release-small
   XCODE_CONFIG := Release
   GRADLE_BUILD_TYPE := Release
   RELEASE_MODE := release

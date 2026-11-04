@@ -152,8 +152,8 @@ $(WASM_GEN) &: $(wasm-build-deps)
 	$(check-wasm-bindgen)
 	$(check-wasm-cc)
 	cd $(JS_DIR) && \
-	$(WASM_BUILD_ENV) CARGO_PROFILE_RELEASE_OPT_LEVEL=s \
-	  bun ubrn build wasm2 --config ubrn.config.yaml $(CARGO_BUILD_ARGS) \
+	$(WASM_BUILD_ENV) \
+	  bun ubrn build wasm2 --config ubrn.config.yaml $(UBRN_BUILD_ARGS) \
 	  $(WASM_OPT)
 	$(SHELL) $(WASM_IMPORTS_SCRIPT) $(BROWSER_GEN_DIR) core_crypto_ffi
 	@touch $(WASM_GEN)
