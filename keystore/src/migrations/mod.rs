@@ -257,13 +257,12 @@ pub(crate) mod test {
 
     use crate::{
         DatabaseKey, Sha256Hash,
-        ancillary::ConversationIdRef,
         connection::{Database, migrate_db_key_type_to_bytes},
         entities::{
             MlsPendingMessage, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredPskBundle,
         },
         migrations::MigrationTarget,
-        traits::{Entity, EntityGetBorrowed as _, PrimaryKey as _, SearchableEntity as _},
+        traits::{Entity, EntityGetBorrowed as _, PrimaryKey as _},
     };
 
     pub(crate) const DB: &[u8] = include_bytes!(concat!(
@@ -318,6 +317,20 @@ pub(crate) mod test {
             |row| Ok((row.get(0)?, row.get(1)?)),
         )
         .expect("reading back the stored key")
+    }
+
+    /// Every row of `mls_pending_messages` as `(conversation_id, message)`, sorted by message.
+    ///
+    /// Reads the table directly rather than through an entity, so that it keeps working at whichever
+    /// schema version between V31 and V49 a test stops at.
+    fn pending_messages(conn: &rusqlite::Connection) -> Vec<(Vec<u8>, Vec<u8>)> {
+        let mut stmt = conn
+            .prepare("SELECT conversation_id, message FROM mls_pending_messages ORDER BY message")
+            .expect("preparing to read pending messages");
+        stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+            .expect("reading pending messages")
+            .collect::<Result<_, _>>()
+            .expect("reading pending messages")
     }
 
     /// A temporary database path, kept alive by the returned file handle.
@@ -795,15 +808,11 @@ r9IJmL6kDQ==
             .await;
             let conn = db.conn().await;
 
-            let migrated = MlsPendingMessage::load_all(&conn).expect("loading migrated pending messages");
             assert_eq!(
-                migrated.len(),
-                1,
+                pending_messages(&conn),
+                [(CONVERSATION_ID.to_vec(), MESSAGE.to_vec())],
                 "V31 must carry an orphan pending message across, not drop it or fail the migration"
             );
-            let migrated = migrated.into_iter().next().unwrap();
-            assert_eq!(migrated.conversation_id.bytes(), CONVERSATION_ID);
-            assert_eq!(migrated.message, MESSAGE);
         });
     }
 
@@ -845,14 +854,12 @@ r9IJmL6kDQ==
             .await;
             let conn = db.conn().await;
 
-            let mut migrated = MlsPendingMessage::find_all_matching(&conn, ConversationIdRef::new(CONVERSATION_ID))
-                .expect("loading migrated pending messages");
-            migrated.sort_by(|a, b| a.message.cmp(&b.message));
-            let messages = migrated.iter().map(|m| m.message.as_slice()).collect::<Vec<_>>();
-            let mut expected = [DISTINCT_MESSAGE, DUPLICATED_MESSAGE];
-            expected.sort();
+            let mut expected =
+                [DISTINCT_MESSAGE, DUPLICATED_MESSAGE].map(|message| (CONVERSATION_ID.to_vec(), message.to_vec()));
+            expected.sort_by(|(_, a), (_, b)| a.cmp(b));
             assert_eq!(
-                messages, expected,
+                pending_messages(&conn),
+                expected,
                 "V31 must keep one copy of the duplicated message and the distinct one, and lose neither"
             );
         });
