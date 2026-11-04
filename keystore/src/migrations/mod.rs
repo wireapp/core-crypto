@@ -431,6 +431,7 @@ IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
             (49, 1202272748319186004),
             (50, 4292486588344934490),
             (51, 6769583600770212455),
+            (52, 17645429909226378086),
         ];
 
         let runner = super::migrations::runner();
@@ -1925,7 +1926,7 @@ r9IJmL6kDQ==
         let path = db_file.path().to_str().unwrap();
 
         smol::block_on(async {
-            let db = seed_then_migrate(path, &key, 48, |conn| {
+            let db = seed_then_migrate_to(path, &key, 48, MigrationTarget::Version(50), |conn| {
                 insert_v48_credential(
                     conn,
                     BROKEN_PUBLIC_KEY,

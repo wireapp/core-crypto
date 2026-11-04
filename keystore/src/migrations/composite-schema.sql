@@ -36,12 +36,6 @@ CREATE TABLE "transient_message_rx_counters" (
   FOREIGN KEY (conversation_id) REFERENCES "mls_groups"(id) ON DELETE CASCADE
 );
 
-CREATE TABLE "mls_buffered_commits" (
-  conversation_id BLOB NOT NULL PRIMARY KEY,
-  commit_data BLOB,
-  FOREIGN KEY (conversation_id) REFERENCES "mls_groups"(id) ON DELETE CASCADE
-);
-
 CREATE TABLE "epoch_encryption_keypairs" (
   conversation_id BLOB NOT NULL,
   own_leaf_index INTEGER NOT NULL,
@@ -99,15 +93,6 @@ WHERE
       foreign_credential_hash = OLD.foreign_credential_hash
   );
 END;
-
-CREATE TABLE "mls_pending_messages" (
-  hash_sha256 BLOB PRIMARY KEY NOT NULL,  -- hash of the concatenation of (conversation_id, message)
-  conversation_id BLOB NOT NULL,
-  message BLOB NOT NULL,
-  FOREIGN KEY (conversation_id) REFERENCES mls_groups (id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_mls_pending_messages_conversation_id ON mls_pending_messages (conversation_id);
 
 CREATE TABLE "proteus_prekeys" (
   id INTEGER PRIMARY KEY,
