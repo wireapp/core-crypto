@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use idb::{Factory, KeyPath, TransactionMode, builder::ObjectStoreBuilder};
 use js_sys::{Array, Object, Reflect, Uint8Array};
-use openmls::prelude::{Credential as MlsCredential, TlsSerializeTrait as _};
+use openmls::prelude::{ContentType, Credential as MlsCredential, TlsSerializeTrait as _};
 use rand::distr::{Alphanumeric, SampleString as _};
 use rusqlite::Connection;
 use wasm_bindgen::JsValue;
@@ -30,8 +30,8 @@ use crate::{
         os_unknown,
     },
     entities::{
-        ConsumerData, MlsPendingMessage, PersistedMlsGroup, StoredCredential, StoredCredentialPk,
-        StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef, StoredKeyPackage, X509Crl,
+        ConsumerData, InboxMessage, PersistedMlsGroup, StoredCredential, StoredCredentialPk,
+        StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef, StoredKeyPackage, WaitingFor, X509Crl,
         X509IntermediateCert, X509TrustAnchor,
     },
     traits::FetchFromDatabase as _,
@@ -544,15 +544,16 @@ async fn assert_imported_and_migrated(db: &Database, credential_created_at: u64)
 
     // Like the epoch keypair below, the pending message belongs to the group family, so it only survives as far
     // as the V22 checkpoint. V39 drops its pending conversation because the state is opaque bytes, and V44 then
-    // discards the message along with it. `imports_a_database_captured_from_v9_3_4` covers the surviving case,
-    // against a captured pending join whose state really does deserialize.
-    let pending_messages = db
-        .search::<MlsPendingMessage, _>(ConversationIdRef::new(seed::PENDING_GROUP_ID))
+    // discards the message along with it, so V51 has nothing to move into the inbox.
+    // `imports_a_database_captured_from_v9_3_4` covers the surviving case, against a captured pending join whose
+    // state really does deserialize.
+    let inbox_messages = db
+        .search::<InboxMessage, _>(ConversationIdRef::new(seed::PENDING_GROUP_ID))
         .await
         .unwrap();
     assert!(
-        pending_messages.is_empty(),
-        "V39 drops this pending conversation, so V44 must not leave its pending message behind"
+        inbox_messages.is_empty(),
+        "V39 drops this pending conversation, so its pending message must not reach the inbox"
     );
 
     let credential = db
@@ -946,14 +947,32 @@ async fn imports_a_database_captured_from_v9_3_4() {
     assert!(pending.is_pending);
     assert_eq!(pending.credential_id, Sha256Hash::hash_from(&credential.public_key));
 
-    let pending_messages = db
-        .search::<MlsPendingMessage, _>(ConversationIdRef::new(captured::PENDING_CONVERSATION_ID))
+    // V51 moves the buffered message into the inbox, working out why it waits from the message and its group.
+    let inbox_messages = db
+        .search::<InboxMessage, _>(ConversationIdRef::new(captured::PENDING_CONVERSATION_ID))
         .await
         .unwrap();
+    let [inbox_message] = inbox_messages.as_slice() else {
+        panic!(
+            "the message buffered for the pending join must survive as exactly one inbox message, found {}",
+            inbox_messages.len()
+        );
+    };
     assert_eq!(
-        pending_messages.len(),
-        1,
-        "the message buffered for the pending join survives"
+        inbox_message.waiting_for,
+        WaitingFor::PendingJoin,
+        "a message buffered for a pending conversation waits for the join, whatever its epoch"
+    );
+    assert_eq!(
+        inbox_message.content_type,
+        ContentType::Application,
+        "the captured message is an application message from bob"
+    );
+    // bob created the conversation at epoch 0 and updated his key material to reach epoch 1, then encrypted without
+    // ever seeing alice's join
+    assert_eq!(
+        inbox_message.epoch, 1,
+        "the inbox message must carry the epoch bob encrypted it in"
     );
 
     // keying material, copied one for one
