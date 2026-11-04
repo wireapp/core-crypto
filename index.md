@@ -4,6 +4,7 @@
 
 - [main](./book/main/)
 - [v10](./book/v10/)
+- [v11](./book/v11/)
 
 ## API Documentation
 
