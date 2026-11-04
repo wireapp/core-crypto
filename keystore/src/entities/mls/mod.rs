@@ -4,7 +4,6 @@ mod mls_pending_message;
 mod old_epoch_data;
 mod old_epoch_member_data;
 mod persisted_mls_group;
-mod stored_buffered_commit;
 mod stored_credential;
 mod stored_encryption_key_pair;
 mod stored_epoch_encryption_keypair;
@@ -22,7 +21,6 @@ pub use mls_pending_message::MlsPendingMessage;
 pub use old_epoch_data::{OldEpochData, OldEpochDataPk, OldEpochDataPkRef};
 pub use old_epoch_member_data::{OldEpochMemberData, OldEpochMemberDataPk, OldEpochMemberDataPkRef};
 pub use persisted_mls_group::PersistedMlsGroup;
-pub use stored_buffered_commit::StoredBufferedCommit;
 pub use stored_credential::{CredentialFindFilters, StoredCredential, StoredCredentialPk, credential_not_before};
 pub use stored_encryption_key_pair::StoredEncryptionKeyPair;
 pub use stored_epoch_encryption_keypair::{

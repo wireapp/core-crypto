@@ -199,7 +199,7 @@ impl Seed for LegacyPersistedMlsGroup {
     }
 }
 
-impl Seed for StoredBufferedCommit {
+impl Seed for LegacyStoredBufferedCommit {
     fn seed() -> Self {
         Self::new(seed::GROUP_ID.to_vec(), seed::BUFFERED_COMMIT.to_vec())
     }
