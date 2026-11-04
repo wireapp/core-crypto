@@ -1,5 +1,7 @@
 mod entity;
 mod primary_key;
+#[cfg(all(test, not(target_os = "unknown")))]
+mod tests;
 mod waiting_for;
 
 use const_format::formatcp;
