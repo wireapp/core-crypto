@@ -36,6 +36,8 @@ ignore = [
   # We can't fix this until we update Gobley;
   # see WPB-29524
   "RUSTSEC-2026-0374",
+  # We depend on `testcontainers` to migrate their tar dependency
+  "RUSTSEC-2026-0440",
 ]
 
 [bans]
