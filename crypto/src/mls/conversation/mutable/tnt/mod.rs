@@ -210,9 +210,16 @@ impl TntMessageTBS {
 
 /// A message containing [TntMessageBody] with the corresponding signature.
 #[derive(TlsSize, TlsSerialize, TlsDeserialize)]
-pub(super) struct TntMessage {
+pub(in crate::mls::conversation) struct TntMessage {
     content: TntMessageTBS,
     signature: Signature,
+}
+
+impl TntMessage {
+    /// The epoch of the message
+    pub(in crate::mls::conversation) fn epoch(&self) -> u64 {
+        self.content.body.epoch()
+    }
 }
 
 impl openmls::prelude::Signable for TntMessageTBS {
