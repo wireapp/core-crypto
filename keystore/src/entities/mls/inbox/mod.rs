@@ -47,7 +47,9 @@ impl InboxMessage {
     /// Instead, they should fetch this (potentially lazily) once per transaction,
     /// incrementing the value within the transaction context as inbox messages
     /// are created.
-    pub fn max_arrival_sequence(conn: &Connection) -> CryptoKeystoreResult<u64> {
+    ///
+    /// See [`crate::Transaction::inbox_message_next_arrival_sequence`].
+    pub(crate) fn max_arrival_sequence(conn: &Connection) -> CryptoKeystoreResult<u64> {
         let mut stmt = conn.prepare_cached(formatcp!(
             "SELECT COALESCE(MAX(arrival_sequence), 0) FROM {table_name}",
             table_name = InboxMessage::TABLE

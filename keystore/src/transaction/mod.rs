@@ -9,10 +9,11 @@ mod savepoint;
 use std::sync::Arc;
 
 use async_lock::MutexGuardArc;
+use parking_lot::Mutex;
 use rusqlite::Connection;
 
 pub(crate) use self::{conn::TransactionConnection, mls::read_mls_entity};
-use crate::{CryptoKeystoreResult, Database, UniqueArc, connection::TransactionGuard};
+use crate::{CryptoKeystoreResult, Database, UniqueArc, connection::TransactionGuard, entities::InboxMessage};
 
 const GUARD_EXPECTATION: &str = "connection guard is present for the lifetime of the transaction wrapper";
 
@@ -62,6 +63,15 @@ pub struct Transaction {
     /// On Wasm, callers acquire `SqliteGuard` before this mutex: JSPI can suspend
     /// a synchronous SQLite call while it holds the mutex.
     conn: Arc<parking_lot::Mutex<Option<MutexGuardArc<crate::connection::ManagedConnection>>>>,
+    /// The current max arrival sequence of any inbox message.
+    ///
+    /// This transaction may feel like an odd place to store this, given that an inbox message is an
+    /// entity and its arrival sequence is more like business logic than like database management.
+    ///
+    /// The argument is that the transaction is the correct place to store it because it holds an exclusive
+    /// lock over the database: while a transaction is live, no other task or process can insert new
+    /// inbox messages, except via this transaction. So storing the arrival sequence here works.
+    inbox_message_max_arrival_sequence: Mutex<u64>,
 }
 
 impl Transaction {
@@ -83,10 +93,13 @@ impl Transaction {
             stmt.execute([])?;
         }
 
+        let inbox_message_max_arrival_sequence = InboxMessage::max_arrival_sequence(&conn)?.into();
+
         let transaction = UniqueArc::from(Self {
             _lock_guard: lock_guard,
             database,
             conn: Arc::new(parking_lot::Mutex::new(Some(conn))),
+            inbox_message_max_arrival_sequence,
         });
 
         let weak = UniqueArc::downgrade(&transaction);
@@ -117,5 +130,17 @@ impl Transaction {
     /// > after an error is to use this function.
     fn is_active(conn: &Connection) -> bool {
         !conn.is_autocommit()
+    }
+
+    /// Get the next arrival sequence number for an inbox message.
+    ///
+    /// Multiple calls will return increasing integers. It's fine if any given conversation
+    /// has gaps between messages; only the relative ordering matters.
+    ///
+    /// Not idempotent, but the u64 space is big enough that it shouldn't matter.
+    pub fn inbox_message_next_arrival_sequence(&self) -> u64 {
+        let mut guard = self.inbox_message_max_arrival_sequence.lock();
+        *guard += 1;
+        *guard
     }
 }
