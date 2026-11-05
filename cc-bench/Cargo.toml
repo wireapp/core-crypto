@@ -20,11 +20,12 @@ clap = { version = "4", features = ["derive"] }
 tokio = { version = "1", features = ["rt", "macros", "sync"] }
 uuid = { version = "1", features = ["v4"] }
 
-# Mirrors the core-crypto workspace, so the library is built exactly as it ships.
+# Mirrors the core-crypto workspace's release profile for native platforms, so the library is built
+# exactly as it ships there.
 [profile.release]
 codegen-units = 1
 lto = true
-opt-level = "s"
+opt-level = 3
 
 [patch.crates-io]
 x509-ocsp = { git = "https://github.com/RustCrypto/formats.git", package = "x509-ocsp", version = "0.3.0-pre" }
