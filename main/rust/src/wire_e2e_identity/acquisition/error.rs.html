@@ -63,29 +63,26 @@
 <a href=#63 id=63 data-nosnippet>63</a>    <span class="doccomment">/// Certificate public key does not match the one in the signing keypair
 <a href=#64 id=64 data-nosnippet>64</a>    </span><span class="attr">#[error(<span class="string">"Certificate public key does not match the one in the signing keypair"</span>)]
 <a href=#65 id=65 data-nosnippet>65</a>    </span>KeyMismatch,
-<a href=#66 id=66 data-nosnippet>66</a>    <span class="doccomment">/// The signing keypair could not be parsed for the expected signature algorithm
-<a href=#67 id=67 data-nosnippet>67</a>    </span><span class="attr">#[error(<span class="string">"The signing keypair could not be parsed for the expected signature algorithm"</span>)]
-<a href=#68 id=68 data-nosnippet>68</a>    </span>InvalidSigningKeypair,
-<a href=#69 id=69 data-nosnippet>69</a>    <span class="doccomment">/// Advertised public key is not supported
-<a href=#70 id=70 data-nosnippet>70</a>    </span><span class="attr">#[error(<span class="string">"Advertised public key is not supported"</span>)]
-<a href=#71 id=71 data-nosnippet>71</a>    </span>UnsupportedPublicKey,
-<a href=#72 id=72 data-nosnippet>72</a>    <span class="doccomment">/// Validation error
+<a href=#66 id=66 data-nosnippet>66</a>    <span class="doccomment">/// Advertised public key is not supported
+<a href=#67 id=67 data-nosnippet>67</a>    </span><span class="attr">#[error(<span class="string">"Advertised public key is not supported"</span>)]
+<a href=#68 id=68 data-nosnippet>68</a>    </span>UnsupportedPublicKey,
+<a href=#69 id=69 data-nosnippet>69</a>    <span class="doccomment">/// Validation error
+<a href=#70 id=70 data-nosnippet>70</a>    </span><span class="attr">#[error(transparent)]
+<a href=#71 id=71 data-nosnippet>71</a>    </span>Validation(<span class="attr">#[from] </span><span class="kw">crate</span>::validation::Error),
+<a href=#72 id=72 data-nosnippet>72</a>    <span class="doccomment">/// DER error
 <a href=#73 id=73 data-nosnippet>73</a>    </span><span class="attr">#[error(transparent)]
-<a href=#74 id=74 data-nosnippet>74</a>    </span>Validation(<span class="attr">#[from] </span><span class="kw">crate</span>::validation::Error),
-<a href=#75 id=75 data-nosnippet>75</a>    <span class="doccomment">/// DER error
+<a href=#74 id=74 data-nosnippet>74</a>    </span>Der(<span class="attr">#[from] </span>spki::der::Error),
+<a href=#75 id=75 data-nosnippet>75</a>    <span class="doccomment">/// UTF-8 error
 <a href=#76 id=76 data-nosnippet>76</a>    </span><span class="attr">#[error(transparent)]
-<a href=#77 id=77 data-nosnippet>77</a>    </span>Der(<span class="attr">#[from] </span>spki::der::Error),
-<a href=#78 id=78 data-nosnippet>78</a>    <span class="doccomment">/// UTF-8 error
+<a href=#77 id=77 data-nosnippet>77</a>    </span>Utf8(<span class="attr">#[from] </span>std::str::Utf8Error),
+<a href=#78 id=78 data-nosnippet>78</a>    <span class="doccomment">/// ACME error
 <a href=#79 id=79 data-nosnippet>79</a>    </span><span class="attr">#[error(transparent)]
-<a href=#80 id=80 data-nosnippet>80</a>    </span>Utf8(<span class="attr">#[from] </span>std::str::Utf8Error),
-<a href=#81 id=81 data-nosnippet>81</a>    <span class="doccomment">/// ACME error
+<a href=#80 id=80 data-nosnippet>80</a>    </span>Acme(<span class="attr">#[from] </span><span class="kw">crate</span>::acme::Error),
+<a href=#81 id=81 data-nosnippet>81</a>    <span class="doccomment">/// JWT error
 <a href=#82 id=82 data-nosnippet>82</a>    </span><span class="attr">#[error(transparent)]
-<a href=#83 id=83 data-nosnippet>83</a>    </span>Acme(<span class="attr">#[from] </span><span class="kw">crate</span>::acme::Error),
-<a href=#84 id=84 data-nosnippet>84</a>    <span class="doccomment">/// JWT error
+<a href=#83 id=83 data-nosnippet>83</a>    </span>RustyJwtError(<span class="attr">#[from] </span>RustyJwtError),
+<a href=#84 id=84 data-nosnippet>84</a>    <span class="doccomment">/// jsonwebtoken error
 <a href=#85 id=85 data-nosnippet>85</a>    </span><span class="attr">#[error(transparent)]
-<a href=#86 id=86 data-nosnippet>86</a>    </span>RustyJwtError(<span class="attr">#[from] </span>RustyJwtError),
-<a href=#87 id=87 data-nosnippet>87</a>    <span class="doccomment">/// jsonwebtoken error
-<a href=#88 id=88 data-nosnippet>88</a>    </span><span class="attr">#[error(transparent)]
-<a href=#89 id=89 data-nosnippet>89</a>    </span>JsonWebToken(<span class="attr">#[from] </span>rusty_jwt_tools::jsonwebtoken::errors::Error),
-<a href=#90 id=90 data-nosnippet>90</a>}
+<a href=#86 id=86 data-nosnippet>86</a>    </span>JsonWebToken(<span class="attr">#[from] </span>rusty_jwt_tools::jsonwebtoken::errors::Error),
+<a href=#87 id=87 data-nosnippet>87</a>}
 </code></pre></div></section></main></body></html>
