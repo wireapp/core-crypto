@@ -23,14 +23,12 @@ use openmls::{
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
 
+pub(in crate::mls::conversation) use self::incoming_message::{IncomingMessage, ParsedMessage};
 pub use self::outputs::{
     BufferedCommit, BufferedDecryptedMessage, Commit, DecryptedBytes, DecryptedMessage, DecryptionOutcome,
     DeferralReason, Proposal,
 };
-use self::{
-    incoming_message::{IncomingMessage, ParsedMessage},
-    process_message::{ProcessedMessage, process_message},
-};
+use self::process_message::{ProcessedMessage, process_message};
 use super::{ConversationMut, Result};
 use crate::{
     E2eiConversationState, RecursiveError, Session,
