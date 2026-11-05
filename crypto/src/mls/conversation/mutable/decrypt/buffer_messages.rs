@@ -16,14 +16,6 @@ use crate::{
     mls::conversation::{ConversationMut, mutable::decrypt::ParsedMessage},
 };
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) enum MessageRestorePolicy {
-    /// Retrieve and decrypt pending messages, then clear them from the keystore.
-    DecryptAndClear,
-    /// Clear pending messages from the keystore without decrypting them.
-    ClearOnly,
-}
-
 impl ConversationMut {
     pub(super) fn buffer_future_message(&self, message: impl AsRef<[u8]>) -> Result<()> {
         let pending_msg = MlsPendingMessage {
@@ -39,7 +31,8 @@ impl ConversationMut {
         Ok(())
     }
 
-    fn clear_pending_messages(&self) -> Result<()> {
+    /// Clear pending messages for this conversation.
+    pub(crate) fn clear_pending_messages(&self) -> Result<()> {
         let tx = self
             .tx_context
             .inner()
@@ -49,33 +42,12 @@ impl ConversationMut {
         Ok(())
     }
 
-    pub(super) async fn restore_and_clear_pending_messages(&mut self) -> Result<Option<Vec<BufferedDecryptedMessage>>> {
-        let pending_messages = self
-            .restore_pending_messages(MessageRestorePolicy::DecryptAndClear)
-            .await?;
-
-        let Some(pending_messages) = pending_messages else {
-            return Ok(None);
-        };
-
-        self.clear_pending_messages()?;
-
-        Ok(Some(pending_messages))
-    }
-
     #[cfg_attr(target_os = "unknown", async_recursion::async_recursion(?Send))]
     #[cfg_attr(not(target_os = "unknown"), async_recursion::async_recursion)]
-    pub(crate) async fn restore_pending_messages(
-        &mut self,
-        policy: MessageRestorePolicy,
-    ) -> Result<Option<Vec<BufferedDecryptedMessage>>> {
+    pub(crate) async fn restore_pending_messages(&mut self) -> Result<Vec<BufferedDecryptedMessage>> {
         async move {
             let conversation_id = self.id();
             let database = self.database()?;
-            if policy == MessageRestorePolicy::ClearOnly {
-                self.clear_pending_messages()?;
-                return Ok(None);
-            }
 
             let pending_messages = database
                 .search::<MlsPendingMessage, _>(ConversationIdRef::new(conversation_id.as_ref()))
@@ -119,8 +91,6 @@ impl ConversationMut {
                 };
                 decrypted_messages.push(decrypted.into());
             }
-
-            let decrypted_messages = (!decrypted_messages.is_empty()).then_some(decrypted_messages);
 
             Ok(decrypted_messages)
         }
