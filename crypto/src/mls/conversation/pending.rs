@@ -22,7 +22,7 @@ use crate::{
     mls::{
         conversation::{
             ConversationIdRef,
-            mutable::decrypt::{IncomingMessage, ParsedMessage, buffer_messages::MessageRestorePolicy},
+            mutable::decrypt::{IncomingMessage, ParsedMessage},
         },
         credential::ext::CredentialExt as _,
     },
@@ -259,20 +259,15 @@ impl PendingConversation {
         // already be sitting under this id (saved by an earlier retry attempt via
         // `TransactionContext::join_by_external_commit`'s error-recovery path), and that row is
         // pending, not an established group, so it must not itself count as "already exists".
-        let restore_policy = if database
+        let conversation_already_exists = database
             .get_borrowed::<PersistedMlsGroup>(id.keystore())
             .await
             .map(|maybe_group| maybe_group.is_some_and(|group| !group.is_pending))
-            .map_err(KeystoreError::wrap("checking if group exists"))?
-        {
-            // If the group already exists, it means the external commit is about rejoining the group.
-            // This is most of the time a last resort measure (for example when a commit is dropped,
-            // and you go out of sync), so there's no point in decrypting buffered messages
+            .map_err(KeystoreError::wrap("checking if group exists"))?;
+
+        if conversation_already_exists {
             trace!("External commit trying to rejoin group");
-            MessageRestorePolicy::ClearOnly
-        } else {
-            MessageRestorePolicy::DecryptAndClear
-        };
+        }
 
         // Persist the now usable MLS group in the keystore
         // This is the now merged conversation
@@ -284,19 +279,20 @@ impl PendingConversation {
                 "persisting a pending conversation from mls group",
             ))?;
 
-        let pending_messages = conversation
-            .restore_pending_messages(restore_policy)
-            .await
-            .map_err(RecursiveError::context("restoring pending messages"))?;
-
-        if pending_messages.is_some() {
-            let tx = context.inner().map_err(RecursiveError::context(
-                "getting transaction context to delete pending messages",
-            ))?;
-            MlsPendingMessage::delete_all_matching(tx.transaction(), id.keystore()).map_err(KeystoreError::wrap(
-                "deleting pending messages while merging conversation",
-            ))?;
-        }
+        let pending_messages = if conversation_already_exists {
+            // If the group already exists, it means the external commit is about rejoining the group.
+            // This is most of the time a last resort measure (for example when a commit is dropped,
+            // and you go out of sync), so there's no point in decrypting buffered messages
+            conversation.clear_pending_messages();
+            None
+        } else {
+            Some(
+                conversation
+                    .restore_pending_messages()
+                    .await
+                    .map_err(RecursiveError::context("restoring pending messages"))?,
+            )
+        };
 
         // cleanup the pending group we no longer need
         self.clear()?;

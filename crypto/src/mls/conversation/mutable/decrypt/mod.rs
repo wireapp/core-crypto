@@ -112,7 +112,8 @@ impl ConversationMut {
                         "decrypted message should be constructed with empty buffer"
                     );
                     if recursion_policy == RecursionPolicy::AsNecessary {
-                        decrypted_message.buffered_messages = self.restore_and_clear_pending_messages().await?;
+                        let buffered = self.restore_pending_messages().await?;
+                        decrypted_message.buffered_messages = (!buffered.is_empty()).then_some(buffered);
                     }
                 }
 

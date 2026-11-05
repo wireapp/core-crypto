@@ -51,19 +51,19 @@ pub(in crate::mls::conversation::mutable::decrypt) async fn handle(
     // can't use `.then` because async
     let mut buffered_messages = None;
     if is_active && recursion_policy == RecursionPolicy::AsNecessary {
-        buffered_messages = conversation.restore_and_clear_pending_messages().await?;
+        let restored_messages = conversation.restore_pending_messages().await?;
 
         // ensure that if any buffered message evicts us from the group, we propagate that info
-        if let Some(buffered_messages) = buffered_messages.as_ref() {
-            for message in buffered_messages {
-                if let BufferedDecryptedMessage::Commit(commit) = message {
-                    is_active &= commit.is_active;
-                    if !is_active {
-                        break;
-                    }
+        for message in &restored_messages {
+            if let BufferedDecryptedMessage::Commit(commit) = message {
+                is_active &= commit.is_active;
+                if !is_active {
+                    break;
                 }
             }
         }
+
+        buffered_messages = (!restored_messages.is_empty()).then_some(restored_messages);
     }
 
     let epoch = staged_commit.staged_context().epoch().as_u64();
