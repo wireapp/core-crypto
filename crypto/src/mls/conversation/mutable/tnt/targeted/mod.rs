@@ -58,7 +58,7 @@ pub(super) struct PskId {
 ///
 /// Implementation note: we're preferring OpenMLS types here, because we're using OpenMLS encoding. Once we switch to
 /// mls-rs, we're going to use mls-rs types.
-#[derive(TlsSize, TlsSerialize, TlsDeserialize, Constructor)]
+#[derive(Clone, TlsSize, TlsSerialize, TlsDeserialize, Constructor)]
 pub(super) struct TargetedMessage {
     counter: TntMessageCounter,
     sender: LeafNodeIndex,
