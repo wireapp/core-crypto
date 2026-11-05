@@ -51,7 +51,7 @@ impl TransientMessageAad {
 ///
 /// Implementation note: we're preferring OpenMLS types here, because we're using OpenMLS encoding. Once we switch to
 /// mls-rs, we're going to use mls-rs types.
-#[derive(TlsSize, TlsSerialize, TlsDeserialize, derive_more::Constructor)]
+#[derive(Clone, TlsSize, TlsSerialize, TlsDeserialize, derive_more::Constructor)]
 pub(super) struct TransientMessage {
     /// The mls group context (<https://www.rfc-editor.org/info/rfc9420/#name-group-context>) contains the epoch and
     /// group id, so we don't need those in additional fields here.

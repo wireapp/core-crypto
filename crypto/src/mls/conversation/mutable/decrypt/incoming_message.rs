@@ -13,7 +13,7 @@ use crate::{
 // memory isn't particularly constrained for this application, and this struct is
 // short-lived.
 #[expect(clippy::large_enum_variant)]
-#[derive(derive_more::From)]
+#[derive(Clone, derive_more::From)]
 pub(in crate::mls::conversation) enum ParsedMessage {
     Mls(MlsMessageIn),
     Tnt(TntMessage),
