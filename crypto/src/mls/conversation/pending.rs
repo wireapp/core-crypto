@@ -6,22 +6,24 @@ use std::sync::Arc;
 
 use core_crypto_keystore::{
     Database,
-    entities::{MlsPendingMessage, PersistedMlsGroup},
-    traits::{DeletableBySearchKey, EntityDatabaseMutation as _, FetchFromDatabase as _},
+    entities::{InboxMessage, PersistedMlsGroup, WaitingFor},
+    traits::{EntityDatabaseMutation as _, FetchFromDatabase as _},
 };
 use log::trace;
 use openmls::{
     credentials::CredentialWithKey,
     prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody},
 };
-use tls_codec::Deserialize as _;
 
 use super::{Error, Result, group_metadata};
 use crate::{
     BufferedDecryptedMessage, CommitBundle, ConversationConfiguration, DecryptedMessage, KeystoreError, OpenMlsError,
     RecursiveError,
     mls::{
-        conversation::{ConversationIdRef, mutable::decrypt::buffer_messages::MessageRestorePolicy},
+        conversation::{
+            ConversationIdRef,
+            mutable::decrypt::{IncomingMessage, ParsedMessage, buffer_messages::MessageRestorePolicy},
+        },
         credential::ext::CredentialExt as _,
     },
     mls_provider::CryptoProvider,
@@ -118,10 +120,14 @@ impl PendingConversation {
     ///
     /// Otherwise, the given message will be buffered.
     pub async fn try_process_own_join_commit(&mut self, message: impl AsRef<[u8]>) -> Result<DecryptedMessage> {
+        let incoming = IncomingMessage::parse(message.as_ref())?;
+
         // If the confirmation tag of the pending group and this incoming message are identical, we can merge the
         // pending group.
-        if self.incoming_message_is_own_join_commit(message.as_ref()).await? {
-            return self.merge_and_restore_messages().await;
+        if let ParsedMessage::Mls(mls_message) = &incoming.parsed {
+            if self.incoming_message_is_own_join_commit(mls_message).await? {
+                return self.merge_and_restore_messages().await;
+            }
         }
 
         let context_inner = self
@@ -130,19 +136,24 @@ impl PendingConversation {
             .map_err(RecursiveError::context("acquiring transaction to process join commit"))?;
         let tx = context_inner.transaction();
 
-        let pending_msg = MlsPendingMessage {
+        let inbox_message = InboxMessage {
             conversation_id: self.id().into(),
-            message: message.as_ref().to_vec(),
+            content_type: incoming.parsed.content_type()?,
+            epoch: incoming.parsed.epoch()?,
+            waiting_for: WaitingFor::PendingJoin,
+            message: message.as_ref().to_owned(),
+            arrival_sequence: tx.inbox_message_next_arrival_sequence(),
         };
-        pending_msg
+
+        inbox_message
             .save(tx)
-            .map_err(KeystoreError::wrap("saving mls pending message"))?;
+            .map_err(KeystoreError::wrap("saving mls inbox message"))?;
         Err(Error::BufferedForPendingConversation)
     }
 
     /// If the message confirmation tag and the group confirmation tag are the same, it means that
     /// the external join commit has been accepted by the DS and the pending group can be merged.
-    async fn incoming_message_is_own_join_commit(&self, message: impl AsRef<[u8]>) -> Result<bool> {
+    async fn incoming_message_is_own_join_commit(&self, message_in: &MlsMessageIn) -> Result<bool> {
         let backend = self.mls_provider().await?;
         let database = self.keystore()?;
         // Instantiate the pending group
@@ -162,9 +173,8 @@ impl PendingConversation {
             .merge_pending_commit(&backend)
             .await
             .map_err(OpenMlsError::wrap("merging pending commit"))?;
-        let message_in = MlsMessageIn::tls_deserialize(&mut message.as_ref())
-            .map_err(OpenMlsError::wrap("deserializing mls message"))?;
-        let MlsMessageInBody::PublicMessage(public_message) = message_in.extract() else {
+
+        let MlsMessageInBody::PublicMessage(public_message) = message_in.body_as_ref() else {
             return Ok(false);
         };
         let Some(msg_ct) = public_message.confirmation_tag() else {
