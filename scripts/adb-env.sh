@@ -23,7 +23,10 @@ AVD_NAME=test-phone
 # debugger). Several runner users share each of our self-hosted machines, and
 # outside CI they may also share an adb server (see below), so the port is based
 # on the current user's ID to keep their emulators apart.
-EMULATOR_PORT=$((27000 + $(id -u)))
+#
+# The emulator takes two ports: this one for its console, and the next one up
+# for adb. So each user gets a pair of ports.
+EMULATOR_PORT=$((27000 + 2 * $(id -u)))
 ADB_DEVICE=emulator-$EMULATOR_PORT
 
 # The adb server
@@ -38,7 +41,7 @@ ADB_DEVICE=emulator-$EMULATOR_PORT
 # On CI we therefore give each user their own adb server on its own port. adb,
 # the emulator and the Android Gradle plugin all read ANDROID_ADB_SERVER_PORT,
 # so exporting it here is enough, as long as it happens before any of them run.
-# The emulator ports (27000 + uid, above) don't overlap this range.
+# The emulator ports (27000 + 2 * uid, above) don't overlap this range.
 #
 # Outside CI we keep the default port, so a local emulator stays visible to
 # Android Studio and any adb already running.
