@@ -24,9 +24,9 @@ jobs:
       matrix:
         command:
           - cargo check --workspace --locked --all-targets
-          - cargo check --workspace --locked --target wasm32-unknown-unknown --exclude test-wire-server
+          - cargo check --workspace --locked --target wasm32-unknown-unknown --exclude test-wire-server --features core-crypto-ffi/wasm
           - cargo clippy --workspace --locked --all-targets
-          - cargo clippy --workspace --locked --target wasm32-unknown-unknown --exclude test-wire-server
+          - cargo clippy --workspace --locked --target wasm32-unknown-unknown --exclude test-wire-server --features core-crypto-ffi/wasm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-and-cache-rust

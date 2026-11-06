@@ -14,9 +14,9 @@ rust-fmt: $(STAMPS)/rust-fmt ## Format Rust files via cargo fmt
 $(STAMPS)/rust-check: $(WORKSPACE_RUST_SOURCES)
 	cargo +nightly fmt --all -- --check && \
 	cargo check --locked --all-targets && \
-	cargo check --locked --target wasm32-unknown-unknown && \
+	cargo check --locked --target wasm32-unknown-unknown --features core-crypto-ffi/wasm && \
     cargo clippy --locked --all-targets && \
-    cargo clippy --locked --target wasm32-unknown-unknown
+    cargo clippy --locked --target wasm32-unknown-unknown --features core-crypto-ffi/wasm
 	$(TOUCH_STAMP)
 
 .PHONY: rust-check

@@ -12,7 +12,7 @@ docs-rust-generic: $(STAMPS)/docs-rust-generic ## Generate Rust docs for the hos
 
 # Rust WASM docs
 $(STAMPS)/docs-rust-wasm: $(WORKSPACE_RUST_SOURCES)
-	cargo doc --no-deps --target=wasm32-unknown-unknown
+	cargo doc --no-deps --target=wasm32-unknown-unknown --features core-crypto-ffi/wasm
 	$(TOUCH_STAMP)
 
 .PHONY: docs-rust-wasm

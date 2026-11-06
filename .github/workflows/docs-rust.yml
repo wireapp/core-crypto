@@ -60,6 +60,6 @@ jobs:
           rustflags: ''
           target: wasm32-unknown-unknown
 
-      - run: cargo doc --document-private-items --no-deps --locked --workspace --exclude test-wire-server --target wasm32-unknown-unknown
+      - run: cargo doc --document-private-items --no-deps --locked --workspace --exclude test-wire-server --target wasm32-unknown-unknown --features core-crypto-ffi/wasm
         env:
           RUSTDOCFLAGS: "-Dwarnings"
