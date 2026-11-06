@@ -42,7 +42,7 @@ env:
 
 jobs:
   e2e-interop-test:
-    runs-on: [self-hosted, core-crypto]
+    runs-on: macos-latest
     # Healthy runs take 2 to 25 minutes. Without a limit, a stuck run holds one
     # of our few self-hosted runners for GitHub's default of 6 hours.
     timeout-minutes: 40
