@@ -140,13 +140,12 @@ mod tests {
     use core_crypto_keystore::{entities::*, traits::FetchFromDatabase};
 
     use super::*;
-    use crate::transaction_context::test_utils::EntitiesCount;
+    use crate::transaction_context::test_utils::{EntitiesCount, count_inbox_messages};
 
     impl Session {
         /// Count the entities
         pub async fn count_entities(&self) -> EntitiesCount {
             let keystore = &self.database;
-            let buffered_commits = keystore.count::<StoredBufferedCommit>().await.unwrap();
             let credential = keystore.count::<StoredCredential>().await.unwrap();
             let encryption_keypair = keystore.count::<StoredEncryptionKeyPair>().await.unwrap();
             let epoch_encryption_keypair = keystore.count::<StoredEpochEncryptionKeypair>().await.unwrap();
@@ -157,7 +156,8 @@ mod tests {
             let pending_group = all_groups.iter().filter(|group| group.is_pending).count() as u32;
             let hpke_private_key = keystore.count::<StoredHpkePrivateKey>().await.unwrap();
             let key_package = keystore.count::<StoredKeyPackage>().await.unwrap();
-            let pending_messages = keystore.count::<MlsPendingMessage>().await.unwrap();
+            let (buffered_commits, pending_messages) =
+                count_inbox_messages(&keystore.load_all::<InboxMessage>().await.unwrap());
             let psk_bundle = keystore.count::<StoredPskBundle>().await.unwrap();
             EntitiesCount {
                 buffered_commits,
