@@ -53,7 +53,11 @@ impl ConversationMut {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::{entities::MlsPendingMessage, traits::EntityDatabaseMutation as _};
+    use core_crypto_keystore::{
+        entities::{InboxMessage, WaitingFor},
+        traits::EntityDatabaseMutation as _,
+    };
+    use openmls::prelude::ContentType;
 
     use crate::{BufferedDecryptedMessage, DecryptedMessage, mls::conversation::Error, test_utils::*};
 
@@ -209,18 +213,14 @@ mod tests {
         );
     }
 
-    /// A buffered commit which fails after merging must leave no trace, in memory or in the database.
+    /// A message in the inbox which can't be decoded must not stop a buffered commit from applying.
     ///
-    /// Merging writes the new epoch both to the in-memory group and to the database, and the steps after
-    /// the merge can still fail. When that failure is swallowed so that the triggering proposal can
-    /// succeed, both copies of the group have to be back at the old epoch; if only the database is
-    /// rolled back, the in-memory group runs ahead of what is persisted. The proposal itself must
-    /// still be stored and reported.
-    ///
-    /// We force the failure with an undecodable message in the pending-message buffer, which the
-    /// buffered commit tries to replay only after it has merged.
+    /// When a buffered commit applies, it replays whatever was waiting for its new epoch. A message
+    /// there which can't even be parsed can never be replayed, so it is dropped, and the commit goes
+    /// ahead. If it failed the commit instead, the epoch would be lost for the sake of a message
+    /// which could never be read anyway.
     #[apply(all_cred_cipher)]
-    async fn buffered_commit_failing_after_merge_must_roll_back_memory_and_database(case: TestContext) {
+    async fn undecodable_inbox_message_must_not_block_buffered_commit(case: TestContext) {
         let [alice, bob, charlie] = case.sessions().await;
         let (conversation, missing_proposal) =
             alice_buffers_commit_missing_proposal(&case, [&alice, &bob, &charlie]).await;
@@ -228,26 +228,36 @@ mod tests {
 
         // A protocol version and a public-message wire format, then a group id claiming five bytes
         // which aren't there: decoding the message fails after the wire format check.
-        let undecodable = MlsPendingMessage {
-            conversation_id: conversation_id.as_ref().into(),
-            message: vec![0, 1, 0, 1, 5],
-        };
-        undecodable
-            .save(alice.transaction.inner().unwrap().transaction())
-            .unwrap();
+        // It waits for epoch 2, which Bob's buffered commit moves Alice into, so that the commit replays it.
+        {
+            let transaction = alice.transaction.inner().unwrap();
+            let undecodable = InboxMessage {
+                conversation_id: conversation_id.as_ref().into(),
+                message: vec![0, 1, 0, 1, 5],
+                content_type: ContentType::Application,
+                waiting_for: WaitingFor::Epoch,
+                epoch: 2,
+                arrival_sequence: transaction.transaction().inbox_message_next_arrival_sequence(),
+            };
+            undecodable.save(transaction.transaction()).unwrap();
+        }
 
-        let mut alice_conversation = conversation.guard_of(&alice).await;
-        let decrypted = alice_conversation.decrypt_message(&missing_proposal).await;
-        assert!(
-            matches!(decrypted, Ok(DecryptedMessage::Proposal(_))),
-            "the commit failed, so the proposal's own result must be reported: {decrypted:?}"
-        );
-        assert_eq!(
-            alice_conversation.epoch().await,
-            1,
-            "the in-memory group must have been rolled back to the epoch before the commit"
-        );
-        drop(alice_conversation);
+        {
+            let mut alice_conversation = conversation.guard_of(&alice).await;
+            let decrypted = alice_conversation.decrypt_message(&missing_proposal).await;
+            let Ok(DecryptedMessage::Commit(commit)) = decrypted else {
+                panic!("the proposal completes the buffered commit, which must apply: {decrypted:?}");
+            };
+            assert!(
+                commit.buffered_messages.is_none(),
+                "the undecodable message must not be reported as replayed"
+            );
+            assert_eq!(
+                alice_conversation.epoch().await,
+                2,
+                "the in-memory group must have moved to the commit's epoch"
+            );
+        }
 
         // Load the group afresh from the database.
         alice
@@ -257,23 +267,23 @@ mod tests {
             .lock()
             .await
             .remove(&conversation_id);
-        let reloaded = alice.transaction.conversation(&conversation_id).await.unwrap();
-        assert_eq!(
-            reloaded.epoch().await,
-            1,
-            "the stored group must have been rolled back to the epoch before the commit"
-        );
-        assert_eq!(
-            reloaded.group().await.pending_proposals().count(),
-            1,
-            "the proposal must still be stored"
-        );
-        drop(reloaded);
+        {
+            let reloaded = alice.transaction.conversation(&conversation_id).await.unwrap();
+            assert_eq!(
+                reloaded.epoch().await,
+                2,
+                "the stored group must have moved to the commit's epoch"
+            );
+        }
 
+        let counts = alice.transaction.count_entities().await;
         assert_eq!(
-            alice.transaction.count_entities().await.buffered_commits,
-            0,
-            "the failed commit must have been discarded"
+            counts.buffered_commits, 0,
+            "the applied commit must have left the inbox"
+        );
+        assert_eq!(
+            counts.pending_messages, 0,
+            "the undecodable message must have been dropped from the inbox"
         );
     }
 
