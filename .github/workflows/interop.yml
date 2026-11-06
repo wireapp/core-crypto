@@ -66,6 +66,10 @@ jobs:
           # image are already installed on our runners.
           packages: ''
 
+      - name: install android system image
+        run: |
+         sdkmanager --install 'system-images;android-32;default;arm64-v8a'
+
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
