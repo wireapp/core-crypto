@@ -32,7 +32,7 @@ pub struct InboxMessage {
     pub epoch: u64,
     /// An arbitrary monotonically increasing integer.
     ///
-    /// See [`Self::max_arrival_sequence`].
+    /// See [`crate::Transaction::inbox_message_next_arrival_sequence`].
     pub arrival_sequence: u64,
 }
 
