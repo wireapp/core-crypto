@@ -1,7 +1,7 @@
 use core_crypto_keystore::{
     Transaction,
     ancillary::ConversationEpochsOlderThan,
-    entities::{OldEpochData, TargetedMessageRxCounter, TransientMessageRxCounter},
+    entities::{InboxMessage, OldEpochData, TargetedMessageRxCounter, TransientMessageRxCounter},
     traits::DeletableBySearchKey as _,
 };
 use openmls::group::InnerState;
@@ -72,6 +72,8 @@ impl ConversationMut {
             TransientMessageRxCounter::delete_all_matching(tx, &stale_epochs).map_err(KeystoreError::wrap(
                 "deleting transient message rx counter on epoch change",
             ))?;
+            InboxMessage::drop_stale(tx, id.keystore(), group.epoch().as_u64())
+                .map_err(KeystoreError::wrap("clearing stale inbox messages on epoch change"))?;
         }
 
         group.persist(tx).await?;

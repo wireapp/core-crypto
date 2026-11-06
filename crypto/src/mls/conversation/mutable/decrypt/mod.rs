@@ -9,13 +9,13 @@
 //! | 1+ pend. Proposal | ✅              | ✅              |
 
 mod buffer_commit;
-pub(crate) mod buffer_messages;
 mod handle;
+mod inbox;
 mod incoming_message;
 mod outputs;
 mod process_message;
 
-use log::info;
+use core_crypto_keystore::entities::WaitingFor;
 use openmls::{
     framing::MlsMessageIn,
     group::MlsGroup,
@@ -59,6 +59,8 @@ impl ConversationMut {
     /// Other errors are originating from OpenMls and the KeyStore
     pub async fn decrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<DecryptedMessage> {
         let incoming_message = IncomingMessage::parse(message.as_ref())?;
+        // we have to clone the parsed message, because we are likely to need it to handle the result,
+        // but the `decrypt_mls_message` variant has to consume it.
         let decrypt_message_result = match incoming_message.parsed {
             ParsedMessage::Mls(mls_message_in) => {
                 self.decrypt_mls_message(mls_message_in, RecursionPolicy::AsNecessary)
@@ -70,15 +72,16 @@ impl ConversationMut {
         // These will no longer map to errors with WPB-29261, but we'll still take action on them at this level.
         let decrypted_message = match decrypt_message_result {
             Ok(DecryptionOutcome::Decrypted(decrypted)) => decrypted,
-            Ok(DecryptionOutcome::Deferred(DeferralReason::MissingProposal)) => {
-                self.buffer_commit(message)?;
-                return Err(Error::BufferedCommit);
-            }
-            Ok(DecryptionOutcome::Deferred(DeferralReason::FutureEpoch { epoch })) => {
-                self.buffer_future_message(message)?;
-                let conversation_id = self.id().to_owned();
-                info!(group_id = conversation_id, epoch; "Buffered future message");
-                return Err(Error::BufferedFutureMessage { message_epoch: epoch });
+            Ok(DecryptionOutcome::Deferred(reason)) => {
+                // re-parsing is expensive relative to cloning the previous parse, but it's also much less common.
+                // It's the lesser pain.
+                let incoming_message = IncomingMessage::parse(message.as_ref()).expect("parsing succeeded previously");
+                self.send_to_inbox(&incoming_message, &reason)?;
+                let err = match reason {
+                    DeferralReason::FutureEpoch { epoch } => Error::BufferedFutureMessage { message_epoch: epoch },
+                    DeferralReason::MissingProposal => Error::BufferedCommit,
+                };
+                return Err(err);
             }
             Err(err) => return Err(err),
         };
@@ -106,14 +109,16 @@ impl ConversationMut {
             ProcessedMessage::OwnCommit(confirmation_tag) => {
                 let mut decrypted_message = self.handle_own_commit(&confirmation_tag).await?;
 
-                if let Some(decrypted_message) = decrypted_message.as_commit_mut() {
+                if let Some(commit) = decrypted_message.as_commit_mut() {
                     debug_assert!(
-                        decrypted_message.buffered_messages.is_none(),
+                        commit.buffered_messages.is_none(),
                         "decrypted message should be constructed with empty buffer"
                     );
                     if recursion_policy == RecursionPolicy::AsNecessary {
-                        let buffered = self.restore_pending_messages().await?;
-                        decrypted_message.buffered_messages = (!buffered.is_empty()).then_some(buffered);
+                        let buffered = self
+                            .replay_from_inbox(WaitingFor::Epoch, self.epoch().await.into())
+                            .await?;
+                        commit.buffered_messages = (!buffered.is_empty()).then_some(buffered);
                     }
                 }
 

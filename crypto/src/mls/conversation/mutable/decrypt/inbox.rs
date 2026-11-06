@@ -1,33 +1,70 @@
-//! Sometimes, while still in epoch `n`, we receive messages for epoch `n + 1`.
-//! This is because our DS implementation doesn't guarantee that messages arrive in order.
-//! This module deals with buffering these messages until we receive the commit that advances the
-//! group epoch.
+//! Handle messages which can't be processed yet by storing them in an inbox until proper handling is possible.
 
 use core_crypto_keystore::{
-    ancillary::ConversationIdRef,
-    entities::MlsPendingMessage,
-    traits::{DeletableBySearchKey, EntityDatabaseMutation as _, FetchFromDatabase},
+    entities::{InboxMessage, WaitingFor},
+    traits::{DeletableBySearchKey, EntityDatabaseMutation as _},
 };
-use log::{error, info, warn};
+use log::{info, warn};
 
-use super::{IncomingMessage, RecursionPolicy, Result};
+use super::{Error, IncomingMessage, RecursionPolicy, Result};
 use crate::{
-    BufferedDecryptedMessage, DecryptionOutcome, KeystoreError, RecursiveError,
+    BufferedDecryptedMessage, DecryptionOutcome, DeferralReason, KeystoreError, RecursiveError,
+    error::infrastructure::Infrastructural as _,
     mls::conversation::{ConversationMut, mutable::decrypt::ParsedMessage},
 };
 
 impl ConversationMut {
-    pub(super) fn buffer_future_message(&self, message: impl AsRef<[u8]>) -> Result<()> {
-        let pending_msg = MlsPendingMessage {
-            conversation_id: self.id().into(),
-            message: message.as_ref().to_vec(),
-        };
+    /// Send an incoming message to the inbox for processing later, once its deferral reason is satisfied.
+    pub(super) fn send_to_inbox(&self, message: &IncomingMessage, reason: &DeferralReason) -> Result<()> {
         let context_inner = self.tx_context.inner().map_err(RecursiveError::context(
-            "getting transaction inner to buffer future message",
+            "getting transaction inner to get arrival sequence",
         ))?;
-        pending_msg
-            .save(context_inner.transaction())
-            .map_err(KeystoreError::wrap("saving pending mls message"))?;
+        let tx = context_inner.transaction();
+        self.send_to_inbox_with_arrival_sequence(message, reason, tx.inbox_message_next_arrival_sequence())
+    }
+
+    /// Send an incoming message to the inbox for processing later, once its deferral reason is satisfied.
+    ///
+    /// Here the arrival sequence is manually specified; this is mainly intended for messages which
+    /// were re-deferred after an initial deferral failed to process them.
+    fn send_to_inbox_with_arrival_sequence(
+        &self,
+        message: &IncomingMessage,
+        reason: &DeferralReason,
+        arrival_sequence: u64,
+    ) -> Result<()> {
+        let waiting_for = match reason {
+            DeferralReason::FutureEpoch { .. } => WaitingFor::Epoch,
+            DeferralReason::MissingProposal => WaitingFor::Proposal,
+        };
+        let epoch = message.parsed.epoch()?;
+
+        // sanity check
+        if let DeferralReason::FutureEpoch { epoch: reason_epoch } = reason {
+            debug_assert_eq!(
+                epoch, *reason_epoch,
+                "when waiting for an epoch, the deferral epoch must match"
+            );
+        }
+
+        info!(group_id = self.id.clone(), epoch, reason:?; "saving message to inbox");
+
+        let context_inner = self.tx_context.inner().map_err(RecursiveError::context(
+            "getting transaction inner to save message to inbox",
+        ))?;
+        let tx = context_inner.transaction();
+
+        let inbox_message = InboxMessage {
+            content_type: message.parsed.content_type()?,
+            conversation_id: self.id().into(),
+            message: message.bytes.to_owned(),
+            epoch,
+            waiting_for,
+            arrival_sequence,
+        };
+        inbox_message
+            .save(tx)
+            .map_err(KeystoreError::wrap("saving inbox message"))?;
         Ok(())
     }
 
@@ -37,66 +74,85 @@ impl ConversationMut {
             .tx_context
             .inner()
             .map_err(RecursiveError::context("getting tx context to clear pending messages"))?;
-        MlsPendingMessage::delete_all_matching(tx.transaction(), ConversationIdRef::new(self.id().as_ref()))
+        InboxMessage::delete_all_matching(tx.transaction(), self.id().keystore())
             .map_err(KeystoreError::wrap("clearing pending messages"))?;
         Ok(())
     }
 
+    /// Take everything waiting for the given reason / epoch, and replay it in order.
+    ///
+    /// - Replays each item matching the parameters
+    /// - Re-buffers any which defers again, with the new reason
+    /// - Any item which is stale or fails to parse is dropped with a warning log
     #[cfg_attr(target_os = "unknown", async_recursion::async_recursion(?Send))]
     #[cfg_attr(not(target_os = "unknown"), async_recursion::async_recursion)]
-    pub(crate) async fn restore_pending_messages(&mut self) -> Result<Vec<BufferedDecryptedMessage>> {
-        async move {
-            let conversation_id = self.id();
-            let database = self.database()?;
+    pub(crate) async fn replay_from_inbox(
+        &mut self,
+        waiting_for: WaitingFor,
+        epoch: Option<u64>,
+    ) -> Result<Vec<BufferedDecryptedMessage>> {
+        let tx_context_inner = self.tx_context.inner().map_err(RecursiveError::context(
+            "getting tx context to restore pending messages",
+        ))?;
+        let tx = tx_context_inner.transaction();
 
-            let pending_messages = database
-                .search::<MlsPendingMessage, _>(ConversationIdRef::new(conversation_id.as_ref()))
-                .await
-                .map_err(KeystoreError::wrap("finding all mls pending messages"))?;
-            let mut pending_messages = pending_messages.iter()
-                .map(|m| -> Result<_> {
-                    let incoming_message = IncomingMessage::parse(&m.message)?;
-                    let content_type = incoming_message.parsed.content_type()?;
-                    Ok((content_type as u8, incoming_message))
-                })
-                .collect::<Result<Vec<_>>>()?;
+        // returns messages in order of content type, then arrival sequence
+        let pending_messages = InboxMessage::take(tx, self.id().keystore(), waiting_for, epoch)
+            .map_err(KeystoreError::wrap("taking inbox messages from the db"))?;
 
-            // We want to restore application messages first, then Proposals & finally Commits
-            // luckily for us that's the exact same order as the [ContentType] enum
-            // Within the application messages, we'd ideally also like to sort by message generation.
-            // Unfortunately that's not possible given the current openmls APIs.
-            // We should look into this when we move to mls-rs.
-            pending_messages.sort_by_key(|(content_type, _)| *content_type);
-
-            info!(group_id = conversation_id.to_owned(); "Attempting to restore {} buffered messages", pending_messages.len());
-
-            let mut decrypted_messages = Vec::with_capacity(pending_messages.len());
-            for (_, incoming_message) in pending_messages {
-                // we have to make a best-effort attempt at decrypting these messages, but ultimately the failure of a buffered
-                // message do decrypt should not short-circuit the decryption loop, and should not cause the commit to fail to decrypt
-                let maybe_decrypted = match incoming_message.parsed {
-                    ParsedMessage::Mls(mls_message) => self.decrypt_mls_message(mls_message, RecursionPolicy::None).await,
-                    ParsedMessage::Tnt(tnt_message) => self.decrypt_tnt_message(tnt_message).await,
-                };
-                let decrypted = match maybe_decrypted {
-                    Ok(DecryptionOutcome::Decrypted(decrypted)) => decrypted,
-                    Ok(DecryptionOutcome::Deferred(reason)) => {
-                        warn!(reason:?; "buffered message was not ready to unbuffer");
-                        continue;
-                    }
-                    Err(err) => {
-                        error!(error:% = err; "failed to decrypt buffered message");
-                        continue;
-                    }
-                };
-                decrypted_messages.push(decrypted.into());
-            }
-
-            Ok(decrypted_messages)
+        if !pending_messages.is_empty() {
+            info!(group_id = self.id().to_owned(), waiting_for:?, epoch; "Attempting to restore {} messages from the inbox", pending_messages.len());
         }
-        .await.inspect_err(|err| {
-            error!(error:% = err; "Error restoring pending messages");
-        })
+
+        let mut decrypted_messages = Vec::with_capacity(pending_messages.len());
+        for inbox_message in pending_messages {
+            let incoming_message = match IncomingMessage::parse(&inbox_message.message) {
+                Ok(incoming) => incoming,
+                Err(err) => {
+                    warn!(err:err, group_id = self.id().to_owned(), epoch; "failed to parse buffered message while taking from inbox; dropping");
+                    continue;
+                }
+            };
+
+            let maybe_decrypted = tx_context_inner
+                .with_savepoint(
+                    "replay_from_inbox",
+                    async || match incoming_message.parsed.clone() {
+                        ParsedMessage::Mls(mls_message) => {
+                            self.decrypt_mls_message(mls_message, RecursionPolicy::None).await
+                        }
+                        ParsedMessage::Tnt(tnt_message) => self.decrypt_tnt_message(tnt_message).await,
+                    },
+                    Error::savepoint,
+                )
+                .await;
+
+            let decrypted = match maybe_decrypted {
+                Ok(DecryptionOutcome::Decrypted(decrypted)) => decrypted,
+                Ok(DecryptionOutcome::Deferred(reason)) => {
+                    // we've taken the message out, but it wasn't ready, so let's just put it back
+                    self.send_to_inbox_with_arrival_sequence(
+                        &incoming_message,
+                        &reason,
+                        inbox_message.arrival_sequence,
+                    )?;
+                    continue;
+                }
+                Err(err) => {
+                    if err.is_infrastructure() {
+                        // propagate infrastructure errors so the whole transaction rolls back and we can try again
+                        // later
+                        return Err(err);
+                    } else {
+                        warn!(error:% = err; "failed to decrypt buffered message");
+                        continue;
+                    }
+                }
+            };
+            decrypted_messages.push(decrypted.into());
+        }
+
+        Ok(decrypted_messages)
     }
 }
 
