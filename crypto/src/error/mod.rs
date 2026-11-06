@@ -1,4 +1,5 @@
 pub(crate) mod identity;
+pub(crate) mod infrastructure;
 mod keystore;
 mod open_mls;
 mod proteus;

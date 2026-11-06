@@ -68,12 +68,6 @@ impl ConversationIdRef {
     }
 }
 
-impl ConversationIdRef {
-    pub(crate) fn to_bytes(&self) -> Vec<u8> {
-        self.0.to_owned()
-    }
-}
-
 impl ToOwned for ConversationIdRef {
     type Owned = ConversationId;
 

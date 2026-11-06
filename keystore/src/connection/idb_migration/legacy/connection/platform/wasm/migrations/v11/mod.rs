@@ -16,7 +16,7 @@ use crate::{
         connection::{Database, platform::wasm::WasmStorageTransaction},
         traits::{Encrypting as _, Entity as _, EntityBase as _, KeyType},
     },
-    migrations::LegacyPersistedMlsGroup,
+    migrations::historical::LegacyPersistedMlsGroup,
     traits::BorrowPrimaryKey as _,
 };
 

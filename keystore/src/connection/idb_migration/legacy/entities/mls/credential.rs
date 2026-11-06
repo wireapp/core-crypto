@@ -11,7 +11,7 @@ use crate::{
         },
     },
     entities::CredentialFindFilters,
-    migrations::StoredCredentialV36,
+    migrations::historical::StoredCredentialV36,
     traits::PrimaryKey,
 };
 

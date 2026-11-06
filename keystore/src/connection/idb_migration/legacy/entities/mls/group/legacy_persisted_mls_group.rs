@@ -1,6 +1,6 @@
 use crate::{
     CryptoKeystoreResult,
-    migrations::LegacyPersistedMlsGroup,
+    migrations::historical::LegacyPersistedMlsGroup,
     traits::{BorrowPrimaryKey, PrimaryKey},
 };
 

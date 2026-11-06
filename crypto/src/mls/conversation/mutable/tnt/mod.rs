@@ -55,7 +55,7 @@ impl ProtocolVersion {
 /// The body of [TntMessageTBS], with currently three variants. The wire format is encoded in the leading two
 /// bytes of the TLS-serialized version of this struct. The wire-format values are contained in the range reserved for
 /// private use in RFC 9420.
-#[derive(TlsSize, TlsSerialize, TlsDeserialize)]
+#[derive(Clone, TlsSize, TlsSerialize, TlsDeserialize)]
 #[repr(u16)]
 #[non_exhaustive]
 enum TntMessageBody {
@@ -170,7 +170,7 @@ impl TntWireFormat {
 }
 
 /// The to-be-signed [TntMessage].
-#[derive(TlsSize, TlsSerialize, TlsDeserialize)]
+#[derive(Clone, TlsSize, TlsSerialize, TlsDeserialize)]
 struct TntMessageTBS {
     protocol_version: ProtocolVersion,
     body: TntMessageBody,
@@ -209,10 +209,17 @@ impl TntMessageTBS {
 }
 
 /// A message containing [TntMessageBody] with the corresponding signature.
-#[derive(TlsSize, TlsSerialize, TlsDeserialize)]
-pub(super) struct TntMessage {
+#[derive(Clone, TlsSize, TlsSerialize, TlsDeserialize)]
+pub(in crate::mls::conversation) struct TntMessage {
     content: TntMessageTBS,
     signature: Signature,
+}
+
+impl TntMessage {
+    /// The epoch of the message
+    pub(in crate::mls::conversation) fn epoch(&self) -> u64 {
+        self.content.body.epoch()
+    }
 }
 
 impl openmls::prelude::Signable for TntMessageTBS {

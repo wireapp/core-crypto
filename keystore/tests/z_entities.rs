@@ -135,7 +135,7 @@ mod tests_impl {
     use core_crypto_keystore::{
         CryptoKeystoreError, Transactionlike,
         entities::{
-            MlsPendingMessage, PersistedMlsGroup, StoredCredential, StoredCredentialPk, StoredEpochEncryptionKeypair,
+            InboxMessage, PersistedMlsGroup, StoredCredential, StoredCredentialPk, StoredEpochEncryptionKeypair,
             StoredHpkePrivateKey, StoredKeyPackage, TargetedMessageRxCounter, TransientMessageRxCounter,
         },
         traits::{
@@ -241,7 +241,7 @@ mod tests_impl {
             StoredEpochEncryptionKeypair { conversation_id, .. } => {
                 Some(conversation_id.clone())
             },
-            MlsPendingMessage { conversation_id, .. } => {
+            InboxMessage { conversation_id, .. } => {
                 Some(conversation_id.clone())
             },
             ||=> None,
@@ -281,15 +281,6 @@ mod tests_impl {
 
         let any_e: &dyn Any = entity;
         match_heterogenous!(any_e => {
-            pending_message @ MlsPendingMessage { .. } => {
-                let pending_message_from_store = store
-                    .search::<MlsPendingMessage, _>(pending_message.conversation_id.as_ref())
-                    .await
-                    .unwrap()
-                    .pop()
-                    .unwrap();
-                assert_eq!(*pending_message, *pending_message_from_store);
-            },
             credential @ StoredCredential { .. } => {
                 let mut credential_from_store = Arc::unwrap_or_clone(
                     store
@@ -357,7 +348,7 @@ mod tests_impl {
             StoredEpochEncryptionKeypair { conversation_id, .. } => {
                 Some(conversation_id.clone())
             },
-            MlsPendingMessage { conversation_id, .. } => {
+            InboxMessage { conversation_id, .. } => {
                 Some(conversation_id.clone())
             },
             ||=> None,
@@ -521,7 +512,7 @@ mod tests_impl {
                 StoredEpochEncryptionKeypair { conversation_id, .. } => {
                     Some(conversation_id.clone())
                 },
-                MlsPendingMessage { conversation_id, .. } => {
+                InboxMessage { conversation_id, .. } => {
                     Some(conversation_id.clone())
                 },
                 ||=> None,
@@ -570,7 +561,7 @@ mod tests {
     test_for_entity!(test_persisted_mls_group, PersistedMlsGroup);
     test_for_entity!(test_targeted_message_rx_counter, TargetedMessageRxCounter);
     test_for_entity!(test_transient_message_rx_counter, TransientMessageRxCounter);
-    test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_entity_count: true ignore_update:true ignore_remove:true ignore_find_many:true no_borrowed_key:true);
+    test_for_entity!(test_inbox_message, InboxMessage ignore_update:true);
     test_for_entity!(test_mls_credential, StoredCredential ignore_update:true no_borrowed_key:true);
     test_for_entity!(test_mls_keypackage, StoredKeyPackage no_upsert:true);
     test_for_entity!(test_mls_psk_bundle, StoredPskBundle no_upsert:true);
@@ -631,11 +622,12 @@ pub mod utils {
     use core_crypto_keystore::{
         ancillary::ConversationId,
         entities::{
-            MlsPendingMessage, PersistedMlsGroup, ProteusSession, StoredCredential, StoredCredentialPk,
+            InboxMessage, PersistedMlsGroup, ProteusSession, StoredCredential, StoredCredentialPk,
             StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredHpkePrivateKey, StoredKeyPackage,
-            StoredPskBundle, TargetedMessageRxCounter, TransientMessageRxCounter, X509TrustAnchor,
+            StoredPskBundle, TargetedMessageRxCounter, TransientMessageRxCounter, WaitingFor, X509TrustAnchor,
         },
     };
+    use openmls::prelude::ContentType;
     use rand::{RngExt as _, distr::SampleString};
 
     const MAX_BLOB_SIZE: std::ops::Range<usize> = 1024..8192;
@@ -766,7 +758,10 @@ pub mod utils {
     impl_entity_random_update_ext!(TargetedMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);
     impl_entity_random_update_ext!(TransientMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);
 
-    impl_entity_random_update_ext!(MlsPendingMessage, id_field = conversation_id, blob_fields = [message,]);
+    // The message is part of the primary key, and a duplicate save is a no-op, so there is nothing to update.
+    // The numbers stay within `i64`, which is what SQLite stores, and `waiting_for` is not `Proposal`, which the
+    // schema only permits for commits.
+    impl_entity_random_update_ext!(InboxMessage, id_field = conversation_id, blob_fields = [message id_like:true,], additional_fields = [(content_type: ContentType::Application),(waiting_for: WaitingFor::Epoch),(epoch: u64::from(rand::random::<u32>())),(arrival_sequence: u64::from(rand::random::<u32>())),]);
     impl_entity_random_update_ext!(X509TrustAnchor, id_field = fingerprint, blob_fields = [content,]);
 
     impl EntityRandomExt for core_crypto_keystore::entities::X509IntermediateCert {

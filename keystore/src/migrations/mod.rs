@@ -1,3 +1,4 @@
+pub(crate) mod historical;
 mod meta_migrations;
 
 use refinery::Target;
@@ -5,9 +6,9 @@ use rusqlite::{Connection, functions::FunctionFlags};
 
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey};
 
-refinery::embed_migrations!("src/connection/migrations");
+refinery::embed_migrations!("src/migrations");
 
-const COMPOSITE_SCHEMA: &str = include_str!("../composite-schema.sql");
+const COMPOSITE_SCHEMA: &str = include_str!("composite-schema.sql");
 
 /// The `user_version` pragma; CONST here to guard against typos
 const USER_VERSION: &str = "user_version";
@@ -33,7 +34,7 @@ pub(crate) enum MigrationTarget {
     Composite,
 }
 
-pub(super) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationTarget) -> CryptoKeystoreResult<()> {
+pub(crate) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationTarget) -> CryptoKeystoreResult<()> {
     conn.create_scalar_function("sha256_blob", 1, FunctionFlags::SQLITE_DETERMINISTIC, |ctx| {
         let input_blob = ctx.get::<Vec<u8>>(0)?;
         Ok(crate::sha256(&input_blob))
@@ -179,6 +180,7 @@ fn run_meta_migration(version: i32, conn: &mut rusqlite::Connection) -> CryptoKe
         meta_migrations::v37::VERSION => meta_migrations::v37::meta_migration(&tx)?,
         meta_migrations::v39::VERSION => meta_migrations::v39::meta_migration(&tx)?,
         meta_migrations::v45::VERSION => meta_migrations::v45::meta_migration(&tx)?,
+        meta_migrations::v49::VERSION => meta_migrations::v49::meta_migration(&tx)?,
         _ => {}
     }
 
@@ -189,7 +191,7 @@ fn run_meta_migration(version: i32, conn: &mut rusqlite::Connection) -> CryptoKe
 /// Migrate a database encrypted with a string key to the new raw-bytes [`DatabaseKey`].
 ///
 /// This is intended to be called only once, when migrating from CoreCrypto 5.x to 6.x, before
-/// opening the database via [`super::Database::open`].
+/// opening the database via [`crate::Database::open`].
 pub async fn migrate_db_key_type_to_bytes(
     path: &str,
     old_key: &str,
@@ -197,26 +199,26 @@ pub async fn migrate_db_key_type_to_bytes(
 ) -> CryptoKeystoreResult<()> {
     // On WASM the legacy data lives in an IndexedDB database. This rekeys that legacy store in place,
     // re-encrypting every entity from the old string-derived cipher to the new bytes key. The
-    // subsequent [`super::Database::open`] then copies the data into the unified rusqlite database.
+    // subsequent [`crate::Database::open`] then copies the data into the unified rusqlite database.
     #[cfg(target_os = "unknown")]
     {
-        super::idb_migration::migrate_legacy_idb_key_type_to_bytes(path, old_key, new_key).await
+        crate::connection::idb_migration::migrate_legacy_idb_key_type_to_bytes(path, old_key, new_key).await
     }
 
     // On native platforms we implement the migration directly.
     #[cfg(not(target_os = "unknown"))]
     {
-        use crate::CryptoKeystoreError;
+        use crate::{CryptoKeystoreError, connection};
 
         let mut conn = rusqlite::Connection::open(path)?;
-        let transaction_lock = super::TransactionLock::new(conn.path().unwrap_or_default())?;
+        let transaction_lock = connection::TransactionLock::new(conn.path().unwrap_or_default())?;
         let _guard = transaction_lock.acquire().await?;
 
         conn.pragma_update(None, "key", old_key)?;
 
         // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
         #[cfg(target_os = "ios")]
-        super::ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
+        connection::ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
 
         /// This is the latest schema version our test db dump is compatible with.
         const MAX_SUPPORTED_SCHEMA_VERSION: u8 = 15;
@@ -241,7 +243,7 @@ pub async fn migrate_db_key_type_to_bytes(
         run_migrations(&mut conn, MigrationTarget::Version(MAX_SUPPORTED_SCHEMA_VERSION as u16))?;
 
         // Rekey the database.
-        super::encryption::rekey(&mut conn, new_key)
+        connection::encryption::rekey(&mut conn, new_key)
     }
 }
 
@@ -254,13 +256,11 @@ pub(crate) mod test {
     use x509_cert::der::{DecodePem as _, Encode as _};
 
     use crate::{
-        Sha256Hash,
-        ancillary::ConversationIdRef,
-        connection::{Database, DatabaseKey, migrate_db_key_type_to_bytes, migrations::MigrationTarget},
-        entities::{
-            MlsPendingMessage, StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredPskBundle,
-        },
-        traits::{Entity, EntityGetBorrowed as _, PrimaryKey as _, SearchableEntity as _},
+        DatabaseKey, Sha256Hash,
+        connection::{Database, migrate_db_key_type_to_bytes},
+        entities::{StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredPskBundle},
+        migrations::MigrationTarget,
+        traits::{Entity, EntityGetBorrowed as _},
     };
 
     pub(crate) const DB: &[u8] = include_bytes!(concat!(
@@ -315,6 +315,20 @@ pub(crate) mod test {
             |row| Ok((row.get(0)?, row.get(1)?)),
         )
         .expect("reading back the stored key")
+    }
+
+    /// Every row of `mls_pending_messages` as `(conversation_id, message)`, sorted by message.
+    ///
+    /// Reads the table directly rather than through an entity, so that it keeps working at whichever
+    /// schema version between V31 and V49 a test stops at.
+    fn pending_messages(conn: &rusqlite::Connection) -> Vec<(Vec<u8>, Vec<u8>)> {
+        let mut stmt = conn
+            .prepare("SELECT conversation_id, message FROM mls_pending_messages ORDER BY message")
+            .expect("preparing to read pending messages");
+        stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+            .expect("reading pending messages")
+            .collect::<Result<_, _>>()
+            .expect("reading pending messages")
     }
 
     /// A temporary database path, kept alive by the returned file handle.
@@ -385,6 +399,8 @@ pub(crate) mod test {
             (46, 5473226583050100681),
             (47, 11056727624062448257),
             (48, 15131338238207930367),
+            (49, 1941818560877691063),
+            (50, 16503502327045591689),
         ];
 
         let runner = super::migrations::runner();
@@ -679,82 +695,6 @@ r9IJmL6kDQ==
         });
     }
 
-    /// A pending message which predates V31 is reachable by primary key once V31 has run.
-    ///
-    /// V31 backfills `hash_sha256` in SQL while [`MlsPendingMessage`] computes it in Rust. Those two
-    /// have to agree on both the hash and its storage encoding, or migrated rows become unreachable
-    /// by every primary-key operation: `get`, `delete`, and the transaction cache alike.
-    #[test]
-    fn v31_backfills_primary_keys_which_the_entity_can_use() {
-        const CONVERSATION_ID: &[u8] = b"a conversation predating the migration";
-        const MESSAGE: &[u8] = b"a message buffered before the migration ran";
-
-        let db_file = NamedTempFile::new().unwrap();
-        let path = db_file
-            .path()
-            .to_str()
-            .expect("tmpfile path is representable in unicode");
-        let key = DatabaseKey::generate();
-
-        smol::block_on(async {
-            // write a pending message the way the schema looked before V31
-            {
-                let db = Database::open_at_schema_version(path, &key, MigrationTarget::Version(30))
-                    .await
-                    .unwrap();
-                let conn = db.conn().await;
-                // The pre-V31 table still carries V7's foreign key onto `mls_pending_groups`, so the
-                // parent row has to exist before the message can be inserted here. V31 drops that
-                // constraint; see `v31_migrates_a_pending_message_whose_conversation_is_not_a_pending_group`
-                // for the case which the constraint used to make impossible.
-                conn.execute(
-                    "INSERT INTO mls_pending_groups (id, state, cfg) VALUES (?, ?, ?)",
-                    (CONVERSATION_ID, b"group state", b"custom configuration"),
-                )
-                .expect("inserting the pending group the message refers to");
-                conn.execute(
-                    "INSERT INTO mls_pending_messages (id, message) VALUES (?, ?)",
-                    (CONVERSATION_ID, MESSAGE),
-                )
-                .expect("inserting a pre-migration pending message");
-            }
-
-            // reopening runs V31, which must backfill a primary key the entity agrees with.
-            // Stop there: the V39 meta migration drops the group, whose dummy state can't be
-            // deserialized, and V44 then drops the message along with it.
-            let db = Database::open_at_schema_version(path, &key, MigrationTarget::Version(31))
-                .await
-                .unwrap();
-            let conn = db.conn().await;
-
-            let migrated = MlsPendingMessage::load_all(&conn).expect("loading migrated pending messages");
-            assert_eq!(migrated.len(), 1, "the migration must not lose the pending message");
-            let migrated = migrated.into_iter().next().unwrap();
-            assert_eq!(migrated.conversation_id.bytes(), CONVERSATION_ID);
-            assert_eq!(migrated.message, MESSAGE);
-
-            // spelled out rather than taken from `primary_key()`, so that this pins the derivation
-            // for both the entity and the migration rather than just mirroring one of them
-            let expected_key = Sha256Hash::hash_from_many([
-                (CONVERSATION_ID.len() as u64).to_be_bytes().as_slice(),
-                CONVERSATION_ID,
-                MESSAGE,
-            ]);
-            assert_eq!(
-                migrated.primary_key(),
-                expected_key,
-                "the entity must derive its primary key from the same inputs the migration hashed"
-            );
-
-            assert!(
-                MlsPendingMessage::get(&conn, &expected_key)
-                    .expect("getting the migrated pending message by primary key")
-                    .is_some(),
-                "the primary key V31 wrote must be byte-identical to the one the entity binds when querying"
-            );
-        });
-    }
-
     /// V31 migrates a pending message whose conversation has no `mls_pending_groups` row.
     ///
     /// This is the state V31's backfill would have rejected had it recreated V7's foreign key: an
@@ -790,15 +730,11 @@ r9IJmL6kDQ==
             .await;
             let conn = db.conn().await;
 
-            let migrated = MlsPendingMessage::load_all(&conn).expect("loading migrated pending messages");
             assert_eq!(
-                migrated.len(),
-                1,
+                pending_messages(&conn),
+                [(CONVERSATION_ID.to_vec(), MESSAGE.to_vec())],
                 "V31 must carry an orphan pending message across, not drop it or fail the migration"
             );
-            let migrated = migrated.into_iter().next().unwrap();
-            assert_eq!(migrated.conversation_id.bytes(), CONVERSATION_ID);
-            assert_eq!(migrated.message, MESSAGE);
         });
     }
 
@@ -840,14 +776,12 @@ r9IJmL6kDQ==
             .await;
             let conn = db.conn().await;
 
-            let mut migrated = MlsPendingMessage::find_all_matching(&conn, ConversationIdRef::new(CONVERSATION_ID))
-                .expect("loading migrated pending messages");
-            migrated.sort_by(|a, b| a.message.cmp(&b.message));
-            let messages = migrated.iter().map(|m| m.message.as_slice()).collect::<Vec<_>>();
-            let mut expected = [DISTINCT_MESSAGE, DUPLICATED_MESSAGE];
-            expected.sort();
+            let mut expected =
+                [DISTINCT_MESSAGE, DUPLICATED_MESSAGE].map(|message| (CONVERSATION_ID.to_vec(), message.to_vec()));
+            expected.sort_by(|(_, a), (_, b)| a.cmp(b));
             assert_eq!(
-                messages, expected,
+                pending_messages(&conn),
+                expected,
                 "V31 must keep one copy of the duplicated message and the distinct one, and lose neither"
             );
         });
@@ -1616,5 +1550,258 @@ r9IJmL6kDQ==
                 "every key package's leaf keypair goes with it, and nothing else does"
             );
         });
+    }
+
+    /// The V49 meta migration moves buffered messages into the inbox, and V50 drops the tables they came from.
+    ///
+    /// The old tables don't record why a message waits, so V49 works it out from each message's header and the state
+    /// of its group. Only the plaintext headers are parsed, so these tests build messages by hand instead of needing a
+    /// crypto provider.
+    mod v49_inbox {
+        use openmls::prelude::ContentType;
+        use rstest::rstest;
+
+        use super::{seed_then_migrate, temp_db};
+        use crate::{
+            Sha256Hash,
+            entities::{InboxMessage, WaitingFor},
+            migrations::meta_migrations::v49::tests::{
+                EMPTY_COMMIT, private_message, private_message_with_ciphertext, public_message, targeted_message,
+                transient_message,
+            },
+            traits::Entity as _,
+        };
+
+        const CONVERSATION_ID: &[u8] = b"a conversation which buffered a message before V49";
+        const CREDENTIAL_ID: &[u8] = b"the credential the conversation was created with";
+        const CREDENTIAL_TYPE: u16 = 1;
+        const TARGETED_WIRE_FORMAT: u16 = 0xF001;
+
+        /// Which of the pre-V49 tables a seeded message goes into.
+        #[derive(Debug, Clone, Copy)]
+        enum Table {
+            PendingMessages,
+            BufferedCommits,
+        }
+
+        /// Seed the conversation [`CONVERSATION_ID`] at `epoch`, and the credential it refers to.
+        fn seed_conversation(conn: &rusqlite::Connection, epoch: u64, is_pending: bool) {
+            conn.execute(
+                "INSERT INTO mls_credentials
+                    (public_key_sha256, credential_type, public_key, session_id, credential, ciphersuite, private_key)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    CREDENTIAL_ID,
+                    CREDENTIAL_TYPE,
+                    b"public key".as_slice(),
+                    b"session id".as_slice(),
+                    b"credential".as_slice(),
+                    1,
+                    b"private key".as_slice(),
+                ),
+            )
+            .expect("inserting the credential the conversation refers to");
+            conn.execute(
+                "INSERT INTO mls_groups
+                    (id, state, epoch, ciphersuite, credential_id, credential_type, own_leaf_index, is_pending)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    CONVERSATION_ID,
+                    b"group state".as_slice(),
+                    epoch,
+                    1,
+                    CREDENTIAL_ID,
+                    CREDENTIAL_TYPE,
+                    0,
+                    is_pending,
+                ),
+            )
+            .expect("inserting the conversation");
+        }
+
+        /// Seed `message` for [`CONVERSATION_ID`] into `table`, as the pre-V49 code wrote it.
+        fn seed_message(conn: &rusqlite::Connection, table: Table, message: Option<&[u8]>) {
+            match table {
+                Table::PendingMessages => {
+                    let message = message.expect("pending messages are never null");
+                    conn.execute(
+                        "INSERT INTO mls_pending_messages (hash_sha256, conversation_id, message) VALUES (?, ?, ?)",
+                        (
+                            Sha256Hash::hash_from_many([CONVERSATION_ID, message]),
+                            CONVERSATION_ID,
+                            message,
+                        ),
+                    )
+                    .expect("inserting a pending message");
+                }
+                Table::BufferedCommits => {
+                    conn.execute(
+                        "INSERT INTO mls_buffered_commits (conversation_id, commit_data) VALUES (?, ?)",
+                        (CONVERSATION_ID, message),
+                    )
+                    .expect("inserting a buffered commit");
+                }
+            }
+        }
+
+        /// Every inbox message, sorted by arrival.
+        fn inbox_messages(conn: &rusqlite::Connection) -> Vec<InboxMessage> {
+            let mut inbox_messages = InboxMessage::load_all(conn).expect("loading inbox messages");
+            inbox_messages.sort_by_key(|inbox_message| inbox_message.arrival_sequence);
+            inbox_messages
+        }
+
+        /// V49 works out why each buffered message waits, or drops a message which could never be replayed.
+        ///
+        /// The conversation is at epoch 3 in every case.
+        ///
+        /// - A pending conversation's messages all wait for the join, whatever their epoch or type.
+        /// - An established conversation's pending messages wait for their epoch if it is still ahead, and are stale
+        ///   otherwise.
+        /// - An established conversation's buffered commit waits for a proposal if it belongs to the current epoch, and
+        ///   could never apply otherwise.
+        /// - A message which doesn't parse can't be replayed at all.
+        #[rstest]
+        #[case::future_epoch(false, Table::PendingMessages, private_message(1, 4), Some((WaitingFor::Epoch, ContentType::Application, 4)))]
+        #[case::future_epoch_transient(false, Table::PendingMessages, transient_message(4), Some((WaitingFor::Epoch, ContentType::Application, 4)))]
+        #[case::future_epoch_targeted(false, Table::PendingMessages, targeted_message(TARGETED_WIRE_FORMAT, 4), Some((WaitingFor::Epoch, ContentType::Application, 4)))]
+        #[case::missing_proposal(false, Table::BufferedCommits, public_message(3, EMPTY_COMMIT, true), Some((WaitingFor::Proposal, ContentType::Commit, 3)))]
+        #[case::pending_join_message(true, Table::PendingMessages, private_message(1, 1), Some((WaitingFor::PendingJoin, ContentType::Application, 1)))]
+        #[case::pending_join_commit(true, Table::BufferedCommits, public_message(5, EMPTY_COMMIT, true), Some((WaitingFor::PendingJoin, ContentType::Commit, 5)))]
+        #[case::pending_message_at_current_epoch(false, Table::PendingMessages, private_message(1, 3), None)]
+        #[case::pending_message_at_past_epoch(false, Table::PendingMessages, private_message(1, 2), None)]
+        #[case::buffered_commit_at_past_epoch(
+            false,
+            Table::BufferedCommits,
+            public_message(2, EMPTY_COMMIT, true),
+            None
+        )]
+        #[case::buffered_commit_at_future_epoch(
+            false,
+            Table::BufferedCommits,
+            public_message(4, EMPTY_COMMIT, true),
+            None
+        )]
+        #[case::buffered_non_commit(false, Table::BufferedCommits, private_message(1, 3), None)]
+        #[case::unparseable_pending_message(false, Table::PendingMessages, b"not a message".to_vec(), None)]
+        #[case::unparseable_buffered_commit(false, Table::BufferedCommits, b"not a commit".to_vec(), None)]
+        fn v49_classifies_or_drops_each_buffered_message(
+            #[case] is_pending: bool,
+            #[case] table: Table,
+            #[case] message: Vec<u8>,
+            #[case] expected: Option<(WaitingFor, ContentType, u64)>,
+        ) {
+            let (db_file, key) = temp_db();
+            let path = db_file.path().to_str().unwrap();
+
+            smol::block_on(async {
+                let db = seed_then_migrate(path, &key, 48, |conn| {
+                    seed_conversation(conn, 3, is_pending);
+                    seed_message(conn, table, Some(&message));
+                })
+                .await;
+                let conn = db.conn().await;
+
+                let migrated = inbox_messages(&conn)
+                    .into_iter()
+                    .map(|inbox_message| {
+                        assert_eq!(inbox_message.conversation_id.bytes(), CONVERSATION_ID);
+                        assert_eq!(inbox_message.message, message, "the message bytes must survive exactly");
+                        (
+                            inbox_message.waiting_for,
+                            inbox_message.content_type,
+                            inbox_message.epoch,
+                        )
+                    })
+                    .collect::<Vec<_>>();
+                assert_eq!(migrated, Vec::from_iter(expected));
+            });
+        }
+
+        /// V49 drops a buffered commit with no data rather than failing.
+        ///
+        /// `mls_buffered_commits.commit_data` was nullable, though nothing should have written a null into it. There
+        /// is nothing to replay in such a row.
+        #[test]
+        fn v49_drops_a_buffered_commit_without_data() {
+            let (db_file, key) = temp_db();
+            let path = db_file.path().to_str().unwrap();
+
+            smol::block_on(async {
+                let db = seed_then_migrate(path, &key, 48, |conn| {
+                    seed_conversation(conn, 3, false);
+                    seed_message(conn, Table::BufferedCommits, None);
+                })
+                .await;
+                let conn = db.conn().await;
+
+                assert!(inbox_messages(&conn).is_empty());
+            });
+        }
+
+        /// V49 preserves the order in which buffered messages arrived.
+        ///
+        /// Pending messages keep the order the database held them in, and the buffered commit comes after all of
+        /// them. On replay the commit sorts last regardless, being a commit, but the inbox's own order must not
+        /// contradict that.
+        #[test]
+        fn v49_preserves_arrival_order() {
+            let pending_messages = [b"first".as_slice(), b"second", b"third"]
+                .map(|ciphertext| private_message_with_ciphertext(1, 4, ciphertext));
+            let commit = public_message(3, EMPTY_COMMIT, true);
+
+            let (db_file, key) = temp_db();
+            let path = db_file.path().to_str().unwrap();
+
+            smol::block_on(async {
+                let db = seed_then_migrate(path, &key, 48, |conn| {
+                    seed_conversation(conn, 3, false);
+                    // seed the commit first, to show that the order comes from the tables, not from insertion
+                    seed_message(conn, Table::BufferedCommits, Some(&commit));
+                    for message in &pending_messages {
+                        seed_message(conn, Table::PendingMessages, Some(message));
+                    }
+                })
+                .await;
+                let conn = db.conn().await;
+
+                let migrated = inbox_messages(&conn)
+                    .into_iter()
+                    .map(|inbox_message| inbox_message.message)
+                    .collect::<Vec<_>>();
+                let mut expected = pending_messages.to_vec();
+                expected.push(commit);
+                assert_eq!(migrated, expected);
+            });
+        }
+
+        /// V49 keeps one copy of a message buffered in both tables.
+        ///
+        /// A pending conversation can hold the same commit as a pending message and as its buffered commit. Both
+        /// copies wait for the join, and the inbox holds each message once per conversation.
+        #[test]
+        fn v49_keeps_one_copy_of_a_message_in_both_tables() {
+            let commit = public_message(3, EMPTY_COMMIT, true);
+
+            let (db_file, key) = temp_db();
+            let path = db_file.path().to_str().unwrap();
+
+            smol::block_on(async {
+                let db = seed_then_migrate(path, &key, 48, |conn| {
+                    seed_conversation(conn, 3, true);
+                    seed_message(conn, Table::PendingMessages, Some(&commit));
+                    seed_message(conn, Table::BufferedCommits, Some(&commit));
+                })
+                .await;
+                let conn = db.conn().await;
+
+                let migrated = inbox_messages(&conn);
+                let [inbox_message] = migrated.as_slice() else {
+                    panic!("expected exactly one inbox message, found {}", migrated.len());
+                };
+                assert_eq!(inbox_message.message, commit);
+                assert_eq!(inbox_message.waiting_for, WaitingFor::PendingJoin);
+            });
+        }
     }
 }

@@ -5,7 +5,10 @@ use idb::{
 
 use super::DB_VERSION_3;
 use crate::{
-    CryptoKeystoreResult, connection::idb_migration::legacy::traits::EntityBase as _, entities::StoredBufferedCommit,
+    CryptoKeystoreResult,
+    connection::idb_migration::legacy::{
+        entities::mls::stored_buffered_commit::LegacyStoredBufferedCommit, traits::EntityBase as _,
+    },
 };
 
 /// Open IDB once with the new builder and close it, this will add the new object store.
@@ -16,11 +19,11 @@ pub(super) async fn migrate(name: &str) -> CryptoKeystoreResult<u32> {
     Ok(version)
 }
 
-/// Add a new object store for the StoredBufferedCommit struct.
+/// Add a new object store for the LegacyStoredBufferedCommit struct.
 pub(super) fn get_builder(name: &str) -> DatabaseBuilder {
     let previous_builder = super::v02::get_builder(name);
     previous_builder.version(DB_VERSION_3).add_object_store(
-        ObjectStoreBuilder::new(StoredBufferedCommit::TABLE_NAME)
+        ObjectStoreBuilder::new(LegacyStoredBufferedCommit::TABLE_NAME)
             .auto_increment(false)
             .add_index(
                 IndexBuilder::new("conversation_id".into(), KeyPath::new_single("conversation_id")).unique(true),

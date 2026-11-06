@@ -3,7 +3,7 @@ use const_format::formatcp;
 use crate::{
     CryptoKeystoreResult,
     entities::StoredCredential,
-    migrations::{LegacyPersistedMlsGroup, V6Credential, make_ciphersuite_for_signature_scheme},
+    migrations::historical::{LegacyPersistedMlsGroup, V6Credential, make_ciphersuite_for_signature_scheme},
     traits::Entity as _,
 };
 

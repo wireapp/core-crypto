@@ -15,7 +15,7 @@ use super::traits::{
 };
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey, Transaction,
-    migrations::LegacyPersistedMlsGroup,
+    migrations::historical::LegacyPersistedMlsGroup,
     traits::{BorrowPrimaryKey, FetchFromDatabase},
 };
 
