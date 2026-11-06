@@ -151,7 +151,7 @@ pub enum DecryptionOutcome {
 
 impl DecryptionOutcome {
     /// `true` when this outcome is a decrypted message; `false` otherwise
-    pub(crate) fn savepoint_outcome_check<E>(outcome: &Result<Self, E>) -> bool {
-        matches!(outcome, Ok(Self::Decrypted(_)))
+    pub(crate) fn savepoint_outcome_check<E>(outcome: &Result<Option<Self>, E>) -> bool {
+        matches!(outcome, Ok(Some(Self::Decrypted(_))))
     }
 }

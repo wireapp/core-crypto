@@ -1,7 +1,4 @@
-use core_crypto_keystore::{
-    entities::StoredBufferedCommit,
-    traits::{EntityDatabaseMutation as _, EntityDeleteBorrowed, FetchFromDatabase as _},
-};
+use core_crypto_keystore::entities::{InboxMessage, WaitingFor};
 use log::info;
 use openmls::framing::MlsMessageIn;
 use tls_codec::Deserialize as _;
@@ -10,35 +7,28 @@ use super::{ConversationMut, RecursionPolicy, Result};
 use crate::{DecryptionOutcome, KeystoreError, RecursiveError, TlsCodecError};
 
 impl ConversationMut {
-    /// Cache the bytes of a buffered commit in the backend.
+    /// Take the first pending commit (by arrival sequence) from the inbox.
     ///
-    /// By storing the raw commit bytes and doing deserialization/decryption from scratch, we preserve all
-    /// security guarantees. When we do restore, it's as though the commit had simply been received later.
-    pub(super) fn buffer_commit(&self, commit: impl AsRef<[u8]>) -> Result<()> {
-        info!(group_id = self.id().to_owned(); "buffering commit");
-
-        let buffered_commit = StoredBufferedCommit::new(self.id().to_bytes(), commit.as_ref().to_owned());
-
-        let context_inner = self.tx_context.inner().map_err(RecursiveError::context(
-            "getting context inner for transaction for buffering commit",
-        ))?;
-        buffered_commit
-            .save(context_inner.transaction())
-            .map_err(KeystoreError::wrap("buffering commit"))?;
-
-        Ok(())
-    }
-
-    /// Retrieve the bytes of a pending commit.
-    pub(super) async fn retrieve_buffered_commit(&self) -> Result<Option<Vec<u8>>> {
-        let database = self.database()?;
+    /// As a side-effect, clears all pending commits for this conversation.
+    pub(super) async fn take_buffered_commit(&self) -> Result<Option<InboxMessage>> {
         info!(group_id = self.id().to_owned(); "attempting to retrieve buffered commit");
-        database
-            .get_borrowed::<StoredBufferedCommit>(self.id().as_ref())
-            .await
-            .map(|option| option.map(|commit| commit.commit_data().to_owned()))
-            .map_err(KeystoreError::wrap("attempting to retrieve buffered commit"))
-            .map_err(Into::into)
+        let epoch = self.inner.epoch().await;
+
+        let tx_context_inner = self
+            .tx_context
+            .inner()
+            .map_err(RecursiveError::context("getting tx context to take buffered commits"))?;
+        let tx = tx_context_inner.transaction();
+
+        // NOTE: removes all buffered commits from the DB, but discards the rest if any exist.
+        // This is in line with the current implementation which allows only a single buffered commit per conversation,
+        // but in the future we'd prefer to actually take only the first buffered commit.
+        let buffered_commit = InboxMessage::take(tx, self.id().keystore(), WaitingFor::Proposal, epoch.into())
+            .map_err(KeystoreError::wrap("taking inbox messages from the db"))?
+            .into_iter()
+            .next();
+
+        Ok(buffered_commit)
     }
 
     /// Try to apply a buffered commit.
@@ -58,17 +48,6 @@ impl ConversationMut {
             .map_err(TlsCodecError::deserialize("mls message in"))?;
 
         Box::pin(self.decrypt_mls_message(message, recursion_policy)).await
-    }
-
-    /// Remove the buffered commit for this conversation; it has been applied.
-    pub(super) fn clear_buffered_commit(&self) -> Result<bool> {
-        info!(group_id = self.id().to_owned(); "attempting to delete buffered commit");
-        let context_inner = self.tx_context.inner().map_err(RecursiveError::context(
-            "getting context inner for transaction for clearing buffered commit",
-        ))?;
-        StoredBufferedCommit::delete_borrowed(context_inner.transaction(), self.id().as_ref())
-            .map_err(KeystoreError::wrap("attempting to clear buffered commit"))
-            .map_err(Into::into)
     }
 }
 

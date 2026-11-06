@@ -1,3 +1,4 @@
+use core_crypto_keystore::entities::WaitingFor;
 use log::info;
 use obfuscate::Obfuscated;
 use openmls::group::StagedCommit;
@@ -51,7 +52,9 @@ pub(in crate::mls::conversation::mutable::decrypt) async fn handle(
     // can't use `.then` because async
     let mut buffered_messages = None;
     if is_active && recursion_policy == RecursionPolicy::AsNecessary {
-        let restored_messages = conversation.restore_pending_messages().await?;
+        let restored_messages = conversation
+            .replay_from_inbox(WaitingFor::Epoch, conversation.epoch().await.into())
+            .await?;
 
         // ensure that if any buffered message evicts us from the group, we propagate that info
         for message in &restored_messages {

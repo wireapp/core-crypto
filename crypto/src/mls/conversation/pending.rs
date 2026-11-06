@@ -124,10 +124,10 @@ impl PendingConversation {
 
         // If the confirmation tag of the pending group and this incoming message are identical, we can merge the
         // pending group.
-        if let ParsedMessage::Mls(mls_message) = &incoming.parsed {
-            if self.incoming_message_is_own_join_commit(mls_message).await? {
-                return self.merge_and_restore_messages().await;
-            }
+        if let ParsedMessage::Mls(mls_message) = &incoming.parsed
+            && self.incoming_message_is_own_join_commit(mls_message).await?
+        {
+            return self.merge_and_restore_messages().await;
         }
 
         let context_inner = self
@@ -284,12 +284,12 @@ impl PendingConversation {
             // If the group already exists, it means the external commit is about rejoining the group.
             // This is most of the time a last resort measure (for example when a commit is dropped,
             // and you go out of sync), so there's no point in decrypting buffered messages
-            conversation.clear_pending_messages();
+            conversation.clear_pending_messages()?;
             None
         } else {
             Some(
                 conversation
-                    .restore_pending_messages()
+                    .replay_from_inbox(WaitingFor::PendingJoin, None)
                     .await
                     .map_err(RecursiveError::context("restoring pending messages"))?,
             )

@@ -73,8 +73,6 @@ impl ParsedMessage {
 /// A pair: an incoming message's parsed container, and also the bytes from which it was parsed.
 pub(in crate::mls::conversation) struct IncomingMessage<'a> {
     pub(in crate::mls::conversation) parsed: ParsedMessage,
-    // We can't really take advantage of this until we have `apply_one`: WPB-29257
-    #[expect(unused)]
     pub(super) bytes: &'a [u8],
 }
 
