@@ -75,7 +75,7 @@ impl ConversationMut {
             Ok(DecryptionOutcome::Deferred(reason)) => {
                 // re-parsing is expensive relative to cloning the previous parse, but it's also much less common.
                 // It's the lesser pain.
-                let incoming_message = IncomingMessage::parse(message.as_ref()).expect("parsing succeeded previously");
+                let incoming_message = IncomingMessage::parse(message.as_ref())?;
                 self.send_to_inbox(&incoming_message, &reason)?;
                 let err = match reason {
                     DeferralReason::FutureEpoch { epoch } => Error::BufferedFutureMessage { message_epoch: epoch },
