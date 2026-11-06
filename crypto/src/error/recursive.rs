@@ -87,6 +87,17 @@ macro_rules! recursive_error {
                 }
             }
         )+
+
+        impl crate::error::infrastructure::Infrastructural for RecursiveError {
+            fn is_infrastructure(&self) -> bool {
+                match self {
+                    $(
+                        $( #[cfg($meta)] )*
+                        Self::$variant { source, .. } => crate::error::infrastructure::Infrastructural::is_infrastructure(&**source),
+                    )+
+                }
+            }
+        }
     };
 }
 
