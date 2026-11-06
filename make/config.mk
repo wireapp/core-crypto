@@ -40,6 +40,22 @@ endif
 # Make platform-specific LLVM toolchain available to Android builds.
 export PATH := $(PATH):$(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/$(PLATFORM_DIR)/bin
 
+# The C toolchain for Android build scripts, from the PATH above. Gradle builds get theirs from the
+# uniffi plugin, so this isn't in `.cargo/config.toml`, where it would override the plugin's.
+# RANLIB is needed since https://github.com/alexcrichton/openssl-src-rs/pull/180.
+export CC_armv7_linux_androideabi := armv7a-linux-androideabi24-clang
+export CXX_armv7_linux_androideabi := armv7a-linux-androideabi24-clang++
+export AR_armv7_linux_androideabi := llvm-ar
+export RANLIB_armv7_linux_androideabi := llvm-ranlib
+export CC_aarch64_linux_android := aarch64-linux-android24-clang
+export CXX_aarch64_linux_android := aarch64-linux-android24-clang++
+export AR_aarch64_linux_android := llvm-ar
+export RANLIB_aarch64_linux_android := llvm-ranlib
+export CC_x86_64_linux_android := x86_64-linux-android24-clang
+export CXX_x86_64_linux_android := x86_64-linux-android24-clang++
+export AR_x86_64_linux_android := llvm-ar
+export RANLIB_x86_64_linux_android := llvm-ranlib
+
 # Directory we store timestamps in
 STAMPS := .stamps
 

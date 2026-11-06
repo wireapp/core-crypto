@@ -14,15 +14,18 @@ on:
         type: string
   workflow_dispatch:
 
-env:
-  RELEASE: 1
-
 jobs:
   test-jvm:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+        include:
+          # The Rust targets the uniffi plugin builds for debug: Android for the host's
+          # architecture, and on macOS the Apple targets.
+          - runs-on: ubuntu-latest
+            rust-targets: x86_64-linux-android,aarch64-linux-android
+          - runs-on: [self-hosted, core-crypto]
+            rust-targets: aarch64-linux-android,aarch64-apple-ios,aarch64-apple-ios-sim
+    runs-on: ${{ matrix.runs-on }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -39,22 +42,47 @@ jobs:
         with:
           cache-provider: basic
 
-      - name: download ffi library
-        uses: ./.github/actions/make/ffi-library
+      # Gradle only includes the KMP module with `ANDROID_HOME` set.
+      - name: setup android sdk
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
         with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
+          # Don't download unnecessary packages.
+          packages: ''
 
-      - name: download platform jvm library
-        uses: ./.github/actions/make/jvm
+      - name: install ndk and set up environment
+        run: |
+          ndk_version=$(cat crypto-ffi/bindings/android/ndk.version)
+          echo "y" | sdkmanager --install "ndk;$ndk_version"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$ndk_version" >> "$GITHUB_ENV"
+
+      - name: setup Xcode
+        if: runner.os == 'macOS'
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
+          xcode-version: '26.6.0'
 
-      - name: build and test kmp package
+      # The uniffi plugin builds the Rust libraries during the Gradle build. Empty `rustflags`, as
+      # `RUSTFLAGS` would replace the Android flags in `.cargo/config.toml`.
+      - name: set up rust
+        uses: ./.github/actions/setup-and-cache-rust
+        with:
+          target: ${{ matrix.rust-targets }}
+          rustflags: ""
+          cache-key-prefix: kmp
+
+      # The keys name the OS: each runner builds and tests different targets.
+      - name: build kmp package
         uses: ./.github/actions/make
         with:
-          key: kmp-jvm-test
+          key: kmp-${{ runner.os }}
+          make-rule: kmp
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
+
+      - name: test kmp package
+        uses: ./.github/actions/make
+        with:
+          key: kmp-jvm-test-${{ runner.os }}
           make-rule: kmp-jvm-test
           always-run: ${{ github.event_name == 'workflow_dispatch' || github.ref_name == 'main' }}
           gh-token: ${{ secrets.GITHUB_TOKEN }}

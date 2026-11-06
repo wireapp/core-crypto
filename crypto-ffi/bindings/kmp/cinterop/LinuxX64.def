@@ -1,2 +1,0 @@
-linkerOpts.linux_x64 = -lm -lc
-staticLibraries = libcore_crypto_ffi.a

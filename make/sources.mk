@@ -38,7 +38,8 @@ RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(RUST_RS_FILES) $(K
 WORKSPACE_RS_FILES := $(shell fd --type f --extension rs | LC_ALL=C sort)
 WORKSPACE_RUST_SOURCES := $(WORKSPACE_CARGO_FILES) $(CRATE_MANIFESTS) $(WORKSPACE_RS_FILES) $(KEYSTORE_SQL_FILES)
 
-# Uniffi binding configs; `--config` files are merged over each crate's own `uniffi.toml`
+# Uniffi binding configs. uniffi-bindgen finds the crate's own `uniffi.toml` through cargo metadata. A `--config` file
+# is a global config, whose `[crates.<lib name>]` tables are merged over the crate's own `uniffi.toml`.
 UNIFFI_TOML := crypto-ffi/uniffi.toml
 UNIFFI_ANDROID_TOML := crypto-ffi/uniffi-android.toml
 

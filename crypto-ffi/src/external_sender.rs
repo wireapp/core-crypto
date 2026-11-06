@@ -20,8 +20,8 @@ impl ExternalSender {
     ///
     /// This expects a raw json serialized JWK of an Ed25519 key, or of an ECDSA key on P-256, P-384 or P-521.
     #[uniffi::constructor(name = "parse_jwk")]
-    pub fn parse_jwk(jwk: &[u8]) -> CoreCryptoResult<Self> {
-        core_crypto::ExternalSender::parse_jwk(jwk)
+    pub fn parse_jwk(jwk: Vec<u8>) -> CoreCryptoResult<Self> {
+        core_crypto::ExternalSender::parse_jwk(&jwk)
             .map(Into::into)
             .map_err(Into::into)
     }
@@ -32,8 +32,8 @@ impl ExternalSender {
     /// raw.
     // TODO: remove at some point when the backend API is not used anymore. Tracking issue: WPB-9614
     #[uniffi::constructor(name = "parse_public_key")]
-    pub fn parse_public_key(key: &[u8], signature_scheme: SignatureScheme) -> CoreCryptoResult<ExternalSender> {
-        core_crypto::ExternalSender::parse_public_key(key, signature_scheme.into())
+    pub fn parse_public_key(key: Vec<u8>, signature_scheme: SignatureScheme) -> CoreCryptoResult<ExternalSender> {
+        core_crypto::ExternalSender::parse_public_key(&key, signature_scheme.into())
             .map(Into::into)
             .map_err(Into::into)
     }
@@ -43,8 +43,8 @@ impl ExternalSender {
     /// This first attempts to parse this as a JWK per `parse_jwk`,
     /// and falls back to `parse_public_key` if the former method fails.
     #[uniffi::constructor(name = "parse")]
-    pub fn external_sender_parse(key: &[u8], signature_scheme: SignatureScheme) -> CoreCryptoResult<ExternalSender> {
-        core_crypto::ExternalSender::parse(key, signature_scheme.into())
+    pub fn external_sender_parse(key: Vec<u8>, signature_scheme: SignatureScheme) -> CoreCryptoResult<ExternalSender> {
+        core_crypto::ExternalSender::parse(&key, signature_scheme.into())
             .map(Into::into)
             .map_err(Into::into)
     }
