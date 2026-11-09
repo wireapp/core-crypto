@@ -774,8 +774,8 @@ dependencies = [
 
 [[package]]
 name = "certval"
-version = "0.1.4"
-source = "git+https://github.com/carl-wallace/rust-pki.git?rev=b6f91a2bd01ebd1f6ef313d25fbca61b537ae476#b6f91a2bd01ebd1f6ef313d25fbca61b537ae476"
+version = "0.2.0-rc.2"
+source = "git+https://github.com/carl-wallace/rust-pki.git?rev=763c69799165b4b757fd29d39eca3ccbe88e1bdf#763c69799165b4b757fd29d39eca3ccbe88e1bdf"
 dependencies = [
  "base64ct",
  "cfg-if",
@@ -787,7 +787,6 @@ dependencies = [
  "ecdsa",
  "ed25519-dalek 3.0.0",
  "flagset",
- "hex-literal",
  "log",
  "p256",
  "p384",
@@ -799,10 +798,11 @@ dependencies = [
  "sha1 0.11.0",
  "sha2 0.11.1",
  "signature 3.0.0",
+ "spin",
  "spki 0.8.1",
  "subtle-encoding",
  "x509-cert",
- "x509-ocsp",
+ "x509-ocsp 0.3.0-rc.0",
 ]
 
 [[package]]
@@ -962,9 +962,9 @@ checksum = "0c9ea0ac24bc397ab3c98583a3c9ba74fa56b09a4449bbe172b9b1ddb016027a"
 
 [[package]]
 name = "cms"
-version = "0.3.0-pre.2"
+version = "0.3.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "986e7713348fbe5322df18082d73a0ad53a2946dbb7a02452cf3622b83b91e7c"
+checksum = "6e99ff55bfffd019bf15e3f0d5edef2ca1e3af5ade276ed100e3c0c3455050c2"
 dependencies = [
  "const-oid 0.10.2",
  "der 0.8.2",
@@ -3967,7 +3967,7 @@ checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
 [[package]]
 name = "pkiprocmacros"
 version = "0.1.2"
-source = "git+https://github.com/carl-wallace/rust-pki.git?rev=b6f91a2bd01ebd1f6ef313d25fbca61b537ae476#b6f91a2bd01ebd1f6ef313d25fbca61b537ae476"
+source = "git+https://github.com/carl-wallace/rust-pki.git?rev=763c69799165b4b757fd29d39eca3ccbe88e1bdf#763c69799165b4b757fd29d39eca3ccbe88e1bdf"
 dependencies = [
  "quote",
  "syn 2.0.119",
@@ -5266,6 +5266,12 @@ dependencies = [
  "libc",
  "windows-sys 0.61.2",
 ]
+
+[[package]]
+name = "spin"
+version = "0.9.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3763264f6b73151db08c50ff20d7d8a0b8796e021cdea7ceedad07b80155fa0e"
 
 [[package]]
 name = "spinoff"
@@ -7120,7 +7126,7 @@ dependencies = [
  "uuid",
  "web-time",
  "x509-cert",
- "x509-ocsp",
+ "x509-ocsp 0.3.0-pre",
  "zeroize",
 ]
 
@@ -7212,6 +7218,18 @@ source = "git+https://github.com/RustCrypto/formats.git#f17419b70c3631cba5aa960d
 dependencies = [
  "const-oid 0.10.2",
  "der 0.8.2",
+ "spki 0.8.1",
+ "x509-cert",
+]
+
+[[package]]
+name = "x509-ocsp"
+version = "0.3.0-rc.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24e12c9a7f47a2a518e34d822c083d6bc21736d58d3425707244e046923efb79"
+dependencies = [
+ "const-oid 0.10.2",
+ "der 0.8.3",
  "spki 0.8.1",
  "x509-cert",
 ]

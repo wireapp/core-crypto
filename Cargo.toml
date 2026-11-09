@@ -89,7 +89,7 @@ uuid = "1.23"
 x509-cert = "0.3"
 zeroize = "1.8"
 
-certval = { git = "https://github.com/carl-wallace/rust-pki.git", rev = "b6f91a2bd01ebd1f6ef313d25fbca61b537ae476", package = "certval", default-features = false, features = [
+certval = { git = "https://github.com/carl-wallace/rust-pki.git", rev = "763c69799165b4b757fd29d39eca3ccbe88e1bdf", package = "certval", default-features = false, features = [
   "eddsa",
   "revocation",
 ] }
