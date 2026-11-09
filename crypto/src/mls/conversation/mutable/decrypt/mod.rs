@@ -76,7 +76,13 @@ impl ConversationMut {
                 // re-parsing is expensive relative to cloning the previous parse, but it's also much less common.
                 // It's the lesser pain.
                 let incoming_message = IncomingMessage::parse(message.as_ref())?;
-                self.send_to_inbox(&incoming_message, &reason)?;
+                self.send_to_inbox(
+                    incoming_message.parsed.content_type()?,
+                    incoming_message.parsed.epoch()?,
+                    incoming_message.arrival_sequence,
+                    message.as_ref().to_owned(),
+                    &reason,
+                )?;
                 let err = match reason {
                     DeferralReason::FutureEpoch { epoch } => Error::BufferedFutureMessage { message_epoch: epoch },
                     DeferralReason::MissingProposal => Error::BufferedCommit,

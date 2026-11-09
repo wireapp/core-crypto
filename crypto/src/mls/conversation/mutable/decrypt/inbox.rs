@@ -5,6 +5,7 @@ use core_crypto_keystore::{
     traits::{DeletableBySearchKey, EntityDatabaseMutation as _},
 };
 use log::{info, warn};
+use openmls::prelude::ContentType;
 
 use super::{Error, IncomingMessage, RecursionPolicy, Result};
 use crate::{
@@ -15,29 +16,26 @@ use crate::{
 
 impl ConversationMut {
     /// Send an incoming message to the inbox for processing later, once its deferral reason is satisfied.
-    pub(super) fn send_to_inbox(&self, message: &IncomingMessage, reason: &DeferralReason) -> Result<()> {
-        let context_inner = self.tx_context.inner().map_err(RecursiveError::context(
-            "getting transaction inner to get arrival sequence",
-        ))?;
-        let tx = context_inner.transaction();
-        self.send_to_inbox_with_arrival_sequence(message, reason, tx.inbox_message_next_arrival_sequence())
-    }
-
-    /// Send an incoming message to the inbox for processing later, once its deferral reason is satisfied.
     ///
-    /// Here the arrival sequence is manually specified; this is mainly intended for messages which
-    /// were re-deferred after an initial deferral failed to process them.
-    fn send_to_inbox_with_arrival_sequence(
+    /// ## Parameters
+    ///
+    /// - `content_type`: extract from the parsed message with `message.parsed.content_type()?`
+    /// - `epoch`: extract from the parsed message with `message.parsed.epoch()?`
+    /// - `arrival_sequence`: extract from the message with `message.arrival_sequence`
+    /// - `serialized_message`: the TLS serialization of the message
+    /// - `reason`: why this message must be deferred for processing in the future.
+    pub(super) fn send_to_inbox(
         &self,
-        message: &IncomingMessage,
+        content_type: ContentType,
+        epoch: u64,
+        arrival_sequence: Option<u64>,
+        serialized_message: Vec<u8>,
         reason: &DeferralReason,
-        arrival_sequence: u64,
     ) -> Result<()> {
         let waiting_for = match reason {
             DeferralReason::FutureEpoch { .. } => WaitingFor::Epoch,
             DeferralReason::MissingProposal => WaitingFor::Proposal,
         };
-        let epoch = message.parsed.epoch()?;
 
         // sanity check
         if let DeferralReason::FutureEpoch { epoch: reason_epoch } = reason {
@@ -53,11 +51,12 @@ impl ConversationMut {
             "getting transaction inner to save message to inbox",
         ))?;
         let tx = context_inner.transaction();
+        let arrival_sequence = arrival_sequence.unwrap_or_else(|| tx.inbox_message_next_arrival_sequence());
 
         let inbox_message = InboxMessage {
-            content_type: message.parsed.content_type()?,
             conversation_id: self.id().into(),
-            message: message.bytes.to_owned(),
+            message: serialized_message,
+            content_type,
             epoch,
             waiting_for,
             arrival_sequence,
@@ -107,17 +106,24 @@ impl ConversationMut {
         let mut decrypted_messages = Vec::with_capacity(pending_messages.len());
         for inbox_message in pending_messages {
             let incoming_message = match IncomingMessage::parse(&inbox_message.message) {
-                Ok(incoming) => incoming,
+                Ok(mut incoming) => {
+                    incoming.arrival_sequence = Some(inbox_message.arrival_sequence);
+                    incoming
+                }
                 Err(err) => {
                     warn!(err:err, group_id = self.id().to_owned(), epoch; "failed to parse buffered message while taking from inbox; dropping");
                     continue;
                 }
             };
 
+            let content_type = incoming_message.parsed.content_type()?;
+            let epoch = incoming_message.parsed.epoch()?;
+            let arrival_sequence = incoming_message.arrival_sequence;
+
             let maybe_decrypted = tx_context_inner
                 .with_savepoint(
                     "replay_from_inbox",
-                    async || match incoming_message.parsed.clone() {
+                    async || match incoming_message.parsed {
                         ParsedMessage::Mls(mls_message) => {
                             self.decrypt_mls_message(mls_message, RecursionPolicy::None).await
                         }
@@ -131,11 +137,7 @@ impl ConversationMut {
                 Ok(DecryptionOutcome::Decrypted(decrypted)) => decrypted,
                 Ok(DecryptionOutcome::Deferred(reason)) => {
                     // we've taken the message out, but it wasn't ready, so let's just put it back
-                    self.send_to_inbox_with_arrival_sequence(
-                        &incoming_message,
-                        &reason,
-                        inbox_message.arrival_sequence,
-                    )?;
+                    self.send_to_inbox(content_type, epoch, arrival_sequence, inbox_message.message, &reason)?;
                     continue;
                 }
                 Err(err) => {

@@ -70,16 +70,30 @@ impl ParsedMessage {
     }
 }
 
-/// A pair: an incoming message's parsed container, and also the bytes from which it was parsed.
-pub(in crate::mls::conversation) struct IncomingMessage<'a> {
+/// An incoming message's parsed container, and its original arrival sequence.
+///
+/// The arrival sequence gives us two pieces of information: both the actual arrival sequence
+/// stored in the DB, but also its existence demonstrates that the message was in fact
+/// buffered in the DB. Where the arrival sequence is `None`, this message has not been buffered;
+/// it was provided by the caller.
+pub(in crate::mls::conversation) struct IncomingMessage {
     pub(in crate::mls::conversation) parsed: ParsedMessage,
-    pub(super) bytes: &'a [u8],
+    /// The original arrival sequence of this message.
+    ///
+    /// `None` if this was freshly parsed and the arrival sequence has not yet been determined.
+    ///
+    /// `Some(arrival_sequence)` if this has already been buffered in the keystore; contains the original
+    /// arrival sequence value.
+    pub(super) arrival_sequence: Option<u64>,
 }
 
-impl<'a> IncomingMessage<'a> {
-    /// Parse some bytes into a parsed message, paired with the actual incoming bytes
-    pub(in crate::mls::conversation) fn parse(bytes: &'a [u8]) -> Result<Self, TlsCodecError> {
+impl IncomingMessage {
+    /// Parse some bytes into a parsed message, paired with the arrival sequence.
+    pub(in crate::mls::conversation) fn parse(bytes: &[u8]) -> Result<Self, TlsCodecError> {
         let parsed = ParsedMessage::parse(bytes)?;
-        Ok(Self { parsed, bytes })
+        Ok(Self {
+            parsed,
+            arrival_sequence: None,
+        })
     }
 }
