@@ -1642,4 +1642,449 @@ r9IJmL6kDQ==
             );
         });
     }
+
+    /// Two self-signed P256 certificates over the same key, for the same client, which differ only in
+    /// their validity: the second is a renewal of the first. Generated with openssl, which also supplied
+    /// the expiration timestamps below.
+    mod renewed_certificates {
+        /// notAfter 2027-01-01T00:00:00Z
+        pub(super) const ORIGINAL_PEM: &str = "-----BEGIN CERTIFICATE-----
+MIIBvzCCAWagAwIBAgIUUm4soEejx7kjTjZZXDZw72QUet4wCgYIKoZIzj0EAwIw
+EDEOMAwGA1UEAwwFYWxpY2UwHhcNMjYwMTAxMDAwMDAwWhcNMjcwMTAxMDAwMDAw
+WjAQMQ4wDAYDVQQDDAVhbGljZTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABKrS
+oN0GyH1kaizJALFRZKiqlY2Ug9NwxdqI82yr3RWJ4uYgWXeTubm4xK88Q8FNXxXr
+tSrqrqpVIRYR0fD9H+CjgZ0wgZowHQYDVR0OBBYEFFnexiRC/SaSmjb2peIFUEgy
+i2fDMB8GA1UdIwQYMBaAFFnexiRC/SaSmjb2peIFUEgyi2fDMA8GA1UdEwEB/wQF
+MAMBAf8wRwYDVR0RBEAwPoY8d2lyZWFwcDovL2Z6cWNMbHNkVG9xY2J5MUxqaG9f
+WEElMjFhMWIyYzNkNGU1ZjYwNzE4QHdpcmUuY29tMAoGCCqGSM49BAMCA0cAMEQC
+IGJDv1+j22nYj6dSXhWioSEJt9wcSzSGcuN0sqDW8sEhAiBh2HWnpsYBplQ+CMWp
+MFkJiMIP7td/s43W9iOSyhudAg==
+-----END CERTIFICATE-----
+";
+        pub(super) const ORIGINAL_NOT_AFTER: i64 = 1_798_761_600;
+
+        /// notAfter 2028-01-01T00:00:00Z
+        pub(super) const RENEWED_PEM: &str = "-----BEGIN CERTIFICATE-----
+MIIBvzCCAWagAwIBAgIUffMeeNtZkYUZsFyUxzEjmecqHCQwCgYIKoZIzj0EAwIw
+EDEOMAwGA1UEAwwFYWxpY2UwHhcNMjYwMTAxMDAwMDAwWhcNMjgwMTAxMDAwMDAw
+WjAQMQ4wDAYDVQQDDAVhbGljZTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABKrS
+oN0GyH1kaizJALFRZKiqlY2Ug9NwxdqI82yr3RWJ4uYgWXeTubm4xK88Q8FNXxXr
+tSrqrqpVIRYR0fD9H+CjgZ0wgZowHQYDVR0OBBYEFFnexiRC/SaSmjb2peIFUEgy
+i2fDMB8GA1UdIwQYMBaAFFnexiRC/SaSmjb2peIFUEgyi2fDMA8GA1UdEwEB/wQF
+MAMBAf8wRwYDVR0RBEAwPoY8d2lyZWFwcDovL2Z6cWNMbHNkVG9xY2J5MUxqaG9f
+WEElMjFhMWIyYzNkNGU1ZjYwNzE4QHdpcmUuY29tMAoGCCqGSM49BAMCA0cAMEQC
+IFZlMeY2W6MollPxjCoTlSaym9kgktJffTzYabiGYkPlAiBB0brlOcQ+sv+OQivk
+u/bTD1hzaMEyff4xCjv1QeZY1Q==
+-----END CERTIFICATE-----
+";
+        pub(super) const RENEWED_NOT_AFTER: i64 = 1_830_297_600;
+    }
+
+    /// Parse a PEM certificate, returning its public key and the serialized X509 `MlsCredential` for it.
+    fn x509_credential_from_pem(pem: &str) -> (Vec<u8>, Vec<u8>) {
+        let certificate = x509_cert::Certificate::from_pem(pem).unwrap();
+        let public_key = certificate
+            .tbs_certificate()
+            .subject_public_key_info()
+            .subject_public_key
+            .raw_bytes()
+            .to_vec();
+        let credential = MlsCredential::new_x509(vec![certificate.to_der().unwrap()])
+            .unwrap()
+            .tls_serialize_detached()
+            .unwrap();
+        (public_key, credential)
+    }
+
+    /// Insert a credential into `mls_credentials` as of V48, keyed by `(sha256(public_key), credential_type)`.
+    fn insert_v48_credential(conn: &rusqlite::Connection, public_key: &[u8], credential_type: u16, credential: &[u8]) {
+        conn.execute(
+            "INSERT INTO mls_credentials
+                (public_key_sha256, credential_type, public_key, session_id, credential, ciphersuite, private_key)
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                Sha256Hash::hash_from(public_key),
+                credential_type,
+                public_key,
+                b"session id".as_slice(),
+                credential,
+                Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 as u16,
+                b"private key".as_slice(),
+            ),
+        )
+        .expect("inserting a V48 credential");
+    }
+
+    /// Insert a group using the given credential into `mls_groups` as of V48.
+    fn insert_v48_group(conn: &rusqlite::Connection, id: &[u8], public_key: &[u8], credential_type: u16) {
+        conn.execute(
+            "INSERT INTO mls_groups
+                (id, state, epoch, ciphersuite, credential_id, credential_type, own_leaf_index, is_pending)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                id,
+                b"group state".as_slice(),
+                1,
+                Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 as u16,
+                Sha256Hash::hash_from(public_key),
+                credential_type,
+                0,
+                false,
+            ),
+        )
+        .expect("inserting a V48 group");
+    }
+
+    /// Insert a key package using the given credential into `mls_key_packages` as of V48, along with its leaf
+    /// keypair. Every value is derived from `key_package_ref` so that several key packages don't collide.
+    fn insert_v48_key_package(
+        conn: &rusqlite::Connection,
+        key_package_ref: &[u8],
+        public_key: &[u8],
+        credential_type: u16,
+    ) {
+        conn.execute(
+            "INSERT INTO mls_encryption_keypairs (pk_sha256, pk, sk) VALUES (?, ?, ?)",
+            (
+                leaf_key_hash_of(key_package_ref),
+                [key_package_ref, b" leaf pk"].concat(),
+                b"leaf sk".as_slice(),
+            ),
+        )
+        .expect("inserting a V48 leaf keypair");
+        conn.execute(
+            "INSERT INTO mls_key_packages
+                (key_package_ref, key_package, credential_id, credential_type,
+                 hpke_init_public_key_hash, leaf_encryption_key_hash, hpke_init_private_key)
+             VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                key_package_ref,
+                b"key package".as_slice(),
+                Sha256Hash::hash_from(public_key),
+                credential_type,
+                Sha256Hash::hash_from([key_package_ref, b" init pk"].concat()),
+                leaf_key_hash_of(key_package_ref),
+                b"init sk".as_slice(),
+            ),
+        )
+        .expect("inserting a V48 key package");
+    }
+
+    fn leaf_key_hash_of(key_package_ref: &[u8]) -> Sha256Hash {
+        Sha256Hash::hash_from([key_package_ref, b" leaf pk"].concat())
+    }
+
+    fn count_where(conn: &rusqlite::Connection, table: &str, condition: &str, param: impl rusqlite::ToSql) -> i64 {
+        conn.query_row(
+            &format!("SELECT count(*) FROM {table} WHERE {condition}"),
+            [param],
+            |row| row.get(0),
+        )
+        .unwrap()
+    }
+
+    /// Every foreign key violation in the database, as `(table, rowid, parent)`.
+    ///
+    /// V50 runs with foreign keys off, so nothing checks the rows it copies. This is what does.
+    fn foreign_key_violations(conn: &rusqlite::Connection) -> Vec<(String, Option<i64>, String)> {
+        conn.prepare(r#"SELECT "table", rowid, parent FROM pragma_foreign_key_check"#)
+            .unwrap()
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap()
+    }
+
+    /// V49 and V50 key every credential by its expiration date, and carry each group's and key package's
+    /// reference to its credential across, so that a renewed certificate can be stored next to the original.
+    #[test]
+    fn v49_v50_key_credentials_by_expiration_date() {
+        use openmls::prelude::CredentialType;
+
+        const X509_GROUP: &[u8] = b"a conversation using the X509 credential";
+        const BASIC_GROUP: &[u8] = b"a conversation using the basic credential";
+        const X509_KEY_PACKAGE: &[u8] = b"a key package using the X509 credential";
+        const BASIC_KEY_PACKAGE: &[u8] = b"a key package using the basic credential";
+        const BASIC_PUBLIC_KEY: &[u8] = b"the basic credential's public key";
+        let x509 = u16::from(CredentialType::X509);
+        let basic = u16::from(CredentialType::Basic);
+
+        let (public_key, original) = x509_credential_from_pem(renewed_certificates::ORIGINAL_PEM);
+        let (renewed_public_key, renewed) = x509_credential_from_pem(renewed_certificates::RENEWED_PEM);
+        assert_eq!(public_key, renewed_public_key, "a renewal keeps the key pair");
+        let basic_credential = MlsCredential::new_basic(b"basic client".to_vec())
+            .tls_serialize_detached()
+            .unwrap();
+
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let db = seed_then_migrate(path, &key, 48, |conn| {
+                insert_v48_credential(conn, &public_key, x509, &original);
+                insert_v48_group(conn, X509_GROUP, &public_key, x509);
+                insert_v48_key_package(conn, X509_KEY_PACKAGE, &public_key, x509);
+
+                insert_v48_credential(conn, BASIC_PUBLIC_KEY, basic, &basic_credential);
+                insert_v48_group(conn, BASIC_GROUP, BASIC_PUBLIC_KEY, basic);
+                insert_v48_key_package(conn, BASIC_KEY_PACKAGE, BASIC_PUBLIC_KEY, basic);
+            })
+            .await;
+            let conn = db.conn().await;
+
+            let credential_expiration = |public_key: &[u8], credential_type: u16| -> i64 {
+                conn.query_row(
+                    "SELECT expiration_date FROM mls_credentials WHERE public_key_sha256 = ? AND credential_type = ?",
+                    (Sha256Hash::hash_from(public_key), credential_type),
+                    |row| row.get(0),
+                )
+                .expect("the credential survives the migration")
+            };
+            assert_eq!(
+                credential_expiration(&public_key, x509),
+                renewed_certificates::ORIGINAL_NOT_AFTER,
+                "an X509 credential expires with its leaf certificate"
+            );
+            assert_eq!(
+                credential_expiration(BASIC_PUBLIC_KEY, basic),
+                0,
+                "a basic credential doesn't expire"
+            );
+
+            let referenced_expiration = |table: &str, id_column: &str, id: &[u8]| -> i64 {
+                conn.query_row(
+                    &format!("SELECT credential_expiration_date FROM {table} WHERE {id_column} = ?"),
+                    [id],
+                    |row| row.get(0),
+                )
+                .unwrap_or_else(|err| panic!("reading back {id:?} from {table}: {err}"))
+            };
+            assert_eq!(
+                referenced_expiration("mls_groups", "id", X509_GROUP),
+                renewed_certificates::ORIGINAL_NOT_AFTER
+            );
+            assert_eq!(referenced_expiration("mls_groups", "id", BASIC_GROUP), 0);
+            assert_eq!(
+                referenced_expiration("mls_key_packages", "key_package_ref", X509_KEY_PACKAGE),
+                renewed_certificates::ORIGINAL_NOT_AFTER
+            );
+            assert_eq!(
+                referenced_expiration("mls_key_packages", "key_package_ref", BASIC_KEY_PACKAGE),
+                0
+            );
+            assert_eq!(foreign_key_violations(&conn), []);
+
+            // The point of the change: the renewed certificate can now be stored next to the original.
+            conn.execute(
+                "INSERT INTO mls_credentials
+                    (public_key_sha256, credential_type, expiration_date, public_key, session_id, credential,
+                     ciphersuite, private_key)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    Sha256Hash::hash_from(&public_key),
+                    x509,
+                    renewed_certificates::RENEWED_NOT_AFTER,
+                    &public_key,
+                    b"session id".as_slice(),
+                    &renewed,
+                    Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 as u16,
+                    b"private key".as_slice(),
+                ),
+            )
+            .expect("storing the renewed credential next to the original");
+            let mut expirations: Vec<i64> = conn
+                .prepare("SELECT expiration_date FROM mls_credentials WHERE public_key_sha256 = ?")
+                .unwrap()
+                .query_map([Sha256Hash::hash_from(&public_key)], |row| row.get(0))
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap();
+            expirations.sort();
+            assert_eq!(
+                expirations,
+                [
+                    renewed_certificates::ORIGINAL_NOT_AFTER,
+                    renewed_certificates::RENEWED_NOT_AFTER
+                ]
+            );
+        });
+    }
+
+    /// V49 drops a credential whose expiration date it can't read, and with it everything which depends on it,
+    /// rather than failing the migration. Everything else is left alone.
+    #[test]
+    fn v49_drops_an_unreadable_credential_with_its_groups_and_key_packages() {
+        use openmls::prelude::CredentialType;
+
+        const GOOD_PUBLIC_KEY: &[u8] = b"a readable credential's public key";
+        const BAD_PUBLIC_KEY: &[u8] = b"an unreadable credential's public key";
+        const GOOD_GROUP: &[u8] = b"a conversation using the readable credential";
+        const BAD_GROUP: &[u8] = b"a conversation using the unreadable credential";
+        const GOOD_KEY_PACKAGE: &[u8] = b"a key package using the readable credential";
+        const BAD_KEY_PACKAGE: &[u8] = b"a key package using the unreadable credential";
+        let basic = u16::from(CredentialType::Basic);
+
+        let good_credential = MlsCredential::new_basic(b"basic client".to_vec())
+            .tls_serialize_detached()
+            .unwrap();
+
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let db = seed_then_migrate(path, &key, 48, |conn| {
+                insert_v48_credential(conn, GOOD_PUBLIC_KEY, basic, &good_credential);
+                insert_v48_group(conn, GOOD_GROUP, GOOD_PUBLIC_KEY, basic);
+                insert_v48_key_package(conn, GOOD_KEY_PACKAGE, GOOD_PUBLIC_KEY, basic);
+
+                insert_v48_credential(conn, BAD_PUBLIC_KEY, basic, b"not a serialized credential");
+                insert_v48_group(conn, BAD_GROUP, BAD_PUBLIC_KEY, basic);
+                insert_v48_key_package(conn, BAD_KEY_PACKAGE, BAD_PUBLIC_KEY, basic);
+
+                // Something which hangs off each group, to show the cascade from a dropped group.
+                for group in [GOOD_GROUP, BAD_GROUP] {
+                    conn.execute(
+                        "INSERT INTO mls_pending_messages (hash_sha256, conversation_id, message) VALUES (?, ?, ?)",
+                        (Sha256Hash::hash_from(group), group, b"pending message".as_slice()),
+                    )
+                    .expect("inserting a pending message");
+                }
+            })
+            .await;
+            let conn = db.conn().await;
+
+            let present = |table: &str, column: &str, value: &[u8]| {
+                count_where(&conn, table, &format!("{column} = ?"), value) > 0
+            };
+            let credential_present = |public_key: &[u8]| {
+                count_where(
+                    &conn,
+                    "mls_credentials",
+                    "public_key_sha256 = ?",
+                    Sha256Hash::hash_from(public_key),
+                ) > 0
+            };
+            let leaf_keypair_present = |key_package_ref: &[u8]| {
+                count_where(
+                    &conn,
+                    "mls_encryption_keypairs",
+                    "pk_sha256 = ?",
+                    leaf_key_hash_of(key_package_ref),
+                ) > 0
+            };
+
+            assert!(
+                !credential_present(BAD_PUBLIC_KEY),
+                "the unreadable credential is dropped"
+            );
+            assert!(!present("mls_groups", "id", BAD_GROUP), "its group goes with it");
+            assert!(
+                !present("mls_pending_messages", "conversation_id", BAD_GROUP),
+                "and so does what hangs off the group"
+            );
+            assert!(
+                !present("mls_key_packages", "key_package_ref", BAD_KEY_PACKAGE),
+                "its key package goes with it"
+            );
+            assert!(
+                !leaf_keypair_present(BAD_KEY_PACKAGE),
+                "and so does the key package's leaf keypair"
+            );
+
+            assert!(credential_present(GOOD_PUBLIC_KEY));
+            assert!(present("mls_groups", "id", GOOD_GROUP));
+            assert!(present("mls_pending_messages", "conversation_id", GOOD_GROUP));
+            assert!(present("mls_key_packages", "key_package_ref", GOOD_KEY_PACKAGE));
+            assert!(leaf_keypair_present(GOOD_KEY_PACKAGE));
+
+            assert_eq!(foreign_key_violations(&conn), []);
+        });
+    }
+
+    /// V49 and V50 carry every row of a real database across, and leave every foreign key satisfied.
+    ///
+    /// V50 rebuilds `mls_groups` with foreign keys off, so this also shows that the tables referencing it,
+    /// which V50 doesn't touch, keep their rows and end up referencing the rebuilt table.
+    #[test]
+    fn v49_v50_keep_every_row_of_a_real_database() {
+        const TABLES: &[&str] = &[
+            "mls_credentials",
+            "mls_groups",
+            "mls_key_packages",
+            "mls_encryption_keypairs",
+            "epoch_encryption_keypairs",
+            "old_epoch_data",
+            "old_epoch_member_data",
+            "foreign_credentials",
+            "mls_pending_messages",
+            "mls_buffered_commits",
+            "targeted_message_rx_counters",
+            "transient_message_rx_counters",
+        ];
+        let row_counts = |conn: &rusqlite::Connection| -> Vec<(&str, i64)> {
+            TABLES
+                .iter()
+                .map(|&table| {
+                    let count = conn
+                        .query_row(&format!("SELECT count(*) FROM {table}"), [], |row| row.get(0))
+                        .unwrap();
+                    (table, count)
+                })
+                .collect()
+        };
+
+        let mut db_file = NamedTempFile::new().unwrap();
+        db_file.write_all(DB).unwrap();
+        let path = db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode");
+
+        let new_key = DatabaseKey::generate();
+        smol::block_on(migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key)).unwrap();
+
+        smol::block_on(async {
+            let before = {
+                let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(48))
+                    .await
+                    .unwrap();
+                let conn = db.conn().await;
+                row_counts(&conn)
+            };
+            assert!(
+                before.iter().any(|&(table, count)| table == "mls_groups" && count > 0),
+                "the bundled database has a conversation for V50 to carry across"
+            );
+
+            let db = Database::open(path, &new_key).await.unwrap();
+            let conn = db.conn().await;
+
+            assert_eq!(row_counts(&conn), before);
+            assert_eq!(foreign_key_violations(&conn), []);
+
+            let children_of_mls_groups: Vec<String> = conn
+                .prepare(
+                    r#"SELECT m.name FROM sqlite_master m, pragma_foreign_key_list(m.name) f
+                       WHERE m.type = 'table' AND f."table" = 'mls_groups'
+                       ORDER BY m.name"#,
+                )
+                .unwrap()
+                .query_map([], |row| row.get(0))
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap();
+            assert_eq!(
+                children_of_mls_groups,
+                [
+                    "epoch_encryption_keypairs",
+                    "mls_buffered_commits",
+                    "mls_pending_messages",
+                    "old_epoch_data",
+                    "targeted_message_rx_counters",
+                    "transient_message_rx_counters",
+                ],
+                "the tables V50 doesn't touch still reference `mls_groups`"
+            );
+        });
+    }
 }
