@@ -250,7 +250,9 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
             .await
             .unwrap()
             .decrypt_message(message_to_decrypt)
-            .await?
+            .await
+            .map_err(anyhow::Error::from)
+            .and_then(single_message)?
             .into_application_message()
             .map_err(|_| anyhow!("[MLS] No message received on master client"))?
             .plaintext;
@@ -297,7 +299,9 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
                 .conversation(&conversation_id)
                 .await?
                 .decrypt_message(encrypted)
-                .await?;
+                .await
+                .map_err(anyhow::Error::from)
+                .and_then(single_message)?;
             let plaintext = match decrypted {
                 DecryptedMessage::PersistedTargeted(message) | DecryptedMessage::TransientTargeted(message) => {
                     message.plaintext
@@ -335,7 +339,9 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
             .conversation(&conversation_id)
             .await?
             .decrypt_message(encrypted)
-            .await?;
+            .await
+            .map_err(anyhow::Error::from)
+            .and_then(single_message)?;
         let plaintext = decrypted
             .into_transient()
             .map_err(|_| anyhow!("[MLS] Transient message decrypted as an unexpected message type"))?
@@ -345,6 +351,17 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
     spinner.success(format!("{} [OK]", STEP_5_MESSAGE));
 
     Ok(())
+}
+
+/// Take the only message decrypted from a single input.
+///
+/// None of the messages in this test should be deferred, or unblock any buffered messages.
+#[cfg(not(target_os = "unknown"))]
+fn single_message(messages: Vec<core_crypto::DecryptedMessage>) -> Result<core_crypto::DecryptedMessage> {
+    let count = messages.len();
+    let [message] = <[_; 1]>::try_from(messages)
+        .map_err(|_| anyhow!("[MLS] expected exactly one decrypted message, but got {count}"))?;
+    Ok(message)
 }
 
 #[cfg(all(not(target_os = "unknown"), feature = "proteus"))]
