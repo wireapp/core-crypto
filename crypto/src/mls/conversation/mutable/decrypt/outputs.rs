@@ -141,7 +141,7 @@ pub enum DeferralReason {
 //
 // We don't mind the size difference between variants here; the big variant is the happy path.
 #[cfg_attr(not(target_os = "unknown"), expect(clippy::large_enum_variant))]
-#[derive(Debug, derive_more::From)]
+#[derive(Debug, derive_more::From, derive_more::IsVariant)]
 pub enum DecryptionOutcome {
     /// The message was successfully decrypted.
     Decrypted(DecryptedMessage),
@@ -149,9 +149,18 @@ pub enum DecryptionOutcome {
     Deferred(DeferralReason),
 }
 
-impl DecryptionOutcome {
-    /// `true` when this outcome is a decrypted message; `false` otherwise
-    pub(crate) fn savepoint_outcome_check<E>(outcome: &Result<Option<Self>, E>) -> bool {
-        matches!(outcome, Ok(Some(Self::Decrypted(_))))
-    }
+/// A change in state due to this message being processed
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum Effect {
+    /// The message was just a message.
+    None,
+    /// The message was a proposal, which was stored.
+    ProposalStored,
+    /// The message was a commit, which advanced the epoch.
+    EpochAdvanced {
+        /// the new epoch value
+        new_epoch: u64,
+        /// whether we are still a member of this conversation after this commit
+        is_active: bool,
+    },
 }

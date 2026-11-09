@@ -1,11 +1,10 @@
-use core_crypto_keystore::entities::WaitingFor;
 use log::info;
 use obfuscate::Obfuscated;
 use openmls::group::StagedCommit;
 
 use crate::{
-    BufferedDecryptedMessage, Commit, DecryptedMessage, OpenMlsError, RecursiveError, WireIdentity,
-    mls::conversation::{ConversationMut, Result, mutable::decrypt::RecursionPolicy},
+    Commit, DecryptedMessage, OpenMlsError, WireIdentity,
+    mls::conversation::{ConversationMut, Result},
 };
 
 /// Handle decryption of staged commit message.
@@ -13,12 +12,11 @@ pub(in crate::mls::conversation::mutable::decrypt) async fn handle(
     conversation: &mut ConversationMut,
     staged_commit: StagedCommit,
     identity: WireIdentity,
-    recursion_policy: RecursionPolicy,
 ) -> Result<DecryptedMessage> {
     conversation.validate_commit(&staged_commit).await?;
     let provider = conversation.crypto_provider().await?;
 
-    let (mut is_active, removed_members, added_members, group_id) = conversation
+    let (is_active, removed_members, added_members, group_id) = conversation
         .mutate_group(async |_, group, id| {
             let removed_indices = staged_commit
                 .remove_proposals()
@@ -49,26 +47,6 @@ pub(in crate::mls::conversation::mutable::decrypt) async fn handle(
         })
         .await?;
 
-    // can't use `.then` because async
-    let mut buffered_messages = None;
-    if is_active && recursion_policy == RecursionPolicy::AsNecessary {
-        let restored_messages = conversation
-            .replay_from_inbox(WaitingFor::Epoch, conversation.epoch().await.into())
-            .await?;
-
-        // ensure that if any buffered message evicts us from the group, we propagate that info
-        for message in &restored_messages {
-            if let BufferedDecryptedMessage::Commit(commit) = message {
-                is_active &= commit.is_active;
-                if !is_active {
-                    break;
-                }
-            }
-        }
-
-        buffered_messages = (!restored_messages.is_empty()).then_some(restored_messages);
-    }
-
     let epoch = staged_commit.staged_context().epoch().as_u64();
     info!(
         added = Obfuscated::from(&added_members),
@@ -78,15 +56,10 @@ pub(in crate::mls::conversation::mutable::decrypt) async fn handle(
         proposals:? = staged_commit.queued_proposals().map(Obfuscated::from).collect::<Vec<_>>();
         "Epoch advanced"
     );
-    conversation
-        .tx_context
-        .queue_epoch_changed(group_id, epoch)
-        .await
-        .map_err(RecursiveError::context("queueing epoch changed notification"))?;
 
     Ok(DecryptedMessage::Commit(Commit {
         is_active,
-        buffered_messages,
         identity,
+        buffered_messages: Default::default(),
     }))
 }

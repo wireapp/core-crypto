@@ -288,6 +288,10 @@ impl PendingConversation {
             None
         } else {
             Some(
+                // TODO: WPB-29258 will move the joins of pending conversations into the normal message parsing loop
+                // in `decrypt_message`, and remove `conversation.replay_from_inbox` entirely.
+                // We'll definitely be implementing that ticket before making the next release, so for now
+                // we'll keep this impl.
                 conversation
                     .replay_from_inbox(WaitingFor::PendingJoin, None)
                     .await

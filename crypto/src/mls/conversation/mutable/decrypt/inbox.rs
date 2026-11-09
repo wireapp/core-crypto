@@ -7,7 +7,7 @@ use core_crypto_keystore::{
 use log::{info, warn};
 use openmls::prelude::ContentType;
 
-use super::{Error, IncomingMessage, RecursionPolicy, Result};
+use super::{Error, IncomingMessage, Result};
 use crate::{
     BufferedDecryptedMessage, DecryptionOutcome, DeferralReason, KeystoreError, RecursiveError, TlsCodecError,
     error::infrastructure::Infrastructural as _,
@@ -153,9 +153,7 @@ impl ConversationMut {
                 .with_savepoint(
                     "replay_from_inbox",
                     async || match incoming_message.parsed {
-                        ParsedMessage::Mls(mls_message) => {
-                            self.decrypt_mls_message(mls_message, RecursionPolicy::None).await
-                        }
+                        ParsedMessage::Mls(mls_message) => self.decrypt_mls_message(mls_message).await,
                         ParsedMessage::Tnt(tnt_message) => self.decrypt_tnt_message(tnt_message).await,
                     },
                     Error::savepoint,

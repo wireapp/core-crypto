@@ -15,7 +15,10 @@ mod incoming_message;
 mod outputs;
 mod process_message;
 
-use core_crypto_keystore::entities::WaitingFor;
+use std::{borrow::Cow, collections::VecDeque};
+
+use core_crypto_keystore::entities::{InboxMessage, WaitingFor};
+use log::warn;
 use openmls::{
     framing::MlsMessageIn,
     group::MlsGroup,
@@ -28,106 +31,160 @@ pub use self::outputs::{
     BufferedCommit, BufferedDecryptedMessage, Commit, DecryptedBytes, DecryptedMessage, DecryptionOutcome,
     DeferralReason, Proposal,
 };
-use self::process_message::{ProcessedMessage, process_message};
+use self::{
+    outputs::Effect,
+    process_message::{ProcessedMessage, process_message},
+};
 use super::{ConversationMut, Result};
 use crate::{
-    E2eiConversationState, RecursiveError, Session,
+    E2eiConversationState, RecursiveError, Session, TlsCodecError,
+    error::infrastructure::Infrastructural as _,
     mls::{conversation::Error, credential::ext::CredentialExt as _},
 };
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum RecursionPolicy {
-    AsNecessary,
-    None,
-}
-
 impl ConversationMut {
-    /// Deserializes a TLS-serialized message, then processes it.
+    /// Decrypt and process a MLS or TNT message.
     ///
-    /// Effect on local pending state depends on what the message turns out to
-    /// be:
+    /// Effect on local state depends on what the message turns out to be:
     ///
     /// - a commit from another member supersedes any local pending commit, and consumes all pending proposals;
     /// - our own commit, delivered back to us, is merged rather than discarded;
     /// - proposals and application messages leave local pending state untouched.
     ///
-    /// # Arguments
-    /// * `message` - the encrypted message as a byte array
+    /// The message bytes must be TLS-serialized.
     ///
-    /// # Errors
-    /// If a message has been buffered, this will be indicated by an error.
-    /// Other errors are originating from OpenMls and the KeyStore
-    pub async fn decrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<DecryptedMessage> {
-        let incoming_message = IncomingMessage::parse(message.as_ref())?;
-        // we have to clone the parsed message, because we are likely to need it to handle the result,
-        // but the `decrypt_mls_message` variant has to consume it.
-        let decrypt_message_result = match incoming_message.parsed {
-            ParsedMessage::Mls(mls_message_in) => {
-                self.decrypt_mls_message(mls_message_in, RecursionPolicy::AsNecessary)
-                    .await
+    /// Returns a vector. The first item in this vector is always the message this function was called with;
+    /// subsequent items are buffered messages which have been unblocked by that first message. If the initial
+    /// message was deferred, this vector will be empty.
+    ///
+    /// Errors occurred when decrypting the message with which this function was called propagate as normal.
+    /// Errors occurred when decrypting buffered messages unblocked by the initial message are propagated in
+    /// case they are infrastructure errors. If they are not, then they are logged but not propagated, and the
+    /// related message is dropped.
+    pub async fn decrypt_message(&mut self, bytes: impl Into<Cow<'_, [u8]>>) -> Result<Vec<DecryptedMessage>> {
+        let id = self.id.clone();
+        let log_and_skip_unparseable_buffered_messages = move |maybe_message: Result<
+            (InboxMessage, IncomingMessage),
+            TlsCodecError,
+        >| {
+            match maybe_message {
+                Ok((inbox, incoming)) => Some((incoming, inbox.message.into())),
+                Err(err) => {
+                    warn!(err:err, group_id = id.clone(); "failed to parse buffered message while taking from inbox; dropping");
+                    None
+                }
             }
-            ParsedMessage::Tnt(tnt_message) => self.decrypt_tnt_message(tnt_message).await,
         };
 
-        // These will no longer map to errors with WPB-29261, but we'll still take action on them at this level.
-        let decrypted_message = match decrypt_message_result {
-            Ok(DecryptionOutcome::Decrypted(decrypted)) => decrypted,
-            Ok(DecryptionOutcome::Deferred(reason)) => {
-                // re-parsing is expensive relative to cloning the previous parse, but it's also much less common.
-                // It's the lesser pain.
-                let incoming_message = IncomingMessage::parse(message.as_ref())?;
-                self.send_to_inbox(
-                    incoming_message.parsed.content_type()?,
-                    incoming_message.parsed.epoch()?,
-                    incoming_message.arrival_sequence,
-                    message.as_ref().to_owned(),
-                    &reason,
-                )?;
-                let err = match reason {
-                    DeferralReason::FutureEpoch { epoch } => Error::BufferedFutureMessage { message_epoch: epoch },
-                    DeferralReason::MissingProposal => Error::BufferedCommit,
-                };
-                return Err(err);
-            }
-            Err(err) => return Err(err),
-        };
+        let bytes = bytes.into();
+        let incoming_message = IncomingMessage::parse(&bytes)?;
+        let mut queue = VecDeque::from([(incoming_message, bytes)]);
+        let mut decrypted_messages = Vec::new();
 
-        if let Some(commit) = decrypted_message.as_commit()
-            && !commit.is_active
-        {
-            self.wipe().await?;
+        let tx_context_inner = self
+            .tx_context
+            .inner()
+            .map_err(RecursiveError::context("getting tx context inner to decrypt a message"))?;
+        while let Some((message, bytes)) = queue.pop_front() {
+            // we don't swallow these errors even when processing buffered messages:
+            // for a message to be buffered, it must previously have been parseable, so these
+            // should only ever propagate on the first item in the queue.
+            let content_type = message.parsed.content_type()?;
+            let epoch = message.parsed.epoch()?;
+            let arrival_sequence = message.arrival_sequence;
+
+            let outcome_result = tx_context_inner
+                .with_savepoint(
+                    "decrypt_message",
+                    async || match message.parsed {
+                        ParsedMessage::Mls(mls_message_in) => self.decrypt_mls_message(mls_message_in).await,
+                        ParsedMessage::Tnt(tnt_message) => self.decrypt_tnt_message(tnt_message).await,
+                    },
+                    Error::savepoint,
+                )
+                .await;
+
+            let outcome = match outcome_result {
+                Ok(outcome) => outcome,
+                Err(err) if arrival_sequence.is_none() || err.is_infrastructure() => {
+                    // If the arrival sequence is none, this was the original message the caller passed in;
+                    // it's appropriate to return a decryption error in that case.
+                    // If the arrival sequence is not None, then this message had been buffered;
+                    // in that case, we'd report infrastructure errors, but swallow non-infrastructure errors.
+                    return Err(err);
+                }
+                Err(err) => {
+                    // non-infrastructure errors just drop the offending message
+                    warn!(err:err, group_id = self.id.clone(); "failed to decrypt a message; dropping");
+                    continue;
+                }
+            };
+
+            let effect = match &outcome {
+                DecryptionOutcome::Decrypted(DecryptedMessage::Commit(commit)) => Effect::EpochAdvanced {
+                    new_epoch: self.epoch().await,
+                    is_active: commit.is_active,
+                },
+                DecryptionOutcome::Decrypted(DecryptedMessage::Proposal(_)) => Effect::ProposalStored,
+                _ => Effect::None,
+            };
+
+            if let DecryptionOutcome::Deferred(reason) = &outcome {
+                self.send_to_inbox(content_type, epoch, arrival_sequence, bytes.into_owned(), reason)?;
+            }
+
+            // This will change in WPB-29261 to something like
+            //   if !(item.arrival_sequence.is_some() && outcome.is_deferred())
+            // but for now because we don't actually return outcomes,
+            // we need a narrower filter.
+            if let DecryptionOutcome::Decrypted(decrypted) = outcome {
+                decrypted_messages.push(decrypted);
+            }
+
+            match effect {
+                Effect::None => {}
+                Effect::ProposalStored => {
+                    // if we stored a proposal, then it's time to unearth any commits and see if any of them can apply
+                    // now
+                    queue.extend(
+                        self.inbox_take(WaitingFor::Proposal, self.epoch().await.into())?
+                            .filter_map(&log_and_skip_unparseable_buffered_messages),
+                    );
+                }
+                Effect::EpochAdvanced { new_epoch, is_active } => {
+                    // notify the epoch change in every case
+                    self.tx_context
+                        .queue_epoch_changed(self.id.clone(), new_epoch)
+                        .await
+                        .map_err(RecursiveError::context("queueing epoch change notification"))?;
+
+                    // if we're no longer in the group, cleanup is simpler
+                    if !is_active {
+                        self.wipe().await?;
+                        break;
+                    }
+
+                    // we're now ready to process any messages which were waiting for this epoch
+                    queue.extend(
+                        self.inbox_take(WaitingFor::Epoch, new_epoch.into())?
+                            .filter_map(&log_and_skip_unparseable_buffered_messages),
+                    );
+                }
+            }
         }
 
-        Ok(decrypted_message)
+        Ok(decrypted_messages)
     }
 
-    /// Decrypt a deserialized [MlsMessageIn].
-    async fn decrypt_mls_message(
-        &mut self,
-        message: MlsMessageIn,
-        recursion_policy: RecursionPolicy,
-    ) -> Result<DecryptionOutcome> {
+    /// Decrypt a single MLS message, reporting but not taking action on its outcome.
+    async fn decrypt_mls_message(&mut self, message: MlsMessageIn) -> Result<DecryptionOutcome> {
         let message = match process_message(self, message).await? {
             // processing succeeded
             ProcessedMessage::Content(message) => message,
 
             // Handles the case where we receive our own commits.
             ProcessedMessage::OwnCommit(confirmation_tag) => {
-                let mut decrypted_message = self.handle_own_commit(&confirmation_tag).await?;
-
-                if let Some(commit) = decrypted_message.as_commit_mut() {
-                    debug_assert!(
-                        commit.buffered_messages.is_none(),
-                        "decrypted message should be constructed with empty buffer"
-                    );
-                    if recursion_policy == RecursionPolicy::AsNecessary {
-                        let buffered = self
-                            .replay_from_inbox(WaitingFor::Epoch, self.epoch().await.into())
-                            .await?;
-                        commit.buffered_messages = (!buffered.is_empty()).then_some(buffered);
-                    }
-                }
-
+                let decrypted_message = self.handle_own_commit(&confirmation_tag).await?;
                 return Ok(decrypted_message.into());
             }
             ProcessedMessage::Deferred(reason) => return Ok(reason.into()),
@@ -154,11 +211,9 @@ impl ConversationMut {
             ProcessedMessageContent::ApplicationMessage(app_msg) => {
                 handle::application(self, app_msg, epoch, identity, sender_client_id_result)?
             }
-            ProcessedMessageContent::ProposalMessage(proposal) => {
-                handle::proposal(self, *proposal, identity, recursion_policy).await?
-            }
+            ProcessedMessageContent::ProposalMessage(proposal) => handle::proposal(self, *proposal, identity).await?,
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
-                handle::staged_commit(self, *staged_commit, identity, recursion_policy).await?
+                handle::staged_commit(self, *staged_commit, identity).await?
             }
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
                 handle::external_join_proposal(self, *proposal, identity).await?
