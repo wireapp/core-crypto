@@ -27,6 +27,8 @@ pub enum CryptoKeystoreError {
     IncorrectApiUsage(&'static str),
     #[error("The credential tied to this signature keypair is different from the provided one")]
     SignatureKeyPairDoesNotBelongToCredential,
+    #[error("Invalid credential: {0}")]
+    InvalidCredential(String),
     #[error("The uniqueness constraint has been violated for {0}")]
     AlreadyExists(&'static str),
     #[error("The provided buffer is too big to be persisted in the store")]

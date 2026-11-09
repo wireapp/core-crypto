@@ -22,10 +22,14 @@ pub struct PersistedMlsGroup {
     #[zeroize(skip)]
     pub credential_id: Sha256Hash,
     /// The type of the credential identified by `credential_id`. `mls_credentials`'s primary key
-    /// is `(public_key_sha256, credential_type)`, not `public_key_sha256` alone, so this always
-    /// travels alongside `credential_id`: both are `Some` or both are `None`.
+    /// is `(public_key_sha256, credential_type, expiration_date)`, not `public_key_sha256` alone,
+    /// so this always travels alongside `credential_id`.
     #[zeroize(skip)]
     pub credential_type: u16,
+    /// The expiration date of the credential identified by `credential_id`, the third part of
+    /// its primary key.
+    #[zeroize(skip)]
+    pub credential_expiration_date: u64,
     pub own_leaf_index: u32,
     /// Distinguishes a group joined by external commit but not yet merged from an established one.
     pub is_pending: bool,
@@ -56,6 +60,7 @@ impl PersistedMlsGroup {
             ciphersuite: row.get("ciphersuite")?,
             credential_id: row.get("credential_id")?,
             credential_type: row.get("credential_type")?,
+            credential_expiration_date: row.get("credential_expiration_date")?,
             own_leaf_index: row.get("own_leaf_index")?,
             is_pending: row.get("is_pending")?,
             tnt_tx_counter: row.get("tnt_tx_counter")?,
@@ -112,15 +117,16 @@ impl EntityDatabaseMutation for PersistedMlsGroup {
         // "delete then insert", so all those foreign keys would cascade-delete before we insert a replacement.
         let mut stmt = conn.prepare_cached(
             "INSERT INTO mls_groups
-                ( id,  state,  epoch,  ciphersuite,  credential_id,  credential_type,  own_leaf_index,  is_pending,  tnt_tx_counter)
+                ( id,  state,  epoch,  ciphersuite,  credential_id,  credential_type,  credential_expiration_date,  own_leaf_index,  is_pending,  tnt_tx_counter)
              VALUES
-                (:id, :state, :epoch, :ciphersuite, :credential_id, :credential_type, :own_leaf_index, :is_pending, :tnt_tx_counter)
+                (:id, :state, :epoch, :ciphersuite, :credential_id, :credential_type, :credential_expiration_date, :own_leaf_index, :is_pending, :tnt_tx_counter)
              ON CONFLICT (id) DO UPDATE SET
                 state = excluded.state,
                 epoch = excluded.epoch,
                 ciphersuite = excluded.ciphersuite,
                 credential_id = excluded.credential_id,
                 credential_type = excluded.credential_type,
+                credential_expiration_date = excluded.credential_expiration_date,
                 own_leaf_index = excluded.own_leaf_index,
                 is_pending = excluded.is_pending,
                 tnt_tx_counter = excluded.tnt_tx_counter",
@@ -132,6 +138,7 @@ impl EntityDatabaseMutation for PersistedMlsGroup {
             ":ciphersuite": self.ciphersuite,
             ":credential_id": self.credential_id,
             ":credential_type": self.credential_type,
+            ":credential_expiration_date": self.credential_expiration_date,
             ":own_leaf_index": self.own_leaf_index,
             ":is_pending": self.is_pending,
             ":tnt_tx_counter": self.tnt_tx_counter,

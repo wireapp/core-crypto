@@ -7,7 +7,7 @@ use zeroize::ZeroizeOnDrop;
 use crate::{
     CryptoKeystoreResult, Sha256Hash, Transactionlike,
     ancillary::helpers,
-    entities::StoredCredentialPk,
+    entities::{StoredCredentialPk, credential_expiration_date},
     traits::{
         BorrowPrimaryKey, DeletableBySearchKey, Entity, EntityDatabaseMutation, EntityDeleteBorrowed,
         EntityGetBorrowed, PrimaryKey, SearchableEntity,
@@ -44,6 +44,7 @@ impl StoredKeyPackage {
             key_package,
             credential_id,
             credential_type,
+            credential_expiration_date,
             hpke_init_public_key_hash,
             leaf_encryption_key_hash
         FROM {table_name}",
@@ -56,19 +57,26 @@ impl StoredKeyPackage {
     );
 
     const QUERY_BY_CREDENTIAL: &str = formatcp!(
-        "{query_all} WHERE credential_id = :credential_id AND credential_type = :credential_type",
+        "{query_all} WHERE credential_id = :credential_id AND credential_type = :credential_type \
+            AND credential_expiration_date = :credential_expiration_date",
         query_all = StoredKeyPackage::QUERY_ALL,
     );
 
     const DELETE_BY_CREDENTIAL: &str = formatcp!(
-        "DELETE FROM {table_name} WHERE credential_id = :credential_id AND credential_type = :credential_type",
+        "DELETE FROM {table_name} WHERE credential_id = :credential_id AND credential_type = :credential_type \
+            AND credential_expiration_date = :credential_expiration_date",
         table_name = StoredKeyPackage::TABLE_NAME,
     );
 
     /// Construct an instance from a pre-computed id, serialization, and a dynamic openmls entity
     ///
-    /// Panics if `V` is not a `KeyPackage`.
-    pub(crate) fn from_openmls<V: MlsEntity>(id: &[u8], serialization: Vec<u8>, value: &V) -> Self {
+    /// Panics if `V` is not a `KeyPackage`. Fails if the expiration date of the key package's credential can't be
+    /// read.
+    pub(crate) fn from_openmls<V: MlsEntity>(
+        id: &[u8],
+        serialization: Vec<u8>,
+        value: &V,
+    ) -> CryptoKeystoreResult<Self> {
         // Ideally we'd write this whole section like
         //
         // ```rust
@@ -93,16 +101,18 @@ impl StoredKeyPackage {
         // so we know this must be valid.
         let key_package = unsafe { &*std::ptr::from_ref(value).cast::<KeyPackage>() };
 
-        Self {
+        let credential = key_package.leaf_node().credential();
+        Ok(Self {
             key_package_ref: id.to_owned(),
             key_package: serialization,
             credential: StoredCredentialPk {
                 public_key_hash: Sha256Hash::hash_from(key_package.leaf_node().signature_key().as_slice()),
-                credential_type: u16::from(key_package.leaf_node().credential().credential_type()),
+                credential_type: u16::from(credential.credential_type()),
+                expiration_date: credential_expiration_date(credential)?,
             },
             hpke_init_public_key_hash: Sha256Hash::hash_from(key_package.hpke_init_key().as_slice()),
             leaf_encryption_key_hash: Sha256Hash::hash_from(key_package.leaf_node().encryption_key().as_slice()),
-        }
+        })
     }
 
     fn from_row(row: &Row<'_>) -> rusqlite::Result<Self> {
@@ -112,6 +122,7 @@ impl StoredKeyPackage {
             credential: StoredCredentialPk {
                 public_key_hash: row.get("credential_id")?,
                 credential_type: row.get("credential_type")?,
+                expiration_date: row.get("credential_expiration_date")?,
             },
             hpke_init_public_key_hash: row.get("hpke_init_public_key_hash")?,
             leaf_encryption_key_hash: row.get("leaf_encryption_key_hash")?,
@@ -170,6 +181,7 @@ impl EntityDatabaseMutation for StoredKeyPackage {
                 key_package,
                 credential_id,
                 credential_type,
+                credential_expiration_date,
                 hpke_init_public_key_hash,
                 leaf_encryption_key_hash
             )
@@ -178,6 +190,7 @@ impl EntityDatabaseMutation for StoredKeyPackage {
                 :key_package,
                 :credential_id,
                 :credential_type,
+                :credential_expiration_date,
                 :hpke_init_public_key_hash,
                 :leaf_encryption_key_hash
             )",
@@ -187,6 +200,7 @@ impl EntityDatabaseMutation for StoredKeyPackage {
             ":key_package": self.key_package,
             ":credential_id": self.credential.public_key_hash,
             ":credential_type": self.credential.credential_type,
+            ":credential_expiration_date": self.credential.expiration_date,
             ":hpke_init_public_key_hash": self.hpke_init_public_key_hash,
             ":leaf_encryption_key_hash": self.leaf_encryption_key_hash,
         })
@@ -222,6 +236,7 @@ impl SearchableEntity<StoredCredentialPk> for StoredKeyPackage {
                 named_params! {
                     ":credential_id": search_key.public_key_hash,
                     ":credential_type": search_key.credential_type,
+                    ":credential_expiration_date": search_key.expiration_date,
                 },
                 Self::from_row,
             )?
@@ -244,6 +259,7 @@ impl DeletableBySearchKey<StoredCredentialPk> for StoredKeyPackage {
             .execute(named_params! {
                 ":credential_id": search_key.public_key_hash,
                 ":credential_type": search_key.credential_type,
+                ":credential_expiration_date": search_key.expiration_date,
             })?;
         Ok(())
     }

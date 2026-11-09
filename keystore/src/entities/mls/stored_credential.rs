@@ -1,3 +1,5 @@
+use openmls::prelude::{Credential as MlsCredential, MlsCredentialType};
+use x509_cert::der::Decode as _;
 use zeroize::Zeroize;
 
 use crate::{
@@ -5,6 +7,28 @@ use crate::{
     ancillary::helpers,
     traits::{Entity, PrimaryKey},
 };
+
+/// Read the expiration date of a credential as a unix timestamp in seconds.
+///
+/// For an X509 credential this is the leaf certificate's notAfter. Basic credentials don't expire, and get 0.
+///
+/// The expiration date is part of a credential's primary key, and key packages derive the reference to their
+/// credential from their own leaf node. Use this whenever the expiration date of a stored credential is needed, so
+/// that the two always agree.
+pub fn credential_expiration_date(credential: &MlsCredential) -> CryptoKeystoreResult<u64> {
+    match credential.mls_credential() {
+        MlsCredentialType::Basic(_) => Ok(0),
+        MlsCredentialType::X509(cert) => {
+            let leaf = cert
+                .certificates
+                .first()
+                .ok_or_else(|| CryptoKeystoreError::InvalidCredential("no leaf certificate".into()))?;
+            let leaf = x509_cert::Certificate::from_der(leaf.as_slice())
+                .map_err(|e| CryptoKeystoreError::InvalidCredential(format!("decoding x509 certificate: {e}")))?;
+            Ok(leaf.tbs_certificate().validity().not_after.to_unix_duration().as_secs())
+        }
+    }
+}
 
 /// This type exists so that we can efficiently search for credentials by a variety of metrics at the database level.
 ///
@@ -16,6 +40,8 @@ pub struct CredentialFindFilters<'a> {
     pub hash: Option<Sha256Hash>,
     /// Credential type to search for.
     pub credential_type: Option<u16>,
+    /// Expiration date (unix timestamp in seconds, 0 for basic credentials) to search for.
+    pub expiration_date: Option<u64>,
     /// Public key to search for
     pub public_key: Option<&'a [u8]>,
     /// Session / Client id to search for
@@ -40,12 +66,16 @@ pub struct StoredCredential {
     #[sensitive]
     pub public_key: Vec<u8>,
     pub credential_type: u16,
+    /// Unix timestamp (seconds) at which the credential expires, or 0 if it never does.
+    ///
+    /// Must agree with [`credential_expiration_date`] for `credential`.
+    pub expiration_date: u64,
     #[sensitive]
     pub private_key: Vec<u8>,
 }
 
 impl StoredCredential {
-    const PRIMARY_KEY_COLUMN_NAMES: [&str; 2] = ["public_key_sha256", "credential_type"];
+    const PRIMARY_KEY_COLUMN_NAMES: [&str; 3] = ["public_key_sha256", "credential_type", "expiration_date"];
 
     fn from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Self> {
         Ok(Self {
@@ -55,6 +85,7 @@ impl StoredCredential {
             ciphersuite: row.get("ciphersuite")?,
             public_key: row.get("public_key")?,
             credential_type: row.get("credential_type")?,
+            expiration_date: row.get("expiration_date")?,
             private_key: row.get("private_key")?,
         })
     }
@@ -80,6 +111,7 @@ impl StoredCredential {
 pub struct StoredCredentialPk {
     pub public_key_hash: Sha256Hash,
     pub credential_type: u16,
+    pub expiration_date: u64,
 }
 
 impl PrimaryKey for StoredCredential {
@@ -90,6 +122,7 @@ impl PrimaryKey for StoredCredential {
         StoredCredentialPk {
             public_key_hash,
             credential_type: self.credential_type,
+            expiration_date: self.expiration_date,
         }
     }
 }
@@ -102,11 +135,11 @@ impl crate::traits::Entity for StoredCredential {
 
         conn.prepare_cached(
             "SELECT session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, public_key, \
-                    credential_type, private_key \
-             FROM mls_credentials WHERE public_key_sha256 = ? AND credential_type = ?",
+                    credential_type, expiration_date, private_key \
+             FROM mls_credentials WHERE public_key_sha256 = ? AND credential_type = ? AND expiration_date = ?",
         )?
         .query_row(
-            rusqlite::params![key.public_key_hash, key.credential_type],
+            rusqlite::params![key.public_key_hash, key.credential_type, key.expiration_date],
             Self::from_row,
         )
         .optional()
@@ -120,7 +153,7 @@ impl crate::traits::Entity for StoredCredential {
     fn load_all(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<Vec<Self>> {
         let mut statement = conn.prepare_cached(
             "SELECT session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, public_key, \
-                    credential_type, private_key \
+                    credential_type, expiration_date, private_key \
              FROM mls_credentials",
         )?;
         statement
@@ -138,13 +171,14 @@ impl crate::traits::EntityDatabaseMutation for StoredCredential {
         let conn = tx.into().conn()?;
         let mut stmt = conn.prepare_cached(
             "INSERT INTO mls_credentials \
-             (public_key_sha256, credential_type, public_key, session_id, credential, created_at, ciphersuite, private_key) \
+             (public_key_sha256, credential_type, expiration_date, public_key, session_id, credential, created_at, ciphersuite, private_key) \
              VALUES \
-             (:public_key_sha256, :credential_type, :public_key, :session_id, :credential, datetime(:created_at, 'unixepoch'), :ciphersuite, :private_key)",
+             (:public_key_sha256, :credential_type, :expiration_date, :public_key, :session_id, :credential, datetime(:created_at, 'unixepoch'), :ciphersuite, :private_key)",
         )?;
         stmt.execute(rusqlite::named_params![
             ":public_key_sha256": Sha256Hash::hash_from(&self.public_key),
             ":credential_type": self.credential_type,
+            ":expiration_date": self.expiration_date,
             ":public_key": self.public_key,
             ":session_id": self.session_id,
             ":credential": self.credential,
@@ -164,7 +198,7 @@ impl crate::traits::EntityDatabaseMutation for StoredCredential {
         helpers::delete_helper_composite_key::<Self, _>(
             tx,
             &Self::PRIMARY_KEY_COLUMN_NAMES,
-            rusqlite::params![id.public_key_hash, id.credential_type],
+            rusqlite::params![id.public_key_hash, id.credential_type, id.expiration_date],
         )
         .map(|count| count > 0)
     }
@@ -178,20 +212,24 @@ impl<'a> crate::traits::SearchableEntity<CredentialFindFilters<'a>> for StoredCr
         let hash = filters
             .hash
             .or_else(|| filters.public_key.map(crate::Sha256Hash::hash_from));
-        if let (Some(hash), Some(credential_type)) = (hash, filters.credential_type) {
-            return <Self as crate::traits::Entity>::get(conn, &StoredCredentialPk::new(hash, credential_type)).map(
-                |opt| {
-                    opt.into_iter()
-                        .filter(|c| <Self as crate::traits::SearchableEntity<_>>::matches(c, filters))
-                        .collect()
-                },
-            );
+        if let (Some(hash), Some(credential_type), Some(expiration_date)) =
+            (hash, filters.credential_type, filters.expiration_date)
+        {
+            return <Self as crate::traits::Entity>::get(
+                conn,
+                &StoredCredentialPk::new(hash, credential_type, expiration_date),
+            )
+            .map(|opt| {
+                opt.into_iter()
+                    .filter(|c| <Self as crate::traits::SearchableEntity<_>>::matches(c, filters))
+                    .collect()
+            });
         }
 
         let mut query =
-            "SELECT session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, public_key, credential_type, private_key \
+            "SELECT session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, public_key, credential_type, expiration_date, private_key \
              FROM mls_credentials \
-             WHERE (true OR :hash OR :credential_type OR :ciphersuite OR :created_at OR :session_id) "
+             WHERE (true OR :hash OR :credential_type OR :expiration_date OR :ciphersuite OR :created_at OR :session_id) "
                 .to_owned();
 
         if hash.is_some() {
@@ -199,6 +237,9 @@ impl<'a> crate::traits::SearchableEntity<CredentialFindFilters<'a>> for StoredCr
         }
         if filters.credential_type.is_some() {
             query.push_str("AND credential_type = :credential_type ");
+        }
+        if filters.expiration_date.is_some() {
+            query.push_str("AND expiration_date = :expiration_date ");
         }
         if filters.ciphersuite.is_some() {
             query.push_str("AND ciphersuite = :ciphersuite ");
@@ -215,21 +256,12 @@ impl<'a> crate::traits::SearchableEntity<CredentialFindFilters<'a>> for StoredCr
             rusqlite::named_params![
                 ":hash": hash,
                 ":credential_type": filters.credential_type,
+                ":expiration_date": filters.expiration_date,
                 ":ciphersuite": filters.ciphersuite,
                 ":created_at": filters.earliest_validity,
                 ":session_id": filters.session_id,
             ],
-            |row| {
-                Ok(Self {
-                    session_id: row.get("session_id")?,
-                    credential: row.get("credential")?,
-                    created_at: row.get("created_at")?,
-                    ciphersuite: row.get("ciphersuite")?,
-                    public_key: row.get("public_key")?,
-                    credential_type: row.get("credential_type")?,
-                    private_key: row.get("private_key")?,
-                })
-            },
+            Self::from_row,
         )?
         .collect::<Result<_, _>>()
         .map_err(Into::into)
@@ -242,6 +274,9 @@ impl<'a> crate::traits::SearchableEntity<CredentialFindFilters<'a>> for StoredCr
             && filters
                 .credential_type
                 .is_none_or(|credential_type| credential_type == self.credential_type)
+            && filters
+                .expiration_date
+                .is_none_or(|expiration_date| expiration_date == self.expiration_date)
             && filters.public_key.is_none_or(|pk| pk == self.public_key)
             && filters.session_id.is_none_or(|sid| sid == self.session_id)
             && filters.ciphersuite.is_none_or(|cs| cs == self.ciphersuite)

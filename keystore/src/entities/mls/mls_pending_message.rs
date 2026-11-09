@@ -187,6 +187,7 @@ mod tests {
             ciphersuite: 1,
             public_key: OWN_PUBLIC_KEY.to_vec(),
             credential_type: OWN_CREDENTIAL_TYPE,
+            expiration_date: 0,
             private_key: b"private key".to_vec(),
         }
         .save(tx)
@@ -198,6 +199,7 @@ mod tests {
             ciphersuite: 1,
             credential_id: Sha256Hash::hash_from(OWN_PUBLIC_KEY),
             credential_type: OWN_CREDENTIAL_TYPE,
+            credential_expiration_date: 0,
             own_leaf_index: 0,
             is_pending: false,
             tnt_tx_counter: 0,

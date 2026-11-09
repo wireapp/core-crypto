@@ -21,7 +21,7 @@ pub use old_epoch_data::{OldEpochData, OldEpochDataPk, OldEpochDataPkRef};
 pub use old_epoch_member_data::{OldEpochMemberData, OldEpochMemberDataPk, OldEpochMemberDataPkRef};
 pub use persisted_mls_group::PersistedMlsGroup;
 pub use stored_buffered_commit::StoredBufferedCommit;
-pub use stored_credential::{CredentialFindFilters, StoredCredential, StoredCredentialPk};
+pub use stored_credential::{CredentialFindFilters, StoredCredential, StoredCredentialPk, credential_expiration_date};
 pub use stored_encryption_key_pair::StoredEncryptionKeyPair;
 pub use stored_epoch_encryption_keypair::{
     StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPk, StoredEpochEncryptionKeypairPkRef,
