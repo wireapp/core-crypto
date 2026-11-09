@@ -120,7 +120,8 @@ impl<'a, T> OperationGuard<'a, T> {
     ) -> Self {
         let result = self.notify_member_inner(member).await.unwrap();
         let sender = self.conversation().actor();
-        if let Some(ref decrypted) = result {
+        // the first decrypted message is the one we just sent; any others were replayed from the inbox
+        if let Some(decrypted) = result.as_ref().and_then(|messages| messages.first()) {
             sender
                 .verify_sender_identity(self.conversation().case, credential_ref, decrypted)
                 .await;
@@ -131,7 +132,7 @@ impl<'a, T> OperationGuard<'a, T> {
     async fn notify_member_inner(
         &mut self,
         member: &SessionContext,
-    ) -> crate::mls::conversation::Result<Option<DecryptedMessage>> {
+    ) -> crate::mls::conversation::Result<Option<Vec<DecryptedMessage>>> {
         let member_index = self.conversation().member_index(member).await;
         if self.already_notified.contains(&member_index) {
             return Ok(None);
@@ -150,12 +151,12 @@ impl<'a, T> OperationGuard<'a, T> {
         result.map(Some)
     }
 
-    /// Use this if you need access to the [`DecryptedMessage`][crate::DecryptedMessage] or potential
+    /// Use this if you need access to the [`DecryptedMessage`][crate::DecryptedMessage]s or potential
     /// error returned when the member is notified about this.
     pub async fn notify_member_fallible(
         mut self,
         member: &SessionContext,
-    ) -> (Self, crate::mls::conversation::Result<DecryptedMessage>) {
+    ) -> (Self, crate::mls::conversation::Result<Vec<DecryptedMessage>>) {
         let result = self.notify_member_inner(member).await;
         (
             self,

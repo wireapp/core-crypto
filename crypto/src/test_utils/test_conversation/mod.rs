@@ -4,7 +4,10 @@ use openmls::prelude::group_info::VerifiableGroupInfo;
 use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::IdentityStatus;
 
-use super::{CredentialType, MessageExt as _, MlsTransportTestExt, SessionContext, TestContext, TestError};
+use super::{
+    CredentialType, DecryptedMessagesExt as _, MessageExt as _, MlsTransportTestExt, SessionContext, TestContext,
+    TestError,
+};
 use crate::{
     ConversationId, CredentialRef, E2eiConversationState, RecursiveError,
     mls::{
@@ -192,6 +195,7 @@ impl<'a> TestConversation<'a> {
             .decrypt_message(encrypted)
             .await
             .map_err(RecursiveError::context("decrypting message; receiver <- sender"))?
+            .into_single()
             .into_application_message()
             .map_err(|_| TestError::ImplementationError)?
             .plaintext;

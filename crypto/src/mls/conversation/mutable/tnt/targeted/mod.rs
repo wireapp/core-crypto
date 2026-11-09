@@ -190,6 +190,7 @@ mod tests {
             .decrypt_message(encrypted)
             .await
             .unwrap()
+            .into_single()
             .into_persisted_targeted()
             .unwrap()
             .plaintext;
@@ -212,6 +213,7 @@ mod tests {
             .decrypt_message(encrypted)
             .await
             .unwrap()
+            .into_single()
             .into_transient_targeted()
             .unwrap()
             .plaintext;
@@ -259,6 +261,7 @@ mod tests {
             .decrypt_message(within_retention)
             .await
             .unwrap()
+            .into_single()
             .into_persisted_targeted()
             .unwrap();
         assert_eq!(decrypted.plaintext, b"within retention");
@@ -296,6 +299,7 @@ mod tests {
             .decrypt_message(&encrypted)
             .await
             .unwrap()
+            .into_single()
             .into_persisted_targeted()
             .unwrap()
             .plaintext;
@@ -344,30 +348,31 @@ mod tests {
             .decrypt_message(encrypted_epoch_1)
             .await
             .unwrap()
+            .into_single()
             .into_persisted_targeted()
             .unwrap()
             .plaintext;
         assert_eq!(&decrypted, &epoch_1);
 
-        let error = conversation
+        let decrypted = conversation
             .guard_of(&bob)
             .await
             .decrypt_message(encrypted_epoch_2)
             .await
-            .unwrap_err();
-        assert!(matches!(
-            error,
-            crate::mls::conversation::Error::BufferedFutureMessage { message_epoch: 2 }
-        ));
+            .unwrap();
+        assert!(decrypted.is_empty(), "the epoch 2 message must have been deferred");
 
-        let (_, decrypted_commit) = commit.notify_member_fallible(&bob).await;
-        let decrypted_commit = decrypted_commit.unwrap().into_commit().unwrap();
-        let buffered_message = decrypted_commit.buffered_messages.unwrap().remove(0);
-        let decrypted = crate::DecryptedMessage::from(buffered_message)
-            .into_persisted_targeted()
-            .unwrap()
-            .plaintext;
-        assert_eq!(&decrypted, &epoch_2);
+        // once the commit arrives, the buffered message is decrypted right after it
+        let (_, decrypted) = commit.notify_member_fallible(&bob).await;
+        let decrypted = decrypted.unwrap();
+        let [
+            crate::DecryptedMessage::Commit(_),
+            crate::DecryptedMessage::PersistedTargeted(decrypted_message),
+        ] = decrypted.as_slice()
+        else {
+            panic!("expected the commit, then the buffered message: {decrypted:?}");
+        };
+        assert_eq!(&decrypted_message.plaintext, &epoch_2);
     }
 
     #[apply(all_cred_cipher)]
@@ -403,6 +408,7 @@ mod tests {
             .decrypt_message(encrypted)
             .await
             .unwrap()
+            .into_single()
             .into_persisted_targeted()
             .unwrap();
         assert_eq!(decrypted.plaintext, message);
@@ -438,6 +444,7 @@ mod tests {
             .decrypt_message(encrypted)
             .await
             .unwrap()
+            .into_single()
             .into_persisted_targeted()
             .unwrap();
         assert_eq!(decrypted.plaintext, message);
@@ -493,6 +500,7 @@ mod tests {
             .decrypt_message(encrypted)
             .await
             .unwrap()
+            .into_single()
             .into_persisted_targeted()
             .unwrap();
         assert_eq!(decrypted.plaintext, message);
@@ -535,6 +543,7 @@ mod tests {
             .decrypt_message(encrypted)
             .await
             .unwrap()
+            .into_single()
             .into_persisted_targeted()
             .unwrap();
         assert_eq!(decrypted.plaintext, message);
@@ -565,6 +574,7 @@ mod tests {
             .decrypt_message(encrypted)
             .await
             .unwrap()
+            .into_single()
             .into_persisted_targeted()
             .unwrap();
         assert_eq!(decrypted.plaintext, message);
@@ -607,6 +617,7 @@ mod tests {
             .decrypt_message(encrypted)
             .await
             .unwrap()
+            .into_single()
             .into_persisted_targeted()
             .unwrap();
         assert_eq!(decrypted.plaintext, message);
@@ -652,6 +663,7 @@ mod tests {
             .decrypt_message(encrypted)
             .await
             .unwrap()
+            .into_single()
             .into_persisted_targeted()
             .unwrap();
         assert_eq!(decrypted.plaintext, message);
@@ -742,6 +754,7 @@ mod tests {
             .decrypt_message(encrypted)
             .await
             .unwrap()
+            .into_single()
             .into_persisted_targeted()
             .unwrap();
         assert_eq!(decrypted.plaintext, message);
@@ -893,6 +906,7 @@ mod tests {
             .decrypt_message(encrypted)
             .await
             .unwrap()
+            .into_single()
             .into_persisted_targeted()
             .unwrap();
         assert_eq!(decrypted.plaintext, message);

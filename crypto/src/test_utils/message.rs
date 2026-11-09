@@ -26,3 +26,23 @@ impl MessageExt for MlsMessageOut {
         }
     }
 }
+
+/// Helpers for the list of messages returned by `ConversationMut::decrypt_message`.
+pub trait DecryptedMessagesExt {
+    /// Take the only decrypted message.
+    ///
+    /// Panics unless there is exactly one: either the input message was deferred, or it unblocked some buffered
+    /// messages which were decrypted along with it.
+    fn into_single(self) -> crate::DecryptedMessage;
+}
+
+impl DecryptedMessagesExt for Vec<crate::DecryptedMessage> {
+    #[track_caller]
+    fn into_single(self) -> crate::DecryptedMessage {
+        let len = self.len();
+        let Ok([message]) = <[_; 1]>::try_from(self) else {
+            panic!("expected exactly one decrypted message, but got {len}");
+        };
+        message
+    }
+}

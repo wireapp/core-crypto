@@ -319,7 +319,7 @@ mod tests {
                     .unwrap()
                     .decrypt_message(&commit2)
                     .await;
-                assert!(matches!(out_of_order.unwrap_err(), Error::BufferedFutureMessage { .. }));
+                assert!(out_of_order.unwrap().is_empty(), "the message must have been deferred");
 
                 // works in the right order though
                 // NB: here 'commit2' has been buffered so it is also applied when we decrypt commit1

@@ -195,12 +195,12 @@ mod tests {
         let charlie_hypothetical_position = 1;
 
         assert_eq!(
-            bob_decrypted_message.as_proposal().unwrap().delay,
+            bob_decrypted_message.into_single().as_proposal().unwrap().delay,
             Some(DELAY_POS_LINEAR_INCR * bob_hypothetical_position)
         );
 
         assert_eq!(
-            charlie_decrypted_message.as_proposal().unwrap().delay,
+            charlie_decrypted_message.into_single().as_proposal().unwrap().delay,
             Some(DELAY_POS_LINEAR_INCR * charlie_hypothetical_position)
         );
     }
@@ -231,7 +231,7 @@ mod tests {
         for (name, member) in [("charlie", &charlie), ("dave", &dave), ("eve", &eve)] {
             let (guard, result) = proposal_guard.notify_member_fallible(member).await;
             proposal_guard = guard;
-            delays.push((name, result.unwrap().as_proposal().unwrap().delay));
+            delays.push((name, result.unwrap().into_single().as_proposal().unwrap().delay));
         }
 
         assert_delays_are_unique(&delays);
@@ -260,7 +260,7 @@ mod tests {
             .compute_next_commit_delay()
             .await;
         let (_, result) = proposal_guard.notify_member_fallible(&dave).await;
-        let dave_delay = result.unwrap().as_proposal().unwrap().delay;
+        let dave_delay = result.unwrap().into_single().as_proposal().unwrap().delay;
         let delays = vec![("alice", alice_delay), ("dave", dave_delay)];
 
         // post-commit, the members are alice and dave, at positions 0 and 1

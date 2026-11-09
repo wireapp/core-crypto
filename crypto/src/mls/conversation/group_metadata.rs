@@ -242,7 +242,10 @@ mod tests {
             // deriving a credential from the recycled slot used to make this fail
             let decrypted = result.expect("a member must be able to process its own eviction");
             assert!(
-                decrypted.as_commit().is_some_and(|commit| !commit.is_active),
+                decrypted
+                    .into_single()
+                    .as_commit()
+                    .is_some_and(|commit| !commit.is_active),
                 "the commit must report the conversation as no longer active"
             );
             assert!(

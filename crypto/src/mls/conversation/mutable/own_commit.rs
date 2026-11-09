@@ -218,7 +218,7 @@ mod tests {
             let offset = commit_serialized.len() - 1;
             commit_serialized[offset] ^= 0xff;
 
-            let decryption_result = conversation.guard().await.decrypt_message(commit_serialized).await;
+            let decryption_result = conversation.guard().await.decrypt_message(&*commit_serialized).await;
             let error = decryption_result.unwrap_err();
             assert!(matches!(
                 error,

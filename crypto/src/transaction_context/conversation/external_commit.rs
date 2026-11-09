@@ -174,7 +174,7 @@ mod tests {
             let (external_commit, result) = external_commit.notify_member_fallible(&alice).await;
             assert_eq!(external_commit.conversation().members_counted_by(&alice).await, 2);
 
-            let decrypted = result.unwrap();
+            let decrypted = result.unwrap().into_single();
             // verify Bob's (sender) identity
             bob.verify_sender_identity(&case, &bob.initial_credential, &decrypted)
                 .await;

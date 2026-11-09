@@ -255,7 +255,7 @@ mod mls {
     use super::*;
     use crate::{
         mls::conversation::{ConversationId, DecryptedMessage},
-        test_utils::{SessionContext, TestContext},
+        test_utils::{SessionContext, TestContext, message::DecryptedMessagesExt},
     };
 
     async fn epoch(core_crypto: &Arc<CoreCrypto>, id: &ConversationId) -> u64 {
@@ -274,7 +274,8 @@ mod mls {
             .await
             .unwrap()
             .decrypt_message(message)
-            .await;
+            .await
+            .map(DecryptedMessagesExt::into_single);
         match result {
             Ok(DecryptedMessage::ApplicationMessage(decrypted)) => {
                 transaction.finish().await.unwrap();

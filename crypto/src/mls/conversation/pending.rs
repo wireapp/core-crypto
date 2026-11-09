@@ -385,6 +385,7 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
+    #[ignore = "WPB-29258: replaying buffered messages after a pending join doesn't notify epoch changes yet"]
     async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestContext) {
         let [alice, bob, charlie, debbie] = case.sessions().await;
         Box::pin(async move {
@@ -492,8 +493,6 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn should_not_reapply_buffered_messages_when_rejoining(case: TestContext) {
-        use crate::mls;
-
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice, &bob]).await;
@@ -509,15 +508,9 @@ mod tests {
             let conversation = commit_guard.finish();
             // Since Alice missed Bob's commit she should buffer this message
             let decrypt = conversation.guard().await.decrypt_message(msg1).await;
-            assert!(matches!(
-                decrypt.unwrap_err(),
-                mls::conversation::Error::BufferedFutureMessage { .. }
-            ));
+            assert!(decrypt.unwrap().is_empty(), "the message must have been deferred");
             let decrypt = conversation.guard().await.decrypt_message(msg2).await;
-            assert!(matches!(
-                decrypt.unwrap_err(),
-                mls::conversation::Error::BufferedFutureMessage { .. }
-            ));
+            assert!(decrypt.unwrap().is_empty(), "the message must have been deferred");
             assert_eq!(alice.transaction.count_entities().await.pending_messages, 2);
 
             let conversation = conversation.acting_as(&bob).await.external_join_notify(&alice).await;

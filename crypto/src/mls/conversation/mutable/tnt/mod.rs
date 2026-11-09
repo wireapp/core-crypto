@@ -533,7 +533,7 @@ mod tests {
             .decrypt_message(second)
             .await
             .unwrap();
-        assert_eq!(second.into_transient().unwrap().plaintext, b"second");
+        assert_eq!(second.into_single().into_transient().unwrap().plaintext, b"second");
     }
 
     #[apply(all_cred_cipher)]
@@ -588,7 +588,10 @@ mod tests {
             .decrypt_message(encrypted)
             .await
             .unwrap();
-        assert_eq!(decrypted.into_transient().unwrap().plaintext, b"new epoch");
+        assert_eq!(
+            decrypted.into_single().into_transient().unwrap().plaintext,
+            b"new epoch"
+        );
         let counter = alice
             .database()
             .get_borrowed::<PersistedMlsGroup>(id.keystore())

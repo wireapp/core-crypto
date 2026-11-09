@@ -6,7 +6,7 @@ mod tests {
     };
     use openmls::prelude::ContentType;
 
-    use crate::{BufferedDecryptedMessage, DecryptedMessage, mls::conversation::Error, test_utils::*};
+    use crate::{DecryptedMessage, test_utils::*};
 
     /// Set up the common scenario for these tests: Alice has buffered Bob's commit, which removes
     /// Charlie, because it refers to a proposal she never received.
@@ -25,7 +25,10 @@ mod tests {
 
         let commit_guard = conversation.acting_as(bob).await.commit_pending_proposals().await;
         let (commit_guard, result) = commit_guard.notify_member_fallible(alice).await;
-        assert!(matches!(result.unwrap_err(), Error::BufferedCommit));
+        assert!(
+            result.unwrap().is_empty(),
+            "a deferred commit must not decrypt anything"
+        );
         let conversation = commit_guard.finish();
         assert_eq!(
             alice.transaction.count_entities().await.buffered_commits,
@@ -52,8 +55,8 @@ mod tests {
         let proposal_guard = conversation.acting_as(&charlie).await.remove_proposal(&bob).await;
         let (proposal_guard, result) = proposal_guard.notify_member_fallible(&alice).await;
         assert!(
-            matches!(result, Ok(DecryptedMessage::Proposal(_))),
-            "the unrelated proposal must decrypt as a proposal: {result:?}"
+            matches!(result.as_deref(), Ok([DecryptedMessage::Proposal(_)])),
+            "the unrelated proposal must decrypt as a proposal, and nothing else: {result:?}"
         );
         let conversation = proposal_guard.finish();
         assert_eq!(
@@ -70,8 +73,11 @@ mod tests {
             .await
             .unwrap();
         assert!(
-            decrypted.as_commit().is_some(),
-            "the missing proposal must apply the buffered commit"
+            matches!(
+                decrypted.as_slice(),
+                [DecryptedMessage::Proposal(_), DecryptedMessage::Commit(_)]
+            ),
+            "the missing proposal must decrypt, then apply the buffered commit: {decrypted:?}"
         );
     }
 
@@ -91,8 +97,11 @@ mod tests {
             .await
             .unwrap();
         assert!(
-            decrypted.as_commit().is_some(),
-            "the missing proposal must apply the buffered commit"
+            matches!(
+                decrypted.as_slice(),
+                [DecryptedMessage::Proposal(_), DecryptedMessage::Commit(_)]
+            ),
+            "the missing proposal must decrypt, then apply the buffered commit: {decrypted:?}"
         );
         assert_eq!(
             alice.transaction.count_entities().await.buffered_commits,
@@ -118,10 +127,10 @@ mod tests {
         // Bob, at epoch 2, proposes something. Alice is still at epoch 1, so she buffers it.
         let proposal_guard = conversation.acting_as(&bob).await.invite_proposal(&charlie).await;
         let (proposal_guard, result) = proposal_guard.notify_member_fallible(&alice).await;
-        assert!(matches!(
-            result.unwrap_err(),
-            Error::BufferedFutureMessage { message_epoch: 2 }
-        ));
+        assert!(
+            result.unwrap().is_empty(),
+            "a proposal from a future epoch must be deferred"
+        );
         let conversation = proposal_guard.finish();
 
         let decrypted = conversation
@@ -130,16 +139,17 @@ mod tests {
             .decrypt_message(&missing_proposal)
             .await
             .unwrap();
-        let commit = decrypted
-            .as_commit()
-            .expect("the missing proposal must apply the buffered commit");
         assert!(
             matches!(
-                commit.buffered_messages.as_deref(),
-                Some([BufferedDecryptedMessage::Proposal(_)])
+                decrypted.as_slice(),
+                [
+                    DecryptedMessage::Proposal(_),
+                    DecryptedMessage::Commit(_),
+                    DecryptedMessage::Proposal(_)
+                ]
             ),
-            "the replayed proposal must be reported as a proposal: {:?}",
-            commit.buffered_messages
+            "the missing proposal must apply the buffered commit, \
+             and the replayed proposal must be reported as a proposal: {decrypted:?}"
         );
 
         // A failed retry evicts the conversation from the cache, so this is how we observe that
@@ -192,12 +202,13 @@ mod tests {
         {
             let mut alice_conversation = conversation.guard_of(&alice).await;
             let decrypted = alice_conversation.decrypt_message(&missing_proposal).await;
-            let Ok(DecryptedMessage::Commit(commit)) = decrypted else {
-                panic!("the proposal completes the buffered commit, which must apply: {decrypted:?}");
-            };
             assert!(
-                commit.buffered_messages.is_none(),
-                "the undecodable message must not be reported as replayed"
+                matches!(
+                    decrypted.as_deref(),
+                    Ok([DecryptedMessage::Proposal(_), DecryptedMessage::Commit(_)])
+                ),
+                "the proposal completes the buffered commit, which must apply, \
+                 and the undecodable message must not be reported as replayed: {decrypted:?}"
             );
             assert_eq!(
                 alice_conversation.epoch().await,
@@ -263,7 +274,10 @@ mod tests {
             .commit_pending_proposals_unmerged()
             .await;
         let (commit_guard, result) = commit_guard.notify_member_fallible(&alice).await;
-        assert!(matches!(result.unwrap_err(), Error::BufferedCommit));
+        assert!(
+            result.unwrap().is_empty(),
+            "a deferred commit must not decrypt anything"
+        );
         let conversation = commit_guard.finish();
         assert_eq!(
             alice.transaction.count_entities().await.buffered_commits,
