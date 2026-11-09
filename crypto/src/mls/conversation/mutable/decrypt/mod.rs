@@ -211,12 +211,12 @@ impl ConversationMut {
             ProcessedMessageContent::ApplicationMessage(app_msg) => {
                 handle::application(self, app_msg, epoch, identity, sender_client_id_result)?
             }
-            ProcessedMessageContent::ProposalMessage(proposal) => handle::proposal(self, *proposal, identity).await?,
+            ProcessedMessageContent::ProposalMessage(proposal)
+            | ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
+                handle::proposal(self, *proposal, identity).await?
+            }
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
                 handle::staged_commit(self, *staged_commit, identity).await?
-            }
-            ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
-                handle::external_join_proposal(self, *proposal, identity).await?
             }
         };
 
