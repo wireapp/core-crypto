@@ -9,7 +9,7 @@ use openmls::prelude::ContentType;
 
 use super::{Error, IncomingMessage, RecursionPolicy, Result};
 use crate::{
-    BufferedDecryptedMessage, DecryptionOutcome, DeferralReason, KeystoreError, RecursiveError,
+    BufferedDecryptedMessage, DecryptionOutcome, DeferralReason, KeystoreError, RecursiveError, TlsCodecError,
     error::infrastructure::Infrastructural as _,
     mls::conversation::{ConversationMut, mutable::decrypt::ParsedMessage},
 };
@@ -78,6 +78,41 @@ impl ConversationMut {
         Ok(())
     }
 
+    /// Take everything waiting for the given reason / epoch.
+    ///
+    /// This removes them from the database; if that turns out to have been wrong,
+    /// it is the caller's responsibility to use a savepoint or re-add.
+    ///
+    /// Returns messages in order first by content type, then by arrival sequence.
+    ///
+    /// Returns a pair: stored message from the database, and the parsed message.
+    ///
+    /// The internal error type occurs when parsing fails. It is recommended that callers
+    /// log and drop those messages; parsing is deterministic.
+    //
+    // The `use<>` in the return type just indicates that it doesn't carry the lifetime of `self`.
+    pub(super) fn inbox_take(
+        &self,
+        waiting_for: WaitingFor,
+        epoch: Option<u64>,
+    ) -> Result<impl use<> + ExactSizeIterator<Item = Result<(InboxMessage, IncomingMessage), TlsCodecError>>> {
+        let tx_context_inner = self
+            .tx_context
+            .inner()
+            .map_err(RecursiveError::context("getting tx context to take out inbox messages"))?;
+        let tx = tx_context_inner.transaction();
+
+        let messages = InboxMessage::take(tx, self.id().keystore(), waiting_for, epoch)
+            .map_err(KeystoreError::wrap("taking inbox messages from the db"))?;
+
+        let pairs = messages.into_iter().map(|inbox_message| {
+            let mut parsed = IncomingMessage::parse(&inbox_message.message)?;
+            parsed.arrival_sequence = Some(inbox_message.arrival_sequence);
+            Ok((inbox_message, parsed))
+        });
+        Ok(pairs)
+    }
+
     /// Take everything waiting for the given reason / epoch, and replay it in order.
     ///
     /// - Replays each item matching the parameters
@@ -90,26 +125,20 @@ impl ConversationMut {
         waiting_for: WaitingFor,
         epoch: Option<u64>,
     ) -> Result<Vec<BufferedDecryptedMessage>> {
-        let tx_context_inner = self.tx_context.inner().map_err(RecursiveError::context(
-            "getting tx context to restore pending messages",
-        ))?;
-        let tx = tx_context_inner.transaction();
+        let pending_messages = self.inbox_take(waiting_for, epoch)?;
 
-        // returns messages in order of content type, then arrival sequence
-        let pending_messages = InboxMessage::take(tx, self.id().keystore(), waiting_for, epoch)
-            .map_err(KeystoreError::wrap("taking inbox messages from the db"))?;
-
-        if !pending_messages.is_empty() {
+        if pending_messages.len() != 0 {
             info!(group_id = self.id().to_owned(), waiting_for:?, epoch; "Attempting to restore {} messages from the inbox", pending_messages.len());
         }
 
+        let tx_context_inner = self.tx_context.inner().map_err(RecursiveError::context(
+            "getting tx context to apply savepoints when decrypting messages",
+        ))?;
+
         let mut decrypted_messages = Vec::with_capacity(pending_messages.len());
-        for inbox_message in pending_messages {
-            let incoming_message = match IncomingMessage::parse(&inbox_message.message) {
-                Ok(mut incoming) => {
-                    incoming.arrival_sequence = Some(inbox_message.arrival_sequence);
-                    incoming
-                }
+        for maybe_message in pending_messages {
+            let (inbox_message, incoming_message) = match maybe_message {
+                Ok(message) => message,
                 Err(err) => {
                     warn!(err:err, group_id = self.id().to_owned(), epoch; "failed to parse buffered message while taking from inbox; dropping");
                     continue;
