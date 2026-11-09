@@ -30,12 +30,6 @@ pub enum Error {
     #[error("The epoch in which message was encrypted is older than {MAX_PAST_EPOCHS}")]
     MessageEpochTooOld,
     #[error(
-        "Incoming message is a commit for which we have not yet received all the proposals. Buffering until all proposals have arrived."
-    )]
-    BufferedCommit,
-    #[error("Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives")]
-    BufferedFutureMessage { message_epoch: u64 },
-    #[error(
         "You tried to join with an external commit but did not merge it yet. We will reapply this message for you when you merge your external commit"
     )]
     BufferedForPendingConversation,

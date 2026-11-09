@@ -34,8 +34,6 @@ impl Infrastructural for crate::mls::conversation::Error {
             | Self::MessageRejected { .. }
             | Self::DuplicateMessage
             | Self::MessageEpochTooOld
-            | Self::BufferedCommit
-            | Self::BufferedFutureMessage { .. }
             | Self::BufferedForPendingConversation
             | Self::UnbufferedFarFutureMessage
             | Self::StaleCommit
