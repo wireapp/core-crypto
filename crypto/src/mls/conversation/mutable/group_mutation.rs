@@ -72,6 +72,8 @@ impl ConversationMut {
             TransientMessageRxCounter::delete_all_matching(tx, &stale_epochs).map_err(KeystoreError::wrap(
                 "deleting transient message rx counter on epoch change",
             ))?;
+            // Staleness for an inbox message is a bit more complicated than "all messages older than", so we can't
+            // just delete all matching `stale_epochs`.
             InboxMessage::drop_stale(tx, id.keystore(), group.epoch().as_u64())
                 .map_err(KeystoreError::wrap("clearing stale inbox messages on epoch change"))?;
         }
