@@ -18,35 +18,6 @@ CREATE TABLE x509_crls (
   content BLOB NOT NULL
 );
 
-CREATE TABLE "mls_credentials" (
-  public_key_sha256 BLOB NOT NULL,
-  credential_type INTEGER NOT NULL,
-  public_key BLOB NOT NULL,
-  session_id BLOB NOT NULL,
-  credential BLOB NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  ciphersuite INTEGER NOT NULL,
-  private_key BLOB NOT NULL,
-  PRIMARY KEY (public_key_sha256, credential_type)
-);
-
-CREATE TABLE "mls_groups" (
-  id BLOB NOT NULL PRIMARY KEY,
-  -- we have to keep the whole state in a blob because openmls doesn't expose enough information
-  -- to fully persist a mls group in any other way than via this opaque blob
-  state BLOB,
-  -- but we can store several small fields for our own information and sort/search/filter capabilities
-  epoch INTEGER NOT NULL,
-  ciphersuite INTEGER NOT NULL,
-  credential_id BLOB NOT NULL,
-  credential_type INTEGER NOT NULL,
-  own_leaf_index INTEGER NOT NULL,
-  -- this field distinguishes between proper groups and pending groups
-  is_pending BOOLEAN NOT NULL DEFAULT 0,
-  tnt_tx_counter INTEGER NOT NULL DEFAULT 0,
-  FOREIGN KEY (credential_id, credential_type) REFERENCES mls_credentials (public_key_sha256, credential_type) ON DELETE RESTRICT
-);
-
 CREATE TABLE "targeted_message_rx_counters" (
   conversation_id BLOB NOT NULL,
   sender INTEGER NOT NULL,
@@ -138,26 +109,6 @@ CREATE TABLE "mls_pending_messages" (
 
 CREATE INDEX idx_mls_pending_messages_conversation_id ON mls_pending_messages (conversation_id);
 
-CREATE TABLE "mls_key_packages" (
-  key_package_ref BLOB NOT NULL PRIMARY KEY,
-  key_package BLOB NOT NULL,
-  credential_id BLOB NOT NULL,
-  credential_type INTEGER NOT NULL,
-  hpke_init_public_key_hash BLOB NOT NULL UNIQUE,
-  leaf_encryption_key_hash BLOB NOT NULL UNIQUE,
-  -- this has to be nullable because openmls insists on filling it in a separate statement
-  -- because it thinks it's a separate entity
-  hpke_init_private_key BLOB NULL,
-  -- Deferred so that the credential only has to exist by the time the transaction commits. A history
-  -- client stores its key package before it can add the credential: it recovers the credential from
-  -- the stored key package.
-  FOREIGN KEY (credential_id, credential_type) REFERENCES mls_credentials (public_key_sha256, credential_type) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
-);
-
-CREATE INDEX idx_mls_key_packages_credential_fk ON mls_key_packages (credential_id, credential_type);
-
-CREATE INDEX idx_mls_groups_credential_fk ON mls_groups (credential_id, credential_type);
-
 CREATE TABLE "proteus_prekeys" (
   id INTEGER PRIMARY KEY,
   KEY BLOB NOT NULL
@@ -180,6 +131,95 @@ CREATE TABLE "mls_encryption_keypairs" (
   sk BLOB NOT NULL
 );
 
+CREATE TABLE "mls_psk_bundles" (
+  id_sha256 BLOB NOT NULL PRIMARY KEY,
+  psk_id BLOB NOT NULL,
+  psk BLOB NOT NULL
+);
+
+CREATE TABLE "mls_credentials" (
+  public_key_sha256 BLOB NOT NULL,
+  credential_type INTEGER NOT NULL,
+  -- Unix timestamp (seconds) of the leaf certificate's notAfter. Basic credentials don't expire,
+  -- and use 0. Not NULL: SQLite treats NULLs in a primary key as distinct, and a foreign key with
+  -- a NULL column isn't checked at all.
+  expiration_date INTEGER NOT NULL,
+  public_key BLOB NOT NULL,
+  session_id BLOB NOT NULL,
+  credential BLOB NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  ciphersuite INTEGER NOT NULL,
+  private_key BLOB NOT NULL,
+  PRIMARY KEY (
+    public_key_sha256,
+    credential_type,
+    expiration_date
+  )
+);
+
+CREATE TABLE "mls_groups" (
+  id BLOB NOT NULL PRIMARY KEY,
+  -- we have to keep the whole state in a blob because openmls doesn't expose enough information
+  -- to fully persist a mls group in any other way than via this opaque blob
+  state BLOB,
+  -- but we can store several small fields for our own information and sort/search/filter capabilities
+  epoch INTEGER NOT NULL,
+  ciphersuite INTEGER NOT NULL,
+  credential_id BLOB NOT NULL,
+  credential_type INTEGER NOT NULL,
+  credential_expiration_date INTEGER NOT NULL,
+  own_leaf_index INTEGER NOT NULL,
+  -- this field distinguishes between proper groups and pending groups
+  is_pending BOOLEAN NOT NULL DEFAULT 0,
+  tnt_tx_counter INTEGER NOT NULL DEFAULT 0,
+  FOREIGN KEY (
+    credential_id,
+    credential_type,
+    credential_expiration_date
+  ) REFERENCES mls_credentials (
+    public_key_sha256,
+    credential_type,
+    expiration_date
+  ) ON DELETE RESTRICT
+);
+
+CREATE TABLE "mls_key_packages" (
+  key_package_ref BLOB NOT NULL PRIMARY KEY,
+  key_package BLOB NOT NULL,
+  credential_id BLOB NOT NULL,
+  credential_type INTEGER NOT NULL,
+  credential_expiration_date INTEGER NOT NULL,
+  hpke_init_public_key_hash BLOB NOT NULL UNIQUE,
+  leaf_encryption_key_hash BLOB NOT NULL UNIQUE,
+  -- this has to be nullable because openmls insists on filling it in a separate statement
+  -- because it thinks it's a separate entity
+  hpke_init_private_key BLOB NULL,
+  -- Deferred so that the credential only has to exist by the time the transaction commits. A history
+  -- client stores its key package before it can add the credential: it recovers the credential from
+  -- the stored key package.
+  FOREIGN KEY (
+    credential_id,
+    credential_type,
+    credential_expiration_date
+  ) REFERENCES mls_credentials (
+    public_key_sha256,
+    credential_type,
+    expiration_date
+  ) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+);
+
+CREATE INDEX idx_mls_groups_credential_fk ON mls_groups (
+  credential_id,
+  credential_type,
+  credential_expiration_date
+);
+
+CREATE INDEX idx_mls_key_packages_credential_fk ON mls_key_packages (
+  credential_id,
+  credential_type,
+  credential_expiration_date
+);
+
 CREATE TRIGGER delete_key_package_leaf_keypair
 AFTER
   DELETE ON mls_key_packages
@@ -189,9 +229,3 @@ DELETE FROM
 WHERE
   pk_sha256 = OLD.leaf_encryption_key_hash;
 END;
-
-CREATE TABLE "mls_psk_bundles" (
-  id_sha256 BLOB NOT NULL PRIMARY KEY,
-  psk_id BLOB NOT NULL,
-  psk BLOB NOT NULL
-);
