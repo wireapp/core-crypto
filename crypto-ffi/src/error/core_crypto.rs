@@ -155,14 +155,12 @@ impl From<RecursiveError> for CoreCryptoError {
 
         match_heterogenous!(innermost => {
             core_crypto::transaction_context::Error::ConversationAlreadyExists(id) => MlsError::ConversationAlreadyExists { conversation_id: id.clone().into() }.into(),
-            core_crypto::mls::conversation::Error::BufferedFutureMessage{..} => MlsError::BufferedFutureMessage.into(),
             core_crypto::mls::conversation::Error::DuplicateMessage => MlsError::DuplicateMessage.into(),
             core_crypto::mls::conversation::Error::MessageEpochTooOld => MlsError::MessageEpochTooOld.into(),
             core_crypto::mls::conversation::Error::SelfCommitIgnored => MlsError::SelfCommitIgnored.into(),
             core_crypto::mls::conversation::Error::StaleCommit => MlsError::StaleCommit.into(),
             core_crypto::mls::conversation::Error::StaleProposal => MlsError::StaleProposal.into(),
             core_crypto::mls::conversation::Error::UnbufferedFarFutureMessage => MlsError::WrongEpoch.into(),
-            core_crypto::mls::conversation::Error::BufferedCommit => MlsError::BufferedCommit.into(),
             core_crypto::mls::conversation::Error::MessageRejected { reason } => MlsError::MessageRejected { reason: reason.clone() }.into(),
             core_crypto::mls::conversation::Error::OrphanWelcome => MlsError::OrphanWelcome.into(),
             // The internal name is what we want, but renaming the external variant is a breaking change.
