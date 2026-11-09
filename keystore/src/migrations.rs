@@ -97,6 +97,27 @@ pub(crate) fn credential_type_from_serialized(credential: &[u8]) -> CryptoKeysto
         .map_err(|e| CryptoKeystoreError::MigrationFailed(format!("deserializing stored credential: {e}")))
 }
 
+/// Read the expiration date of a serialized credential as a unix timestamp in seconds.
+///
+/// For an X509 credential this is the leaf certificate's notAfter. Basic credentials don't expire, and get 0.
+pub(crate) fn expiration_date_from_serialized(credential: &[u8]) -> CryptoKeystoreResult<u64> {
+    let credential = MlsCredential::tls_deserialize_exact(credential)
+        .map_err(|e| CryptoKeystoreError::MigrationFailed(format!("deserializing stored credential: {e}")))?;
+
+    match credential.mls_credential() {
+        MlsCredentialType::Basic(_) => Ok(0),
+        MlsCredentialType::X509(cert) => {
+            let leaf = cert
+                .certificates
+                .first()
+                .ok_or(CryptoKeystoreError::MigrationFailed("No leaf certificate".into()))?;
+            let leaf = x509_cert::Certificate::from_der(leaf.as_slice())
+                .map_err(|e| CryptoKeystoreError::MigrationFailed(format!("decoding x509 certificate: {e}")))?;
+            Ok(leaf.tbs_certificate().validity().not_after.to_unix_duration().as_secs())
+        }
+    }
+}
+
 /// [`StoredCredential`] as it appeared prior to v37.
 #[derive(Clone)]
 pub(crate) struct StoredCredentialV36 {

@@ -123,11 +123,31 @@ pub(super) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationT
         return Err(CryptoKeystoreError::DatabaseFromTheFuture);
     }
 
+    // Migrations which rebuild a table that other tables reference. With foreign keys on, dropping the old table
+    // would cascade into every table referencing it, so those would all have to be rebuilt too. With them off, the
+    // references just point at whichever table holds the name once the migration is done.
+    //
+    // Nothing checks the copied rows while foreign keys are off, so such a migration has to keep every reference
+    // valid by construction, and its test should assert that `pragma_foreign_key_check` comes back empty.
+    //
+    // The pragma is a no-op inside a transaction, and refinery runs each migration in one, so it can't be set from
+    // the migration's own SQL.
+    const WITHOUT_FOREIGN_KEYS: &[i32] = &[50];
+
     let resume_from = (user_version + 1).max(newest_applied_version);
     for version in resume_from..=target_version {
         runner = runner.set_target(Target::Version(version));
 
-        let report = runner.run(conn).map_err(Box::new)?;
+        let foreign_keys_off = WITHOUT_FOREIGN_KEYS.contains(&version);
+        if foreign_keys_off {
+            conn.pragma_update(None, "foreign_keys", "OFF")?;
+        }
+        let report = runner.run(conn);
+        // Turn them back on before checking the result, so a failed migration doesn't leave them off.
+        if foreign_keys_off {
+            conn.pragma_update(None, "foreign_keys", "ON")?;
+        }
+        let report = report.map_err(Box::new)?;
 
         debug_assert!(
             report.applied_migrations().len() < 2,
@@ -179,6 +199,7 @@ fn run_meta_migration(version: i32, conn: &mut rusqlite::Connection) -> CryptoKe
         meta_migrations::v37::VERSION => meta_migrations::v37::meta_migration(&tx)?,
         meta_migrations::v39::VERSION => meta_migrations::v39::meta_migration(&tx)?,
         meta_migrations::v45::VERSION => meta_migrations::v45::meta_migration(&tx)?,
+        meta_migrations::v49::VERSION => meta_migrations::v49::meta_migration(&tx)?,
         _ => {}
     }
 
@@ -385,6 +406,8 @@ pub(crate) mod test {
             (46, 5473226583050100681),
             (47, 11056727624062448257),
             (48, 15131338238207930367),
+            (49, 16087021754816815038),
+            (50, 8650981285566570375),
         ];
 
         let runner = super::migrations::runner();
@@ -1251,7 +1274,9 @@ r9IJmL6kDQ==
         let path = db_file.path().to_str().unwrap();
 
         smol::block_on(async {
-            let db = seed_then_migrate(path, &key, 40, |conn| {
+            // Stop at V41: V49 parses the credential, and drops it along with its group if it can't, so
+            // the arbitrary credential bytes below would take the live conversation with them.
+            let db = seed_then_migrate_to(path, &key, 40, MigrationTarget::Version(41), |conn| {
                 // V40 made `mls_groups.credential_id` a foreign key onto `mls_credentials`, so the
                 // credential has to exist before the conversation which refers to it.
                 conn.execute(
