@@ -141,7 +141,7 @@ impl PkiEnvironment {
             .await
             .get_trust_anchors()
             .iter()
-            .map(|choice| Certificate::from_der(&choice.encoded_ta).expect("valid DER"))
+            .map(|choice| Certificate::from_der(choice.as_bytes()).expect("valid DER"))
             .collect()
     }
 
