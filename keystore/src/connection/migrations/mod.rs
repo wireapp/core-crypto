@@ -552,6 +552,8 @@ RgIhAPzHW4tb1ABKVdVaCD/FyEAAo/iKXYrIY7Sb/u1A6zEzAiEAvXkFu46HchDj
 IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
 -----END CERTIFICATE-----
 ";
+        /// The certificate's notAfter, 2126-09-08T09:13:32Z, as read by openssl.
+        const CERTIFICATE_NOT_AFTER: u64 = 4_944_532_412;
         const PRIVATE_KEY_HEX: &str = "6f5653a1cd645f9a8ca45e8dc724f5adb5117cd1ce0ec3cd1a11745e9c0a0a08";
         const CLIENT_ID: &[u8] = b"7f3a9c2e-5b1d-4e8a-9c6f-2d4b8e1a3f5c:a1b2c3d4e5f60718@wire.com";
 
@@ -615,6 +617,7 @@ IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
                 &crate::entities::StoredCredentialPk::new(
                     Sha256Hash::hash_from(&public_key),
                     CredentialType::X509.into(),
+                    CERTIFICATE_NOT_AFTER,
                 ),
             )
             .unwrap()
@@ -1034,7 +1037,7 @@ r9IJmL6kDQ==
             assert!(
                 StoredCredential::get(
                     &conn,
-                    &crate::entities::StoredCredentialPk::new(Sha256Hash::hash_from(PUBLIC_KEY), credential_type),
+                    &crate::entities::StoredCredentialPk::new(Sha256Hash::hash_from(PUBLIC_KEY), credential_type, 0),
                 )
                 .unwrap()
                 .is_some(),

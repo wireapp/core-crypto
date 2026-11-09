@@ -40,6 +40,7 @@ mod stored_credential {
         let ciphersuite = rand::random_range(1_u16..=7);
         let public_key = random_bytes(512..=1024);
         let credential_type = rand::random_range(1_u16..=2);
+        let expiration_date = u64::from(rand::random::<u32>());
         let private_key = random_bytes(128..=256);
 
         let mut entity = StoredCredential {
@@ -49,6 +50,7 @@ mod stored_credential {
             ciphersuite,
             public_key,
             credential_type,
+            expiration_date,
             private_key,
         };
 
@@ -126,10 +128,29 @@ mod stored_credential {
 
     #[apply(all_storage_types)]
     async fn credentials_with_the_same_public_key_and_different_types_can_coexist(context: KeystoreTestContext) {
-        let store = context.store();
         let first = random_entity();
         let mut second = first.clone();
         second.credential_type = first.credential_type.saturating_add(1);
+
+        assert_coexist(&context, first, second).await;
+    }
+
+    /// A renewed X509 credential keeps the key pair and type, and only gets a new expiration date.
+    #[apply(all_storage_types)]
+    async fn credentials_with_the_same_public_key_and_type_and_different_expiration_dates_can_coexist(
+        context: KeystoreTestContext,
+    ) {
+        let first = random_entity();
+        let mut second = first.clone();
+        second.expiration_date = first.expiration_date + 1;
+
+        assert_coexist(&context, first, second).await;
+    }
+
+    /// Save two credentials sharing a public key, and check that each can be fetched and deleted without
+    /// affecting the other.
+    async fn assert_coexist(context: &KeystoreTestContext, first: StoredCredential, second: StoredCredential) {
+        let store = context.store();
 
         let tx = store.new_transaction().await.unwrap();
         first.save(&*tx).unwrap();

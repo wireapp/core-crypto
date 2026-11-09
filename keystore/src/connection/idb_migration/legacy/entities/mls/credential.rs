@@ -180,6 +180,7 @@ impl<'a> SearchableEntity<CredentialFindFilters<'a>> for StoredCredentialV36 {
         CredentialFindFilters {
             hash,
             credential_type: _,
+            expiration_date: _,
             public_key,
             ciphersuite,
             earliest_validity,

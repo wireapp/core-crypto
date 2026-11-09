@@ -103,19 +103,8 @@ pub(crate) fn credential_type_from_serialized(credential: &[u8]) -> CryptoKeysto
 pub(crate) fn expiration_date_from_serialized(credential: &[u8]) -> CryptoKeystoreResult<u64> {
     let credential = MlsCredential::tls_deserialize_exact(credential)
         .map_err(|e| CryptoKeystoreError::MigrationFailed(format!("deserializing stored credential: {e}")))?;
-
-    match credential.mls_credential() {
-        MlsCredentialType::Basic(_) => Ok(0),
-        MlsCredentialType::X509(cert) => {
-            let leaf = cert
-                .certificates
-                .first()
-                .ok_or(CryptoKeystoreError::MigrationFailed("No leaf certificate".into()))?;
-            let leaf = x509_cert::Certificate::from_der(leaf.as_slice())
-                .map_err(|e| CryptoKeystoreError::MigrationFailed(format!("decoding x509 certificate: {e}")))?;
-            Ok(leaf.tbs_certificate().validity().not_after.to_unix_duration().as_secs())
-        }
-    }
+    crate::entities::credential_expiration_date(&credential)
+        .map_err(|e| CryptoKeystoreError::MigrationFailed(format!("reading the expiration date: {e}")))
 }
 
 /// [`StoredCredential`] as it appeared prior to v37.
