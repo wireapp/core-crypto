@@ -4,7 +4,8 @@ use std::{
 };
 
 use certval::{
-    PDVCertificate, PathValidationStatus, RevocationStatusCache, TimeOfInterest, buffer_to_hex, name_to_string,
+    PDVCertificate, PathValidationStatus, RevocationStatusCache, SubjectNameAndKey, TimeOfInterest, buffer_to_hex,
+    name_to_string,
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -28,7 +29,12 @@ fn get_name_serial_pair(cert: &PDVCertificate) -> (String, String) {
 }
 
 impl RevocationStatusCache for RevocationCache {
-    fn get_status(&self, cert: &PDVCertificate, time_of_interest: TimeOfInterest) -> PathValidationStatus {
+    fn get_status(
+        &self,
+        cert: &PDVCertificate,
+        _issuer: &dyn SubjectNameAndKey,
+        time_of_interest: TimeOfInterest,
+    ) -> PathValidationStatus {
         let Ok(cache_map) = self.cache_map.lock() else {
             return PathValidationStatus::RevocationStatusNotDetermined;
         };
@@ -42,7 +48,13 @@ impl RevocationStatusCache for RevocationCache {
         PathValidationStatus::RevocationStatusNotDetermined
     }
 
-    fn add_status(&self, cert: &PDVCertificate, next_update: u64, mut status: PathValidationStatus) {
+    fn add_status(
+        &self,
+        cert: &PDVCertificate,
+        _issuer: &dyn SubjectNameAndKey,
+        next_update: u64,
+        mut status: PathValidationStatus,
+    ) {
         let is_status_relevant = matches!(
             status,
             PathValidationStatus::Valid

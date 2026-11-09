@@ -3,7 +3,7 @@ use std::time::Duration;
 use certval::{
     CertSource, CertVector, CertificationPath, CertificationPathResults, CertificationPathSettings, DeferDecodeSigned,
     EXTS_OF_INTEREST, ExtensionProcessing as _, PDVTrustAnchorChoice, PathValidationStatus, TaSource, TimeOfInterest,
-    check_revocation, validate_path_rfc5280,
+    check_revocation_local, validate_path_rfc5280,
     validator::{PDVCertificate, path_validator::check_validity},
     verify_signatures,
 };
@@ -116,8 +116,7 @@ fn check_cpr(cpr: CertificationPathResults) -> Result<()> {
         match validation_status {
             certval::PathValidationStatus::Valid => Ok(()),
             // No CRL is available, this is fine
-            certval::PathValidationStatus::RevocationStatusNotDetermined
-            | certval::PathValidationStatus::RevocationStatusNotAvailable => Ok(()),
+            certval::PathValidationStatus::RevocationStatusNotDetermined => Ok(()),
             validation_status => Err(Error::CertValError(certval::Error::PathValidation(validation_status))),
         }
     } else {
@@ -198,10 +197,10 @@ pub(crate) fn validate_trust_anchor_cert(
     let ta = PDVTrustAnchorChoice::try_from(x509_cert::anchor::TrustAnchorChoice::Certificate(
         cert.decoded().clone(),
     ))?;
-    let mut certification_path = CertificationPath::new(ta, vec![], cert);
+    let certification_path = CertificationPath::new(ta, vec![], cert);
 
-    check_validity(pe, &cps, &mut certification_path, &mut CertificationPathResults::new())?;
-    verify_signatures(pe, &cps, &mut certification_path, &mut CertificationPathResults::new())?;
+    check_validity(pe, &cps, &certification_path, &mut CertificationPathResults::new())?;
+    verify_signatures(pe, &cps, &certification_path, &mut CertificationPathResults::new())?;
 
     Ok(())
 }
@@ -232,9 +231,9 @@ pub(crate) fn validate_cert(
 
     let mut result = Ok(());
 
-    let any_path_validates = paths.into_iter().any(|mut path| {
+    let any_path_validates = paths.into_iter().any(|path| {
         let mut cpr = CertificationPathResults::new();
-        let _ = validate_path_rfc5280(pe, &cps, &mut path, &mut cpr);
+        let _ = validate_path_rfc5280(pe, &cps, &path, &mut cpr);
         let r = check_cpr(cpr);
         if r.is_err() {
             result = r;
@@ -245,7 +244,7 @@ pub(crate) fn validate_cert(
             cps.set_check_crls(true);
             cps.set_revocation_max_age(Duration::from_hours(24));
             let mut cpr = CertificationPathResults::new();
-            let _ = check_revocation(pe, &cps, &mut path, &mut cpr);
+            let _ = check_revocation_local(pe, &cps, &path, &mut cpr);
             let r = check_cpr(cpr);
             if r.is_err() {
                 result = r;
@@ -273,7 +272,7 @@ pub(crate) fn validate_crl(
     }) {
         let akid = aki.extn_value.as_bytes();
         if let Ok(ta) = pe.get_trust_anchor(akid) {
-            spki_list.push(certval::source::ta_source::get_subject_public_key_info_from_trust_anchor(&ta.decoded_ta));
+            spki_list.push(certval::source::ta_source::get_subject_public_key_info_from_trust_anchor(ta.decoded()));
         } else if let Ok(intermediates) = pe.get_intermediates_by_skid(akid) {
             spki_list.extend(
                 intermediates
@@ -284,7 +283,7 @@ pub(crate) fn validate_crl(
     }
 
     if let Ok(ta) = pe.get_trust_anchor_by_name(&crl.tbs_cert_list.issuer) {
-        let spki = certval::source::ta_source::get_subject_public_key_info_from_trust_anchor(&ta.decoded_ta);
+        let spki = certval::source::ta_source::get_subject_public_key_info_from_trust_anchor(ta.decoded());
         if !spki_list.contains(&spki) {
             spki_list.push(spki);
         }
@@ -301,14 +300,8 @@ pub(crate) fn validate_crl(
     let crl_defer = DeferDecodeSigned::from_der(crl_raw)?;
 
     let any_spki_verifies = spki_list.into_iter().any(|spki| {
-        pe.verify_signature_message(
-            pe,
-            &crl_defer.tbs_field,
-            crl.signature.raw_bytes(),
-            &crl.signature_algorithm,
-            spki,
-        )
-        .is_ok()
+        pe.verify_signature_message(pe, &crl_defer.tbs_field, &crl.signature, &crl.signature_algorithm, spki)
+            .is_ok()
     });
 
     if any_spki_verifies {
