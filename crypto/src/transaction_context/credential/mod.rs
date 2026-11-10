@@ -73,7 +73,7 @@ impl TransactionContext {
 #[cfg(test)]
 mod tests {
     use core_crypto_keystore::{
-        entities::{StoredCredential, StoredCredentialPk, StoredKeyPackage},
+        entities::{StoredCredential, StoredKeyPackage},
         traits::FetchFromDatabase as _,
     };
 
@@ -85,10 +85,7 @@ mod tests {
             .transaction
             .database()
             .unwrap()
-            .get::<StoredCredential>(&StoredCredentialPk::new(
-                credential.public_key_hash(),
-                credential.r#type().into(),
-            ))
+            .get::<StoredCredential>(&credential.keystore_pk())
             .await
             .unwrap()
             .is_some()
