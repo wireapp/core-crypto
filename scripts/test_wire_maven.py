@@ -268,17 +268,25 @@ def test_signed_by_signing_key_or_its_primary():
 
 def test_descriptors_go_last_and_aggregating_module_after_the_rest(stage):
     stage(staged_files("core-crypto-kmp", module=AGGREGATING_MODULE))
-    order = [
-        path.name
-        for path in wm.upload_order(load(stage(staged_files("core-crypto-kmp-jvm"))))
+    rest, *descriptors = [
+        sorted(path.name for path in wave)
+        for wave in wm.upload_order(load(stage(staged_files("core-crypto-kmp-jvm"))))
     ]
-    descriptors = [name for name in order if name.endswith((".module", ".pom"))]
-    assert order[-len(descriptors) :] == descriptors
+    assert not any(name.endswith((".module", ".pom")) for name in rest)
     assert descriptors == [
-        f"core-crypto-kmp-jvm-{VERSION}.module",
-        f"core-crypto-kmp-jvm-{VERSION}.pom",
-        f"core-crypto-kmp-{VERSION}.module",
-        f"core-crypto-kmp-{VERSION}.pom",
+        [f"core-crypto-kmp-jvm-{VERSION}.module"],
+        [f"core-crypto-kmp-jvm-{VERSION}.pom"],
+        [f"core-crypto-kmp-{VERSION}.module"],
+        [f"core-crypto-kmp-{VERSION}.pom"],
+    ]
+
+
+def test_descriptors_of_sibling_artifacts_share_a_wave(stage):
+    stage(staged_files("core-crypto-jvm"))
+    waves = wm.upload_order(load(stage(staged_files("core-crypto-android"))))
+    assert [sorted(path.suffix for path in wave) for wave in waves[1:]] == [
+        [".module", ".module"],
+        [".pom", ".pom"],
     ]
 
 
