@@ -13,7 +13,7 @@ pub(crate) mod x509;
 
 use std::sync::Arc;
 
-use core_crypto_keystore::entities::StoredCredential;
+use core_crypto_keystore::entities::{StoredCredential, credential_expiration_date};
 use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, KeyPackage, SignatureScheme};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::crypto::OpenMlsCrypto;
@@ -25,7 +25,10 @@ pub use self::{
     credential_type::CredentialType,
     error::Error,
 };
-use crate::{CipherSuite, ClientId, ClientIdRef, OpenMlsError, RecursiveError, TlsCodecError, mls_provider::CRYPTO};
+use crate::{
+    CipherSuite, ClientId, ClientIdRef, KeystoreError, OpenMlsError, RecursiveError, TlsCodecError,
+    mls_provider::CRYPTO,
+};
 
 /// A cryptographic credential.
 ///
@@ -50,6 +53,11 @@ pub struct Credential {
     /// For an X509 credential this is the leaf certificate's `not_before` claim. A basic credential has
     /// no such claim: it reads 0 until the credential is persisted, and the insertion time thereafter.
     pub(crate) earliest_validity: u64,
+    /// Point at which this credential expires, in seconds since the unix epoch, or 0 if it never does.
+    ///
+    /// For an X509 credential this is the leaf certificate's `not_after` claim. Basic credentials don't expire.
+    /// Together with the public key and the credential type, this identifies the credential in the keystore.
+    pub(crate) expiration_date: u64,
 }
 
 impl TryFrom<Arc<StoredCredential>> for Credential {
@@ -75,6 +83,7 @@ impl TryFrom<Arc<StoredCredential>> for Credential {
             credential_type,
             mls_credential,
             earliest_validity,
+            expiration_date: stored_credential.expiration_date,
         })
     }
 }
@@ -99,6 +108,7 @@ impl Credential {
             mls_credential: MlsCredential::new_basic(client_id.into_inner()),
             signature_key_pair,
             earliest_validity: 0,
+            expiration_date: 0,
         })
     }
 
@@ -113,6 +123,9 @@ impl Credential {
         let leaf_node = key_package.leaf_node();
         let mls_credential = leaf_node.credential().clone();
         let credential_type = mls_credential.credential_type().try_into()?;
+        let expiration_date = credential_expiration_date(&mls_credential).map_err(KeystoreError::wrap(
+            "reading the expiration date of a key package's credential",
+        ))?;
         let signature_key_pair = SignatureKeyPair::from_raw(
             cipher_suite.signature_algorithm(),
             Vec::new(),
@@ -125,6 +138,7 @@ impl Credential {
             mls_credential,
             signature_key_pair,
             earliest_validity: 0,
+            expiration_date,
         })
     }
 
@@ -174,6 +188,13 @@ impl Credential {
     /// no such claim: it reads 0 until the credential is persisted, and the insertion time thereafter.
     pub fn earliest_validity(&self) -> u64 {
         self.earliest_validity
+    }
+
+    /// Point at which this credential expires, in seconds since the unix epoch, or 0 if it never does.
+    ///
+    /// For an X509 credential this is the leaf certificate's `not_after` claim. Basic credentials don't expire.
+    pub fn expiration_date(&self) -> u64 {
+        self.expiration_date
     }
 
     /// Get the client ID associated with this credential

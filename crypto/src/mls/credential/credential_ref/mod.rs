@@ -30,6 +30,8 @@ pub struct CredentialRef {
     cipher_suite: CipherSuite,
     // first unix timestamp at which the credential is valid
     earliest_validity: u64,
+    // unix timestamp at which the credential expires, or 0 if it never does
+    expiration_date: u64,
 }
 
 impl CredentialRef {
@@ -42,6 +44,7 @@ impl CredentialRef {
             r#type: credential.credential_type(),
             cipher_suite: credential.cipher_suite(),
             earliest_validity: credential.earliest_validity,
+            expiration_date: credential.expiration_date,
         }
     }
 
@@ -75,5 +78,12 @@ impl CredentialRef {
     /// See [`Credential::earliest_validity`][crate::Credential::earliest_validity].
     pub fn earliest_validity(&self) -> u64 {
         self.earliest_validity
+    }
+
+    /// Get the unix timestamp at which this credential expires, or 0 if it never does.
+    ///
+    /// See [`Credential::expiration_date`][crate::Credential::expiration_date].
+    pub fn expiration_date(&self) -> u64 {
+        self.expiration_date
     }
 }
