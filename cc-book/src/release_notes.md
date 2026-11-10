@@ -4,6 +4,11 @@
 
 ### Unreleased
 
+#### Bug fixes
+
+- It's now possible to rotate a X509 credential with another x509 credential which has the same public key but with a
+  different expiration date.
+
 #### TypeScript
 
 - Browser: removed `Database.close()`. Calls can be removed as it was a noop.
