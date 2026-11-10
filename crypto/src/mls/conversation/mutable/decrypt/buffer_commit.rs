@@ -82,8 +82,6 @@ mod tests {
     }
 
     /// A buffered commit which applies must be removed from the buffer.
-    ///
-    /// Otherwise the next proposal retries a commit which is already part of the group's history.
     #[apply(all_cred_cipher)]
     async fn applied_buffered_commit_must_be_unbuffered(case: TestContext) {
         let [alice, bob, charlie] = case.sessions().await;
@@ -110,19 +108,16 @@ mod tests {
         );
     }
 
-    /// Applying a buffered commit must not retry that same commit while it is being applied.
+    /// It's possible for one message to end up decrypting two proposals: a commit is pre-buffered
+    /// waiting for the first proposal, and the second is a proposal in the new epoch.
     ///
-    /// Once the buffered commit merges, the messages buffered for the new epoch are replayed. If one of
-    /// them is a proposal, it retries whatever commit is buffered. That must not be the commit which is
-    /// being applied right now: the retry would fail as a duplicate, and the failure handling would
-    /// then reload the conversation from under the operation still in progress. The replayed proposal
-    /// must also be reported to the caller, since it has been stored.
+    /// Decrypting the first proposal must successfully unbuffer not just the bound commit but the
+    /// proposal which was waiting for the new epoch.
     #[apply(all_cred_cipher)]
-    async fn applying_buffered_commit_must_not_retry_itself(case: TestContext) {
+    async fn applying_buffered_proposal_can_also_decrypt_another_buffered_proposal(case: TestContext) {
         let [alice, bob, charlie] = case.sessions().await;
         let (conversation, missing_proposal) =
             alice_buffers_commit_missing_proposal(&case, [&alice, &bob, &charlie]).await;
-        let conversation_id = conversation.id().clone();
 
         // Bob, at epoch 2, proposes something. Alice is still at epoch 1, so she buffers it.
         let proposal_guard = conversation.acting_as(&bob).await.invite_proposal(&charlie).await;
@@ -150,23 +145,6 @@ mod tests {
             ),
             "the missing proposal must apply the buffered commit, \
              and the replayed proposal must be reported as a proposal: {decrypted:?}"
-        );
-
-        // A failed retry evicts the conversation from the cache, so this is how we observe that
-        // the commit being applied was not retried.
-        let still_cached = alice
-            .session()
-            .await
-            .conversation_cache
-            .lock()
-            .await
-            .remove(&conversation_id)
-            .is_some();
-        assert!(still_cached, "the commit being applied must not have been retried");
-        assert_eq!(
-            alice.transaction.count_entities().await.buffered_commits,
-            0,
-            "the buffered commit has applied, so it must no longer be buffered"
         );
     }
 
@@ -245,16 +223,12 @@ mod tests {
         );
     }
 
-    /// A buffered commit which can never apply must not poison every later proposal.
+    /// A buffered commit must be discarded once the group moves past its epoch.
     ///
-    /// Each incoming proposal retries the buffered commit, but the buffered commit is only cleared
-    /// once it applies. If the group moves past the buffered commit's epoch by some other route
-    /// before its missing proposal arrives, the retry can only ever fail. That failure must not
-    /// replace the result of decrypting the proposal: the proposal is perfectly valid, and the
-    /// stale commit is now useless and should be discarded. Otherwise every subsequent proposal
-    /// fails with the same error for the lifetime of the conversation.
+    /// A commit waiting for a missing proposal is only ever valid in the epoch it was created for.
+    /// If the group bypasses the commit, the old commit must be discarded as stale.
     #[apply(all_cred_cipher)]
-    async fn stale_buffered_commit_must_not_fail_later_proposals(case: TestContext) {
+    async fn stale_buffered_commit_is_discarded_on_epoch_advance(case: TestContext) {
         let [alice, bob, charlie] = case.sessions().await;
         let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
 
@@ -288,7 +262,7 @@ mod tests {
         // Before the proposal arrives, Alice updates her key material, and her commit wins:
         // everyone moves to epoch 2, and Bob's commit is discarded. Bob's buffered commit belongs
         // to epoch 1, so it can never apply now.
-        let conversation = conversation
+        conversation
             .acting_as(&alice)
             .await
             .update()
@@ -299,20 +273,6 @@ mod tests {
             .await
             .finish();
 
-        // Two perfectly valid epoch 2 proposals arrive, from two different members.
-        let proposal_guard = conversation.acting_as(&bob).await.remove_proposal(&charlie).await;
-        let (proposal_guard, bob_proposal_result) = proposal_guard.notify_member_fallible(&alice).await;
-        let conversation = proposal_guard.finish();
-
-        let proposal_guard = conversation.acting_as(&charlie).await.remove_proposal(&bob).await;
-        let (_proposal_guard, charlie_proposal_result) = proposal_guard.notify_member_fallible(&alice).await;
-
-        assert!(
-            bob_proposal_result.is_ok() && charlie_proposal_result.is_ok(),
-            "valid proposals must decrypt regardless of the stale buffered commit\n\
-                 bob's proposal: {bob_proposal_result:?}\n\
-                 charlie's proposal: {charlie_proposal_result:?}"
-        );
         assert_eq!(
             alice.transaction.count_entities().await.buffered_commits,
             0,

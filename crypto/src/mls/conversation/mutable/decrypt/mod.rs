@@ -459,7 +459,7 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        async fn cannot_decrypt_app_message_from_future_epoch(case: TestContext) {
+        async fn future_epoch_app_message_is_deferred_until_its_commit(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob]).await;
@@ -472,7 +472,7 @@ mod tests {
                 let msg = b"Hello bob";
                 let encrypted = conversation.guard().await.encrypt_message(msg).await.unwrap();
 
-                // which Bob cannot decrypt because of Post CompromiseSecurity
+                // which Bob cannot decrypt because he won't have epoch 2 keys until he receives the commit
                 let decrypt = conversation.guard_of(&bob).await.decrypt_message(encrypted).await;
                 assert!(decrypt.unwrap().is_empty(), "the message must have been deferred");
 

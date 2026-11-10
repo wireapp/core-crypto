@@ -235,8 +235,7 @@ mod tests {
             let conversation = commit_guard.process_member_changes().await.finish();
 
             // And now Bob will have to decrypt those messages while he hasn't yet merged its commit
-            // To add more fun, he will buffer the messages in exactly the wrong order (to make
-            // sure he reapplies them in the right order afterwards)
+            // To add more fun, he will buffer the messages in the reverse order in which they were sent.
             let messages = [commit, remove_proposal]
                 .into_iter()
                 .map(|m| m.to_bytes().unwrap())
@@ -301,10 +300,11 @@ mod tests {
                 .map(|(_conversation_id, epoch)| epoch)
                 .collect::<Vec<_>>();
             dbg!(&observed_epochs);
+            // Bob's observer can't see the initial setup commit
             assert_eq!(
-                observed_epochs.len(),
-                2,
-                "Bob's own commit and Alice's restored commit each changed the epoch"
+                observed_epochs.as_slice(),
+                &[2, 3],
+                "Bob's own commit and Alice's restored commit each created a subsequent epoch"
             );
         })
         .await
@@ -337,8 +337,7 @@ mod tests {
             let conversation = commit_guard.process_member_changes().await.finish();
 
             // And now Alice will have to decrypt those messages while he hasn't yet merged the commit
-            // To add more fun, he will buffer the messages in exactly the wrong order (to make
-            // sure he reapplies them in the right order afterwards)
+            // To add more fun, he will buffer the messages in the reverse order from which they were sent.
             let messages = vec![commit, proposal].into_iter().map(|m| m.to_bytes().unwrap());
             for m in messages {
                 let decrypt = conversation.guard_of(&alice).await.decrypt_message(m).await;
@@ -402,10 +401,12 @@ mod tests {
                 .map(|(_conversation_id, epoch)| epoch)
                 .collect::<Vec<_>>();
             dbg!(&observed_epochs);
+            // Alice's transaction also holds her commit creating the conversation, so the observer
+            // sees that epoch change also.
             assert_eq!(
-                observed_epochs.len(),
-                3,
-                "there was 2 buffered commits changing the epoch plus the outer commit changing the epoch"
+                observed_epochs.as_slice(),
+                &[1, 2, 3],
+                "setup commit, original commit, restored commit; each create a subsequent epoch"
             );
         })
         .await
