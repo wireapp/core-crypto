@@ -162,4 +162,100 @@ mod tests {
         assert!(!credential_is_stored(&alice, &credential).await);
         assert_eq!(count_key_packages_for(&alice, &credential).await, 0);
     }
+
+    /// An X509 credential renewed over the same key pair can be stored next to the original. Each keeps its own key
+    /// packages, conversations keep using the original until they are moved to the renewal, and once they have been,
+    /// the original can be removed.
+    #[apply(all_cred_cipher)]
+    async fn renewed_x509_credential_coexists_with_the_original(case: TestContext) {
+        use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+        use crate::test_utils::x509::PkiKeypair;
+
+        /// How much later the renewal expires than the original.
+        const RENEWAL: u64 = 86_400;
+        /// Slack for the seconds which pass between computing the renewal's lifetime and issuing it.
+        const CLOCK_TOLERANCE: u64 = 5;
+        /// Test certificates start their validity a second in the past, so they also expire a second early.
+        const BACKDATING: u64 = 1;
+
+        // A basic credential has no expiration date, so there's nothing to renew.
+        if !case.is_x509() {
+            return;
+        }
+
+        let [alice] = case.sessions().await;
+        let conversation = case.create_conversation([&alice]).await;
+        let database = alice.transaction.database().unwrap();
+        let original_ref = alice.initial_credential.clone();
+        let original = original_ref.load(&*database).await.unwrap();
+
+        // Issue a certificate for the same client and key pair, which expires a day after the original.
+        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        let key_pair =
+            PkiKeypair::new(case.signature_scheme(), original.signature_key_pair.private().to_vec()).unwrap();
+        let certificate = CertificateBundle::new_with_expiration(
+            "alice_wire",
+            "Alice Smith",
+            Some(&original.client_id().to_owned()),
+            Some(key_pair),
+            alice.x509_chain_unchecked().find_local_intermediate_ca(),
+            Some(Duration::from_secs(original.expiration_date() + RENEWAL - now)),
+        );
+        let renewed = Credential::x509(case.cipher_suite(), certificate).unwrap();
+        assert_eq!(
+            renewed.signature_key_pair.public(),
+            original.signature_key_pair.public(),
+            "a renewal keeps the key pair"
+        );
+        let expected_expiration = original.expiration_date() + RENEWAL;
+        assert!(
+            (expected_expiration - BACKDATING..=expected_expiration + CLOCK_TOLERANCE)
+                .contains(&renewed.expiration_date()),
+            "the renewal expires when its certificate does: expected about {expected_expiration}, got {}",
+            renewed.expiration_date()
+        );
+
+        let renewed_ref = alice
+            .transaction
+            .add_credential(renewed.clone())
+            .await
+            .expect("a renewed credential can be stored next to the original");
+        assert_eq!(renewed_ref.public_key_hash(), original_ref.public_key_hash());
+        assert_eq!(renewed_ref.r#type(), original_ref.r#type());
+
+        // Each ref resolves to its own credential.
+        assert_eq!(original_ref.load(&*database).await.unwrap(), original);
+        assert_eq!(renewed_ref.load(&*database).await.unwrap(), renewed);
+
+        // Key packages belong to the credential they were generated from, not to every credential with that key.
+        let original_key_packages = count_key_packages_for(&alice, &original_ref).await;
+        alice.new_keypackage_from_ref(renewed_ref.clone(), None).await;
+        assert_eq!(count_key_packages_for(&alice, &renewed_ref).await, 1);
+        assert_eq!(
+            count_key_packages_for(&alice, &original_ref).await,
+            original_key_packages
+        );
+
+        assert_eq!(
+            *conversation.guard().await.credential().await.unwrap(),
+            original,
+            "adding a renewal doesn't move existing conversations to it"
+        );
+
+        let conversation = conversation.set_credential_by_ref_notify(&renewed_ref).await;
+        assert_eq!(*conversation.guard().await.credential().await.unwrap(), renewed);
+
+        // Removing a credential which a conversation still uses fails, so this also shows that the stored
+        // conversation now references the renewal rather than the original.
+        let removed = alice
+            .transaction
+            .remove_credential(&original_ref)
+            .await
+            .expect("the original can be removed once no conversation uses it");
+        assert!(removed, "removal must report that the credential was deleted");
+        assert!(!credential_is_stored(&alice, &original_ref).await);
+        assert!(credential_is_stored(&alice, &renewed_ref).await);
+        assert_eq!(*conversation.guard().await.credential().await.unwrap(), renewed);
+    }
 }
