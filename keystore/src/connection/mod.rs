@@ -322,13 +322,13 @@ mod export_test {
             let dest_path = temp_dir.path().join("test_export_dest.db");
 
             // Write test database
-            std::fs::write(&source_path, crate::migrations::test::DB).unwrap();
+            std::fs::write(&source_path, crate::migrations::test_helpers::DB).unwrap();
 
             // Migrate the database to use the new key format
             let key = DatabaseKey::generate();
             crate::migrations::migrate_db_key_type_to_bytes(
                 source_path.to_str().unwrap(),
-                crate::migrations::test::OLD_KEY,
+                crate::migrations::test_helpers::OLD_KEY,
                 &key,
             )
             .await

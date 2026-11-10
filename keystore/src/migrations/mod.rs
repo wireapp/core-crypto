@@ -1,5 +1,7 @@
 pub(crate) mod historical;
 mod meta_migrations;
+#[cfg(test)]
+pub(crate) mod test_helpers;
 
 use refinery::Target;
 use rusqlite::{Connection, functions::FunctionFlags};
@@ -271,7 +273,7 @@ pub async fn migrate_db_key_type_to_bytes(
 }
 
 #[cfg(all(test, not(target_os = "unknown")))]
-pub(crate) mod test {
+mod test {
     use std::io::Write;
 
     use openmls::prelude::{Ciphersuite, Credential as MlsCredential, TlsSerializeTrait as _};
@@ -282,15 +284,14 @@ pub(crate) mod test {
         DatabaseKey, Sha256Hash,
         connection::{Database, migrate_db_key_type_to_bytes},
         entities::{StoredCredential, StoredEncryptionKeyPair, StoredEpochEncryptionKeypair, StoredPskBundle},
-        migrations::MigrationTarget,
+        migrations::{
+            MigrationTarget,
+            test_helpers::{
+                DB, OLD_KEY, pending_messages, seed_then_migrate, seed_then_migrate_to, stored_key_encoding, temp_db,
+            },
+        },
         traits::{Entity, EntityGetBorrowed as _},
     };
-
-    pub(crate) const DB: &[u8] = include_bytes!(concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/../crypto-ffi/bindings/jvm/src/test/resources/db-v10002003.sqlite"
-    ));
-    pub(crate) const OLD_KEY: &str = "secret";
 
     // A self-signed P256 certificate for client `7f3a9c2e-5b1d-4e8a-9c6f-2d4b8e1a3f5c:a1b2c3d4e5f60718@wire.com`
     const CERTIFICATE_PEM: &str = "-----BEGIN CERTIFICATE-----
@@ -308,73 +309,6 @@ IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
 ";
     const PRIVATE_KEY_HEX: &str = "6f5653a1cd645f9a8ca45e8dc724f5adb5117cd1ce0ec3cd1a11745e9c0a0a08";
     const CLIENT_ID: &[u8] = b"7f3a9c2e-5b1d-4e8a-9c6f-2d4b8e1a3f5c:a1b2c3d4e5f60718@wire.com";
-
-    /// Seed a fresh database at `schema_version`, then reopen it migrated all the way to latest.
-    ///
-    /// The inner database is dropped before reopening, so that the reopen actually runs the
-    /// migrations under test against the seeded rows.
-    async fn seed_then_migrate(
-        path: &str,
-        key: &DatabaseKey,
-        schema_version: u16,
-        seed: impl FnOnce(&rusqlite::Connection),
-    ) -> std::sync::Arc<Database> {
-        seed_then_migrate_to(path, key, schema_version, MigrationTarget::Latest, seed).await
-    }
-
-    /// Like [`seed_then_migrate`], but stops migrating at `target`.
-    ///
-    /// For tests of one migration's behaviour which a later migration deliberately changes.
-    async fn seed_then_migrate_to(
-        path: &str,
-        key: &DatabaseKey,
-        schema_version: u16,
-        target: MigrationTarget,
-        seed: impl FnOnce(&rusqlite::Connection),
-    ) -> std::sync::Arc<Database> {
-        {
-            let db = Database::open_at_schema_version(path, key, MigrationTarget::Version(schema_version))
-                .await
-                .expect("opening the database at the pre-migration schema version");
-            let conn = db.conn().await;
-            seed(&conn);
-        }
-        Database::open_at_schema_version(path, key, target)
-            .await
-            .expect("reopening migrated to the target version")
-            .into()
-    }
-
-    /// The storage class and length of a stored key, so that a failure says *why* it failed.
-    ///
-    /// A correctly backfilled key reads as `("blob", 32)`; a hex-encoded one as `("text", 64)`.
-    fn stored_key_encoding(conn: &rusqlite::Connection, table: &str, column: &str) -> (String, i64) {
-        conn.query_row(
-            &format!("SELECT typeof({column}), length({column}) FROM {table}"),
-            [],
-            |row| Ok((row.get(0)?, row.get(1)?)),
-        )
-        .expect("reading back the stored key")
-    }
-
-    /// Every row of `mls_pending_messages` as `(conversation_id, message)`, sorted by message.
-    ///
-    /// Reads the table directly rather than through an entity, so that it keeps working at whichever
-    /// schema version between V31 and V51 a test stops at.
-    fn pending_messages(conn: &rusqlite::Connection) -> Vec<(Vec<u8>, Vec<u8>)> {
-        let mut stmt = conn
-            .prepare("SELECT conversation_id, message FROM mls_pending_messages ORDER BY message")
-            .expect("preparing to read pending messages");
-        stmt.query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
-            .expect("reading pending messages")
-            .collect::<Result<_, _>>()
-            .expect("reading pending messages")
-    }
-
-    /// A temporary database path, kept alive by the returned file handle.
-    fn temp_db() -> (NamedTempFile, DatabaseKey) {
-        (NamedTempFile::new().unwrap(), DatabaseKey::generate())
-    }
 
     #[test]
     fn released_migration_checksums_are_unchanged() {
@@ -2029,7 +1963,7 @@ r9IJmL6kDQ==
         use crate::{
             Sha256Hash,
             entities::{InboxMessage, WaitingFor},
-            migrations::meta_migrations::v51::tests::{
+            migrations::test_helpers::{
                 EMPTY_COMMIT, private_message, private_message_with_ciphertext, public_message, targeted_message,
                 transient_message,
             },
