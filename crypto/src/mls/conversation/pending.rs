@@ -59,6 +59,7 @@ impl PendingConversation {
             ciphersuite: group.ciphersuite() as u16,
             credential_id: current_credential.public_key_hash,
             credential_type: current_credential.credential_type,
+            credential_expiration_date: current_credential.expiration_date,
             own_leaf_index: group.own_leaf_index().u32(),
             is_pending: true,
             tnt_tx_counter: Default::default(),

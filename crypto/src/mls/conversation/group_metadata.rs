@@ -7,7 +7,7 @@
 
 use core_crypto_keystore::{
     Sha256Hash,
-    entities::{StoredCredential, StoredCredentialPk},
+    entities::{StoredCredential, StoredCredentialPk, credential_expiration_date},
     traits::FetchFromDatabase,
 };
 use openmls::{
@@ -90,9 +90,13 @@ pub(super) async fn current_credential_pk(
     ))?;
     let id = Sha256Hash::hash_from(leaf.signature_key().as_slice());
     let credential_type: u16 = leaf.credential().credential_type().into();
+    let expiration_date = credential_expiration_date(leaf.credential()).map_err(KeystoreError::wrap(
+        "reading the expiration date of our leaf's credential",
+    ))?;
     let pk = StoredCredentialPk {
         public_key_hash: id,
         credential_type,
+        expiration_date,
     };
 
     // The credential we present must be one we hold, so its absence is a real inconsistency rather

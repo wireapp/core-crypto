@@ -111,6 +111,7 @@ mod tests {
                     ),
                     signature_key_pair,
                     earliest_validity: 0,
+                    expiration_date: 0,
                 };
                 let cred_ref = carol.add_credential(credential).await.unwrap();
                 let carol_key_package = carol.new_keypackage_from_ref(cred_ref, None).await;
