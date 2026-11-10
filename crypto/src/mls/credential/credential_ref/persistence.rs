@@ -18,7 +18,7 @@ use crate::{Credential, CredentialRef, KeystoreError, RecursiveError};
 impl CredentialRef {
     /// Compute the credential's primary key as the keystore understands it.
     pub(crate) fn keystore_pk(&self) -> StoredCredentialPk {
-        StoredCredentialPk::new(self.public_key_hash(), self.r#type().into())
+        StoredCredentialPk::new(self.public_key_hash(), self.r#type().into(), self.expiration_date())
     }
 
     /// Load the credential which matches this ref from the database.

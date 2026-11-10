@@ -13,7 +13,7 @@ use super::{Error, Result};
 #[cfg(test)]
 use crate::test_utils::x509::{PkiKeypair, X509Certificate};
 use crate::{
-    CipherSuite, ClientId, Credential, CredentialType, OpenMlsError, RecursiveError,
+    CipherSuite, ClientId, Credential, CredentialType, KeystoreError, OpenMlsError, RecursiveError,
     mls::credential::ext::CredentialExt as _,
 };
 
@@ -112,6 +112,9 @@ impl Credential {
             CertificateKeyPair::new(sk, chain.clone()).map_err(OpenMlsError::wrap("creating certificate key pair"))?;
 
         let credential = MlsCredential::new_x509(chain).map_err(OpenMlsError::wrap("creating x509 credential"))?;
+        let expiration_date = core_crypto_keystore::entities::credential_expiration_date(&credential).map_err(
+            KeystoreError::wrap("reading the 'not after' claim from the leaf cert in Credential::x509"),
+        )?;
 
         let cb = Credential {
             cipher_suite,
@@ -119,6 +122,7 @@ impl Credential {
             mls_credential: credential,
             signature_key_pair: kp.0,
             earliest_validity,
+            expiration_date,
         };
         Ok(cb)
     }

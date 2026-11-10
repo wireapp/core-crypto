@@ -106,6 +106,7 @@ impl CredentialRef {
                     r#type,
                     cipher_suite,
                     earliest_validity: stored_credential.created_at,
+                    expiration_date: stored_credential.expiration_date,
                     public_key_hash: Sha256Hash::hash_from(&stored_credential.public_key),
                 })
             }
