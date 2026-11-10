@@ -1,27 +1,34 @@
 use core_crypto_keystore::{
     Sha256Hash, Transaction,
-    entities::{StoredCredential, StoredCredentialPk},
+    entities::{StoredCredential, StoredCredentialPk, credential_expiration_date},
     traits::{EntityDatabaseMutation as _, FetchFromDatabase},
 };
-use openmls::prelude::SignaturePublicKey;
+use openmls::prelude::{Credential as MlsCredential, SignaturePublicKey};
 use tls_codec::Serialize as _;
 
 use super::{Error, Result};
 use crate::{Credential, CredentialRef, KeystoreError, TlsCodecError};
 
 impl Credential {
-    /// Loads a credential with the given public key from the database.
+    /// Loads the stored credential matching a leaf node's public key and credential from the database.
+    ///
+    /// Several stored credentials can share a public key, for instance a renewed X509 credential and the one it
+    /// replaces, so the credential itself is needed to tell them apart.
     ///
     /// Should not be passed over the ffi boundary.
     pub(crate) async fn load(
         database: &impl FetchFromDatabase,
         public_key: &SignaturePublicKey,
-        credential_type: openmls::prelude::CredentialType,
+        credential: &MlsCredential,
     ) -> Result<Self> {
+        let expiration_date = credential_expiration_date(credential).map_err(KeystoreError::wrap(
+            "reading the expiration date of the credential to load",
+        ))?;
         let stored_credential = &database
             .get::<StoredCredential>(&StoredCredentialPk::new(
                 Sha256Hash::hash_from(public_key.as_slice()),
-                credential_type.into(),
+                credential.credential_type().into(),
+                expiration_date,
             ))
             .await
             .map_err(KeystoreError::wrap("getting credential by public key"))?
@@ -61,6 +68,7 @@ impl Credential {
             created_at: self.earliest_validity,
             ciphersuite: u16::from(self.cipher_suite),
             credential_type: self.credential_type.into(),
+            expiration_date: self.expiration_date,
             private_key: self.signature_key_pair.private().to_owned(),
             public_key: self.signature_key().public().to_owned(),
         };

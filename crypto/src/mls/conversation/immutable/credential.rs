@@ -6,7 +6,7 @@ use super::{Error, Result};
 use crate::{ClientId, Credential, RecursiveError, mls::conversation::group_metadata};
 
 impl super::Conversation {
-    /// Find the current leaf node, then load it scredential.
+    /// Find the current leaf node, then load its credential.
     pub(crate) async fn find_current_credential(&self) -> Result<Arc<Credential>> {
         // if the group has pending proposals one of which is an own update proposal, we should take the credential from
         // there.
@@ -15,7 +15,7 @@ impl super::Conversation {
             group_metadata::current_own_leaf(&group).ok_or(Error::MlsGroupInvalidState("own leaf node not found"))?;
         let credential = self
             .session()?
-            .load_credential(own_leaf.signature_key(), own_leaf.credential().credential_type())
+            .load_credential(own_leaf.signature_key(), own_leaf.credential())
             .await
             .map_err(RecursiveError::context("finding current credential"))?;
         Ok(credential)
