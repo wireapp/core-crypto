@@ -315,4 +315,27 @@ impl ConversationMut {
             encrypted_message: None,
         }))
     }
+
+    /// Reinit the conversation. To switch cipher suites, provide a `new_credential` with another cipher suite than than
+    /// current one.
+    pub async fn reinit(&self, new_credential: CredentialRef) -> Result<()> {
+        let extensions = todo!();
+        let cipher_suite = todo!();
+        let version = todo!();
+
+        let provider = &self.crypto_provider().await?;
+        let credential = self.credential().await?;
+
+        // OpenMLS will only allow creating the reinit proposal if there are no pending proposals.
+        self.mutate_group(async |_, group, _| {
+            let signer = &credential.signature_key_pair;
+            group
+                .propose_reinit(provider, signer, extensions, cipher_suite, version)
+                .map_err(OpenMlsError::wrap("creating reinit proposal"))
+                .map_err(Into::into)
+        })
+        .await?;
+
+        self.commit_pending_proposals().await
+    }
 }
