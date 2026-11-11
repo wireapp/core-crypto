@@ -550,6 +550,12 @@ def positive_int(value: str) -> int:
     return number
 
 
+def https_url(value: str) -> str:
+    if not value.startswith("https://"):
+        raise argparse.ArgumentTypeError(f"must start with https://, not {value!r}")
+    return value
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__.splitlines()[0],
@@ -590,6 +596,7 @@ def main(argv: list[str] | None = None) -> int:
     release.add_argument("--key-prefix", default="", help="prepended to every S3 key")
     release.add_argument(
         "--public-url",
+        type=https_url,
         default=PUBLIC_URL,
         help="where the bucket is served (default: %(default)s)",
     )
@@ -604,9 +611,6 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     args = parser.parse_args(argv)
-    HTTPS = "https://"
-    if hasattr(args, 'public_url') and not args.public_url.startswith(HTTPS):
-        raise ValueError(f"--public-url value must start with '{HTTPS}'")
     try:
         repo = load_repo(args.repo, args.group, args.version, args.allowed_prefix)
         if unsigned := unsigned_files(repo):
