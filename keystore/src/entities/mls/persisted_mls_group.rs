@@ -16,16 +16,19 @@ pub struct PersistedMlsGroup {
     pub state: Vec<u8>,
     pub epoch: u64,
     pub ciphersuite: u16,
-    /// Hash of the public key of the credential currently in use by our leaf node, if one
-    /// can be determined. `None` if the group's leaf node has been removed, or if that
-    /// credential is no longer present in `mls_credentials`.
+    /// Hash of the public key of the credential our leaf node uses.
+    ///
+    /// Together with `credential_type` and `credential_not_before`, this is the primary key of that credential in
+    /// `mls_credentials`, and a foreign key onto it.
     #[zeroize(skip)]
     pub credential_id: Sha256Hash,
-    /// The type of the credential identified by `credential_id`. `mls_credentials`'s primary key
-    /// is `(public_key_sha256, credential_type)`, not `public_key_sha256` alone, so this always
-    /// travels alongside `credential_id`: both are `Some` or both are `None`.
+    /// The type of the credential identified by `credential_id`.
     #[zeroize(skip)]
     pub credential_type: u16,
+    /// The `not_before` of the credential identified by `credential_id`: its leaf certificate's for an X509
+    /// credential, and 0 for any other.
+    #[zeroize(skip)]
+    pub credential_not_before: u64,
     pub own_leaf_index: u32,
     /// Distinguishes a group joined by external commit but not yet merged from an established one.
     pub is_pending: bool,
@@ -56,6 +59,7 @@ impl PersistedMlsGroup {
             ciphersuite: row.get("ciphersuite")?,
             credential_id: row.get("credential_id")?,
             credential_type: row.get("credential_type")?,
+            credential_not_before: row.get("credential_not_before")?,
             own_leaf_index: row.get("own_leaf_index")?,
             is_pending: row.get("is_pending")?,
             tnt_tx_counter: row.get("tnt_tx_counter")?,
@@ -112,15 +116,18 @@ impl EntityDatabaseMutation for PersistedMlsGroup {
         // "delete then insert", so all those foreign keys would cascade-delete before we insert a replacement.
         let mut stmt = conn.prepare_cached(
             "INSERT INTO mls_groups
-                ( id,  state,  epoch,  ciphersuite,  credential_id,  credential_type,  own_leaf_index,  is_pending,  tnt_tx_counter)
+                ( id,  state,  epoch,  ciphersuite,  credential_id,  credential_type,  credential_not_before,
+                  own_leaf_index,  is_pending,  tnt_tx_counter)
              VALUES
-                (:id, :state, :epoch, :ciphersuite, :credential_id, :credential_type, :own_leaf_index, :is_pending, :tnt_tx_counter)
+                (:id, :state, :epoch, :ciphersuite, :credential_id, :credential_type, :credential_not_before,
+                 :own_leaf_index, :is_pending, :tnt_tx_counter)
              ON CONFLICT (id) DO UPDATE SET
                 state = excluded.state,
                 epoch = excluded.epoch,
                 ciphersuite = excluded.ciphersuite,
                 credential_id = excluded.credential_id,
                 credential_type = excluded.credential_type,
+                credential_not_before = excluded.credential_not_before,
                 own_leaf_index = excluded.own_leaf_index,
                 is_pending = excluded.is_pending,
                 tnt_tx_counter = excluded.tnt_tx_counter",
@@ -132,6 +139,7 @@ impl EntityDatabaseMutation for PersistedMlsGroup {
             ":ciphersuite": self.ciphersuite,
             ":credential_id": self.credential_id,
             ":credential_type": self.credential_type,
+            ":credential_not_before": self.credential_not_before,
             ":own_leaf_index": self.own_leaf_index,
             ":is_pending": self.is_pending,
             ":tnt_tx_counter": self.tnt_tx_counter,

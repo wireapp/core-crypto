@@ -105,23 +105,12 @@ pub(crate) fn not_before_from_serialized(credential: &[u8]) -> CryptoKeystoreRes
     let credential = MlsCredential::tls_deserialize_exact(credential)
         .map_err(|e| CryptoKeystoreError::MigrationFailed(format!("deserializing stored credential: {e}")))?;
 
-    let MlsCredentialType::X509(certificate) = credential.mls_credential() else {
+    if !matches!(credential.mls_credential(), MlsCredentialType::X509(_)) {
         return Err(CryptoKeystoreError::MigrationFailed(
             "expected an X509 credential".into(),
         ));
-    };
-    let leaf = certificate
-        .certificates
-        .first()
-        .ok_or(CryptoKeystoreError::MigrationFailed("No leaf certificate".into()))?;
-    let leaf = x509_cert::Certificate::from_der(leaf.as_slice())
-        .map_err(|e| CryptoKeystoreError::MigrationFailed(format!("decoding x509 certificate: {e}")))?;
-    Ok(leaf
-        .tbs_certificate()
-        .validity()
-        .not_before
-        .to_unix_duration()
-        .as_secs())
+    }
+    crate::entities::credential_not_before(&credential)
 }
 
 /// [`StoredCredential`] as it appeared prior to v37.
