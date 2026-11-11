@@ -1,11 +1,12 @@
 //! This module contains the implementation of [TransactionContext::join_by_external_commit].
 
+use core_crypto_keystore::{entities::InboxMessage, traits::DeletableBySearchKey as _};
 use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
 use super::Result;
 use crate::{
-    CommitBundle, ConversationConfiguration, ConversationId, CredentialRef, GroupInfoBundle, OpenMlsError,
-    RecursiveError,
+    CommitBundle, ConversationConfiguration, ConversationId, CredentialRef, GroupInfoBundle, KeystoreError,
+    OpenMlsError, RecursiveError,
     mls::{
         self,
         conversation::{ConversationIdRef, PendingConversation},
@@ -34,6 +35,8 @@ impl TransactionContext {
     /// the only reason to call this on a conversation you already have is that its local state is already
     /// considered unusable — that is what "rejoin" means here — so there is nothing worth preserving in the row it
     /// replaces.
+    ///
+    /// If this join is a rejoin of an existing group, any messages currently buffered for that group are discarded.
     ///
     /// # Arguments
     /// * `group_info` - a GroupInfo wrapped in an MLS message. it can be obtained by deserializing a TLS serialized
@@ -92,11 +95,11 @@ impl TransactionContext {
             ..Default::default()
         };
 
-        let id = ConversationIdRef::new(group_info.group_id().as_slice());
-        if self.conversation_exists(id, Some(false)).await? {
+        let id = ConversationIdRef::new(group_info.group_id().as_slice()).to_owned();
+        if self.conversation_exists(&id, Some(false)).await? {
             // rejoining replaces the group without going through `mutate_group`, so we have to
             // capture epoch data from an existing group here
-            let conversation = self.conversation(id).await?;
+            let conversation = self.conversation(&id).await?;
             conversation
                 .record_epoch_data(conversation.group().await.mls_group())
                 .await
@@ -126,11 +129,21 @@ impl TransactionContext {
         let group_info = GroupInfoBundle::try_new_full_plaintext(group_info)
             .map_err(RecursiveError::context("trying new full plaintext group info bundle"))?;
 
-        let id = ConversationId::from(group.group_id().as_slice());
-
         let pending_conversation = PendingConversation::from_mls_group(group, self.clone())
             .await
             .map_err(RecursiveError::context("creating pending conversation"))?;
+
+        // Having just built a join commit, we clear any inbox messages which may be stored.
+        //
+        // Three cases:
+        //
+        // 1. Fresh join: nothing can be in the inbox, no effect, harmless.
+        // 2. Rejoin: gets rid of the old group's leftovers, which wouldn't decrypt with the new group anyway.
+        // 3. Retrying a pending join: also clears messages buffered against the pending group; as we're
+        //    currently replacing that, we couldn't have decrypted them anyway.
+        InboxMessage::delete_all_matching(inner.transaction(), id.keystore()).map_err(KeystoreError::wrap(
+            "deleting all inbox messages for conversation when creating external join commit",
+        ))?;
 
         let commit_bundle = CommitBundle {
             welcome: None,
