@@ -9,7 +9,8 @@ Usage:
     scripts/wire-maven.py verify REPO --version VERSION [--key-id KEY_ID]
                                       [--expect-artifact ARTIFACT_ID ...]
     scripts/wire-maven.py release REPO --version VERSION [--bucket BUCKET]
-                                       [--key-prefix PREFIX] [--public-url URL] [--dry-run]
+                                       [--key-prefix PREFIX] [--public-url URL] [--jobs N]
+                                       [--dry-run]
 
 REPO is a local Maven repository as Gradle's `publishAllPublicationsToWireMavenRepository`
 writes it: `com/wire/<artifact>/<version>/<files>`. Gradle also writes
@@ -31,6 +32,9 @@ and one with different content is a hard error. A release uploads, in order:
    exists, a partly uploaded version looks unpublished rather than broken;
 3. each artifact's `maven-metadata.xml`, now listing the new version.
 
+Uploads run concurrently (see --jobs), but only within a step: each step starts once the
+previous one has finished, and stops the release if any of its uploads failed.
+
 A pre-release version (one with a `-suffix`) is uploaded but never listed in
 `maven-metadata.xml`, so only a build that asks for that exact version can find it. Tools
 disagree on how to order such suffixes (Maven sorts `10.3.1-test1` after `10.3.1`, Gradle
@@ -51,6 +55,7 @@ import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Iterator
+from concurrent.futures import FIRST_EXCEPTION, ThreadPoolExecutor, wait
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from itertools import groupby
@@ -72,6 +77,9 @@ SIGNATURE_SUFFIX = ".asc"
 CHECKSUM_SUFFIXES = (".md5", ".sha1", ".sha256", ".sha512")
 # In upload order: Gradle prefers the module file, so it should never find a pom without it.
 DESCRIPTOR_SUFFIXES = (".module", ".pom")
+
+# How many uploads run at once, unless --jobs says otherwise.
+DEFAULT_JOBS = 16
 
 # wire-maven-infra: the CDN serves a cached object for up to 60 seconds, so anything that
 # waits for S3 and the CDN to agree must keep trying for longer than that.
@@ -337,17 +345,21 @@ class Cdn(Protocol):
 
 @dataclass
 class S3Bucket:
-    """Writes through boto3, which reports a failed precondition as a distinct error code."""
+    """Writes through boto3, sharing one client, and so one connection pool, across threads."""
 
     name: str
     dry_run: bool = False
+    max_connections: int = DEFAULT_JOBS
     client: Any = None
 
     def __post_init__(self) -> None:
         if self.client is None and not self.dry_run:
             self.client = boto3.client(
                 "s3",
-                config=Config(retries={"mode": "standard"}),
+                config=Config(
+                    max_pool_connections=self.max_connections,
+                    retries={"mode": "standard"},
+                ),
             )
 
     def put(
@@ -421,14 +433,14 @@ class Release:
     bucket: Bucket
     cdn: Cdn
     key_prefix: str = ""
+    jobs: int = DEFAULT_JOBS
     sleep: Callable[[float], None] = time.sleep
     clock: Callable[[], float] = time.monotonic
     now: Callable[[], datetime] = lambda: datetime.now(timezone.utc)
 
     def run(self) -> None:
         for wave in upload_order(self.repo):
-            for path in wave:
-                self.upload(path)
+            self.upload_all(wave)
         if is_prerelease(self.repo.version):
             print(
                 f"{self.repo.version} is a pre-release, so no maven-metadata.xml will list it"
@@ -436,6 +448,20 @@ class Release:
             return
         for artifact_id in sorted(self.repo.artifacts):
             self.list_version(artifact_id)
+
+    def upload_all(self, paths: list[PurePosixPath]) -> None:
+        """Upload `paths` concurrently; returns only once every upload has finished.
+
+        On the first failure, uploads that haven't started yet are cancelled, and the error
+        is raised once those already running have finished.
+        """
+        with ThreadPoolExecutor(max_workers=self.jobs) as pool:
+            futures = [pool.submit(self.upload, path) for path in paths]
+            done, pending = wait(futures, return_when=FIRST_EXCEPTION)
+            for future in pending:
+                future.cancel()
+            for future in done:
+                future.result()
 
     def key(self, path: PurePosixPath) -> str:
         return self.key_prefix + path.as_posix()
@@ -517,6 +543,13 @@ class Release:
             # it again and merge anew.
 
 
+def positive_int(value: str) -> int:
+    number = int(value)
+    if number < 1:
+        raise argparse.ArgumentTypeError(f"must be at least 1, not {number}")
+    return number
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__.splitlines()[0],
@@ -561,6 +594,12 @@ def main(argv: list[str] | None = None) -> int:
         help="where the bucket is served (default: %(default)s)",
     )
     release.add_argument(
+        "--jobs",
+        type=positive_int,
+        default=DEFAULT_JOBS,
+        help="how many uploads to run at once (default: %(default)s)",
+    )
+    release.add_argument(
         "--dry-run", action="store_true", help="print uploads instead of making them"
     )
 
@@ -587,9 +626,13 @@ def main(argv: list[str] | None = None) -> int:
                 f"verified {len(list(repo.files()))} files in {sorted(repo.artifacts)}"
             )
         else:
-            bucket = S3Bucket(args.bucket, dry_run=args.dry_run)
+            bucket = S3Bucket(
+                args.bucket, dry_run=args.dry_run, max_connections=args.jobs
+            )
             cdn = HttpCdn(args.public_url.rstrip("/"))
-            Release(repo, bucket, cdn, key_prefix=args.key_prefix).run()
+            Release(
+                repo, bucket, cdn, key_prefix=args.key_prefix, jobs=args.jobs
+            ).run()
     # boto3 fails with a `BotoCoreError` before any upload if, say, it finds no region or
     # credentials.
     except (ReleaseError, BotoCoreError) as error:
