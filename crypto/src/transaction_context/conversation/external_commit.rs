@@ -2,7 +2,7 @@
 
 use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
-use super::{Error, Result};
+use super::Result;
 use crate::{
     CommitBundle, ConversationConfiguration, ConversationId, CredentialRef, GroupInfoBundle, OpenMlsError,
     RecursiveError,
@@ -93,7 +93,7 @@ impl TransactionContext {
         };
 
         let id = ConversationIdRef::new(group_info.group_id().as_slice());
-        if self.conversation_exists(id).await? {
+        if self.conversation_exists(id, Some(false)).await? {
             // rejoining replaces the group without going through `mutate_group`, so we have to
             // capture epoch data from an existing group here
             let conversation = self.conversation(id).await?;
@@ -141,14 +141,6 @@ impl TransactionContext {
 
         Ok((commit_bundle, id, pending_conversation))
     }
-
-    pub(crate) async fn pending_conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
-        match self.pending_conversation(id).await {
-            Ok(_) => Ok(true),
-            Err(Error::ConversationNotFound(_)) => Ok(false),
-            Err(e) => Err(e),
-        }
-    }
 }
 
 #[cfg(test)]
@@ -156,8 +148,7 @@ mod tests {
 
     use core_crypto_keystore::{entities::PersistedMlsGroup, traits::FetchFromDatabase as _};
 
-    use super::Error;
-    use crate::{ConversationConfiguration, test_utils::*};
+    use crate::{ConversationConfiguration, test_utils::*, transaction_context::Error};
 
     #[apply(all_cred_cipher)]
     async fn join_by_external_commit_should_succeed(case: TestContext) {

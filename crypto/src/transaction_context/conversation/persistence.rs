@@ -106,7 +106,7 @@ impl TransactionContext {
 
         let id = ConversationId::from(group.group_id().as_slice());
 
-        if self.conversation_exists(&id).await? || self.pending_conversation_exists(&id).await? {
+        if self.conversation_exists(&id, None).await? {
             return Err(Error::ConversationAlreadyExists(id));
         }
 

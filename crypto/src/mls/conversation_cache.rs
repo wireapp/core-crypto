@@ -76,16 +76,33 @@ impl ConversationCache {
     /// Returns `true` when a conversation with the given ID exists in the cache or the database.
     ///
     /// Does not load the converation into the cache or change the order of the LRU cache.
-    pub(crate) async fn exists(&self, id: &ConversationIdRef, database: &ImmutableDatabase) -> Result<bool> {
-        if self.entries.peek(id).is_some() {
-            return Ok(true);
+    ///
+    /// If `filter_pending` is set, only returns `true` if a conversation exists whose `is_pending`
+    /// matches the filter.
+    pub(crate) async fn exists(
+        &self,
+        id: &ConversationIdRef,
+        database: &ImmutableDatabase,
+        filter_pending: Option<bool>,
+    ) -> Result<bool> {
+        if let Some(conversation) = self.entries.peek(id) {
+            if let Some(filter) = filter_pending {
+                return Ok(conversation.group().await.is_pending == filter);
+            } else {
+                return Ok(true);
+            }
         }
-        database
+
+        let Some(entry_is_pending) = database
             .get_borrowed::<PersistedMlsGroup>(id.keystore())
             .await
-            .map(|maybe_entry| maybe_entry.is_some_and(|entry| !entry.is_pending))
-            .map_err(KeystoreError::wrap("checking for existence of mls group"))
-            .map_err(Into::into)
+            .map(|maybe_entry| maybe_entry.map(|entry| entry.is_pending))
+            .map_err(KeystoreError::wrap("checking for existence of mls group"))?
+        else {
+            return Ok(false);
+        };
+
+        Ok(filter_pending.is_none_or(|filter| filter == entry_is_pending))
     }
 
     /// Inserts a freshly-created conversation and returns the cached handle.

@@ -19,11 +19,14 @@ impl TransactionContext {
     /// Checks if a given conversation id exists locally.
     ///
     /// Somewhat cheaper than `self.conversation(id).is_ok()`.
-    pub async fn conversation_exists(&self, id: &ConversationIdRef) -> Result<bool> {
+    ///
+    /// If `filter_pending` is set, only returns `true` if a conversation exists whose `is_pending`
+    /// matches the filter.
+    pub async fn conversation_exists(&self, id: &ConversationIdRef, filter_pending: Option<bool>) -> Result<bool> {
         let database = self.database()?.into();
         self.mls_groups()
             .await?
-            .exists(id, &database)
+            .exists(id, &database, filter_pending)
             .await
             .map_err(RecursiveError::context("checking for conversation existence"))
             .map_err(Into::into)
@@ -95,7 +98,7 @@ impl TransactionContext {
     ) -> Result<()> {
         let database = self.database()?;
         let provider = self.crypto_provider().await?;
-        if self.conversation_exists(id).await? || self.pending_conversation_exists(id).await? {
+        if self.conversation_exists(id, None).await? {
             return Err(Error::ConversationAlreadyExists(id.to_owned()));
         }
 

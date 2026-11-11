@@ -135,7 +135,7 @@ mod tests {
         })
         .await;
 
-        assert!(!alice.transaction.conversation_exists(&id).await.unwrap());
+        assert!(!alice.transaction.conversation_exists(&id, Some(false)).await.unwrap());
     }
 
     /// An epoch change inside a rolled-back savepoint never happened, so observers must not hear of it.
