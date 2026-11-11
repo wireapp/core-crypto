@@ -3,10 +3,9 @@
 //! Shared between [`super::immutable::MlsGroupState::persist`] (an established or newly-merged
 //! group) and [`super::pending::PendingConversation`] (a group awaiting external-commit
 //! confirmation): both need the same derivation, and it has to agree with what
-//! `keystore`'s `v39` meta migration backfilled for existing rows.
+//! `keystore`'s `v39` and `v49` meta migrations backfilled for existing rows.
 
 use core_crypto_keystore::{
-    Sha256Hash,
     entities::{StoredCredential, StoredCredentialPk},
     traits::FetchFromDatabase,
 };
@@ -88,12 +87,8 @@ pub(super) async fn current_credential_pk(
     let leaf = current_own_leaf(group).ok_or(Error::MlsGroupInvalidState(
         "this group has no leaf node and therefore no credential",
     ))?;
-    let id = Sha256Hash::hash_from(leaf.signature_key().as_slice());
-    let credential_type: u16 = leaf.credential().credential_type().into();
-    let pk = StoredCredentialPk {
-        public_key_hash: id,
-        credential_type,
-    };
+    let pk = StoredCredentialPk::from_mls_credential(leaf.signature_key().as_slice(), leaf.credential())
+        .map_err(KeystoreError::wrap("computing the primary key of our credential"))?;
 
     // The credential we present must be one we hold, so its absence is a real inconsistency rather
     // than something a caller could sensibly carry on without.

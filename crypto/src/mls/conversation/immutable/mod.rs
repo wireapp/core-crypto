@@ -12,7 +12,7 @@ use async_lock::{RwLock, RwLockReadGuard};
 use core_crypto_keystore::{
     Transaction,
     ancillary::ConversationIdRef as KeystoreConversationIdRef,
-    entities::PersistedMlsGroup,
+    entities::{PersistedMlsGroup, StoredCredentialPk},
     traits::{EntityDatabaseMutation as _, FetchFromDatabase},
 };
 use openmls::group::{InnerState, MlsGroup};
@@ -75,9 +75,8 @@ impl MlsGroupState {
         // change that. Handling our own eviction wipes the conversation immediately afterwards, so
         // this value is seldom durable — but `persist` still has to produce a valid one, because
         // every mutation of a group reaches the keystore through here.
-        let (credential_id, credential_type) = if group.is_active() {
-            let current_credential = group_metadata::current_credential_pk(group, tx).await?;
-            (current_credential.public_key_hash, current_credential.credential_type)
+        let credential = if group.is_active() {
+            group_metadata::current_credential_pk(group, tx).await?
         } else {
             let persisted = tx
                 .get_borrowed::<PersistedMlsGroup>(KeystoreConversationIdRef::new(id.as_slice()))
@@ -92,7 +91,11 @@ impl MlsGroupState {
                 .ok_or(Error::MlsGroupInvalidState(
                     "an evicted conversation must already have been persisted",
                 ))?;
-            (persisted.credential_id, persisted.credential_type)
+            StoredCredentialPk::new(
+                persisted.credential_id,
+                persisted.credential_type,
+                persisted.credential_not_before,
+            )
         };
 
         PersistedMlsGroup {
@@ -100,8 +103,9 @@ impl MlsGroupState {
             state: core_crypto_keystore::ser(group).map_err(KeystoreError::wrap("serializing group state"))?,
             epoch: group.epoch().as_u64(),
             ciphersuite: group.ciphersuite() as u16,
-            credential_id,
-            credential_type,
+            credential_id: credential.public_key_hash,
+            credential_type: credential.credential_type,
+            credential_not_before: credential.not_before,
             own_leaf_index: group.own_leaf_index().u32(),
             // `persist` is reached either by an established conversation persisting a normal
             // change, or by `persist_conversation_from_mls_group` once an external commit has
