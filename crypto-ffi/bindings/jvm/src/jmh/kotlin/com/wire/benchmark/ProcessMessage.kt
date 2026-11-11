@@ -16,22 +16,7 @@ import kotlin.collections.MutableList
 @Warmup(iterations = 1, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @State(Scope.Thread)
-open class ProcessMessage {
-    @Param(
-        "1",
-        "2",
-        "3",
-        "5",
-        "7"
-    )
-    var cipherSuite: UShort = 1u
-
-    @Param("1", "10", "100")
-    var messageCount: Int = 0
-
-    @Param("16", "1024", "65536")
-    var messageSize: Int = 0
-
+open class ProcessMessage : MessageBenchmark() {
     private lateinit var encryptedMessages: List<ByteArray>
     private lateinit var conversationId: ConversationId
 
@@ -39,8 +24,7 @@ open class ProcessMessage {
 
     @Setup(Level.Invocation)
     fun setup() = runBlocking {
-        val cipherSuite = CipherSuite.entries.first { it.value == cipherSuite }
-        val options = CcInitOptions.Mode.WithBasicCredential(cipherSuite)
+        val options = CcInitOptions.Mode.WithBasicCredential(selectedCipherSuite)
         val aliceCc = ccInit(CcInitOptions(options))
         conversationId = createConversation(aliceCc)
 

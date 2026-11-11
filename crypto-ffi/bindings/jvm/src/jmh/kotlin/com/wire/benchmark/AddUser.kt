@@ -15,19 +15,7 @@ import java.util.concurrent.TimeUnit
 @Warmup(iterations = 1, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @State(Scope.Thread)
-open class AddUser {
-    @Param(
-        "1",
-        "2",
-        "3",
-        "5",
-        "7"
-    )
-    var cipherSuite: UShort = 1u
-
-    @Param("1", "10", "100")
-    var userCount: Int = 0
-
+open class AddUser : UserBenchmark() {
     private lateinit var aliceCc: CoreCrypto
     private lateinit var conversationId: ConversationId
     private lateinit var keyPackages: List<KeyPackage>
@@ -35,8 +23,7 @@ open class AddUser {
     @Setup(Level.Invocation)
     fun setup() {
         runBlocking {
-            val cipherSuite = CipherSuite.entries.first { it.value == cipherSuite }
-            val options = CcInitOptions(CcInitOptions.Mode.WithBasicCredential(cipherSuite))
+            val options = CcInitOptions(CcInitOptions.Mode.WithBasicCredential(selectedCipherSuite))
             aliceCc = ccInit(options)
             conversationId = createConversation(aliceCc)
 

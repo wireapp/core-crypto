@@ -15,30 +15,14 @@ import java.util.concurrent.TimeUnit
 @Warmup(iterations = 1, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @State(Scope.Benchmark)
-open class CreateMessage {
-    @Param(
-        "1",
-        "2",
-        "3",
-        "5",
-        "7"
-    )
-    var cipherSuite: UShort = 1u
-
-    @Param("1", "10", "100")
-    var messageCount: Int = 0
-
-    @Param("16", "1024", "65536")
-    var messageSize: Int = 0
-
+open class CreateMessage : MessageBenchmark() {
     private lateinit var messages: List<ByteArray>
     private lateinit var conversationId: ConversationId
     private lateinit var cc: CoreCrypto
 
     @Setup(Level.Iteration)
     fun setup() = runBlocking {
-        val cipherSuite = CipherSuite.entries.first { it.value == cipherSuite }
-        cc = ccInit(CcInitOptions(CcInitOptions.Mode.WithBasicCredential(cipherSuite)))
+        cc = ccInit(CcInitOptions(CcInitOptions.Mode.WithBasicCredential(selectedCipherSuite)))
         conversationId = createConversation(cc)
         messages = List(messageCount) {
             ByteArray(messageSize) { 'A'.code.toByte() }
