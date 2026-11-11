@@ -43,7 +43,6 @@ before), so listing it could let a version range pick it over the real release.
 import argparse
 import hashlib
 import json
-import shlex
 import subprocess
 import sys
 import tempfile
@@ -55,7 +54,11 @@ from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
-from typing import Protocol
+from typing import Any, Protocol
+
+import boto3
+from botocore.config import Config
+from botocore.exceptions import BotoCoreError, ClientError
 
 GROUP = "com.wire"
 # wire-maven-infra: our publishing role may only write keys starting with this prefix.
@@ -328,11 +331,18 @@ class Cdn(Protocol):
 
 @dataclass
 class S3Bucket:
-    """Writes through the AWS CLI, whose `s3api` reports a failed precondition distinctly."""
+    """Writes through boto3, which reports a failed precondition as a distinct error code."""
 
     name: str
     dry_run: bool = False
-    run: Callable[..., subprocess.CompletedProcess] = subprocess.run
+    client: Any = None
+
+    def __post_init__(self) -> None:
+        if self.client is None and not self.dry_run:
+            self.client = boto3.client(
+                "s3",
+                config=Config(retries={"mode": "standard"}),
+            )
 
     def put(
         self,
@@ -343,39 +353,34 @@ class S3Bucket:
         if_match: str | None = None,
         cache_control: str | None = None,
     ) -> bool:
-        command = [
-            "aws",
-            "s3api",
-            "put-object",
-            "--bucket",
-            self.name,
-            "--key",
-            key,
-            "--body",
-            str(body),
-        ]
+        request: dict[str, str] = {"Bucket": self.name, "Key": key}
         # wire-maven-infra: the bucket refuses any write that does not promise not to
-        # overwrite, which is why this never uses `aws s3 sync` or `aws s3 cp`.
+        # overwrite, which is why this never uses `upload_file` or `aws s3 sync`.
         if if_none_match:
-            command += ["--if-none-match", "*"]
+            request["IfNoneMatch"] = "*"
         if if_match is not None:
-            command += ["--if-match", if_match]
+            request["IfMatch"] = if_match
         if cache_control is not None:
-            command += ["--cache-control", cache_control]
+            request["CacheControl"] = cache_control
         if self.dry_run:
-            print(f"dry run: {shlex.join(command)}")
+            print(f"dry run: put-object {body} {json.dumps(request)}")
             return True
-        result = self.run(command, capture_output=True, text=True)
-        if result.returncode == 0:
-            return True
-        # 412 means the precondition failed; 409 that a concurrent conditional write to the
-        # same key won. Either way, the caller should look at what is there now.
-        if (
-            "PreconditionFailed" in result.stderr
-            or "ConditionalRequestConflict" in result.stderr
-        ):
-            return False
-        raise ReleaseError(f"uploading {key} failed: {result.stderr.strip()}")
+
+        try:
+            with body.open("rb") as file:
+                self.client.put_object(Body=file, **request)
+        except ClientError as error:
+            # 412 means the precondition failed; 409 that a concurrent conditional write to
+            # the same key won. Either way, the caller should look at what is there now. A
+            # retried write whose first attempt went through also ends up here, and the
+            # caller then finds identical content.
+            code = error.response.get("Error", {}).get("Code")
+            if code in ("PreconditionFailed", "ConditionalRequestConflict"):
+                return False
+            raise ReleaseError(f"uploading {key} failed: {error}") from error
+        except BotoCoreError as error:
+            raise ReleaseError(f"uploading {key} failed: {error}") from error
+        return True
 
 
 @dataclass
@@ -578,7 +583,9 @@ def main(argv: list[str] | None = None) -> int:
             bucket = S3Bucket(args.bucket, dry_run=args.dry_run)
             cdn = HttpCdn(args.public_url.rstrip("/"))
             Release(repo, bucket, cdn, key_prefix=args.key_prefix).run()
-    except ReleaseError as error:
+    # boto3 fails with a `BotoCoreError` before any upload if, say, it finds no region or
+    # credentials.
+    except (ReleaseError, BotoCoreError) as error:
         # The `::error::` prefix makes GitHub Actions annotate the run with the message.
         print(f"::error::{error}")
         return 1
