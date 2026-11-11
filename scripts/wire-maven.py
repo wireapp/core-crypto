@@ -26,9 +26,9 @@ release safe: an object that already exists with identical content counts as upl
 and one with different content is a hard error. A release uploads, in order:
 
 1. every file except the `.module`/`.pom` descriptors;
-2. the descriptors, those of aggregating modules (the KMP root) last. A build resolves a
-   version through its descriptor, so until the descriptor exists, a partly uploaded
-   version looks unpublished rather than broken;
+2. the descriptors, `.module` before `.pom`, and those of aggregating modules (the KMP
+   root) last. A build resolves a version through its descriptor, so until the descriptor
+   exists, a partly uploaded version looks unpublished rather than broken;
 3. each artifact's `maven-metadata.xml`, now listing the new version.
 
 A pre-release version (one with a `-suffix`) is uploaded but never listed in
@@ -53,6 +53,7 @@ import xml.etree.ElementTree as ET
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from itertools import groupby
 from pathlib import Path, PurePosixPath
 from typing import Any, Protocol
 
@@ -224,26 +225,31 @@ def is_aggregating(repo: StagedRepo, artifact: Artifact) -> bool:
     return False
 
 
-def upload_order(repo: StagedRepo) -> list[PurePosixPath]:
-    """All files of the repository, in the order described in the module docs."""
-    artifacts = sorted(
-        repo.artifacts.values(),
-        key=lambda artifact: (is_aggregating(repo, artifact), artifact.artifact_id),
-    )
-    rest = [
-        path
-        for artifact in artifacts
-        for path in artifact.files
-        if path.suffix not in DESCRIPTOR_SUFFIXES
+def upload_order(repo: StagedRepo) -> list[list[PurePosixPath]]:
+    """All files of the repository, in the order described in the module docs.
+
+    Each inner list is a wave of files that may be uploaded in any order, or all at once.
+    A wave must be fully uploaded before the next one starts.
+    """
+
+    def wave(path: PurePosixPath, aggregating: bool) -> int:
+        if path.suffix not in DESCRIPTOR_SUFFIXES:
+            return 0
+        return (
+            1
+            + aggregating * len(DESCRIPTOR_SUFFIXES)
+            + DESCRIPTOR_SUFFIXES.index(path.suffix)
+        )
+
+    ranked = []
+    for artifact in repo.artifacts.values():
+        aggregating = is_aggregating(repo, artifact)
+        ranked += [(wave(path, aggregating), path) for path in artifact.files]
+    ranked.sort()
+    return [
+        [path for _, path in group]
+        for _, group in groupby(ranked, key=lambda ranked_path: ranked_path[0])
     ]
-    descriptors = [
-        path
-        for artifact in artifacts
-        for suffix in DESCRIPTOR_SUFFIXES
-        for path in artifact.files
-        if path.suffix == suffix
-    ]
-    return rest + descriptors
 
 
 def _local_name(element: ET.Element) -> str:
@@ -420,8 +426,9 @@ class Release:
     now: Callable[[], datetime] = lambda: datetime.now(timezone.utc)
 
     def run(self) -> None:
-        for path in upload_order(self.repo):
-            self.upload(path)
+        for wave in upload_order(self.repo):
+            for path in wave:
+                self.upload(path)
         if is_prerelease(self.repo.version):
             print(
                 f"{self.repo.version} is a pre-release, so no maven-metadata.xml will list it"
