@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 
 import pytest
+from botocore.exceptions import ClientError
 
 _spec = importlib.util.spec_from_file_location(
     "wire_maven", Path(__file__).with_name("wire-maven.py")
@@ -279,6 +280,39 @@ def test_descriptors_go_last_and_aggregating_module_after_the_rest(stage):
         f"core-crypto-kmp-{VERSION}.module",
         f"core-crypto-kmp-{VERSION}.pom",
     ]
+
+
+# S3Bucket
+
+
+class FailingS3Client:
+    """Raises `error` from every `put_object` call."""
+
+    def __init__(self, error: Exception):
+        self.error = error
+
+    def put_object(self, **request):
+        raise self.error
+
+
+def s3_error(code: str) -> ClientError:
+    return ClientError({"Error": {"Code": code, "Message": code}}, "PutObject")
+
+
+@pytest.mark.parametrize("code", ["PreconditionFailed", "ConditionalRequestConflict"])
+def test_put_reports_a_failed_precondition(tmp_path, code):
+    body = tmp_path / "body"
+    body.write_bytes(b"content")
+    bucket = wm.S3Bucket("bucket", client=FailingS3Client(s3_error(code)))
+    assert not bucket.put("key", body, if_none_match=True)
+
+
+def test_put_fails_the_release_on_any_other_error(tmp_path):
+    body = tmp_path / "body"
+    body.write_bytes(b"content")
+    bucket = wm.S3Bucket("bucket", client=FailingS3Client(s3_error("AccessDenied")))
+    with pytest.raises(wm.ReleaseError, match="uploading key failed"):
+        bucket.put("key", body, if_none_match=True)
 
 
 # release
