@@ -49,7 +49,9 @@ impl ConversationMut {
         let Conversation { group, id, .. } = &*self.inner;
         context_inner.conversation_touched(id).await;
         let mut group = group.write().await;
-        self.record_epoch_data(group.mls_group()).await?;
+        if !group.is_pending {
+            self.record_epoch_data(group.mls_group()).await?;
+        }
         let epoch_before_operation = group.epoch();
 
         let ok_result = operation(tx, &mut *group, id).await?;

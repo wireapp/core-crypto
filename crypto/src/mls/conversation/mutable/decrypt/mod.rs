@@ -22,7 +22,7 @@ use log::warn;
 use openmls::{
     framing::MlsMessageIn,
     group::MlsGroup,
-    prelude::{CredentialType, LeafNodeIndex, Member, ProcessedMessageContent, StagedCommit},
+    prelude::{CredentialType, LeafNodeIndex, Member, MlsMessageInBody, ProcessedMessageContent, StagedCommit},
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
 
@@ -92,13 +92,19 @@ impl ConversationMut {
             let content_type = message.parsed.content_type()?;
             let epoch = message.parsed.epoch()?;
             let arrival_sequence = message.arrival_sequence;
+            let was_pending = self.group().await.is_pending;
 
             let outcome_result = tx_context_inner
                 .with_savepoint(
                     "decrypt_message",
-                    async || match message.parsed {
-                        ParsedMessage::Mls(mls_message_in) => self.decrypt_mls_message(mls_message_in).await,
-                        ParsedMessage::Tnt(tnt_message) => self.decrypt_tnt_message(tnt_message).await,
+                    async || {
+                        if let Some(outcome) = self.try_resolve_pending(&message).await? {
+                            return Ok(outcome);
+                        }
+                        match message.parsed {
+                            ParsedMessage::Mls(mls_message_in) => self.decrypt_mls_message(mls_message_in).await,
+                            ParsedMessage::Tnt(tnt_message) => self.decrypt_tnt_message(tnt_message).await,
+                        }
                     },
                     Error::savepoint,
                 )
@@ -119,6 +125,15 @@ impl ConversationMut {
                     continue;
                 }
             };
+
+            if was_pending && !self.group().await.is_pending {
+                // we must have merged the pending group, so let's enqueue whatever in the inbox was waiting for that
+                // before we even begin with the effect
+                queue.extend(
+                    self.inbox_take(WaitingFor::PendingJoin, None)?
+                        .filter_map(&log_and_skip_unparseable_buffered_messages),
+                );
+            }
 
             let effect = match &outcome {
                 DecryptionOutcome::Decrypted(DecryptedMessage::Commit(commit)) => Effect::EpochAdvanced {
@@ -174,6 +189,41 @@ impl ConversationMut {
         }
 
         Ok(decrypted_messages)
+    }
+
+    /// Attempt to resolve messages against a potentially pending group.
+    ///
+    /// If the group is pending, we generally need to simply defer it.
+    /// In that case, returns `Some(DecryptionOutcome::Deferred(PendingJoin))`.
+    ///
+    /// There is one exception: if the group is pending, and the message is a public message whose confirmation tag
+    /// matches the confirmation tag of the group's existing pending commit, we need to merge that pending commit,
+    /// returning the decryption outcome of that operation.
+    ///
+    /// In every other case, returns `Ok(None)`.
+    async fn try_resolve_pending(&mut self, message: &IncomingMessage) -> Result<Option<DecryptionOutcome>> {
+        let group = self.group().await;
+
+        if !group.is_pending {
+            return Ok(None);
+        }
+
+        if let ParsedMessage::Mls(mls) = &message.parsed
+            && let MlsMessageInBody::PublicMessage(public_message) = mls.body_as_ref()
+        {
+            let pending_confirmation_tag = group
+                .mls_group()
+                .pending_commit()
+                .map(|pending| pending.get_confirmation_tag());
+            if pending_confirmation_tag
+                .zip(public_message.confirmation_tag())
+                .is_some_and(|(pending_ct, message_ct)| pending_ct == message_ct)
+            {
+                drop(group);
+                return self.merge_pending_commit().await.map(Into::into).map(Some);
+            }
+        }
+        Ok(Some(DeferralReason::PendingJoin.into()))
     }
 
     /// Decrypt a single MLS message, reporting but not taking action on its outcome.

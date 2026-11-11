@@ -4,15 +4,12 @@ pub mod external_commit;
 mod persistence;
 pub mod welcome;
 
-use std::sync::Arc;
-
-use core_crypto_keystore::{entities::PersistedMlsGroup, traits::FetchFromDatabase as _};
 use openmls::group::MlsGroup;
 
 use super::{Error, Result, TransactionContext};
 use crate::{
-    ConversationConfiguration, CredentialRef, KeystoreError, OpenMlsError, RecursiveError,
-    mls::conversation::{ConversationIdRef, ConversationMut, PendingConversation},
+    ConversationConfiguration, CredentialRef, OpenMlsError, RecursiveError,
+    mls::conversation::{ConversationIdRef, ConversationMut},
 };
 
 impl TransactionContext {
@@ -62,21 +59,6 @@ impl TransactionContext {
             return Err(Error::PendingConversation(id.to_owned()));
         }
         Ok(conversation)
-    }
-
-    pub(crate) async fn pending_conversation(&self, id: &ConversationIdRef) -> Result<PendingConversation> {
-        let inner = self.inner()?;
-        let group = inner
-            .transaction
-            .get_borrowed::<PersistedMlsGroup>(id.keystore())
-            .await
-            .map_err(KeystoreError::wrap("finding persisted mls group"))?
-            .filter(|group| group.is_pending);
-        let Some(group) = group else {
-            return Err(Error::ConversationNotFound(id.to_owned()));
-        };
-        let group = Arc::unwrap_or_clone(group);
-        Ok(PendingConversation::new(group, self.clone()))
     }
 
     /// Create a new empty conversation

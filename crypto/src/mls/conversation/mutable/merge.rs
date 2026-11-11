@@ -35,6 +35,8 @@ impl ConversationMut {
     pub(super) async fn commit_accepted(&mut self) -> Result<()> {
         let provider = &self.crypto_provider().await?;
         self.mutate_group(async |tx, group, _| {
+            group.is_pending = false;
+
             // openmls stores here all the encryption keypairs used for update proposals..
             let previous_own_leaf_nodes = group.own_leaf_nodes.clone();
 

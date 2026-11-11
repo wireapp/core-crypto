@@ -29,10 +29,6 @@ pub enum Error {
     DuplicateMessage,
     #[error("The epoch in which message was encrypted is older than {MAX_PAST_EPOCHS}")]
     MessageEpochTooOld,
-    #[error(
-        "You tried to join with an external commit but did not merge it yet. We will reapply this message for you when you merge your external commit"
-    )]
-    BufferedForPendingConversation,
     #[error("Incoming message is from an epoch too far in the future to buffer.")]
     UnbufferedFarFutureMessage,
     #[error("The received commit is deemed stale and is from an older epoch.")]
