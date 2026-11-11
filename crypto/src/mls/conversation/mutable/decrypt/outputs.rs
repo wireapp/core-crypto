@@ -135,6 +135,8 @@ pub enum DeferralReason {
     },
     /// Message attempts to commit a proposal by reference, but we have not yet received the referenced proposal
     MissingProposal,
+    /// Message was delivered for a pending group which we haven't fully joined yet.
+    PendingJoin,
 }
 
 /// Outcome of attempting to decrypt a message.

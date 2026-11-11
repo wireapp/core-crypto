@@ -35,6 +35,7 @@ impl ConversationMut {
         let waiting_for = match reason {
             DeferralReason::FutureEpoch { .. } => WaitingFor::Epoch,
             DeferralReason::MissingProposal => WaitingFor::Proposal,
+            DeferralReason::PendingJoin => WaitingFor::PendingJoin,
         };
 
         // sanity check
