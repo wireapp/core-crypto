@@ -246,10 +246,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
         }
 
         let decrypted_master_raw = transaction
-            .conversation(&conversation_id)
-            .await
-            .unwrap()
-            .decrypt_message(message_to_decrypt)
+            .decrypt_message(&conversation_id, message_to_decrypt)
             .await
             .map_err(anyhow::Error::from)
             .and_then(single_message)?
@@ -296,9 +293,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
                 )
                 .await?;
             let decrypted = transaction
-                .conversation(&conversation_id)
-                .await?
-                .decrypt_message(encrypted)
+                .decrypt_message(&conversation_id, encrypted)
                 .await
                 .map_err(anyhow::Error::from)
                 .and_then(single_message)?;
@@ -336,9 +331,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
             .encrypt_transient_message(conversation_id.as_ref().as_ref(), message)
             .await?;
         let decrypted = transaction
-            .conversation(&conversation_id)
-            .await?
-            .decrypt_message(encrypted)
+            .decrypt_message(&conversation_id, encrypted)
             .await
             .map_err(anyhow::Error::from)
             .and_then(single_message)?;
