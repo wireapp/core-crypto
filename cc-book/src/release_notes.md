@@ -13,6 +13,10 @@
   copies it by path, update the path. If you call `initWasmModule()` without a path, it now loads the module from next
   to `corecrypto.js`.
 
+#### Bug Fixes
+
+- It's now possible to rotate a existing x509 credential with a new x509 credential which has the same public key.
+
 ## CoreCrypto 11
 
 ### v11.0.0 - 2026-10-30
