@@ -761,7 +761,7 @@ pub mod utils {
                 };
             }
 
-    impl_entity_random_update_ext!(StoredCredential, blob_fields=[credential,public_key,private_key,], additional_fields=[(session_id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),(ciphersuite: rand::random()),(credential_type: 1),(not_before: 0),]);
+    impl_entity_random_update_ext!(StoredCredential, blob_fields=[credential,public_key,private_key,], additional_fields=[(session_id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),(ciphersuite: rand::random()),(credential_type: 1),(not_before: StoredCredential::NOT_BEFORE_WITHOUT_CERTIFICATE),]);
     impl_entity_random_update_ext!(StoredEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredPskBundle, blob_fields=[psk,psk_id id_like:true,]);
     impl_entity_random_update_ext!(TargetedMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);
@@ -890,7 +890,7 @@ pub mod utils {
                 credential: StoredCredentialPk {
                     public_key_hash: random_sha256(),
                     credential_type: 1, // type of basic credential
-                    not_before: 0,      // always 0 for a basic credential
+                    not_before: StoredCredential::NOT_BEFORE_WITHOUT_CERTIFICATE,
                 },
                 hpke_init_public_key_hash: random_sha256(),
                 leaf_encryption_key_hash: random_sha256(),
@@ -969,8 +969,8 @@ pub mod utils {
                     rand::fill(&mut id);
                     id.into()
                 },
-                credential_type: 1,       // type of basic credential
-                credential_not_before: 0, // always 0 for a basic credential
+                credential_type: 1, // type of basic credential
+                credential_not_before: StoredCredential::NOT_BEFORE_WITHOUT_CERTIFICATE,
                 own_leaf_index: rand::random(),
                 is_pending: false,
                 tnt_tx_counter: rand::random(),

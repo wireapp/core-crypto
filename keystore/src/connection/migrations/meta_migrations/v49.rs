@@ -6,7 +6,7 @@
 use log::warn;
 use rusqlite::named_params;
 
-use crate::{CryptoKeystoreResult, migrations::not_before_from_serialized};
+use crate::{CryptoKeystoreResult, entities::StoredCredential, migrations::not_before_from_serialized};
 
 pub(crate) const VERSION: i32 = 49;
 
@@ -14,18 +14,21 @@ pub(crate) const VERSION: i32 = 49;
 const X509: u16 = 2;
 
 pub(crate) fn meta_migration(tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreResult<()> {
-    // A basic credential has no certificate, and its `not_before` is always 0.
+    // A basic credential has no certificate to take `not_before` from.
     tx.execute(
         "INSERT INTO mls_credentials_new (
             public_key_sha256, credential_type, not_before, public_key, session_id, credential, created_at,
             ciphersuite, private_key
         )
         SELECT
-            public_key_sha256, credential_type, 0, public_key, session_id, credential, created_at,
+            public_key_sha256, credential_type, :not_before, public_key, session_id, credential, created_at,
             ciphersuite, private_key
         FROM mls_credentials
         WHERE credential_type != :x509",
-        named_params! { ":x509": X509 },
+        named_params! {
+            ":not_before": StoredCredential::NOT_BEFORE_WITHOUT_CERTIFICATE,
+            ":x509": X509,
+        },
     )?;
 
     let credentials: Vec<(Vec<u8>, Vec<u8>)> = tx

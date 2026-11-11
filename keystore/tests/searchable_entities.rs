@@ -266,7 +266,7 @@ mod stored_credential {
         let store = context.store();
         let mut first = random_entity();
         first.credential_type = BASIC;
-        first.not_before = 0;
+        first.not_before = StoredCredential::NOT_BEFORE_WITHOUT_CERTIFICATE;
         first.created_at = 1_700_000_000;
         let mut second = first.clone();
         second.credential = random_bytes(128..=256);

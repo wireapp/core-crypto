@@ -1042,8 +1042,11 @@ r9IJmL6kDQ==
             assert!(
                 StoredCredential::get(
                     &conn,
-                    // a basic credential's `not_before` is always 0
-                    &crate::entities::StoredCredentialPk::new(Sha256Hash::hash_from(PUBLIC_KEY), credential_type, 0),
+                    &crate::entities::StoredCredentialPk::new(
+                        Sha256Hash::hash_from(PUBLIC_KEY),
+                        credential_type,
+                        StoredCredential::NOT_BEFORE_WITHOUT_CERTIFICATE,
+                    ),
                 )
                 .unwrap()
                 .is_some(),
