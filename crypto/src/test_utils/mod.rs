@@ -229,6 +229,32 @@ impl SessionContext {
         self.x509_chain().expect("No x509 test chain setup")
     }
 
+    /// Add one X509 credential per entry of `not_before`, all for this session's client and certifying the same new
+    /// signature key, as a series of certificate rotations would.
+    ///
+    /// Each certificate is valid from its `not_before` (seconds since the unix epoch) for 30 days.
+    pub async fn add_x509_credentials_sharing_a_key<const N: usize>(
+        &self,
+        cipher_suite: crate::CipherSuite,
+        not_before: [u64; N],
+    ) -> [CredentialRef; N] {
+        use openmls_traits::crypto::OpenMlsCrypto as _;
+
+        let signature_scheme = cipher_suite.signature_algorithm();
+        let (secret_key, _) = crate::mls_provider::CRYPTO.signature_key_gen(signature_scheme).unwrap();
+        let keypair = x509::PkiKeypair::new(signature_scheme, secret_key).unwrap();
+        let client_id = self.get_client_id().await;
+        let issuer = self.x509_chain_unchecked().find_local_intermediate_ca();
+
+        let mut credentials = Vec::with_capacity(N);
+        for not_before in not_before {
+            let bundle = issuer.issue_bundle_for_keypair(&client_id, &keypair, not_before);
+            let credential = Credential::x509(cipher_suite, bundle).unwrap();
+            credentials.push(self.transaction.add_credential(credential).await.unwrap());
+        }
+        credentials.try_into().unwrap()
+    }
+
     pub fn database(&self) -> Arc<Database> {
         self.transaction.database().expect("database from transaction context")
     }
