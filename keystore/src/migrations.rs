@@ -97,6 +97,33 @@ pub(crate) fn credential_type_from_serialized(credential: &[u8]) -> CryptoKeysto
         .map_err(|e| CryptoKeystoreError::MigrationFailed(format!("deserializing stored credential: {e}")))
 }
 
+/// Read the leaf certificate's `not_before` from a serialized X509 credential, as a unix timestamp in seconds.
+///
+/// This is the last column of an X509 credential's primary key. Fails for anything but an X509 credential with a leaf
+/// certificate that decodes.
+pub(crate) fn not_before_from_serialized(credential: &[u8]) -> CryptoKeystoreResult<u64> {
+    let credential = MlsCredential::tls_deserialize_exact(credential)
+        .map_err(|e| CryptoKeystoreError::MigrationFailed(format!("deserializing stored credential: {e}")))?;
+
+    let MlsCredentialType::X509(certificate) = credential.mls_credential() else {
+        return Err(CryptoKeystoreError::MigrationFailed(
+            "expected an X509 credential".into(),
+        ));
+    };
+    let leaf = certificate
+        .certificates
+        .first()
+        .ok_or(CryptoKeystoreError::MigrationFailed("No leaf certificate".into()))?;
+    let leaf = x509_cert::Certificate::from_der(leaf.as_slice())
+        .map_err(|e| CryptoKeystoreError::MigrationFailed(format!("decoding x509 certificate: {e}")))?;
+    Ok(leaf
+        .tbs_certificate()
+        .validity()
+        .not_before
+        .to_unix_duration()
+        .as_secs())
+}
+
 /// [`StoredCredential`] as it appeared prior to v37.
 #[derive(Clone)]
 pub(crate) struct StoredCredentialV36 {
