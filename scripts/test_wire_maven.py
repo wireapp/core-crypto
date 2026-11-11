@@ -1,7 +1,7 @@
-#!/usr/bin/env -S uv run --script
+#!/usr/bin/env -S uv run --locked --script
 # /// script
 # requires-python = ">=3.10"
-# dependencies = ["pytest"]
+# dependencies = ["boto3", "pytest"]
 # ///
 """Tests for `wire-maven.py`. Run with `scripts/test_wire_maven.py` (needs uv)."""
 

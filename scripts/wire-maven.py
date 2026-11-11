@@ -1,7 +1,7 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --locked --script
 # /// script
 # requires-python = ">=3.10"
-# dependencies = []
+# dependencies = ["boto3"]
 # ///
 """Check a staged Maven repository, and release it to maven.wire.com.
 
