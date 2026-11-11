@@ -559,6 +559,8 @@ async fn assert_imported_and_migrated(db: &Database, credential_created_at: u64)
         .get::<StoredCredential>(&StoredCredentialPk::new(
             Sha256Hash::hash_from(seed::CREDENTIAL_PUBLIC_KEY),
             basic_credential_type(),
+            // a basic credential's `not_before` is always 0
+            0,
         ))
         .await
         .unwrap()
