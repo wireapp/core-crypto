@@ -25,6 +25,8 @@ pub enum CryptoKeystoreError {
     OutOfKeyPackageBundles,
     #[error("Incorrect API usage: {0}")]
     IncorrectApiUsage(&'static str),
+    #[error("Invalid X509 credential: {0}")]
+    InvalidX509Credential(String),
     #[error("The credential tied to this signature keypair is different from the provided one")]
     SignatureKeyPairDoesNotBelongToCredential,
     #[error("The uniqueness constraint has been violated for {0}")]

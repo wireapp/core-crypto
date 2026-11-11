@@ -1,3 +1,5 @@
+use openmls::prelude::{Credential as MlsCredential, MlsCredentialType};
+use x509_cert::der::Decode as _;
 use zeroize::Zeroize;
 
 use crate::{
@@ -40,12 +42,17 @@ pub struct StoredCredential {
     #[sensitive]
     pub public_key: Vec<u8>,
     pub credential_type: u16,
+    /// Unix timestamp in seconds of the leaf certificate's `not_before` for an X509 credential, and 0 for any other.
+    ///
+    /// Part of the primary key: it tells apart X509 credentials which certify the same signature key, and can be
+    /// read from a leaf node. [`credential_not_before`] computes it from the credential.
+    pub not_before: u64,
     #[sensitive]
     pub private_key: Vec<u8>,
 }
 
 impl StoredCredential {
-    const PRIMARY_KEY_COLUMN_NAMES: [&str; 2] = ["public_key_sha256", "credential_type"];
+    const PRIMARY_KEY_COLUMN_NAMES: [&str; 3] = ["public_key_sha256", "credential_type", "not_before"];
 
     fn from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Self> {
         Ok(Self {
@@ -55,6 +62,7 @@ impl StoredCredential {
             ciphersuite: row.get("ciphersuite")?,
             public_key: row.get("public_key")?,
             credential_type: row.get("credential_type")?,
+            not_before: row.get("not_before")?,
             private_key: row.get("private_key")?,
         })
     }
@@ -76,10 +84,50 @@ impl StoredCredential {
     }
 }
 
+/// The `not_before` part of a stored credential's primary key.
+///
+/// For an X509 credential this is the leaf certificate's `not_before`, as a unix timestamp in seconds. Any other
+/// credential has no certificate, and gets 0.
+pub fn credential_not_before(credential: &MlsCredential) -> CryptoKeystoreResult<u64> {
+    let MlsCredentialType::X509(certificate) = credential.mls_credential() else {
+        return Ok(0);
+    };
+    let leaf = certificate
+        .certificates
+        .first()
+        .ok_or(CryptoKeystoreError::InvalidX509Credential(
+            "the certificate chain is empty".into(),
+        ))?;
+    let leaf = x509_cert::Certificate::from_der(leaf.as_slice())
+        .map_err(|e| CryptoKeystoreError::InvalidX509Credential(format!("decoding the leaf certificate: {e}")))?;
+    Ok(leaf
+        .tbs_certificate()
+        .validity()
+        .not_before
+        .to_unix_duration()
+        .as_secs())
+}
+
 #[derive(Debug, Clone, Hash, PartialEq, Eq, derive_more::Constructor)]
 pub struct StoredCredentialPk {
     pub public_key_hash: Sha256Hash,
     pub credential_type: u16,
+    /// See [`StoredCredential::not_before`].
+    pub not_before: u64,
+}
+
+impl StoredCredentialPk {
+    /// The primary key of the stored credential holding this signature key and credential.
+    ///
+    /// This is how a leaf node finds its credential: both parts are in the leaf node. Fails if the credential is
+    /// X509 and its leaf certificate can't be decoded.
+    pub fn from_mls_credential(signature_key: &[u8], credential: &MlsCredential) -> CryptoKeystoreResult<Self> {
+        Ok(Self {
+            public_key_hash: Sha256Hash::hash_from(signature_key),
+            credential_type: credential.credential_type().into(),
+            not_before: credential_not_before(credential)?,
+        })
+    }
 }
 
 impl PrimaryKey for StoredCredential {
@@ -90,6 +138,7 @@ impl PrimaryKey for StoredCredential {
         StoredCredentialPk {
             public_key_hash,
             credential_type: self.credential_type,
+            not_before: self.not_before,
         }
     }
 }
@@ -102,11 +151,11 @@ impl crate::traits::Entity for StoredCredential {
 
         conn.prepare_cached(
             "SELECT session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, public_key, \
-                    credential_type, private_key \
-             FROM mls_credentials WHERE public_key_sha256 = ? AND credential_type = ?",
+                    credential_type, not_before, private_key \
+             FROM mls_credentials WHERE public_key_sha256 = ? AND credential_type = ? AND not_before = ?",
         )?
         .query_row(
-            rusqlite::params![key.public_key_hash, key.credential_type],
+            rusqlite::params![key.public_key_hash, key.credential_type, key.not_before],
             Self::from_row,
         )
         .optional()
@@ -120,7 +169,7 @@ impl crate::traits::Entity for StoredCredential {
     fn load_all(conn: &rusqlite::Connection) -> crate::CryptoKeystoreResult<Vec<Self>> {
         let mut statement = conn.prepare_cached(
             "SELECT session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, public_key, \
-                    credential_type, private_key \
+                    credential_type, not_before, private_key \
              FROM mls_credentials",
         )?;
         statement
@@ -138,13 +187,14 @@ impl crate::traits::EntityDatabaseMutation for StoredCredential {
         let conn = tx.into().conn()?;
         let mut stmt = conn.prepare_cached(
             "INSERT INTO mls_credentials \
-             (public_key_sha256, credential_type, public_key, session_id, credential, created_at, ciphersuite, private_key) \
+             (public_key_sha256, credential_type, not_before, public_key, session_id, credential, created_at, ciphersuite, private_key) \
              VALUES \
-             (:public_key_sha256, :credential_type, :public_key, :session_id, :credential, datetime(:created_at, 'unixepoch'), :ciphersuite, :private_key)",
+             (:public_key_sha256, :credential_type, :not_before, :public_key, :session_id, :credential, datetime(:created_at, 'unixepoch'), :ciphersuite, :private_key)",
         )?;
         stmt.execute(rusqlite::named_params![
             ":public_key_sha256": Sha256Hash::hash_from(&self.public_key),
             ":credential_type": self.credential_type,
+            ":not_before": self.not_before,
             ":public_key": self.public_key,
             ":session_id": self.session_id,
             ":credential": self.credential,
@@ -164,7 +214,7 @@ impl crate::traits::EntityDatabaseMutation for StoredCredential {
         helpers::delete_helper_composite_key::<Self, _>(
             tx,
             &Self::PRIMARY_KEY_COLUMN_NAMES,
-            rusqlite::params![id.public_key_hash, id.credential_type],
+            rusqlite::params![id.public_key_hash, id.credential_type, id.not_before],
         )
         .map(|count| count > 0)
     }
@@ -178,18 +228,9 @@ impl<'a> crate::traits::SearchableEntity<CredentialFindFilters<'a>> for StoredCr
         let hash = filters
             .hash
             .or_else(|| filters.public_key.map(crate::Sha256Hash::hash_from));
-        if let (Some(hash), Some(credential_type)) = (hash, filters.credential_type) {
-            return <Self as crate::traits::Entity>::get(conn, &StoredCredentialPk::new(hash, credential_type)).map(
-                |opt| {
-                    opt.into_iter()
-                        .filter(|c| <Self as crate::traits::SearchableEntity<_>>::matches(c, filters))
-                        .collect()
-                },
-            );
-        }
-
         let mut query =
-            "SELECT session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, public_key, credential_type, private_key \
+            "SELECT session_id, credential, unixepoch(created_at) AS created_at, ciphersuite, public_key, credential_type, \
+                    not_before, private_key \
              FROM mls_credentials \
              WHERE (true OR :hash OR :credential_type OR :ciphersuite OR :created_at OR :session_id) "
                 .to_owned();
@@ -219,17 +260,7 @@ impl<'a> crate::traits::SearchableEntity<CredentialFindFilters<'a>> for StoredCr
                 ":created_at": filters.earliest_validity,
                 ":session_id": filters.session_id,
             ],
-            |row| {
-                Ok(Self {
-                    session_id: row.get("session_id")?,
-                    credential: row.get("credential")?,
-                    created_at: row.get("created_at")?,
-                    ciphersuite: row.get("ciphersuite")?,
-                    public_key: row.get("public_key")?,
-                    credential_type: row.get("credential_type")?,
-                    private_key: row.get("private_key")?,
-                })
-            },
+            Self::from_row,
         )?
         .collect::<Result<_, _>>()
         .map_err(Into::into)
