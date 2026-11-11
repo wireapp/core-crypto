@@ -269,6 +269,23 @@ pub(crate) mod test {
     ));
     pub(crate) const OLD_KEY: &str = "secret";
 
+    // A self-signed P256 certificate for client `7f3a9c2e-5b1d-4e8a-9c6f-2d4b8e1a3f5c:a1b2c3d4e5f60718@wire.com`
+    const CERTIFICATE_PEM: &str = "-----BEGIN CERTIFICATE-----
+MIIBwzCCAWigAwIBAgIULao7a4zzIWQnsf+x3AATPKxNz9MwCgYIKoZIzj0EAwIw
+EDEOMAwGA1UEAwwFYWxpY2UwIBcNMjYxMDAyMDkxMzMyWhgPMjEyNjA5MDgwOTEz
+MzJaMBAxDjAMBgNVBAMMBWFsaWNlMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE
+jVFOhKBLgunDycNREMhL/HNqEVu4q233k4OLVEfSV7cxWEiObENMRUqdR3QnRKfk
+xZcUf/LTfGEhM9ZITludV6OBnTCBmjAdBgNVHQ4EFgQUInHZBtKavuhbjGkbsEJN
+TXgPgDYwHwYDVR0jBBgwFoAUInHZBtKavuhbjGkbsEJNTXgPgDYwDwYDVR0TAQH/
+BAUwAwEB/zBHBgNVHREEQDA+hjx3aXJlYXBwOi8vZnpxY0xsc2RUb3FjYnkxTGpo
+b19YQSUyMWExYjJjM2Q0ZTVmNjA3MThAd2lyZS5jb20wCgYIKoZIzj0EAwIDSQAw
+RgIhAPzHW4tb1ABKVdVaCD/FyEAAo/iKXYrIY7Sb/u1A6zEzAiEAvXkFu46HchDj
+IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
+-----END CERTIFICATE-----
+";
+    const PRIVATE_KEY_HEX: &str = "6f5653a1cd645f9a8ca45e8dc724f5adb5117cd1ce0ec3cd1a11745e9c0a0a08";
+    const CLIENT_ID: &[u8] = b"7f3a9c2e-5b1d-4e8a-9c6f-2d4b8e1a3f5c:a1b2c3d4e5f60718@wire.com";
+
     /// Seed a fresh database at `schema_version`, then reopen it migrated all the way to latest.
     ///
     /// The inner database is dropped before reopening, so that the reopen actually runs the
@@ -514,23 +531,6 @@ pub(crate) mod test {
     fn e2ei_enrolled_v9_client_keeps_its_x509_credential() {
         use openmls::prelude::{CredentialType, SignatureScheme};
         use openmls_basic_credential::SignatureKeyPair;
-
-        // A self-signed P256 certificate for client `7f3a9c2e-5b1d-4e8a-9c6f-2d4b8e1a3f5c:a1b2c3d4e5f60718@wire.com`
-        const CERTIFICATE_PEM: &str = "-----BEGIN CERTIFICATE-----
-MIIBwzCCAWigAwIBAgIULao7a4zzIWQnsf+x3AATPKxNz9MwCgYIKoZIzj0EAwIw
-EDEOMAwGA1UEAwwFYWxpY2UwIBcNMjYxMDAyMDkxMzMyWhgPMjEyNjA5MDgwOTEz
-MzJaMBAxDjAMBgNVBAMMBWFsaWNlMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE
-jVFOhKBLgunDycNREMhL/HNqEVu4q233k4OLVEfSV7cxWEiObENMRUqdR3QnRKfk
-xZcUf/LTfGEhM9ZITludV6OBnTCBmjAdBgNVHQ4EFgQUInHZBtKavuhbjGkbsEJN
-TXgPgDYwHwYDVR0jBBgwFoAUInHZBtKavuhbjGkbsEJNTXgPgDYwDwYDVR0TAQH/
-BAUwAwEB/zBHBgNVHREEQDA+hjx3aXJlYXBwOi8vZnpxY0xsc2RUb3FjYnkxTGpo
-b19YQSUyMWExYjJjM2Q0ZTVmNjA3MThAd2lyZS5jb20wCgYIKoZIzj0EAwIDSQAw
-RgIhAPzHW4tb1ABKVdVaCD/FyEAAo/iKXYrIY7Sb/u1A6zEzAiEAvXkFu46HchDj
-IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
------END CERTIFICATE-----
-";
-        const PRIVATE_KEY_HEX: &str = "6f5653a1cd645f9a8ca45e8dc724f5adb5117cd1ce0ec3cd1a11745e9c0a0a08";
-        const CLIENT_ID: &[u8] = b"7f3a9c2e-5b1d-4e8a-9c6f-2d4b8e1a3f5c:a1b2c3d4e5f60718@wire.com";
 
         let certificate = x509_cert::Certificate::from_pem(CERTIFICATE_PEM).unwrap();
         let public_key = certificate
@@ -1615,6 +1615,351 @@ r9IJmL6kDQ==
                 [UNRELATED_LEAF_PK],
                 "every key package's leaf keypair goes with it, and nothing else does"
             );
+        });
+    }
+
+    const BASIC: u16 = 1;
+    const X509: u16 = 2;
+
+    /// Every foreign key violation in the database, as `(child table, child rowid, parent table)`.
+    ///
+    /// This errors with "foreign key mismatch" if a foreign key targets columns which are neither the
+    /// parent's primary key nor covered by a unique index.
+    fn foreign_key_violations(conn: &rusqlite::Connection) -> Vec<(String, Option<i64>, String)> {
+        conn.prepare("PRAGMA foreign_key_check")
+            .unwrap()
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .expect("checking foreign keys")
+    }
+
+    fn row_count(conn: &rusqlite::Connection, table: &str) -> i64 {
+        conn.query_row(&format!("SELECT count(*) FROM {table}"), [], |row| row.get(0))
+            .unwrap()
+    }
+
+    /// `created_at` of every credential with this public key and type, in seconds since the epoch.
+    fn credential_created_at(conn: &rusqlite::Connection, public_key: &[u8], credential_type: u16) -> Vec<u64> {
+        conn.prepare(
+            "SELECT unixepoch(created_at) FROM mls_credentials \
+             WHERE public_key_sha256 = ?1 AND credential_type = ?2 ORDER BY created_at",
+        )
+        .unwrap()
+        .query_map((Sha256Hash::hash_from(public_key), credential_type), |row| row.get(0))
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap()
+    }
+
+    /// `not_before`, the last primary key column, of every credential with this public key and type.
+    fn credential_not_before(conn: &rusqlite::Connection, public_key: &[u8], credential_type: u16) -> Vec<u64> {
+        conn.prepare(
+            "SELECT not_before FROM mls_credentials \
+             WHERE public_key_sha256 = ?1 AND credential_type = ?2 ORDER BY not_before",
+        )
+        .unwrap()
+        .query_map((Sha256Hash::hash_from(public_key), credential_type), |row| row.get(0))
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap()
+    }
+
+    /// Insert a credential into the schema as of V48.
+    fn insert_v48_credential(
+        conn: &rusqlite::Connection,
+        public_key: &[u8],
+        credential_type: u16,
+        credential: &[u8],
+        created_at: u64,
+    ) {
+        conn.execute(
+            "INSERT INTO mls_credentials \
+             (public_key_sha256, credential_type, public_key, session_id, credential, created_at, ciphersuite, private_key) \
+             VALUES (?1, ?2, ?3, ?4, ?5, datetime(?6, 'unixepoch'), ?7, ?8)",
+            rusqlite::params![
+                Sha256Hash::hash_from(public_key),
+                credential_type,
+                public_key,
+                CLIENT_ID,
+                credential,
+                created_at,
+                Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 as u16,
+                b"a private key".as_slice(),
+            ],
+        )
+        .expect("inserting a V48 credential");
+    }
+
+    /// Every table with a foreign key onto `mls_credentials` must reference its whole primary key.
+    ///
+    /// SQLite only accepts a foreign key whose parent columns are the primary key or carry a unique
+    /// index. A foreign key left on `(public_key_sha256, credential_type)` once `created_at` joins the
+    /// primary key is not rejected when the schema is created, only later, when a write touches it.
+    #[test]
+    fn credential_foreign_keys_reference_the_full_primary_key() {
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let db = Database::open_at_schema_version(path, &key, MigrationTarget::Latest)
+                .await
+                .unwrap();
+            let conn = db.conn().await;
+
+            let mut primary_key: Vec<String> = conn
+                .prepare("SELECT name FROM pragma_table_info('mls_credentials') WHERE pk > 0")
+                .unwrap()
+                .query_map([], |row| row.get(0))
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap();
+            primary_key.sort();
+
+            let referencing: Vec<(String, i64, String)> = conn
+                .prepare(
+                    "SELECT m.name, fk.id, fk.\"to\" \
+                     FROM sqlite_master AS m, pragma_foreign_key_list(m.name) AS fk \
+                     WHERE m.type = 'table' AND fk.\"table\" = 'mls_credentials'",
+                )
+                .unwrap()
+                .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap();
+
+            let mut by_foreign_key = std::collections::BTreeMap::<(String, i64), Vec<String>>::new();
+            for (table, id, column) in referencing {
+                by_foreign_key.entry((table, id)).or_default().push(column);
+            }
+            assert!(
+                by_foreign_key.keys().any(|(table, _)| table == "mls_groups")
+                    && by_foreign_key.keys().any(|(table, _)| table == "mls_key_packages"),
+                "groups and key packages must both reference their credential, found {by_foreign_key:?}"
+            );
+            for ((table, _), mut columns) in by_foreign_key {
+                columns.sort();
+                assert_eq!(
+                    columns, primary_key,
+                    "{table}'s foreign key onto mls_credentials must cover its whole primary key"
+                );
+            }
+        });
+    }
+
+    /// An X509 credential is keyed by its leaf certificate's `not_before`, which the migration has to
+    /// read from the certificate itself: releases before v11.0.0 stored the insertion time in
+    /// `created_at` instead. The migration also has to correct `created_at`, which is the
+    /// credential's earliest validity. A credential ref built from it would otherwise point at a key
+    /// no row has. Anything referencing the credential must still resolve to it afterwards.
+    #[test]
+    fn x509_credential_is_keyed_by_the_certificate_not_before() {
+        const INSERTION_TIME: u64 = 1_700_000_100;
+        const CONVERSATION_ID: &[u8] = b"a conversation using the X509 credential";
+        const KEY_PACKAGE_REF: &[u8] = b"a key package generated from the X509 credential";
+
+        let certificate = x509_cert::Certificate::from_pem(CERTIFICATE_PEM).unwrap();
+        let not_before = certificate
+            .tbs_certificate()
+            .validity()
+            .not_before
+            .to_unix_duration()
+            .as_secs();
+        assert_ne!(
+            not_before, INSERTION_TIME,
+            "the key must visibly come from the certificate, not from created_at"
+        );
+        let public_key = certificate
+            .tbs_certificate()
+            .subject_public_key_info()
+            .subject_public_key
+            .raw_bytes()
+            .to_vec();
+        let x509_credential = MlsCredential::new_x509(vec![certificate.to_der().unwrap()])
+            .unwrap()
+            .tls_serialize_detached()
+            .unwrap();
+
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let db = seed_then_migrate(path, &key, 48, |conn| {
+                insert_v48_credential(conn, &public_key, X509, &x509_credential, INSERTION_TIME);
+                conn.execute(
+                    "INSERT INTO mls_groups \
+                     (id, state, epoch, ciphersuite, credential_id, credential_type, own_leaf_index, is_pending) \
+                     VALUES (?1, ?2, 1, ?3, ?4, ?5, 0, 0)",
+                    rusqlite::params![
+                        CONVERSATION_ID,
+                        b"opaque group state".as_slice(),
+                        Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 as u16,
+                        Sha256Hash::hash_from(&public_key),
+                        X509,
+                    ],
+                )
+                .expect("inserting a group");
+                conn.execute(
+                    "INSERT INTO mls_key_packages \
+                     (key_package_ref, key_package, credential_id, credential_type, hpke_init_public_key_hash, \
+                      leaf_encryption_key_hash) \
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                    rusqlite::params![
+                        KEY_PACKAGE_REF,
+                        b"opaque key package".as_slice(),
+                        Sha256Hash::hash_from(&public_key),
+                        X509,
+                        Sha256Hash::hash_from(b"an hpke init key"),
+                        Sha256Hash::hash_from(b"a leaf encryption key"),
+                    ],
+                )
+                .expect("inserting a key package");
+            })
+            .await;
+            let conn = db.conn().await;
+
+            assert_eq!(credential_not_before(&conn, &public_key, X509), [not_before]);
+            assert_eq!(
+                credential_created_at(&conn, &public_key, X509),
+                [not_before],
+                "created_at must be corrected to the certificate's not_before"
+            );
+            assert_eq!(row_count(&conn, "mls_groups"), 1, "the group must survive");
+            assert_eq!(row_count(&conn, "mls_key_packages"), 1, "the key package must survive");
+            assert_eq!(foreign_key_violations(&conn), []);
+        });
+    }
+
+    /// An X509 credential whose certificate can't be parsed has no `not_before` to key it by. It was
+    /// never loadable anyway, so the migration drops it rather than failing.
+    #[test]
+    fn migration_drops_an_x509_credential_whose_certificate_does_not_parse() {
+        const PUBLIC_KEY: &[u8] = b"public key of a credential with a broken certificate";
+
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let db = seed_then_migrate(path, &key, 48, |conn| {
+                insert_v48_credential(conn, PUBLIC_KEY, X509, b"not a serialized credential", 1_700_000_000);
+            })
+            .await;
+            let conn = db.conn().await;
+
+            assert_eq!(credential_created_at(&conn, PUBLIC_KEY, X509), [] as [u64; 0]);
+        });
+    }
+
+    /// A basic credential has no certificate, so its `created_at` is all there is. The migration must
+    /// leave it, and the credential bytes, exactly as they were.
+    #[test]
+    fn migration_keeps_a_basic_credentials_created_at() {
+        const PUBLIC_KEY: &[u8] = b"public key of a basic credential";
+        const CREDENTIAL: &[u8] = b"a basic credential, never parsed by the migration";
+        const CREATED_AT: u64 = 1_700_000_000;
+
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let db = seed_then_migrate(path, &key, 48, |conn| {
+                insert_v48_credential(conn, PUBLIC_KEY, BASIC, CREDENTIAL, CREATED_AT);
+            })
+            .await;
+            let conn = db.conn().await;
+
+            assert_eq!(credential_created_at(&conn, PUBLIC_KEY, BASIC), [CREATED_AT]);
+            assert_eq!(credential_not_before(&conn, PUBLIC_KEY, BASIC), [0]);
+            let credential: Vec<u8> = conn
+                .query_row("SELECT credential FROM mls_credentials", [], |row| row.get(0))
+                .unwrap();
+            assert_eq!(credential, CREDENTIAL);
+        });
+    }
+
+    /// `created_at` has always been nullable, and V48 doesn't stop a basic credential from holding a
+    /// `NULL` there. The new primary key doesn't involve `created_at`, so such a credential must come
+    /// through the rebuild like any other, keyed by a `not_before` of 0.
+    #[test]
+    fn migration_keeps_a_basic_credential_without_created_at() {
+        const PUBLIC_KEY: &[u8] = b"public key of a basic credential stored without created_at";
+        const CREDENTIAL: &[u8] = b"a basic credential, never parsed by the migration";
+
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let db = seed_then_migrate(path, &key, 48, |conn| {
+                insert_v48_credential(conn, PUBLIC_KEY, BASIC, CREDENTIAL, 0);
+                conn.execute("UPDATE mls_credentials SET created_at = NULL", [])
+                    .expect("clearing created_at");
+            })
+            .await;
+            let conn = db.conn().await;
+
+            let (credential, not_before): (Vec<u8>, u64) = conn
+                .query_row(
+                    "SELECT credential, not_before FROM mls_credentials \
+                     WHERE public_key_sha256 = ?1 AND credential_type = ?2",
+                    (Sha256Hash::hash_from(PUBLIC_KEY), BASIC),
+                    |row| Ok((row.get(0)?, row.get(1)?)),
+                )
+                .expect("the basic credential must survive the migration");
+            assert_eq!(credential, CREDENTIAL);
+            assert_eq!(not_before, 0);
+        });
+    }
+
+    /// Rebuilding `mls_credentials` must not touch what references it. With foreign keys on, dropping
+    /// the old table would cascade onto every key package and be refused by every group, so this
+    /// shows the rebuild really runs with them off and leaves every reference intact.
+    ///
+    /// The bundled database carries one basic credential, one group and 99 key packages using it.
+    #[test]
+    fn credential_rebuild_keeps_every_reference_in_a_real_database() {
+        let mut db_file = NamedTempFile::new().unwrap();
+        db_file.write_all(DB).unwrap();
+        let path = db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode");
+
+        let new_key = DatabaseKey::generate();
+        smol::block_on(migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key)).unwrap();
+
+        smol::block_on(async {
+            let tables = ["mls_credentials", "mls_groups", "mls_key_packages"];
+            let (before, basic_created_at): (Vec<i64>, Vec<(Vec<u8>, u64)>) = {
+                let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(48))
+                    .await
+                    .unwrap();
+                let conn = db.conn().await;
+                let created_at = conn
+                    .prepare("SELECT public_key, unixepoch(created_at) FROM mls_credentials WHERE credential_type = ?1")
+                    .unwrap()
+                    .query_map([BASIC], |row| Ok((row.get(0)?, row.get(1)?)))
+                    .unwrap()
+                    .collect::<Result<_, _>>()
+                    .unwrap();
+                (tables.map(|table| row_count(&conn, table)).to_vec(), created_at)
+            };
+            assert!(
+                before.iter().all(|&count| count > 0),
+                "the bundled database must have rows in {tables:?}, found {before:?}"
+            );
+
+            let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Latest)
+                .await
+                .unwrap();
+            let conn = db.conn().await;
+
+            let after = tables.map(|table| row_count(&conn, table)).to_vec();
+            assert_eq!(after, before, "row counts of {tables:?}");
+            assert_eq!(foreign_key_violations(&conn), []);
+            for (public_key, created_at) in basic_created_at {
+                assert_eq!(credential_created_at(&conn, &public_key, BASIC), [created_at]);
+                assert_eq!(credential_not_before(&conn, &public_key, BASIC), [0]);
+            }
         });
     }
 }
