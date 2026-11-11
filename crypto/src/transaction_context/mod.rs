@@ -21,6 +21,7 @@ use crate::{
 };
 pub mod conversation;
 mod credential;
+mod decrypt;
 pub mod e2e_identity;
 mod error;
 mod inner_guard;

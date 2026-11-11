@@ -61,7 +61,7 @@ impl ConversationMut {
     /// Errors occurred when decrypting buffered messages unblocked by the initial message are propagated in
     /// case they are infrastructure errors. If they are not, then they are logged but not propagated, and the
     /// related message is dropped.
-    pub async fn decrypt_message(&mut self, bytes: impl Into<Cow<'_, [u8]>>) -> Result<Vec<DecryptedMessage>> {
+    pub(crate) async fn decrypt_message(&mut self, bytes: impl Into<Cow<'_, [u8]>>) -> Result<Vec<DecryptedMessage>> {
         let id = self.id.clone();
         let log_and_skip_unparseable_buffered_messages = move |maybe_message: Result<
             (InboxMessage, IncomingMessage),
