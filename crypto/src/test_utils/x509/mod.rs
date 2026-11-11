@@ -408,6 +408,30 @@ impl X509Certificate {
         }
     }
 
+    /// Issue an end-identity certificate for `keypair`, valid from `not_before` (seconds since the unix epoch) for 30
+    /// days, and bundle it with this issuer.
+    ///
+    /// Issuing twice with the same `client_id` and `keypair` reissues a certificate for the same signature key, as a
+    /// certificate rotation does.
+    pub fn issue_bundle_for_keypair(
+        &self,
+        client_id: &ClientId,
+        keypair: &PkiKeypair,
+        not_before: u64,
+    ) -> CertificateBundle {
+        let certificate = self.create_and_sign_end_identity(CertificateParams {
+            handle: Some("alice_wire".into()),
+            client_id: Some(client_id.clone()),
+            cert_keypair: Some(keypair.clone()),
+            // certificate generation moves the start back a second to prevent clipping, so add it back to land on
+            // exactly `not_before`
+            validity_start: Some(Duration::from_secs(not_before + 1)),
+            expiration: Duration::from_secs(30 * 86_400),
+            ..Default::default()
+        });
+        CertificateBundle::from_certificate_and_issuer(&certificate, self)
+    }
+
     pub fn create_and_sign_end_identity(&self, params: CertificateParams) -> X509Certificate {
         let signature_scheme = self.signature_scheme;
         let serial = u64::from_le_bytes(CRYPTO.random_array().unwrap());
