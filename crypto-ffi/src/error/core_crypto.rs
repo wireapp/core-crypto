@@ -163,10 +163,6 @@ impl From<RecursiveError> for CoreCryptoError {
             core_crypto::mls::conversation::Error::UnbufferedFarFutureMessage => MlsError::WrongEpoch.into(),
             core_crypto::mls::conversation::Error::MessageRejected { reason } => MlsError::MessageRejected { reason: reason.clone() }.into(),
             core_crypto::mls::conversation::Error::OrphanWelcome => MlsError::OrphanWelcome.into(),
-            // The internal name is what we want, but renaming the external variant is a breaking change.
-            // Since we're re-designing the `BufferedMessage` errors soon, it's not worth producing
-            // an additional breaking change until then, so the names are inconsistent.
-            core_crypto::mls::conversation::Error::BufferedForPendingConversation => MlsError::UnmergedPendingGroup.into(),
             ||=> MlsError::Other { msg: error.innermost_error_message() }.into(),
         })
     }

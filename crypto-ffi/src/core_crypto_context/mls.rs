@@ -1,8 +1,6 @@
 use std::{fmt, sync::Arc, time::Duration};
 
-use core_crypto::{
-    BufferedDecryptedMessage, ConversationConfiguration, transaction_context::Error as TransactionError,
-};
+use core_crypto::{BufferedDecryptedMessage, ConversationConfiguration};
 
 use crate::{
     CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, Credential,
@@ -152,7 +150,7 @@ impl CoreCryptoContext {
     /// Returns true if a conversation with the given id exists in the local state.
     pub async fn conversation_exists(&self, conversation_id: &ConversationId) -> CoreCryptoResult<bool> {
         self.inner
-            .conversation_exists(conversation_id.as_ref())
+            .conversation_exists(conversation_id.as_ref(), Some(false))
             .await
             .map_err(Into::into)
     }
@@ -288,67 +286,56 @@ impl CoreCryptoContext {
         conversation_id: &ConversationId,
         payload: Vec<u8>,
     ) -> CoreCryptoResult<DecryptedMessage> {
-        let conversation_result = self.inner.conversation(conversation_id.as_ref()).await;
-        let decrypted_message = match conversation_result {
-            Err(TransactionError::PendingConversation(mut pending)) => {
-                pending.try_process_own_join_commit(&payload).await?.into()
-            }
-            Ok(mut conversation) => {
-                // This mapping shouldn't survive past WPB-29259, but it's necessary for the moment because
-                // we have not yet adjusted the public API.
-                let messages = conversation.decrypt_message(&payload).await?;
+        // This mapping shouldn't survive past WPB-29259, but it's necessary for the moment because
+        // we have not yet adjusted the public API.
+        let messages = self.inner.decrypt_message(conversation_id.as_ref(), &payload).await?;
 
-                // We need to transform the list of results to match what used to be produced.
-                // There are two main wrinkles:
-                // 1. We no longer have context about why a message was deferred (to be restored in WPB-29261)
-                // 2. A proposal which restored a commit makes that commit the main message, not the proposal.
+        // We need to transform the list of results to match what used to be produced.
+        // There are two main wrinkles:
+        // 1. We no longer have context about why a message was deferred (to be restored in WPB-29261)
+        // 2. A proposal which restored a commit makes that commit the main message, not the proposal.
 
-                // if we're evicted, the final message decrypted is always the commit which ejects us
-                let final_message_is_active = messages
-                    .last()
-                    .and_then(|message| message.as_commit())
-                    .is_none_or(|commit| commit.is_active);
+        // if we're evicted, the final message decrypted is always the commit which ejects us
+        let final_message_is_active = messages
+            .last()
+            .and_then(|message| message.as_commit())
+            .is_none_or(|commit| commit.is_active);
 
-                // the main message is either the first commit or the first result
-                let primary_message_idx = messages
-                    .iter()
-                    .position(|message| message.is_commit())
-                    .unwrap_or_default();
+        // the main message is either the first commit or the first result
+        let primary_message_idx = messages
+            .iter()
+            .position(|message| message.is_commit())
+            .unwrap_or_default();
 
-                debug_assert!(
-                    primary_message_idx == 0 || primary_message_idx == 1,
-                    "the only case where primary message is 1 is when 0 is a proposal unblocking a commit"
-                );
+        debug_assert!(
+            primary_message_idx == 0 || primary_message_idx == 1,
+            "the only case where primary message is 1 is when 0 is a proposal unblocking a commit"
+        );
 
-                // old behavior: discard the proposal producing a commit
-                let mut messages = messages.into_iter().skip(primary_message_idx);
-                let Some(mut primary_message) = messages.next().map(Into::into) else {
-                    // no messages -> must have been buffered
-                    // all buffering is reported as this error variant, now, even if the buffered
-                    // message was in fact a commit.
-                    // that's a guess, not necessarily accurate, but it'll be fixed in WPB-29261.
-                    return Err(MlsError::BufferedFutureMessage.into());
-                };
-                let buffered_decrypted = messages
-                    .map(|message| BufferedDecryptedMessage::from(message).into())
-                    .collect::<Vec<_>>();
-
-                if let DecryptedMessage::Commit {
-                    buffered_messages,
-                    is_active,
-                    ..
-                } = &mut primary_message
-                {
-                    *buffered_messages = (!buffered_decrypted.is_empty()).then_some(buffered_decrypted);
-                    *is_active = final_message_is_active;
-                }
-
-                primary_message
-            }
-            Err(e) => Err(e)?,
+        // old behavior: discard the proposal producing a commit
+        let mut messages = messages.into_iter().skip(primary_message_idx);
+        let Some(mut primary_message) = messages.next().map(Into::into) else {
+            // no messages -> must have been buffered
+            // all buffering is reported as this error variant, now, even if the buffered
+            // message was in fact a commit.
+            // that's a guess, not necessarily accurate, but it'll be fixed in WPB-29261.
+            return Err(MlsError::BufferedFutureMessage.into());
         };
+        let buffered_decrypted = messages
+            .map(|message| BufferedDecryptedMessage::from(message).into())
+            .collect::<Vec<_>>();
 
-        Ok(decrypted_message)
+        if let DecryptedMessage::Commit {
+            buffered_messages,
+            is_active,
+            ..
+        } = &mut primary_message
+        {
+            *buffered_messages = (!buffered_decrypted.is_empty()).then_some(buffered_decrypted);
+            *is_active = final_message_is_active;
+        }
+
+        Ok(primary_message)
     }
 
     /// Encrypts a plaintext message for all members of the given conversation.

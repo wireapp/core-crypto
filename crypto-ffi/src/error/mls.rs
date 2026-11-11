@@ -24,10 +24,6 @@ pub enum MlsError {
     MessageEpochTooOld,
     #[error("Tried to decrypt a commit created by self which is likely to have been replayed by the DS")]
     SelfCommitIgnored,
-    #[error(
-        "You tried to join with an external commit but did not merge it yet. We will reapply this message for you when you merge your external commit"
-    )]
-    UnmergedPendingGroup,
     #[error("The received proposal is deemed stale and is from an older epoch.")]
     StaleProposal,
     #[error("The received commit is deemed stale and is from an older epoch.")]
