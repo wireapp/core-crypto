@@ -31,8 +31,13 @@ impl TransactionContext {
 
     /// Acquire a conversation guard.
     ///
-    /// This helper struct permits mutations on a conversation.
-    pub async fn conversation(&self, id: &ConversationIdRef) -> Result<ConversationMut> {
+    /// Most of the time it's better to use [`Self::conversation`] or [`Self::pending_conversation`].
+    /// However, in certain limited circumstances, it might be necessary to get a [`ConversationMut`]
+    /// whether or not the conversation in question is in fact pending.
+    pub(crate) async fn conversation_regardless_of_pending_status(
+        &self,
+        id: &ConversationIdRef,
+    ) -> Result<ConversationMut> {
         let inner = self.inner()?;
         let session = self.session().await?;
         let conversation = self
@@ -40,15 +45,20 @@ impl TransactionContext {
             .await?
             .get_or_fetch(id, &inner.transaction, &session)
             .await
-            .map_err(RecursiveError::context("fetching conversation from mls groups by id"))?;
+            .map_err(RecursiveError::context("fetching conversation from mls groups by id"))?
+            .ok_or_else(|| Error::ConversationNotFound(id.to_owned()))?;
+        Ok(ConversationMut::new(conversation, self.clone()))
+    }
 
-        if let Some(conversation) = conversation {
-            return Ok(ConversationMut::new(conversation, self.clone()));
+    /// Acquire a conversation guard.
+    ///
+    /// This helper struct permits mutations on a conversation.
+    pub async fn conversation(&self, id: &ConversationIdRef) -> Result<ConversationMut> {
+        let conversation = self.conversation_regardless_of_pending_status(id).await?;
+        if conversation.group().await.is_pending {
+            return Err(Error::PendingConversation(id.to_owned()));
         }
-        // Check if there is a pending conversation with
-        // the same id
-        let pending = self.pending_conversation(id).await.map(Error::PendingConversation)?;
-        Err(pending)
+        Ok(conversation)
     }
 
     pub(crate) async fn pending_conversation(&self, id: &ConversationIdRef) -> Result<PendingConversation> {

@@ -28,7 +28,8 @@ impl TransactionContext {
         configuration: ConversationConfiguration,
     ) -> Result<ConversationMut> {
         let id = ConversationId::from(group.group_id().as_slice());
-        let mut group_state = MlsGroupState::new(group, Default::default());
+        // A conversation created in this way is never pending.
+        let mut group_state = MlsGroupState::new(group, Default::default(), false);
 
         let context_inner = self.inner()?;
         group_state

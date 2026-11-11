@@ -54,7 +54,7 @@ impl ConversationCache {
             return Ok(Some(entry.clone()));
         }
 
-        let Some(conversation) = Conversation::load(session, id)
+        let Some(conversation) = Conversation::load_including_pending(session, id)
             .await
             .map_err(RecursiveError::context("fetching persisted mls group from keystore"))?
         else {

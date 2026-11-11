@@ -1,7 +1,7 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![expect(missing_docs)]
 
-use crate::{ConversationId, CredentialRef, mls::conversation::PendingConversation};
+use crate::{ConversationId, CredentialRef};
 
 /// A module-specific [Result][core::result::Result] type with a default error variant.
 pub type Result<T, E = Error> = core::result::Result<T, E>;
@@ -20,7 +20,7 @@ pub enum Error {
     #[error("Couldn't find conversation")]
     ConversationNotFound(ConversationId),
     #[error("The conversation with the specified id is pending")]
-    PendingConversation(PendingConversation),
+    PendingConversation(ConversationId),
     #[error("Proteus client hasn't been initialized")]
     ProteusNotInitialized,
     #[error("PKI Environment must be set before calling this function")]

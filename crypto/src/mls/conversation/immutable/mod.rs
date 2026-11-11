@@ -36,6 +36,8 @@ pub(crate) struct MlsGroupState {
     /// The purpose of these counters is replay protection on the recipient side: we provide the count when sending a
     /// message to a receiver, and they check if the counter is greater than any they've seen before.
     tnt_message_tx_counter: TntMessageCounter,
+    /// This group is in a pending state, not yet finalized and ready to process messages.
+    pub(crate) is_pending: bool,
 }
 
 impl MlsGroupState {
@@ -107,11 +109,7 @@ impl MlsGroupState {
             credential_type: credential.credential_type,
             credential_not_before: credential.not_before,
             own_leaf_index: group.own_leaf_index().u32(),
-            // `persist` is reached either by an established conversation persisting a normal
-            // change, or by `persist_conversation_from_mls_group` once an external commit has
-            // already been merged — either way, this group is no longer pending by the time this
-            // runs.
-            is_pending: false,
+            is_pending: self.is_pending,
             tnt_tx_counter: self.tnt_message_tx_counter.into(),
         }
         .save(tx)

@@ -33,7 +33,7 @@ use crate::{
 /// A pending conversation is a conversation that has been created via an external join commit
 /// locally, while this commit has not yet been approved by the DS.
 #[derive(Debug)]
-pub struct PendingConversation {
+pub(crate) struct PendingConversation {
     inner: PersistedMlsGroup,
     context: TransactionContext,
 }
@@ -88,7 +88,7 @@ impl PendingConversation {
         ConversationIdRef::new(self.inner.id.bytes())
     }
 
-    pub(crate) fn save(&self) -> Result<()> {
+    pub(crate) async fn save(&self) -> Result<()> {
         let context = self
             .context
             .inner()
@@ -96,8 +96,18 @@ impl PendingConversation {
         let tx = context.transaction();
         self.inner
             .save(tx)
-            .map_err(KeystoreError::wrap("saving mls pending groups"))
-            .map_err(Into::into)
+            .map_err(KeystoreError::wrap("saving mls pending groups"))?;
+        // When saving, we may be overwriting an existing non-pending mls group.
+        // In that case, we have to clear it from the conversation cache to ensure
+        // that the proper state is loaded on next use.
+        self.context
+            .mls_groups()
+            .await
+            .map_err(RecursiveError::context(
+                "getting conversation cache when saving pending conversation",
+            ))?
+            .remove(self.id());
+        Ok(())
     }
 
     /// Send the commit via [crate::MlsTransport] and handle the response.
@@ -119,7 +129,7 @@ impl PendingConversation {
     /// merge the pending group and restore any buffered messages.
     ///
     /// Otherwise, the given message will be buffered.
-    pub async fn try_process_own_join_commit(&mut self, message: impl AsRef<[u8]>) -> Result<DecryptedMessage> {
+    pub(crate) async fn try_process_own_join_commit(&mut self, message: impl AsRef<[u8]>) -> Result<DecryptedMessage> {
         let incoming = IncomingMessage::parse(message.as_ref())?;
 
         // If the confirmation tag of the pending group and this incoming message are identical, we can merge the
@@ -300,7 +310,7 @@ impl PendingConversation {
         };
 
         // cleanup the pending group we no longer need
-        self.clear()?;
+        self.clear().await?;
 
         Ok(pending_messages)
     }
@@ -311,7 +321,7 @@ impl PendingConversation {
     ///
     /// # Errors
     /// Errors resulting from the KeyStore calls
-    pub(crate) fn clear(&mut self) -> Result<()> {
+    pub(crate) async fn clear(&mut self) -> Result<()> {
         let context = self
             .context
             .inner()
@@ -320,7 +330,15 @@ impl PendingConversation {
         let group_id = self.id();
         PersistedMlsGroup::delete_if_pending(tx, group_id.keystore())
             .map_err(KeystoreError::wrap("deleting pending group by id"))?;
-
+        // We may have stored this pending conversation in the conversation cache.
+        // In that case, we have to clear it.
+        self.context
+            .mls_groups()
+            .await
+            .map_err(RecursiveError::context(
+                "getting conversation cache when saving pending conversation",
+            ))?
+            .remove(self.id());
         Ok(())
     }
 }

@@ -24,7 +24,7 @@ impl Conversation {
         };
 
         // The tnt message counter is stored in the same row as the rest of the group.
-        let group = MlsGroupState::new(group, persisted.tnt_tx_counter.into()).into();
+        let group = MlsGroupState::new(group, persisted.tnt_tx_counter.into(), persisted.is_pending).into();
 
         Ok(Self {
             id,
@@ -34,21 +34,36 @@ impl Conversation {
         })
     }
 
+    /// Load a conversation from the database, even if it is pending.
+    ///
+    /// For the majority of use cases, it's better to exclude pending conversations with [`Self::load`].
+    /// However, when decrypting messages specifically, it is sometimes helpful to be able to include a pending
+    /// conversation in the results.
+    pub(crate) async fn load_including_pending(session: &Arc<Session>, id: impl AsRef<[u8]>) -> Result<Option<Self>> {
+        let group = session
+            .database()
+            .get_borrowed::<PersistedMlsGroup>(ConversationIdRef::new(id.as_ref()))
+            .await
+            .map_err(KeystoreError::wrap("finding a persisted mls group"))?;
+        let Some(group) = group else {
+            return Ok(None);
+        };
+        let conversation = Self::from_persisted(Arc::downgrade(session), &group)?;
+        Ok(Some(conversation))
+    }
+
     /// Load a conversation from the database
     ///
     /// A row marked `is_pending` is a join-by-external-commit awaiting confirmation, not a usable
     /// conversation yet, so it's treated the same as not found here — callers fall back to
     /// [`crate::transaction_context::TransactionContext::pending_conversation`] for that case.
     pub(crate) async fn load(session: &Arc<Session>, id: impl AsRef<[u8]>) -> Result<Option<Self>> {
-        let group = session
-            .database()
-            .get_borrowed::<PersistedMlsGroup>(ConversationIdRef::new(id.as_ref()))
-            .await
-            .map_err(KeystoreError::wrap("finding a persisted mls group"))?;
-        let Some(group) = group.filter(|group| !group.is_pending) else {
+        let Some(conversation) = Self::load_including_pending(session, id).await? else {
             return Ok(None);
         };
-        let conversation = Self::from_persisted(Arc::downgrade(session), &group)?;
+        if conversation.group().await.is_pending {
+            return Ok(None);
+        }
         Ok(Some(conversation))
     }
 
@@ -57,7 +72,7 @@ impl Conversation {
     /// Returns `false`, changing nothing, if the conversation is no longer in the database.
     pub(crate) async fn reload(&self) -> Result<bool> {
         let session = self.session()?;
-        let Some(persisted) = Self::load(&session, self.id.as_ref()).await? else {
+        let Some(persisted) = Self::load_including_pending(&session, self.id.as_ref()).await? else {
             return Ok(false);
         };
         *self.group.write().await = persisted.group.into_inner();
