@@ -52,6 +52,9 @@ pub struct StoredCredential {
 }
 
 impl StoredCredential {
+    /// The `not_before` of a credential without a certificate, such as a basic credential.
+    pub const NOT_BEFORE_WITHOUT_CERTIFICATE: u64 = 0;
+
     const PRIMARY_KEY_COLUMN_NAMES: [&str; 3] = ["public_key_sha256", "credential_type", "not_before"];
 
     fn from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<Self> {
@@ -87,10 +90,10 @@ impl StoredCredential {
 /// The `not_before` part of a stored credential's primary key.
 ///
 /// For an X509 credential this is the leaf certificate's `not_before`, as a unix timestamp in seconds. Any other
-/// credential has no certificate, and gets 0.
+/// credential has no certificate, and gets [`StoredCredential::NOT_BEFORE_WITHOUT_CERTIFICATE`].
 pub fn credential_not_before(credential: &MlsCredential) -> CryptoKeystoreResult<u64> {
     let MlsCredentialType::X509(certificate) = credential.mls_credential() else {
-        return Ok(0);
+        return Ok(StoredCredential::NOT_BEFORE_WITHOUT_CERTIFICATE);
     };
     let leaf = certificate
         .certificates
