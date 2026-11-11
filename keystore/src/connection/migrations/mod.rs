@@ -123,11 +123,33 @@ pub(super) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationT
         return Err(CryptoKeystoreError::DatabaseFromTheFuture);
     }
 
+    // Migrations which rebuild a table that other tables reference. With foreign keys on, dropping the old table
+    // would cascade into every table referencing it, so those would all have to be rebuilt too. With them off, the
+    // references just point at whichever table holds the name once the migration is done.
+    //
+    // Nothing checks the copied rows while foreign keys are off, so such a migration has to keep every reference
+    // valid by construction, and its test should assert that `PRAGMA foreign_key_check` comes back empty.
+    //
+    // The pragma is a no-op inside a transaction, and refinery runs each migration in one, so it can't be set from
+    // the migration's own SQL.
+    const WITHOUT_FOREIGN_KEYS: &[i32] = &[];
+
     let resume_from = (user_version + 1).max(newest_applied_version);
     for version in resume_from..=target_version {
         runner = runner.set_target(Target::Version(version));
 
-        let report = runner.run(conn).map_err(Box::new)?;
+        let report = if WITHOUT_FOREIGN_KEYS.contains(&version) {
+            // Restore whatever the caller had rather than assuming it was on.
+            let foreign_keys: bool = conn.pragma_query_value(None, "foreign_keys", |row| row.get(0))?;
+            conn.pragma_update(None, "foreign_keys", false)?;
+            let report = runner.run(conn);
+            // Restore before looking at the result, so a failed migration doesn't leave foreign keys off.
+            conn.pragma_update(None, "foreign_keys", foreign_keys)?;
+            report
+        } else {
+            runner.run(conn)
+        }
+        .map_err(Box::new)?;
 
         debug_assert!(
             report.applied_migrations().len() < 2,
