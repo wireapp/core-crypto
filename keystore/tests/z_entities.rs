@@ -172,8 +172,8 @@ mod tests_impl {
 
     /// Save a fresh credential and point `group` at it.
     ///
-    /// `mls_groups.(credential_id, credential_type)` is a foreign key onto `mls_credentials`, so any
-    /// group saved for this suite's purposes — whether the entity under test or merely a dependency
+    /// `mls_groups.(credential_id, credential_type, credential_not_before)` is a foreign key onto `mls_credentials`, so
+    /// any group saved for this suite's purposes — whether the entity under test or merely a dependency
     /// satisfying some other entity's foreign key onto `mls_groups` — needs a real credential behind it.
     fn attach_valid_credential<'a, Tx>(tx: &'a Tx, group: &mut PersistedMlsGroup)
     where
@@ -185,6 +185,7 @@ mod tests_impl {
             "groups should always generate with basic credential refs for the purpose of this test"
         );
         group.credential_id = credential.public_key_hash;
+        group.credential_not_before = credential.not_before;
     }
 
     /// Save a fresh credential, returning its primary key.
@@ -203,9 +204,9 @@ mod tests_impl {
 
     /// Save whatever a key package or HPKE init key needs behind it.
     ///
-    /// `mls_key_packages.(credential_id, credential_type)` is a foreign key onto `mls_credentials`, so a
-    /// key package needs a real credential. An HPKE init private key is stored on the row of the key
-    /// package which owns it, so it can only be saved once that key package exists.
+    /// `mls_key_packages.(credential_id, credential_type, credential_not_before)` is a foreign key onto
+    /// `mls_credentials`, so a key package needs a real credential. An HPKE init private key is stored on the row
+    /// of the key package which owns it, so it can only be saved once that key package exists.
     fn satisfy_key_package_dependencies<'a, Tx>(tx: &'a Tx, entity: &mut dyn Any)
     where
         &'a Tx: Into<Transactionlike<'a>>,
@@ -760,7 +761,7 @@ pub mod utils {
                 };
             }
 
-    impl_entity_random_update_ext!(StoredCredential, blob_fields=[credential,public_key,private_key,], additional_fields=[(session_id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),(ciphersuite: rand::random()),(credential_type: 1),]);
+    impl_entity_random_update_ext!(StoredCredential, blob_fields=[credential,public_key,private_key,], additional_fields=[(session_id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),(ciphersuite: rand::random()),(credential_type: 1),(not_before: 0),]);
     impl_entity_random_update_ext!(StoredEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
     impl_entity_random_update_ext!(StoredPskBundle, blob_fields=[psk,psk_id id_like:true,]);
     impl_entity_random_update_ext!(TargetedMessageRxCounter, blob_fields=[], update_fields=[(count: rand::random()),], additional_fields=[(conversation_id: random_conversation_id()),(sender: rand::random()),(epoch: u64::from(rand::random::<u32>())),]);
@@ -889,6 +890,7 @@ pub mod utils {
                 credential: StoredCredentialPk {
                     public_key_hash: random_sha256(),
                     credential_type: 1, // type of basic credential
+                    not_before: 0,      // always 0 for a basic credential
                 },
                 hpke_init_public_key_hash: random_sha256(),
                 leaf_encryption_key_hash: random_sha256(),
@@ -967,7 +969,8 @@ pub mod utils {
                     rand::fill(&mut id);
                     id.into()
                 },
-                credential_type: 1, // type of basic credential
+                credential_type: 1,       // type of basic credential
+                credential_not_before: 0, // always 0 for a basic credential
                 own_leaf_index: rand::random(),
                 is_pending: false,
                 tnt_tx_counter: rand::random(),

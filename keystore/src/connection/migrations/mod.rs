@@ -617,6 +617,12 @@ IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
                 &crate::entities::StoredCredentialPk::new(
                     Sha256Hash::hash_from(&public_key),
                     CredentialType::X509.into(),
+                    certificate
+                        .tbs_certificate()
+                        .validity()
+                        .not_before
+                        .to_unix_duration()
+                        .as_secs(),
                 ),
             )
             .unwrap()
@@ -1036,7 +1042,8 @@ r9IJmL6kDQ==
             assert!(
                 StoredCredential::get(
                     &conn,
-                    &crate::entities::StoredCredentialPk::new(Sha256Hash::hash_from(PUBLIC_KEY), credential_type),
+                    // a basic credential's `not_before` is always 0
+                    &crate::entities::StoredCredentialPk::new(Sha256Hash::hash_from(PUBLIC_KEY), credential_type, 0),
                 )
                 .unwrap()
                 .is_some(),

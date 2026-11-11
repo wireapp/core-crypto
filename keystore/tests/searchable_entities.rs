@@ -40,6 +40,12 @@ mod stored_credential {
         let ciphersuite = rand::random_range(1_u16..=7);
         let public_key = random_bytes(512..=1024);
         let credential_type = rand::random_range(1_u16..=2);
+        // only an X509 credential (type 2) has a certificate to take `not_before` from
+        let not_before = if credential_type == 2 {
+            rand::random_range(1..=u64::from(u32::MAX))
+        } else {
+            0
+        };
         let private_key = random_bytes(128..=256);
 
         let mut entity = StoredCredential {
@@ -49,6 +55,7 @@ mod stored_credential {
             ciphersuite,
             public_key,
             credential_type,
+            not_before,
             private_key,
         };
 
@@ -185,7 +192,7 @@ mod stored_credential {
     /// A reissued certificate can certify the same signature key. Its `not_before` is later than the old one's, so
     /// both credentials are kept, and each stays reachable through its own primary key.
     #[apply(all_storage_types)]
-    async fn x509_credentials_with_the_same_public_key_and_different_created_at_can_coexist(
+    async fn x509_credentials_with_the_same_public_key_and_different_not_before_can_coexist(
         context: KeystoreTestContext,
     ) {
         const X509: u16 = 2;
@@ -193,10 +200,12 @@ mod stored_credential {
         let store = context.store();
         let mut first = random_entity();
         first.credential_type = X509;
-        first.created_at = 1_700_000_000;
+        first.not_before = 1_700_000_000;
+        first.created_at = first.not_before;
         let mut second = first.clone();
         second.credential = random_bytes(128..=256);
-        second.created_at = first.created_at + 86_400;
+        second.not_before = first.not_before + 86_400;
+        second.created_at = second.not_before;
 
         let tx = store.new_transaction().await.unwrap();
         first.save(&*tx).unwrap();
@@ -224,7 +233,7 @@ mod stored_credential {
             })
             .await
             .unwrap();
-        matches.sort_unstable_by_key(|credential| credential.created_at);
+        matches.sort_unstable_by_key(|credential| credential.not_before);
         assert_eq!(matches, vec![Arc::new(first.clone()), Arc::new(second.clone())]);
 
         let tx = store.new_transaction().await.unwrap();
@@ -247,9 +256,9 @@ mod stored_credential {
         );
     }
 
-    /// A basic credential's `created_at` is just its insertion time, and nothing in a group or key package can recover
-    /// it. Lookups for basic credentials rely on there being only one per public key and type, so the keystore has to
-    /// keep enforcing that even though `created_at` is part of the primary key.
+    /// A basic credential has no certificate, so its `not_before` is always 0, and a group or key package finds it by
+    /// public key and type alone. That only works while there is one basic credential per public key, whatever their
+    /// `created_at`.
     #[apply(all_storage_types)]
     async fn basic_credentials_with_the_same_public_key_cannot_coexist(context: KeystoreTestContext) {
         const BASIC: u16 = 1;
@@ -257,6 +266,7 @@ mod stored_credential {
         let store = context.store();
         let mut first = random_entity();
         first.credential_type = BASIC;
+        first.not_before = 0;
         first.created_at = 1_700_000_000;
         let mut second = first.clone();
         second.credential = random_bytes(128..=256);
