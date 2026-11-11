@@ -139,8 +139,8 @@ impl TransactionContext {
         //
         // 1. Fresh join: nothing can be in the inbox, no effect, harmless.
         // 2. Rejoin: gets rid of the old group's leftovers, which wouldn't decrypt with the new group anyway.
-        // 3. Retrying a pending join: also clears messages buffered against the pending group; as we're
-        //    currently replacing that, we couldn't have decrypted them anyway.
+        // 3. Retrying a pending join: also clears messages buffered against the pending group; as we're currently
+        //    replacing that, we couldn't have decrypted them anyway.
         InboxMessage::delete_all_matching(inner.transaction(), id.keystore()).map_err(KeystoreError::wrap(
             "deleting all inbox messages for conversation when creating external join commit",
         ))?;
@@ -445,5 +445,128 @@ mod tests {
             );
         })
         .await
+    }
+
+    /// Starting a rejoin discards the messages the old group had buffered, but messages which arrive while the
+    /// rejoin is pending belong to the new group, so they are replayed once the join commit is merged.
+    #[apply(all_cred_cipher)]
+    async fn rejoin_discards_old_buffered_messages_but_replays_those_received_while_pending(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+
+        // Alice misses Bob's commit, so she has to buffer the message he sends after it.
+        let commit_guard = conversation.acting_as(&bob).await.update().await;
+        let stale_message = commit_guard
+            .conversation()
+            .guard()
+            .await
+            .encrypt_message("stale")
+            .await
+            .unwrap();
+        let conversation = commit_guard.finish();
+        let decrypted = alice
+            .transaction
+            .decrypt_message(conversation.id(), stale_message)
+            .await
+            .unwrap();
+        assert!(
+            decrypted.is_empty(),
+            "Alice can't decrypt Bob's message without his commit"
+        );
+        assert_eq!(alice.transaction.count_entities().await.pending_messages, 1);
+
+        // Alice gives up on her desynchronized state and rejoins. The DS hasn't confirmed her join yet.
+        let (commit_guard, _pending_conversation) =
+            conversation.acting_as(&bob).await.external_join_unmerged(&alice).await;
+        assert_eq!(
+            alice.transaction.count_entities().await.pending_messages,
+            0,
+            "starting the rejoin must discard the messages buffered for the old group"
+        );
+        let join_commit = commit_guard.message().to_bytes().unwrap();
+
+        // Bob accepts Alice's join, then speaks in the new epoch before Alice has seen her own join commit.
+        let conversation = commit_guard.notify_members().await;
+        let fresh_message = conversation
+            .guard_of(&bob)
+            .await
+            .encrypt_message("fresh")
+            .await
+            .unwrap();
+        let decrypted = alice
+            .transaction
+            .decrypt_message(conversation.id(), fresh_message)
+            .await
+            .unwrap();
+        assert!(
+            decrypted.is_empty(),
+            "Alice's rejoin is still pending, so she must defer Bob's message"
+        );
+        assert_eq!(alice.transaction.count_entities().await.pending_messages, 1);
+
+        // Alice's join commit arrives: she merges it, then replays the message Bob sent in the meantime.
+        let mut decrypted = alice
+            .transaction
+            .decrypt_message(conversation.id(), join_commit)
+            .await
+            .unwrap()
+            .into_iter();
+        assert!(
+            decrypted.next().unwrap().is_commit(),
+            "the first message must be Alice's own join commit"
+        );
+        let replayed = decrypted
+            .map(|message| message.into_application_message().unwrap().plaintext)
+            .collect::<Vec<_>>();
+        assert_eq!(replayed, [b"fresh".to_vec()]);
+        assert_eq!(alice.transaction.count_entities().await.pending_messages, 0);
+        assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
+    }
+
+    /// A new attempt to join replaces the previous one, so messages buffered for the previous attempt are discarded.
+    #[apply(all_cred_cipher)]
+    async fn retrying_an_external_join_discards_messages_buffered_for_the_previous_attempt(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice]).await;
+
+        // Bob's first attempt to join never reaches the DS, so Alice never sees it.
+        let (commit_guard, _first_attempt) = conversation.external_join_unmerged(&bob).await;
+        let conversation = commit_guard.finish();
+
+        // Meanwhile Alice speaks. Bob's join is pending, so he buffers her message.
+        let message = conversation.guard().await.encrypt_message("hello").await.unwrap();
+        let decrypted = bob
+            .transaction
+            .decrypt_message(conversation.id(), message)
+            .await
+            .unwrap();
+        assert!(
+            decrypted.is_empty(),
+            "Bob's join is pending, so he must defer Alice's message"
+        );
+        assert_eq!(bob.transaction.count_entities().await.pending_messages, 1);
+
+        // Bob tries again.
+        let (commit_guard, _second_attempt) = conversation.external_join_unmerged(&bob).await;
+        assert_eq!(
+            bob.transaction.count_entities().await.pending_messages,
+            0,
+            "starting a new join attempt must discard the messages buffered for the previous one"
+        );
+
+        // This time the DS accepts Bob's commit.
+        let join_commit = commit_guard.message().to_bytes().unwrap();
+        let conversation = commit_guard.notify_members().await;
+        let decrypted = bob
+            .transaction
+            .decrypt_message(conversation.id(), join_commit)
+            .await
+            .unwrap();
+        assert_eq!(decrypted.len(), 1, "nothing buffered may be replayed");
+        assert!(
+            decrypted[0].is_commit(),
+            "the only message must be Bob's own join commit"
+        );
+        assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
     }
 }
