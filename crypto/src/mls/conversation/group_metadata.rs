@@ -110,7 +110,11 @@ mod tests {
 
     use std::sync::Arc;
 
-    use core_crypto_keystore::{Sha256Hash, entities::PersistedMlsGroup, traits::FetchFromDatabase as _};
+    use core_crypto_keystore::{
+        Sha256Hash,
+        entities::{PersistedMlsGroup, StoredCredentialPk},
+        traits::FetchFromDatabase as _,
+    };
 
     use crate::{
         CertificateBundle, ConversationId, Credential, CredentialRef,
@@ -129,16 +133,15 @@ mod tests {
             .expect("conversation is persisted")
     }
 
-    /// The `(credential_id, credential_type)` pair recorded for `conversation` in `session`'s
-    /// keystore.
-    async fn persisted_credential(session: &SessionContext, conversation: &ConversationId) -> (Sha256Hash, u16) {
+    /// The credential recorded for `conversation` in `session`'s keystore.
+    async fn persisted_credential(session: &SessionContext, conversation: &ConversationId) -> StoredCredentialPk {
         let row = persisted_group(session, conversation).await;
-        (row.credential_id, row.credential_type)
+        StoredCredentialPk::new(row.credential_id, row.credential_type, row.credential_not_before)
     }
 
-    /// The same pair, as it should appear for a conversation using `credential`.
-    fn expected_credential(credential: &CredentialRef) -> (Sha256Hash, u16) {
-        (credential.public_key_hash(), credential.r#type().into())
+    /// The credential that should be recorded for a conversation using `credential`.
+    fn expected_credential(credential: &CredentialRef) -> StoredCredentialPk {
+        credential.keystore_pk()
     }
 
     /// The leaf index `target` occupies in `conversation`, according to `observer`.
@@ -294,5 +297,46 @@ mod tests {
             expected_credential(&new_credential),
             "the recorded credential must follow a rotation"
         );
+    }
+
+    /// Two X509 credentials can certify the same signature key, as they do while a certificate is being rotated. The
+    /// row has to record which of them the conversation uses, and loading our current credential has to return that
+    /// one, not just any credential with the same key.
+    #[apply(all_cred_cipher)]
+    async fn conversation_records_which_of_two_credentials_sharing_a_key_it_uses(case: TestContext) {
+        if !case.is_x509() {
+            return;
+        }
+
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        let not_before = [now - 2 * 86_400, now - 86_400];
+
+        let [alice] = case.sessions().await;
+        let mut conversation = case.create_conversation([&alice]).await;
+        let id = conversation.id().clone();
+        let credentials = alice
+            .add_x509_credentials_sharing_a_key(case.cipher_suite(), not_before)
+            .await;
+
+        for (credential, not_before) in credentials.iter().zip(not_before) {
+            conversation = conversation.set_credential_by_ref_notify(credential).await;
+
+            let recorded = persisted_credential(&alice, &id).await;
+            assert_eq!(recorded.public_key_hash, credential.public_key_hash());
+            assert_eq!(
+                recorded.not_before, not_before,
+                "the row must record the not_before of the certificate the conversation uses"
+            );
+
+            let current = conversation.guard().await.find_current_credential().await.unwrap();
+            assert_eq!(
+                current.earliest_validity(),
+                not_before,
+                "the current credential must be the one the conversation uses"
+            );
+        }
     }
 }

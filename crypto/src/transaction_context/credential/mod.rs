@@ -73,7 +73,7 @@ impl TransactionContext {
 #[cfg(test)]
 mod tests {
     use core_crypto_keystore::{
-        entities::{StoredCredential, StoredCredentialPk, StoredKeyPackage},
+        entities::{StoredCredential, StoredKeyPackage},
         traits::FetchFromDatabase as _,
     };
 
@@ -85,10 +85,7 @@ mod tests {
             .transaction
             .database()
             .unwrap()
-            .get::<StoredCredential>(&StoredCredentialPk::new(
-                credential.public_key_hash(),
-                credential.r#type().into(),
-            ))
+            .get::<StoredCredential>(&credential.keystore_pk())
             .await
             .unwrap()
             .is_some()
@@ -164,5 +161,59 @@ mod tests {
         assert!(removed, "removal must report that the credential was deleted");
         assert!(!credential_is_stored(&alice, &credential).await);
         assert_eq!(count_key_packages_for(&alice, &credential).await, 0);
+    }
+
+    /// Unix timestamps in seconds of two certificates for the same key: one issued two days ago, and the one which
+    /// replaced it a day later. Both are still valid.
+    fn rotation_not_before() -> [u64; 2] {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        [now - 2 * 86_400, now - 86_400]
+    }
+
+    /// A reissued certificate can certify the signature key of the one it replaces. Both credentials are kept side by
+    /// side, each keeps its own key packages, and either can be removed without touching the other.
+    #[apply(all_cred_cipher)]
+    async fn x509_credentials_sharing_a_signature_key_are_kept_apart(case: TestContext) {
+        if !case.is_x509() {
+            return;
+        }
+
+        let [alice] = case.sessions().await;
+        let [old, new] = alice
+            .add_x509_credentials_sharing_a_key(case.cipher_suite(), rotation_not_before())
+            .await;
+        assert_eq!(
+            old.public_key_hash(),
+            new.public_key_hash(),
+            "the test needs a shared key"
+        );
+
+        assert!(credential_is_stored(&alice, &old).await);
+        assert!(credential_is_stored(&alice, &new).await);
+
+        // a different number for each, so that one credential's key packages can't pass for the other's
+        alice.new_keypackage_from_ref(old.clone(), None).await;
+        for _ in 0..2 {
+            alice.new_keypackage_from_ref(new.clone(), None).await;
+        }
+        assert_eq!(count_key_packages_for(&alice, &old).await, 1);
+        assert_eq!(count_key_packages_for(&alice, &new).await, 2);
+
+        let removed = alice
+            .transaction
+            .remove_credential(&old)
+            .await
+            .expect("a credential no conversation uses can be removed");
+        assert!(removed, "removal must report that the credential was deleted");
+        assert!(!credential_is_stored(&alice, &old).await);
+        assert_eq!(count_key_packages_for(&alice, &old).await, 0);
+        assert!(
+            credential_is_stored(&alice, &new).await,
+            "removing one credential must leave the other with the same key alone"
+        );
+        assert_eq!(count_key_packages_for(&alice, &new).await, 2);
     }
 }
