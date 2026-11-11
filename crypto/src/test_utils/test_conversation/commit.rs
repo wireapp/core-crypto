@@ -264,20 +264,9 @@ impl<'a> TestConversation<'a> {
         )
     }
 
-    /// Like [Self::external_join_notify], but with "unmerged" state on the joiners session. To merge, call
-    /// [PendingConversation::merge].
-    pub async fn external_join_unmerged_notify(
-        self,
-        joiner: &'a SessionContext,
-    ) -> (TestConversation<'a>, PendingConversation) {
-        let group_info = self.export_group_info().await;
-        let (commit_guard, pending_conversation) = self.external_join_via_group_info_unmerged(joiner, group_info).await;
-        (commit_guard.notify_members().await, pending_conversation)
-    }
-
     /// Like [Self::external_join], but with "unmerged" state on the joiners session. To merge, call
     /// [PendingConversation::merge].
-    pub async fn external_join_unmerged(
+    pub(crate) async fn external_join_unmerged(
         self,
         joiner: &'a SessionContext,
     ) -> (OperationGuard<'a, Commit>, PendingConversation) {
@@ -297,7 +286,7 @@ impl<'a> TestConversation<'a> {
     /// the row would only ever be written to be deleted again. A caller which holds an unmerged
     /// pending conversation across other operations is in the state that survives a failed merge,
     /// and that state is on disk, so this reproduces it.
-    pub async fn external_join_via_group_info_unmerged(
+    pub(crate) async fn external_join_via_group_info_unmerged(
         self,
         joiner: &'a SessionContext,
         group_info: VerifiableGroupInfo,
@@ -308,7 +297,7 @@ impl<'a> TestConversation<'a> {
             .create_external_join_commit(group_info, &joiner_credential_ref)
             .await
             .unwrap();
-        pending_conversation.save().unwrap();
+        pending_conversation.save().await.unwrap();
 
         // if this is a rejoin, make sure that the joiner doesn't receive their join commit again
         let already_notified: &[usize] = if self.is_member(joiner).await {

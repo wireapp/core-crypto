@@ -220,8 +220,7 @@ impl PendingConversation {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::{DecryptedMessage, test_utils::*};
+    use crate::test_utils::*;
 
     /// Abandoning an external join abandons the messages buffered while it was pending.
     ///
@@ -234,7 +233,7 @@ mod tests {
             let conversation = case.create_conversation([&alice]).await;
 
             // Bob asks to join Alice's group with an external commit, and waits for the DS to accept it.
-            let (commit_guard, _pending_conversation) = conversation.external_join_unmerged(&bob).await;
+            let (commit_guard, mut pending_conversation) = conversation.external_join_unmerged(&bob).await;
             let conversation = commit_guard.finish();
 
             // While Bob waits, Alice speaks. Bob can process nothing until his own join is merged, so he
@@ -245,20 +244,29 @@ mod tests {
                 .encrypt_message(b"Hello Bob !")
                 .await
                 .unwrap();
-            let Err(crate::transaction_context::Error::PendingConversation(mut pending_conversation)) =
-                bob.transaction.conversation(conversation.id()).await
-            else {
-                panic!("Bob should not have the conversation yet")
-            };
-            let decrypt = pending_conversation.try_process_own_join_commit(app_msg).await;
-            assert!(matches!(decrypt.unwrap_err(), Error::BufferedForPendingConversation));
+            assert!(
+                matches!(
+                    bob.transaction.conversation(conversation.id()).await.unwrap_err(),
+                    crate::transaction_context::Error::PendingConversation(_)
+                ),
+                "Bob should not have the conversation yet"
+            );
+            let decrypted = bob
+                .transaction
+                .conversation_regardless_of_pending_status(conversation.id())
+                .await
+                .unwrap()
+                .decrypt_message(app_msg)
+                .await
+                .unwrap();
+            assert!(decrypted.is_empty(), "Alice's message must have been deferred");
 
             let counts = bob.transaction.count_entities().await;
             assert_eq!(counts.pending_group, 1, "Bob's join is still pending");
             assert_eq!(counts.pending_messages, 1, "Alice's message must have been buffered");
 
             // The DS rejects Bob's commit, so he gives up on the join.
-            pending_conversation.clear().unwrap();
+            pending_conversation.clear().await.unwrap();
 
             drop(conversation);
             bob.commit_transaction().await;
@@ -278,12 +286,9 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    #[ignore = "WPB-29258: replaying buffered messages after a pending join doesn't notify epoch changes yet"]
     async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestContext) {
         let [alice, bob, charlie, debbie] = case.sessions().await;
         Box::pin(async move {
-            use crate::mls::conversation::mutable::decrypt::Commit;
-
             let conversation = case.create_conversation([&alice, &debbie]).await;
             // Bob tries to join Alice's group with an external commit
             let (commit_guard, _pending_conversation) = conversation.external_join_unmerged(&bob).await;
@@ -318,18 +323,23 @@ mod tests {
             // And now Bob will have to decrypt those messages while he hasn't yet merged its external commit
             // To add more fun, he will buffer the messages in exactly the wrong order (to make
             // sure he reapplies them in the right order afterwards)
-            let messages = vec![remove_proposal, commit].into_iter().map(|m| m.to_bytes().unwrap());
-            let Err(crate::transaction_context::Error::PendingConversation(mut pending_conversation)) =
-                bob.transaction.conversation(conversation.id()).await
-            else {
-                panic!("Bob should not have the conversation yet")
-            };
-            for m in messages {
-                let decrypt = pending_conversation.try_process_own_join_commit(m).await;
-                assert!(matches!(decrypt.unwrap_err(), Error::BufferedForPendingConversation));
+            assert!(
+                matches!(
+                    bob.transaction.conversation(conversation.id()).await.unwrap_err(),
+                    crate::transaction_context::Error::PendingConversation(_)
+                ),
+                "Bob should not have the conversation yet"
+            );
+            let mut bob_conversation = bob
+                .transaction
+                .conversation_regardless_of_pending_status(conversation.id())
+                .await
+                .unwrap();
+            let messages = [remove_proposal, commit].map(|m| m.to_bytes().unwrap());
+            for message in messages.into_iter().chain([app_msg]) {
+                let decrypted = bob_conversation.decrypt_message(message).await.unwrap();
+                assert!(decrypted.is_empty(), "the message must have been deferred");
             }
-            let decrypt = pending_conversation.try_process_own_join_commit(app_msg).await;
-            assert!(matches!(decrypt.unwrap_err(), Error::BufferedForPendingConversation));
 
             // Bob should have buffered the messages
             assert_eq!(bob.transaction.count_entities().await.pending_messages, 3);
@@ -342,27 +352,30 @@ mod tests {
                 .unwrap();
 
             // Finally, Bob receives the green light from the DS and he can merge the external commit
-            let DecryptedMessage::Commit(Commit {
-                buffered_messages: Some(restored_messages),
-                ..
-            }) = pending_conversation
-                .try_process_own_join_commit(external_commit.to_bytes().unwrap())
+            let mut decrypted = bob_conversation
+                .decrypt_message(external_commit.to_bytes().unwrap())
                 .await
                 .unwrap()
-            else {
-                panic!("Alice's messages should have been restored at this point");
-            };
+                .into_iter();
+            assert!(
+                decrypted.next().unwrap().is_commit(),
+                "the first message must be Bob's own join commit"
+            );
+            assert!(
+                !bob_conversation.group().await.is_pending,
+                "merging the join commit must have made the conversation established"
+            );
 
-            for (idx, buffered_message) in restored_messages.into_iter().enumerate() {
-                let text = DecryptedMessage::from(buffered_message).into_application_message();
-                if idx == 0 {
-                    // the only application message
-                    let msg = text.unwrap().plaintext;
-                    assert_eq!(msg, b"Hello Bob !");
-                } else {
-                    assert!(text.is_err());
-                }
-            }
+            let restored = decrypted.collect::<Vec<_>>();
+            assert_eq!(restored.len(), 3, "all buffered messages must have been restored");
+            let plaintexts = restored
+                .iter()
+                .filter_map(|message| message.as_application_message())
+                .map(|message| message.plaintext.as_slice())
+                .collect::<Vec<_>>();
+            assert_eq!(plaintexts, [b"Hello Bob !".as_slice()]);
+            assert_eq!(restored.iter().filter(|message| message.is_proposal()).count(), 1);
+            assert_eq!(restored.iter().filter(|message| message.is_commit()).count(), 1);
 
             assert_eq!(conversation.member_count().await, 3);
             assert!(conversation.is_functional().await);
@@ -371,15 +384,15 @@ mod tests {
             // After merging we should erase all those pending messages
             assert_eq!(bob.transaction.count_entities().await.pending_messages, 0);
 
+            let final_epoch = bob_conversation.epoch().await;
+            drop(bob_conversation);
             bob.transaction.finish().await.unwrap();
 
+            // Bob's conversation advanced twice: once when his join commit was merged,
+            // and once more when Alice's commit adding Charlie was restored.
             let observed_epochs = observer.observed_epochs().await;
-            assert_eq!(
-                observed_epochs.len(),
-                1,
-                "we should see exactly 1 epoch change in these 4 messages"
-            );
-            assert_eq!(observed_epochs[0].0, *conversation.id(), "conversation id must match");
+            let expected_epochs = [final_epoch - 1, final_epoch].map(|epoch| (conversation.id().clone(), epoch));
+            assert_eq!(observed_epochs, expected_epochs);
         })
         .await
     }

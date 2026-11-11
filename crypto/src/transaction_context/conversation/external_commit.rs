@@ -263,22 +263,6 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    async fn should_fail_when_no_pending_external_commit(case: TestContext) {
-        let [session] = case.sessions().await;
-        let non_existent_id = conversation_id();
-        // try to get a non-existent pending group
-        let err = session
-            .transaction
-            .pending_conversation(&non_existent_id)
-            .await
-            .unwrap_err();
-
-        assert!(matches!(
-           err, Error::ConversationNotFound(id) if non_existent_id == id
-        ));
-    }
-
-    #[apply(all_cred_cipher)]
     async fn should_return_valid_group_info(case: TestContext) {
         let [alice, bob, charlie] = case.sessions().await;
         Box::pin(async move {
@@ -313,7 +297,7 @@ mod tests {
             let (_, mut pending_conversation) = conversation.external_join_unmerged(&bob).await;
 
             // But for some reason, Bob wants to abort joining the group
-            pending_conversation.clear().unwrap();
+            pending_conversation.clear().await.unwrap();
 
             let final_count = alice.transaction.count_entities().await;
             assert_eq!(initial_count, final_count);
