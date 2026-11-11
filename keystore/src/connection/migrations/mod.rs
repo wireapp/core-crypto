@@ -1850,6 +1850,90 @@ r9IJmL6kDQ==
         });
     }
 
+    /// A group whose X509 credential can't be parsed can't be loaded either: there is no credential
+    /// to sign with. As in V39, the migration drops such a group along with the credential instead of
+    /// failing, and whatever hangs off either of them goes too. Nothing else is touched.
+    #[test]
+    fn migration_drops_groups_using_an_x509_credential_whose_certificate_does_not_parse() {
+        const BROKEN_PUBLIC_KEY: &[u8] = b"public key of a credential with a broken certificate";
+        const BROKEN_CONVERSATION: &[u8] = b"a conversation using the broken credential";
+        const BROKEN_KEY_PACKAGE: &[u8] = b"a key package generated from the broken credential";
+        const HEALTHY_PUBLIC_KEY: &[u8] = b"public key of a basic credential";
+        const HEALTHY_CONVERSATION: &[u8] = b"a conversation using the basic credential";
+
+        fn insert_group(conn: &rusqlite::Connection, id: &[u8], public_key: &[u8], credential_type: u16) {
+            conn.execute(
+                "INSERT INTO mls_groups \
+                 (id, state, epoch, ciphersuite, credential_id, credential_type, own_leaf_index, is_pending) \
+                 VALUES (?1, ?2, 1, ?3, ?4, ?5, 0, 0)",
+                rusqlite::params![
+                    id,
+                    b"opaque group state".as_slice(),
+                    Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 as u16,
+                    Sha256Hash::hash_from(public_key),
+                    credential_type,
+                ],
+            )
+            .expect("inserting a group");
+            conn.execute(
+                "INSERT INTO mls_buffered_commits (conversation_id, commit_data) VALUES (?1, ?2)",
+                (id, b"a buffered commit".as_slice()),
+            )
+            .expect("inserting a buffered commit");
+        }
+
+        let (db_file, key) = temp_db();
+        let path = db_file.path().to_str().unwrap();
+
+        smol::block_on(async {
+            let db = seed_then_migrate(path, &key, 48, |conn| {
+                insert_v48_credential(
+                    conn,
+                    BROKEN_PUBLIC_KEY,
+                    X509,
+                    b"not a serialized credential",
+                    1_700_000_000,
+                );
+                insert_group(conn, BROKEN_CONVERSATION, BROKEN_PUBLIC_KEY, X509);
+                conn.execute(
+                    "INSERT INTO mls_key_packages \
+                     (key_package_ref, key_package, credential_id, credential_type, hpke_init_public_key_hash, \
+                      leaf_encryption_key_hash) \
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                    rusqlite::params![
+                        BROKEN_KEY_PACKAGE,
+                        b"opaque key package".as_slice(),
+                        Sha256Hash::hash_from(BROKEN_PUBLIC_KEY),
+                        X509,
+                        Sha256Hash::hash_from(b"an hpke init key"),
+                        Sha256Hash::hash_from(b"a leaf encryption key"),
+                    ],
+                )
+                .expect("inserting a key package");
+
+                insert_v48_credential(conn, HEALTHY_PUBLIC_KEY, BASIC, b"a basic credential", 1_700_000_000);
+                insert_group(conn, HEALTHY_CONVERSATION, HEALTHY_PUBLIC_KEY, BASIC);
+            })
+            .await;
+            let conn = db.conn().await;
+
+            let ids = |table: &str, column: &str| -> Vec<Vec<u8>> {
+                conn.prepare(&format!("SELECT {column} FROM {table}"))
+                    .unwrap()
+                    .query_map([], |row| row.get(0))
+                    .unwrap()
+                    .collect::<Result<_, _>>()
+                    .unwrap()
+            };
+            assert_eq!(credential_created_at(&conn, BROKEN_PUBLIC_KEY, X509), [] as [u64; 0]);
+            assert_eq!(ids("mls_groups", "id"), [HEALTHY_CONVERSATION]);
+            assert_eq!(ids("mls_buffered_commits", "conversation_id"), [HEALTHY_CONVERSATION]);
+            assert_eq!(row_count(&conn, "mls_key_packages"), 0);
+            assert_eq!(credential_created_at(&conn, HEALTHY_PUBLIC_KEY, BASIC), [1_700_000_000]);
+            assert_eq!(foreign_key_violations(&conn), []);
+        });
+    }
+
     /// A basic credential has no certificate, so its `created_at` is all there is. The migration must
     /// leave it, and the credential bytes, exactly as they were.
     #[test]
