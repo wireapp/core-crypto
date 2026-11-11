@@ -89,4 +89,7 @@ pub enum OpenMlsErrorKind {
     /// Signature Error
     #[error(transparent)]
     SignatureError(#[from] openmls::prelude::SignatureError),
+    #[error(transparent)]
+    /// ProposeReInitError
+    ProposeReInitError(#[from] openmls::prelude::ProposeReInitError),
 }
