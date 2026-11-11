@@ -1,28 +1,29 @@
 use core_crypto_keystore::{
-    Sha256Hash, Transaction,
-    entities::{StoredCredential, StoredCredentialPk},
+    Transaction,
+    entities::{StoredCredential, StoredCredentialPk, credential_not_before},
     traits::{EntityDatabaseMutation as _, FetchFromDatabase},
 };
-use openmls::prelude::SignaturePublicKey;
+use openmls::prelude::{Credential as MlsCredential, SignaturePublicKey};
 use tls_codec::Serialize as _;
 
 use super::{Error, Result};
 use crate::{Credential, CredentialRef, KeystoreError, TlsCodecError};
 
 impl Credential {
-    /// Loads a credential with the given public key from the database.
+    /// Loads the credential with the given public key and MLS credential from the database.
+    ///
+    /// Both are in a leaf node. Several X509 credentials can share a public key; the MLS credential tells them apart.
     ///
     /// Should not be passed over the ffi boundary.
     pub(crate) async fn load(
         database: &impl FetchFromDatabase,
         public_key: &SignaturePublicKey,
-        credential_type: openmls::prelude::CredentialType,
+        mls_credential: &MlsCredential,
     ) -> Result<Self> {
+        let primary_key = StoredCredentialPk::from_mls_credential(public_key.as_slice(), mls_credential)
+            .map_err(KeystoreError::wrap("computing the primary key of a credential"))?;
         let stored_credential = &database
-            .get::<StoredCredential>(&StoredCredentialPk::new(
-                Sha256Hash::hash_from(public_key.as_slice()),
-                credential_type.into(),
-            ))
+            .get::<StoredCredential>(&primary_key)
             .await
             .map_err(KeystoreError::wrap("getting credential by public key"))?
             .ok_or_else(|| Error::CredentialNotFound(public_key.clone()))?;
@@ -61,6 +62,8 @@ impl Credential {
             created_at: self.earliest_validity,
             ciphersuite: u16::from(self.cipher_suite),
             credential_type: self.credential_type.into(),
+            not_before: credential_not_before(&self.mls_credential)
+                .map_err(KeystoreError::wrap("reading not_before from the credential"))?,
             private_key: self.signature_key_pair.private().to_owned(),
             public_key: self.signature_key().public().to_owned(),
         };

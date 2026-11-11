@@ -68,7 +68,12 @@ impl TryFrom<Arc<StoredCredential>> for Credential {
             .credential_type()
             .try_into()
             .map_err(RecursiveError::context("loading credential from db"))?;
-        let earliest_validity = stored_credential.created_at;
+        // An X509 credential's earliest validity is its leaf certificate's `not_before`, which the keystore keeps in a
+        // column of its own. `created_at` may not match it: releases before v11.0.0 stored the insertion time there.
+        let earliest_validity = match credential_type {
+            CredentialType::X509 => stored_credential.not_before,
+            CredentialType::Basic => stored_credential.created_at,
+        };
         Ok(Credential {
             cipher_suite,
             signature_key_pair,

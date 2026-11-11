@@ -13,12 +13,19 @@ use core_crypto_keystore::{
 };
 
 use super::super::{Error, Result};
-use crate::{Credential, CredentialRef, KeystoreError, RecursiveError};
+use crate::{Credential, CredentialRef, CredentialType, KeystoreError, RecursiveError};
 
 impl CredentialRef {
     /// Compute the credential's primary key as the keystore understands it.
+    ///
+    /// The last part is the leaf certificate's `not_before` for an X509 credential, which is its earliest validity,
+    /// and 0 for a basic one.
     pub(crate) fn keystore_pk(&self) -> StoredCredentialPk {
-        StoredCredentialPk::new(self.public_key_hash(), self.r#type().into())
+        let not_before = match self.r#type() {
+            CredentialType::X509 => self.earliest_validity(),
+            CredentialType::Basic => 0,
+        };
+        StoredCredentialPk::new(self.public_key_hash(), self.r#type().into(), not_before)
     }
 
     /// Load the credential which matches this ref from the database.
