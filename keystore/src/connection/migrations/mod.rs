@@ -201,6 +201,7 @@ fn run_meta_migration(version: i32, conn: &mut rusqlite::Connection) -> CryptoKe
         meta_migrations::v37::VERSION => meta_migrations::v37::meta_migration(&tx)?,
         meta_migrations::v39::VERSION => meta_migrations::v39::meta_migration(&tx)?,
         meta_migrations::v45::VERSION => meta_migrations::v45::meta_migration(&tx)?,
+        meta_migrations::v49::VERSION => meta_migrations::v49::meta_migration(&tx)?,
         _ => {}
     }
 
@@ -424,6 +425,7 @@ IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
             (46, 5473226583050100681),
             (47, 11056727624062448257),
             (48, 15131338238207930367),
+            (49, 1202272748319186004),
         ];
 
         let runner = super::migrations::runner();
