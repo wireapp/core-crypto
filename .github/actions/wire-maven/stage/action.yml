@@ -36,6 +36,11 @@ runs:
         ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ inputs.pgp-signing-key }}
         ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ inputs.pgp-passphrase }}
 
+    - name: install uv
+      uses: taiki-e/install-action@41049aa56687c35e0afa74eed4f09cec4f9afabf # v2.85.2
+      with:
+        tool: uv
+
     - name: verify the staging repository
       shell: bash
       run: |
