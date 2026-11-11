@@ -132,7 +132,7 @@ pub(super) fn run_migrations(conn: &mut rusqlite::Connection, target: MigrationT
     //
     // The pragma is a no-op inside a transaction, and refinery runs each migration in one, so it can't be set from
     // the migration's own SQL.
-    const WITHOUT_FOREIGN_KEYS: &[i32] = &[];
+    const WITHOUT_FOREIGN_KEYS: &[i32] = &[50];
 
     let resume_from = (user_version + 1).max(newest_applied_version);
     for version in resume_from..=target_version {
@@ -426,6 +426,7 @@ IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
             (47, 11056727624062448257),
             (48, 15131338238207930367),
             (49, 1202272748319186004),
+            (50, 4292486588344934490),
         ];
 
         let runner = super::migrations::runner();
