@@ -7,6 +7,7 @@
 - CoreCrypto now notices when another process (i.e. NSE) has written to the DB. In that case, it clears all MLS and
   Proteus caches, so that fresh state is loaded on-demand from the DB.
 - Aborted transactions and failed commits now also clear the Proteus cache, so they are no longer left ahead of the DB.
+- It's now possible to rotate an existing x509 credential with a new x509 credential which has the same public key.
 
 ### v11.0.0 - 2026-10-30
 
