@@ -52,7 +52,7 @@ on:
         required: false
         type: string
       benchmark_cipher_suites:
-        description: Comma-separated benchmark cipher suite names
+        description: Comma-separated cipher suite codepoints, decimal or hex (e.g. 0x0001)
         required: false
         type: string
       publish:
