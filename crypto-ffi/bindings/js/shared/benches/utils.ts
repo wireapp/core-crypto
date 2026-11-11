@@ -45,6 +45,7 @@ type MessageParameterSet = {
     count: number;
     size: number;
     cipherSuite: number;
+    cipherSuiteLabel: string;
 };
 
 const DEFAULT_MESSAGE_COUNTS = [1, 10];
@@ -96,6 +97,11 @@ async function parseCipherSuiteList(
     }, values);
 }
 
+// Labels cipher suites as hex the way the JVM benchmarks do.
+function cipherSuiteLabel(cipherSuite: number): string {
+    return `0x${cipherSuite.toString(16).toUpperCase().padStart(4, "0")}`;
+}
+
 export async function messageBenchmarkParameters(): Promise<
     MessageParameterSet[]
 > {
@@ -113,7 +119,12 @@ export async function messageBenchmarkParameters(): Promise<
         for (const count of messageCounts) {
             for (const size of messageSizes) {
                 for (const cipherSuite of cipherSuites) {
-                    yield { count, size, cipherSuite };
+                    yield {
+                        count,
+                        size,
+                        cipherSuite,
+                        cipherSuiteLabel: cipherSuiteLabel(cipherSuite),
+                    };
                 }
             }
         }
@@ -125,6 +136,7 @@ export async function messageBenchmarkParameters(): Promise<
 type UserParameterSet = {
     userCount: number;
     cipherSuite: number;
+    cipherSuiteLabel: string;
 };
 
 export async function userBenchmarkParameters(): Promise<UserParameterSet[]> {
@@ -137,7 +149,11 @@ export async function userBenchmarkParameters(): Promise<UserParameterSet[]> {
     function* benchmarkCombinations() {
         for (const userCount of userCounts) {
             for (const cipherSuite of cipherSuites) {
-                yield { userCount, cipherSuite };
+                yield {
+                    userCount,
+                    cipherSuite,
+                    cipherSuiteLabel: cipherSuiteLabel(cipherSuite),
+                };
             }
         }
     }

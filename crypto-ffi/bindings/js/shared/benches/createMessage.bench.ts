@@ -13,7 +13,12 @@ export async function setupCreateMessageBench() {
             teardown: globalThis.tinybenchTeardown,
         });
 
-        for (const { count, size, cipherSuite } of parameters) {
+        for (const {
+            count,
+            size,
+            cipherSuite,
+            cipherSuiteLabel,
+        } of parameters) {
             const message = new Uint8Array(size);
             const cc = await helpers.ccInit({
                 withBasicCredential: true,
@@ -22,7 +27,7 @@ export async function setupCreateMessageBench() {
             const conversationId = await helpers.createConversation(cc);
 
             bench.add(
-                `cipherSuite=${cipherSuite} messageSize=${size} messageCount=${count}`,
+                `cipherSuite=${cipherSuiteLabel} messageSize=${size} messageCount=${count}`,
                 async () => {
                     await cc.transaction(async (ctx) => {
                         for (let i = 0; i < count; i++) {

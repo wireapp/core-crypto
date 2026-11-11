@@ -13,9 +13,9 @@ export async function setupJoinGroupBench() {
             setup: globalThis.tinybenchSetup,
             teardown: globalThis.tinybenchTeardown,
         });
-        for (const { userCount, cipherSuite } of parameters) {
+        for (const { userCount, cipherSuite, cipherSuiteLabel } of parameters) {
             bench.add(
-                `cipherSuite=${cipherSuite} userCount=${userCount}`,
+                `cipherSuite=${cipherSuiteLabel} userCount=${userCount}`,
                 async () => {
                     const aliceCc = await helpers.ccInit({
                         withBasicCredential: true,

@@ -164,7 +164,7 @@ def parse_extra(extra: str) -> dict[str, Measurement]:
 def parse_name_labels(name: str) -> dict[str, str]:
     """Split a tinybench result name into `benchmark` plus parameter labels.
 
-    Names look like `Add a User - cipherSuite=Mls128... userCount=1`: the task
+    Names look like `AddUser - cipherSuite=0x0001 userCount=1`: the task
     name after the separator is the parameter set the benchmark ran with, which
     is where JMH would have a `params` object. Anything in there that isn't a
     `key=value` pair is kept verbatim under a `task` label rather than silently
