@@ -210,8 +210,10 @@ impl PartialEq for Credential {
 
 #[cfg(test)]
 mod tests {
+    use openmls_traits::OpenMlsCryptoProvider as _;
     use rusty_jwt_tools::jsonwebtoken::DecodingKey;
     use wire_e2e_identity::CiphersuiteExt as _;
+    use x509_cert::der::Encode as _;
 
     use super::{x509::CertificateBundle, *};
     use crate::{
@@ -536,5 +538,39 @@ mod tests {
     pub(crate) fn now_std() -> std::time::Duration {
         let now = web_time::SystemTime::now();
         now.duration_since(web_time::UNIX_EPOCH).unwrap()
+    }
+
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn revoked_cert_should_invalidate_credential() {
+        let case = TestContext::default_x509();
+        let [alice] = case.sessions_x509().await;
+
+        let chain = alice.x509_chain_unchecked();
+        let intermediate = &chain.intermediates[0];
+        let cert = &chain.actors[0].certificate.certificate;
+        let serial = cert.tbs_certificate().serial_number();
+
+        let crl = intermediate
+            .pki_keypair
+            .revoke_certs(&intermediate.certificate, vec![serial.as_bytes().to_vec()])
+            .unwrap();
+        let pki_env = alice
+            .session
+            .read()
+            .await
+            .crypto_provider
+            .authentication_service()
+            .pki_env()
+            .await
+            .unwrap();
+        let dp = &intermediate.crl_dps[0];
+
+        let inner = alice.transaction.inner().unwrap();
+        pki_env
+            .save_crl(inner.transaction(), dp, &crl.to_der().unwrap())
+            .await
+            .unwrap();
+
+        assert!(alice.transaction.check_credentials().await.is_err());
     }
 }
