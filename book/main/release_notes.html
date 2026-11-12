@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-4614b0ba.js";
+            window.path_to_searchindex_js = "searchindex-e1693214.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e64f8d46.js"></script>
@@ -190,6 +190,10 @@ copies it by path, update the path. If you call <code>initWasmModule()</code> wi
 to <code>corecrypto.js</code>.</p>
 </li>
 </ul>
+<h4 id="bug-fixes"><a class="header" href="#bug-fixes">Bug Fixes</a></h4>
+<ul>
+<li>It’s now possible to rotate a existing x509 credential with a new x509 credential which has the same public key.</li>
+</ul>
 <h2 id="corecrypto-11"><a class="header" href="#corecrypto-11">CoreCrypto 11</a></h2>
 <h3 id="v1100---2026-10-30"><a class="header" href="#v1100---2026-10-30">v11.0.0 - 2026-10-30</a></h3>
 <ul>
@@ -331,7 +335,7 @@ Maven Central.</p>
 async.</p>
 </li>
 </ul>
-<h4 id="bug-fixes"><a class="header" href="#bug-fixes">Bug Fixes</a></h4>
+<h4 id="bug-fixes-1"><a class="header" href="#bug-fixes-1">Bug Fixes</a></h4>
 <ul>
 <li>
 <p>Fixed a bug in the data migrations. This applies to clients upgrading from v9. The bug caused exactly one credential
@@ -588,7 +592,7 @@ platforms.</p>
 </code></pre>
 </li>
 </ul>
-<h4 id="bug-fixes-1"><a class="header" href="#bug-fixes-1">Bug Fixes</a></h4>
+<h4 id="bug-fixes-2"><a class="header" href="#bug-fixes-2">Bug Fixes</a></h4>
 <ul>
 <li>Web: fixed the abort reason of an <code>MlsTransportResponse</code> not being forwarded to rust.</li>
 </ul>
@@ -606,7 +610,7 @@ Affected platforms: web</li>
 <p>Affected platforms: Android</p>
 </li>
 </ul>
-<h4 id="bug-fixes-2"><a class="header" href="#bug-fixes-2">Bug Fixes</a></h4>
+<h4 id="bug-fixes-3"><a class="header" href="#bug-fixes-3">Bug Fixes</a></h4>
 <ul>
 <li>Kotlin documentation is now correctly generated and deployed.</li>
 </ul>
@@ -873,12 +877,12 @@ immediate access of the byte vector.</p>
 <h2 id="corecrypto-7"><a class="header" href="#corecrypto-7">CoreCrypto 7</a></h2>
 <h3 id="v702---2025-07-07"><a class="header" href="#v702---2025-07-07">v7.0.2 - 2025-07-07</a></h3>
 <p>Upgrade OpenMLS to fix a bug where the ratchet tree would sometimes become corrupt leading to broken MLS groups.</p>
-<h4 id="bug-fixes-3"><a class="header" href="#bug-fixes-3">Bug Fixes</a></h4>
+<h4 id="bug-fixes-4"><a class="header" href="#bug-fixes-4">Bug Fixes</a></h4>
 <ul>
 <li>update openmls [WPB-18569] (7ca7ba7)</li>
 </ul>
 <h3 id="v701---2025-06-02"><a class="header" href="#v701---2025-06-02">v7.0.1 - 2025-06-02</a></h3>
-<h4 id="bug-fixes-4"><a class="header" href="#bug-fixes-4">Bug Fixes</a></h4>
+<h4 id="bug-fixes-5"><a class="header" href="#bug-fixes-5">Bug Fixes</a></h4>
 <ul>
 <li>initWasm was being called with the wrong property field. (ca1706d)</li>
 <li>allow registering epoch observer before calling mls_init (3f0605a)</li>
@@ -899,7 +903,7 @@ function.</p>
 <li>add <code>fn history_client(HistorySecret) -&gt; CoreCrypto</code> (8b7b7d4)</li>
 <li>add <code>fn generate_history_secret</code> (a998dec)</li>
 </ul>
-<h4 id="bug-fixes-5"><a class="header" href="#bug-fixes-5">Bug Fixes</a></h4>
+<h4 id="bug-fixes-6"><a class="header" href="#bug-fixes-6">Bug Fixes</a></h4>
 <ul>
 <li>crypto-ffi: fix naming and attributes of WelcomeBundle fields on Wasm (1b2e88b)</li>
 <li>prevent cancellations during transactions (Kotlin) (75217d5)</li>
@@ -907,7 +911,7 @@ function.</p>
 </ul>
 <h2 id="corecrypto-6"><a class="header" href="#corecrypto-6">CoreCrypto 6</a></h2>
 <h3 id="v601---2025-05-07"><a class="header" href="#v601---2025-05-07">v6.0.1 - 2025-05-07</a></h3>
-<h4 id="bug-fixes-6"><a class="header" href="#bug-fixes-6">Bug Fixes</a></h4>
+<h4 id="bug-fixes-7"><a class="header" href="#bug-fixes-7">Bug Fixes</a></h4>
 <ul>
 <li>swift publishing CI action (d1030e1)</li>
 </ul>
@@ -935,19 +939,19 @@ key.</p>
 as <a href="https://mozilla.github.io/uniffi-rs/latest/futures.html#cancelling-async-code">required by Uniffi</a>. This prevents a
 category of bug where Kotlin thinks a transaction has been cancelled, while Rust thinks it is still running.</p>
 <h3 id="v530--2025-04-29"><a class="header" href="#v530--2025-04-29">v5.3.0- 2025-04-29</a></h3>
-<h4 id="bug-fixes-7"><a class="header" href="#bug-fixes-7">Bug Fixes</a></h4>
+<h4 id="bug-fixes-8"><a class="header" href="#bug-fixes-8">Bug Fixes</a></h4>
 <ul>
 <li>re-throw inner error which cancelled the transaction (Swift) (0c282b2)</li>
 </ul>
 <h3 id="v520---2025-04-15"><a class="header" href="#v520---2025-04-15">v5.2.0 - 2025-04-15</a></h3>
-<h4 id="bug-fixes-8"><a class="header" href="#bug-fixes-8">Bug Fixes</a></h4>
+<h4 id="bug-fixes-9"><a class="header" href="#bug-fixes-9">Bug Fixes</a></h4>
 <ul>
 <li>add registerEpochObserver to CoreCryptoProtocol (eadf388)</li>
 <li>create an interface for <code>ConversationConfiguration</code> (b1e82bf)</li>
 <li>swift publishing failing due to not running on latest macos runner (dcc1890)</li>
 </ul>
 <h3 id="v510---2025-04-03"><a class="header" href="#v510---2025-04-03">v5.1.0 - 2025-04-03</a></h3>
-<h4 id="bug-fixes-9"><a class="header" href="#bug-fixes-9">Bug Fixes</a></h4>
+<h4 id="bug-fixes-10"><a class="header" href="#bug-fixes-10">Bug Fixes</a></h4>
 <ul>
 <li>broken swift bindings by publishing uniffi framework separately (2b950cc)</li>
 <li>don’t refer to the internal uniffi EpochObserver type in the public API (7833300)</li>
