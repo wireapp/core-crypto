@@ -36,9 +36,15 @@ impl Conversation {
 
     /// Load a conversation from the database, even if it is pending.
     ///
-    /// For the majority of use cases, it's better to exclude pending conversations with [`Self::load`].
-    /// However, when decrypting messages specifically, it is sometimes helpful to be able to include a pending
-    /// conversation in the results.
+    /// The conversation cache loads conversations through this, so it can
+    /// produce pending ones also. [`TransactionContext::conversation`] excludes
+    /// them for callers who don't want to deal with pending conversations. But
+    /// decryption reaches them through [`TransactionContext::decrypt_message`].
+    ///
+    /// [`TransactionContext::conversation`]:
+    ///     crate::transaction_context::TransactionContext::conversation
+    /// [`TransactionContext::decrypt_message`]:
+    ///     crate::transaction_context::TransactionContext::decrypt_message
     pub(crate) async fn load_including_pending(session: &Arc<Session>, id: impl AsRef<[u8]>) -> Result<Option<Self>> {
         let group = session
             .database()
@@ -56,7 +62,7 @@ impl Conversation {
     ///
     /// A row marked `is_pending` is a join-by-external-commit awaiting confirmation, not a usable
     /// conversation yet, so it's treated the same as not found here — callers fall back to
-    /// [`crate::transaction_context::TransactionContext::pending_conversation`] for that case.
+    /// [`Self::load_including_pending`] for that case.
     pub(crate) async fn load(session: &Arc<Session>, id: impl AsRef<[u8]>) -> Result<Option<Self>> {
         let Some(conversation) = Self::load_including_pending(session, id).await? else {
             return Ok(None);

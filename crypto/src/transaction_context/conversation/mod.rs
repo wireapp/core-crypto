@@ -31,7 +31,7 @@ impl TransactionContext {
 
     /// Acquire a conversation guard.
     ///
-    /// Most of the time it's better to use [`Self::conversation`] or [`Self::pending_conversation`].
+    /// Most of the time it's better to use [`Self::conversation`].
     /// However, in certain limited circumstances, it might be necessary to get a [`ConversationMut`]
     /// whether or not the conversation in question is in fact pending.
     pub(crate) async fn conversation_regardless_of_pending_status(
