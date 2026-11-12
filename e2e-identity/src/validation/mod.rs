@@ -168,7 +168,6 @@ pub(crate) fn prepare_environment(
 
     // Make a CRL source
     let crl_source = CrlStore::from(crls);
-    crl_source.index_crls(toi)?;
 
     let mut pe = certval::environment::PkiEnvironment::default();
     pe.populate_5280_pki_environment();
