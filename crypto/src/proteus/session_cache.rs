@@ -79,6 +79,11 @@ impl ProteusSessionCache {
     pub(crate) fn remove(&mut self, id: &str) -> Option<ProteusConversationSession> {
         self.entries.remove(id)
     }
+
+    /// Removes all entries from the cache.
+    pub(crate) fn clear(&mut self) {
+        self.entries.clear();
+    }
 }
 
 impl std::fmt::Debug for ProteusSessionCache {
