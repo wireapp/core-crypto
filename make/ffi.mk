@@ -59,7 +59,6 @@ else
 $(UNIFFI_SWIFT_OUTPUT): $(bindings-deps)
 	mkdir -p crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi
 	$(UNIFFI_BINDGEN) generate \
-	  --config $(UNIFFI_TOML) \
 	  --language swift \
 	  --out-dir crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi \
 	  --library $(FFI_LIBRARY)
@@ -93,7 +92,6 @@ UNIFFI_JVM_OUTPUT := crypto-ffi/bindings/jvm/src/main/uniffi/com/wire/crypto/cor
 $(UNIFFI_JVM_OUTPUT): $(bindings-deps)
 	mkdir -p crypto-ffi/bindings/jvm/src/main/uniffi
 	$(UNIFFI_BINDGEN) generate \
-	  --config $(UNIFFI_TOML) \
 	  --language kotlin \
 	  --no-format \
 	  --out-dir crypto-ffi/bindings/jvm/src/main/uniffi \

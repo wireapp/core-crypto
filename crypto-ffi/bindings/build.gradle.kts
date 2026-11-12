@@ -15,6 +15,9 @@ buildscript {
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
     alias(libs.plugins.android.library) apply false
+    // Declared here so that the uniffi plugin shares the root classloader with AGP and Kotlin.
+    // Otherwise it sees their older kotlinx-serialization, and fails reading cargo metadata.
+    alias(libs.plugins.ubique.uniffi) apply false
     id(libs.plugins.dokka.get().pluginId) version libs.versions.dokka
 }
 
@@ -66,19 +69,6 @@ allprojects {
         dokkaSourceSets.configureEach {
             sourceLink {
                 remoteUrl("https://github.com/wireapp/core-crypto/tree/main/crypto-ffi/bindings/jvm")
-            }
-        }
-    }
-
-    // Gobley attaches the same generated `generated/uniffi/nativeMain/kotlin` directory to each
-    // native leaf source set (iosArm64/iosSimulatorArm64/macosArm64) —
-    //
-    // Disabling until https://github.com/gobley/gobley/issues/290 is fixed
-    afterEvaluate {
-        dokka {
-            dokkaSourceSets.configureEach {
-                val generatedDir = layout.buildDirectory.dir("generated/uniffi/nativeMain").get().asFile
-                sourceRoots.setFrom(sourceRoots.files.filterNot { it.startsWith(generatedDir) })
             }
         }
     }
