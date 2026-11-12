@@ -774,8 +774,8 @@ dependencies = [
 
 [[package]]
 name = "certval"
-version = "0.2.0-rc.2"
-source = "git+https://github.com/carl-wallace/rust-pki.git?rev=763c69799165b4b757fd29d39eca3ccbe88e1bdf#763c69799165b4b757fd29d39eca3ccbe88e1bdf"
+version = "0.2.0-rc.3"
+source = "git+https://github.com/carl-wallace/rust-pki.git?rev=b73fb148d82f18de8d884a1fb4dd4819acece035#b73fb148d82f18de8d884a1fb4dd4819acece035"
 dependencies = [
  "base64ct",
  "cfg-if",
@@ -802,7 +802,7 @@ dependencies = [
  "spki 0.8.1",
  "subtle-encoding",
  "x509-cert",
- "x509-ocsp 0.3.0-rc.0",
+ "x509-ocsp",
 ]
 
 [[package]]
@@ -964,9 +964,9 @@ checksum = "0c9ea0ac24bc397ab3c98583a3c9ba74fa56b09a4449bbe172b9b1ddb016027a"
 
 [[package]]
 name = "cms"
-version = "0.3.0-rc.1"
+version = "0.3.0-rc.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e99ff55bfffd019bf15e3f0d5edef2ca1e3af5ade276ed100e3c0c3455050c2"
+checksum = "d089eddc8a5c984d82fcf1427367a6fa0d019d5af04b6e3197e86c8989533b8d"
 dependencies = [
  "const-oid 0.10.2",
  "der 0.8.3",
@@ -3972,7 +3972,7 @@ checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
 [[package]]
 name = "pkiprocmacros"
 version = "0.1.2"
-source = "git+https://github.com/carl-wallace/rust-pki.git?rev=763c69799165b4b757fd29d39eca3ccbe88e1bdf#763c69799165b4b757fd29d39eca3ccbe88e1bdf"
+source = "git+https://github.com/carl-wallace/rust-pki.git?rev=b73fb148d82f18de8d884a1fb4dd4819acece035#b73fb148d82f18de8d884a1fb4dd4819acece035"
 dependencies = [
  "quote",
  "syn 2.0.119",
@@ -7124,7 +7124,7 @@ dependencies = [
  "uuid",
  "web-time",
  "x509-cert",
- "x509-ocsp 0.3.0-rc.1",
+ "x509-ocsp",
  "zeroize",
 ]
 
@@ -7207,18 +7207,6 @@ dependencies = [
  "signature 3.0.0",
  "spki 0.8.1",
  "tls_codec 0.4.2",
-]
-
-[[package]]
-name = "x509-ocsp"
-version = "0.3.0-rc.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24e12c9a7f47a2a518e34d822c083d6bc21736d58d3425707244e046923efb79"
-dependencies = [
- "const-oid 0.10.2",
- "der 0.8.3",
- "spki 0.8.1",
- "x509-cert",
 ]
 
 [[package]]
