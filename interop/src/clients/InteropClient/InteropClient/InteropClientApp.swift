@@ -27,6 +27,7 @@ enum InteropError: String, Error {
         "Unable to perform action since core crypto is not initialised"
     case encodingError = "Failed to encode result"
     case randomBytesError = "Failed to get random bytes"
+    case unexpectedMessageCount = "Expected exactly one decrypted message"
 }
 
 @main
@@ -246,11 +247,15 @@ struct InteropClientApp: App {
             guard let coreCrypto else { throw InteropError.notInitialised }
             let conversationId = ConversationId(bytes: conversationId)
 
-            let decryptedMessage = try await coreCrypto.transaction { ctx in
+            let decryptedMessages = try await coreCrypto.transaction { ctx in
                 try await ctx.decryptMessage(
                     conversationId: conversationId,
                     payload: message
                 )
+            }
+            guard decryptedMessages.count == 1, let decryptedMessage = decryptedMessages.first
+            else {
+                throw InteropError.unexpectedMessageCount
             }
 
             switch decryptedMessage {

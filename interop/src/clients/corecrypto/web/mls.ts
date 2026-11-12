@@ -139,9 +139,13 @@ export async function decryptMessage() {
     const conversationId = new ConversationId(Uint8Array.from(Object.values(cId)));
     const encryptedMessage = Uint8Array.from(Object.values(encMessage));
 
-    const decryptedMessage = await window.cc.transaction((ctx) =>
+    const decryptedMessages = await window.cc.transaction((ctx) =>
         ctx.decryptMessage(conversationId, encryptedMessage)
     );
+    if (decryptedMessages.length !== 1) {
+        throw new Error(`expected exactly one decrypted message, but got ${decryptedMessages.length}`);
+    }
+    const [decryptedMessage] = decryptedMessages;
     if (DecryptedMessage.ApplicationMessage.instanceOf(decryptedMessage)
         || DecryptedMessage.Transient.instanceOf(decryptedMessage)
         || DecryptedMessage.PersistedTargeted.instanceOf(decryptedMessage)

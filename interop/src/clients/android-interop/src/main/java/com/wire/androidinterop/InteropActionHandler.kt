@@ -69,11 +69,16 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
             }
 
             is InteropAction.MLS.DecryptMessage -> {
-                when (
-                    val decryptedMessage = coreCrypto.transaction { context ->
-                        context.decryptMessage(ConversationId(bytes = action.conversationId), action.message)
-                    }
-                ) {
+                val decryptedMessages = coreCrypto.transaction { context ->
+                    context.decryptMessage(ConversationId(bytes = action.conversationId), action.message)
+                }
+                val decryptedMessage = decryptedMessages.singleOrNull()
+                    ?: return Result.failure(
+                        IllegalStateException(
+                            "expected exactly one decrypted message, but got ${decryptedMessages.size}"
+                        )
+                    )
+                when (decryptedMessage) {
                     is DecryptedMessage.ApplicationMessage -> Result.success(Base64.Default.encode(decryptedMessage.plaintext))
 
                     is DecryptedMessage.Commit,
