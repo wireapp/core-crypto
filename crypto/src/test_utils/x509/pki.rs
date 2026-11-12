@@ -1,4 +1,7 @@
-use std::str::FromStr as _;
+use std::{
+    str::FromStr as _,
+    sync::atomic::{AtomicU16, Ordering},
+};
 
 use ecdsa::SignatureEncoding as _;
 use openmls_traits::types::SignatureScheme;
@@ -137,6 +140,16 @@ fn add_crl_distribution_points<P: BuilderProfile>(
             .map_err(|_| ())?;
     }
     Ok(())
+}
+
+/// Allocates a CRL number to be used in the CRL number extension. CRL numbers are useful for
+/// distinguishing between CRLs that have the same timestamp. Since this is for testing purposes
+/// only, we don't actually care that the CRL number is globally unique, rather than per-issuer and
+/// CRL scope.
+fn allocate_crl_number() -> u16 {
+    static CRL_NUMBER: AtomicU16 = AtomicU16::new(1);
+
+    CRL_NUMBER.update(Ordering::SeqCst, Ordering::SeqCst, |n| n + 1)
 }
 
 fn generate_cert_root<Signature, Signer>(
@@ -403,6 +416,11 @@ impl PkiKeypair {
             })
             .collect();
 
+        let mut crl_extensions = x509_cert::ext::Extensions::new();
+        let issuer_name = issuer_cert.tbs_certificate().subject();
+        let crl_number = x509_cert::ext::pkix::CrlNumber::try_from(allocate_crl_number()).unwrap();
+        crl_extensions.push(crl_number.to_extension(issuer_name, &crl_extensions).unwrap());
+
         let tbs_cert_list = x509_cert::crl::TbsCertList {
             version: x509_cert::Version::V3,
             signature: signature_algorithm.ref_to_owned(),
@@ -410,7 +428,7 @@ impl PkiKeypair {
             this_update: now,
             next_update: None,
             revoked_certificates: Some(revoked_certificates),
-            crl_extensions: None,
+            crl_extensions: Some(crl_extensions),
         };
 
         use spki::der::Encode as _;
