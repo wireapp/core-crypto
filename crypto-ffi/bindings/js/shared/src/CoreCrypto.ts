@@ -74,7 +74,6 @@ export {
     DecryptedMessage,
     CoreCryptoLogLevel,
     ProteusAutoPrekeyBundle,
-    BufferedDecryptedMessage,
     KeyPackage,
     KeyPackageRef,
     SignatureScheme,

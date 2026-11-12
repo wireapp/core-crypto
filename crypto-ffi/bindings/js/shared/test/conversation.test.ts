@@ -69,7 +69,7 @@ describe("conversation", () => {
                     persistedMessage,
                 ),
             );
-            const persistedDecrypted = await bob.transaction((ctx) =>
+            const [persistedDecrypted] = await bob.transaction((ctx) =>
                 ctx.decryptMessage(conversationId, persistedCiphertext),
             );
 
@@ -84,7 +84,7 @@ describe("conversation", () => {
                     transientMessage,
                 ),
             );
-            const transientDecrypted = await bob.transaction((ctx) =>
+            const [transientDecrypted] = await bob.transaction((ctx) =>
                 ctx.decryptMessage(conversationId, transientCiphertext),
             );
 
@@ -125,7 +125,7 @@ describe("conversation", () => {
             const ciphertext = await alice.transaction((ctx) =>
                 ctx.encryptTransientMessage(conversationId, message),
             );
-            const decrypted = await bob.transaction((ctx) =>
+            const [decrypted] = await bob.transaction((ctx) =>
                 ctx.decryptMessage(conversationId, ciphertext),
             );
 

@@ -433,7 +433,7 @@ async function setHelpers() {
                         );
                     },
                 );
-                const decryptedByClient2 = await cc2.transaction(
+                const [decryptedByClient2] = await cc2.transaction(
                     async (ctx) => {
                         return await ctx.decryptMessage(
                             conversationId,
@@ -450,7 +450,7 @@ async function setHelpers() {
                         );
                     },
                 );
-                const decryptedByClient1 = await cc1.transaction(
+                const [decryptedByClient1] = await cc1.transaction(
                     async (ctx) => {
                         return await ctx.decryptMessage(
                             conversationId,
