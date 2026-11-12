@@ -1,10 +1,10 @@
 use std::{fmt, sync::Arc, time::Duration};
 
-use core_crypto::{BufferedDecryptedMessage, ConversationConfiguration};
+use core_crypto::ConversationConfiguration;
 
 use crate::{
     CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, Credential,
-    CredentialRef, DecryptedMessage, ExternalSender, KeyPackage, KeyPackageRef, MlsError, MlsTransport,
+    CredentialRef, DecryptedMessage, ExternalSender, KeyPackage, KeyPackageRef, MlsTransport,
     bytes_wrapper::bytes_wrapper, core_crypto::mls_transport::callback_shim,
 };
 
@@ -281,61 +281,39 @@ impl CoreCryptoContext {
     /// A commit from another member supersedes any local pending commit and consumes the pending
     /// proposals it references. Our own commit, delivered back to us, is merged. Proposals and
     /// application messages leave local pending state untouched.
+    ///
+    /// If the decrypted message is deferred for processing after some future event, the returned
+    /// list is empty. If the returned list is not empty, then its first item is the result of decrypting
+    /// the provided payload.
+    ///
+    /// If the decrypted message produces an event causing previously-buffered messages to be decrypted,
+    /// they are appended to the returned list in processing order.
+    ///
+    /// If a commit ejects us from the group, no further messages are considered. This means that
+    /// if we are ejected, the final message will always be a `Commit` variant with `isActive: false`.
+    ///
+    /// When decrypting buffered messages, we distinguish betwen infrastructural errors and other errors.
+    /// Infrastructural errors are those which we would expect not to reappear if we re-attempted the decryption
+    /// in a new, perfectly healthy environment.
+    ///
+    /// If decryption of a buffered message triggers an infrastructural
+    /// error, that error is propagated so that the transaction is rolled back. Once the environment is healthy,
+    /// reattempting can be expected to succeed.
+    ///
+    /// Non-infrastructural errors when decrypting buffered messages produce a log line, but they are not
+    /// propagated, and the buffered message is dropped.
+    ///
+    /// All errors produced when decrypting the initial message are propagated, whether or not they are infrastructural.
     pub async fn decrypt_message(
         &self,
         conversation_id: &ConversationId,
         payload: Vec<u8>,
-    ) -> CoreCryptoResult<DecryptedMessage> {
-        // This mapping shouldn't survive past WPB-29259, but it's necessary for the moment because
-        // we have not yet adjusted the public API.
-        let messages = self.inner.decrypt_message(conversation_id.as_ref(), &payload).await?;
-
-        // We need to transform the list of results to match what used to be produced.
-        // There are two main wrinkles:
-        // 1. We no longer have context about why a message was deferred (to be restored in WPB-29261)
-        // 2. A proposal which restored a commit makes that commit the main message, not the proposal.
-
-        // if we're evicted, the final message decrypted is always the commit which ejects us
-        let final_message_is_active = messages
-            .last()
-            .and_then(|message| message.as_commit())
-            .is_none_or(|commit| commit.is_active);
-
-        // the main message is either the first commit or the first result
-        let primary_message_idx = messages
-            .iter()
-            .position(|message| message.is_commit())
-            .unwrap_or_default();
-
-        debug_assert!(
-            primary_message_idx == 0 || primary_message_idx == 1,
-            "the only case where primary message is 1 is when 0 is a proposal unblocking a commit"
-        );
-
-        // old behavior: discard the proposal producing a commit
-        let mut messages = messages.into_iter().skip(primary_message_idx);
-        let Some(mut primary_message) = messages.next().map(Into::into) else {
-            // no messages -> must have been buffered
-            // all buffering is reported as this error variant, now, even if the buffered
-            // message was in fact a commit.
-            // that's a guess, not necessarily accurate, but it'll be fixed in WPB-29261.
-            return Err(MlsError::BufferedFutureMessage.into());
-        };
-        let buffered_decrypted = messages
-            .map(|message| BufferedDecryptedMessage::from(message).into())
-            .collect::<Vec<_>>();
-
-        if let DecryptedMessage::Commit {
-            buffered_messages,
-            is_active,
-            ..
-        } = &mut primary_message
-        {
-            *buffered_messages = (!buffered_decrypted.is_empty()).then_some(buffered_decrypted);
-            *is_active = final_message_is_active;
-        }
-
-        Ok(primary_message)
+    ) -> CoreCryptoResult<Vec<DecryptedMessage>> {
+        self.inner
+            .decrypt_message(conversation_id.as_ref(), &payload)
+            .await
+            .map(|messages| messages.into_iter().map(Into::into).collect())
+            .map_err(Into::into)
     }
 
     /// Encrypts a plaintext message for all members of the given conversation.
