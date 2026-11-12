@@ -105,7 +105,7 @@ impl Database {
                 ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
             }
 
-            (conn, filesystem::NativeFs)
+            (conn.into(), filesystem::NativeFs)
         };
 
         let filesystem = Box::new(filesystem);
@@ -240,6 +240,8 @@ impl Database {
     // Close this database connection
     pub async fn close(self) -> CryptoKeystoreResult<()> {
         let (conn, _fs, _guard) = self.take().await?;
+        #[cfg(not(target_os = "unknown"))]
+        let conn = conn.into_inner();
         conn.close().map_err(|(_conn, err)| err)?;
         Ok(())
     }
@@ -263,6 +265,8 @@ impl Database {
             )?;
         }
         let location = conn.path().map(ToOwned::to_owned);
+        #[cfg(not(target_os = "unknown"))]
+        let conn = conn.into_inner();
         conn.close().map_err(|(_conn, err)| err)?;
         if let Some(path) = location {
             // not in-memory
