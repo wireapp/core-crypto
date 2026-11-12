@@ -151,8 +151,8 @@
 <a href=#151 id=151 data-nosnippet>151</a>
 <a href=#152 id=152 data-nosnippet>152</a><span class="kw">impl </span>DecryptionOutcome {
 <a href=#153 id=153 data-nosnippet>153</a>    <span class="doccomment">/// `true` when this outcome is a decrypted message; `false` otherwise
-<a href=#154 id=154 data-nosnippet>154</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>savepoint_outcome_check&lt;E&gt;(outcome: <span class="kw-2">&amp;</span><span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, E&gt;) -&gt; bool {
-<a href=#155 id=155 data-nosnippet>155</a>        <span class="macro">matches!</span>(outcome, <span class="prelude-val">Ok</span>(<span class="self">Self</span>::Decrypted(<span class="kw">_</span>)))
+<a href=#154 id=154 data-nosnippet>154</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>savepoint_outcome_check&lt;E&gt;(outcome: <span class="kw-2">&amp;</span><span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;, E&gt;) -&gt; bool {
+<a href=#155 id=155 data-nosnippet>155</a>        <span class="macro">matches!</span>(outcome, <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="self">Self</span>::Decrypted(<span class="kw">_</span>))))
 <a href=#156 id=156 data-nosnippet>156</a>    }
 <a href=#157 id=157 data-nosnippet>157</a>}
 </code></pre></div></section></main></body></html>

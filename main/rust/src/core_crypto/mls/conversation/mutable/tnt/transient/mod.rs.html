@@ -51,7 +51,7 @@
 <a href=#51 id=51 data-nosnippet>51</a>///
 <a href=#52 id=52 data-nosnippet>52</a>/// Implementation note: we're preferring OpenMLS types here, because we're using OpenMLS encoding. Once we switch to
 <a href=#53 id=53 data-nosnippet>53</a>/// mls-rs, we're going to use mls-rs types.
-<a href=#54 id=54 data-nosnippet>54</a></span><span class="attr">#[derive(TlsSize, TlsSerialize, TlsDeserialize, derive_more::Constructor)]
+<a href=#54 id=54 data-nosnippet>54</a></span><span class="attr">#[derive(Clone, TlsSize, TlsSerialize, TlsDeserialize, derive_more::Constructor)]
 <a href=#55 id=55 data-nosnippet>55</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>TransientMessage {
 <a href=#56 id=56 data-nosnippet>56</a>    <span class="doccomment">/// The mls group context (&lt;https://www.rfc-editor.org/info/rfc9420/#name-group-context&gt;) contains the epoch and
 <a href=#57 id=57 data-nosnippet>57</a>    /// group id, so we don't need those in additional fields here.

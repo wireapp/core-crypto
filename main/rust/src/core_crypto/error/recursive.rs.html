@@ -87,35 +87,46 @@
 <a href=#87 id=87 data-nosnippet>87</a>                }
 <a href=#88 id=88 data-nosnippet>88</a>            }
 <a href=#89 id=89 data-nosnippet>89</a>        )+
-<a href=#90 id=90 data-nosnippet>90</a>    };
-<a href=#91 id=91 data-nosnippet>91</a>}
-<a href=#92 id=92 data-nosnippet>92</a>
-<a href=#93 id=93 data-nosnippet>93</a><span class="macro">recursive_error!</span> {
-<a href=#94 id=94 data-nosnippet>94</a>    Root: <span class="kw">crate</span>::Error =&gt; root;
-<a href=#95 id=95 data-nosnippet>95</a>    TransactionContext: <span class="kw">crate</span>::transaction_context::Error =&gt; transaction;
-<a href=#96 id=96 data-nosnippet>96</a>    E2e: wire_e2e_identity::E2eIdentityError =&gt; e2e_identity;
-<a href=#97 id=97 data-nosnippet>97</a>    MlsClient: <span class="kw">crate</span>::mls::session::Error =&gt; mls_client;
-<a href=#98 id=98 data-nosnippet>98</a>    MlsConversation: <span class="kw">crate</span>::mls::conversation::Error =&gt; mls_conversation;
-<a href=#99 id=99 data-nosnippet>99</a>    MlsCredential: <span class="kw">crate</span>::mls::credential::Error =&gt; mls_credential;
-<a href=#100 id=100 data-nosnippet>100</a>    <span class="attr">#[cfg(test)]
-<a href=#101 id=101 data-nosnippet>101</a>    </span>Test: <span class="kw">crate</span>::test_utils::TestError =&gt; test;
+<a href=#90 id=90 data-nosnippet>90</a>
+<a href=#91 id=91 data-nosnippet>91</a>        <span class="kw">impl </span><span class="kw">crate</span>::error::infrastructure::Infrastructural <span class="kw">for </span>RecursiveError {
+<a href=#92 id=92 data-nosnippet>92</a>            <span class="kw">fn </span>is_infrastructure(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+<a href=#93 id=93 data-nosnippet>93</a>                <span class="kw">match </span><span class="self">self </span>{
+<a href=#94 id=94 data-nosnippet>94</a>                    $(
+<a href=#95 id=95 data-nosnippet>95</a>                        $( <span class="attr">#[cfg(<span class="macro-nonterminal">$meta</span>)] </span>)*
+<a href=#96 id=96 data-nosnippet>96</a>                        <span class="self">Self</span>::<span class="macro-nonterminal">$variant </span>{ source, .. } =&gt; <span class="kw">crate</span>::error::infrastructure::Infrastructural::is_infrastructure(<span class="kw-2">&amp;**</span>source),
+<a href=#97 id=97 data-nosnippet>97</a>                    )+
+<a href=#98 id=98 data-nosnippet>98</a>                }
+<a href=#99 id=99 data-nosnippet>99</a>            }
+<a href=#100 id=100 data-nosnippet>100</a>        }
+<a href=#101 id=101 data-nosnippet>101</a>    };
 <a href=#102 id=102 data-nosnippet>102</a>}
 <a href=#103 id=103 data-nosnippet>103</a>
-<a href=#104 id=104 data-nosnippet>104</a><span class="kw">impl </span>RecursiveError {
-<a href=#105 id=105 data-nosnippet>105</a>    <span class="doccomment">/// Wrap any error which [`RecursiveError`] knows how to wrap, given the current context.
-<a href=#106 id=106 data-nosnippet>106</a>    ///
-<a href=#107 id=107 data-nosnippet>107</a>    /// The variant is selected from the error's type, so this is usually what you want:
-<a href=#108 id=108 data-nosnippet>108</a>    ///
-<a href=#109 id=109 data-nosnippet>109</a>    /// ```ignore
-<a href=#110 id=110 data-nosnippet>110</a>    /// self.session().await.map_err(RecursiveError::context("getting mls client"))?
-<a href=#111 id=111 data-nosnippet>111</a>    /// ```
-<a href=#112 id=112 data-nosnippet>112</a>    ///
-<a href=#113 id=113 data-nosnippet>113</a>    /// This only accepts the module error types themselves. When you need to convert first, for
-<a href=#114 id=114 data-nosnippet>114</a>    /// instance because you are holding a [`crate::TlsCodecError`] which several module errors
-<a href=#115 id=115 data-nosnippet>115</a>    /// can absorb, reach for the variant-specific constructor such as
-<a href=#116 id=116 data-nosnippet>116</a>    /// [`Self::mls_conversation`] instead.
-<a href=#117 id=117 data-nosnippet>117</a>    </span><span class="kw">pub fn </span>context&lt;E: ToRecursiveError&gt;(context: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="kw">impl </span>FnOnce(E) -&gt; <span class="self">Self </span>{
-<a href=#118 id=118 data-nosnippet>118</a>        <span class="kw">move </span>|source| source.construct_recursive(context)
-<a href=#119 id=119 data-nosnippet>119</a>    }
-<a href=#120 id=120 data-nosnippet>120</a>}
+<a href=#104 id=104 data-nosnippet>104</a><span class="macro">recursive_error!</span> {
+<a href=#105 id=105 data-nosnippet>105</a>    Root: <span class="kw">crate</span>::Error =&gt; root;
+<a href=#106 id=106 data-nosnippet>106</a>    TransactionContext: <span class="kw">crate</span>::transaction_context::Error =&gt; transaction;
+<a href=#107 id=107 data-nosnippet>107</a>    E2e: wire_e2e_identity::E2eIdentityError =&gt; e2e_identity;
+<a href=#108 id=108 data-nosnippet>108</a>    MlsClient: <span class="kw">crate</span>::mls::session::Error =&gt; mls_client;
+<a href=#109 id=109 data-nosnippet>109</a>    MlsConversation: <span class="kw">crate</span>::mls::conversation::Error =&gt; mls_conversation;
+<a href=#110 id=110 data-nosnippet>110</a>    MlsCredential: <span class="kw">crate</span>::mls::credential::Error =&gt; mls_credential;
+<a href=#111 id=111 data-nosnippet>111</a>    <span class="attr">#[cfg(test)]
+<a href=#112 id=112 data-nosnippet>112</a>    </span>Test: <span class="kw">crate</span>::test_utils::TestError =&gt; test;
+<a href=#113 id=113 data-nosnippet>113</a>}
+<a href=#114 id=114 data-nosnippet>114</a>
+<a href=#115 id=115 data-nosnippet>115</a><span class="kw">impl </span>RecursiveError {
+<a href=#116 id=116 data-nosnippet>116</a>    <span class="doccomment">/// Wrap any error which [`RecursiveError`] knows how to wrap, given the current context.
+<a href=#117 id=117 data-nosnippet>117</a>    ///
+<a href=#118 id=118 data-nosnippet>118</a>    /// The variant is selected from the error's type, so this is usually what you want:
+<a href=#119 id=119 data-nosnippet>119</a>    ///
+<a href=#120 id=120 data-nosnippet>120</a>    /// ```ignore
+<a href=#121 id=121 data-nosnippet>121</a>    /// self.session().await.map_err(RecursiveError::context("getting mls client"))?
+<a href=#122 id=122 data-nosnippet>122</a>    /// ```
+<a href=#123 id=123 data-nosnippet>123</a>    ///
+<a href=#124 id=124 data-nosnippet>124</a>    /// This only accepts the module error types themselves. When you need to convert first, for
+<a href=#125 id=125 data-nosnippet>125</a>    /// instance because you are holding a [`crate::TlsCodecError`] which several module errors
+<a href=#126 id=126 data-nosnippet>126</a>    /// can absorb, reach for the variant-specific constructor such as
+<a href=#127 id=127 data-nosnippet>127</a>    /// [`Self::mls_conversation`] instead.
+<a href=#128 id=128 data-nosnippet>128</a>    </span><span class="kw">pub fn </span>context&lt;E: ToRecursiveError&gt;(context: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="kw">impl </span>FnOnce(E) -&gt; <span class="self">Self </span>{
+<a href=#129 id=129 data-nosnippet>129</a>        <span class="kw">move </span>|source| source.construct_recursive(context)
+<a href=#130 id=130 data-nosnippet>130</a>    }
+<a href=#131 id=131 data-nosnippet>131</a>}
 </code></pre></div></section></main></body></html>

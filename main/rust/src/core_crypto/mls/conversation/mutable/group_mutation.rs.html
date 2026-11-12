@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `crypto/src/mls/conversation/mutable/group_mutation.rs`."><title>group_mutation.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-0c87338a.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="core_crypto" data-themes="" data-resource-suffix="" data-rustdoc-version="1.99.1 (58cf8f9c3 2026-10-13)" data-channel="1.99.1" data-search-js="search-cf4fc35e.js" data-stringdex-js="stringdex-b5109af9.js" data-settings-js="settings-170eb4bf.js" ><script src="../../../../../static.files/storage-41dd4d93.js"></script><script defer src="../../../../../static.files/src-script-813739b1.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-417ebf0a.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-9f56287d.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><a class="skip-main-content" href="#main-content">Skip to main content</a><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><section id="main-content" class="content" tabindex="-1"><div class="main-heading"><h1><div class="sub-heading">core_crypto/mls/conversation/mutable/</div>group_mutation.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap digits-3"><pre class="rust"><code><a href=#1 id=1 data-nosnippet>1</a><span class="kw">use </span>core_crypto_keystore::{
 <a href=#2 id=2 data-nosnippet>2</a>    Transaction,
 <a href=#3 id=3 data-nosnippet>3</a>    ancillary::ConversationEpochsOlderThan,
-<a href=#4 id=4 data-nosnippet>4</a>    entities::{OldEpochData, TargetedMessageRxCounter, TransientMessageRxCounter},
+<a href=#4 id=4 data-nosnippet>4</a>    entities::{InboxMessage, OldEpochData, TargetedMessageRxCounter, TransientMessageRxCounter},
 <a href=#5 id=5 data-nosnippet>5</a>    traits::DeletableBySearchKey <span class="kw">as _</span>,
 <a href=#6 id=6 data-nosnippet>6</a>};
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span>openmls::group::InnerState;
@@ -72,44 +72,46 @@
 <a href=#72 id=72 data-nosnippet>72</a>            TransientMessageRxCounter::delete_all_matching(tx, <span class="kw-2">&amp;</span>stale_epochs).map_err(KeystoreError::wrap(
 <a href=#73 id=73 data-nosnippet>73</a>                <span class="string">"deleting transient message rx counter on epoch change"</span>,
 <a href=#74 id=74 data-nosnippet>74</a>            ))<span class="question-mark">?</span>;
-<a href=#75 id=75 data-nosnippet>75</a>        }
-<a href=#76 id=76 data-nosnippet>76</a>
-<a href=#77 id=77 data-nosnippet>77</a>        group.persist(tx).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#75 id=75 data-nosnippet>75</a>            InboxMessage::drop_stale(tx, id.keystore(), group.epoch().as_u64())
+<a href=#76 id=76 data-nosnippet>76</a>                .map_err(KeystoreError::wrap(<span class="string">"clearing stale inbox messages on epoch change"</span>))<span class="question-mark">?</span>;
+<a href=#77 id=77 data-nosnippet>77</a>        }
 <a href=#78 id=78 data-nosnippet>78</a>
-<a href=#79 id=79 data-nosnippet>79</a>        <span class="prelude-val">Ok</span>(ok_result)
-<a href=#80 id=80 data-nosnippet>80</a>    }
-<a href=#81 id=81 data-nosnippet>81</a>
-<a href=#82 id=82 data-nosnippet>82</a>    <span class="doccomment">/// Perform an operation on a mutable reference to the contained MLS group.
-<a href=#83 id=83 data-nosnippet>83</a>    ///
-<a href=#84 id=84 data-nosnippet>84</a>    /// Errors will be propagated.
-<a href=#85 id=85 data-nosnippet>85</a>    /// When the operation does not error, the group will automatically be persisted.
-<a href=#86 id=86 data-nosnippet>86</a>    /// This ensures that persistence cannot be forgotten.
-<a href=#87 id=87 data-nosnippet>87</a>    ///
-<a href=#88 id=88 data-nosnippet>88</a>    /// We choose to implement this as a closure instead of a lightweight holding a reference to the coversation
-<a href=#89 id=89 data-nosnippet>89</a>    /// which calls that method on `Drop` because this way we can ensure we do _not_ automatically call it when there is
-<a href=#90 id=90 data-nosnippet>90</a>    /// an error.
-<a href=#91 id=91 data-nosnippet>91</a>    ///
-<a href=#92 id=92 data-nosnippet>92</a>    /// See [`Self::mutate_group_with_operation_check`]. That function does the same thing, but performs an additional
-<a href=#93 id=93 data-nosnippet>93</a>    /// check to tell whether the group state has actually changed.
-<a href=#94 id=94 data-nosnippet>94</a>    ///
-<a href=#95 id=95 data-nosnippet>95</a>    /// ## Note
+<a href=#79 id=79 data-nosnippet>79</a>        group.persist(tx).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#80 id=80 data-nosnippet>80</a>
+<a href=#81 id=81 data-nosnippet>81</a>        <span class="prelude-val">Ok</span>(ok_result)
+<a href=#82 id=82 data-nosnippet>82</a>    }
+<a href=#83 id=83 data-nosnippet>83</a>
+<a href=#84 id=84 data-nosnippet>84</a>    <span class="doccomment">/// Perform an operation on a mutable reference to the contained MLS group.
+<a href=#85 id=85 data-nosnippet>85</a>    ///
+<a href=#86 id=86 data-nosnippet>86</a>    /// Errors will be propagated.
+<a href=#87 id=87 data-nosnippet>87</a>    /// When the operation does not error, the group will automatically be persisted.
+<a href=#88 id=88 data-nosnippet>88</a>    /// This ensures that persistence cannot be forgotten.
+<a href=#89 id=89 data-nosnippet>89</a>    ///
+<a href=#90 id=90 data-nosnippet>90</a>    /// We choose to implement this as a closure instead of a lightweight holding a reference to the coversation
+<a href=#91 id=91 data-nosnippet>91</a>    /// which calls that method on `Drop` because this way we can ensure we do _not_ automatically call it when there is
+<a href=#92 id=92 data-nosnippet>92</a>    /// an error.
+<a href=#93 id=93 data-nosnippet>93</a>    ///
+<a href=#94 id=94 data-nosnippet>94</a>    /// See [`Self::mutate_group_with_operation_check`]. That function does the same thing, but performs an additional
+<a href=#95 id=95 data-nosnippet>95</a>    /// check to tell whether the group state has actually changed.
 <a href=#96 id=96 data-nosnippet>96</a>    ///
-<a href=#97 id=97 data-nosnippet>97</a>    /// This function requires acquiring a write lock on the immutable conversation; it will deadlock
-<a href=#98 id=98 data-nosnippet>98</a>    /// if any lock already exists on that conversation.
-<a href=#99 id=99 data-nosnippet>99</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">async fn </span>mutate_group&lt;T&gt;(
-<a href=#100 id=100 data-nosnippet>100</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#101 id=101 data-nosnippet>101</a>        operation: <span class="kw">impl </span>AsyncFnOnce(<span class="kw-2">&amp;</span>Transaction, <span class="kw-2">&amp;mut </span>MlsGroupState, <span class="kw-2">&amp;</span>ConversationIdRef) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;,
-<a href=#102 id=102 data-nosnippet>102</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt; {
-<a href=#103 id=103 data-nosnippet>103</a>        <span class="self">self</span>.mutate_group_with_operation_check(operation, |<span class="kw">_</span>| <span class="bool-val">false</span>).<span class="kw">await
-<a href=#104 id=104 data-nosnippet>104</a>    </span>}
-<a href=#105 id=105 data-nosnippet>105</a>
-<a href=#106 id=106 data-nosnippet>106</a>    <span class="doccomment">/// Exactly as [`Self::mutate_group`], but accessible from anywhere in core-crypto for testing.
-<a href=#107 id=107 data-nosnippet>107</a>    </span><span class="attr">#[cfg(test)]
-<a href=#108 id=108 data-nosnippet>108</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>mutate_group_test&lt;T&gt;(
-<a href=#109 id=109 data-nosnippet>109</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#110 id=110 data-nosnippet>110</a>        operation: <span class="kw">impl </span>AsyncFnOnce(<span class="kw-2">&amp;</span>Transaction, <span class="kw-2">&amp;mut </span>MlsGroupState, <span class="kw-2">&amp;</span>ConversationIdRef) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;,
-<a href=#111 id=111 data-nosnippet>111</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt; {
-<a href=#112 id=112 data-nosnippet>112</a>        <span class="self">self</span>.mutate_group(operation).<span class="kw">await
-<a href=#113 id=113 data-nosnippet>113</a>    </span>}
-<a href=#114 id=114 data-nosnippet>114</a>}
+<a href=#97 id=97 data-nosnippet>97</a>    /// ## Note
+<a href=#98 id=98 data-nosnippet>98</a>    ///
+<a href=#99 id=99 data-nosnippet>99</a>    /// This function requires acquiring a write lock on the immutable conversation; it will deadlock
+<a href=#100 id=100 data-nosnippet>100</a>    /// if any lock already exists on that conversation.
+<a href=#101 id=101 data-nosnippet>101</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">async fn </span>mutate_group&lt;T&gt;(
+<a href=#102 id=102 data-nosnippet>102</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#103 id=103 data-nosnippet>103</a>        operation: <span class="kw">impl </span>AsyncFnOnce(<span class="kw-2">&amp;</span>Transaction, <span class="kw-2">&amp;mut </span>MlsGroupState, <span class="kw-2">&amp;</span>ConversationIdRef) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;,
+<a href=#104 id=104 data-nosnippet>104</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt; {
+<a href=#105 id=105 data-nosnippet>105</a>        <span class="self">self</span>.mutate_group_with_operation_check(operation, |<span class="kw">_</span>| <span class="bool-val">false</span>).<span class="kw">await
+<a href=#106 id=106 data-nosnippet>106</a>    </span>}
+<a href=#107 id=107 data-nosnippet>107</a>
+<a href=#108 id=108 data-nosnippet>108</a>    <span class="doccomment">/// Exactly as [`Self::mutate_group`], but accessible from anywhere in core-crypto for testing.
+<a href=#109 id=109 data-nosnippet>109</a>    </span><span class="attr">#[cfg(test)]
+<a href=#110 id=110 data-nosnippet>110</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>mutate_group_test&lt;T&gt;(
+<a href=#111 id=111 data-nosnippet>111</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+<a href=#112 id=112 data-nosnippet>112</a>        operation: <span class="kw">impl </span>AsyncFnOnce(<span class="kw-2">&amp;</span>Transaction, <span class="kw-2">&amp;mut </span>MlsGroupState, <span class="kw-2">&amp;</span>ConversationIdRef) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt;,
+<a href=#113 id=113 data-nosnippet>113</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;T&gt; {
+<a href=#114 id=114 data-nosnippet>114</a>        <span class="self">self</span>.mutate_group(operation).<span class="kw">await
+<a href=#115 id=115 data-nosnippet>115</a>    </span>}
+<a href=#116 id=116 data-nosnippet>116</a>}
 </code></pre></div></section></main></body></html>

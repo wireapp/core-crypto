@@ -140,24 +140,24 @@
 <a href=#140 id=140 data-nosnippet>140</a>    <span class="kw">use </span>core_crypto_keystore::{entities::<span class="kw-2">*</span>, traits::FetchFromDatabase};
 <a href=#141 id=141 data-nosnippet>141</a>
 <a href=#142 id=142 data-nosnippet>142</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
-<a href=#143 id=143 data-nosnippet>143</a>    <span class="kw">use </span><span class="kw">crate</span>::transaction_context::test_utils::EntitiesCount;
+<a href=#143 id=143 data-nosnippet>143</a>    <span class="kw">use </span><span class="kw">crate</span>::transaction_context::test_utils::{EntitiesCount, count_inbox_messages};
 <a href=#144 id=144 data-nosnippet>144</a>
 <a href=#145 id=145 data-nosnippet>145</a>    <span class="kw">impl </span>Session {
 <a href=#146 id=146 data-nosnippet>146</a>        <span class="doccomment">/// Count the entities
 <a href=#147 id=147 data-nosnippet>147</a>        </span><span class="kw">pub async fn </span>count_entities(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; EntitiesCount {
 <a href=#148 id=148 data-nosnippet>148</a>            <span class="kw">let </span>keystore = <span class="kw-2">&amp;</span><span class="self">self</span>.database;
-<a href=#149 id=149 data-nosnippet>149</a>            <span class="kw">let </span>buffered_commits = keystore.count::&lt;StoredBufferedCommit&gt;().<span class="kw">await</span>.unwrap();
-<a href=#150 id=150 data-nosnippet>150</a>            <span class="kw">let </span>credential = keystore.count::&lt;StoredCredential&gt;().<span class="kw">await</span>.unwrap();
-<a href=#151 id=151 data-nosnippet>151</a>            <span class="kw">let </span>encryption_keypair = keystore.count::&lt;StoredEncryptionKeyPair&gt;().<span class="kw">await</span>.unwrap();
-<a href=#152 id=152 data-nosnippet>152</a>            <span class="kw">let </span>epoch_encryption_keypair = keystore.count::&lt;StoredEpochEncryptionKeypair&gt;().<span class="kw">await</span>.unwrap();
-<a href=#153 id=153 data-nosnippet>153</a>            <span class="comment">// `mls_groups` now holds both established and pending rows, distinguished by `is_pending`,
-<a href=#154 id=154 data-nosnippet>154</a>            // so `group` and `pending_group` come from one `load_all` rather than two separate counts.
-<a href=#155 id=155 data-nosnippet>155</a>            </span><span class="kw">let </span>all_groups = keystore.load_all::&lt;PersistedMlsGroup&gt;().<span class="kw">await</span>.unwrap();
-<a href=#156 id=156 data-nosnippet>156</a>            <span class="kw">let </span>group = all_groups.iter().filter(|group| !group.is_pending).count() <span class="kw">as </span>u32;
-<a href=#157 id=157 data-nosnippet>157</a>            <span class="kw">let </span>pending_group = all_groups.iter().filter(|group| group.is_pending).count() <span class="kw">as </span>u32;
-<a href=#158 id=158 data-nosnippet>158</a>            <span class="kw">let </span>hpke_private_key = keystore.count::&lt;StoredHpkePrivateKey&gt;().<span class="kw">await</span>.unwrap();
-<a href=#159 id=159 data-nosnippet>159</a>            <span class="kw">let </span>key_package = keystore.count::&lt;StoredKeyPackage&gt;().<span class="kw">await</span>.unwrap();
-<a href=#160 id=160 data-nosnippet>160</a>            <span class="kw">let </span>pending_messages = keystore.count::&lt;MlsPendingMessage&gt;().<span class="kw">await</span>.unwrap();
+<a href=#149 id=149 data-nosnippet>149</a>            <span class="kw">let </span>credential = keystore.count::&lt;StoredCredential&gt;().<span class="kw">await</span>.unwrap();
+<a href=#150 id=150 data-nosnippet>150</a>            <span class="kw">let </span>encryption_keypair = keystore.count::&lt;StoredEncryptionKeyPair&gt;().<span class="kw">await</span>.unwrap();
+<a href=#151 id=151 data-nosnippet>151</a>            <span class="kw">let </span>epoch_encryption_keypair = keystore.count::&lt;StoredEpochEncryptionKeypair&gt;().<span class="kw">await</span>.unwrap();
+<a href=#152 id=152 data-nosnippet>152</a>            <span class="comment">// `mls_groups` now holds both established and pending rows, distinguished by `is_pending`,
+<a href=#153 id=153 data-nosnippet>153</a>            // so `group` and `pending_group` come from one `load_all` rather than two separate counts.
+<a href=#154 id=154 data-nosnippet>154</a>            </span><span class="kw">let </span>all_groups = keystore.load_all::&lt;PersistedMlsGroup&gt;().<span class="kw">await</span>.unwrap();
+<a href=#155 id=155 data-nosnippet>155</a>            <span class="kw">let </span>group = all_groups.iter().filter(|group| !group.is_pending).count() <span class="kw">as </span>u32;
+<a href=#156 id=156 data-nosnippet>156</a>            <span class="kw">let </span>pending_group = all_groups.iter().filter(|group| group.is_pending).count() <span class="kw">as </span>u32;
+<a href=#157 id=157 data-nosnippet>157</a>            <span class="kw">let </span>hpke_private_key = keystore.count::&lt;StoredHpkePrivateKey&gt;().<span class="kw">await</span>.unwrap();
+<a href=#158 id=158 data-nosnippet>158</a>            <span class="kw">let </span>key_package = keystore.count::&lt;StoredKeyPackage&gt;().<span class="kw">await</span>.unwrap();
+<a href=#159 id=159 data-nosnippet>159</a>            <span class="kw">let </span>(buffered_commits, pending_messages) =
+<a href=#160 id=160 data-nosnippet>160</a>                count_inbox_messages(<span class="kw-2">&amp;</span>keystore.load_all::&lt;InboxMessage&gt;().<span class="kw">await</span>.unwrap());
 <a href=#161 id=161 data-nosnippet>161</a>            <span class="kw">let </span>psk_bundle = keystore.count::&lt;StoredPskBundle&gt;().<span class="kw">await</span>.unwrap();
 <a href=#162 id=162 data-nosnippet>162</a>            EntitiesCount {
 <a href=#163 id=163 data-nosnippet>163</a>                buffered_commits,

@@ -58,7 +58,7 @@
 <a href=#58 id=58 data-nosnippet>58</a>///
 <a href=#59 id=59 data-nosnippet>59</a>/// Implementation note: we're preferring OpenMLS types here, because we're using OpenMLS encoding. Once we switch to
 <a href=#60 id=60 data-nosnippet>60</a>/// mls-rs, we're going to use mls-rs types.
-<a href=#61 id=61 data-nosnippet>61</a></span><span class="attr">#[derive(TlsSize, TlsSerialize, TlsDeserialize, Constructor)]
+<a href=#61 id=61 data-nosnippet>61</a></span><span class="attr">#[derive(Clone, TlsSize, TlsSerialize, TlsDeserialize, Constructor)]
 <a href=#62 id=62 data-nosnippet>62</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">struct </span>TargetedMessage {
 <a href=#63 id=63 data-nosnippet>63</a>    counter: TntMessageCounter,
 <a href=#64 id=64 data-nosnippet>64</a>    sender: LeafNodeIndex,
