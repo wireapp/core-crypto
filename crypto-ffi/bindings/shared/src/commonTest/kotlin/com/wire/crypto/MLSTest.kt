@@ -247,7 +247,7 @@ class MLSTest {
         bob.transaction { ctx -> ctx.updateKeyingMaterial(groupId) }
         val commit = MockMlsTransportSuccessProvider.getInstance().getLatestCommit()
 
-        val decrypted = alice.transaction { ctx -> ctx.decryptMessage(groupId, commit) }
+        val decrypted = alice.transaction { ctx -> ctx.decryptMessage(groupId, commit).single() }
         assertIs<DecryptedMessage.Commit>(decrypted)
     }
 
@@ -276,7 +276,9 @@ class MLSTest {
 
         val plaintextMsg =
             bob.transaction { ctx ->
-                assertIs<DecryptedMessage.ApplicationMessage>(ctx.decryptMessage(groupId, ciphertextMsg)).plaintext
+                assertIs<DecryptedMessage.ApplicationMessage>(
+                    ctx.decryptMessage(groupId, ciphertextMsg).single()
+                ).plaintext
             }
         assertThat(plaintextMsg).isNotEmpty().isEqualTo(msg)
 
@@ -309,7 +311,7 @@ class MLSTest {
 
         val persistedPlaintext = bob.transaction { ctx ->
             assertIs<DecryptedMessage.PersistedTargeted>(
-                ctx.decryptMessage(conversationId, persistedCiphertext)
+                ctx.decryptMessage(conversationId, persistedCiphertext).single()
             ).plaintext
         }
         assertThat(persistedPlaintext).isEqualTo(persistedMessage)
@@ -327,7 +329,7 @@ class MLSTest {
 
         val transientPlaintext = bob.transaction { ctx ->
             assertIs<DecryptedMessage.TransientTargeted>(
-                ctx.decryptMessage(conversationId, transientCiphertext)
+                ctx.decryptMessage(conversationId, transientCiphertext).single()
             ).plaintext
         }
         assertThat(transientPlaintext).isEqualTo(transientMessage)
@@ -349,7 +351,7 @@ class MLSTest {
 
         val plaintext = bob.transaction { ctx ->
             assertIs<DecryptedMessage.Transient>(
-                ctx.decryptMessage(conversationId, ciphertext)
+                ctx.decryptMessage(conversationId, ciphertext).single()
             ).plaintext
         }
         assertThat(plaintext).isEqualTo(message)
@@ -370,7 +372,7 @@ class MLSTest {
         invite(bob, carol, conversationId)
         val commit = MockMlsTransportSuccessProvider.getInstance().getLatestCommit()
 
-        val decrypted = alice.transaction { ctx -> ctx.decryptMessage(conversationId, commit) }
+        val decrypted = alice.transaction { ctx -> ctx.decryptMessage(conversationId, commit).single() }
         assertIs<DecryptedMessage.Commit>(decrypted)
 
         val members = alice.transaction { ctx -> ctx.getClientIds(conversationId) }
@@ -405,7 +407,7 @@ class MLSTest {
         bob.transaction { ctx -> ctx.removeClientsFromConversation(conversationId, carolMember) }
         val commit = MockMlsTransportSuccessProvider.getInstance().getLatestCommit()
 
-        val decrypted = alice.transaction { ctx -> ctx.decryptMessage(conversationId, commit) }
+        val decrypted = alice.transaction { ctx -> ctx.decryptMessage(conversationId, commit).single() }
         assertIs<DecryptedMessage.Commit>(decrypted)
     }
 
