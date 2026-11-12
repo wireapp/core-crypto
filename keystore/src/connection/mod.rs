@@ -167,10 +167,12 @@ impl Database {
     /// it is stored in OPFS via JSPI, and WAL uses exclusive locking and an in-memory index.
     /// Otherwise, it is stored at a path in the local filesystem.
     pub async fn open(path: &str, database_key: &DatabaseKey) -> CryptoKeystoreResult<Arc<Self>> {
+        let transaction_lock = TransactionLock::new(path)?;
+        // SQL migrations and their meta migrations commit separately. Keep other processes
+        // out for the entire initialization, including reading the current schema version.
+        let _guard = transaction_lock.acquire().await?;
         let (conn, filesystem) = Self::open_internal(path, database_key).await?;
-        Self::init(conn, filesystem, MigrationTarget::Latest)
-            .await
-            .map(Into::into)
+        Self::init_with_lock(conn, filesystem, MigrationTarget::Latest, transaction_lock).map(Into::into)
     }
 
     /// Open an in-memory `Database`.
