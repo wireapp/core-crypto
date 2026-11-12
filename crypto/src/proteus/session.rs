@@ -109,6 +109,11 @@ impl ProteusCentral {
         Ok(())
     }
 
+    /// Clears all sessions from the cache without touching the keystore.
+    pub(crate) fn clear_session_cache(&mut self) {
+        self.proteus_sessions.clear();
+    }
+
     /// Session accessor
     pub(crate) async fn session(
         &mut self,

@@ -10,6 +10,7 @@ use core_crypto_keystore::{
     traits::{EntityDatabaseMutation as _, FetchFromDatabase as _},
 };
 pub use error::{Error, Result};
+use log::info;
 use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::pki_env::PkiEnvironment;
 
@@ -66,12 +67,27 @@ impl CoreCrypto {
 }
 
 impl TransactionContext {
+    /// Clear the MLS and Proteus caches so accesses are forced to read from DB state.
+    async fn clear_caches(core_crypto: &CoreCrypto) {
+        if let Some(session) = core_crypto.mls.read().await.as_ref() {
+            session.conversation_cache.lock().await.clear();
+        }
+        #[cfg(feature = "proteus")]
+        if let Some(proteus) = core_crypto.proteus.lock().await.as_mut() {
+            proteus.clear_session_cache();
+        }
+    }
+
     async fn new(core_crypto: Arc<CoreCrypto>) -> Result<Self> {
         let transaction = core_crypto
             .database
             .new_transaction()
             .await
             .map_err(KeystoreError::wrap("creating new transaction"))?;
+        if transaction.externally_modified() {
+            info!("on initializing a new transaction, DB connection detected external modification; clearing caches");
+            Self::clear_caches(&core_crypto).await;
+        }
         Ok(Self {
             inner: Arc::new(RwLock::new(Some(TransactionContextInner {
                 core_crypto,
@@ -196,20 +212,21 @@ impl TransactionContext {
             .map_err(KeystoreError::wrap("commiting transaction"))
             .map_err(Into::into);
 
-        if let Some(session) = core_crypto.mls.read().await.as_ref() {
-            if commit_result.is_ok() {
+        if commit_result.is_ok() {
+            if let Some(session) = core_crypto.mls.read().await.as_ref() {
                 // We need owned values, so we could just clone the conversation ids, but we don't need the events
                 // anymore, so draining the vector works, too.
                 let mut epoch_changes = pending_epoch_changes.lock().await;
                 for (conversation_id, epoch) in epoch_changes.drain(..) {
                     session.notify_epoch_changed(conversation_id, epoch).await;
                 }
-            } else {
-                // Commit failed: the keystore is back to its pre-transaction state, but the in-memory
-                // conversation cache may have absorbed mutations that never made it to disk. Clear them
-                // so subsequent reads load fresh state from the keystore.
-                session.conversation_cache.lock().await.clear();
             }
+            // if not, we still drop the pending changes at the end of this function
+        } else {
+            // Commit failed: the keystore is back to its pre-transaction state, but the in-memory
+            // caches may have absorbed mutations that never made it to disk. Clear them
+            // so subsequent reads load fresh state from the keystore.
+            Self::clear_caches(&core_crypto).await;
         }
 
         commit_result
@@ -221,11 +238,9 @@ impl TransactionContext {
     pub async fn abort(&self) -> Result<()> {
         let inner = self.take_inner().await?;
 
-        // Drop any in-memory conversation state mutated during this transaction; it never reached
+        // Drop any in-memory state mutated during this transaction; it never reached
         // the keystore and would otherwise diverge from disk after rollback.
-        if let Some(session) = inner.core_crypto.mls.read().await.as_ref() {
-            session.conversation_cache.lock().await.clear();
-        }
+        Self::clear_caches(&inner.core_crypto).await;
 
         Ok(())
     }
