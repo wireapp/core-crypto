@@ -28,8 +28,7 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 
 pub(in crate::mls::conversation) use self::incoming_message::{IncomingMessage, ParsedMessage};
 pub use self::outputs::{
-    BufferedCommit, BufferedDecryptedMessage, Commit, DecryptedBytes, DecryptedMessage, DecryptionOutcome,
-    DeferralReason, Proposal,
+    BufferedCommit, Commit, DecryptedBytes, DecryptedMessage, DecryptionOutcome, DeferralReason, Proposal,
 };
 use self::{
     outputs::Effect,

@@ -65,7 +65,6 @@ impl ConversationMut {
 
         let decrypted_message = DecryptedMessage::Commit(Commit {
             is_active: self.group().await.is_active(),
-            buffered_messages: None,
             identity,
         });
 

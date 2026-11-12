@@ -59,9 +59,9 @@ pub use crate::{
         ExternalSender, UnknownCipherSuite,
         cipher_suite::CipherSuite,
         conversation::{
-            BufferedCommit, BufferedDecryptedMessage, Commit, CommitBundle, ConversationConfiguration, ConversationId,
-            DecryptedBytes, DecryptedMessage, DecryptionOutcome, DeferralReason, GroupInfoBundle,
-            GroupInfoEncryptionType, GroupInfoPayload, Proposal, RatchetTreeType, WirePolicy,
+            BufferedCommit, Commit, CommitBundle, ConversationConfiguration, ConversationId, DecryptedBytes,
+            DecryptedMessage, DecryptionOutcome, DeferralReason, GroupInfoBundle, GroupInfoEncryptionType,
+            GroupInfoPayload, Proposal, RatchetTreeType, WirePolicy,
         },
         credential::{
             Credential, CredentialRef, CredentialType, FindFilters as CredentialFindFilters, x509::CertificateBundle,

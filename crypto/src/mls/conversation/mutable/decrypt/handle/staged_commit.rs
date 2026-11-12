@@ -57,9 +57,5 @@ pub(in crate::mls::conversation::mutable::decrypt) async fn handle(
         "Epoch advanced"
     );
 
-    Ok(DecryptedMessage::Commit(Commit {
-        is_active,
-        identity,
-        buffered_messages: Default::default(),
-    }))
+    Ok(DecryptedMessage::Commit(Commit { is_active, identity }))
 }
