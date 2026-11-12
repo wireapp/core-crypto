@@ -62,6 +62,12 @@ pub struct Transaction {
     /// On Wasm, callers acquire `SqliteGuard` before this mutex: JSPI can suspend
     /// a synchronous SQLite call while it holds the mutex.
     conn: Arc<parking_lot::Mutex<Option<MutexGuardArc<crate::connection::ManagedConnection>>>>,
+    /// Whether the database detected external modifications to the connection when this transaction
+    /// was created.
+    ///
+    /// If there is only a single live connection to the database, this will never be `true`.
+    /// That can only happen if multiple connections are interleaving transactions on the DB.
+    externally_modified: bool,
 }
 
 impl Transaction {
@@ -83,11 +89,22 @@ impl Transaction {
             stmt.execute([])?;
         }
 
-        let transaction = UniqueArc::from(Self {
+        let mut transaction = Self {
             _lock_guard: lock_guard,
             database,
             conn: Arc::new(parking_lot::Mutex::new(Some(conn))),
-        });
+            externally_modified: false,
+        };
+        // we have to set this after initialization so that a sqlite failure when querying the pragma
+        // causes a rollback.
+        transaction.externally_modified = {
+            // not strictly necessary given that we never actually interact with the DB, but good practice
+            let _sqlite = crate::connection::SqliteGuard::lock();
+            let mut conn = transaction.conn.as_ref().lock();
+            let conn = conn.as_mut().expect("mutex was just initialized with Some");
+            conn.update_data_version()?
+        };
+        let transaction = UniqueArc::from(transaction);
 
         let weak = UniqueArc::downgrade(&transaction);
 
@@ -117,5 +134,14 @@ impl Transaction {
     /// > after an error is to use this function.
     fn is_active(conn: &Connection) -> bool {
         !conn.is_autocommit()
+    }
+
+    /// Whether the database detected external modifications to the connection when this transaction
+    /// was created.
+    ///
+    /// If there is only a single live connection to the database, this will never return `true`.
+    /// That can only happen if multiple connections are interleaving transactions on the DB.
+    pub fn externally_modified(&self) -> bool {
+        self.externally_modified
     }
 }
