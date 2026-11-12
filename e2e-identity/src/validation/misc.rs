@@ -1,30 +1,6 @@
-use certval::{ExtensionProcessing, PDVCertificate, PDVExtension, TimeOfInterest};
-use const_oid::db::rfc5912::{ID_CE_CRL_DISTRIBUTION_POINTS, ID_CE_ISSUING_DISTRIBUTION_POINT};
-use x509_cert::{
-    certificate::Raw,
-    crl::CertificateList,
-    der::{Decode, Encode},
-    ext::pkix::IssuingDistributionPoint,
-};
-
-pub(crate) fn check_crl_valid_at_toi(toi: TimeOfInterest, crl: &CertificateList<Raw>) -> bool {
-    let toi = toi.as_unix_secs();
-    if toi == 0 {
-        return false;
-    }
-
-    if crl.tbs_cert_list.this_update.to_unix_duration().as_secs() > toi {
-        return false;
-    }
-
-    if let Some(nu) = crl.tbs_cert_list.next_update
-        && nu.to_unix_duration().as_secs() < toi
-    {
-        return false;
-    }
-
-    true
-}
+use certval::{ExtensionProcessing, PDVCertificate, PDVExtension};
+use const_oid::db::rfc5912::ID_CE_CRL_DISTRIBUTION_POINTS;
+use x509_cert::der::Encode;
 
 pub(crate) fn get_dps_from_cert(cert: &PDVCertificate) -> Option<Vec<Vec<u8>>> {
     match cert.get_extension(&ID_CE_CRL_DISTRIBUTION_POINTS) {
