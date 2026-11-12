@@ -26,22 +26,6 @@ pub(crate) fn check_crl_valid_at_toi(toi: TimeOfInterest, crl: &CertificateList<
     true
 }
 
-pub(crate) fn get_dp_from_crl(crl: &CertificateList<Raw>) -> Option<Vec<u8>> {
-    if let Some(exts) = &crl.tbs_cert_list.crl_extensions {
-        for ext in exts {
-            if ext.extn_id == ID_CE_ISSUING_DISTRIBUTION_POINT
-                && let Some(enc_dp) = IssuingDistributionPoint::from_der(ext.extn_value.as_bytes())
-                    .ok()
-                    .and_then(|idp| idp.distribution_point)
-                    .and_then(|dp| dp.to_der().ok())
-            {
-                return Some(enc_dp);
-            }
-        }
-    }
-    None
-}
-
 pub(crate) fn get_dps_from_cert(cert: &PDVCertificate) -> Option<Vec<Vec<u8>>> {
     match cert.get_extension(&ID_CE_CRL_DISTRIBUTION_POINTS) {
         Ok(Some(PDVExtension::CrlDistributionPoints(crl_dps))) => Some(
