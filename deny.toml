@@ -38,6 +38,10 @@ ignore = [
   "RUSTSEC-2026-0374",
   # We depend on `testcontainers` to migrate their tar dependency
   "RUSTSEC-2026-0440",
+  # The fix is in sqlcipher-src 420, which comes with rusqlite 0.42,
+  # but refinery doesn't allow rusqlite 0.42 yet. The bug needs a
+  # database and -wal file written by someone else.
+  "RUSTSEC-2026-0502",
 ]
 
 [bans]
