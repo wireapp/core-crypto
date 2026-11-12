@@ -8,14 +8,15 @@ import org.openjdk.jmh.annotations.State
 @State(Scope.Thread)
 open class CipherSuiteBenchmark {
     @Param(
-        "1",
-        "2",
-        "3",
-        "5",
-        "7"
+        "0x0001",
+        "0x0002",
+        "0x0003",
+        "0xF001",
+        "0xF003",
+        "0xF006"
     )
-    var cipherSuite: UShort = 1u
+    var cipherSuite: String = "1"
 
     protected val selectedCipherSuite: CipherSuite
-        get() = CipherSuite.entries.first { it.value == cipherSuite }
+        get() = CipherSuite.entries.first { it.value.toInt() == Integer.decode(cipherSuite) }
 }
