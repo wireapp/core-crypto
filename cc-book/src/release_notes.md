@@ -2,6 +2,12 @@
 
 ## CoreCrypto 11
 
+### Unreleased
+
+- CoreCrypto now notices when another process (i.e. NSE) has written to the DB. In that case, it clears all MLS and
+  Proteus caches, so that fresh state is loaded on-demand from the DB.
+- Aborted transactions and failed commits now also clear the Proteus cache, so they are no longer left ahead of the DB.
+
 ### v11.0.0 - 2026-10-30
 
 - CoreCrypto now supports encrypting and decrypting transient messages. Transient messages are encrypted and decrypted
