@@ -174,7 +174,7 @@
 <a href=#174 id=174 data-nosnippet>174</a>            <span class="kw">let </span>(external_commit, result) = external_commit.notify_member_fallible(<span class="kw-2">&amp;</span>alice).<span class="kw">await</span>;
 <a href=#175 id=175 data-nosnippet>175</a>            <span class="macro">assert_eq!</span>(external_commit.conversation().members_counted_by(<span class="kw-2">&amp;</span>alice).<span class="kw">await</span>, <span class="number">2</span>);
 <a href=#176 id=176 data-nosnippet>176</a>
-<a href=#177 id=177 data-nosnippet>177</a>            <span class="kw">let </span>decrypted = result.unwrap();
+<a href=#177 id=177 data-nosnippet>177</a>            <span class="kw">let </span>decrypted = result.unwrap().into_single();
 <a href=#178 id=178 data-nosnippet>178</a>            <span class="comment">// verify Bob's (sender) identity
 <a href=#179 id=179 data-nosnippet>179</a>            </span>bob.verify_sender_identity(<span class="kw-2">&amp;</span>case, <span class="kw-2">&amp;</span>bob.initial_credential, <span class="kw-2">&amp;</span>decrypted)
 <a href=#180 id=180 data-nosnippet>180</a>                .<span class="kw">await</span>;

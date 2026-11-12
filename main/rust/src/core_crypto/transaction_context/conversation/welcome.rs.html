@@ -205,7 +205,10 @@
 <a href=#205 id=205 data-nosnippet>205</a>            </span>.decrypt_message(<span class="kw-2">&amp;</span>message)
 <a href=#206 id=206 data-nosnippet>206</a>            .<span class="kw">await
 <a href=#207 id=207 data-nosnippet>207</a>            </span>.unwrap();
-<a href=#208 id=208 data-nosnippet>208</a>        <span class="macro">assert_eq!</span>(decrypted.as_application_message().unwrap().plaintext, <span class="string">b"hello"</span>);
-<a href=#209 id=209 data-nosnippet>209</a>    }
-<a href=#210 id=210 data-nosnippet>210</a>}
+<a href=#208 id=208 data-nosnippet>208</a>        <span class="macro">assert_eq!</span>(
+<a href=#209 id=209 data-nosnippet>209</a>            decrypted.into_single().as_application_message().unwrap().plaintext,
+<a href=#210 id=210 data-nosnippet>210</a>            <span class="string">b"hello"
+<a href=#211 id=211 data-nosnippet>211</a>        </span>);
+<a href=#212 id=212 data-nosnippet>212</a>    }
+<a href=#213 id=213 data-nosnippet>213</a>}
 </code></pre></div></section></main></body></html>

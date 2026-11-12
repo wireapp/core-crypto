@@ -533,7 +533,7 @@
 <a href=#533 id=533 data-nosnippet>533</a>            .decrypt_message(second)
 <a href=#534 id=534 data-nosnippet>534</a>            .<span class="kw">await
 <a href=#535 id=535 data-nosnippet>535</a>            </span>.unwrap();
-<a href=#536 id=536 data-nosnippet>536</a>        <span class="macro">assert_eq!</span>(second.into_transient().unwrap().plaintext, <span class="string">b"second"</span>);
+<a href=#536 id=536 data-nosnippet>536</a>        <span class="macro">assert_eq!</span>(second.into_single().into_transient().unwrap().plaintext, <span class="string">b"second"</span>);
 <a href=#537 id=537 data-nosnippet>537</a>    }
 <a href=#538 id=538 data-nosnippet>538</a>
 <a href=#539 id=539 data-nosnippet>539</a>    <span class="attr">#[apply(all_cred_cipher)]
@@ -588,15 +588,18 @@
 <a href=#588 id=588 data-nosnippet>588</a>            </span>.decrypt_message(encrypted)
 <a href=#589 id=589 data-nosnippet>589</a>            .<span class="kw">await
 <a href=#590 id=590 data-nosnippet>590</a>            </span>.unwrap();
-<a href=#591 id=591 data-nosnippet>591</a>        <span class="macro">assert_eq!</span>(decrypted.into_transient().unwrap().plaintext, <span class="string">b"new epoch"</span>);
-<a href=#592 id=592 data-nosnippet>592</a>        <span class="kw">let </span>counter = alice
-<a href=#593 id=593 data-nosnippet>593</a>            .database()
-<a href=#594 id=594 data-nosnippet>594</a>            .get_borrowed::&lt;PersistedMlsGroup&gt;(id.keystore())
-<a href=#595 id=595 data-nosnippet>595</a>            .<span class="kw">await
-<a href=#596 id=596 data-nosnippet>596</a>            </span>.unwrap()
-<a href=#597 id=597 data-nosnippet>597</a>            .unwrap()
-<a href=#598 id=598 data-nosnippet>598</a>            .tnt_tx_counter;
-<a href=#599 id=599 data-nosnippet>599</a>        <span class="macro">assert_eq!</span>(counter, <span class="number">1</span>);
-<a href=#600 id=600 data-nosnippet>600</a>    }
-<a href=#601 id=601 data-nosnippet>601</a>}
+<a href=#591 id=591 data-nosnippet>591</a>        <span class="macro">assert_eq!</span>(
+<a href=#592 id=592 data-nosnippet>592</a>            decrypted.into_single().into_transient().unwrap().plaintext,
+<a href=#593 id=593 data-nosnippet>593</a>            <span class="string">b"new epoch"
+<a href=#594 id=594 data-nosnippet>594</a>        </span>);
+<a href=#595 id=595 data-nosnippet>595</a>        <span class="kw">let </span>counter = alice
+<a href=#596 id=596 data-nosnippet>596</a>            .database()
+<a href=#597 id=597 data-nosnippet>597</a>            .get_borrowed::&lt;PersistedMlsGroup&gt;(id.keystore())
+<a href=#598 id=598 data-nosnippet>598</a>            .<span class="kw">await
+<a href=#599 id=599 data-nosnippet>599</a>            </span>.unwrap()
+<a href=#600 id=600 data-nosnippet>600</a>            .unwrap()
+<a href=#601 id=601 data-nosnippet>601</a>            .tnt_tx_counter;
+<a href=#602 id=602 data-nosnippet>602</a>        <span class="macro">assert_eq!</span>(counter, <span class="number">1</span>);
+<a href=#603 id=603 data-nosnippet>603</a>    }
+<a href=#604 id=604 data-nosnippet>604</a>}
 </code></pre></div></section></main></body></html>

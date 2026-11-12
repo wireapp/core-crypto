@@ -319,7 +319,7 @@
 <a href=#319 id=319 data-nosnippet>319</a>                    </span>.unwrap()
 <a href=#320 id=320 data-nosnippet>320</a>                    .decrypt_message(<span class="kw-2">&amp;</span>commit2)
 <a href=#321 id=321 data-nosnippet>321</a>                    .<span class="kw">await</span>;
-<a href=#322 id=322 data-nosnippet>322</a>                <span class="macro">assert!</span>(<span class="macro">matches!</span>(out_of_order.unwrap_err(), Error::BufferedFutureMessage { .. }));
+<a href=#322 id=322 data-nosnippet>322</a>                <span class="macro">assert!</span>(out_of_order.unwrap().is_empty(), <span class="string">"the message must have been deferred"</span>);
 <a href=#323 id=323 data-nosnippet>323</a>
 <a href=#324 id=324 data-nosnippet>324</a>                <span class="comment">// works in the right order though
 <a href=#325 id=325 data-nosnippet>325</a>                // NB: here 'commit2' has been buffered so it is also applied when we decrypt commit1

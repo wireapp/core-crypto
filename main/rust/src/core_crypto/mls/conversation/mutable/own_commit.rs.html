@@ -218,7 +218,7 @@
 <a href=#218 id=218 data-nosnippet>218</a>            </span><span class="kw">let </span>offset = commit_serialized.len() - <span class="number">1</span>;
 <a href=#219 id=219 data-nosnippet>219</a>            commit_serialized[offset] ^= <span class="number">0xff</span>;
 <a href=#220 id=220 data-nosnippet>220</a>
-<a href=#221 id=221 data-nosnippet>221</a>            <span class="kw">let </span>decryption_result = conversation.guard().<span class="kw">await</span>.decrypt_message(commit_serialized).<span class="kw">await</span>;
+<a href=#221 id=221 data-nosnippet>221</a>            <span class="kw">let </span>decryption_result = conversation.guard().<span class="kw">await</span>.decrypt_message(<span class="kw-2">&amp;*</span>commit_serialized).<span class="kw">await</span>;
 <a href=#222 id=222 data-nosnippet>222</a>            <span class="kw">let </span>error = decryption_result.unwrap_err();
 <a href=#223 id=223 data-nosnippet>223</a>            <span class="macro">assert!</span>(<span class="macro">matches!</span>(
 <a href=#224 id=224 data-nosnippet>224</a>                error,

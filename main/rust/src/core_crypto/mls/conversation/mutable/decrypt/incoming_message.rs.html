@@ -70,17 +70,31 @@
 <a href=#70 id=70 data-nosnippet>70</a>    }
 <a href=#71 id=71 data-nosnippet>71</a>}
 <a href=#72 id=72 data-nosnippet>72</a>
-<a href=#73 id=73 data-nosnippet>73</a><span class="doccomment">/// A pair: an incoming message's parsed container, and also the bytes from which it was parsed.
-<a href=#74 id=74 data-nosnippet>74</a></span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::mls::conversation) <span class="kw">struct </span>IncomingMessage&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#75 id=75 data-nosnippet>75</a>    <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::mls::conversation) parsed: ParsedMessage,
-<a href=#76 id=76 data-nosnippet>76</a>    <span class="kw">pub</span>(<span class="kw">super</span>) bytes: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8],
-<a href=#77 id=77 data-nosnippet>77</a>}
-<a href=#78 id=78 data-nosnippet>78</a>
-<a href=#79 id=79 data-nosnippet>79</a><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; IncomingMessage&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#80 id=80 data-nosnippet>80</a>    <span class="doccomment">/// Parse some bytes into a parsed message, paired with the actual incoming bytes
-<a href=#81 id=81 data-nosnippet>81</a>    </span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::mls::conversation) <span class="kw">fn </span>parse(bytes: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TlsCodecError&gt; {
-<a href=#82 id=82 data-nosnippet>82</a>        <span class="kw">let </span>parsed = ParsedMessage::parse(bytes)<span class="question-mark">?</span>;
-<a href=#83 id=83 data-nosnippet>83</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{ parsed, bytes })
-<a href=#84 id=84 data-nosnippet>84</a>    }
-<a href=#85 id=85 data-nosnippet>85</a>}
+<a href=#73 id=73 data-nosnippet>73</a><span class="doccomment">/// An incoming message's parsed container, and its original arrival sequence.
+<a href=#74 id=74 data-nosnippet>74</a>///
+<a href=#75 id=75 data-nosnippet>75</a>/// The arrival sequence gives us two pieces of information: both the actual arrival sequence
+<a href=#76 id=76 data-nosnippet>76</a>/// stored in the DB, but also its existence demonstrates that the message was in fact
+<a href=#77 id=77 data-nosnippet>77</a>/// buffered in the DB. Where the arrival sequence is `None`, this message has not been buffered;
+<a href=#78 id=78 data-nosnippet>78</a>/// it was provided by the caller.
+<a href=#79 id=79 data-nosnippet>79</a></span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::mls::conversation) <span class="kw">struct </span>IncomingMessage {
+<a href=#80 id=80 data-nosnippet>80</a>    <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::mls::conversation) parsed: ParsedMessage,
+<a href=#81 id=81 data-nosnippet>81</a>    <span class="doccomment">/// The original arrival sequence of this message.
+<a href=#82 id=82 data-nosnippet>82</a>    ///
+<a href=#83 id=83 data-nosnippet>83</a>    /// `None` if this was freshly parsed and the arrival sequence has not yet been determined.
+<a href=#84 id=84 data-nosnippet>84</a>    ///
+<a href=#85 id=85 data-nosnippet>85</a>    /// `Some(arrival_sequence)` if this has already been buffered in the keystore; contains the original
+<a href=#86 id=86 data-nosnippet>86</a>    /// arrival sequence value.
+<a href=#87 id=87 data-nosnippet>87</a>    </span><span class="kw">pub</span>(<span class="kw">super</span>) arrival_sequence: <span class="prelude-ty">Option</span>&lt;u64&gt;,
+<a href=#88 id=88 data-nosnippet>88</a>}
+<a href=#89 id=89 data-nosnippet>89</a>
+<a href=#90 id=90 data-nosnippet>90</a><span class="kw">impl </span>IncomingMessage {
+<a href=#91 id=91 data-nosnippet>91</a>    <span class="doccomment">/// Parse some bytes into a parsed message, paired with the arrival sequence.
+<a href=#92 id=92 data-nosnippet>92</a>    </span><span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::mls::conversation) <span class="kw">fn </span>parse(bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, TlsCodecError&gt; {
+<a href=#93 id=93 data-nosnippet>93</a>        <span class="kw">let </span>parsed = ParsedMessage::parse(bytes)<span class="question-mark">?</span>;
+<a href=#94 id=94 data-nosnippet>94</a>        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+<a href=#95 id=95 data-nosnippet>95</a>            parsed,
+<a href=#96 id=96 data-nosnippet>96</a>            arrival_sequence: <span class="prelude-val">None</span>,
+<a href=#97 id=97 data-nosnippet>97</a>        })
+<a href=#98 id=98 data-nosnippet>98</a>    }
+<a href=#99 id=99 data-nosnippet>99</a>}
 </code></pre></div></section></main></body></html>

@@ -141,7 +141,7 @@
 <a href=#141 id=141 data-nosnippet>141</a></span><span class="comment">//
 <a href=#142 id=142 data-nosnippet>142</a>// We don't mind the size difference between variants here; the big variant is the happy path.
 <a href=#143 id=143 data-nosnippet>143</a></span><span class="attr">#[cfg_attr(not(target_os = <span class="string">"unknown"</span>), expect(clippy::large_enum_variant))]
-<a href=#144 id=144 data-nosnippet>144</a>#[derive(Debug, derive_more::From)]
+<a href=#144 id=144 data-nosnippet>144</a>#[derive(Debug, derive_more::From, derive_more::IsVariant)]
 <a href=#145 id=145 data-nosnippet>145</a></span><span class="kw">pub enum </span>DecryptionOutcome {
 <a href=#146 id=146 data-nosnippet>146</a>    <span class="doccomment">/// The message was successfully decrypted.
 <a href=#147 id=147 data-nosnippet>147</a>    </span>Decrypted(DecryptedMessage),
@@ -149,10 +149,19 @@
 <a href=#149 id=149 data-nosnippet>149</a>    </span>Deferred(DeferralReason),
 <a href=#150 id=150 data-nosnippet>150</a>}
 <a href=#151 id=151 data-nosnippet>151</a>
-<a href=#152 id=152 data-nosnippet>152</a><span class="kw">impl </span>DecryptionOutcome {
-<a href=#153 id=153 data-nosnippet>153</a>    <span class="doccomment">/// `true` when this outcome is a decrypted message; `false` otherwise
-<a href=#154 id=154 data-nosnippet>154</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>savepoint_outcome_check&lt;E&gt;(outcome: <span class="kw-2">&amp;</span><span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;, E&gt;) -&gt; bool {
-<a href=#155 id=155 data-nosnippet>155</a>        <span class="macro">matches!</span>(outcome, <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="self">Self</span>::Decrypted(<span class="kw">_</span>))))
-<a href=#156 id=156 data-nosnippet>156</a>    }
-<a href=#157 id=157 data-nosnippet>157</a>}
+<a href=#152 id=152 data-nosnippet>152</a><span class="doccomment">/// A change in state due to this message being processed
+<a href=#153 id=153 data-nosnippet>153</a></span><span class="attr">#[derive(Clone, Copy, PartialEq, Eq)]
+<a href=#154 id=154 data-nosnippet>154</a></span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">enum </span>Effect {
+<a href=#155 id=155 data-nosnippet>155</a>    <span class="doccomment">/// The message was just a message.
+<a href=#156 id=156 data-nosnippet>156</a>    </span><span class="prelude-val">None</span>,
+<a href=#157 id=157 data-nosnippet>157</a>    <span class="doccomment">/// The message was a proposal, which was stored.
+<a href=#158 id=158 data-nosnippet>158</a>    </span>ProposalStored,
+<a href=#159 id=159 data-nosnippet>159</a>    <span class="doccomment">/// The message was a commit, which advanced the epoch.
+<a href=#160 id=160 data-nosnippet>160</a>    </span>EpochAdvanced {
+<a href=#161 id=161 data-nosnippet>161</a>        <span class="doccomment">/// the new epoch value
+<a href=#162 id=162 data-nosnippet>162</a>        </span>new_epoch: u64,
+<a href=#163 id=163 data-nosnippet>163</a>        <span class="doccomment">/// whether we are still a member of this conversation after this commit
+<a href=#164 id=164 data-nosnippet>164</a>        </span>is_active: bool,
+<a href=#165 id=165 data-nosnippet>165</a>    },
+<a href=#166 id=166 data-nosnippet>166</a>}
 </code></pre></div></section></main></body></html>

@@ -195,12 +195,12 @@
 <a href=#195 id=195 data-nosnippet>195</a>        <span class="kw">let </span>charlie_hypothetical_position = <span class="number">1</span>;
 <a href=#196 id=196 data-nosnippet>196</a>
 <a href=#197 id=197 data-nosnippet>197</a>        <span class="macro">assert_eq!</span>(
-<a href=#198 id=198 data-nosnippet>198</a>            bob_decrypted_message.as_proposal().unwrap().delay,
+<a href=#198 id=198 data-nosnippet>198</a>            bob_decrypted_message.into_single().as_proposal().unwrap().delay,
 <a href=#199 id=199 data-nosnippet>199</a>            <span class="prelude-val">Some</span>(DELAY_POS_LINEAR_INCR * bob_hypothetical_position)
 <a href=#200 id=200 data-nosnippet>200</a>        );
 <a href=#201 id=201 data-nosnippet>201</a>
 <a href=#202 id=202 data-nosnippet>202</a>        <span class="macro">assert_eq!</span>(
-<a href=#203 id=203 data-nosnippet>203</a>            charlie_decrypted_message.as_proposal().unwrap().delay,
+<a href=#203 id=203 data-nosnippet>203</a>            charlie_decrypted_message.into_single().as_proposal().unwrap().delay,
 <a href=#204 id=204 data-nosnippet>204</a>            <span class="prelude-val">Some</span>(DELAY_POS_LINEAR_INCR * charlie_hypothetical_position)
 <a href=#205 id=205 data-nosnippet>205</a>        );
 <a href=#206 id=206 data-nosnippet>206</a>    }
@@ -231,7 +231,7 @@
 <a href=#231 id=231 data-nosnippet>231</a>        <span class="kw">for </span>(name, member) <span class="kw">in </span>[(<span class="string">"charlie"</span>, <span class="kw-2">&amp;</span>charlie), (<span class="string">"dave"</span>, <span class="kw-2">&amp;</span>dave), (<span class="string">"eve"</span>, <span class="kw-2">&amp;</span>eve)] {
 <a href=#232 id=232 data-nosnippet>232</a>            <span class="kw">let </span>(guard, result) = proposal_guard.notify_member_fallible(member).<span class="kw">await</span>;
 <a href=#233 id=233 data-nosnippet>233</a>            proposal_guard = guard;
-<a href=#234 id=234 data-nosnippet>234</a>            delays.push((name, result.unwrap().as_proposal().unwrap().delay));
+<a href=#234 id=234 data-nosnippet>234</a>            delays.push((name, result.unwrap().into_single().as_proposal().unwrap().delay));
 <a href=#235 id=235 data-nosnippet>235</a>        }
 <a href=#236 id=236 data-nosnippet>236</a>
 <a href=#237 id=237 data-nosnippet>237</a>        assert_delays_are_unique(<span class="kw-2">&amp;</span>delays);
@@ -260,7 +260,7 @@
 <a href=#260 id=260 data-nosnippet>260</a>            </span>.compute_next_commit_delay()
 <a href=#261 id=261 data-nosnippet>261</a>            .<span class="kw">await</span>;
 <a href=#262 id=262 data-nosnippet>262</a>        <span class="kw">let </span>(<span class="kw">_</span>, result) = proposal_guard.notify_member_fallible(<span class="kw-2">&amp;</span>dave).<span class="kw">await</span>;
-<a href=#263 id=263 data-nosnippet>263</a>        <span class="kw">let </span>dave_delay = result.unwrap().as_proposal().unwrap().delay;
+<a href=#263 id=263 data-nosnippet>263</a>        <span class="kw">let </span>dave_delay = result.unwrap().into_single().as_proposal().unwrap().delay;
 <a href=#264 id=264 data-nosnippet>264</a>        <span class="kw">let </span>delays = <span class="macro">vec!</span>[(<span class="string">"alice"</span>, alice_delay), (<span class="string">"dave"</span>, dave_delay)];
 <a href=#265 id=265 data-nosnippet>265</a>
 <a href=#266 id=266 data-nosnippet>266</a>        <span class="comment">// post-commit, the members are alice and dave, at positions 0 and 1

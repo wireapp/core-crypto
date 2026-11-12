@@ -54,7 +54,7 @@
 <a href=#54 id=54 data-nosnippet>54</a>
 <a href=#55 id=55 data-nosnippet>55</a><span class="attr">#[cfg(test)]
 <a href=#56 id=56 data-nosnippet>56</a></span><span class="kw">mod </span>tests {
-<a href=#57 id=57 data-nosnippet>57</a>    <span class="kw">use crate</span>::{mls::conversation::Error, test_utils::<span class="kw-2">*</span>};
+<a href=#57 id=57 data-nosnippet>57</a>    <span class="kw">use </span><span class="kw">crate</span>::test_utils::<span class="kw-2">*</span>;
 <a href=#58 id=58 data-nosnippet>58</a>
 <a href=#59 id=59 data-nosnippet>59</a>    <span class="doccomment">/// Wiping a conversation abandons the messages it had buffered.
 <a href=#60 id=60 data-nosnippet>60</a>    </span><span class="attr">#[apply(all_cred_cipher)]
@@ -82,7 +82,7 @@
 <a href=#82 id=82 data-nosnippet>82</a>            <span class="comment">// Alice cannot decrypt a message from an epoch she has not reached yet, so she buffers it
 <a href=#83 id=83 data-nosnippet>83</a>            // until the commit which advances her own epoch arrives.
 <a href=#84 id=84 data-nosnippet>84</a>            </span><span class="kw">let </span>decrypt = conversation.guard_of(<span class="kw-2">&amp;</span>alice).<span class="kw">await</span>.decrypt_message(app_msg).<span class="kw">await</span>;
-<a href=#85 id=85 data-nosnippet>85</a>            <span class="macro">assert!</span>(<span class="macro">matches!</span>(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
+<a href=#85 id=85 data-nosnippet>85</a>            <span class="macro">assert!</span>(decrypt.unwrap().is_empty(), <span class="string">"the message must have been deferred"</span>);
 <a href=#86 id=86 data-nosnippet>86</a>            <span class="macro">assert_eq!</span>(
 <a href=#87 id=87 data-nosnippet>87</a>                alice.transaction.count_entities().<span class="kw">await</span>.pending_messages,
 <a href=#88 id=88 data-nosnippet>88</a>                <span class="number">1</span>,
@@ -125,7 +125,7 @@
 <a href=#125 id=125 data-nosnippet>125</a>            // received that proposal — cannot apply the commit, and buffers it to retry once she does.
 <a href=#126 id=126 data-nosnippet>126</a>            </span><span class="kw">let </span>commit_guard = conversation.acting_as(<span class="kw-2">&amp;</span>bob).<span class="kw">await</span>.commit_pending_proposals().<span class="kw">await</span>;
 <a href=#127 id=127 data-nosnippet>127</a>            <span class="kw">let </span>(commit_guard, result) = commit_guard.notify_member_fallible(<span class="kw-2">&amp;</span>alice).<span class="kw">await</span>;
-<a href=#128 id=128 data-nosnippet>128</a>            <span class="macro">assert!</span>(<span class="macro">matches!</span>(result.unwrap_err(), Error::BufferedCommit));
+<a href=#128 id=128 data-nosnippet>128</a>            <span class="macro">assert!</span>(result.unwrap().is_empty(), <span class="string">"the message must have been deferred"</span>);
 <a href=#129 id=129 data-nosnippet>129</a>            <span class="kw">let </span>conversation = commit_guard.finish();
 <a href=#130 id=130 data-nosnippet>130</a>
 <a href=#131 id=131 data-nosnippet>131</a>            <span class="macro">assert_eq!</span>(
