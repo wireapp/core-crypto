@@ -589,7 +589,8 @@ final class WireCoreCryptoTests: XCTestCase {
         let decrypted = try await alice.transaction { ctx in
             try await ctx.decryptMessage(conversationId: conversationId, payload: commit!)
         }
-        guard case .commit = decrypted else {
+        XCTAssertEqual(decrypted.count, 1)
+        guard case .commit? = decrypted.first else {
             XCTFail("Expected a decrypted commit")
             return
         }
@@ -614,7 +615,8 @@ final class WireCoreCryptoTests: XCTestCase {
         let decrypted = try await bob.transaction { ctx in
             try await ctx.decryptMessage(conversationId: conversationId, payload: ciphertext)
         }
-        guard case .applicationMessage(let plaintext, _, _) = decrypted else {
+        XCTAssertEqual(decrypted.count, 1)
+        guard case .applicationMessage(let plaintext, _, _)? = decrypted.first else {
             XCTFail("Expected decrypted text")
             return
         }
@@ -654,7 +656,8 @@ final class WireCoreCryptoTests: XCTestCase {
                 payload: persistedCiphertext
             )
         }
-        guard case .persistedTargeted(let plaintext, _, _) = persistedDecrypted else {
+        XCTAssertEqual(persistedDecrypted.count, 1)
+        guard case .persistedTargeted(let plaintext, _, _)? = persistedDecrypted.first else {
             XCTFail("Expected a decrypted persisted targeted message")
             return
         }
@@ -677,7 +680,8 @@ final class WireCoreCryptoTests: XCTestCase {
                 payload: transientCiphertext
             )
         }
-        guard case .transientTargeted(let plaintext, _, _) = transientDecrypted else {
+        XCTAssertEqual(transientDecrypted.count, 1)
+        guard case .transientTargeted(let plaintext, _, _)? = transientDecrypted.first else {
             XCTFail("Expected a decrypted transient targeted message")
             return
         }
@@ -706,7 +710,8 @@ final class WireCoreCryptoTests: XCTestCase {
                 payload: ciphertext
             )
         }
-        guard case .transient(let plaintext, _, _) = decrypted else {
+        XCTAssertEqual(decrypted.count, 1)
+        guard case .transient(let plaintext, _, _)? = decrypted.first else {
             XCTFail("Expected a decrypted transient message")
             return
         }
