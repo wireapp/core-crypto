@@ -24,6 +24,8 @@ mod mls_provider;
 /// Proteus Abstraction
 #[cfg(feature = "proteus")]
 pub mod proteus;
+#[cfg(test)]
+mod shared_database_tests;
 pub mod transaction_context;
 
 use std::sync::Arc;
