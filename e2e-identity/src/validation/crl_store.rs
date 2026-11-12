@@ -4,7 +4,7 @@ use std::{
 };
 
 use certval::{
-    CrlInfo, CrlScope, CrlSource, ExtensionProcessing, PDVCertificate, PDVExtension, TimeOfInterest, get_crl_info,
+    CrlInfo, CrlScope, CrlSource, ExtensionProcessing, PDVCertificate, PDVExtension, get_crl_info,
     name_to_string,
 };
 use const_oid::db::rfc5912::ID_CE_AUTHORITY_KEY_IDENTIFIER;
@@ -12,7 +12,7 @@ use x509_cert::{certificate::Raw, crl::CertificateList, der::Encode};
 
 use super::{
     Error, Result,
-    misc::{check_crl_valid_at_toi, get_dp_from_crl, get_dps_from_cert},
+    misc::{get_dp_from_crl, get_dps_from_cert},
 };
 
 type IssuerMap = BTreeMap<String, Vec<usize>>;
@@ -79,21 +79,6 @@ impl CrlStore {
                     .entry(issuer_name)
                     .or_default()
                     .push(index);
-            }
-        }
-
-        Ok(())
-    }
-
-    pub(crate) fn index_crls(&self, toi: TimeOfInterest) -> Result<()> {
-        let crls = self.crls.lock().map_err(|_| Error::LockPoisonError)?;
-        let mut crl_info = self.crl_info.lock().map_err(|_| Error::LockPoisonError)?;
-        for crl in crls.iter() {
-            match get_crl_info(crl) {
-                Ok(info) if check_crl_valid_at_toi(toi, crl) => {
-                    self.add_crl_info_with_guard(crl, info, &mut crl_info)?;
-                }
-                _ => continue,
             }
         }
 
