@@ -80,8 +80,9 @@ async function parseCipherSuiteList(
                 ccModule.CipherSuite
                     .Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519,
                 ccModule.CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256,
-                ccModule.CipherSuite.Mls256Dhkemp384Aes256gcmSha384P384,
-                ccModule.CipherSuite.Mls256Dhkemp521Aes256gcmSha512P521,
+                ccModule.CipherSuite.Mls128Mlkem768x25519Aes128gcmSha256Ed25519,
+                ccModule.CipherSuite.Mls128Mlkem768p256Aes128gcmSha256P256,
+                ccModule.CipherSuite.Mls128Mlkem768Aes256gcmSha384Ed25519,
             ];
         }
 
