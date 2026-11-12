@@ -73,7 +73,7 @@ $(STAMPS)/ts-check: $(TS_SRCS) $(TS_TEST_FILES) $(TS_BENCH_FILES) $(BROWSER_OUT)
 	bun x tsc --noEmit --project ./packages/browser/tsconfig.json && \
 	bun x tsc --noEmit --project ./packages/native/tsconfig.json && \
 	bun x tsc --noEmit --project $(KEYSTORE_JS_DIR)/tsconfig.json && \
-	bun oxfmt --check $(JSON_FILES)
+	bun oxfmt --check
 	$(TOUCH_STAMP)
 
 .PHONY: ts-check
