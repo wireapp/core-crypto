@@ -1,19 +1,15 @@
 use std::{
     collections::BTreeMap,
-    sync::{Arc, Mutex, MutexGuard},
+    sync::{Arc, Mutex},
 };
 
 use certval::{
-    CrlInfo, CrlScope, CrlSource, ExtensionProcessing, PDVCertificate, PDVExtension, get_crl_info,
-    name_to_string,
+    CrlInfo, CrlScope, CrlSource, ExtensionProcessing, PDVCertificate, PDVExtension, get_crl_info, name_to_string,
 };
 use const_oid::db::rfc5912::ID_CE_AUTHORITY_KEY_IDENTIFIER;
 use x509_cert::{certificate::Raw, crl::CertificateList, der::Encode};
 
-use super::{
-    Error, Result,
-    misc::{get_dp_from_crl, get_dps_from_cert},
-};
+use super::misc::get_dps_from_cert;
 
 type IssuerMap = BTreeMap<String, Vec<usize>>;
 type SkidMap = BTreeMap<Vec<u8>, Vec<usize>>;
@@ -40,24 +36,12 @@ impl From<&[CertificateList<Raw>]> for CrlStore {
 }
 
 impl CrlStore {
-    fn add_crl_info_with_guard(
-        &self,
-        crl: &CertificateList<Raw>,
-        info: CrlInfo,
-        crl_info: &mut MutexGuard<Vec<CrlInfo>>,
-    ) -> Result<()> {
-        if crl_info.contains(&info) {
-            return Ok(());
-        }
-
-        let index = crl_info.len();
-        crl_info.push(info);
-
-        let info = crl_info.last().expect("fine as we just inserted the data above");
-        if let Some(dp) = get_dp_from_crl(crl) {
+    /// Update maps that are used when searching for CRLs matching a given certificate.
+    fn populate_maps(&self, index: usize, info: &CrlInfo) {
+        if let Some(dp) = info.idp_blob.clone() {
             self.dps
                 .lock()
-                .map_err(|_| Error::LockPoisonError)?
+                .expect("not poisoned")
                 .entry(dp)
                 .or_default()
                 .push(index);
@@ -65,24 +49,21 @@ impl CrlStore {
             if let Some(akid) = info.skid.clone() {
                 self.sk_ids
                     .lock()
-                    .map_err(|_| Error::LockPoisonError)?
+                    .expect("not poisoned")
                     .entry(akid)
                     .or_default()
                     .push(index);
             }
 
             if info.type_info.scope == CrlScope::Complete {
-                let issuer_name = name_to_string(&crl.tbs_cert_list.issuer);
                 self.issuers
                     .lock()
-                    .map_err(|_| Error::LockPoisonError)?
-                    .entry(issuer_name)
+                    .expect("not poisoned")
+                    .entry(info.issuer_name.clone())
                     .or_default()
                     .push(index);
             }
         }
-
-        Ok(())
     }
 }
 
@@ -148,16 +129,32 @@ impl CrlSource for CrlStore {
     }
 
     fn add_crl(&self, _: &[u8], crl: &CertificateList<Raw>, _: &str) -> certval::Result<()> {
-        self.crls
-            .lock()
-            .map_err(|_| certval::Error::Unrecognized)?
-            .push(crl.clone());
+        let info = get_crl_info(crl)?;
 
-        if let Ok(info) = get_crl_info(crl) {
-            let guard = &mut self.crl_info.lock().map_err(|_| certval::Error::Unrecognized)?;
-            self.add_crl_info_with_guard(crl, info, guard)
-                .map_err(|_| certval::Error::Unrecognized)?;
-        }
+        let mut crls = self.crls.lock().expect("not poisoned");
+        let mut crl_infos = self.crl_info.lock().expect("not poisoned");
+
+        // see if we already have a matching CRL
+        let pos = crl_infos
+            .iter()
+            .position(|ci| ci.type_info == info.type_info && ci.idp_name == info.idp_name && ci.uri == info.uri);
+
+        match pos {
+            Some(idx) => {
+                // update the existing CRL and CRL info, but only if the new CRL is actually newer
+                if info.this_update < crl_infos[idx].this_update {
+                    return Err(certval::Error::Unrecognized);
+                }
+                crls[idx] = crl.clone();
+                crl_infos[idx] = info;
+                return Ok(());
+            }
+            None => {
+                crls.push(crl.clone());
+                crl_infos.push(info.clone());
+                self.populate_maps(crls.len() - 1, &info);
+            }
+        };
 
         Ok(())
     }
