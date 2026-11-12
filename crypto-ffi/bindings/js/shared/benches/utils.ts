@@ -52,7 +52,7 @@ const DEFAULT_MESSAGE_SIZES = [16, 1024, 65536];
 const DEFAULT_USER_COUNTS = [1, 10, 100];
 function parsePositiveIntegerList(
     envVarName: string,
-    fallback: number[]
+    fallback: number[],
 ): number[] {
     const rawValue = process.env[envVarName];
 
@@ -65,7 +65,7 @@ function parsePositiveIntegerList(
 }
 
 async function parseCipherSuiteList(
-    envVarName: string
+    envVarName: string,
 ): Promise<CipherSuite[]> {
     const rawValue = process.env[envVarName];
     const values =
@@ -76,8 +76,7 @@ async function parseCipherSuiteList(
     return await runOnPlatform((values) => {
         if (values === undefined) {
             return [
-                ccModule.CipherSuite
-                    .Mls128Dhkemx25519Aes128gcmSha256Ed25519,
+                ccModule.CipherSuite.Mls128Dhkemx25519Aes128gcmSha256Ed25519,
                 ccModule.CipherSuite
                     .Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519,
                 ccModule.CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256,
@@ -101,15 +100,13 @@ export async function messageBenchmarkParameters(): Promise<
 > {
     const messageCounts = parsePositiveIntegerList(
         "BENCHMARK_MESSAGE_COUNTS",
-        DEFAULT_MESSAGE_COUNTS
+        DEFAULT_MESSAGE_COUNTS,
     );
     const messageSizes = parsePositiveIntegerList(
         "BENCHMARK_MESSAGE_SIZES",
-        DEFAULT_MESSAGE_SIZES
+        DEFAULT_MESSAGE_SIZES,
     );
-    const cipherSuites = await parseCipherSuiteList(
-        "BENCHMARK_CIPHER_SUITES"
-    );
+    const cipherSuites = await parseCipherSuiteList("BENCHMARK_CIPHER_SUITES");
 
     function* benchmarkCombinations() {
         for (const count of messageCounts) {
@@ -132,11 +129,9 @@ type UserParameterSet = {
 export async function userBenchmarkParameters(): Promise<UserParameterSet[]> {
     const userCounts = parsePositiveIntegerList(
         "BENCHMARK_USER_COUNTS",
-        DEFAULT_USER_COUNTS
+        DEFAULT_USER_COUNTS,
     );
-    const cipherSuites = await parseCipherSuiteList(
-        "BENCHMARK_CIPHER_SUITES"
-    );
+    const cipherSuites = await parseCipherSuiteList("BENCHMARK_CIPHER_SUITES");
 
     function* benchmarkCombinations() {
         for (const userCount of userCounts) {
@@ -184,7 +179,7 @@ function parseMetric(metric?: string | number) {
 
 export function toCustomBenchmarkEntries(
     benchmarkName: string | undefined,
-    rows: (Record<string, string | number | undefined> | null)[]
+    rows: (Record<string, string | number | undefined> | null)[],
 ): CustomBenchmarkEntry[] {
     return rows.map((row) => {
         const throughput = parseMetric(row?.["Throughput avg (ops/s)"]);
@@ -217,7 +212,7 @@ export function toCustomBenchmarkEntries(
 
 export async function logResults(
     benchmarkName: string | undefined,
-    rows: (Record<string, string | number | undefined> | null)[]
+    rows: (Record<string, string | number | undefined> | null)[],
 ) {
     console.log(benchmarkName);
     console.table(rows);
@@ -229,6 +224,6 @@ export async function logResults(
     await mkdir("benches_result", { recursive: true });
     await writeFile(
         `benches_result/${benchmarkName}.json`,
-        JSON.stringify(customResults, null, 2)
+        JSON.stringify(customResults, null, 2),
     );
 }

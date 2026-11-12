@@ -33,7 +33,7 @@ export async function setupAddUserBench() {
                         });
                         const kp = await helpers.generateKeyPackage(
                             bobCc,
-                            cipherSuite
+                            cipherSuite,
                         );
                         keyPackages.push(kp);
                     }
@@ -43,12 +43,12 @@ export async function setupAddUserBench() {
                         async (ctx) =>
                             await ctx.addClientsToConversation(
                                 conversationId,
-                                keyPackages
-                            )
+                                keyPackages,
+                            ),
                     );
                     const end = bench.now();
                     return { overriddenDuration: end - start };
-                }
+                },
             );
         }
     }, parameters);

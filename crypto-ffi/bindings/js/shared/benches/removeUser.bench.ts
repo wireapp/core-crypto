@@ -39,7 +39,7 @@ export async function setupRemoveUserBench() {
                         });
                         const kp = await helpers.generateKeyPackage(
                             bobCc,
-                            cipherSuite
+                            cipherSuite,
                         );
                         keyPackages.push(kp);
                         clientIdsToRemove.push(bobId);
@@ -49,8 +49,8 @@ export async function setupRemoveUserBench() {
                         async (ctx) =>
                             await ctx.addClientsToConversation(
                                 conversationId,
-                                keyPackages
-                            )
+                                keyPackages,
+                            ),
                     );
                     const start = bench.now();
 
@@ -58,13 +58,13 @@ export async function setupRemoveUserBench() {
                         async (ctx) =>
                             await ctx.removeClientsFromConversation(
                                 conversationId,
-                                clientIdsToRemove
-                            )
+                                clientIdsToRemove,
+                            ),
                     );
 
                     const end = bench.now();
                     return { overriddenDuration: end - start };
-                }
+                },
             );
         }
     }, parameters);

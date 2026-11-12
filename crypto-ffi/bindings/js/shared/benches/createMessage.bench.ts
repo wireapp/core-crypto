@@ -29,7 +29,7 @@ export async function setupCreateMessageBench() {
                             await ctx.encryptMessage(conversationId, message);
                         }
                     });
-                }
+                },
             );
         }
     }, parameters);

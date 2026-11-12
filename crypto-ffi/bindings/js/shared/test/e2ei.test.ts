@@ -54,7 +54,7 @@ describe("PKI environment", () => {
             const database = await helpers.newDatabase();
             pkiEnv = await ccModule.PkiEnvironment.create(
                 pkiEnvironmentHooks,
-                database
+                database,
             );
             await cc.setPkiEnvironment(pkiEnv);
             // We cannot compare the result of getPkiEnvironment()
@@ -80,7 +80,7 @@ describe("PKI environment", () => {
 
             pkiEnv = await ccModule.PkiEnvironment.create(
                 pkiEnvironmentHooks,
-                database
+                database,
             );
             await cc.setPkiEnvironment(pkiEnv);
 
@@ -95,14 +95,14 @@ describe("PKI environment", () => {
                 const database = await helpers.newDatabase();
                 const pkiEnvironment = await ccModule.PkiEnvironment.create(
                     pkiEnvironmentHooks,
-                    database
+                    database,
                 );
                 await pkiEnvironment.addTrustAnchor(certPem);
                 await pkiEnvironment.addTrustAnchor(certPem2);
                 return await pkiEnvironment.getTrustAnchors();
             },
             TEST_CA_PEM,
-            TEST_CA_PEM_2
+            TEST_CA_PEM_2,
         );
 
         expect(pems.length).to.equal(2);
@@ -119,13 +119,13 @@ describe("PKI environment", () => {
                 const fingerprintBytes = new Uint8Array(
                     pem2Fingerprint
                         .match(/.{1,2}/g)!
-                        .map((byte) => parseInt(byte, 16))
+                        .map((byte) => parseInt(byte, 16)),
                 );
 
                 const database = await helpers.newDatabase();
                 const pkiEnvironment = await ccModule.PkiEnvironment.create(
                     pkiEnvironmentHooks,
-                    database
+                    database,
                 );
                 await pkiEnvironment.addTrustAnchor(certPem);
                 await pkiEnvironment.addTrustAnchor(certPem2);
@@ -133,7 +133,7 @@ describe("PKI environment", () => {
                 return await pkiEnvironment.getTrustAnchors();
             },
             TEST_CA_PEM,
-            TEST_CA_PEM_2
+            TEST_CA_PEM_2,
         );
 
         expect(pems.length).to.equal(1);
@@ -147,7 +147,7 @@ describe("end to end identity", () => {
             const database = await helpers.newDatabase();
             const pkiEnvironment = await ccModule.PkiEnvironment.create(
                 pkiEnvironmentHooks,
-                database
+                database,
             );
 
             const qualifiedClientId = helpers.newClientId();
@@ -164,7 +164,7 @@ describe("end to end identity", () => {
 
             const acquisition = new ccModule.X509CredentialAcquisition(
                 pkiEnvironment,
-                config
+                config,
             );
 
             return acquisition !== undefined;
@@ -201,7 +201,7 @@ describe("end to end identity", () => {
                 await ccModule.X509CredentialAcquisition.newFromCredentialRef(
                     pkiEnvironment!,
                     config,
-                    credentialRef!
+                    credentialRef!,
                 );
 
             return acquisition !== undefined;

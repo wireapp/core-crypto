@@ -88,25 +88,25 @@ describe("logger", () => {
 
             const encryptedMessage = await alice.transaction(
                 async (ctx) =>
-                    await ctx.encryptMessage(conversationId, messageBytes)
+                    await ctx.encryptMessage(conversationId, messageBytes),
             );
 
             await bob.transaction(
                 async (ctx) =>
-                    await ctx.decryptMessage(conversationId, encryptedMessage)
+                    await ctx.decryptMessage(conversationId, encryptedMessage),
             );
 
             return recordedLogs;
         });
 
         const proteusErrorLog = result.find(
-            (element) => element.message === "Application message"
+            (element) => element.message === "Application message",
         )!.context;
 
         expect(JSON.parse(proteusErrorLog)).to.have.keys(
             "group_id",
             "sender_client_id",
-            "epoch"
+            "epoch",
         );
     });
 
@@ -127,10 +127,10 @@ describe("logger", () => {
         });
 
         const epochChangedContext1 = logs.find(
-            (element) => element.message === "Epoch advanced"
+            (element) => element.message === "Epoch advanced",
         )!.context;
         const epochChangedContext2 = logs.findLast(
-            (element) => element.message === "Epoch advanced"
+            (element) => element.message === "Epoch advanced",
         )!.context;
 
         const parsed1 = JSON.parse(epochChangedContext1);
@@ -139,7 +139,7 @@ describe("logger", () => {
             "group_id",
             "epoch",
             "added",
-            "proposals"
+            "proposals",
         );
         expect(parsed1.added).to.include("Member");
         expect(parsed1.removed).to.equal("[]");
@@ -150,7 +150,7 @@ describe("logger", () => {
             "group_id",
             "epoch",
             "added",
-            "proposals"
+            "proposals",
         );
         expect(parsed2.added).to.equal("[]");
         expect(parsed2.removed).to.include("Member");

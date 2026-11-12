@@ -34,7 +34,7 @@ export async function setupJoinGroupBench() {
                             });
                             const kp = await helpers.generateKeyPackage(
                                 bobCc,
-                                cipherSuite
+                                cipherSuite,
                             );
                             keyPackages.push(kp);
                         }
@@ -43,8 +43,8 @@ export async function setupJoinGroupBench() {
                             async (ctx) =>
                                 await ctx.addClientsToConversation(
                                     conversationId,
-                                    keyPackages
-                                )
+                                    keyPackages,
+                                ),
                         );
                     }
 
@@ -54,14 +54,14 @@ export async function setupJoinGroupBench() {
                     });
                     const kp = await helpers.generateKeyPackage(
                         charlieCc,
-                        cipherSuite
+                        cipherSuite,
                     );
 
                     await aliceCc.transaction(
                         async (ctx) =>
                             await ctx.addClientsToConversation(conversationId, [
                                 kp,
-                            ])
+                            ]),
                     );
                     const commitBundle =
                         await deliveryService.getLatestCommitBundle();
@@ -69,12 +69,12 @@ export async function setupJoinGroupBench() {
                     const start = bench.now();
 
                     await charlieCc.transaction((ctx) =>
-                        ctx.processWelcomeMessage(commitBundle.welcome!)
+                        ctx.processWelcomeMessage(commitBundle.welcome!),
                     );
 
                     const end = bench.now();
                     return { overriddenDuration: end - start };
-                }
+                },
             );
         }
     }, parameters);

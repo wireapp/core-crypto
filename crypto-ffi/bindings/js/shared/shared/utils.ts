@@ -65,18 +65,18 @@ export async function sharedTeardown() {
 
 export type CcInitOptions =
     | {
-        withBasicCredential: false;
-        clientId?: ClientId;
-        database?: Database;
-        withPkiEnvironment?: boolean;
-    }
+          withBasicCredential: false;
+          clientId?: ClientId;
+          database?: Database;
+          withPkiEnvironment?: boolean;
+      }
     | {
-        withBasicCredential?: true;
-        cipherSuite?: CipherSuite;
-        clientId?: ClientId;
-        database?: Database;
-        withPkiEnvironment?: boolean;
-    };
+          withBasicCredential?: true;
+          cipherSuite?: CipherSuite;
+          clientId?: ClientId;
+          database?: Database;
+          withPkiEnvironment?: boolean;
+      };
 
 export interface Helpers {
     newClientId(): ClientId;
@@ -85,7 +85,7 @@ export interface Helpers {
     newDatabase(location?: string, key?: DatabaseKey): Promise<Database>;
     generateKeyPackage(
         cc: CoreCrypto,
-        cipherSuite?: CipherSuite
+        cipherSuite?: CipherSuite,
     ): Promise<KeyPackage>;
     ccInit: (options?: CcInitOptions) => Promise<CoreCrypto>;
     recordLogs(): void;
@@ -94,34 +94,34 @@ export interface Helpers {
         cc1: CoreCrypto,
         cc2: CoreCrypto,
         conversationId: ConversationId,
-        cipherSuite?: CipherSuite
+        cipherSuite?: CipherSuite,
     ): Promise<GroupInfoBundle>;
     remove(
         cc: CoreCrypto,
         clientIdToRemove: ClientId,
-        conversationId: ConversationId
+        conversationId: ConversationId,
     ): Promise<GroupInfoBundle>;
     consumeLastestCommit(
         cc: CoreCrypto,
-        conversationId: ConversationId
+        conversationId: ConversationId,
     ): Promise<void>;
     roundTripMessage(
         cc1: CoreCrypto,
         cc2: CoreCrypto,
         conversationId: ConversationId,
-        message: string
+        message: string,
     ): Promise<string[]>;
     proteusInit(): Promise<CoreCrypto>;
     newProteusSessionFromPrekey(
         cc1: CoreCrypto,
         cc2: CoreCrypto,
-        sessionId: string
+        sessionId: string,
     ): Promise<void>;
     newProteusSessionFromMessage(
         cc1: CoreCrypto,
         cc2: CoreCrypto,
         sessionId: string,
-        message: string
+        message: string,
     ): Promise<string>;
 }
 
@@ -155,26 +155,26 @@ async function setHelpers() {
                 const conversationIdStr = crypto.randomUUID();
                 const encoder = new TextEncoder();
                 return new ccModule.ConversationId(
-                    encoder.encode(conversationIdStr)
+                    encoder.encode(conversationIdStr),
                 );
             }
 
             newDatabaseKey(): DatabaseKey {
                 return new ccModule.DatabaseKey(
-                    crypto.getRandomValues(new Uint8Array(32))
+                    crypto.getRandomValues(new Uint8Array(32)),
                 );
             }
 
             async newDatabase(
                 location?: string,
-                key?: DatabaseKey
+                key?: DatabaseKey,
             ): Promise<Database> {
                 return platformHelpers.newDatabase(location, key);
             }
 
             async generateKeyPackage(
                 cc: CoreCrypto,
-                cipherSuite?: CipherSuite
+                cipherSuite?: CipherSuite,
             ): Promise<KeyPackage> {
                 if (cipherSuite === undefined) {
                     cipherSuite = ccModule.cipherSuiteDefault();
@@ -202,7 +202,7 @@ async function setHelpers() {
                     withBasicCredential: true,
                     cipherSuite: ccModule.cipherSuiteDefault(),
                     withPkiEnvironment: false,
-                }
+                },
             ): Promise<CoreCrypto> {
                 const clientId = options.clientId ?? helpers.newClientId();
                 const db = options.database ?? (await helpers.newDatabase());
@@ -211,7 +211,7 @@ async function setHelpers() {
                 if (options.withPkiEnvironment) {
                     const pkiEnvironment = await ccModule.PkiEnvironment.create(
                         pkiEnvironmentHooks,
-                        db
+                        db,
                     );
                     await cc.setPkiEnvironment(pkiEnvironment);
                 }
@@ -228,7 +228,7 @@ async function setHelpers() {
                             options.cipherSuite ??
                             ccModule.cipherSuiteDefault();
                         await ctx.addCredential(
-                            ccModule.Credential.basic(cipherSuite, clientId)
+                            ccModule.Credential.basic(cipherSuite, clientId),
                         );
                     }
                 });
@@ -275,7 +275,7 @@ async function setHelpers() {
                 await cc.transaction(async (ctx) => {
                     await ctx.createConversation(
                         conversationId,
-                        credentialRef!
+                        credentialRef!,
                     );
                 });
                 return conversationId;
@@ -299,16 +299,16 @@ async function setHelpers() {
                 cc1: CoreCrypto,
                 cc2: CoreCrypto,
                 conversationId: ConversationId,
-                cipherSuite?: CipherSuite
+                cipherSuite?: CipherSuite,
             ): Promise<GroupInfoBundle> {
                 const kp = await helpers.generateKeyPackage(cc2, cipherSuite);
                 await cc1.transaction((ctx) =>
-                    ctx.addClientsToConversation(conversationId, [kp])
+                    ctx.addClientsToConversation(conversationId, [kp]),
                 );
                 const commitBundle =
                     await deliveryService.getLatestCommitBundle();
                 await cc2.transaction((ctx) =>
-                    ctx.processWelcomeMessage(commitBundle.welcome!)
+                    ctx.processWelcomeMessage(commitBundle.welcome!),
                 );
 
                 return commitBundle.groupInfo;
@@ -331,12 +331,12 @@ async function setHelpers() {
             async remove(
                 cc: CoreCrypto,
                 clientIdToRemove: ClientId,
-                conversationId: ConversationId
+                conversationId: ConversationId,
             ): Promise<GroupInfoBundle> {
                 await cc.transaction((ctx) =>
                     ctx.removeClientsFromConversation(conversationId, [
                         clientIdToRemove,
-                    ])
+                    ]),
                 );
                 const commitBundle =
                     await deliveryService.getLatestCommitBundle();
@@ -356,12 +356,12 @@ async function setHelpers() {
              */
             async consumeLastestCommit(
                 cc: CoreCrypto,
-                conversationId: ConversationId
+                conversationId: ConversationId,
             ): Promise<void> {
                 const commitBundle =
                     await deliveryService.getLatestCommitBundle();
                 await cc.transaction((ctx) =>
-                    ctx.decryptMessage(conversationId, commitBundle.commit)
+                    ctx.decryptMessage(conversationId, commitBundle.commit),
                 );
             }
 
@@ -383,7 +383,7 @@ async function setHelpers() {
                 cc1: CoreCrypto,
                 cc2: CoreCrypto,
                 conversationId: ConversationId,
-                message: string
+                message: string,
             ): Promise<string[]> {
                 const encoder = new TextEncoder();
                 const messageBytes = encoder.encode(message);
@@ -392,50 +392,50 @@ async function setHelpers() {
                     async (ctx) => {
                         return await ctx.encryptMessage(
                             conversationId,
-                            messageBytes
+                            messageBytes,
                         );
-                    }
+                    },
                 );
                 const decryptedByClient2 = await cc2.transaction(
                     async (ctx) => {
                         return await ctx.decryptMessage(
                             conversationId,
-                            encryptedByClient1
+                            encryptedByClient1,
                         );
-                    }
+                    },
                 );
 
                 const encryptedByClient2 = await cc2.transaction(
                     async (ctx) => {
                         return await ctx.encryptMessage(
                             conversationId,
-                            messageBytes
+                            messageBytes,
                         );
-                    }
+                    },
                 );
                 const decryptedByClient1 = await cc1.transaction(
                     async (ctx) => {
                         return await ctx.decryptMessage(
                             conversationId,
-                            encryptedByClient2
+                            encryptedByClient2,
                         );
-                    }
+                    },
                 );
 
                 if (
                     ccModule.DecryptedMessage.ApplicationMessage.instanceOf(
-                        decryptedByClient1
+                        decryptedByClient1,
                     ) &&
                     ccModule.DecryptedMessage.ApplicationMessage.instanceOf(
-                        decryptedByClient2
+                        decryptedByClient2,
                     )
                 ) {
                     const decoder = new TextDecoder();
                     const result1 = decoder.decode(
-                        decryptedByClient1.inner.plaintext
+                        decryptedByClient1.inner.plaintext,
                     );
                     const result2 = decoder.decode(
-                        decryptedByClient2.inner.plaintext
+                        decryptedByClient2.inner.plaintext,
                     );
                     return [result1, result2];
                 }
@@ -474,7 +474,7 @@ async function setHelpers() {
             async newProteusSessionFromPrekey(
                 cc1: CoreCrypto,
                 cc2: CoreCrypto,
-                sessionId: string
+                sessionId: string,
             ): Promise<void> {
                 const cc2Prekey = await cc2.transaction(async (ctx) => {
                     return await ctx.proteusNewPrekey(10);
@@ -483,7 +483,7 @@ async function setHelpers() {
                 await cc1.transaction(async (ctx) => {
                     return await ctx.proteusSessionFromPrekey(
                         sessionId,
-                        cc2Prekey
+                        cc2Prekey,
                     );
                 });
             }
@@ -509,7 +509,7 @@ async function setHelpers() {
                 cc1: CoreCrypto,
                 cc2: CoreCrypto,
                 sessionId: string,
-                message: string
+                message: string,
             ): Promise<string> {
                 const encoder = new TextEncoder();
                 const messageBytes = encoder.encode(message);
@@ -520,7 +520,7 @@ async function setHelpers() {
                 const decrypted = await cc2.transaction(async (ctx) => {
                     return await ctx.proteusSessionFromMessage(
                         sessionId,
-                        encrypted
+                        encrypted,
                     );
                 });
 
@@ -539,7 +539,7 @@ async function setDeliveryService() {
                 globalThis._latestCommitBundle = commitBundle;
             },
             async prepareForTransport(
-                secret: HistorySecret
+                secret: HistorySecret,
             ): Promise<MlsTransportData> {
                 return Promise.resolve(secret.clientId.copyBytes());
             },
@@ -557,7 +557,7 @@ async function setLogger() {
                 log: (
                     _level: CoreCryptoLogLevel,
                     message: string,
-                    context: string | undefined
+                    context: string | undefined,
                 ) => {
                     console.log(message, context);
                 },
@@ -570,8 +570,8 @@ async function setLogger() {
                 log: (
                     _level: CoreCryptoLogLevel,
                     _message: string,
-                    _context: string | undefined
-                ) => { },
+                    _context: string | undefined,
+                ) => {},
             });
             ccModule.setMaxLogLevel(ccModule.CoreCryptoLogLevel.Off);
         });

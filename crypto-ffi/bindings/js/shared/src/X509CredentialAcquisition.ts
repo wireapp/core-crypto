@@ -21,13 +21,13 @@ export class X509CredentialAcquisition extends X509CredentialAcquisitionFfi {
         pkiEnvironment: PkiEnvironmentLike,
         config: X509CredentialAcquisitionConfiguration,
         credentialRef: CredentialRefLike,
-        coreCryptoDatabase?: DatabaseLike
+        coreCryptoDatabase?: DatabaseLike,
     ): Promise<X509CredentialAcquisition> {
         return X509CredentialAcquisitionFfi.newFromCredentialRef(
             pkiEnvironment,
             config,
             credentialRef,
-            coreCryptoDatabase
+            coreCryptoDatabase,
         ) as Promise<X509CredentialAcquisition>;
     }
 }

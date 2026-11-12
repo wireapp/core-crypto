@@ -32,7 +32,7 @@ describe("proteus", () => {
 
         expect(result.lastResortPrekeyId).to.equal(u16MAX);
         expect(result.lastResortPrekey1).to.deep.equal(
-            result.lastResortPrekey2
+            result.lastResortPrekey2,
         );
     });
 
@@ -58,7 +58,7 @@ describe("proteus", () => {
                 alice,
                 bob,
                 sessionId,
-                message
+                message,
             );
         }, message);
         expect(decryptedMessage).to.equal(message);
@@ -77,7 +77,7 @@ describe("proteus", () => {
                 alice,
                 bob,
                 sessionId,
-                message
+                message,
             );
 
             if (decryptedMessage != message) {
@@ -88,10 +88,10 @@ describe("proteus", () => {
                     alice,
                     bob,
                     sessionId,
-                    message
+                    message,
                 );
                 throw new Error(
-                    "Expected newProteusSessionFromMessage to reject"
+                    "Expected newProteusSessionFromMessage to reject",
                 );
             } catch (err) {
                 return ccModule.CoreCryptoError.Proteus.instanceOf(err);

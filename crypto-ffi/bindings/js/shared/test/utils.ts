@@ -15,7 +15,7 @@ async function setPkiEnvironmentHooks() {
                 _method: HttpMethod,
                 _url: string,
                 _headers: Array<HttpHeader>,
-                _body: Uint8Array
+                _body: Uint8Array,
             ) {
                 // return a HttpResponse
                 return {
@@ -29,7 +29,7 @@ async function setPkiEnvironmentHooks() {
                 _idp: string,
                 _keyAuth: string,
                 _acmeAud: string,
-                _acquisition_snapshot: Uint8Array
+                _acquisition_snapshot: Uint8Array,
             ) {
                 return "dummy-id-token";
             },

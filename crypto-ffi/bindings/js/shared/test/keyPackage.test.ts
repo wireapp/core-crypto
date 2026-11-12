@@ -57,7 +57,7 @@ describe("key package", () => {
                 }
 
                 return { wasDefined, wasEmpty, roundtripMatches };
-            }
+            },
         );
 
         expect(wasDefined).to.equal(true);
@@ -102,7 +102,7 @@ describe("key package", () => {
 
                 const credential = ccModule.Credential.basic(
                     ccModule.cipherSuiteDefault(),
-                    clientId
+                    clientId,
                 );
 
                 const keyPackages = await cc.transaction(async (ctx) => {
@@ -124,7 +124,7 @@ describe("key package", () => {
                 const arraySize = keyPackages.length;
 
                 return { wasDefined, wasArray, arraySize };
-            }
+            },
         );
 
         expect(wasDefined).to.equal(true);
@@ -145,11 +145,11 @@ describe("key package", () => {
                 const credential1 = ccModule.Credential.basic(
                     ccModule.CipherSuite
                         .Mls128Dhkemx25519Aes128gcmSha256Ed25519,
-                    clientId
+                    clientId,
                 );
                 const credential2 = ccModule.Credential.basic(
                     ccModule.CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256,
-                    clientId
+                    clientId,
                 );
 
                 return await cc.transaction(async (ctx) => {

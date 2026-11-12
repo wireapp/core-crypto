@@ -59,7 +59,7 @@ describe("transaction context", () => {
         });
         expect(result.isCorrectInstance).to.equal(true);
         expect(result.message).to.equal(
-            "This transaction context has already been finished and can no longer be used."
+            "This transaction context has already been finished and can no longer be used.",
         );
     });
 
@@ -68,7 +68,7 @@ describe("transaction context", () => {
             const cc = await helpers.ccInit();
             const basicCredentialType = ccModule.CredentialType.Basic;
             const conversationId = new ccModule.ConversationId(
-                new TextEncoder().encode("testConversation")
+                new TextEncoder().encode("testConversation"),
             );
             const CoreCryptoError = ccModule.CoreCryptoError;
             const MlsError = ccModule.MlsError;
@@ -84,7 +84,7 @@ describe("transaction context", () => {
                 await cc.transaction(async (ctx) => {
                     await ctx.createConversation(
                         conversationId,
-                        credentialRef!
+                        credentialRef!,
                     );
 
                     throw expectedError;
@@ -104,14 +104,14 @@ describe("transaction context", () => {
                 await cc.transaction(async (ctx) => {
                     await ctx.createConversation(
                         conversationId,
-                        credentialRef!
+                        credentialRef!,
                     );
                 });
             } catch (err) {
                 if (
                     CoreCryptoError.Mls.instanceOf(err) &&
                     MlsError.ConversationAlreadyExists.instanceOf(
-                        err.inner.mlsError
+                        err.inner.mlsError,
                     )
                 ) {
                     return {
@@ -138,8 +138,8 @@ describe("transaction context", () => {
                         })
                         .then(
                             () => "resolved",
-                            () => "rejected"
-                        )
+                            () => "rejected",
+                        ),
                 );
             }
             return results;

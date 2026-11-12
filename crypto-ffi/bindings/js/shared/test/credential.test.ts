@@ -15,7 +15,7 @@ describe("credentials", () => {
         const result = await runOnPlatform(async () => {
             const credential = ccModule.Credential.basic(
                 ccModule.cipherSuiteDefault(),
-                helpers.newClientId()
+                helpers.newClientId(),
             );
             return {
                 isBasicType:
@@ -67,7 +67,7 @@ describe("credentials", () => {
                 ccModule.CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256;
             const credential1 = ccModule.Credential.basic(
                 cipherSuite1,
-                clientId
+                clientId,
             );
 
             const cipherSuite2 =
@@ -75,7 +75,7 @@ describe("credentials", () => {
                     .Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519;
             const credential2 = ccModule.Credential.basic(
                 cipherSuite2,
-                clientId
+                clientId,
             );
 
             const cc = await helpers.ccInit({

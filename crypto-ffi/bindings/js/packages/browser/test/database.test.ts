@@ -61,19 +61,19 @@ describe("database", () => {
             const cc = ccModule.CoreCrypto.new(database);
             const clientId = helpers.newClientId();
             await cc.transaction((ctx) =>
-                ctx.mlsInit(clientId, deliveryService)
+                ctx.mlsInit(clientId, deliveryService),
             );
             const credentialRef = await cc.transaction((ctx) =>
                 ctx.addCredential(
                     ccModule.Credential.basic(
                         ccModule.cipherSuiteDefault(),
-                        clientId
-                    )
-                )
+                        clientId,
+                    ),
+                ),
             );
             const conversationId = helpers.newConversationId();
             await cc.transaction((ctx) =>
-                ctx.createConversation(conversationId, credentialRef)
+                ctx.createConversation(conversationId, credentialRef),
             );
 
             conversationId.uniffiDestroy();
@@ -103,7 +103,7 @@ describe("database", () => {
         // means the TS compiler has no idea about it, which is why we use
         // ts-expect-error further down.
         const response = await fetch(
-            "https://cdn.jsdelivr.net/npm/idb@8/build/umd.js"
+            "https://cdn.jsdelivr.net/npm/idb@8/build/umd.js",
         );
         if (!response.ok)
             throw new Error(`failed to fetch script: ${response.statusText}`);
@@ -127,7 +127,7 @@ describe("database", () => {
 
             const chunks = (s: string) =>
                 Array.from({ length: s.length / 2 }, (_, i) =>
-                    s.substr(i * 2, 2)
+                    s.substr(i * 2, 2),
                 );
             const fromHex = (s: string) =>
                 Uint8Array.from(chunks(s), (byte) => parseInt(byte, 16));
@@ -148,7 +148,7 @@ describe("database", () => {
             await ccModule.migrateDatabaseKeyTypeToBytes(
                 clientName,
                 old_key,
-                new_key
+                new_key,
             );
 
             // Reconstruct the client based on the migrated database and fetch the epoch.
@@ -161,7 +161,7 @@ describe("database", () => {
                 const clientId = helpers.newClientId();
                 await ctx.mlsInit(clientId, deliveryService);
                 return await ctx.conversationEpoch(
-                    new ccModule.ConversationId(encoder.encode("convId"))
+                    new ccModule.ConversationId(encoder.encode("convId")),
                 );
             });
             return Number(epoch);

@@ -40,7 +40,7 @@ describe("external entropy", () => {
                 return [Array.from(produced1), Array.from(produced2)];
             },
             vector1.length * vector1.BYTES_PER_ELEMENT,
-            vector2.length * vector2.BYTES_PER_ELEMENT
+            vector2.length * vector2.BYTES_PER_ELEMENT,
         );
 
         const resultByteVector1 = new Uint8Array(result1!);

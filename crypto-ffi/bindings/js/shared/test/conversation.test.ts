@@ -41,10 +41,10 @@ describe("conversation", () => {
                     alice,
                     bob,
                     convId,
-                    messageText
+                    messageText,
                 );
             },
-            messageText
+            messageText,
         );
         expect(decryptedByAlice).to.equal(messageText);
         expect(decryptedByBob).to.equal(messageText);
@@ -59,33 +59,33 @@ describe("conversation", () => {
             await helpers.invite(alice, bob, conversationId);
 
             const persistedMessage = new TextEncoder().encode(
-                "This persisted message targets Bob"
+                "This persisted message targets Bob",
             );
             const persistedCiphertext = await alice.transaction((ctx) =>
                 ctx.encryptTargetedMessage(
                     conversationId,
                     bobId,
                     ccModule.TargetedMessagePolicy.Persisted,
-                    persistedMessage
-                )
+                    persistedMessage,
+                ),
             );
             const persistedDecrypted = await bob.transaction((ctx) =>
-                ctx.decryptMessage(conversationId, persistedCiphertext)
+                ctx.decryptMessage(conversationId, persistedCiphertext),
             );
 
             const transientMessage = new TextEncoder().encode(
-                "This transient message targets Bob"
+                "This transient message targets Bob",
             );
             const transientCiphertext = await alice.transaction((ctx) =>
                 ctx.encryptTargetedMessage(
                     conversationId,
                     bobId,
                     ccModule.TargetedMessagePolicy.Transient,
-                    transientMessage
-                )
+                    transientMessage,
+                ),
             );
             const transientDecrypted = await bob.transaction((ctx) =>
-                ctx.decryptMessage(conversationId, transientCiphertext)
+                ctx.decryptMessage(conversationId, transientCiphertext),
             );
 
             const decoder = new TextDecoder();
@@ -94,14 +94,14 @@ describe("conversation", () => {
                 persistedMessage: decoder.decode(persistedMessage),
                 persistedPlaintext:
                     ccModule.DecryptedMessage.PersistedTargeted.instanceOf(
-                        persistedDecrypted
+                        persistedDecrypted,
                     )
                         ? decoder.decode(persistedDecrypted.inner.plaintext)
                         : "wrong decrypted variant",
                 transientMessage: decoder.decode(transientMessage),
                 transientPlaintext:
                     ccModule.DecryptedMessage.TransientTargeted.instanceOf(
-                        transientDecrypted
+                        transientDecrypted,
                     )
                         ? decoder.decode(transientDecrypted.inner.plaintext)
                         : "wrong decrypted variant",
@@ -120,13 +120,13 @@ describe("conversation", () => {
             await helpers.invite(alice, bob, conversationId);
 
             const message = new TextEncoder().encode(
-                "This is a transient message"
+                "This is a transient message",
             );
             const ciphertext = await alice.transaction((ctx) =>
-                ctx.encryptTransientMessage(conversationId, message)
+                ctx.encryptTransientMessage(conversationId, message),
             );
             const decrypted = await bob.transaction((ctx) =>
-                ctx.decryptMessage(conversationId, ciphertext)
+                ctx.decryptMessage(conversationId, ciphertext),
             );
 
             const decoder = new TextDecoder();
@@ -134,7 +134,7 @@ describe("conversation", () => {
             return {
                 message: decoder.decode(message),
                 plaintext: ccModule.DecryptedMessage.Transient.instanceOf(
-                    decrypted
+                    decrypted,
                 )
                     ? decoder.decode(decrypted.inner.plaintext)
                     : "wrong decrypted variant",

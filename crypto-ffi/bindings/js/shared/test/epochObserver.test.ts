@@ -28,7 +28,7 @@ describe("epoch observer", () => {
                     async epochChanged(
                         // @ts-expect-error `window` is not present when ts is checking, but is present in the browser
                         conversationId: ccModule.ConversationId,
-                        epoch: bigint
+                        epoch: bigint,
                     ): Promise<void> {
                         this.observations.push({ conversationId, epoch });
                     }
@@ -54,18 +54,18 @@ describe("epoch observer", () => {
 
                 // pass a serializable
                 const first_id_hex = new TextDecoder().decode(
-                    observer.observations[0]?.conversationId.copyBytes()
+                    observer.observations[0]?.conversationId.copyBytes(),
                 );
 
                 const convIdSerialized = new TextDecoder().decode(
-                    convId.copyBytes()
+                    convId.copyBytes(),
                 );
                 return {
                     length: observer.observations.length,
                     first_id_hex,
                     convIdSerialized,
                 };
-            }
+            },
         );
 
         expect(length).to.equal(1);

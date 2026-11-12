@@ -73,7 +73,7 @@ export class CoreCrypto extends CoreCryptoFfi {
      * Other use is a logic error.
      */
     public static async historyClient(
-        historySecret: HistorySecret
+        historySecret: HistorySecret,
     ): Promise<CoreCrypto> {
         const historyClient = await coreCryptoHistoryClient(historySecret);
         try {
@@ -92,7 +92,7 @@ export class CoreCrypto extends CoreCryptoFfi {
      * @returns the result of the callback will be returned from this call
      */
     async transaction<R>(
-        callback: (ctx: CoreCryptoContext) => Promise<R>
+        callback: (ctx: CoreCryptoContext) => Promise<R>,
     ): Promise<R> {
         let result!: R;
         let error: CoreCryptoError | Error | null = null;
@@ -135,7 +135,7 @@ export class CoreCrypto extends CoreCryptoFfi {
      */
     async transactionFfi(
         command: CoreCryptoFfiTypes.CoreCryptoCommand,
-        asyncOpts_?: { signal: AbortSignal }
+        asyncOpts_?: { signal: AbortSignal },
     ): Promise<void> {
         return super.transactionFfi(command, asyncOpts_);
     }
@@ -146,14 +146,14 @@ export class CoreCrypto extends CoreCryptoFfi {
      * @param findFilters a set of filters defining which credentials are of interest.
      */
     async findCredentials(
-        findFilters: CredentialFindFilters
+        findFilters: CredentialFindFilters,
     ): Promise<CredentialRef[]> {
         return await super.findCredentialsFfi(
             findFilters.clientId,
             findFilters.publicKey,
             findFilters.cipherSuite,
             findFilters.credentialType,
-            findFilters.earliestValidity
+            findFilters.earliestValidity,
         );
     }
 
@@ -166,7 +166,7 @@ export class CoreCrypto extends CoreCryptoFfi {
         cipherSuite?: CipherSuite,
         credentialType?: CredentialType,
         earliestValidity?: bigint,
-        asyncOpts_?: { signal: AbortSignal }
+        asyncOpts_?: { signal: AbortSignal },
     ): Promise<Array<CredentialRef>> {
         return await super.findCredentialsFfi(
             clientId,
@@ -174,7 +174,7 @@ export class CoreCrypto extends CoreCryptoFfi {
             cipherSuite,
             credentialType,
             earliestValidity,
-            asyncOpts_
+            asyncOpts_,
         );
     }
 }

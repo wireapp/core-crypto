@@ -37,18 +37,18 @@ describe("core crypto errors", () => {
                 if (
                     CoreCryptoError.Mls.instanceOf(err) &&
                     MlsError.ConversationAlreadyExists.instanceOf(
-                        err.inner.mlsError
+                        err.inner.mlsError,
                     )
                 ) {
                     const conversationIdFromError = new Uint8Array(
-                        err.inner.mlsError.inner.conversationId
+                        err.inner.mlsError.inner.conversationId,
                     );
                     return {
                         isCorrectInstance: true,
                         errorConvIdMatches:
                             JSON.stringify(conversationIdFromError) ===
                             JSON.stringify(
-                                new Uint8Array(conversationId.copyBytes())
+                                new Uint8Array(conversationId.copyBytes()),
                             ),
                     };
                 }
@@ -118,7 +118,7 @@ it("should build correctly when constructed by ubrn", async () => {
                 });
                 await cx.createConversation(
                     convId as unknown as ConversationId,
-                    credentialRef!
+                    credentialRef!,
                 );
             });
         } catch (err) {
@@ -145,14 +145,14 @@ describe("Error type mapping", () => {
                 await cc.transaction(async (ctx) => {
                     await ctx.createConversation(
                         conversationId,
-                        credentialRef!
+                        credentialRef!,
                     );
                 });
             } catch (e) {
                 return (
                     ccModule.CoreCryptoError.Mls.hasInner(e) &&
                     ccModule.MlsError.ConversationAlreadyExists.instanceOf(
-                        e.inner.mlsError
+                        e.inner.mlsError,
                     ) &&
                     e.inner.mlsError.inner.conversationId !== undefined
                 );

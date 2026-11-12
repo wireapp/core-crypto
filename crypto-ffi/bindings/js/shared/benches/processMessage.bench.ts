@@ -42,13 +42,13 @@ export async function setupProcessMessageBench() {
                                 const encryptedMessage =
                                     await ctx.encryptMessage(
                                         conversationId,
-                                        message
+                                        message,
                                     );
 
                                 encryptedMessages.push(encryptedMessage);
                             }
                             return encryptedMessages;
-                        }
+                        },
                     );
                     const start = bench.now();
                     await bobCc.transaction(async (ctx) => {
@@ -58,7 +58,7 @@ export async function setupProcessMessageBench() {
                     });
                     const end = bench.now();
                     return { overriddenDuration: end - start };
-                }
+                },
             );
         }
     }, parameters);

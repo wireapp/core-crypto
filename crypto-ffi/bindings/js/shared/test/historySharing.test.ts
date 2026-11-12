@@ -28,7 +28,7 @@ describe("history sharing", () => {
 
                 async historyClientCreated(
                     conversationId: ConversationId,
-                    historySecret: HistorySecret
+                    historySecret: HistorySecret,
                 ): Promise<void> {
                     this.observations.push({
                         conversationId,
@@ -68,10 +68,10 @@ describe("history sharing", () => {
             // the browser context
             const firstIdString = decoder.decode(
                 observer.observations[0]?.conversationId.copyBytes() ??
-                    new Uint8Array()
+                    new Uint8Array(),
             );
             const convIdSerialized = decoder.decode(
-                convId.copyBytes() ?? new Uint8Array()
+                convId.copyBytes() ?? new Uint8Array(),
             );
             return {
                 length: observer.observations.length,

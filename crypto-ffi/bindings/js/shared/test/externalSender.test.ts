@@ -32,7 +32,7 @@ describe("external sender", () => {
                     await ctx.createConversation(
                         conversationId,
                         credentialRef!,
-                        externalSender
+                        externalSender,
                     );
                     return await ctx.getExternalSender(conversationId);
                 });
@@ -42,7 +42,7 @@ describe("external sender", () => {
                     Array.from(externalSender.serialize()),
                 ];
             },
-            jwkString
+            jwkString,
         );
 
         expect(retrievedBytes).to.deep.equal(serializedBytes);
@@ -55,7 +55,7 @@ describe("external sender", () => {
             const fromJwk = ccModule.ExternalSender.parseJwk(jwk);
             const fromBytes = ccModule.ExternalSender.parsePublicKey(
                 fromJwk.serialize(),
-                ccModule.SignatureScheme.Ed25519
+                ccModule.SignatureScheme.Ed25519,
             );
             return fromJwk.equals(fromBytes);
         }, jwkString);

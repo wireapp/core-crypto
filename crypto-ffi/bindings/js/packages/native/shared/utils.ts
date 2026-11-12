@@ -19,10 +19,10 @@ export async function sharedTeardown() {
         locations.map((location) =>
             Promise.all(
                 SQLITE_SIDE_CAR_SUFFIXES.map((suffix) =>
-                    rm(`${location}${suffix}`, { force: true })
-                )
-            )
-        )
+                    rm(`${location}${suffix}`, { force: true }),
+                ),
+            ),
+        ),
     );
 }
 
