@@ -47,7 +47,7 @@ type MessageParameterSet = {
     cipherSuite: number;
 };
 
-const DEFAULT_MESSAGE_COUNTS = [1, 10, 100];
+const DEFAULT_MESSAGE_COUNTS = [1, 10];
 const DEFAULT_MESSAGE_SIZES = [16, 1024, 65536];
 const DEFAULT_USER_COUNTS = [1, 10, 100];
 function parsePositiveIntegerList(

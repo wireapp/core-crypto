@@ -6,7 +6,7 @@ import org.openjdk.jmh.annotations.State
 
 @State(Scope.Thread)
 open class MessageBenchmark : CipherSuiteBenchmark() {
-    @Param("1", "10", "100")
+    @Param("1", "10")
     var messageCount: Int = 0
 
     @Param("16", "1024", "65536")
