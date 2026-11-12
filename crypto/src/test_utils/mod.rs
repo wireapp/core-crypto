@@ -95,6 +95,9 @@ pub struct SessionContext {
     x509_test_chain: Arc<Option<X509TestChain>>,
     history_observer: Arc<RwLock<Option<Arc<TestHistoryObserver>>>>,
     core_crypto: Arc<CoreCrypto>,
+    /// Where the database lives and how to unlock it, so that a test can open a second,
+    /// independent connection to it. `None` for in-memory databases.
+    db_location: Option<(String, DatabaseKey)>,
     // We need to store the `TempDir` struct for the duration of the test session,
     // because its drop implementation takes care of the directory deletion.
     _db_dir: Option<Arc<tempfile::TempDir>>,
@@ -110,14 +113,15 @@ impl SessionContext {
         credential: Credential,
         in_memory: bool,
     ) -> crate::Result<Self> {
-        let (db_dir, db) = if in_memory {
-            (None, Database::open_in_memory().unwrap())
+        let (db_dir, db_location, db) = if in_memory {
+            (None, None, Database::open_in_memory().unwrap())
         } else {
             // We need to store the `TempDir` struct for the duration of the test session,
             // because its drop implementation takes care of the directory deletion.
             let (db_path, db_dir) = tmp_db_file();
-            let db = Database::open(&db_path, &DatabaseKey::generate()).await.unwrap();
-            (Some(Arc::new(db_dir)), db)
+            let db_key = DatabaseKey::generate();
+            let db = Database::open(&db_path, &db_key).await.unwrap();
+            (Some(Arc::new(db_dir)), Some((db_path, db_key)), db)
         };
 
         let core_crypto = CoreCrypto::new(db.clone());
@@ -152,6 +156,7 @@ impl SessionContext {
             x509_test_chain: Arc::new(maybe_chain),
             history_observer: Default::default(),
             core_crypto,
+            db_location,
             _db_dir: db_dir,
         };
         Ok(session_context)
@@ -184,8 +189,36 @@ impl SessionContext {
             x509_test_chain: Arc::new(maybe_chain),
             history_observer: Default::default(),
             core_crypto,
+            db_location: None,
             _db_dir: None,
         }
+    }
+
+    pub(crate) fn core_crypto(&self) -> Arc<CoreCrypto> {
+        self.core_crypto.clone()
+    }
+
+    /// Open another [`CoreCrypto`] instance on this session's database, with an MLS session for the same client.
+    ///
+    /// The new instance has its own connection and its own in-memory caches, just like a second process
+    /// (an app extension, say) using the same database file.
+    ///
+    /// Panics if the database is in memory. This takes the transaction lock, so this session's own
+    /// transaction must be finished first.
+    pub(crate) async fn open_another_instance(&self) -> Arc<CoreCrypto> {
+        let (path, key) = self
+            .db_location
+            .as_ref()
+            .expect("an in-memory database can't be opened a second time");
+        let database = Database::open(path, key).await.unwrap();
+        let core_crypto = CoreCrypto::new(database);
+        let transaction = core_crypto.new_transaction().await.unwrap();
+        transaction
+            .mls_init(self.get_client_id().await, self.mls_transport().await)
+            .await
+            .unwrap();
+        transaction.finish().await.unwrap();
+        core_crypto
     }
 
     pub fn x509_chain(&self) -> Option<&X509TestChain> {
