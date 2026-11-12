@@ -117,6 +117,7 @@ impl Database {
     /// The connection must already be configured for encryption if appropriate.
     ///
     /// Sets appropriate pragmas and performs migrations and general initialization work.
+    #[cfg(test)]
     async fn init(
         conn: ManagedConnection,
         filesystem: Box<dyn Filesystem>,
