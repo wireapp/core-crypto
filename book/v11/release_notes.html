@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-8a46e9ef.js";
+            window.path_to_searchindex_js = "searchindex-82c5f9e4.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e64f8d46.js"></script>
@@ -183,6 +183,8 @@
 Proteus caches, so that fresh state is loaded on-demand from the DB.</li>
 <li>Aborted transactions and failed commits now also clear the Proteus cache, so they are no longer left ahead of the DB.</li>
 <li>It’s now possible to rotate an existing x509 credential with a new x509 credential which has the same public key.</li>
+<li>iOS: A file lock now protects migration of the keystore salt avoiding potential concurrent access from separate
+processes.</li>
 </ul>
 <h3 id="v1100---2026-10-30"><a class="header" href="#v1100---2026-10-30">v11.0.0 - 2026-10-30</a></h3>
 <ul>
