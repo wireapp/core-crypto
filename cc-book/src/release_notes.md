@@ -2,7 +2,9 @@
 
 ## CoreCrypto 11
 
-### Unreleased
+### v11.0.1 - 2026-11-13
+
+#### Bug fixes
 
 - CoreCrypto now notices when another process (i.e. NSE) has written to the DB. In that case, it clears all MLS and
   Proteus caches, so that fresh state is loaded on-demand from the DB.
