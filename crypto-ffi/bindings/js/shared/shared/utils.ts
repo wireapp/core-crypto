@@ -78,6 +78,9 @@ export type CcInitOptions =
           withPkiEnvironment?: boolean;
       };
 
+/** A client together with the database it was initialized on, so both can be released. */
+export type ClientWithDatabase = { cc: CoreCrypto; database: Database };
+
 export interface Helpers {
     newClientId(): ClientId;
     newConversationId(): ConversationId;
@@ -88,6 +91,11 @@ export interface Helpers {
         cipherSuite?: CipherSuite,
     ): Promise<KeyPackage>;
     ccInit: (options?: CcInitOptions) => Promise<CoreCrypto>;
+    newClient(
+        cipherSuite: CipherSuite,
+        clientId?: ClientId,
+    ): Promise<ClientWithDatabase>;
+    releaseClients(clients: ClientWithDatabase[]): void;
     recordLogs(): void;
     createConversation(cc: CoreCrypto): Promise<ConversationId>;
     invite(
@@ -233,6 +241,35 @@ async function setHelpers() {
                     }
                 });
                 return cc;
+            }
+
+            /**
+             * Initialize a {@link CoreCrypto} instance with a basic credential on a database of its
+             * own, and return both, so {@link releaseClients} can release them.
+             */
+            async newClient(
+                cipherSuite: CipherSuite,
+                clientId?: ClientId,
+            ): Promise<ClientWithDatabase> {
+                const database = await helpers.newDatabase();
+                const cc = await helpers.ccInit({
+                    withBasicCredential: true,
+                    cipherSuite,
+                    clientId,
+                    database,
+                });
+                return { cc, database };
+            }
+
+            /**
+             * Release clients and their databases right away rather than leaving them to the
+             * garbage collector, so the databases close.
+             */
+            releaseClients(clients: ClientWithDatabase[]): void {
+                for (const { cc, database } of clients) {
+                    cc.uniffiDestroy();
+                    database.uniffiDestroy();
+                }
             }
 
             /**
