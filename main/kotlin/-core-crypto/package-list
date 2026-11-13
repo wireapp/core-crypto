@@ -771,9 +771,6 @@ $dokka.location:com.wire.crypto/MlsException.StaleCommit/message/#/PointingToDec
 $dokka.location:com.wire.crypto/MlsException.StaleProposal///PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-stale-proposal/index.html
 $dokka.location:com.wire.crypto/MlsException.StaleProposal/StaleProposal/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-stale-proposal/-stale-proposal.html
 $dokka.location:com.wire.crypto/MlsException.StaleProposal/message/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-stale-proposal/message.html
-$dokka.location:com.wire.crypto/MlsException.UnmergedPendingGroup///PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-unmerged-pending-group/index.html
-$dokka.location:com.wire.crypto/MlsException.UnmergedPendingGroup/UnmergedPendingGroup/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-unmerged-pending-group/-unmerged-pending-group.html
-$dokka.location:com.wire.crypto/MlsException.UnmergedPendingGroup/message/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-unmerged-pending-group/message.html
 $dokka.location:com.wire.crypto/MlsException.WrongEpoch///PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-wrong-epoch/index.html
 $dokka.location:com.wire.crypto/MlsException.WrongEpoch/WrongEpoch/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-wrong-epoch/-wrong-epoch.html
 $dokka.location:com.wire.crypto/MlsException.WrongEpoch/message/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-wrong-epoch/message.html

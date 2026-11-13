@@ -52,7 +52,7 @@
 <a href=#52 id=52 data-nosnippet>52</a>            <span class="comment">// an external commit to verify that we can still detect wrong epoch correctly
 <a href=#53 id=53 data-nosnippet>53</a>            </span><span class="kw">let </span>(commit_guard, <span class="kw-2">mut </span>pending_conversation) = conversation.external_join_unmerged(<span class="kw-2">&amp;</span>bob).<span class="kw">await</span>;
 <a href=#54 id=54 data-nosnippet>54</a>            <span class="kw">let </span>unknown_ext_commit = commit_guard.message();
-<a href=#55 id=55 data-nosnippet>55</a>            pending_conversation.clear().unwrap();
+<a href=#55 id=55 data-nosnippet>55</a>            pending_conversation.clear().<span class="kw">await</span>.unwrap();
 <a href=#56 id=56 data-nosnippet>56</a>            <span class="kw">let </span>conversation = commit_guard.finish();
 <a href=#57 id=57 data-nosnippet>57</a>
 <a href=#58 id=58 data-nosnippet>58</a>            <span class="kw">let </span>commit_guard = conversation.external_join(<span class="kw-2">&amp;</span>bob).<span class="kw">await</span>;
