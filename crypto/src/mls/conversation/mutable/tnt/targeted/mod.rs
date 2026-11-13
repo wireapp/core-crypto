@@ -134,7 +134,7 @@ mod tests {
         entities::{OldEpochData, OldEpochDataPkRef},
         traits::{EntityDeleteBorrowed as _, FetchFromDatabase as _},
     };
-    use openmls::prelude::{GroupEpoch, Signable as _};
+    use openmls::prelude::{GroupEpoch, Signable as _, group_info::VerifiableGroupInfo};
     use tls_codec::{Deserialize as _, Serialize as _};
 
     use super::TargetedMessagePolicy;
@@ -669,32 +669,36 @@ mod tests {
         assert_eq!(decrypted.plaintext, message);
     }
 
-    /// A rejoin landing on an epoch number the recipient already has a record of must replace that record.
+    /// Put alice and bob on a fork of charlie's group, and make sure bob records the forked epoch.
     ///
-    /// Epoch numbers only identify an epoch within one history of the group. Here bob follows a fork of the group
-    /// which charlie never sees, then rejoins from charlie's state. The epoch number bob rejoins at is one he already
-    /// recorded in the fork, and that record describes the wrong epoch.
-    #[apply(all_cred_cipher)]
-    async fn targeted_message_survives_a_rejoin_onto_an_epoch_number_seen_in_a_fork(case: TestContext) {
-        let [alice, bob, charlie] = case.sessions().await;
-        let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
-        let conversation = conversation.acting_as(&charlie).await;
+    /// Returns charlie's group info from before the fork, and the epoch number of the fork.
+    async fn fork_away_from_charlie<'a>(
+        case: &'a TestContext,
+        [alice, bob, charlie]: [&'a SessionContext; 3],
+    ) -> (TestConversation<'a>, VerifiableGroupInfo, u64) {
+        let conversation = case.create_conversation([alice, bob, charlie]).await;
+        let conversation = conversation.acting_as(charlie).await;
         let charlies_group_info = conversation.export_group_info().await;
 
-        // Alice's commit reaches bob but never charlie, so alice and bob are now on a fork of charlie's group.
+        // Alice's commit either never reaches or is lost by the DS, but an
+        // unspecified bug means it reaches Bob anyway. A fundamental
+        // requirement of this test scenario is that the DS somehow forgets
+        // about this commit. Alice and Bob are both ahead of Charlie and the DS
+        // by a single epoch, which (unknowingly) is going to become a fork due
+        // to the DS's absent-mindedness.
         let conversation = conversation
-            .acting_as(&alice)
+            .acting_as(alice)
             .await
             .update()
             .await
-            .notify_member(&bob)
+            .notify_member(bob)
             .await
             .finish();
-        let forked_epoch = conversation.guard_of(&bob).await.epoch().await;
+        let forked_epoch = conversation.guard_of(bob).await.epoch().await;
 
         // Bob acts in the fork, so it is recorded however recording on entry to an epoch turns out.
         conversation
-            .guard_of(&bob)
+            .guard_of(bob)
             .await
             .encrypt_targeted(
                 &alice.get_client_id().await,
@@ -713,23 +717,28 @@ mod tests {
             "the test is only meaningful if bob recorded the forked epoch"
         );
 
-        let conversation = conversation
-            .acting_as(&charlie)
-            .await
-            .external_join_via_group_info(&bob, charlies_group_info)
-            .await
-            .notify_member(&charlie)
-            .await
-            .finish();
+        (conversation, charlies_group_info, forked_epoch)
+    }
+
+    /// Check that bob, having rejoined from charlie's state at `forked_epoch`, can decrypt a targeted message charlie
+    /// sends him in that epoch.
+    ///
+    /// Charlie moves on to the next epoch before bob decrypts, so that bob has to decrypt via `OldEpochData`.
+    async fn assert_bob_decrypts_charlies_message_after_rejoin(
+        conversation: TestConversation<'_>,
+        bob: &SessionContext,
+        charlie: &SessionContext,
+        forked_epoch: u64,
+    ) {
         assert_eq!(
-            conversation.guard_of(&bob).await.epoch().await,
+            conversation.guard_of(bob).await.epoch().await,
             forked_epoch,
             "the test is only meaningful if bob rejoined at the epoch number he recorded in the fork"
         );
 
         let message = b"sent in the epoch bob rejoined at";
         let encrypted = conversation
-            .guard_of(&charlie)
+            .guard_of(charlie)
             .await
             .encrypt_targeted(
                 &bob.get_client_id().await,
@@ -740,16 +749,16 @@ mod tests {
             .unwrap();
 
         let conversation = conversation
-            .acting_as(&charlie)
+            .acting_as(charlie)
             .await
             .update()
             .await
-            .notify_member(&bob)
+            .notify_member(bob)
             .await
             .finish();
 
         let decrypted = conversation
-            .guard_of(&bob)
+            .guard_of(bob)
             .await
             .decrypt_message(encrypted)
             .await
@@ -758,6 +767,65 @@ mod tests {
             .into_persisted_targeted()
             .unwrap();
         assert_eq!(decrypted.plaintext, message);
+    }
+
+    /// A rejoin landing on an epoch number the recipient already has a record of must replace that record.
+    ///
+    /// Epoch numbers only identify an epoch within one history of the group. Here bob follows a fork of the group
+    /// which charlie never sees, then rejoins from charlie's state. The epoch number bob rejoins at is one he already
+    /// recorded in the fork, and that record describes the wrong epoch.
+    #[apply(all_cred_cipher)]
+    async fn targeted_message_survives_a_rejoin_onto_an_epoch_number_seen_in_a_fork(case: TestContext) {
+        let [alice, bob, charlie] = case.sessions().await;
+        let (conversation, charlies_group_info, forked_epoch) =
+            fork_away_from_charlie(&case, [&alice, &bob, &charlie]).await;
+
+        let conversation = conversation
+            .acting_as(&charlie)
+            .await
+            .external_join_via_group_info(&bob, charlies_group_info)
+            .await
+            .notify_member(&charlie)
+            .await
+            .finish();
+
+        assert_bob_decrypts_charlies_message_after_rejoin(conversation, &bob, &charlie, forked_epoch).await;
+    }
+
+    /// Like [`targeted_message_survives_a_rejoin_onto_an_epoch_number_seen_in_a_fork`], but the rejoin stays pending
+    /// until bob receives his own join commit, so it is merged by the decryption loop rather than immediately.
+    #[apply(all_cred_cipher)]
+    async fn targeted_message_survives_a_pending_rejoin_onto_an_epoch_number_seen_in_a_fork(case: TestContext) {
+        let [alice, bob, charlie] = case.sessions().await;
+        let (conversation, charlies_group_info, forked_epoch) =
+            fork_away_from_charlie(&case, [&alice, &bob, &charlie]).await;
+
+        // Bob rejoins from state the DS is aware of, matching Charlie's. The DS
+        // hasn't returned his join commit yet, so the join is pending.
+        //
+        // Normally the DS would reject this as it produces `E+1` in contention
+        // with Alice's, but the fundamental requirement for this scenario is
+        // that the DS lost Alice's `E+1`.
+        let (commit_guard, _pending_conversation) = conversation
+            .acting_as(&charlie)
+            .await
+            .external_join_via_group_info_unmerged(&bob, charlies_group_info)
+            .await;
+        let join_commit = commit_guard.message().to_bytes().unwrap();
+        let conversation = commit_guard.notify_member(&charlie).await.finish();
+
+        // Bob's join commit arrives, and the decryption loop merges it.
+        let decrypted = bob
+            .transaction
+            .decrypt_message(conversation.id(), join_commit)
+            .await
+            .unwrap();
+        assert!(
+            decrypted.first().is_some_and(|message| message.is_commit()),
+            "the test is only meaningful if bob merged his join through the decryption loop"
+        );
+
+        assert_bob_decrypts_charlies_message_after_rejoin(conversation, &bob, &charlie, forked_epoch).await;
     }
 
     #[apply(all_cred_cipher)]
