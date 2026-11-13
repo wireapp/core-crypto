@@ -29,7 +29,6 @@ const_format.workspace = true
 enum-as-inner.workspace = true
 thiserror.workspace = true
 hex.workspace = true
-futures-util.workspace = true
 
 openmls = { workspace = true, features = ["crypto-subtle"] }
 openmls_basic_credential = { workspace = true, features = ["clonable"] }

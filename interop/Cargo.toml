@@ -14,9 +14,7 @@ workspace = true
 [dependencies]
 anyhow.workspace = true
 log.workspace = true
-env_logger.workspace = true
 core-crypto = { path = "../crypto" }
-core-crypto-ffi = { path = "../crypto-ffi" }
 openmls.workspace = true
 tls_codec.workspace = true
 
@@ -28,14 +26,16 @@ base64.workspace = true
 rand.workspace = true
 bitflags.workspace = true
 uuid = { workspace = true, features = ["v4"] }
-tempfile.workspace = true
-spinoff = { version = "0.8", features = [
-  "aesthetic",
-], default-features = false }
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 
 [target.'cfg(not(target_os = "unknown"))'.dependencies]
+core-crypto-ffi = { path = "../crypto-ffi" }
+env_logger.workspace = true
+spinoff = { version = "0.8", features = [
+  "aesthetic",
+], default-features = false }
+tempfile.workspace = true
 tokio = { workspace = true, features = ["full"] }
 # Http Server
 warp = { version = "0.4", features = ["server"] }

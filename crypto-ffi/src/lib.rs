@@ -18,6 +18,11 @@ uniffi_runtime_wasm::export_jspi_entry!();
 
 uniffi::setup_scaffolding!("core_crypto_ffi");
 
+// Our uniffi dep is _weird_, we have a few different versions in play depending
+// on build setup, and this was the only way we could get it all to work out.
+#[cfg(all(target_family = "wasm", not(feature = "wasm")))]
+compile_error!("when compiling for wasm you must include the `wasm` feature");
+
 mod bundles;
 mod bytes_wrapper;
 #[cfg(feature = "cancellable-transactions")]

@@ -6128,7 +6128,6 @@ dependencies = [
  "anyhow",
  "cargo_metadata",
  "uniffi_bindgen 0.29.5",
- "uniffi_build",
  "uniffi_core 0.29.5",
  "uniffi_macros 0.29.5",
  "uniffi_pipeline 0.29.5",
@@ -6203,17 +6202,6 @@ dependencies = [
  "uniffi_meta 0.31.0",
  "uniffi_pipeline 0.31.0",
  "uniffi_udl 0.31.0",
-]
-
-[[package]]
-name = "uniffi_build"
-version = "0.29.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "025a05cba02ee22b6624ac3d257e59c7395319ea8fe1aae33a7cdb4e2a3016cc"
-dependencies = [
- "anyhow",
- "camino",
- "uniffi_bindgen 0.29.5",
 ]
 
 [[package]]
@@ -7136,7 +7124,7 @@ dependencies = [
  "uuid",
  "web-time",
  "x509-cert",
- "x509-ocsp 0.3.0-pre",
+ "x509-ocsp 0.3.0-rc.1",
  "zeroize",
 ]
 
@@ -7223,8 +7211,9 @@ dependencies = [
 
 [[package]]
 name = "x509-ocsp"
-version = "0.3.0-pre"
-source = "git+https://github.com/RustCrypto/formats.git#f17419b70c3631cba5aa960d4daeb9d1ca60d59b"
+version = "0.3.0-rc.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24e12c9a7f47a2a518e34d822c083d6bc21736d58d3425707244e046923efb79"
 dependencies = [
  "const-oid 0.10.2",
  "der 0.8.3",
@@ -7234,9 +7223,8 @@ dependencies = [
 
 [[package]]
 name = "x509-ocsp"
-version = "0.3.0-rc.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24e12c9a7f47a2a518e34d822c083d6bc21736d58d3425707244e046923efb79"
+version = "0.3.0-rc.1"
+source = "git+https://github.com/RustCrypto/formats.git#6a44b94a3d48506eca55ea641e533f8c39090c76"
 dependencies = [
  "const-oid 0.10.2",
  "der 0.8.3",

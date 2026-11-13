@@ -68,13 +68,6 @@ uniffi-runtime-wasm = { git = "https://github.com/wireapp/uniffi-bindgen-react-n
 # JSPI needs the exporting cdylib to depend on wasm-bindgen directly.
 wasm-bindgen.workspace = true
 
-[build-dependencies]
-uniffi = { workspace = true, features = [
-  "build",
-  "bindgen",
-  "wasm-unstable-single-threaded",
-] }
-
 [dev-dependencies]
 testing_logger = "0.1.1"
 macro_rules_attribute.workspace = true
