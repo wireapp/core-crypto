@@ -33,9 +33,6 @@ ignore = [
   # pre-release state. rsa comes in through jsonwebtoken, which
   # rusty-jwt-tools uses. We only use RSA keys in tests.
   "RUSTSEC-2023-0071",
-  # We can't fix this until we update Gobley;
-  # see WPB-29524
-  "RUSTSEC-2026-0374",
   # We depend on `testcontainers` to migrate their tar dependency
   "RUSTSEC-2026-0440",
   # The fix is in sqlcipher-src 420, which comes with rusqlite 0.42,
@@ -73,4 +70,4 @@ unknown-git = "deny"
 unknown-registry = "deny"
 
 [sources.allow-org]
-github = ["wireapp", "RustCrypto", "carl-wallace"]
+github = ["wireapp", "carl-wallace"]
