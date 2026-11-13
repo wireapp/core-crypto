@@ -29,15 +29,6 @@ pub struct Commit {
     pub identity: WireIdentity,
 }
 
-/// The data relevant after a buffered Commit was processed.
-#[derive(Debug)]
-pub struct BufferedCommit {
-    /// Is the conversation still active after receiving this commit, i.e., has the user been removed from the group
-    pub is_active: bool,
-    /// Identity claims present in the sender credential
-    pub identity: WireIdentity,
-}
-
 /// Represents the items a consumer might require after decrypting a message.
 #[derive(Debug, enum_as_inner::EnumAsInner)]
 pub enum DecryptedMessage {
