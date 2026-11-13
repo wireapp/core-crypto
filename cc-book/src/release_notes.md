@@ -19,6 +19,8 @@
 - CoreCrypto now notices when another process (i.e. NSE) has written to the DB. In that case, it clears all MLS and
   Proteus caches, so that fresh state is loaded on-demand from the DB.
 - Aborted transactions and failed commits now also clear the Proteus cache, so they are no longer left ahead of the DB.
+- iOS: A file lock now protects migration of the keystore salt avoiding potential concurrent access from separate
+  processes.
 
 ## CoreCrypto 11
 
