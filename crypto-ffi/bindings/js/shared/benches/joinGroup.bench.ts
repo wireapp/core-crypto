@@ -1,4 +1,4 @@
-import type { KeyPackage } from "#core-crypto";
+import type { CoreCrypto, KeyPackage } from "#core-crypto";
 import { runOnPlatform } from "#shared-utils";
 import { runBenchmark, userBenchmarkParameters } from "./utils";
 
@@ -14,32 +14,34 @@ export async function setupJoinGroupBench() {
             teardown: globalThis.tinybenchTeardown,
         });
         for (const { userCount, cipherSuite, cipherSuiteLabel } of parameters) {
+            // The existing members only provide key packages, so each task creates them
+            // once and every iteration takes fresh key packages from them.
+            let members: CoreCrypto[] = [];
             bench.add(
                 `cipherSuite=${cipherSuiteLabel} userCount=${userCount}`,
                 async () => {
-                    const aliceCc = await helpers.ccInit({
+                    const alice = await helpers.ccInit({
                         withBasicCredential: true,
                         cipherSuite,
                     });
-
+                    const charlie = await helpers.ccInit({
+                        withBasicCredential: true,
+                        cipherSuite,
+                    });
                     const conversationId =
-                        await helpers.createConversation(aliceCc);
-                    const keyPackages: KeyPackage[] = [];
+                        await helpers.createConversation(alice);
 
-                    if (userCount > 1) {
-                        for (let i = 0; i < userCount; i++) {
-                            const bobCc = await helpers.ccInit({
-                                withBasicCredential: true,
-                                cipherSuite,
-                            });
-                            const kp = await helpers.generateKeyPackage(
-                                bobCc,
-                                cipherSuite,
+                    if (members.length > 0) {
+                        const keyPackages: KeyPackage[] = [];
+                        for (const member of members) {
+                            keyPackages.push(
+                                await helpers.generateKeyPackage(
+                                    member,
+                                    cipherSuite,
+                                ),
                             );
-                            keyPackages.push(kp);
                         }
-
-                        await aliceCc.transaction(
+                        await alice.transaction(
                             async (ctx) =>
                                 await ctx.addClientsToConversation(
                                     conversationId,
@@ -48,16 +50,11 @@ export async function setupJoinGroupBench() {
                         );
                     }
 
-                    const charlieCc = await helpers.ccInit({
-                        withBasicCredential: true,
-                        cipherSuite,
-                    });
                     const kp = await helpers.generateKeyPackage(
-                        charlieCc,
+                        charlie,
                         cipherSuite,
                     );
-
-                    await aliceCc.transaction(
+                    await alice.transaction(
                         async (ctx) =>
                             await ctx.addClientsToConversation(conversationId, [
                                 kp,
@@ -67,13 +64,28 @@ export async function setupJoinGroupBench() {
                         await deliveryService.getLatestCommitBundle();
 
                     const start = bench.now();
-
-                    await charlieCc.transaction((ctx) =>
+                    await charlie.transaction((ctx) =>
                         ctx.processWelcomeMessage(commitBundle.welcome!),
                     );
-
                     const end = bench.now();
                     return { overriddenDuration: end - start };
+                },
+                {
+                    async beforeAll() {
+                        if (userCount > 1) {
+                            for (let i = 0; i < userCount; i++) {
+                                members.push(
+                                    await helpers.ccInit({
+                                        withBasicCredential: true,
+                                        cipherSuite,
+                                    }),
+                                );
+                            }
+                        }
+                    },
+                    async afterAll() {
+                        members = [];
+                    },
                 },
             );
         }

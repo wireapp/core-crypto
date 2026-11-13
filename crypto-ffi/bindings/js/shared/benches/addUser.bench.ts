@@ -1,4 +1,4 @@
-import type { KeyPackage } from "#core-crypto";
+import type { CoreCrypto, KeyPackage } from "#core-crypto";
 import { runBenchmark, userBenchmarkParameters } from "./utils";
 import { runOnPlatform } from "../shared/utils";
 
@@ -14,32 +14,27 @@ export async function setupAddUserBench() {
             teardown: globalThis.tinybenchTeardown,
         });
         for (const { userCount, cipherSuite, cipherSuiteLabel } of parameters) {
+            // Users only provide key packages, so each task creates them once and every
+            // iteration takes fresh key packages from them.
+            let users: CoreCrypto[] = [];
             globalThis.bench.add(
                 `cipherSuite=${cipherSuiteLabel} userCount=${userCount}`,
                 async () => {
-                    const aliceCc = await helpers.ccInit({
+                    const alice = await helpers.ccInit({
                         withBasicCredential: true,
                         cipherSuite,
                     });
-
                     const conversationId =
-                        await helpers.createConversation(aliceCc);
+                        await helpers.createConversation(alice);
                     const keyPackages: KeyPackage[] = [];
-
-                    for (let i = 0; i < userCount; i++) {
-                        const bobCc = await helpers.ccInit({
-                            withBasicCredential: true,
-                            cipherSuite,
-                        });
-                        const kp = await helpers.generateKeyPackage(
-                            bobCc,
-                            cipherSuite,
+                    for (const user of users) {
+                        keyPackages.push(
+                            await helpers.generateKeyPackage(user, cipherSuite),
                         );
-                        keyPackages.push(kp);
                     }
 
                     const start = bench.now();
-                    await aliceCc.transaction(
+                    await alice.transaction(
                         async (ctx) =>
                             await ctx.addClientsToConversation(
                                 conversationId,
@@ -48,6 +43,21 @@ export async function setupAddUserBench() {
                     );
                     const end = bench.now();
                     return { overriddenDuration: end - start };
+                },
+                {
+                    async beforeAll() {
+                        for (let i = 0; i < userCount; i++) {
+                            users.push(
+                                await helpers.ccInit({
+                                    withBasicCredential: true,
+                                    cipherSuite,
+                                }),
+                            );
+                        }
+                    },
+                    async afterAll() {
+                        users = [];
+                    },
                 },
             );
         }
