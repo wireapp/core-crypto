@@ -21,7 +21,7 @@ workspace = true
 
 [features]
 default = ["proteus"]
-cancellable-transactions = ["dep:tokio-util"]
+cancellable-transactions = ["dep:tokio-util", "dep:futures-util"]
 # Guard keystore transactions across processes, not just within one. Intended for targets where
 # more than one process shares a keystore, such as iOS apps with extensions.
 # Not supported on `target_os = "unknown"`; see the keystore feature of the same name.
@@ -38,7 +38,7 @@ core-crypto-macros.workspace = true
 core-crypto.workspace = true
 wire-e2e-identity.workspace = true
 derive_more.workspace = true
-futures-util.workspace = true
+futures-util = { workspace = true, optional = true }
 hex.workspace = true
 log-reload.workspace = true
 log.workspace = true
@@ -51,14 +51,15 @@ tls_codec.workspace = true
 uuid.workspace = true
 x509-cert.workspace = true
 
-# UniFFI - Android + iOS bindings - Runtime support
-uniffi.workspace = true
-
 # Needed to use the latest ubrn version when building.
 uniffi_ubrn = { package = "uniffi", version = "0.31", optional = true, features = [
   "wasm-unstable-single-threaded",
 ] }
 tokio-util = { version = "0.7", optional = true }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+# UniFFI - Android + iOS bindings - Runtime support
+uniffi.workspace = true
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 js-sys.workspace = true
