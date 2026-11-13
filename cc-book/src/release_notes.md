@@ -10,6 +10,8 @@
 - It's now possible to rotate an existing x509 credential with a new x509 credential which has the same public key.
 - iOS: A file lock now protects migration of the keystore salt avoiding potential concurrent access from separate
   processes.
+- CRL handling has been fixed such that revoked X509 certificates immediately cause credentials relying on them to be
+  invalidated. Previously revocation was having an effect only after reconstructing the `PkiEnvironment`.
 
 ### v11.0.0 - 2026-10-30
 
