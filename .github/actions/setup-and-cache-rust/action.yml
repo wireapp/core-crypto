@@ -8,6 +8,13 @@ inputs:
     description: Set the value of RUSTFLAGS (set to empty string to avoid overwriting existing flags)
     required: false
     default: -D warnings
+  build-warnings:
+    description: >
+      Set the value of CARGO_BUILD_WARNINGS (set to empty string to leave it unset). Unlike RUSTFLAGS, this also
+      applies to cargo's own lints, such as `unused_dependencies`, and to every workspace cargo builds in the job,
+      including tools like ubrn. So it defaults to unset; `-D warnings` in RUSTFLAGS still denies rustc warnings.
+    required: false
+    default: ''
   components:
     description: Additional components to install that don't come with the toolchain by default.
     required: false
@@ -37,6 +44,7 @@ runs:
         toolchain: ${{ inputs.toolchain }}
         target: ${{ inputs.target }}
         rustflags: ${{ inputs.rustflags }}
+        build-warnings: ${{ inputs.build-warnings }}
         components: ${{ inputs.components }}
         cache: false
     - name: Cleanup unused Rust toolchains
