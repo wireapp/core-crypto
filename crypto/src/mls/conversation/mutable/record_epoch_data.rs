@@ -1,6 +1,9 @@
 use core_crypto_keystore::{
-    entities::{OldEpochData, OldEpochDataPkRef, OldEpochMemberData},
-    traits::{EntityDatabaseMutation as _, FetchFromDatabase as _},
+    ancillary::ConversationEpochsNewerThan,
+    entities::{
+        OldEpochData, OldEpochDataPkRef, OldEpochMemberData, TargetedMessageRxCounter, TransientMessageRxCounter,
+    },
+    traits::{DeletableBySearchKey as _, EntityDatabaseMutation as _, FetchFromDatabase as _},
 };
 use openmls::group::MlsGroup;
 use tls_codec::Serialize as _;
@@ -9,6 +12,38 @@ use super::{ConversationMut, Result};
 use crate::{KeystoreError, RecursiveError, TlsCodecError};
 
 impl ConversationMut {
+    /// Record initial epoch data, clearing any existing epoch data which may remain from forks.
+    pub(crate) async fn record_initial_epoch_data(&self) -> Result<()> {
+        let tx = self.tx_context.inner().map_err(RecursiveError::context(
+            "getting conversation's tx context for idempotence check for recording epoch data",
+        ))?;
+        let tx = tx.transaction();
+
+        // implicit in being initial is that any equal or subsequent group state is from a fork or something
+        // and must be removed.
+        let newer_than = ConversationEpochsNewerThan::new(self.id().keystore(), self.epoch().await);
+        OldEpochData::delete_all_matching(tx, &newer_than).map_err(KeystoreError::wrap(
+            "deleting any stale epoch data on recording initial epoch data",
+        ))?;
+
+        // We also have to clean up the counters, for consistency
+        TargetedMessageRxCounter::delete_all_matching(tx, &newer_than).map_err(KeystoreError::wrap(
+            "deleting targeted msg rx counter on recording initial epoch data",
+        ))?;
+        TransientMessageRxCounter::delete_all_matching(tx, &newer_than).map_err(KeystoreError::wrap(
+            "deleting transient msg rx counter on recording initial epoch data",
+        ))?;
+
+        let group_state = self.group().await;
+        self.record_epoch_data(group_state.mls_group())
+            .await
+            .map_err(RecursiveError::context(
+                "recording epoch data for new conversation creation",
+            ))?;
+
+        Ok(())
+    }
+
     /// Idempotently record per-epoch durable data for TNT messages.
     pub(crate) async fn record_epoch_data(&self, group: &MlsGroup) -> Result<()> {
         let tx = self.tx_context.inner().map_err(RecursiveError::context(
