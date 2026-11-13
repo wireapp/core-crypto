@@ -26,22 +26,8 @@ open class RemoveUser : UserBenchmark() {
             aliceCc = ccInit(CcInitOptions(CcInitOptions.Mode.WithBasicCredential(selectedCipherSuite)))
             conversationId = createConversation(aliceCc)
 
-            val keyPackages = mutableListOf<KeyPackage>()
-            clientIdsToRemove = buildList {
-                repeat(userCount) {
-                    val bobId = genClientId()
-                    val bobCc =
-                        ccInit(
-                            CcInitOptions(
-                                mode = CcInitOptions.Mode.WithBasicCredential(selectedCipherSuite),
-                                clientId = bobId
-                            )
-                        )
-                    val kp = generateKeyPackage(bobCc)
-                    keyPackages.add(kp)
-                    this.add(bobId)
-                }
-            }
+            val keyPackages = users.map { generateKeyPackage(it.cc) }
+            clientIdsToRemove = users.map { it.id }
 
             aliceCc.transaction {
                 it.addClientsToConversation(conversationId, keyPackages)

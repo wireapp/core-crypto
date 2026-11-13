@@ -23,17 +23,9 @@ open class AddUser : UserBenchmark() {
     @Setup(Level.Invocation)
     fun setup() {
         runBlocking {
-            val options = CcInitOptions(CcInitOptions.Mode.WithBasicCredential(selectedCipherSuite))
-            aliceCc = ccInit(options)
+            aliceCc = ccInit(CcInitOptions(CcInitOptions.Mode.WithBasicCredential(selectedCipherSuite)))
             conversationId = createConversation(aliceCc)
-
-            keyPackages = buildList {
-                repeat(userCount) {
-                    val bobCc = ccInit(options)
-                    val kp = generateKeyPackage(bobCc)
-                    this.add(kp)
-                }
-            }
+            keyPackages = users.map { generateKeyPackage(it.cc) }
         }
     }
 

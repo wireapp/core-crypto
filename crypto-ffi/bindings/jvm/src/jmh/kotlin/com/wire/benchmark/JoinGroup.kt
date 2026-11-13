@@ -25,14 +25,8 @@ open class JoinGroup : UserBenchmark() {
             val aliceCc = ccInit(options)
             conversationId = createConversation(aliceCc)
 
-            val keyPackages = mutableListOf<KeyPackage>()
-
             if (userCount > 1) {
-                repeat(userCount) {
-                    val bobCc = ccInit(options)
-                    val kp = generateKeyPackage(bobCc)
-                    keyPackages.add(kp)
-                }
+                val keyPackages = users.map { generateKeyPackage(it.cc) }
                 aliceCc.transaction {
                     it.addClientsToConversation(conversationId, keyPackages)
                 }
