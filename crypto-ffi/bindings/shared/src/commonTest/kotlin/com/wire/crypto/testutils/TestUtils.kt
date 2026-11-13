@@ -6,9 +6,11 @@ import com.wire.crypto.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
+import java.io.File
 import java.nio.ByteBuffer
 import java.nio.file.Files
 import java.security.SecureRandom
+import java.util.Collections
 import java.util.Locale
 import java.util.UUID
 import kotlin.random.Random
@@ -187,11 +189,26 @@ suspend fun ccInit(
     return cc
 }
 
+private val databaseDirectories = Collections.synchronizedList(mutableListOf<File>())
+
 suspend fun newDatabase(): Database {
     val root = Files.createTempDirectory("mls").toFile()
+    databaseDirectories += root
     val path = root.resolve("keystore-${randomIdentifier()}")
     val key = genDatabaseKey()
     return openDatabase(path.absolutePath, key)
+}
+
+/**
+ * Delete the directories of all databases [newDatabase] has created so far.
+ *
+ * Only call this once nothing uses those databases anymore.
+ */
+fun deleteDatabases() {
+    synchronized(databaseDirectories) {
+        databaseDirectories.forEach { it.deleteRecursively() }
+        databaseDirectories.clear()
+    }
 }
 
 suspend fun createConversation(cc: CoreCrypto): ConversationId {
