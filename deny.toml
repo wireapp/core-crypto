@@ -70,4 +70,4 @@ unknown-git = "deny"
 unknown-registry = "deny"
 
 [sources.allow-org]
-github = ["wireapp", "carl-wallace"]
+github = ["wireapp", "carl-wallace", "RustCrypto"]
