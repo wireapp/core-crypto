@@ -8,6 +8,8 @@
   Proteus caches, so that fresh state is loaded on-demand from the DB.
 - Aborted transactions and failed commits now also clear the Proteus cache, so they are no longer left ahead of the DB.
 - It's now possible to rotate an existing x509 credential with a new x509 credential which has the same public key.
+- iOS: A file lock now protects migration of the keystore salt avoiding potential concurrent access from separate
+  processes.
 
 ### v11.0.0 - 2026-10-30
 
