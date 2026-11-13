@@ -12,14 +12,8 @@ pub enum MlsError {
     ConversationAlreadyExists { conversation_id: Vec<u8> },
     #[error("We already decrypted this message once")]
     DuplicateMessage,
-    #[error("Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives")]
-    BufferedFutureMessage,
     #[error("Incoming message is from an epoch too far in the future to buffer.")]
     WrongEpoch,
-    #[error(
-        "Incoming message is a commit for which we have not yet received all the proposals. Buffering until all proposals have arrived."
-    )]
-    BufferedCommit,
     #[error("The epoch in which message was encrypted is older than allowed")]
     MessageEpochTooOld,
     #[error("Tried to decrypt a commit created by self which is likely to have been replayed by the DS")]
