@@ -21,6 +21,8 @@
 - Aborted transactions and failed commits now also clear the Proteus cache, so they are no longer left ahead of the DB.
 - iOS: A file lock now protects migration of the keystore salt avoiding potential concurrent access from separate
   processes.
+- CRL handling has been fixed such that revoked X509 certificates immediately cause credentials relying on them to be
+  invalidated. Previously revocation was having an effect only after reconstructing the `PkiEnvironment`.
 
 ## CoreCrypto 11
 
