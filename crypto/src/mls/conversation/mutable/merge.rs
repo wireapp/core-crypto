@@ -28,33 +28,42 @@
 use core_crypto_keystore::{entities::StoredEncryptionKeyPair, traits::EntityDeleteBorrowed};
 
 use super::{ConversationMut, Result};
-use crate::{KeystoreError, OpenMlsError, mls::conversation::Error};
+use crate::{KeystoreError, OpenMlsError, RecursiveError, mls::conversation::Error};
 
 impl ConversationMut {
     /// Apply a pending commit
     pub(super) async fn commit_accepted(&mut self) -> Result<()> {
         let provider = &self.crypto_provider().await?;
-        self.mutate_group(async |tx, group, _| {
-            group.is_pending = false;
+        let was_pending = self
+            .mutate_group(async |tx, group, _| {
+                let was_pending = std::mem::replace(&mut group.is_pending, false);
 
-            // openmls stores here all the encryption keypairs used for update proposals..
-            let previous_own_leaf_nodes = group.own_leaf_nodes.clone();
+                // openmls stores here all the encryption keypairs used for update proposals..
+                let previous_own_leaf_nodes = group.own_leaf_nodes.clone();
 
-            group
-                .merge_pending_commit(provider)
-                .await
-                .map_err(OpenMlsError::wrap("merging pending commit"))?;
+                group
+                    .merge_pending_commit(provider)
+                    .await
+                    .map_err(OpenMlsError::wrap("merging pending commit"))?;
 
-            // ..so if there's any, we clear them after the commit is merged
-            for oln in &previous_own_leaf_nodes {
-                let ek = oln.encryption_key().as_slice();
-                StoredEncryptionKeyPair::delete_borrowed(tx, ek)
-                    .map_err(KeystoreError::wrap("deleting stored encryption keypair"))?;
-            }
+                // ..so if there's any, we clear them after the commit is merged
+                for oln in &previous_own_leaf_nodes {
+                    let ek = oln.encryption_key().as_slice();
+                    StoredEncryptionKeyPair::delete_borrowed(tx, ek)
+                        .map_err(KeystoreError::wrap("deleting stored encryption keypair"))?;
+                }
 
-            Ok(())
-        })
-        .await
+                Ok(was_pending)
+            })
+            .await?;
+
+        if was_pending {
+            self.record_initial_epoch_data().await.map_err(RecursiveError::context(
+                "recording initial epoch data when realizing a group",
+            ))?;
+        }
+
+        Ok(())
     }
 
     /// Allows to remove a pending commit. Use this when backend rejects the commit
