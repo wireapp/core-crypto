@@ -116,10 +116,7 @@ impl Database {
         filesystem: Box<dyn Filesystem>,
         migration_target: MigrationTarget,
     ) -> CryptoKeystoreResult<Self> {
-        let transaction_lock = {
-            let _sqlite = SqliteGuard::lock();
-            TransactionLock::new(conn.path().unwrap_or_default())?
-        };
+        let transaction_lock = TransactionLock::new(conn.path().unwrap_or_default())?;
         // SQL migrations and their meta migrations commit separately. Keep other processes
         // out for the entire initialization, including reading the current schema version.
         let _guard = transaction_lock.acquire().await?;
@@ -174,10 +171,7 @@ impl Database {
     ///
     /// In-memory databases are never encrypted.
     pub fn open_in_memory() -> CryptoKeystoreResult<Arc<Self>> {
-        let connection = {
-            let _sqlite = SqliteGuard::lock();
-            ManagedConnection::from(Connection::open_in_memory()?)
-        };
+        let connection = ManagedConnection::from(Connection::open_in_memory()?);
         Self::init_with_lock(
             connection,
             Box::new(filesystem::Nop),
