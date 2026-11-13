@@ -3,7 +3,8 @@ use const_format::formatcp;
 use crate::{
     CryptoKeystoreResult, Transactionlike,
     ancillary::{
-        ConversationEpochsOlderThan, ConversationId, MessageRxCounterPk, MessageRxCounterPkRef,
+        ConversationEpochsNewerThan, ConversationEpochsOlderThan, ConversationId, MessageRxCounterPk,
+        MessageRxCounterPkRef,
         helpers::{count_helper, get_helper_composite_key, load_all_helper},
     },
     traits::{
@@ -143,30 +144,27 @@ impl EntityDeleteBorrowed for TransientMessageRxCounter {
 impl SearchableEntity<ConversationEpochsOlderThan<'_>> for TransientMessageRxCounter {
     fn find_all_matching(
         conn: &rusqlite::Connection,
-        conversation_epoch: &ConversationEpochsOlderThan,
+        search_key: &ConversationEpochsOlderThan,
     ) -> CryptoKeystoreResult<Vec<Self>> {
         let mut stmt = conn.prepare_cached(formatcp!(
             "SELECT * FROM {} WHERE conversation_id = ? AND epoch < ?",
             TransientMessageRxCounter::TABLE_NAME
         ))?;
         stmt.query_map(
-            rusqlite::params![conversation_epoch.conversation_id, conversation_epoch.epoch],
+            rusqlite::params![search_key.conversation_id, search_key.epoch],
             Self::from_row,
         )?
         .collect::<Result<_, _>>()
         .map_err(Into::into)
     }
 
-    fn matches(&self, conversation_epoch: &ConversationEpochsOlderThan) -> bool {
-        &self.conversation_id == conversation_epoch.conversation_id && self.epoch < conversation_epoch.epoch
+    fn matches(&self, search_key: &ConversationEpochsOlderThan) -> bool {
+        &self.conversation_id == search_key.conversation_id && self.epoch < search_key.epoch
     }
 }
 
 impl DeletableBySearchKey<ConversationEpochsOlderThan<'_>> for TransientMessageRxCounter {
-    fn delete_all_matching<'a, Tx>(
-        tx: &'a Tx,
-        conversation_epoch: &ConversationEpochsOlderThan,
-    ) -> CryptoKeystoreResult<()>
+    fn delete_all_matching<'a, Tx>(tx: &'a Tx, search_key: &ConversationEpochsOlderThan) -> CryptoKeystoreResult<()>
     where
         &'a Tx: Into<Transactionlike<'a>>,
     {
@@ -175,10 +173,44 @@ impl DeletableBySearchKey<ConversationEpochsOlderThan<'_>> for TransientMessageR
             "DELETE FROM {} WHERE conversation_id = ? AND epoch < ?",
             TransientMessageRxCounter::TABLE_NAME
         ))?;
-        stmt.execute(rusqlite::params![
-            conversation_epoch.conversation_id,
-            conversation_epoch.epoch
-        ])?;
+        stmt.execute(rusqlite::params![search_key.conversation_id, search_key.epoch])?;
+        Ok(())
+    }
+}
+
+impl SearchableEntity<ConversationEpochsNewerThan<'_>> for TransientMessageRxCounter {
+    fn find_all_matching(
+        conn: &rusqlite::Connection,
+        search_key: &ConversationEpochsNewerThan<'_>,
+    ) -> CryptoKeystoreResult<Vec<Self>> {
+        let mut stmt = conn.prepare_cached(formatcp!(
+            "SELECT * FROM {} WHERE conversation_id = ? AND epoch >= ?",
+            TransientMessageRxCounter::TABLE_NAME
+        ))?;
+        stmt.query_map(
+            rusqlite::params![search_key.conversation_id, search_key.epoch],
+            Self::from_row,
+        )?
+        .collect::<Result<_, _>>()
+        .map_err(Into::into)
+    }
+
+    fn matches(&self, search_key: &ConversationEpochsNewerThan<'_>) -> bool {
+        &self.conversation_id == search_key.conversation_id && self.epoch >= search_key.epoch
+    }
+}
+
+impl DeletableBySearchKey<ConversationEpochsNewerThan<'_>> for TransientMessageRxCounter {
+    fn delete_all_matching<'a, Tx>(tx: &'a Tx, search_key: &ConversationEpochsNewerThan<'_>) -> CryptoKeystoreResult<()>
+    where
+        &'a Tx: Into<Transactionlike<'a>>,
+    {
+        let conn = tx.into().conn()?;
+        let mut stmt = conn.prepare_cached(formatcp!(
+            "DELETE FROM {} WHERE conversation_id = ? AND epoch >= ?",
+            TransientMessageRxCounter::TABLE_NAME
+        ))?;
+        stmt.execute(rusqlite::params![search_key.conversation_id, search_key.epoch])?;
         Ok(())
     }
 }
