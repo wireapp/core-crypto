@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-1a01e1cb.js";
+            window.path_to_searchindex_js = "searchindex-5e61c94d.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-e64f8d46.js"></script>
@@ -1138,6 +1138,8 @@ to <code>corecrypto.js</code>.</p>
 <li>CoreCrypto now notices when another process (i.e. NSE) has written to the DB. In that case, it clears all MLS and
 Proteus caches, so that fresh state is loaded on-demand from the DB.</li>
 <li>Aborted transactions and failed commits now also clear the Proteus cache, so they are no longer left ahead of the DB.</li>
+<li>iOS: A file lock now protects migration of the keystore salt avoiding potential concurrent access from separate
+processes.</li>
 </ul>
 <h2 id="corecrypto-11"><a class="header" href="#corecrypto-11">CoreCrypto 11</a></h2>
 <h3 id="v1100---2026-10-30"><a class="header" href="#v1100---2026-10-30">v11.0.0 - 2026-10-30</a></h3>
