@@ -32,13 +32,11 @@ impl Infrastructural for crate::mls::conversation::Error {
             | Self::MemberNotFound(_)
             | Self::TntMessageCounterOverflow
             | Self::MessageRejected { .. }
-            | Self::MessageEpochTooOld
             | Self::UnbufferedFarFutureMessage
             | Self::DecryptionError
             | Self::IdentityInitializationError
             | Self::MlsGroupInvalidState(_)
             | Self::MlsMessageInvalidState(_)
-            | Self::InvalidTransientMessageEpoch { .. }
             | Self::MissingExternalSenderExtension
             | Self::MissingGroupInfo
             | Self::PendingCommitNotFound

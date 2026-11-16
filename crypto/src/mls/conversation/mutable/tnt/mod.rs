@@ -296,13 +296,14 @@ impl ConversationMut {
                 }));
             }
             return Err(Error::UnbufferedFarFutureMessage);
-        } else if message.content.body.is_transient() {
-            return Err(Error::InvalidTransientMessageEpoch {
-                group_epoch,
+        } else if message.content.body.is_transient()
+            || message_epoch < group_epoch.saturating_sub(MAX_PAST_EPOCHS as _)
+        {
+            return Ok(RejectionReason::MessageEpochTooOld {
                 message_epoch,
-            });
-        } else if message_epoch < group_epoch.saturating_sub(MAX_PAST_EPOCHS as _) {
-            return Err(Error::MessageEpochTooOld);
+                group_epoch,
+            }
+            .into());
         } else {
             // for older targeted messages we have to be able to look into the past and get old member data
             // (FetchFromDatabase impl for Database arc-wraps internally, so this should never clone)

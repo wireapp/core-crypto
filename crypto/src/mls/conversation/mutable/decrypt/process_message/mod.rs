@@ -99,7 +99,11 @@ pub(super) async fn process_message(
                         if msg_epoch < group_epoch =>
                     {
                         match content_type {
-                            ContentType::Application => Err(Error::MessageEpochTooOld),
+                            ContentType::Application => Ok(RejectionReason::MessageEpochTooOld {
+                                message_epoch: msg_epoch,
+                                group_epoch,
+                            }
+                            .into()),
                             ContentType::Commit => Ok(RejectionReason::StaleCommit.into()),
                             ContentType::Proposal => Ok(RejectionReason::StaleProposal.into()),
                         }
@@ -107,9 +111,16 @@ pub(super) async fn process_message(
                     Err(ProcessMessageError::ValidationError(ValidationError::WrongEpoch)) => {
                         Err(Error::UnbufferedFarFutureMessage)
                     }
-                    Err(ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
-                        MessageDecryptionError::SecretTreeError(SecretTreeError::TooDistantInThePast),
-                    ))) => Err(Error::MessageEpochTooOld),
+                    Err(ProcessMessageError::ValidationError(
+                        ValidationError::UnableToDecrypt(MessageDecryptionError::SecretTreeError(
+                            SecretTreeError::TooDistantInThePast,
+                        ))
+                        | ValidationError::NoPastEpochData,
+                    )) => Ok(RejectionReason::MessageEpochTooOld {
+                        message_epoch: msg_epoch,
+                        group_epoch,
+                    }
+                    .into()),
 
                     // other errors we care to unpack
                     Err(ProcessMessageError::InvalidCommit(StageCommitError::MissingProposal)) => {

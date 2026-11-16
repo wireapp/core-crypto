@@ -83,6 +83,15 @@ pub enum RejectionReason {
     StaleCommit,
     /// This proposal is for an epoch which this conversation has already moved past.
     StaleProposal,
+    /// This message is from an epoch whose secrets are no longer available.
+    ///
+    /// This includes transient messages from any epoch older than the current one.
+    MessageEpochTooOld {
+        /// Epoch of the message
+        message_epoch: u64,
+        /// Epoch of the group
+        group_epoch: u64,
+    },
 }
 
 /// Outcome of attempting to decrypt a message.

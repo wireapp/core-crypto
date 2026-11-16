@@ -3,7 +3,6 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![expect(missing_docs)]
 
-use super::config::MAX_PAST_EPOCHS;
 use crate::ClientId;
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
@@ -25,8 +24,6 @@ pub enum Error {
         /// Why was the message rejected by the delivery service?
         reason: String,
     },
-    #[error("The epoch in which message was encrypted is older than {MAX_PAST_EPOCHS}")]
-    MessageEpochTooOld,
     #[error("Incoming message is from an epoch too far in the future to buffer.")]
     UnbufferedFarFutureMessage,
     #[error("An application message failed to decrypt")]
@@ -37,11 +34,6 @@ pub enum Error {
     MlsGroupInvalidState(&'static str),
     #[error("MLS message is in an invalid state: {0}")]
     MlsMessageInvalidState(&'static str),
-    #[error(
-        "A transient message can only be decrypted in the same epoch as it was sent.
-        Message eppoch: {message_epoch}, group epoch: {group_epoch}."
-    )]
-    InvalidTransientMessageEpoch { group_epoch: u64, message_epoch: u64 },
     #[error("The group lacks an ExternalSender extension whereas it should have at least one")]
     MissingExternalSenderExtension,
     #[error("unexpectedly failed to retrieve group info")]
