@@ -59,6 +59,7 @@ pub enum LoggingError {
 }
 
 /// A callback interface for forwarding CoreCrypto log messages to the platform's logging system.
+#[cfg(not(target_os = "unknown"))]
 #[uniffi::export(with_foreign)]
 pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
     /// CoreCrypto will call this method whenever it needs to log a message.
@@ -67,29 +68,31 @@ pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
     fn log(&self, level: CoreCryptoLogLevel, message: String, context: Option<String>) -> Result<(), LoggingError>;
 }
 
-/// The dummy logger is a suitable default value for the log shim
-#[derive(Debug)]
-struct DummyLogger;
-
-impl CoreCryptoLogger for DummyLogger {
-    #[expect(unused_variables)]
-    fn log(&self, level: CoreCryptoLogLevel, message: String, context: Option<String>) -> Result<(), LoggingError> {
-        Ok(())
-    }
+/// A callback interface for forwarding CoreCrypto log messages to the platform's logging system.
+//
+// Async on Wasm because CoreCrypto runs in a worker there, so every call into the logger is a message to the page.
+// Calls are not awaited by the code that logs; see `LogShim::log`.
+#[cfg(target_os = "unknown")]
+#[uniffi::export(with_foreign)]
+#[async_trait::async_trait(?Send)]
+pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
+    /// CoreCrypto will call this method whenever it needs to log a message.
+    ///
+    /// This function catches panics and other unexpected errors. In those cases, it writes to the console.
+    async fn log(
+        &self,
+        level: CoreCryptoLogLevel,
+        message: String,
+        context: Option<String>,
+    ) -> Result<(), LoggingError>;
 }
 
 /// The uniffi log shim is a simple wrapper around the foreign implementer of the trait
-#[derive(Clone, derive_more::Constructor)]
+///
+/// Drops every message until a logger is set.
+#[derive(Clone, Default)]
 struct LogShim {
-    logger: Arc<dyn CoreCryptoLogger>,
-}
-
-impl Default for LogShim {
-    fn default() -> Self {
-        Self {
-            logger: Arc::new(DummyLogger),
-        }
-    }
+    logger: Option<Arc<dyn CoreCryptoLogger>>,
 }
 
 impl LogShim {
@@ -109,6 +112,10 @@ impl log::Log for LogShim {
     }
 
     fn log(&self, record: &Record) {
+        let Some(logger) = &self.logger else {
+            return;
+        };
+
         struct KeyValueVisitor<'kvs>(BTreeMap<Key<'kvs>, Value<'kvs>>);
 
         impl<'kvs> VisitSource<'kvs> for KeyValueVisitor<'kvs> {
@@ -133,16 +140,28 @@ impl log::Log for LogShim {
         // adjust the loglevel for sqlite migrations
         let loglevel = CoreCryptoLogLevel::from(self.adjusted_log_level(record.metadata()));
 
-        let log_result = self.logger.log(loglevel, message.clone(), context);
-
-        if let Err(LoggingError::Ffi(meta_err @ uniffi::UnexpectedUniFFICallbackError { .. })) = log_result {
-            #[cfg(not(target_os = "unknown"))]
+        #[cfg(not(target_os = "unknown"))]
+        if let Err(LoggingError::Ffi(meta_err @ uniffi::UnexpectedUniFFICallbackError { .. })) =
+            logger.log(loglevel, message.clone(), context)
+        {
             eprintln!("{meta_err} while attempting to produce {message}");
+        }
 
-            #[cfg(target_os = "unknown")]
-            web_sys::console::error_1(&JsValue::from(format!(
-                "{meta_err} while attempting to produce {message}"
-            )));
+        // `log::Log::log` is synchronous, so the call to the foreign logger can't be awaited here. Tasks start in the
+        // order they were spawned, so messages still reach the logger in order but they can arrive after their caller
+        // has returned.
+        #[cfg(target_os = "unknown")]
+        {
+            let logger = logger.clone();
+            wasm_bindgen_futures::spawn_local(async move {
+                if let Err(LoggingError::Ffi(meta_err @ uniffi::UnexpectedUniFFICallbackError { .. })) =
+                    logger.log(loglevel, message.clone(), context).await
+                {
+                    web_sys::console::error_1(&JsValue::from(format!(
+                        "{meta_err} while attempting to produce {message}"
+                    )));
+                }
+            });
         }
     }
 
@@ -157,7 +176,7 @@ static LOGGER: LazyLock<ReloadLog<LogShim>> = LazyLock::new(|| ReloadLog::new(Lo
 pub fn set_logger(logger: Arc<dyn CoreCryptoLogger>) {
     LOGGER
         .handle()
-        .replace(LogShim::new(logger))
+        .replace(LogShim { logger: Some(logger) })
         .expect("no poisoned locks should be possible as we never panic while holding the lock");
 
     INIT_LOGGER.call_once(|| {
