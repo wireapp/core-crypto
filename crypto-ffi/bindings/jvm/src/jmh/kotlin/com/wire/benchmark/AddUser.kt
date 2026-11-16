@@ -6,14 +6,9 @@ import kotlinx.coroutines.runBlocking
 import org.openjdk.jmh.annotations.*
 import testutils.*
 import java.nio.file.Files
-import java.util.concurrent.TimeUnit
 
 // This benchmark measures throughput of encrypting messages in a transaction and committing these.
 // It includes the database interaction, because want to be able to answer to a user how long creating messages takes.
-@BenchmarkMode(Mode.Throughput)
-@OutputTimeUnit(TimeUnit.SECONDS)
-@Warmup(iterations = 1, time = 1, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @State(Scope.Thread)
 open class AddUser : UserBenchmark() {
     private lateinit var aliceCc: CoreCrypto
