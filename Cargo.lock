@@ -6198,8 +6198,9 @@ dependencies = [
 
 [[package]]
 name = "uniffi-runtime-wasm"
-version = "0.31.0-5.wire.1"
-source = "git+https://github.com/wireapp/uniffi-bindgen-react-native?tag=0.31.0-5.wire.1#d55ad748fa7d2608f88de912408c5fbae325ba81"
+version = "0.31.0-7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bad07d5cdae4c594ea8e30a00380b7c4b2f8eb3b0bf7939e629e2d711e6438d5"
 
 [[package]]
 name = "uniffi_bindgen"
