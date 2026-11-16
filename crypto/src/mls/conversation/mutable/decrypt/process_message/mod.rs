@@ -101,7 +101,7 @@ pub(super) async fn process_message(
                         match content_type {
                             ContentType::Application => Err(Error::MessageEpochTooOld),
                             ContentType::Commit => Ok(RejectionReason::StaleCommit.into()),
-                            ContentType::Proposal => Err(Error::StaleProposal),
+                            ContentType::Proposal => Ok(RejectionReason::StaleProposal.into()),
                         }
                     }
                     Err(ProcessMessageError::ValidationError(ValidationError::WrongEpoch)) => {

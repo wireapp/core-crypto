@@ -81,6 +81,8 @@ pub enum RejectionReason {
     DuplicateMessage,
     /// This commit is for an epoch which this conversation has already moved past.
     StaleCommit,
+    /// This proposal is for an epoch which this conversation has already moved past.
+    StaleProposal,
 }
 
 /// Outcome of attempting to decrypt a message.
