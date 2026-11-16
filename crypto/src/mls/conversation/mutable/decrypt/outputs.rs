@@ -124,6 +124,8 @@ pub enum RejectionReason {
     UntrustedCredential(openmls_traits::types::CryptoError),
     /// This message belongs to a different conversation.
     WrongGroupId,
+    /// This message's sender is not a member of the conversation in the message's epoch.
+    UnknownMember,
 }
 
 /// Outcome of attempting to decrypt a message.

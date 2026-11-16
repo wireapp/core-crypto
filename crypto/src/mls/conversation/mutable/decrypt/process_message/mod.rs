@@ -137,6 +137,9 @@ pub(super) async fn process_message(
                     Err(ProcessMessageError::ValidationError(ValidationError::WrongGroupId)) => {
                         Ok(RejectionReason::WrongGroupId.into())
                     }
+                    Err(ProcessMessageError::ValidationError(ValidationError::UnknownMember)) => {
+                        Ok(RejectionReason::UnknownMember.into())
+                    }
 
                     // everything else gets a generic wrapping
                     Err(err) => Err(OpenMlsError::wrap("processing message")(err).into()),

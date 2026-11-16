@@ -295,13 +295,15 @@ impl ConversationMut {
         let sender = if message_epoch == group_epoch {
             // for current-epoch messages regardless of type it is ok to inspect the current group state to find the
             // sender
-            self.group()
+            let Some(sender) = self
+                .group()
                 .await
                 .members()
                 .find(|member| member.index == message.content.sender_index())
-                .ok_or(Error::MlsMessageInvalidState(
-                    "tnt sender is not a group member in the current epoch",
-                ))?
+            else {
+                return Ok(RejectionReason::UnknownMember.into());
+            };
+            sender
         } else if message_epoch > group_epoch {
             if message_epoch <= group_epoch.saturating_add(MAX_FUTURE_EPOCHS) {
                 // returning this outcome here is sufficient to cause the buffering to happen,
@@ -325,20 +327,21 @@ impl ConversationMut {
             .into());
         } else {
             // for older targeted messages we have to be able to look into the past and get old member data
-            // (FetchFromDatabase impl for Database arc-wraps internally, so this should never clone)
-            let oemd = Arc::unwrap_or_clone(
-                self.database()?
-                    .get_borrowed::<OldEpochMemberData>(OldEpochMemberDataPkRef::new(
-                        self.id.keystore(),
-                        message_epoch,
-                        message.content.sender_index().u32(),
-                    ))
-                    .await
-                    .map_err(KeystoreError::wrap("fetching old epoch member data"))?
-                    .ok_or(Error::MlsMessageInvalidState(
-                        "old epoch member data not found for the sender",
-                    ))?,
-            );
+            let Some(oemd) = self
+                .database()?
+                .get_borrowed::<OldEpochMemberData>(OldEpochMemberDataPkRef::new(
+                    self.id.keystore(),
+                    message_epoch,
+                    message.content.sender_index().u32(),
+                ))
+                .await
+                .map_err(KeystoreError::wrap("fetching old epoch member data"))?
+            else {
+                // we've already checked if the message is too old, so missing data here maps to "unknown member"
+                return Ok(RejectionReason::UnknownMember.into());
+            };
+            // FetchFromDatabase impl for Database arc-wraps internally, so this should never clone
+            let oemd = Arc::unwrap_or_clone(oemd);
             let credential = MlsCredential::tls_deserialize_exact(&oemd.credential)
                 .map_err(TlsCodecError::deserialize("deserializing old epoch member credential"))?;
             Member {
