@@ -78,13 +78,24 @@ paste = "1.0.5"
 rusqlite = { version = "0.41", default-features = false, features = [
   "ffi-sqlite-wasm-rs",
 ] }
-rsqlite-vfs = "0.2"
+sqlite-wasm-vfs = { version = "0.3", features = ["sahpool"] }
 # `wasm-bindgen` provides the host hooks, including the entropy for SQLCipher.
 sqlite-wasm-rs = { version = "0.6.2", features = ["wasm-bindgen", "sqlcipher"] }
 time = { version = "0.3.5", features = ["wasm-bindgen"] }
 serde-wasm-bindgen.workspace = true
 wasm-bindgen.workspace = true
 wasm-bindgen-futures.workspace = true
+web-sys = { version = "0.3", features = [
+  "FileSystemDirectoryHandle",
+  "FileSystemFileHandle",
+  "FileSystemGetDirectoryOptions",
+  "FileSystemGetFileOptions",
+  "FileSystemReadWriteOptions",
+  "FileSystemSyncAccessHandle",
+  "StorageManager",
+  "WorkerGlobalScope",
+  "WorkerNavigator",
+] }
 web-time.workspace = true
 
 [dev-dependencies]

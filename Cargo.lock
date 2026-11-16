@@ -1237,7 +1237,6 @@ dependencies = [
  "proteus-wasm",
  "rand 0.10.3",
  "refinery",
- "rsqlite-vfs",
  "rstest",
  "rstest_reuse",
  "rusqlite",
@@ -1249,6 +1248,7 @@ dependencies = [
  "smol",
  "smol-macros",
  "sqlite-wasm-rs",
+ "sqlite-wasm-vfs",
  "tempfile",
  "thiserror 2.0.21",
  "time",
@@ -1257,6 +1257,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
+ "web-sys",
  "web-time",
  "x509-cert",
  "zeroize",
@@ -5386,6 +5387,20 @@ dependencies = [
  "rsqlite-vfs",
  "sqlcipher-src 420.0.0+sqlcipher-4.20.0-sqlite-3.54.1-libtomcrypt-1.18.2",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "sqlite-wasm-vfs"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11859fbd5ce417c37e9e8c1993b55b9dc21ea7dd6452ba9097115f06e54a7e4a"
+dependencies = [
+ "futures-util",
+ "js-sys",
+ "rsqlite-vfs",
+ "thiserror 2.0.21",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
