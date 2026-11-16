@@ -8,6 +8,9 @@ on:
       METRICS_WRITER_PASSWORD:
         description: Password for the metrics writer used to publish to Prometheus
         required: true
+      METRICS_WRITER_PASSWORD_NEXUS:
+        description: Password for the metrics writer used to publish to Prometheus on Nexus
+        required: true
 
 permissions:
   deployments: write
@@ -28,6 +31,7 @@ jobs:
       - name: Publish benchmark result to Prometheus
         env:
           VM_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
+          VM_PASSWORD_NEXUS: ${{ secrets.METRICS_WRITER_PASSWORD_NEXUS }}
         run: |
           scripts/benchmarks-to-openmetrics.py --format tinybench benches_result.json > metrics.txt
           COMMIT_HASH=$(git rev-parse --short HEAD)
@@ -37,3 +41,9 @@ jobs:
                --url-query "extra_label=commit=$COMMIT_HASH" \
                --url-query extra_label=target=ts-browser \
               "https://monitoring.zinfra.io/prometheus/api/v1/import/prometheus?"
+          curl -sS --fail-with-body -u "ci-writer:$VM_PASSWORD_NEXUS" --data-binary @metrics.txt \
+               --url-query extra_label=job=core-crypto-benchmark \
+               --url-query "extra_label=repo=$GITHUB_REPOSITORY" \
+               --url-query "extra_label=commit=$COMMIT_HASH" \
+               --url-query extra_label=target=ts-browser \
+              "https://monitoring.nexus.zinfra.io/prometheus/api/v1/import/prometheus?"

@@ -37,6 +37,9 @@ on:
       METRICS_WRITER_PASSWORD:
         description: Password for the metrics writer used to publish to Prometheus
         required: false
+      METRICS_WRITER_PASSWORD_NEXUS:
+        description: Password for the metrics writer used to publish to Prometheus on Nexus
+        required: false
   workflow_dispatch:
     inputs:
       benchmark_message_counts:
@@ -119,3 +122,4 @@ jobs:
     uses: ./.github/workflows/benchmark-ts-native-publish.yml
     secrets:
       METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
+      METRICS_WRITER_PASSWORD_NEXUS: ${{ secrets.METRICS_WRITER_PASSWORD_NEXUS }}

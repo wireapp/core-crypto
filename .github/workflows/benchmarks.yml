@@ -17,6 +17,7 @@ jobs:
       runs_on: '["self-hosted", "benchmark", "core-crypto"]'
     secrets:
       METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
+      METRICS_WRITER_PASSWORD_NEXUS: ${{ secrets.METRICS_WRITER_PASSWORD_NEXUS }}
 
   benchmark-ts-browser:
     needs: artifact-generation
@@ -26,6 +27,7 @@ jobs:
       runs_on: '["self-hosted", "benchmark", "core-crypto"]'
     secrets:
       METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
+      METRICS_WRITER_PASSWORD_NEXUS: ${{ secrets.METRICS_WRITER_PASSWORD_NEXUS }}
 
   benchmark-ts-native:
     needs: artifact-generation
@@ -35,3 +37,4 @@ jobs:
       runs_on: '["self-hosted", "benchmark", "core-crypto"]'
     secrets:
       METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
+      METRICS_WRITER_PASSWORD_NEXUS: ${{ secrets.METRICS_WRITER_PASSWORD_NEXUS }}
