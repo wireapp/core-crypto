@@ -1,11 +1,5 @@
-//! SQLite ownership and entry on Wasm, where synchronous I/O can suspend through JSPI.
-//!
-//! The entry guard covers whole SQLite operations and must precede synchronous
-//! connection locks. It is not held for the lifetime of a keystore transaction.
-//! Native builds use rusqlite's connection and their existing locking behavior,
-//! in a small wrapping struct.
+//! The connection to a database, in a small wrapping struct.
 
-#[cfg(not(target_os = "unknown"))]
 #[derive(Debug, derive_more::Deref, derive_more::DerefMut)]
 pub(crate) struct ManagedConnection {
     #[deref]
@@ -14,7 +8,6 @@ pub(crate) struct ManagedConnection {
     last_data_version: Option<i64>,
 }
 
-#[cfg(not(target_os = "unknown"))]
 impl From<rusqlite::Connection> for ManagedConnection {
     fn from(inner: rusqlite::Connection) -> Self {
         Self {
@@ -24,7 +17,6 @@ impl From<rusqlite::Connection> for ManagedConnection {
     }
 }
 
-#[cfg(not(target_os = "unknown"))]
 impl ManagedConnection {
     pub(crate) fn into_inner(self) -> rusqlite::Connection {
         self.inner
@@ -43,99 +35,6 @@ impl ManagedConnection {
             .is_some_and(|stored_data_version| stored_data_version != data_version);
         self.last_data_version = Some(data_version);
         Ok(externally_modified)
-    }
-}
-
-#[cfg(not(target_os = "unknown"))]
-pub(crate) struct SqliteGuard;
-
-#[cfg(not(target_os = "unknown"))]
-impl SqliteGuard {
-    pub(crate) fn lock() -> Self {
-        Self
-    }
-}
-
-#[cfg(target_os = "unknown")]
-pub(crate) use wasm::ManagedConnection;
-
-#[cfg(target_os = "unknown")]
-pub(crate) use super::opfs_vfs::{SqliteGuard, defer};
-
-/// Drop the connection lock before releasing the SQLite entry guard.
-pub(crate) struct Guarded<T> {
-    pub(crate) inner: T,
-    pub(crate) _sqlite: SqliteGuard,
-}
-
-impl<T: std::ops::Deref> std::ops::Deref for Guarded<T> {
-    type Target = T::Target;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
-#[cfg(target_os = "unknown")]
-mod wasm {
-    use std::ops::{Deref, DerefMut};
-
-    use super::{SqliteGuard, defer};
-
-    #[derive(Debug)]
-    // The inner is always `Some` while the value is usable; taken only by `close` or `Drop`.
-    pub(crate) struct ManagedConnection(Option<rusqlite::Connection>);
-
-    impl From<rusqlite::Connection> for ManagedConnection {
-        fn from(conn: rusqlite::Connection) -> Self {
-            Self(Some(conn))
-        }
-    }
-
-    impl Deref for ManagedConnection {
-        type Target = rusqlite::Connection;
-
-        fn deref(&self) -> &Self::Target {
-            self.0.as_ref().expect("connection is open")
-        }
-    }
-
-    impl DerefMut for ManagedConnection {
-        fn deref_mut(&mut self) -> &mut Self::Target {
-            self.0.as_mut().expect("connection is open")
-        }
-    }
-
-    impl ManagedConnection {
-        pub(crate) fn close(mut self) -> Result<(), (Self, rusqlite::Error)> {
-            let _sqlite = SqliteGuard::lock();
-            self.0
-                .take()
-                .expect("connection is open")
-                .close()
-                .map_err(|(conn, error)| (conn.into(), error))
-        }
-
-        /// Noop for compat with the `not(target_os = "unknown")` version of `ManagedConnection`.
-        ///
-        /// OPFS sync access handles are exclusive and held for the connection's lifetime,
-        /// so no other connection can read or write this DB.
-        pub(crate) fn update_data_version(&mut self) -> rusqlite::Result<bool> {
-            Ok(false)
-        }
-    }
-
-    impl Drop for ManagedConnection {
-        fn drop(&mut self) {
-            if let Some(conn) = self.0.take() {
-                defer(move || {
-                    if let Err((conn, error)) = conn.close() {
-                        log::warn!(err:err = error; "failed to close SQLite connection");
-                        drop(conn);
-                    }
-                });
-            }
-        }
     }
 }
 

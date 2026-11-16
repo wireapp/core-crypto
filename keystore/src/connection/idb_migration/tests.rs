@@ -675,10 +675,7 @@ async fn imports_every_legacy_entity() {
     let (conn, fs) = os_unknown::open(&name, &key)
         .await
         .expect("opening the new database over an existing legacy database imports it");
-    {
-        let _sqlite = crate::connection::SqliteGuard::lock();
-        assert_imported_at_v22(&conn);
-    }
+    assert_imported_at_v22(&conn);
 
     // and this is the rest of `Database::open`
     let db = Database::init(conn, Box::new(fs), MigrationTarget::Latest)

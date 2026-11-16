@@ -79,7 +79,7 @@ impl Database {
         #[derive(derive_more::From)]
         enum ConnectionGuard<'a> {
             Transaction(TransactionConnection),
-            Database(super::managed_connection::Guarded<MutexGuard<'a, super::ManagedConnection>>),
+            Database(MutexGuard<'a, super::ManagedConnection>),
         }
 
         impl<'a> Deref for ConnectionGuard<'a> {
@@ -99,12 +99,7 @@ impl Database {
         {
             ConnectionGuard::from(transaction_connection)
         } else {
-            let inner = self.conn.lock().await;
-            super::managed_connection::Guarded {
-                inner,
-                _sqlite: super::SqliteGuard::lock(),
-            }
-            .into()
+            self.conn.lock().await.into()
         }
     }
 

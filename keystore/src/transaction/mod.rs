@@ -59,9 +59,6 @@ pub struct Transaction {
     /// - by using the synchronous version, the compiler ensures we don't hold a guard over an await point, which would
     ///   deadlock everything
     /// - ensures that no two threads race on `conn.prepare` / `prepare_cached`
-    ///
-    /// On Wasm, callers acquire `SqliteGuard` before this mutex: JSPI can suspend
-    /// a synchronous SQLite call while it holds the mutex.
     conn: Arc<parking_lot::Mutex<Option<MutexGuardArc<crate::connection::ManagedConnection>>>>,
     /// Whether the database detected external modifications to the connection when this transaction
     /// was created.
@@ -91,7 +88,6 @@ impl Transaction {
         let conn = database.raw_conn().await;
 
         {
-            let _sqlite = crate::connection::SqliteGuard::lock();
             // initialize the DB-level transaction before doing any construction work on the type-level
             // transaction; failure here invalidates everything to follow. We don't need to worry about
             // concurrency; we already hold the lock guard.
@@ -111,8 +107,6 @@ impl Transaction {
         // we have to set this after initialization so that a sqlite failure when querying the pragma
         // causes a rollback.
         transaction.externally_modified = {
-            // not strictly necessary given that we never actually interact with the DB, but good practice
-            let _sqlite = crate::connection::SqliteGuard::lock();
             let mut conn = transaction.conn.as_ref().lock();
             let conn = conn.as_mut().expect("mutex was just initialized with Some");
             conn.update_data_version()?

@@ -28,7 +28,7 @@ pub use self::idb_migration::{delete_legacy_idb, legacy_idb_exists};
 pub use self::mls::{deser, ser};
 pub(crate) use self::{
     filesystem::Filesystem,
-    managed_connection::{ManagedConnection, SqliteGuard},
+    managed_connection::ManagedConnection,
     transaction_lock::{TransactionGuard, TransactionLock},
 };
 pub use crate::migrations::migrate_db_key_type_to_bytes;
@@ -127,7 +127,6 @@ impl Database {
         migration_target: MigrationTarget,
         transaction_lock: TransactionLock,
     ) -> CryptoKeystoreResult<Self> {
-        let _sqlite = SqliteGuard::lock();
         #[cfg(feature = "log-queries")]
         conn.trace_v2(TraceEventCodes::SQLITE_TRACE_STMT, Some(log_query))?;
         conn.pragma_update(None, "foreign_keys", "ON")?;
@@ -200,7 +199,6 @@ impl Database {
     /// Change the encryption key for this database.
     pub async fn update_key(&self, new_key: &DatabaseKey) -> CryptoKeystoreResult<()> {
         let mut guard = self.conn.lock().await;
-        let _sqlite = SqliteGuard::lock();
         encryption::rekey(&mut guard, new_key)
     }
 
@@ -211,15 +209,10 @@ impl Database {
     /// teardown is not interleaved with somebody else's transaction.
     async fn take(self) -> CryptoKeystoreResult<(ManagedConnection, Box<dyn Filesystem>, TransactionGuard)> {
         // Nobody ever clones `self.conn`; the Arc is only so we can have a lifetime-free guard over
-        // the interior mutex. Such a guard holds a clone, though, and on Wasm a dropped transaction
-        // defers its rollback together with its guard. Acquiring `SqliteGuard` runs that deferred
-        // cleanup and so releases the clone. After that, the strong count is 1.
-        let conn = {
-            let _sqlite = SqliteGuard::lock();
-            Arc::into_inner(self.conn)
-                .expect("nobody holds a guard over self.conn")
-                .into_inner()
-        };
+        // the interior mutex, so the strong count here is 1.
+        let conn = Arc::into_inner(self.conn)
+            .expect("nobody holds a guard over self.conn")
+            .into_inner();
         let guard = self.transaction_lock.acquire().await?;
         Ok((conn, self.filesystem.into_inner(), guard))
     }
@@ -227,9 +220,7 @@ impl Database {
     // Close this database connection
     pub async fn close(self) -> CryptoKeystoreResult<()> {
         let (conn, _fs, _guard) = self.take().await?;
-        #[cfg(not(target_os = "unknown"))]
-        let conn = conn.into_inner();
-        conn.close().map_err(|(_conn, err)| err)?;
+        conn.into_inner().close().map_err(|(_conn, err)| err)?;
         Ok(())
     }
 
@@ -240,21 +231,16 @@ impl Database {
     /// simply open an empty database.
     pub async fn wipe(self) -> CryptoKeystoreResult<()> {
         let (conn, fs, _guard) = self.take().await?;
-        {
-            let _sqlite = SqliteGuard::lock();
-            conn.execute_batch(
-                "
+        conn.execute_batch(
+            "
             PRAGMA writable_schema = 1;
             DELETE FROM sqlite_master WHERE type IN ('table', 'index', 'trigger');
             PRAGMA writable_schema = 0;
             VACUUM;
         ",
-            )?;
-        }
+        )?;
         let location = conn.path().map(ToOwned::to_owned);
-        #[cfg(not(target_os = "unknown"))]
-        let conn = conn.into_inner();
-        conn.close().map_err(|(_conn, err)| err)?;
+        conn.into_inner().close().map_err(|(_conn, err)| err)?;
         if let Some(path) = location {
             // not in-memory
             fs.delete(&path).await?;

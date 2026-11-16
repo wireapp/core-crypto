@@ -44,7 +44,6 @@ impl UniqueArc<Transaction> {
 
         // locking here is guaranteed not to block because we consumed the unique arc; there are no other
         // live references to the data
-        let _sqlite = crate::connection::SqliteGuard::lock();
         let mut guard = conn.lock();
 
         // we need to ensure we only actually clear the connection (preventing rollback)
@@ -87,13 +86,6 @@ impl Drop for Transaction {
 
         // locking here is guaranteed not to wait because this is `Drop`; the strong count is 0
         if let Some(conn) = self.conn.lock().take() {
-            #[cfg(target_os = "unknown")]
-            crate::connection::managed_connection::defer(move || {
-                if let Err(error) = Self::execute_rollback(&conn) {
-                    log::warn!(err:err = error; "failed to roll back dropped SQLite transaction");
-                }
-            });
-            #[cfg(not(target_os = "unknown"))]
             let _ = Self::execute_rollback(&conn);
         }
     }

@@ -27,20 +27,14 @@ type Keepalive = Option<ArcWithReadGuard<Transaction>>;
 /// mutex we still hold.
 pub struct TransactionConnection {
     guard: InternalGuard,
-    _sqlite: crate::connection::SqliteGuard,
     _keepalive: Keepalive,
 }
 
 impl TransactionConnection {
     /// Construct this transaction connection, checking that the transaction is in fact still alive.
-    fn new(
-        guard: InternalGuard,
-        keepalive: Keepalive,
-        sqlite: crate::connection::SqliteGuard,
-    ) -> CryptoKeystoreResult<Self> {
+    fn new(guard: InternalGuard, keepalive: Keepalive) -> CryptoKeystoreResult<Self> {
         let connection = Self {
             guard,
-            _sqlite: sqlite,
             _keepalive: keepalive,
         };
         // Construct first so field order also releases locks before the keepalive
@@ -65,8 +59,7 @@ impl Transaction {
     ///
     /// Errors if SQLite has already rolled this transaction back under us.
     pub fn conn(&self) -> CryptoKeystoreResult<TransactionConnection> {
-        let sqlite = crate::connection::SqliteGuard::lock();
-        TransactionConnection::new(self.conn.lock_arc(), None, sqlite)
+        TransactionConnection::new(self.conn.lock_arc(), None)
     }
 }
 
@@ -74,8 +67,7 @@ impl TransactionConnection {
     /// As [`Transaction::conn`], for callers who reached the transaction
     /// through a weak reference and must keep it alive.
     pub(crate) fn shared(wrapper: ArcWithReadGuard<Transaction>) -> CryptoKeystoreResult<Self> {
-        let sqlite = crate::connection::SqliteGuard::lock();
         let guard = wrapper.conn.lock_arc();
-        Self::new(guard, Some(wrapper), sqlite)
+        Self::new(guard, Some(wrapper))
     }
 }
