@@ -29,8 +29,6 @@ pub enum Error {
     MessageEpochTooOld,
     #[error("Incoming message is from an epoch too far in the future to buffer.")]
     UnbufferedFarFutureMessage,
-    #[error("The received commit is deemed stale and is from an older epoch.")]
-    StaleCommit,
     #[error("The received proposal is deemed stale and is from an older epoch.")]
     StaleProposal,
     #[error("An application message failed to decrypt")]

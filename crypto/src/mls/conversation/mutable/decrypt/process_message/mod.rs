@@ -100,7 +100,7 @@ pub(super) async fn process_message(
                     {
                         match content_type {
                             ContentType::Application => Err(Error::MessageEpochTooOld),
-                            ContentType::Commit => Err(Error::StaleCommit),
+                            ContentType::Commit => Ok(RejectionReason::StaleCommit.into()),
                             ContentType::Proposal => Err(Error::StaleProposal),
                         }
                     }

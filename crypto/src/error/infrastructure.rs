@@ -34,7 +34,6 @@ impl Infrastructural for crate::mls::conversation::Error {
             | Self::MessageRejected { .. }
             | Self::MessageEpochTooOld
             | Self::UnbufferedFarFutureMessage
-            | Self::StaleCommit
             | Self::StaleProposal
             | Self::DecryptionError
             | Self::IdentityInitializationError

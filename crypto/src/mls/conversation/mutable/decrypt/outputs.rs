@@ -79,6 +79,8 @@ pub enum DeferralReason {
 pub enum RejectionReason {
     /// This message has already been processed, or replays a message which has.
     DuplicateMessage,
+    /// This commit is for an epoch which this conversation has already moved past.
+    StaleCommit,
 }
 
 /// Outcome of attempting to decrypt a message.
