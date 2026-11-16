@@ -18,51 +18,51 @@ pub use crate::{CipherSuite, ConversationConfiguration, CredentialType, WirePoli
 #[template]
 #[rstest(
     case,
-    case::basic_cs1(TestContext::new(
+    case::basic_cs0001(TestContext::new(
         crate::CredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )),
-    case::cert_cs1(TestContext::new(
+    case::cert_cs0001(TestContext::new(
         crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )),
     #[cfg(feature = "test-all-cipher")]
-    case::basic_cs2(TestContext::new(
+    case::basic_cs0002(TestContext::new(
         crate::CredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
     )),
     #[cfg(feature = "test-all-cipher")]
-    case::cert_cs2(TestContext::new(
+    case::cert_cs0002(TestContext::new(
         crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
     )),
     #[cfg(feature = "test-all-cipher")]
-    case::basic_cs3(TestContext::new(
+    case::basic_cs0003(TestContext::new(
         crate::CredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
     )),
     #[cfg(feature = "test-all-cipher")]
-    case::cert_cs3(TestContext::new(
+    case::cert_cs0003(TestContext::new(
         crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
     )),
     #[cfg(feature = "test-all-cipher")]
-    case::basic_cs5(TestContext::new(
+    case::basic_cs0005(TestContext::new(
         crate::CredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521
     )),
     #[cfg(feature = "test-all-cipher")]
-    case::cert_cs5(TestContext::new(
+    case::cert_cs0005(TestContext::new(
         crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521
     )),
     #[cfg(feature = "test-all-cipher")]
-    case::basic_cs7(TestContext::new(
+    case::basic_cs0007(TestContext::new(
         crate::CredentialType::Basic,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
     #[cfg(feature = "test-all-cipher")]
-    case::cert_cs7(TestContext::new(
+    case::cert_cs0007(TestContext::new(
         crate::CredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
