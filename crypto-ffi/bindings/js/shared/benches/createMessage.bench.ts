@@ -6,12 +6,7 @@ export async function setupCreateMessageBench() {
     await runOnPlatform(async (parameters) => {
         globalThis.bench = newBench("CreateMessage");
 
-        for (const {
-            count,
-            size,
-            cipherSuite,
-            cipherSuiteLabel,
-        } of parameters) {
+        for (const { count, size, cipherSuite, taskName } of parameters) {
             const message = new Uint8Array(size);
             const cc = await helpers.ccInit({
                 withBasicCredential: true,
@@ -19,16 +14,13 @@ export async function setupCreateMessageBench() {
             });
             const conversationId = await helpers.createConversation(cc);
 
-            bench.add(
-                `cipherSuite=${cipherSuiteLabel} messageSize=${size} messageCount=${count}`,
-                async () => {
-                    await cc.transaction(async (ctx) => {
-                        for (let i = 0; i < count; i++) {
-                            await ctx.encryptMessage(conversationId, message);
-                        }
-                    });
-                },
-            );
+            bench.add(taskName, async () => {
+                await cc.transaction(async (ctx) => {
+                    for (let i = 0; i < count; i++) {
+                        await ctx.encryptMessage(conversationId, message);
+                    }
+                });
+            });
         }
     }, parameters);
 }

@@ -13,12 +13,12 @@ export async function setupRemoveUserBench() {
             warmup: true,
             warmupTime: 0,
         });
-        for (const { userCount, cipherSuite, cipherSuiteLabel } of parameters) {
+        for (const { userCount, cipherSuite, taskName } of parameters) {
             // Users only provide key packages, so each task creates them once and every
             // iteration adds them to a new conversation with fresh key packages.
             let users: (ClientWithDatabase & { id: ClientId })[] = [];
             bench.add(
-                `cipherSuite=${cipherSuiteLabel} userCount=${userCount}`,
+                taskName,
                 measured(async (measure) => {
                     const alice = await helpers.newClient(cipherSuite);
                     try {

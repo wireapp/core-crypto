@@ -6,12 +6,7 @@ export async function setupProcessMessageBench() {
 
     await runOnPlatform(async (parameters) => {
         globalThis.bench = newBench("ProcessMessage");
-        for (const {
-            count,
-            size,
-            cipherSuite,
-            cipherSuiteLabel,
-        } of parameters) {
+        for (const { count, size, cipherSuite, taskName } of parameters) {
             const aliceCc = await helpers.ccInit({
                 withBasicCredential: true,
                 cipherSuite,
@@ -31,7 +26,7 @@ export async function setupProcessMessageBench() {
             // This means that we can't encrypt the messages beforehand as this would lead to bob decrypting
             // the same messages over and over again.
             bench.add(
-                `cipherSuite=${cipherSuiteLabel} messageSize=${size} messageCount=${count}`,
+                taskName,
                 measured(async (measure) => {
                     const encryptedMessages = await aliceCc.transaction(
                         async (ctx) => {

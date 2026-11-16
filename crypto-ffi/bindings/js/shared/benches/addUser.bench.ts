@@ -7,12 +7,12 @@ export async function setupAddUserBench() {
     const parameters = await userBenchmarkParameters();
     await runOnPlatform(async (parameters) => {
         globalThis.bench = newBench("AddUser");
-        for (const { userCount, cipherSuite, cipherSuiteLabel } of parameters) {
+        for (const { userCount, cipherSuite, taskName } of parameters) {
             // Users only provide key packages, so each task creates them once and every
             // iteration takes fresh key packages from them.
             let users: ClientWithDatabase[] = [];
             globalThis.bench.add(
-                `cipherSuite=${cipherSuiteLabel} userCount=${userCount}`,
+                taskName,
                 measured(async (measure) => {
                     const alice = await helpers.newClient(cipherSuite);
                     try {

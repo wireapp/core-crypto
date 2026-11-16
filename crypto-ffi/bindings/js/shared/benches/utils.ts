@@ -82,7 +82,7 @@ type MessageParameterSet = {
     count: number;
     size: number;
     cipherSuite: number;
-    cipherSuiteLabel: string;
+    taskName: string;
 };
 
 const DEFAULT_MESSAGE_COUNTS = [1, 10];
@@ -160,7 +160,7 @@ export async function messageBenchmarkParameters(): Promise<
                         count,
                         size,
                         cipherSuite,
-                        cipherSuiteLabel: cipherSuiteLabel(cipherSuite),
+                        taskName: `cipherSuite=${cipherSuiteLabel(cipherSuite)} messageSize=${size} messageCount=${count}`,
                     };
                 }
             }
@@ -173,7 +173,7 @@ export async function messageBenchmarkParameters(): Promise<
 type UserParameterSet = {
     userCount: number;
     cipherSuite: number;
-    cipherSuiteLabel: string;
+    taskName: string;
 };
 
 export async function userBenchmarkParameters(): Promise<UserParameterSet[]> {
@@ -189,7 +189,7 @@ export async function userBenchmarkParameters(): Promise<UserParameterSet[]> {
                 yield {
                     userCount,
                     cipherSuite,
-                    cipherSuiteLabel: cipherSuiteLabel(cipherSuite),
+                    taskName: `cipherSuite=${cipherSuiteLabel(cipherSuite)} userCount=${userCount}`,
                 };
             }
         }

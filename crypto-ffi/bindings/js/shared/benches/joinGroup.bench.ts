@@ -7,12 +7,12 @@ export async function setupJoinGroupBench() {
     const parameters = await userBenchmarkParameters();
     await runOnPlatform(async (parameters) => {
         globalThis.bench = newBench("JoinGroup");
-        for (const { userCount, cipherSuite, cipherSuiteLabel } of parameters) {
+        for (const { userCount, cipherSuite, taskName } of parameters) {
             // The existing members only provide key packages, so each task creates them
             // once and every iteration takes fresh key packages from them.
             let members: ClientWithDatabase[] = [];
             bench.add(
-                `cipherSuite=${cipherSuiteLabel} userCount=${userCount}`,
+                taskName,
                 measured(async (measure) => {
                     const alice = await helpers.newClient(cipherSuite);
                     const charlie = await helpers.newClient(cipherSuite);
