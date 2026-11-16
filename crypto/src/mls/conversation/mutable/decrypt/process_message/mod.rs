@@ -126,6 +126,9 @@ pub(super) async fn process_message(
                     Err(ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
                         MessageDecryptionError::AeadError,
                     ))) => Ok(RejectionReason::InvalidAuthentication.into()),
+                    Err(ProcessMessageError::IncompatibleWireFormat) => {
+                        Ok(RejectionReason::IncompatibleWireFormat.into())
+                    }
 
                     // everything else gets a generic wrapping
                     Err(err) => Err(OpenMlsError::wrap("processing message")(err).into()),
