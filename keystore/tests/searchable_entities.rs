@@ -11,7 +11,7 @@ use wasm_bindgen_test::*;
 
 mod common;
 
-wasm_bindgen_test_configure!(run_in_browser);
+wasm_bindgen_test_configure!(run_in_dedicated_worker);
 
 fn random_bytes(range: impl SampleRange<usize>) -> Vec<u8> {
     let mut rng = rand::rng();

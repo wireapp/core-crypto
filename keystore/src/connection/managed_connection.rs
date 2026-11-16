@@ -143,12 +143,12 @@ mod wasm {
 mod tests {
     use std::sync::Arc;
 
-    use wasm_bindgen::JsValue;
+    use wasm_bindgen_test::wasm_bindgen_test;
 
     use crate::{Database, DatabaseKey};
 
-    #[core_crypto_macros::jspi_wasm_bindgen_test]
-    async fn drop_outside_jspi_rolls_back_and_closes_before_reopen() {
+    #[wasm_bindgen_test]
+    async fn dropping_transaction_and_database_rolls_back_and_closes_before_reopen() {
         let name = format!("managed-{}.db", uuid::Uuid::new_v4());
         let key = DatabaseKey::generate();
         let db = Database::open(&name, &key).await.unwrap();
@@ -162,18 +162,8 @@ mod tests {
             .execute("UPDATE cleanup_probe SET value=2", [])
             .unwrap();
 
-        // Deliberately outside a promising export, as with a JavaScript finalizer:
-        // `spawn_local` tasks are polled from a plain microtask callback.
-        let mut owners = Some((db, tx));
-        let dropped = js_sys::Promise::new(&mut |resolve, _reject| {
-            let (db, tx) = owners.take().expect("promise executor runs once");
-            wasm_bindgen_futures::spawn_local(async move {
-                drop(tx);
-                drop(db);
-                resolve.call0(&JsValue::UNDEFINED).unwrap();
-            });
-        });
-        wasm_bindgen_futures::JsFuture::from(dropped).await.unwrap();
+        drop(tx);
+        drop(db);
 
         let db = Database::open(&name, &key).await.unwrap();
         assert_eq!(
@@ -193,7 +183,7 @@ mod tests {
         Arc::into_inner(db).unwrap().wipe().await.unwrap();
     }
 
-    #[core_crypto_macros::jspi_wasm_bindgen_test]
+    #[wasm_bindgen_test]
     async fn rekey_keeps_wal_and_reopens_with_the_new_key() {
         let name = format!("rekey-{}.db", uuid::Uuid::new_v4());
         let old_key = DatabaseKey::generate();
@@ -224,7 +214,7 @@ mod tests {
         Arc::into_inner(db).unwrap().wipe().await.unwrap();
     }
 
-    #[core_crypto_macros::jspi_wasm_bindgen_test]
+    #[wasm_bindgen_test]
     async fn dropped_transaction_releases_connection_for_the_next_transaction() {
         let name = format!("rollback-{}.db", uuid::Uuid::new_v4());
         let db = Database::open(&name, &DatabaseKey::generate()).await.unwrap();

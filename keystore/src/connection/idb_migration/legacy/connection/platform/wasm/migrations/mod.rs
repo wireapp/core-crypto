@@ -143,13 +143,13 @@ mod tests {
 
     pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(DatabaseKey::generate);
 
-    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+    wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_dedicated_worker);
 
     fn store_name() -> String {
         format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12))
     }
 
-    #[core_crypto_macros::jspi_wasm_bindgen_test]
+    #[wasm_bindgen_test::wasm_bindgen_test]
     pub(crate) async fn can_run_migrations() {
         let name = store_name();
         let factory = Factory::new().expect("factory");
@@ -203,7 +203,7 @@ mod tests {
         factory.delete(&name).expect("delete request").await.expect("wiping db");
     }
 
-    #[core_crypto_macros::jspi_wasm_bindgen_test]
+    #[wasm_bindgen_test::wasm_bindgen_test]
     pub(crate) async fn v9_schema_allows_multiple_creds_per_session() {
         let name = store_name();
         const LEN_RANGE: std::ops::Range<usize> = 1024..8192;
@@ -277,7 +277,7 @@ mod tests {
     /// right shape. It only surfaced downstream, as conversations whose credential could no longer
     /// be resolved. v9's swap is the chain's only remove-then-rename-onto-the-same-name pair, so
     /// credentials are the only store this could have hit.
-    #[core_crypto_macros::jspi_wasm_bindgen_test]
+    #[wasm_bindgen_test::wasm_bindgen_test]
     pub(crate) async fn credentials_survive_the_upgrades_after_v9() {
         let name = store_name();
         let public_key = seed_credential_at_v9(&name).await;
@@ -294,7 +294,7 @@ mod tests {
     /// A crash between two steps leaves the database at an intermediate version, so v10's builder
     /// also has to be correct when it runs against a database whose credentials store is *already*
     /// in its post-rename form, rather than only as the step straight after v9's swap.
-    #[core_crypto_macros::jspi_wasm_bindgen_test]
+    #[wasm_bindgen_test::wasm_bindgen_test]
     pub(crate) async fn credentials_survive_a_resumed_migration() {
         let name = store_name();
         let public_key = seed_credential_at_v9(&name).await;
@@ -370,7 +370,7 @@ mod tests {
         factory.delete(name).expect("delete request").await.expect("wiping db");
     }
 
-    #[core_crypto_macros::jspi_wasm_bindgen_test]
+    #[wasm_bindgen_test::wasm_bindgen_test]
     pub(crate) async fn data_is_preserved_through_migrations() {
         let db_name = store_name();
         // this entity type is simple, stable from v0 through v10, and we do not expect

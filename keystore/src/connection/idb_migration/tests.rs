@@ -37,7 +37,7 @@ use crate::{
     traits::FetchFromDatabase as _,
 };
 
-wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);
+wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_dedicated_worker);
 
 /// The row seeded into each legacy object store.
 ///
@@ -658,7 +658,7 @@ async fn assert_imported_and_migrated(db: &Database, credential_created_at: u64)
 /// connection is opened exactly as `Database::open` opens it, which runs the import, then the V22 schema is
 /// checked directly, then the same connection is initialised as `Database::open` would have initialised it,
 /// and the result is checked through the public API.
-#[core_crypto_macros::jspi_wasm_bindgen_test]
+#[wasm_bindgen_test::wasm_bindgen_test]
 async fn imports_every_legacy_entity() {
     let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
     let key = DatabaseKey::generate();
@@ -695,7 +695,7 @@ async fn imports_every_legacy_entity() {
 }
 
 /// Opening a second time neither re-imports nor disturbs what the first import produced.
-#[core_crypto_macros::jspi_wasm_bindgen_test]
+#[wasm_bindgen_test::wasm_bindgen_test]
 async fn a_second_open_after_import_is_a_no_op() {
     let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
     let key = DatabaseKey::generate();
@@ -894,7 +894,7 @@ fn certificate_common_name(der: &[u8]) -> String {
 /// the whole path handles what an old client actually wrote, from IndexedDB schema version 5 through the legacy
 /// upgrade steps, the import, and every SQL migration after it. Because the rows are real, the group family can
 /// be checked through the fully migrated database here, which the seeded tests cannot do.
-#[core_crypto_macros::jspi_wasm_bindgen_test]
+#[wasm_bindgen_test::wasm_bindgen_test]
 async fn imports_a_database_captured_from_v9_3_4() {
     let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
     let factory = Factory::new().expect("factory");
@@ -1066,7 +1066,7 @@ async fn imports_a_database_captured_from_v9_3_4() {
 ///
 /// Its rows are the ones [`seed`] describes, so the shared assertions apply; the credential's `created_at` is
 /// read from the capture because that release stamped it at save time.
-#[core_crypto_macros::jspi_wasm_bindgen_test]
+#[wasm_bindgen_test::wasm_bindgen_test]
 async fn imports_a_database_captured_from_v10_1_0() {
     let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
     let factory = Factory::new().expect("factory");
@@ -1095,7 +1095,7 @@ async fn imports_a_database_captured_from_v10_1_0() {
 }
 
 /// A keystore genuinely initialized through the v10.5.3 relaxed-IDB VFS is rejected.
-#[core_crypto_macros::jspi_wasm_bindgen_test]
+#[wasm_bindgen_test::wasm_bindgen_test]
 async fn rejects_a_database_captured_from_v10_5_3() {
     let fixture = fixture(RELAXED_IDB_VFS_FIXTURE_V10_5_3);
     let name = fixture["database_name"]
@@ -1191,7 +1191,7 @@ async fn remove_corrupt_pending_message(name: &str) {
 /// partway, what must not happen is for the next open to find the new database, conclude that the import
 /// already ran, and hand back an empty keystore while the legacy data sits unread. The import has to be
 /// retried until it succeeds, and once the cause of the failure is gone it has to succeed.
-#[core_crypto_macros::jspi_wasm_bindgen_test]
+#[wasm_bindgen_test::wasm_bindgen_test]
 async fn a_failed_import_is_retried_on_the_next_open() {
     let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
     let key = DatabaseKey::generate();
@@ -1242,17 +1242,18 @@ async fn a_failed_import_is_retried_on_the_next_open() {
         .expect("wiping the new database");
 }
 
-// Fails the `k`th flush request to the OPFS worker by pointing it at a file id the worker doesn't know.
+// Fails the `k`th flush of an OPFS sync access handle, as if the browser had failed to write it out.
 // SQLite sees an `xSync` error, so it can't count on that flush having made anything durable.
 const FAIL_OPFS_FLUSH_JS: &str = r#"(function (k) {
   let count = 0;
-  const original = Worker.prototype.postMessage;
-  Worker.prototype.postMessage = function (message, transfer) {
-    if (message?.op === 'flush' && ++count === k) message = { ...message, args: [-1] };
-    return original.call(this, message, transfer);
+  const prototype = FileSystemSyncAccessHandle.prototype;
+  const original = prototype.flush;
+  prototype.flush = function () {
+    if (++count === k) throw new DOMException("injected flush failure", "InvalidStateError");
+    return original.call(this);
   };
   return {
-    disarm() { Worker.prototype.postMessage = original; },
+    disarm() { prototype.flush = original; },
     flushes() { return count; },
   };
 })"#;
@@ -1327,7 +1328,7 @@ async fn open_with_failed_flush(k: u32) -> (bool, u32) {
 /// Failed flush before deletion: legacy database stays. Bisect for first failed flush where it's gone. If the
 /// import is not yet durable there, it's lost and `open_with_failed_flush` panics. Bisection, not trying every
 /// flush, so the test doesn't depend on flush count.
-#[core_crypto_macros::jspi_wasm_bindgen_test]
+#[wasm_bindgen_test::wasm_bindgen_test]
 async fn the_legacy_database_outlives_the_import_until_the_import_is_durable() {
     // Nothing fails here; the legacy database is gone after the last flush, at the latest.
     let (legacy_survived, flushes) = open_with_failed_flush(0).await;

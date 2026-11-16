@@ -9,7 +9,7 @@ mod tests {
 
     use crate::common::*;
 
-    wasm_bindgen_test_configure!(run_in_browser);
+    wasm_bindgen_test_configure!(run_in_dedicated_worker);
 
     #[apply(all_storage_types)]
     pub async fn can_create_and_init_store(_context: KeystoreTestContext) {

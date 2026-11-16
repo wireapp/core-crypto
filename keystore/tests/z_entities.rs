@@ -555,7 +555,7 @@ mod tests {
 
     use crate::common::*;
 
-    wasm_bindgen_test_configure!(run_in_browser);
+    wasm_bindgen_test_configure!(run_in_dedicated_worker);
 
     use core_crypto_keystore::entities::*;
 
