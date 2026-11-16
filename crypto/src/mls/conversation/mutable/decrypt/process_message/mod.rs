@@ -129,6 +129,7 @@ pub(super) async fn process_message(
                     Err(ProcessMessageError::IncompatibleWireFormat) => {
                         Ok(RejectionReason::IncompatibleWireFormat.into())
                     }
+                    Err(ProcessMessageError::InvalidSignature) => Ok(RejectionReason::InvalidSignature.into()),
 
                     // everything else gets a generic wrapping
                     Err(err) => Err(OpenMlsError::wrap("processing message")(err).into()),

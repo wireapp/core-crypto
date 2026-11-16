@@ -116,6 +116,8 @@ pub enum RejectionReason {
     UnsupportedProtocolVersion,
     /// This handshake message uses a wire format which the conversation's wire format policy doesn't allow.
     IncompatibleWireFormat,
+    /// This message's signature doesn't match its sender's signature key.
+    InvalidSignature,
 }
 
 /// Outcome of attempting to decrypt a message.

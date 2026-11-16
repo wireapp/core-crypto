@@ -341,9 +341,12 @@ impl ConversationMut {
         let sender_public_key =
             OpenMlsSignaturePublicKey::new(sender.signature_key.clone().into(), signature_algorithm)
                 .map_err(OpenMlsError::wrap("constructing tnt sender signature key"))?;
-        message
+        if message
             .verify_no_out(crypto_provider.crypto(), &sender_public_key)
-            .map_err(OpenMlsError::wrap("verifying tnt message signature"))?;
+            .is_err()
+        {
+            return Ok(RejectionReason::InvalidSignature.into());
+        };
 
         match message.content.body {
             TntMessageBody::Transient(transient_message) => {
