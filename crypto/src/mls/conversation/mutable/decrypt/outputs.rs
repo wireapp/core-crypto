@@ -130,6 +130,8 @@ pub enum RejectionReason {
     WrongRecipient,
     /// This public message's membership tag is missing or invalid.
     InvalidMembershipTag,
+    /// This message comes from an external sender not authorized in this conversation.
+    UnauthorizedExternalSender,
 }
 
 /// Outcome of attempting to decrypt a message.

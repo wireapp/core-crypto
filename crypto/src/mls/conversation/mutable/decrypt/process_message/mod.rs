@@ -143,6 +143,9 @@ pub(super) async fn process_message(
                     Err(ProcessMessageError::ValidationError(
                         ValidationError::MissingMembershipTag | ValidationError::InvalidMembershipTag,
                     )) => Ok(RejectionReason::InvalidMembershipTag.into()),
+                    Err(ProcessMessageError::ValidationError(
+                        ValidationError::NoExternalSendersExtension | ValidationError::UnauthorizedExternalSender,
+                    )) => Ok(RejectionReason::UnauthorizedExternalSender.into()),
 
                     // everything else gets a generic wrapping
                     Err(err) => Err(OpenMlsError::wrap("processing message")(err).into()),
