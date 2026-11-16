@@ -269,10 +269,10 @@ impl ConversationMut {
     /// Verify the [TntMessage] signature, then proceed with decryption.
     pub(super) async fn decrypt_tnt_message(&self, message: TntMessage) -> Result<DecryptionOutcome> {
         let protocol_version = message.content.protocol_version;
-        // Currently, we only support `ProtocolVersion::V1`, so we're throwing an error if anyone from a future version
+        // Currently, we only support `ProtocolVersion::V1`, so we're rejecting if anyone from a future version
         // sends us a message.
         if protocol_version != ProtocolVersion::V1 {
-            return Err(Error::MlsMessageInvalidState("Unsupported tnt protocol version"));
+            return Ok(RejectionReason::UnsupportedProtocolVersion.into());
         }
 
         let message_epoch = message.content.body.epoch();

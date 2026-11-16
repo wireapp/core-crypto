@@ -112,6 +112,8 @@ pub enum RejectionReason {
     ///
     /// For example, a welcome or a key package.
     InappropriateMessageBodyType,
+    /// This message uses a protocol version we don't support.
+    UnsupportedProtocolVersion,
 }
 
 /// Outcome of attempting to decrypt a message.
