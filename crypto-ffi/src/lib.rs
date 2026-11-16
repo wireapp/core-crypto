@@ -9,12 +9,10 @@
 #[cfg(any(feature = "wasm", feature = "napi"))]
 extern crate uniffi_ubrn as uniffi;
 
-// The wasm2 player calls into this crate's allocator and JSPI entry, but nothing here references them,
-// so without these the linker would drop them.
+// The wasm2 player calls into this crate's allocator, but nothing here references it,
+// so without this the linker would drop it.
 #[cfg(target_arch = "wasm32")]
 extern crate uniffi_runtime_wasm as _;
-#[cfg(target_arch = "wasm32")]
-uniffi_runtime_wasm::export_jspi_entry!();
 
 uniffi::setup_scaffolding!("core_crypto_ffi");
 
