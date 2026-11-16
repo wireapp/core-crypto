@@ -49,7 +49,7 @@ jobs:
         run: |
           case "$GITHUB_REF_NAME" in
             main)
-              major="$(yq '.package.version | split(".") | .[0]' crypto/Cargo.toml)"
+              major="$(yq '.workspace.package.version | split(".") | .[0]' Cargo.toml)"
               slots="main"
               # `--exit-code` exits with 2 when nothing matches. Anything else is a real failure,
               # and must not be mistaken for "not forked yet", or we would publish `main` as `vM`.
