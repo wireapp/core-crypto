@@ -118,6 +118,8 @@ pub enum RejectionReason {
     IncompatibleWireFormat,
     /// This message's signature doesn't match its sender's signature key.
     InvalidSignature,
+    /// The sender's X509 certificate chain could not be parsed.
+    MalformedCredential(openmls::prelude::CredentialError),
 }
 
 /// Outcome of attempting to decrypt a message.
