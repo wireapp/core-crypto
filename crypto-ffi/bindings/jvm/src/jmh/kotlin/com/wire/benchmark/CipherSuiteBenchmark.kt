@@ -25,9 +25,9 @@ open class CipherSuiteBenchmark {
         "0x0001",
         "0x0002",
         "0x0003",
-        "0xF001",
-        "0xF003",
-        "0xF006"
+        "0x0010",
+        "0x0012",
+        "0x0015"
     )
     var cipherSuite: String = "1"
 
