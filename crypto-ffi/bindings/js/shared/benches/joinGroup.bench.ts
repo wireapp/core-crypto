@@ -13,7 +13,7 @@ export async function setupJoinGroupBench() {
             let members: ClientWithDatabase[] = [];
             bench.add(
                 `cipherSuite=${cipherSuiteLabel} userCount=${userCount}`,
-                async () => {
+                measured(async (measure) => {
                     const alice = await helpers.newClient(cipherSuite);
                     const charlie = await helpers.newClient(cipherSuite);
                     try {
@@ -54,16 +54,17 @@ export async function setupJoinGroupBench() {
                         const commitBundle =
                             await deliveryService.getLatestCommitBundle();
 
-                        const start = bench.now();
-                        await charlie.cc.transaction((ctx) =>
-                            ctx.processWelcomeMessage(commitBundle.welcome!),
+                        await measure(() =>
+                            charlie.cc.transaction((ctx) =>
+                                ctx.processWelcomeMessage(
+                                    commitBundle.welcome!,
+                                ),
+                            ),
                         );
-                        const end = bench.now();
-                        return { overriddenDuration: end - start };
                     } finally {
                         helpers.releaseClients([alice, charlie]);
                     }
-                },
+                }),
                 {
                     async beforeAll() {
                         if (userCount > 1) {

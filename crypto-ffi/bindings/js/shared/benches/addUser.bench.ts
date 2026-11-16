@@ -13,7 +13,7 @@ export async function setupAddUserBench() {
             let users: ClientWithDatabase[] = [];
             globalThis.bench.add(
                 `cipherSuite=${cipherSuiteLabel} userCount=${userCount}`,
-                async () => {
+                measured(async (measure) => {
                     const alice = await helpers.newClient(cipherSuite);
                     try {
                         const conversationId = await helpers.createConversation(
@@ -29,20 +29,19 @@ export async function setupAddUserBench() {
                             );
                         }
 
-                        const start = bench.now();
-                        await alice.cc.transaction(
-                            async (ctx) =>
-                                await ctx.addClientsToConversation(
-                                    conversationId,
-                                    keyPackages,
-                                ),
+                        await measure(() =>
+                            alice.cc.transaction(
+                                async (ctx) =>
+                                    await ctx.addClientsToConversation(
+                                        conversationId,
+                                        keyPackages,
+                                    ),
+                            ),
                         );
-                        const end = bench.now();
-                        return { overriddenDuration: end - start };
                     } finally {
                         helpers.releaseClients([alice]);
                     }
-                },
+                }),
                 {
                     async beforeAll() {
                         for (let i = 0; i < userCount; i++) {

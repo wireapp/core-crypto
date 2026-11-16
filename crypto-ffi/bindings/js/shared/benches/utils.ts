@@ -9,12 +9,17 @@ import {
     teardown as platformTeardown,
 } from "#bench-utils";
 
+type Measure = <T>(operation: () => Promise<T>) => Promise<T>;
+
 declare global {
     var tinybench: typeof import("tinybench");
     var tinybenchSetup: () => void;
     var tinybenchTeardown: () => Promise<void> | void;
     var bench: Bench;
     var newBench: (name: string, options?: BenchOptions) => Bench;
+    var measured: (
+        task: (measure: Measure) => Promise<void>,
+    ) => () => Promise<{ overriddenDuration: number }>;
 }
 
 export { sharedTeardown as teardown } from "../shared/utils";
@@ -52,6 +57,24 @@ export async function setup() {
                 teardown: globalThis.tinybenchTeardown,
                 ...options,
             });
+
+        // Turns a task that times only part of its work into a benchmark function. The task
+        // passes that part to `measure`, and only that part ends up in the samples.
+        globalThis.measured = (task) => async () => {
+            let duration: number | undefined;
+            await task(async (operation) => {
+                const start = bench.now();
+                try {
+                    return await operation();
+                } finally {
+                    duration = bench.now() - start;
+                }
+            });
+            if (duration === undefined) {
+                throw new Error("the benchmark didn't measure anything");
+            }
+            return { overriddenDuration: duration };
+        };
     });
 }
 

@@ -32,7 +32,7 @@ export async function setupProcessMessageBench() {
             // the same messages over and over again.
             bench.add(
                 `cipherSuite=${cipherSuiteLabel} messageSize=${size} messageCount=${count}`,
-                async () => {
+                measured(async (measure) => {
                     const encryptedMessages = await aliceCc.transaction(
                         async (ctx) => {
                             const encryptedMessages: Uint8Array[] = [];
@@ -48,15 +48,17 @@ export async function setupProcessMessageBench() {
                             return encryptedMessages;
                         },
                     );
-                    const start = bench.now();
-                    await bobCc.transaction(async (ctx) => {
-                        for (const message of encryptedMessages) {
-                            await ctx.decryptMessage(conversationId, message);
-                        }
-                    });
-                    const end = bench.now();
-                    return { overriddenDuration: end - start };
-                },
+                    await measure(() =>
+                        bobCc.transaction(async (ctx) => {
+                            for (const message of encryptedMessages) {
+                                await ctx.decryptMessage(
+                                    conversationId,
+                                    message,
+                                );
+                            }
+                        }),
+                    );
+                }),
             );
         }
     }, parameters);

@@ -19,7 +19,7 @@ export async function setupRemoveUserBench() {
             let users: (ClientWithDatabase & { id: ClientId })[] = [];
             bench.add(
                 `cipherSuite=${cipherSuiteLabel} userCount=${userCount}`,
-                async () => {
+                measured(async (measure) => {
                     const alice = await helpers.newClient(cipherSuite);
                     try {
                         const conversationId = await helpers.createConversation(
@@ -42,20 +42,19 @@ export async function setupRemoveUserBench() {
                                 ),
                         );
 
-                        const start = bench.now();
-                        await alice.cc.transaction(
-                            async (ctx) =>
-                                await ctx.removeClientsFromConversation(
-                                    conversationId,
-                                    users.map((user) => user.id),
-                                ),
+                        await measure(() =>
+                            alice.cc.transaction(
+                                async (ctx) =>
+                                    await ctx.removeClientsFromConversation(
+                                        conversationId,
+                                        users.map((user) => user.id),
+                                    ),
+                            ),
                         );
-                        const end = bench.now();
-                        return { overriddenDuration: end - start };
                     } finally {
                         helpers.releaseClients([alice]);
                     }
-                },
+                }),
                 {
                     async beforeAll() {
                         for (let i = 0; i < userCount; i++) {
