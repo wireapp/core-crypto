@@ -7,12 +7,7 @@ export async function setupRemoveUserBench() {
     const parameters = await userBenchmarkParameters();
 
     await runOnPlatform(async (parameters) => {
-        globalThis.bench = newBench("RemoveUser", {
-            time: 0,
-            iterations: 10,
-            warmup: true,
-            warmupTime: 0,
-        });
+        globalThis.bench = newBench("RemoveUser");
         for (const { userCount, cipherSuite, taskName } of parameters) {
             // Users only provide key packages, so each task creates them once and every
             // iteration adds them to a new conversation with fresh key packages.

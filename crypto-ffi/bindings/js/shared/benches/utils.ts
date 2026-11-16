@@ -1,4 +1,4 @@
-import type { Bench, BenchOptions, Task } from "tinybench";
+import type { Bench, Task } from "tinybench";
 import type { CipherSuite } from "#core-crypto";
 import { isNumberObject } from "node:util/types";
 import { mkdir } from "node:fs/promises";
@@ -16,7 +16,7 @@ declare global {
     var tinybenchSetup: () => void;
     var tinybenchTeardown: () => Promise<void> | void;
     var bench: Bench;
-    var newBench: (name: string, options?: BenchOptions) => Bench;
+    var newBench: (name: string) => Bench;
     var measured: (task: (measure: Measure) => Promise<void>) => () => Promise<{
         overriddenDuration: number;
         overriddenIterationCost: number;
@@ -47,8 +47,8 @@ export async function setup() {
         globalThis.tinybenchSetup = tinybenchSetup;
     }
     await runOnPlatform(() => {
-        // The settings all benchmarks share. A benchmark may override them.
-        globalThis.newBench = (name, options) =>
+        // The settings all benchmarks share.
+        globalThis.newBench = (name) =>
             new tinybench.Bench({
                 name,
                 time: 1000,
@@ -56,7 +56,6 @@ export async function setup() {
                 warmupIterations: 1,
                 setup: globalThis.tinybenchSetup,
                 teardown: globalThis.tinybenchTeardown,
-                ...options,
             });
 
         // Turns a task that times only part of its work into a benchmark function. The task
