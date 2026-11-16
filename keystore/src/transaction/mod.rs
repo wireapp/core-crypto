@@ -107,9 +107,9 @@ impl Transaction {
         // we have to set this after initialization so that a sqlite failure when querying the pragma
         // causes a rollback.
         transaction.externally_modified = {
-            let mut conn = transaction.conn.as_ref().lock();
-            let conn = conn.as_mut().expect("mutex was just initialized with Some");
-            conn.update_data_version()?
+            let conn = transaction.conn.as_ref().lock();
+            let conn = conn.as_ref().expect("mutex was just initialized with Some");
+            transaction.database.update_data_version(conn)?
         };
         let transaction = UniqueArc::from(transaction);
 

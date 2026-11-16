@@ -62,6 +62,9 @@ pub struct Database {
     pub(crate) transaction: Mutex<Option<UniqueWeak<Transaction>>>,
     // ensures at most one transaction is in flight against this database at a time
     transaction_lock: TransactionLock,
+    // `PRAGMA data_version` as of the start of the last transaction, if there was one.
+    // Only `update_data_version` uses it, while the transaction holds the connection.
+    last_data_version: parking_lot::Mutex<Option<i64>>,
 }
 
 impl Database {
@@ -148,6 +151,7 @@ impl Database {
             filesystem: filesystem.into(),
             transaction: Default::default(),
             transaction_lock,
+            last_data_version: Default::default(),
         })
     }
 
@@ -259,6 +263,23 @@ impl Database {
     /// Most users should prefer [`Self::conn`].
     pub(crate) async fn raw_conn(&self) -> MutexGuardArc<ManagedConnection> {
         self.conn.lock_arc().await
+    }
+
+    /// Get the value of SQLite's `PRAGMA data_version` and compute `externally_modified` from it.
+    ///
+    /// Returns `true` when the database knows that an external connection changed database state
+    /// since the last time this was called.
+    ///
+    /// `conn` must be this database's connection.
+    ///
+    /// See: <https://www.sqlite.org/pragma.html#pragma_data_version>
+    pub(crate) fn update_data_version(&self, conn: &Connection) -> rusqlite::Result<bool> {
+        let data_version = conn.pragma_query_one(None, "data_version")?;
+        let mut last_data_version = self.last_data_version.lock();
+        let externally_modified =
+            last_data_version.is_some_and(|stored_data_version| stored_data_version != data_version);
+        *last_data_version = Some(data_version);
+        Ok(externally_modified)
     }
 
     /// Get the location of the database.
