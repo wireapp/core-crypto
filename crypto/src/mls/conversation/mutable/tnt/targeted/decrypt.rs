@@ -4,7 +4,7 @@ use core_crypto_keystore::{
 };
 use openmls::{
     group::{MlsGroup, group_context::GroupContext},
-    prelude::{HpkePrivateKey, Member},
+    prelude::{CryptoError, HpkePrivateKey, Member},
     treesync::EncryptionKey,
 };
 use openmls_traits::key_store::{MlsEntity, MlsEntityId};
@@ -13,7 +13,7 @@ use tls_codec::{Deserialize as _, Serialize as _, VLBytes};
 
 use super::{HpkeContextData, PskId, TargetedMessageContext, derive_targeted_message_psk, extract_hpke_context_data};
 use crate::{
-    CryptoProvider, DecryptedMessage, DecryptionOutcome, KeystoreError, OpenMlsError, TlsCodecError,
+    CryptoProvider, DecryptedMessage, DecryptionOutcome, KeystoreError, OpenMlsError, RejectionReason, TlsCodecError,
     mls::conversation::{
         ConversationMut, Error, MlsGroupState, Result, TargetedMessagePolicy,
         mutable::tnt::{ProtocolVersion, TargetedMessage, TntWireFormat},
@@ -89,17 +89,19 @@ impl ConversationMut {
             .counter
             .tls_serialize_detached()
             .map_err(TlsCodecError::serialize("TntMessageCounter"))?;
-        let padded_plaintext = crypto_provider
-            .hpke_open_psk(
-                cipher_suite.hpke_config(),
-                &message.payload,
-                &decryption_key,
-                &context_data.info,
-                &aad,
-                &context_data.psk,
-                &context_data.psk_id,
-            )
-            .map_err(OpenMlsError::wrap("decrypting targeted message"))?;
+        let padded_plaintext = match crypto_provider.hpke_open_psk(
+            cipher_suite.hpke_config(),
+            &message.payload,
+            &decryption_key,
+            &context_data.info,
+            &aad,
+            &context_data.psk,
+            &context_data.psk_id,
+        ) {
+            Ok(plaintext) => plaintext,
+            Err(CryptoError::HpkeDecryptionError) => return Ok(RejectionReason::InvalidAuthentication.into()),
+            Err(err) => return Err(OpenMlsError::wrap("decrypting targeted message")(err).into()),
+        };
 
         // Remove padding from plaintext: VLBytes contains a length prefix which tells the deserializer the plaintext
         // length.

@@ -32,7 +32,6 @@ impl Infrastructural for crate::mls::conversation::Error {
             | Self::MemberNotFound(_)
             | Self::TntMessageCounterOverflow
             | Self::MessageRejected { .. }
-            | Self::DecryptionError
             | Self::IdentityInitializationError
             | Self::MlsGroupInvalidState(_)
             | Self::MlsMessageInvalidState(_)

@@ -1,10 +1,10 @@
-use openmls::prelude::{Member, OpenMlsCrypto};
+use openmls::prelude::{CryptoError, Member, OpenMlsCrypto};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Deserialize as _, Serialize, VLBytes};
 
 use super::Result;
 use crate::{
-    DecryptedMessage, DecryptionOutcome, OpenMlsError, TlsCodecError,
+    DecryptedMessage, DecryptionOutcome, OpenMlsError, RejectionReason, TlsCodecError,
     mls::conversation::{
         ConversationMut,
         mutable::tnt::{ProtocolVersion, TntWireFormat, TransientMessage, transient::transient_message_secrets},
@@ -43,16 +43,17 @@ impl ConversationMut {
             .aad(protocol_version)
             .tls_serialize_detached()
             .map_err(TlsCodecError::serialize("TransientMessageAad"))?;
-        let padded_plaintext = crypto_provider
-            .crypto()
-            .aead_decrypt(
-                cipher_suite.aead_algorithm(),
-                &secrets.secret_key,
-                &message.payload,
-                secrets.aead_nonce.as_slice(),
-                &aad_bytes,
-            )
-            .map_err(OpenMlsError::wrap("decrypting transient message"))?;
+        let padded_plaintext = match crypto_provider.crypto().aead_decrypt(
+            cipher_suite.aead_algorithm(),
+            &secrets.secret_key,
+            &message.payload,
+            secrets.aead_nonce.as_slice(),
+            &aad_bytes,
+        ) {
+            Ok(plaintext) => plaintext,
+            Err(CryptoError::AeadDecryptionError) => return Ok(RejectionReason::InvalidAuthentication.into()),
+            Err(err) => return Err(OpenMlsError::wrap("decrypting transient message")(err).into()),
+        };
 
         // Remove padding from plaintext: VLBytes contains a length prefix which tells the deserializer the plaintext
         // length.

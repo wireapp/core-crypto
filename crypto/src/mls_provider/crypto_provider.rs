@@ -597,8 +597,8 @@ mod hpke_core {
     ) -> Result<Vec<u8>, CryptoError> {
         use hpke::Deserializable as _;
         let encapped_key = Kem::EncappedKey::from_bytes(kem_output).map_err(|_| CryptoError::HpkeDecryptionError)?;
-        let key = Kem::PrivateKey::from_bytes(private_key).map_err(|_| CryptoError::HpkeDecryptionError)?;
-        let psk_bundle = PskBundle::new(psk, psk_id).map_err(|_| CryptoError::HpkeDecryptionError)?;
+        let key = Kem::PrivateKey::from_bytes(private_key).map_err(|_| CryptoError::InvalidKey)?;
+        let psk_bundle = PskBundle::new(psk, psk_id).map_err(|_| CryptoError::InvalidKey)?;
         let plaintext = hpke::single_shot_open::<Aead, Kdf, Kem>(
             &hpke::OpModeR::Psk(psk_bundle),
             &key,

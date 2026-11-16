@@ -101,6 +101,11 @@ pub enum RejectionReason {
         /// Epoch of the group
         group_epoch: u64,
     },
+    /// This message's ciphertext failed authentication, so it could not be decrypted.
+    ///
+    /// The ciphertext may have been corrupted or tampered with, or encrypted with keys we don't have.
+    /// Authenticated encryption deliberately doesn't distinguish between these.
+    InvalidAuthentication,
 }
 
 /// Outcome of attempting to decrypt a message.

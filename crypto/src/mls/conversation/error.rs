@@ -24,8 +24,6 @@ pub enum Error {
         /// Why was the message rejected by the delivery service?
         reason: String,
     },
-    #[error("An application message failed to decrypt")]
-    DecryptionError,
     #[error("MLS Client was not initialized the right way")]
     IdentityInitializationError,
     #[error("MLS group is in an invalid state: {0}")]
