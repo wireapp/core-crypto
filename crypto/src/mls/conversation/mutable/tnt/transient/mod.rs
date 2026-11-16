@@ -55,7 +55,7 @@ impl TransientMessageAad {
 pub(super) struct TransientMessage {
     /// The mls group context (<https://www.rfc-editor.org/info/rfc9420/#name-group-context>) contains the epoch and
     /// group id, so we don't need those in additional fields here.
-    group_context: GroupContext,
+    pub(super) group_context: GroupContext,
     sender: LeafNodeIndex,
     counter: TntMessageCounter,
     /// AEAD-encrypted with an MLS exporter secret. An additional authentication layer is

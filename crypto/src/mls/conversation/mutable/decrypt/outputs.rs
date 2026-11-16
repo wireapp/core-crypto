@@ -122,6 +122,8 @@ pub enum RejectionReason {
     MalformedCredential(openmls::prelude::CredentialError),
     /// The sender's X509 certificate chain is not correctly signed.
     UntrustedCredential(openmls_traits::types::CryptoError),
+    /// This message belongs to a different conversation.
+    WrongGroupId,
 }
 
 /// Outcome of attempting to decrypt a message.

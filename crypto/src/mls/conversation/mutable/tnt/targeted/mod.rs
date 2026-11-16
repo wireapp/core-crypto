@@ -66,7 +66,7 @@ pub(super) struct TargetedMessage {
     /// Client ID as it appears in credentials.
     recipient_id: Vec<u8>,
     pub(super) epoch: GroupEpoch,
-    group_id: GroupId,
+    pub(super) group_id: GroupId,
     /// Encrypted with the receipient's HPKE public key; authenticated with a PSK derived from the epoch secret,
     /// guaranteeing that the sender was a member of the group during the epoch. An additional authentication layer is
     /// provided by the signature over the entire message. Before encryption, the HPKE plaintext is padded.

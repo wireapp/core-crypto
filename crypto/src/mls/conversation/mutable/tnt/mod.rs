@@ -26,7 +26,7 @@ use crate::{
     RecursiveError, RejectionReason, TlsCodecError,
     mls::{
         conversation::{
-            ConversationMut, Error,
+            ConversationIdRef, ConversationMut, Error,
             config::{MAX_FUTURE_EPOCHS, MAX_PAST_EPOCHS},
             mutable::tnt::transient::TransientMessage,
         },
@@ -85,6 +85,17 @@ impl TntMessageBody {
             self,
             TntMessageBody::Transient(_) | TntMessageBody::TransientTargeted(_)
         )
+    }
+
+    /// The ID of the group for which this message is intended.
+    pub(crate) fn group_id(&self) -> &ConversationIdRef {
+        let slice = match self {
+            TntMessageBody::Transient(transient) => transient.group_context.group_id().as_slice(),
+            TntMessageBody::Targeted(targeted) | TntMessageBody::TransientTargeted(targeted) => {
+                targeted.group_id.as_slice()
+            }
+        };
+        ConversationIdRef::new(slice)
     }
 }
 
@@ -273,6 +284,10 @@ impl ConversationMut {
         // sends us a message.
         if protocol_version != ProtocolVersion::V1 {
             return Ok(RejectionReason::UnsupportedProtocolVersion.into());
+        }
+
+        if message.content.body.group_id() != self.id() {
+            return Ok(RejectionReason::WrongGroupId.into());
         }
 
         let message_epoch = message.content.body.epoch();
