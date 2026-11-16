@@ -8,8 +8,7 @@ import testutils.*
 import java.nio.file.Files
 import kotlin.collections.MutableList
 
-// This benchmark measures throughput of encrypting messages in a transaction and committing these.
-// It includes the database interaction, because want to be able to answer to a user how long creating messages takes.
+// Throughput of decrypting messages in one transaction, including the database writes a user waits for.
 @State(Scope.Thread)
 open class ProcessMessage : MessageBenchmark() {
     private lateinit var encryptedMessages: List<ByteArray>

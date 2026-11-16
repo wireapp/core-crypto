@@ -7,8 +7,7 @@ import org.openjdk.jmh.annotations.*
 import testutils.*
 import java.nio.file.Files
 
-// This benchmark measures throughput of encrypting messages in a transaction and committing these.
-// It includes the database interaction, because want to be able to answer to a user how long creating messages takes.
+// Throughput of removing users from a conversation, including the database writes a user waits for.
 @State(Scope.Thread)
 open class RemoveUser : UserBenchmark() {
     private lateinit var aliceCc: CoreCrypto

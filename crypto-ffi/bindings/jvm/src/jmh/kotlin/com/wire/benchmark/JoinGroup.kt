@@ -7,6 +7,7 @@ import org.openjdk.jmh.annotations.*
 import testutils.*
 import java.nio.file.Files
 
+// Throughput of joining a conversation from a welcome, including the database writes a user waits for.
 @State(Scope.Thread)
 open class JoinGroup : UserBenchmark() {
     private lateinit var charlieCc: CoreCrypto
