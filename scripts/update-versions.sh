@@ -1,16 +1,9 @@
 # Update version numbers of various core-crypto components.
 new_version=$1
-for crate in crypto-macros \
-             crypto-ffi \
-             crypto \
-             interop \
-             keystore-dump \
-             keystore; do
-
-        perl -0777 -pi -e \
-            's/^version = "[^"]+"/version = "'"$new_version"'"/m' \
-            "$crate/Cargo.toml"
-    done
+# The crate versions are inherited from the workspace manifest.
+perl -0777 -pi -e \
+    's/^version = "[^"]+"/version = "'"$new_version"'"/m' \
+    Cargo.toml
 
 # Make sure workspace Cargo.lock is updated with new versions.
 cargo update -w
