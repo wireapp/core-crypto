@@ -52,7 +52,7 @@ export async function setup() {
             new tinybench.Bench({
                 name,
                 time: 1000,
-                iterations: 5,
+                iterations: 10,
                 warmupIterations: 1,
                 setup: globalThis.tinybenchSetup,
                 teardown: globalThis.tinybenchTeardown,
