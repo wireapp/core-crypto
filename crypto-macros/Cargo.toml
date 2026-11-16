@@ -2,9 +2,9 @@
 name = "core-crypto-macros"
 description = "Macros for core-crypto"
 repository = "https://github.com/wireapp/core-crypto"
-version = "11.0.0"
-edition = "2024"
-license = "GPL-3.0-only"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
 
 [lib]
 proc-macro = true

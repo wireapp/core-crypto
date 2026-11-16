@@ -12,6 +12,11 @@ members = [
 ]
 resolver = "2"
 
+[workspace.package]
+version = "11.0.0"
+edition = "2024"
+license = "GPL-3.0-only"
+
 [workspace.lints.clippy]
 allow_attributes = "warn"
 missing_safety_doc = "deny"
