@@ -8,8 +8,6 @@ pub(crate) mod idb_migration;
 #[cfg(target_os = "ios")]
 pub(crate) mod ios_wal_compat;
 #[cfg(target_os = "unknown")]
-mod jspi_test;
-#[cfg(target_os = "unknown")]
 mod legacy_opfs;
 pub(crate) mod managed_connection;
 mod mls;
@@ -29,9 +27,11 @@ use rusqlite::trace::{TraceEvent, TraceEventCodes};
 
 #[cfg(target_os = "unknown")]
 pub use self::idb_migration::{delete_legacy_idb, legacy_idb_exists};
-#[cfg(target_os = "unknown")]
-pub use self::jspi_test::run_in_jspi;
 pub use self::mls::{deser, ser};
+/// Used by `core_crypto_macros::jspi_wasm_bindgen_test`.
+#[cfg(target_os = "unknown")]
+#[doc(hidden)]
+pub use self::opfs_vfs::defer;
 pub(crate) use self::{
     filesystem::Filesystem,
     managed_connection::{ManagedConnection, SqliteGuard},
