@@ -86,7 +86,16 @@ pub enum RejectionReason {
     /// This message is from an epoch whose secrets are no longer available.
     ///
     /// This includes transient messages from any epoch older than the current one.
+    #[from(skip)]
     MessageEpochTooOld {
+        /// Epoch of the message
+        message_epoch: u64,
+        /// Epoch of the group
+        group_epoch: u64,
+    },
+    /// This message is from an epoch too far in the future to buffer.
+    #[from(skip)]
+    UnbufferedFarFutureMessage {
         /// Epoch of the message
         message_epoch: u64,
         /// Epoch of the group

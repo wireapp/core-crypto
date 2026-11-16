@@ -295,7 +295,11 @@ impl ConversationMut {
                     epoch: message_epoch,
                 }));
             }
-            return Err(Error::UnbufferedFarFutureMessage);
+            return Ok(RejectionReason::UnbufferedFarFutureMessage {
+                message_epoch,
+                group_epoch,
+            }
+            .into());
         } else if message.content.body.is_transient()
             || message_epoch < group_epoch.saturating_sub(MAX_PAST_EPOCHS as _)
         {

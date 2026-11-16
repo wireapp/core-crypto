@@ -41,7 +41,7 @@ pub(super) async fn process_message(
     };
 
     let is_duplicate = protocol_message.is_duplicate(conversation).await?;
-    let msg_epoch = protocol_message.epoch().as_u64();
+    let message_epoch = protocol_message.epoch().as_u64();
     let content_type = protocol_message.content_type();
     // we need to compute the confirmation tag now, but it's only relevant in a particular case of processing the
     // message, so don't propagate the error yet.
@@ -81,7 +81,8 @@ pub(super) async fn process_message(
                         Ok(RejectionReason::DuplicateMessage.into())
                     }
                     Err(ProcessMessageError::ValidationError(ValidationError::WrongEpoch))
-                        if msg_epoch > group_epoch && msg_epoch <= group_epoch.saturating_add(MAX_FUTURE_EPOCHS) =>
+                        if message_epoch > group_epoch
+                            && message_epoch <= group_epoch.saturating_add(MAX_FUTURE_EPOCHS) =>
                     {
                         // limit to next epoch otherwise if we were buffering a commit for epoch + 2
                         // we would fail when trying to decrypt it in mls.
@@ -92,15 +93,15 @@ pub(super) async fn process_message(
                         // caller can handle it. Our caller needs to know about the epoch number, so
                         // we pass it back inside the deferral.
                         Ok(ProcessedMessage::Deferred(DeferralReason::FutureEpoch {
-                            epoch: msg_epoch,
+                            epoch: message_epoch,
                         }))
                     }
                     Err(ProcessMessageError::ValidationError(ValidationError::WrongEpoch))
-                        if msg_epoch < group_epoch =>
+                        if message_epoch < group_epoch =>
                     {
                         match content_type {
                             ContentType::Application => Ok(RejectionReason::MessageEpochTooOld {
-                                message_epoch: msg_epoch,
+                                message_epoch,
                                 group_epoch,
                             }
                             .into()),
@@ -109,7 +110,11 @@ pub(super) async fn process_message(
                         }
                     }
                     Err(ProcessMessageError::ValidationError(ValidationError::WrongEpoch)) => {
-                        Err(Error::UnbufferedFarFutureMessage)
+                        Ok(RejectionReason::UnbufferedFarFutureMessage {
+                            message_epoch,
+                            group_epoch,
+                        }
+                        .into())
                     }
                     Err(ProcessMessageError::ValidationError(
                         ValidationError::UnableToDecrypt(MessageDecryptionError::SecretTreeError(
@@ -117,7 +122,7 @@ pub(super) async fn process_message(
                         ))
                         | ValidationError::NoPastEpochData,
                     )) => Ok(RejectionReason::MessageEpochTooOld {
-                        message_epoch: msg_epoch,
+                        message_epoch,
                         group_epoch,
                     }
                     .into()),
