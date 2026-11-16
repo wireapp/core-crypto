@@ -32,7 +32,7 @@ The `DatabaseKey` is a 32-byte symmetric key used to encrypt all data at rest. C
 <!-- langtabs-start -->
 
 ```typescript
-const key = DatabaseKey.new(bytes)  // bytes must be exactly 32 bytes
+const key = await DatabaseKey.create(bytes)  // bytes must be exactly 32 bytes
 ```
 
 ```swift

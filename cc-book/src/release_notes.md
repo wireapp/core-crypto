@@ -13,6 +13,26 @@
   copies it by path, update the path. If you call `initWasmModule()` without a path, it now loads the module from next
   to `corecrypto.js`.
 
+- Browser: CoreCrypto now runs in a dedicated web worker, which `initWasmModule()` starts from `dist/worker.js`. Serve
+  that file next to `corecrypto.js`. Bundlers that understand `new URL("./worker.js", import.meta.url)` pick it up
+  themselves.
+
+- Browsers no longer need to support JSPI.
+
+- Browser: every call into CoreCrypto now returns a promise. Add `await` where a call didn't need one before. In
+  particular:
+
+  - Regular constructors became static `create` methods: `new ClientId(...)` is now `await ClientId.create(...)`.
+  - So do module-level functions such as `version`, `buildMetadata`, `cipherSuiteDefault` and `cipherSuiteFromU16`.
+  - Where a type implements `toString`, it's now `asyncToString`. `toString` falls back to JavaScript's default.
+
+- Browser: `CoreCryptoLogger.log` stays synchronous, but CoreCrypto no longer waits for it. If it throws, the error is
+  only reported to the console. Log messages can also arrive after their caller has returned, so code that inspects logs
+  right after awaiting a call may need to wait for them.
+
+- Browser: databases are stored in a different directory in OPFS. A CoreCrypto 11 database moves there the first time
+  it's opened, with the same location and key.
+
 #### Bug Fixes
 
 - It's now possible to rotate a existing x509 credential with a new x509 credential which has the same public key.

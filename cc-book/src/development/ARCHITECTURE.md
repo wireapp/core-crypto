@@ -123,6 +123,7 @@ Summary:
 
 The same as native, except:
 
-- Backing store: a file in OPFS, accessed through a custom VFS
+- Backing store: OPFS, through the `opfs-sahpool` VFS of [sqlite-wasm-rs](https://github.com/Spxg/sqlite-wasm-rs), in a
+  dedicated worker
 - Crypto primitives provider: [LibTomCrypt](https://github.com/libtom/libtomcrypt)
 - PRNG provider: [Crypto.getRandomValues](https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues)
