@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
 use super::{Result, TransactionContext};
-use crate::{DecryptedMessage, RecursiveError, mls::conversation::ConversationIdRef};
+use crate::{DecryptionOutcome, RecursiveError, mls::conversation::ConversationIdRef};
 
 impl TransactionContext {
     /// Decrypt and process a MLS or TNT message.
@@ -32,7 +32,7 @@ impl TransactionContext {
         &self,
         id: &ConversationIdRef,
         bytes: impl Into<Cow<'_, [u8]>>,
-    ) -> Result<Vec<DecryptedMessage>> {
+    ) -> Result<Vec<DecryptionOutcome>> {
         let mut conversation = self.conversation_regardless_of_pending_status(id).await?;
         conversation
             .decrypt_message(bytes)

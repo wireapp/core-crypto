@@ -50,15 +50,14 @@ impl ConversationMut {
     ///
     /// The message bytes must be TLS-serialized.
     ///
-    /// Returns a vector. The first item in this vector is always the message this function was called with;
-    /// subsequent items are buffered messages which have been unblocked by that first message. If the initial
-    /// message was deferred, this vector will be empty.
+    /// Returns a vector. The first outcome in this vector is always for the input message; subsequent outcomes
+    /// are for buffered messages which have been unblocked by that first message.
     ///
     /// Errors occurred when decrypting the message with which this function was called propagate as normal.
     /// Errors occurred when decrypting buffered messages unblocked by the initial message are propagated in
     /// case they are infrastructure errors. If they are not, then they are logged but not propagated, and the
     /// related message is dropped.
-    pub(crate) async fn decrypt_message(&mut self, bytes: impl Into<Cow<'_, [u8]>>) -> Result<Vec<DecryptedMessage>> {
+    pub(crate) async fn decrypt_message(&mut self, bytes: impl Into<Cow<'_, [u8]>>) -> Result<Vec<DecryptionOutcome>> {
         let id = self.id.clone();
         let log_and_skip_unparseable_buffered_messages = move |maybe_message: Result<
             (InboxMessage, IncomingMessage),
@@ -145,12 +144,10 @@ impl ConversationMut {
                 self.send_to_inbox(content_type, epoch, arrival_sequence, bytes.into_owned(), reason)?;
             }
 
-            // This will change in WPB-29261 to something like
-            //   if !(item.arrival_sequence.is_some() && outcome.is_deferred())
-            // but for now because we don't actually return outcomes,
-            // we need a narrower filter.
-            if let DecryptionOutcome::Decrypted(decrypted) = outcome {
-                decrypted_messages.push(decrypted);
+            // we exclude messages which were previously buffered and then re-deferred, because
+            // callers neither know nor care about those.
+            if !(arrival_sequence.is_some() && outcome.is_deferred()) {
+                decrypted_messages.push(outcome);
             }
 
             match effect {
