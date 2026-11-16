@@ -21,6 +21,7 @@ import {
     CoreCryptoContext,
     CoreCryptoError,
     CoreCryptoFfi,
+    type CoreCryptoFfiLike,
     CredentialRef,
     coreCryptoHistoryClient,
     coreCryptoNew,
@@ -37,17 +38,37 @@ export interface CredentialFindFilters {
     earliestValidity?: bigint;
 }
 
+/** `CoreCrypto` where the FFI gives `CoreCryptoFfi`: a promise of it where every call is async (browser). */
+type Adopted<T> =
+    T extends PromiseLike<unknown> ? Promise<CoreCrypto> : CoreCrypto;
+
+// `CoreCryptoFfi` has no primary constructor, so the generated one is private and the class can't be extended as is.
+// This is a type-level hack to allow extending the class anyway.
+const CoreCryptoFfiBase = CoreCryptoFfi as unknown as Omit<
+    typeof CoreCryptoFfi,
+    "prototype"
+> &
+    (abstract new () => CoreCryptoFfi);
+
 /**
  * Wrapper for the WASM-compiled version of CoreCrypto
  */
-export class CoreCrypto extends CoreCryptoFfi {
+export class CoreCrypto extends CoreCryptoFfiBase {
     /** @internal */
     static instanceOf(obj: unknown): obj is CoreCryptoFfi {
-        return super.instanceOf(obj);
+        return CoreCryptoFfi.instanceOf(obj);
     }
 
-    private constructor(ffiInstance: CoreCryptoFfi) {
-        super(ffiInstance);
+    // Never called: instances come from the FFI and are adopted. It's only here to keep the constructor private.
+    private constructor() {
+        super();
+    }
+
+    /**
+     * Make an instance the FFI returned into a `CoreCrypto`.
+     */
+    private static adopt(ffiInstance: CoreCryptoFfiLike): CoreCrypto {
+        return Object.setPrototypeOf(ffiInstance, this.prototype) as CoreCrypto;
     }
 
     /**
@@ -55,15 +76,15 @@ export class CoreCrypto extends CoreCryptoFfi {
      * MLS or proteus can be initialized  with {@link CoreCryptoContext.mlsInit} or
      * {@link CoreCryptoContext.proteusInit}, respectively.
      */
-    public static new(database: Database): CoreCrypto {
+    public static new(
+        database: Database,
+    ): Adopted<ReturnType<typeof coreCryptoNew>> {
         const ffiInstance = coreCryptoNew(database);
-        try {
-            return new this(ffiInstance);
-        } finally {
-            // `new this` holds its own reference to the same Rust object. Release this one now
-            // rather than waiting for the garbage collector, so the database can close.
-            ffiInstance.uniffiDestroy();
-        }
+        return (
+            ffiInstance instanceof Promise
+                ? ffiInstance.then((instance) => this.adopt(instance))
+                : this.adopt(ffiInstance as CoreCryptoFfiLike)
+        ) as Adopted<ReturnType<typeof coreCryptoNew>>;
     }
 
     /**
@@ -75,12 +96,7 @@ export class CoreCrypto extends CoreCryptoFfi {
     public static async historyClient(
         historySecret: HistorySecret,
     ): Promise<CoreCrypto> {
-        const historyClient = await coreCryptoHistoryClient(historySecret);
-        try {
-            return new this(historyClient);
-        } finally {
-            historyClient.uniffiDestroy();
-        }
+        return this.adopt(await coreCryptoHistoryClient(historySecret));
     }
 
     /**
