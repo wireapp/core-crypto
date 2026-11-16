@@ -17,9 +17,10 @@ declare global {
     var tinybenchTeardown: () => Promise<void> | void;
     var bench: Bench;
     var newBench: (name: string, options?: BenchOptions) => Bench;
-    var measured: (
-        task: (measure: Measure) => Promise<void>,
-    ) => () => Promise<{ overriddenDuration: number }>;
+    var measured: (task: (measure: Measure) => Promise<void>) => () => Promise<{
+        overriddenDuration: number;
+        overriddenIterationCost: number;
+    }>;
 }
 
 export { sharedTeardown as teardown } from "../shared/utils";
@@ -61,6 +62,7 @@ export async function setup() {
         // Turns a task that times only part of its work into a benchmark function. The task
         // passes that part to `measure`, and only that part ends up in the samples.
         globalThis.measured = (task) => async () => {
+            const callStart = bench.now();
             let duration: number | undefined;
             await task(async (operation) => {
                 const start = bench.now();
@@ -73,7 +75,12 @@ export async function setup() {
             if (duration === undefined) {
                 throw new Error("the benchmark didn't measure anything");
             }
-            return { overriddenDuration: duration };
+            return {
+                overriddenDuration: duration,
+                // Count the whole call, setup included, towards the time budget, so that
+                // expensive setup doesn't stretch the run.
+                overriddenIterationCost: bench.now() - callStart,
+            };
         };
     });
 }
