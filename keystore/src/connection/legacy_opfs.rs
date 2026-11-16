@@ -257,11 +257,10 @@ mod tests {
     use web_sys::{FileSystemGetDirectoryOptions, FileSystemGetFileOptions};
 
     use super::*;
-    use crate::Database;
-
-    fn unique_name(prefix: &str) -> String {
-        format!("{prefix}-{}.db", uuid::Uuid::new_v4())
-    }
+    use crate::{
+        Database,
+        connection::os_unknown::{unique_name, wipe},
+    };
 
     /// Build CoreCrypto 11 style files: an encrypted database in WAL mode, closed without a checkpoint, so that its
     /// rows are only in the WAL. Returns the main file and the WAL.
@@ -348,10 +347,6 @@ mod tests {
             .unwrap()
             .collect::<rusqlite::Result<_>>()
             .unwrap()
-    }
-
-    async fn wipe(db: Arc<Database>) {
-        Arc::into_inner(db).unwrap().wipe().await.unwrap();
     }
 
     #[wasm_bindgen_test]

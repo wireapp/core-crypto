@@ -130,3 +130,116 @@ impl super::Filesystem for FsAbstraction {
         Ok(())
     }
 }
+
+#[cfg(test)]
+pub(super) fn unique_name(prefix: &str) -> String {
+    format!("{prefix}-{}.db", uuid::Uuid::new_v4())
+}
+
+#[cfg(test)]
+pub(super) async fn wipe(db: std::sync::Arc<crate::Database>) {
+    std::sync::Arc::into_inner(db).unwrap().wipe().await.unwrap();
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use wasm_bindgen_test::wasm_bindgen_test;
+
+    use super::{unique_name, wipe};
+    use crate::{Database, DatabaseKey};
+
+    #[wasm_bindgen_test]
+    async fn dropping_transaction_and_database_rolls_back_and_closes_before_reopen() {
+        let name = unique_name("managed");
+        let key = DatabaseKey::generate();
+        let db = Database::open(&name, &key).await.unwrap();
+        db.conn()
+            .await
+            .execute_batch("CREATE TABLE cleanup_probe(value INTEGER); INSERT INTO cleanup_probe VALUES (1);")
+            .unwrap();
+        let tx = db.new_transaction().await.unwrap();
+        tx.conn()
+            .unwrap()
+            .execute("UPDATE cleanup_probe SET value=2", [])
+            .unwrap();
+
+        drop(tx);
+        drop(db);
+
+        let db = Database::open(&name, &key).await.unwrap();
+        assert_eq!(
+            db.conn()
+                .await
+                .query_row("SELECT value FROM cleanup_probe", [], |row| row.get::<_, i64>(0))
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            db.conn()
+                .await
+                .pragma_query_value(None, "journal_mode", |row| row.get::<_, String>(0))
+                .unwrap(),
+            "wal"
+        );
+        wipe(db).await;
+    }
+
+    #[wasm_bindgen_test]
+    async fn rekey_keeps_wal_and_reopens_with_the_new_key() {
+        let name = unique_name("rekey");
+        let old_key = DatabaseKey::generate();
+        let new_key = DatabaseKey::generate();
+        let db = Database::open(&name, &old_key).await.unwrap();
+        db.conn()
+            .await
+            .execute_batch("CREATE TABLE rekey_probe(value INTEGER); INSERT INTO rekey_probe VALUES (7)")
+            .unwrap();
+        db.update_key(&new_key).await.unwrap();
+        assert_eq!(
+            db.conn()
+                .await
+                .pragma_query_value(None, "journal_mode", |row| row.get::<_, String>(0))
+                .unwrap(),
+            "wal"
+        );
+        Arc::into_inner(db).unwrap().close().await.unwrap();
+        assert!(Database::open(&name, &old_key).await.is_err());
+        let db = Database::open(&name, &new_key).await.unwrap();
+        assert_eq!(
+            db.conn()
+                .await
+                .query_row("SELECT value FROM rekey_probe", [], |row| row.get::<_, i64>(0))
+                .unwrap(),
+            7
+        );
+        wipe(db).await;
+    }
+
+    #[wasm_bindgen_test]
+    async fn dropped_transaction_releases_connection_for_the_next_transaction() {
+        let name = unique_name("rollback");
+        let db = Database::open(&name, &DatabaseKey::generate()).await.unwrap();
+        db.conn()
+            .await
+            .execute_batch("CREATE TABLE rollback_probe(value INTEGER)")
+            .unwrap();
+        let tx = db.new_transaction().await.unwrap();
+        tx.conn()
+            .unwrap()
+            .execute("INSERT INTO rollback_probe VALUES (1)", [])
+            .unwrap();
+        drop(tx);
+        let tx = db.new_transaction().await.unwrap();
+        assert_eq!(
+            tx.conn()
+                .unwrap()
+                .query_row("SELECT count(*) FROM rollback_probe", [], |row| row.get::<_, i64>(0))
+                .unwrap(),
+            0
+        );
+        tx.commit().await.unwrap();
+        wipe(db).await;
+    }
+}
