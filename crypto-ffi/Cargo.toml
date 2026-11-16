@@ -68,6 +68,7 @@ console_error_panic_hook.workspace = true
 uniffi-runtime-wasm = "0.31.0-7"
 # JSPI needs the exporting cdylib to depend on wasm-bindgen directly.
 wasm-bindgen.workspace = true
+wasm-bindgen-futures.workspace = true
 
 [dev-dependencies]
 testing_logger = "0.1.1"

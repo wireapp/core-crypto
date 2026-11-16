@@ -1199,6 +1199,7 @@ dependencies = [
  "uniffi-runtime-wasm",
  "uuid",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "web-sys",
  "wire-e2e-identity",
  "x509-cert",
