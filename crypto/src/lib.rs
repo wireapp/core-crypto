@@ -61,7 +61,7 @@ pub use crate::{
         conversation::{
             Commit, CommitBundle, ConversationConfiguration, ConversationId, DecryptedBytes, DecryptedMessage,
             DecryptionOutcome, DeferralReason, GroupInfoBundle, GroupInfoEncryptionType, GroupInfoPayload, Proposal,
-            RatchetTreeType, WirePolicy,
+            RatchetTreeType, RejectionReason, WirePolicy,
         },
         credential::{
             Credential, CredentialRef, CredentialType, FindFilters as CredentialFindFilters, x509::CertificateBundle,

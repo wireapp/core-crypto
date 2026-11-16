@@ -74,6 +74,10 @@ pub enum DeferralReason {
     PendingJoin,
 }
 
+/// A reason why this message could not be decrypted.
+#[derive(Debug)]
+pub enum RejectionReason {}
+
 /// Outcome of attempting to decrypt a message.
 //
 // We don't mind the size difference between variants here; the big variant is the happy path.
@@ -84,6 +88,12 @@ pub enum DecryptionOutcome {
     Decrypted(DecryptedMessage),
     /// The message could not be processed yet, but is expected to be processable in the future.
     Deferred(DeferralReason),
+    /// The message could not be processed.
+    ///
+    /// This is a stable condition; reattempts will produce the same rejection in the future.
+    /// Even so, this message's rejection doesn't indicate a fundamental error and is no reason
+    /// to abort the transaction.
+    Rejected(RejectionReason),
 }
 
 /// A change in state due to this message being processed

@@ -91,7 +91,7 @@ impl ConversationMut {
             let was_pending = self.group().await.is_pending;
 
             let outcome_result = tx_context_inner
-                .with_savepoint(
+                .with_savepoint_with_outcome_check(
                     "decrypt_message",
                     async || {
                         if let Some(outcome) = self.try_resolve_pending(&message).await? {
@@ -103,6 +103,9 @@ impl ConversationMut {
                         }
                     },
                     Error::savepoint,
+                    // deferred and rejected messages, and errors, all roll back the savepoint
+                    // (deferred messages get sent to the inbox later on; this just clears potential side effects)
+                    |maybe_outcome| matches!(maybe_outcome, Ok(DecryptionOutcome::Decrypted(_))),
                 )
                 .await;
 
