@@ -23,7 +23,7 @@ pub(crate) use self::tnt_message_counter::TntMessageCounter;
 use super::Result;
 use crate::{
     ConversationConfiguration, DecryptedBytes, DecryptionOutcome, DeferralReason, KeystoreError, OpenMlsError,
-    RecursiveError, TlsCodecError,
+    RecursiveError, RejectionReason, TlsCodecError,
     mls::{
         conversation::{
             ConversationMut, Error,
@@ -341,28 +341,28 @@ impl ConversationMut {
             .map_err(OpenMlsError::wrap("verifying tnt message signature"))?;
 
         match message.content.body {
-            TntMessageBody::Transient(transient_message) => self
-                .decrypt_transient(transient_message, protocol_version, &sender)
-                .await
-                .map(Into::into),
-            TntMessageBody::Targeted(targeted_message) => self
-                .decrypt_targeted(
+            TntMessageBody::Transient(transient_message) => {
+                self.decrypt_transient(transient_message, protocol_version, &sender)
+                    .await
+            }
+            TntMessageBody::Targeted(targeted_message) => {
+                self.decrypt_targeted(
                     targeted_message,
                     TargetedMessagePolicy::Persisted,
                     protocol_version,
                     &sender,
                 )
                 .await
-                .map(Into::into),
-            TntMessageBody::TransientTargeted(targeted_message) => self
-                .decrypt_targeted(
+            }
+            TntMessageBody::TransientTargeted(targeted_message) => {
+                self.decrypt_targeted(
                     targeted_message,
                     TargetedMessagePolicy::Transient,
                     protocol_version,
                     &sender,
                 )
                 .await
-                .map(Into::into),
+            }
         }
     }
 
@@ -382,6 +382,7 @@ impl ConversationMut {
 
     /// Shared function for all tnt message types, parameterized by message type and sender, because that's how the
     /// receiver counters are split.
+    ///
     /// The additional complexity introduced by this split is worthwhile, because each message type may be delivered in
     /// a unique way. We don't want to assume that messages arrive in order across different message types. This is why
     /// we're just checking the counter of the same message type, which is enough for duplicate message detection.
@@ -391,15 +392,15 @@ impl ConversationMut {
         message_type: TntWireFormat,
         message_sender: LeafNodeIndex,
         message_counter: TntMessageCounter,
-    ) -> Result<()> {
+    ) -> Result<Option<RejectionReason>> {
         let database = self.database()?;
         let counter_pk = MessageRxCounterPkRef::new(self.id.as_ref().into(), message_sender.u32(), group_epoch);
         let existing_counter = message_type.current_rx_counter(database.as_ref(), counter_pk).await?;
 
         if u32::from(message_counter) > existing_counter {
-            Ok(())
+            Ok(None)
         } else {
-            Err(Error::DuplicateMessage)
+            Ok(Some(RejectionReason::DuplicateMessage))
         }
     }
 

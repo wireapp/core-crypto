@@ -9,7 +9,7 @@ use openmls::{
 };
 
 use self::protocol_message_ext::ProtocolMessageExt as _;
-use super::DeferralReason;
+use super::{DeferralReason, RejectionReason};
 use crate::{
     OpenMlsError,
     mls::conversation::{ConversationMut, Error, Result, config::MAX_FUTURE_EPOCHS},
@@ -21,6 +21,7 @@ pub(super) enum ProcessedMessage {
     Content(MlsProcessedMessage),
     OwnCommit(ConfirmationTag),
     Deferred(DeferralReason),
+    Rejected(RejectionReason),
 }
 
 /// Parse and process a message. This is the step which actually performs decryption.
@@ -61,7 +62,7 @@ pub(super) async fn process_message(
                 // `InnerState::Changed`, and `mutate_group` uses only two signals to determine
                 match group.process_message(&backend, protocol_message).await {
                     // now that openmls has handled the message, we can return the duplicate message error
-                    Ok(_) if is_duplicate => Err(Error::DuplicateMessage),
+                    Ok(_) if is_duplicate => Ok(RejectionReason::DuplicateMessage.into()),
                     // processing message went well
                     Ok(processed) => Ok(processed.into()),
 
@@ -74,10 +75,10 @@ pub(super) async fn process_message(
                         // or an actual duplicate. It emits a log line and flattens all three variants into this single
                         // `GenerationOutOfBound` variant, so we can't tell what situation we're in at this level.
                         // `DuplicateMessage` is more likely than the other two, so that's what we unpack here.
-                        Err(Error::DuplicateMessage)
+                        Ok(RejectionReason::DuplicateMessage.into())
                     }
                     Err(ProcessMessageError::ValidationError(ValidationError::WrongEpoch)) if is_duplicate => {
-                        Err(Error::DuplicateMessage)
+                        Ok(RejectionReason::DuplicateMessage.into())
                     }
                     Err(ProcessMessageError::ValidationError(ValidationError::WrongEpoch))
                         if msg_epoch > group_epoch && msg_epoch <= group_epoch.saturating_add(MAX_FUTURE_EPOCHS) =>

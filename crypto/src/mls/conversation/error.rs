@@ -25,8 +25,6 @@ pub enum Error {
         /// Why was the message rejected by the delivery service?
         reason: String,
     },
-    #[error("We already decrypted this message once")]
-    DuplicateMessage,
     #[error("The epoch in which message was encrypted is older than {MAX_PAST_EPOCHS}")]
     MessageEpochTooOld,
     #[error("Incoming message is from an epoch too far in the future to buffer.")]

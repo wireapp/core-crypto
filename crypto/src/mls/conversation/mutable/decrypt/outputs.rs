@@ -76,12 +76,12 @@ pub enum DeferralReason {
 
 /// A reason why this message could not be decrypted.
 #[derive(Debug)]
-pub enum RejectionReason {}
+pub enum RejectionReason {
+    /// This message has already been processed, or replays a message which has.
+    DuplicateMessage,
+}
 
 /// Outcome of attempting to decrypt a message.
-//
-// We don't mind the size difference between variants here; the big variant is the happy path.
-#[cfg_attr(not(target_os = "unknown"), expect(clippy::large_enum_variant))]
 #[derive(Debug, derive_more::From, derive_more::IsVariant)]
 pub enum DecryptionOutcome {
     /// The message was successfully decrypted.

@@ -32,7 +32,6 @@ impl Infrastructural for crate::mls::conversation::Error {
             | Self::MemberNotFound(_)
             | Self::TntMessageCounterOverflow
             | Self::MessageRejected { .. }
-            | Self::DuplicateMessage
             | Self::MessageEpochTooOld
             | Self::UnbufferedFarFutureMessage
             | Self::StaleCommit

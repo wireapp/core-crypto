@@ -13,7 +13,7 @@ use tls_codec::{Deserialize as _, Serialize as _, VLBytes};
 
 use super::{HpkeContextData, PskId, TargetedMessageContext, derive_targeted_message_psk, extract_hpke_context_data};
 use crate::{
-    CryptoProvider, DecryptedMessage, KeystoreError, OpenMlsError, TlsCodecError,
+    CryptoProvider, DecryptedMessage, DecryptionOutcome, KeystoreError, OpenMlsError, TlsCodecError,
     mls::conversation::{
         ConversationMut, Error, MlsGroupState, Result, TargetedMessagePolicy,
         mutable::tnt::{ProtocolVersion, TargetedMessage, TntWireFormat},
@@ -27,7 +27,7 @@ impl ConversationMut {
         policy: TargetedMessagePolicy,
         protocol_version: ProtocolVersion,
         sender: &Member,
-    ) -> Result<DecryptedMessage> {
+    ) -> Result<DecryptionOutcome> {
         let mls_group = self.group().await;
 
         let old_epoch_data = if message.epoch != mls_group.epoch() {
@@ -66,8 +66,12 @@ impl ConversationMut {
 
         let message_sender = message.sender();
         let message_counter = message.counter;
-        self.ensure_no_duplicate_message(message_epoch, message_type, message_sender, message_counter)
-            .await?;
+        if let Some(rejection_reason) = self
+            .ensure_no_duplicate_message(message_epoch, message_type, message_sender, message_counter)
+            .await?
+        {
+            return Ok(rejection_reason.into());
+        }
 
         let crypto_provider = self.crypto_provider().await?;
         let cipher_suite = &self.cipher_suite();
@@ -108,8 +112,8 @@ impl ConversationMut {
         self.persist_rx_message_counter(message_epoch, message_type, message_sender, message_counter)?;
 
         match policy {
-            TargetedMessagePolicy::Transient => Ok(DecryptedMessage::TransientTargeted(decrypted_bytes)),
-            TargetedMessagePolicy::Persisted => Ok(DecryptedMessage::PersistedTargeted(decrypted_bytes)),
+            TargetedMessagePolicy::Transient => Ok(DecryptedMessage::TransientTargeted(decrypted_bytes).into()),
+            TargetedMessagePolicy::Persisted => Ok(DecryptedMessage::PersistedTargeted(decrypted_bytes).into()),
         }
     }
 

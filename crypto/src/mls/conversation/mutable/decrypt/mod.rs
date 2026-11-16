@@ -27,7 +27,9 @@ use openmls::{
 use openmls_traits::OpenMlsCryptoProvider as _;
 
 pub(in crate::mls::conversation) use self::incoming_message::{IncomingMessage, ParsedMessage};
-pub use self::outputs::{Commit, DecryptedBytes, DecryptedMessage, DecryptionOutcome, DeferralReason, Proposal};
+pub use self::outputs::{
+    Commit, DecryptedBytes, DecryptedMessage, DecryptionOutcome, DeferralReason, Proposal, RejectionReason,
+};
 use self::{
     outputs::Effect,
     process_message::{ProcessedMessage, process_message},
@@ -235,6 +237,7 @@ impl ConversationMut {
                 return Ok(decrypted_message.into());
             }
             ProcessedMessage::Deferred(reason) => return Ok(reason.into()),
+            ProcessedMessage::Rejected(reason) => return Ok(reason.into()),
         };
 
         let credential = message.credential();

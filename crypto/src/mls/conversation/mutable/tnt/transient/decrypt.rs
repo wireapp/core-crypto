@@ -4,7 +4,7 @@ use tls_codec::{Deserialize as _, Serialize, VLBytes};
 
 use super::Result;
 use crate::{
-    DecryptedMessage, OpenMlsError, TlsCodecError,
+    DecryptedMessage, DecryptionOutcome, OpenMlsError, TlsCodecError,
     mls::conversation::{
         ConversationMut,
         mutable::tnt::{ProtocolVersion, TntWireFormat, TransientMessage, transient::transient_message_secrets},
@@ -17,19 +17,23 @@ impl ConversationMut {
         message: TransientMessage,
         protocol_version: ProtocolVersion,
         sender: &Member,
-    ) -> Result<DecryptedMessage> {
+    ) -> Result<DecryptionOutcome> {
         let mls_group = self.group().await;
         let group_epoch = mls_group.epoch().as_u64();
 
         let message_sender = message.sender();
         let message_counter = message.counter;
-        self.ensure_no_duplicate_message(
-            group_epoch,
-            TntWireFormat::TRANSIENT_MESSAGE,
-            message_sender,
-            message_counter,
-        )
-        .await?;
+        if let Some(rejection_reason) = self
+            .ensure_no_duplicate_message(
+                group_epoch,
+                TntWireFormat::TRANSIENT_MESSAGE,
+                message_sender,
+                message_counter,
+            )
+            .await?
+        {
+            return Ok(rejection_reason.into());
+        };
 
         let crypto_provider = self.crypto_provider().await?;
         let cipher_suite = self.cipher_suite();
@@ -65,6 +69,6 @@ impl ConversationMut {
             message_counter,
         )?;
 
-        Ok(DecryptedMessage::Transient(decrypted_bytes))
+        Ok(DecryptedMessage::Transient(decrypted_bytes).into())
     }
 }
