@@ -39,7 +39,7 @@ export async function setPlatformHelpers() {
                 location?: string,
                 key?: DatabaseKey,
             ): Promise<Database> {
-                const finalKey = key ?? helpers.newDatabaseKey();
+                const finalKey = key ?? (await helpers.newDatabaseKey());
                 const finalLocation = location ?? crypto.randomUUID();
                 return ccModule.Database.open(finalLocation, finalKey);
             }

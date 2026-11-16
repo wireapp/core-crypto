@@ -54,11 +54,11 @@ describe("epoch observer", () => {
 
                 // pass a serializable
                 const first_id_hex = new TextDecoder().decode(
-                    observer.observations[0]?.conversationId.copyBytes(),
+                    await observer.observations[0]?.conversationId.copyBytes(),
                 );
 
                 const convIdSerialized = new TextDecoder().decode(
-                    convId.copyBytes(),
+                    await convId.copyBytes(),
                 );
                 return {
                     length: observer.observations.length,

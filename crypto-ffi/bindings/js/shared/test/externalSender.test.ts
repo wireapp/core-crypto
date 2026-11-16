@@ -23,10 +23,11 @@ describe("external sender", () => {
         const [retrievedBytes, serializedBytes] = await runOnPlatform(
             async (jwkString) => {
                 const jwk = new TextEncoder().encode(jwkString);
-                const externalSender = ccModule.ExternalSender.parseJwk(jwk);
+                const externalSender =
+                    await ccModule.ExternalSender.parseJwk(jwk);
 
                 const alice = await helpers.ccInit();
-                const conversationId = helpers.newConversationId();
+                const conversationId = await helpers.newConversationId();
                 const [credentialRef] = await alice.getCredentials();
                 const retrievedKey = await alice.transaction(async (ctx) => {
                     await ctx.createConversation(
@@ -38,8 +39,8 @@ describe("external sender", () => {
                 });
 
                 return [
-                    Array.from(retrievedKey.serialize()),
-                    Array.from(externalSender.serialize()),
+                    Array.from(await retrievedKey.serialize()),
+                    Array.from(await externalSender.serialize()),
                 ];
             },
             jwkString,
@@ -52,12 +53,12 @@ describe("external sender", () => {
         const jwkString = generateEd25519JwkString();
         const equal = await runOnPlatform(async (jwkString) => {
             const jwk = new TextEncoder().encode(jwkString);
-            const fromJwk = ccModule.ExternalSender.parseJwk(jwk);
-            const fromBytes = ccModule.ExternalSender.parsePublicKey(
-                fromJwk.serialize(),
+            const fromJwk = await ccModule.ExternalSender.parseJwk(jwk);
+            const fromBytes = await ccModule.ExternalSender.parsePublicKey(
+                await fromJwk.serialize(),
                 ccModule.SignatureScheme.Ed25519,
             );
-            return fromJwk.equals(fromBytes);
+            return await fromJwk.equals(fromBytes);
         }, jwkString);
 
         expect(equal).to.equal(true);
@@ -66,7 +67,9 @@ describe("external sender", () => {
     it("parseJwk rejects malformed bytes", async () => {
         const threw = await runOnPlatform(async () => {
             try {
-                ccModule.ExternalSender.parseJwk(new Uint8Array([0, 1, 2, 3]));
+                await ccModule.ExternalSender.parseJwk(
+                    new Uint8Array([0, 1, 2, 3]),
+                );
                 return false;
             } catch {
                 return true;

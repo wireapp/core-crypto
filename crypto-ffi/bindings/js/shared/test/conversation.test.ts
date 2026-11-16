@@ -53,7 +53,7 @@ describe("conversation", () => {
     it("should allow decrypting targeted messages", async () => {
         const results = await runOnPlatform(async () => {
             const alice = await helpers.ccInit();
-            const bobId = helpers.newClientId();
+            const bobId = await helpers.newClientId();
             const bob = await helpers.ccInit({ clientId: bobId });
             const conversationId = await helpers.createConversation(alice);
             await helpers.invite(alice, bob, conversationId);

@@ -71,7 +71,7 @@ describe("PKI environment", () => {
     it("should be settable before mls init", async () => {
         const success = await runOnPlatform(async () => {
             const database = await helpers.newDatabase();
-            const cc = ccModule.CoreCrypto.new(database);
+            const cc = await ccModule.CoreCrypto.new(database);
             let pkiEnv = await cc.getPkiEnvironment();
 
             if (pkiEnv != undefined) {
@@ -150,10 +150,10 @@ describe("end to end identity", () => {
                 database,
             );
 
-            const qualifiedClientId = helpers.newClientId();
+            const qualifiedClientId = await helpers.newClientId();
             const config = ccModule.X509CredentialAcquisitionConfiguration.new({
                 acmeDirectoryUrl: "acme.example.com/directory",
-                cipherSuite: ccModule.cipherSuiteDefault(),
+                cipherSuite: await ccModule.cipherSuiteDefault(),
                 displayName: "Alice Smith",
                 clientId: qualifiedClientId,
                 handle: "alice_wire",
@@ -162,7 +162,8 @@ describe("end to end identity", () => {
                 validityPeriodSecs: BigInt(3600),
             });
 
-            const acquisition = new ccModule.X509CredentialAcquisition(
+            const acquisition = await helpers.construct(
+                ccModule.X509CredentialAcquisition,
                 pkiEnvironment,
                 config,
             );
@@ -175,10 +176,10 @@ describe("end to end identity", () => {
 
     it("should instantiate an x509 credential acquisition object from credential ref", async () => {
         const acquisitionCreated = await runOnPlatform(async () => {
-            const clientId = helpers.newClientId();
+            const clientId = await helpers.newClientId();
             const config = ccModule.X509CredentialAcquisitionConfiguration.new({
                 acmeDirectoryUrl: "acme.example.com/directory",
-                cipherSuite: ccModule.cipherSuiteDefault(),
+                cipherSuite: await ccModule.cipherSuiteDefault(),
                 displayName: "Alice Smith",
                 clientId,
                 handle: "alice_wire",
@@ -226,7 +227,7 @@ describe("end to end identity", () => {
 
     it("identities can be queried by client id", async () => {
         const success = await runOnPlatform(async () => {
-            const clientId = helpers.newClientId();
+            const clientId = await helpers.newClientId();
             const cc = await helpers.ccInit({ clientId });
             const conversationId = await helpers.createConversation(cc);
             const identities = await cc.transaction(async (ctx) => {
@@ -242,12 +243,12 @@ describe("end to end identity", () => {
 
     it("identities can be queried by user id", async () => {
         const success = await runOnPlatform(async () => {
-            const clientId = helpers.newClientId();
+            const clientId = await helpers.newClientId();
             const cc = await helpers.ccInit({ clientId });
             const conversationId = await helpers.createConversation(cc);
             const identities = await cc.transaction(async (ctx) => {
                 return await ctx.getUserIdentities(conversationId, [
-                    clientId.deserialize().userId,
+                    (await clientId.deserialize()).userId,
                 ]);
             });
 

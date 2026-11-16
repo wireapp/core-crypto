@@ -48,7 +48,9 @@ describe("core crypto errors", () => {
                         errorConvIdMatches:
                             JSON.stringify(conversationIdFromError) ===
                             JSON.stringify(
-                                new Uint8Array(conversationId.copyBytes()),
+                                new Uint8Array(
+                                    await conversationId.copyBytes(),
+                                ),
                             ),
                     };
                 }

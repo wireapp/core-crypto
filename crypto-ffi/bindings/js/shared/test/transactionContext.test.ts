@@ -67,7 +67,8 @@ describe("transaction context", () => {
         const error = await runOnPlatform(async () => {
             const cc = await helpers.ccInit();
             const basicCredentialType = ccModule.CredentialType.Basic;
-            const conversationId = new ccModule.ConversationId(
+            const conversationId = await helpers.construct(
+                ccModule.ConversationId,
                 new TextEncoder().encode("testConversation"),
             );
             const CoreCryptoError = ccModule.CoreCryptoError;

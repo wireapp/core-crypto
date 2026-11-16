@@ -14,7 +14,8 @@ describe("proteus", () => {
     it("should initialize correctly", async () => {
         const result = await runOnPlatform(async () => {
             const cc = await helpers.proteusInit();
-            const lastResortPrekeyId = ccModule.proteusLastResortPrekeyId();
+            const lastResortPrekeyId =
+                await ccModule.proteusLastResortPrekeyId();
             const [prekey1, prekey2] = await cc.transaction(async (ctx) => {
                 const prekey1 = await ctx.proteusLastResortPrekey();
                 const prekey2 = await ctx.proteusLastResortPrekey();

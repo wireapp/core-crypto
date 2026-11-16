@@ -53,7 +53,7 @@ export async function setupRemoveUserBench() {
                 {
                     async beforeAll() {
                         for (let i = 0; i < userCount; i++) {
-                            const id = helpers.newClientId();
+                            const id = await helpers.newClientId();
                             users.push({
                                 ...(await helpers.newClient(cipherSuite, id)),
                                 id,

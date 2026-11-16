@@ -17,12 +17,12 @@ describe("logger", () => {
             const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } = ccModule;
 
             const logs: string[] = [];
-            setLogger({
+            await setLogger({
                 log: (_level, json_msg: string, _context) => {
                     logs.push(json_msg);
                 },
             });
-            setMaxLogLevel(CoreCryptoLogLevel.Debug);
+            await setMaxLogLevel(CoreCryptoLogLevel.Debug);
             await helpers.createConversation(cc);
             return logs;
         });
@@ -36,17 +36,17 @@ describe("logger", () => {
             const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } = ccModule;
 
             const logs: string[] = [];
-            setLogger({
+            await setLogger({
                 log: (_level, _message, _context) => {
                     throw Error("Initial logger should not be active");
                 },
             });
-            setLogger({
+            await setLogger({
                 log: (_level, json_msg: string, _context) => {
                     logs.push(json_msg);
                 },
             });
-            setMaxLogLevel(CoreCryptoLogLevel.Debug);
+            await setMaxLogLevel(CoreCryptoLogLevel.Debug);
             await helpers.createConversation(cc);
             return logs;
         });
@@ -60,12 +60,12 @@ describe("logger", () => {
             const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } = ccModule;
 
             const logs: string[] = [];
-            setLogger({
+            await setLogger({
                 log: (_level, json_msg: string, _context) => {
                     logs.push(json_msg);
                 },
             });
-            setMaxLogLevel(CoreCryptoLogLevel.Warn);
+            await setMaxLogLevel(CoreCryptoLogLevel.Warn);
             await helpers.createConversation(cc);
             return logs;
         });
@@ -80,7 +80,7 @@ describe("logger", () => {
             const conversationId = await helpers.createConversation(alice);
             await helpers.invite(alice, bob, conversationId);
 
-            helpers.recordLogs();
+            await helpers.recordLogs();
 
             const encoder = new TextEncoder();
             const messageText = "Hello world!";
@@ -114,9 +114,9 @@ describe("logger", () => {
         const logs = await runOnPlatform(async () => {
             const alice = await helpers.ccInit();
             const bob = await helpers.ccInit();
-            const carolId = helpers.newClientId();
+            const carolId = await helpers.newClientId();
             const carol = await helpers.ccInit({ clientId: carolId });
-            helpers.recordLogs();
+            await helpers.recordLogs();
             const conversationId = await helpers.createConversation(alice);
             await helpers.invite(alice, bob, conversationId);
             await helpers.invite(alice, carol, conversationId);

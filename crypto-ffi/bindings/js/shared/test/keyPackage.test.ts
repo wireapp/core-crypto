@@ -38,13 +38,13 @@ describe("key package", () => {
                 const cc = await helpers.ccInit();
                 const keyPackage = await helpers.generateKeyPackage(cc);
 
-                const bytes = new Uint8Array(keyPackage.serialize());
+                const bytes = new Uint8Array(await keyPackage.serialize());
 
                 const wasDefined = bytes !== null && bytes !== undefined;
                 const wasEmpty = bytes.byteLength === 0;
 
-                const kp2 = new ccModule.KeyPackage(bytes);
-                const bytes2 = new Uint8Array(kp2.serialize());
+                const kp2 = await helpers.construct(ccModule.KeyPackage, bytes);
+                const bytes2 = new Uint8Array(await kp2.serialize());
 
                 // JS in the browser doesn't have a natural way to compare Uint8Arrays,
                 // which is just... extremely JS
@@ -94,14 +94,14 @@ describe("key package", () => {
     it("can be removed", async () => {
         const { wasDefined, wasArray, arraySize } = await runOnPlatform(
             async () => {
-                const clientId = helpers.newClientId();
+                const clientId = await helpers.newClientId();
                 const cc = await helpers.ccInit({
                     withBasicCredential: false,
                     clientId,
                 });
 
-                const credential = ccModule.Credential.basic(
-                    ccModule.cipherSuiteDefault(),
+                const credential = await ccModule.Credential.basic(
+                    await ccModule.cipherSuiteDefault(),
                     clientId,
                 );
 
@@ -113,7 +113,7 @@ describe("key package", () => {
                     const keyPackage =
                         await ctx.generateKeyPackage(credentialRef);
                     // now remove that keypackage
-                    await ctx.removeKeyPackage(keyPackage.ref());
+                    await ctx.removeKeyPackage(await keyPackage.ref());
 
                     return await ctx.getKeyPackages();
                 });
@@ -137,17 +137,17 @@ describe("key package", () => {
 
         const { beforeRemovalArraySize, afterRemovalArraySize } =
             await runOnPlatform(async (KEYPACKAGES_PER_CREDENTIAL) => {
-                const clientId = helpers.newClientId();
+                const clientId = await helpers.newClientId();
                 const cc = await helpers.ccInit({
                     withBasicCredential: false,
                     clientId,
                 });
-                const credential1 = ccModule.Credential.basic(
+                const credential1 = await ccModule.Credential.basic(
                     ccModule.CipherSuite
                         .Mls128Dhkemx25519Aes128gcmSha256Ed25519,
                     clientId,
                 );
-                const credential2 = ccModule.Credential.basic(
+                const credential2 = await ccModule.Credential.basic(
                     ccModule.CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256,
                     clientId,
                 );

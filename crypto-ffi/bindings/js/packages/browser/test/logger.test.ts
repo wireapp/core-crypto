@@ -35,12 +35,12 @@ describe("logger", () => {
                 const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
                     ccModule;
 
-                setLogger({
+                await setLogger({
                     log: (_level, _message, _context) => {
                         throw Error(expectedErrorMessage);
                     },
                 });
-                setMaxLogLevel(CoreCryptoLogLevel.Debug);
+                await setMaxLogLevel(CoreCryptoLogLevel.Debug);
                 await helpers.createConversation(cc);
             }, expectedErrorMessage);
 

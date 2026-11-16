@@ -34,10 +34,10 @@ describe("database", () => {
     it("can be reopened once every handle is destroyed after a transaction", async () => {
         const result = await getPage().evaluate(async () => {
             const location = crypto.randomUUID();
-            const key = helpers.newDatabaseKey();
+            const key = await helpers.newDatabaseKey();
 
             const database = await ccModule.Database.open(location, key);
-            const cc = ccModule.CoreCrypto.new(database);
+            const cc = await ccModule.CoreCrypto.new(database);
             await cc.transaction((ctx) => ctx.proteusInit());
             cc.uniffiDestroy();
             database.uniffiDestroy();
@@ -55,23 +55,23 @@ describe("database", () => {
     it("can be reopened once every handle is destroyed after creating a conversation", async () => {
         const result = await getPage().evaluate(async () => {
             const location = crypto.randomUUID();
-            const key = helpers.newDatabaseKey();
+            const key = await helpers.newDatabaseKey();
 
             const database = await ccModule.Database.open(location, key);
-            const cc = ccModule.CoreCrypto.new(database);
-            const clientId = helpers.newClientId();
+            const cc = await ccModule.CoreCrypto.new(database);
+            const clientId = await helpers.newClientId();
             await cc.transaction((ctx) =>
                 ctx.mlsInit(clientId, deliveryService),
             );
-            const credentialRef = await cc.transaction((ctx) =>
+            const credentialRef = await cc.transaction(async (ctx) =>
                 ctx.addCredential(
-                    ccModule.Credential.basic(
-                        ccModule.cipherSuiteDefault(),
+                    await ccModule.Credential.basic(
+                        await ccModule.cipherSuiteDefault(),
                         clientId,
                     ),
                 ),
             );
-            const conversationId = helpers.newConversationId();
+            const conversationId = await helpers.newConversationId();
             await cc.transaction((ctx) =>
                 ctx.createConversation(conversationId, credentialRef),
             );
@@ -144,7 +144,10 @@ describe("database", () => {
 
             // Migrate the whole database to use the new key type.
             const old_key = clientName;
-            const new_key = new ccModule.DatabaseKey(new Uint8Array(32));
+            const new_key = await helpers.construct(
+                ccModule.DatabaseKey,
+                new Uint8Array(32),
+            );
             await ccModule.migrateDatabaseKeyTypeToBytes(
                 clientName,
                 old_key,
@@ -155,13 +158,16 @@ describe("database", () => {
             const encoder = new TextEncoder();
             const database = await ccModule.Database.open(clientName, new_key);
 
-            const instance = ccModule.CoreCrypto.new(database);
+            const instance = await ccModule.CoreCrypto.new(database);
             const epoch = await instance.transaction(async (ctx) => {
                 // note that `conversationEpoch` is a MLS operation so we must at some point initialize MLS
-                const clientId = helpers.newClientId();
+                const clientId = await helpers.newClientId();
                 await ctx.mlsInit(clientId, deliveryService);
                 return await ctx.conversationEpoch(
-                    new ccModule.ConversationId(encoder.encode("convId")),
+                    await helpers.construct(
+                        ccModule.ConversationId,
+                        encoder.encode("convId"),
+                    ),
                 );
             });
             return Number(epoch);

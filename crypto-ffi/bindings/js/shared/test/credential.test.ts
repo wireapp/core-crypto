@@ -13,14 +13,16 @@ afterEach(async () => {
 describe("credentials", () => {
     it("basic credential can be created", async () => {
         const result = await runOnPlatform(async () => {
-            const credential = ccModule.Credential.basic(
-                ccModule.cipherSuiteDefault(),
-                helpers.newClientId(),
+            const credential = await ccModule.Credential.basic(
+                await ccModule.cipherSuiteDefault(),
+                await helpers.newClientId(),
             );
             return {
                 isBasicType:
-                    credential.type() === ccModule.CredentialType.Basic,
-                earliestValidity: credential.earliestValidity().toString(),
+                    (await credential.type()) === ccModule.CredentialType.Basic,
+                earliestValidity: (
+                    await credential.earliestValidity()
+                ).toString(),
             };
         });
         expect(result.isBasicType).to.equal(true);
@@ -34,8 +36,9 @@ describe("credentials", () => {
             const [ref] = allCredentials;
             return {
                 isDefined: ref !== undefined,
-                isBasicType: ref!.type() === ccModule.CredentialType.Basic,
-                earliestValidity: Number(ref!.earliestValidity()),
+                isBasicType:
+                    (await ref!.type()) === ccModule.CredentialType.Basic,
+                earliestValidity: Number(await ref!.earliestValidity()),
                 length: allCredentials.length,
             };
         });
@@ -62,10 +65,10 @@ describe("credentials", () => {
 
     it("credentials can be searched", async () => {
         const result = await runOnPlatform(async () => {
-            const clientId = helpers.newClientId();
+            const clientId = await helpers.newClientId();
             const cipherSuite1 =
                 ccModule.CipherSuite.Mls128Dhkemp256Aes128gcmSha256P256;
-            const credential1 = ccModule.Credential.basic(
+            const credential1 = await ccModule.Credential.basic(
                 cipherSuite1,
                 clientId,
             );
@@ -73,7 +76,7 @@ describe("credentials", () => {
             const cipherSuite2 =
                 ccModule.CipherSuite
                     .Mls128Dhkemx25519Chacha20poly1305Sha256Ed25519;
-            const credential2 = ccModule.Credential.basic(
+            const credential2 = await ccModule.Credential.basic(
                 cipherSuite2,
                 clientId,
             );
@@ -114,7 +117,7 @@ describe("credentials", () => {
             try {
                 const cc = await helpers.ccInit({
                     withBasicCredential: true,
-                    cipherSuite: ccModule.cipherSuiteDefault(),
+                    cipherSuite: await ccModule.cipherSuiteDefault(),
                     withPkiEnvironment: true,
                 });
                 await cc.transaction(async (ctx) => {

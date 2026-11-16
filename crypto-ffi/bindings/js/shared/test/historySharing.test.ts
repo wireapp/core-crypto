@@ -67,11 +67,11 @@ describe("history sharing", () => {
             // we have to explicitly return non-primitives, as anything passed by reference won't make it out of
             // the browser context
             const firstIdString = decoder.decode(
-                observer.observations[0]?.conversationId.copyBytes() ??
+                (await observer.observations[0]?.conversationId.copyBytes()) ??
                     new Uint8Array(),
             );
             const convIdSerialized = decoder.decode(
-                convId.copyBytes() ?? new Uint8Array(),
+                (await convId.copyBytes()) ?? new Uint8Array(),
             );
             return {
                 length: observer.observations.length,

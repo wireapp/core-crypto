@@ -81,10 +81,21 @@ export type CcInitOptions =
 /** A client together with the database it was initialized on, so both can be released. */
 export type ClientWithDatabase = { cc: CoreCrypto; database: Database };
 
+/** A generated class: its primary constructor, or where every call is async (browser), its static `create`. */
+export type Constructible<T> =
+    | (abstract new (...args: never[]) => T)
+    | { create(...args: never[]): Promise<T> };
+
 export interface Helpers {
-    newClientId(): ClientId;
-    newConversationId(): ConversationId;
-    newDatabaseKey(): DatabaseKey;
+    /**
+     * Construct an instance of a generated class with its primary constructor.
+     *
+     * Where every call is async (browser), that is the static `create`, so this is async on every platform.
+     */
+    construct<T>(cls: Constructible<T>, ...args: unknown[]): Promise<T>;
+    newClientId(): Promise<ClientId>;
+    newConversationId(): Promise<ConversationId>;
+    newDatabaseKey(): Promise<DatabaseKey>;
     newDatabase(location?: string, key?: DatabaseKey): Promise<Database>;
     generateKeyPackage(
         cc: CoreCrypto,
@@ -96,7 +107,7 @@ export interface Helpers {
         clientId?: ClientId,
     ): Promise<ClientWithDatabase>;
     releaseClients(clients: ClientWithDatabase[]): void;
-    recordLogs(): void;
+    recordLogs(): Promise<void>;
     createConversation(cc: CoreCrypto): Promise<ConversationId>;
     invite(
         cc1: CoreCrypto,
@@ -141,34 +152,52 @@ async function setHelpers() {
     await setPlatformHelpers();
     await runOnPlatform(() => {
         class HelpersImpl implements Helpers {
+            async construct<T>(
+                cls: Constructible<T>,
+                ...args: unknown[]
+            ): Promise<T> {
+                const create = (cls as { create?: unknown }).create;
+                if (typeof create === "function") {
+                    return await create.apply(cls, args);
+                }
+                return new (cls as new (...args: unknown[]) => T)(...args);
+            }
+
             /**
              * Construct a new ClientId
              **/
-            newClientId(): ClientId {
+            async newClientId(): Promise<ClientId> {
                 const uuid = crypto.randomUUID();
-                const userId = new ccModule.Uuid(uuid);
+                const userId = await helpers.construct(ccModule.Uuid, uuid);
                 const deviceIdBytes = crypto.getRandomValues(new Uint8Array(8));
                 const deviceIdString = [...deviceIdBytes]
                     .map((byte) => byte.toString(16).padStart(2, "0"))
                     .join("");
                 const deviceId =
-                    ccModule.DeviceId.fromHexString(deviceIdString);
-                return new ccModule.ClientId(userId, deviceId, "wire.com");
+                    await ccModule.DeviceId.fromHexString(deviceIdString);
+                return await helpers.construct(
+                    ccModule.ClientId,
+                    userId,
+                    deviceId,
+                    "wire.com",
+                );
             }
 
             /**
              * Construct a new ConversationId
              **/
-            newConversationId(): ConversationId {
+            async newConversationId(): Promise<ConversationId> {
                 const conversationIdStr = crypto.randomUUID();
                 const encoder = new TextEncoder();
-                return new ccModule.ConversationId(
+                return await helpers.construct(
+                    ccModule.ConversationId,
                     encoder.encode(conversationIdStr),
                 );
             }
 
-            newDatabaseKey(): DatabaseKey {
-                return new ccModule.DatabaseKey(
+            async newDatabaseKey(): Promise<DatabaseKey> {
+                return await helpers.construct(
+                    ccModule.DatabaseKey,
                     crypto.getRandomValues(new Uint8Array(32)),
                 );
             }
@@ -185,7 +214,7 @@ async function setHelpers() {
                 cipherSuite?: CipherSuite,
             ): Promise<KeyPackage> {
                 if (cipherSuite === undefined) {
-                    cipherSuite = ccModule.cipherSuiteDefault();
+                    cipherSuite = await ccModule.cipherSuiteDefault();
                 }
                 const [credentialRef] = await cc.findCredentials({
                     cipherSuite: cipherSuite,
@@ -208,13 +237,13 @@ async function setHelpers() {
             async ccInit(
                 options: CcInitOptions = {
                     withBasicCredential: true,
-                    cipherSuite: ccModule.cipherSuiteDefault(),
                     withPkiEnvironment: false,
                 },
             ): Promise<CoreCrypto> {
-                const clientId = options.clientId ?? helpers.newClientId();
+                const clientId =
+                    options.clientId ?? (await helpers.newClientId());
                 const db = options.database ?? (await helpers.newDatabase());
-                const cc = ccModule.CoreCrypto.new(db);
+                const cc = await ccModule.CoreCrypto.new(db);
 
                 if (options.withPkiEnvironment) {
                     const pkiEnvironment = await ccModule.PkiEnvironment.create(
@@ -234,9 +263,12 @@ async function setHelpers() {
                     if (withBasicCredential) {
                         const cipherSuite =
                             options.cipherSuite ??
-                            ccModule.cipherSuiteDefault();
+                            (await ccModule.cipherSuiteDefault());
                         await ctx.addCredential(
-                            ccModule.Credential.basic(cipherSuite, clientId),
+                            await ccModule.Credential.basic(
+                                cipherSuite,
+                                clientId,
+                            ),
                         );
                     }
                 });
@@ -276,14 +308,14 @@ async function setHelpers() {
              * Records logs by setting a logger and maximum log level in the browser's context.
              * The logs are stored in a global variable `recordedLogs` for further retrieval.
              *
-             * @return {void}
+             * @return {Promise<void>}
              */
-            recordLogs(): void {
+            async recordLogs(): Promise<void> {
                 const { setMaxLogLevel, CoreCryptoLogLevel, setLogger } =
                     ccModule;
                 globalThis.recordedLogs = [];
 
-                setLogger({
+                await setLogger({
                     log: (level: number, message: string, context: string) => {
                         console.log(message, context);
                         recordedLogs.push({
@@ -293,7 +325,7 @@ async function setHelpers() {
                         });
                     },
                 });
-                setMaxLogLevel(CoreCryptoLogLevel.Debug);
+                await setMaxLogLevel(CoreCryptoLogLevel.Debug);
             }
 
             /**
@@ -307,7 +339,7 @@ async function setHelpers() {
              * @throws Error if the instance with {@link clientName} cannot be found.
              */
             async createConversation(cc: CoreCrypto): Promise<ConversationId> {
-                const conversationId = helpers.newConversationId();
+                const conversationId = await helpers.newConversationId();
                 const [credentialRef] = await cc.getCredentials();
                 await cc.transaction(async (ctx) => {
                     await ctx.createConversation(
@@ -489,7 +521,7 @@ async function setHelpers() {
              */
             async proteusInit(): Promise<CoreCrypto> {
                 const database = await this.newDatabase();
-                const instance = ccModule.CoreCrypto.new(database);
+                const instance = await ccModule.CoreCrypto.new(database);
                 await instance.transaction((ctx) => ctx.proteusInit());
                 return instance;
             }
@@ -589,8 +621,8 @@ async function setDeliveryService() {
 
 async function setLogger() {
     if (logLevel >= 2) {
-        await runOnPlatform(() => {
-            ccModule.setLogger({
+        await runOnPlatform(async () => {
+            await ccModule.setLogger({
                 log: (
                     _level: CoreCryptoLogLevel,
                     message: string,
@@ -599,18 +631,18 @@ async function setLogger() {
                     console.log(message, context);
                 },
             });
-            ccModule.setMaxLogLevel(ccModule.CoreCryptoLogLevel.Debug);
+            await ccModule.setMaxLogLevel(ccModule.CoreCryptoLogLevel.Debug);
         });
     } else {
-        await runOnPlatform(() => {
-            ccModule.setLogger({
+        await runOnPlatform(async () => {
+            await ccModule.setLogger({
                 log: (
                     _level: CoreCryptoLogLevel,
                     _message: string,
                     _context: string | undefined,
                 ) => {},
             });
-            ccModule.setMaxLogLevel(ccModule.CoreCryptoLogLevel.Off);
+            await ccModule.setMaxLogLevel(ccModule.CoreCryptoLogLevel.Off);
         });
     }
 }

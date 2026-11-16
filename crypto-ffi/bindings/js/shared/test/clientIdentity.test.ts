@@ -12,11 +12,16 @@ afterEach(async () => {
 
 describe("client identity", () => {
     it("Uuid.toString should work", async () => {
-        const result = await runOnPlatform(() => {
+        const result = await runOnPlatform(async () => {
             const rawUuid = crypto.randomUUID();
-            const uuid = new ccModule.Uuid(rawUuid);
+            const uuid = await helpers.construct(ccModule.Uuid, rawUuid);
 
-            return uuid.toString() === rawUuid;
+            // Where every call is async (browser), Display is `asyncToString`, as `toString` can't be async.
+            const displayed =
+                "asyncToString" in uuid
+                    ? await uuid.asyncToString()
+                    : (uuid as { toString(): string }).toString();
+            return displayed === rawUuid;
         });
         expect(result).to.equal(true);
     });
@@ -24,7 +29,8 @@ describe("client identity", () => {
     it("get client public key should work", async () => {
         const result = await runOnPlatform(async () => {
             const cc = await helpers.ccInit();
-            return (await cc.getCredentials())[0]!.publicKeyHash().byteLength;
+            return (await (await cc.getCredentials())[0]!.publicKeyHash())
+                .byteLength;
         });
         expect(result).to.equal(32);
     });
@@ -35,7 +41,7 @@ describe("client identity", () => {
             let threwError = false;
             try {
                 const keypackage = await helpers.generateKeyPackage(cc);
-                keypackage.serialize();
+                await keypackage.serialize();
             } catch {
                 threwError = true;
             }

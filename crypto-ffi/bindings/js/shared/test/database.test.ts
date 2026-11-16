@@ -14,7 +14,7 @@ describe("database", () => {
     it("open previously created db works", async () => {
         const result = await runOnPlatform(async () => {
             const databaseName = crypto.randomUUID();
-            const key = helpers.newDatabaseKey();
+            const key = await helpers.newDatabaseKey();
             const first = await helpers.newDatabase(databaseName, key);
             first.uniffiDestroy();
             const db = await helpers.newDatabase(databaseName, key);
@@ -37,7 +37,7 @@ describe("database", () => {
 
     it("in-memory database stores data", async () => {
         const result = await runOnPlatform(async () => {
-            const database = ccModule.Database.inMemory();
+            const database = await ccModule.Database.inMemory();
             const cc = await helpers.ccInit({ database });
             await cc.transaction(async (ctx) => {
                 await ctx.setData(new Uint8Array([1, 2, 3]));
@@ -54,7 +54,10 @@ describe("database", () => {
     it("key must have correct length", async () => {
         const result = await runOnPlatform(async () => {
             try {
-                new ccModule.DatabaseKey(new Uint8Array(11));
+                await helpers.construct(
+                    ccModule.DatabaseKey,
+                    new Uint8Array(11),
+                );
             } catch (err) {
                 return ccModule.CoreCryptoError.Other.instanceOf(err);
             }
@@ -65,9 +68,9 @@ describe("database", () => {
 
     it("key update works", async () => {
         const [pubkey1, pubkey2] = await runOnPlatform(async () => {
-            const key = helpers.newDatabaseKey();
+            const key = await helpers.newDatabaseKey();
             const database = await helpers.newDatabase(undefined, key);
-            const clientId = helpers.newClientId();
+            const clientId = await helpers.newClientId();
             let cc = await helpers.ccInit({
                 withBasicCredential: true,
                 database,
@@ -78,7 +81,7 @@ describe("database", () => {
                 await cc.findCredentials({ clientId })
             )[0]!.publicKeyHash();
 
-            const newKey = helpers.newDatabaseKey();
+            const newKey = await helpers.newDatabaseKey();
 
             try {
                 await database.updateKey(newKey);

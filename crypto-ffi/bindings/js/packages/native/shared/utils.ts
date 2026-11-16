@@ -35,7 +35,7 @@ class PlatformHelpersImpl implements PlatformHelpers {
      * Open a database that gets wiped after tests run.
      */
     async newDatabase(location?: string, key?: DatabaseKey) {
-        const finalKey = key ?? helpers.newDatabaseKey();
+        const finalKey = key ?? (await helpers.newDatabaseKey());
         const finalLocation = location ?? crypto.randomUUID();
 
         const database = await Database.open(finalLocation, finalKey);
