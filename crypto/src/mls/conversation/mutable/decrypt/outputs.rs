@@ -134,6 +134,10 @@ pub enum RejectionReason {
     UnauthorizedExternalSender,
     /// This external proposal is of a type which external senders may not send.
     UnsupportedProposalType,
+    /// This commit's confirmation tag doesn't match the one we computed.
+    ///
+    /// Either the commit is invalid, or our view of the conversation has diverged from the sender's.
+    ConfirmationTagMismatch,
 }
 
 /// Outcome of attempting to decrypt a message.

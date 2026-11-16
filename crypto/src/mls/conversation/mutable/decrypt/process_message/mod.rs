@@ -149,6 +149,9 @@ pub(super) async fn process_message(
                     Err(ProcessMessageError::UnsupportedProposalType) => {
                         Ok(RejectionReason::UnsupportedProposalType.into())
                     }
+                    Err(ProcessMessageError::InvalidCommit(StageCommitError::ConfirmationTagMismatch)) => {
+                        Ok(RejectionReason::ConfirmationTagMismatch.into())
+                    }
 
                     // everything else gets a generic wrapping
                     Err(err) => Err(OpenMlsError::wrap("processing message")(err).into()),
