@@ -142,7 +142,7 @@ WASM_GEN := \
 # In release builds, shrink the generated wasm for size. wasm-opt is slow, so we only run
 # it when RELEASE is set. We use `-Os` rather than `-Oz` because the extra space savings of
 # `-Oz` don't justify the runtime performance penalty.
-WASM_OPT := $(if $(RELEASE),&& wasm-opt --enable-exception-handling -Os $(BROWSER_WASM) -o $(BROWSER_WASM))
+WASM_OPT := $(if $(RELEASE),&& wasm-opt -Os $(BROWSER_WASM) -o $(BROWSER_WASM))
 
 WASM_IMPORTS_SCRIPT := scripts/wasm-imports.sh
 wasm-build-deps := $(RUST_SOURCES) $(UNIFFI_TOML) $(UBRN_CONFIG) $(WASM_IMPORTS_SCRIPT) $(BUN_LOCK) $(NODE_MODULES)
