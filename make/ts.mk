@@ -145,12 +145,20 @@ WASM_OPT := $(if $(RELEASE),&& wasm-opt -Os $(BROWSER_WASM) -o $(BROWSER_WASM))
 wasm-build-deps := $(RUST_SOURCES) $(UNIFFI_TOML) $(UBRN_CONFIG) $(BUN_LOCK) $(NODE_MODULES)
 # Build the library in a dedicated target dir so we do not mix the shared target outputs used
 # by ios/jvm builds.
+#
+# CoreCrypto runs in a worker in the browser, so every call is a message to it and must return a
+# Promise. `ubrn build wasm2` can't generate those bindings: its `generate all` step rejects
+# `--async`, and `asyncDelivery = true` in `uniffi.toml` breaks the napi build, so the build's bindings are generated
+# again, with `--async`, which is relatively cheap.
 $(WASM_GEN) &: $(wasm-build-deps)
 	$(check-wasm-bindgen)
 	$(check-wasm-cc)
 	cd $(JS_DIR) && \
 	$(WASM_BUILD_ENV) \
-	  bun ubrn build wasm2 --config ubrn.config.yaml $(UBRN_BUILD_ARGS) \
+	  bun ubrn build wasm2 --config ubrn.config.yaml $(UBRN_BUILD_ARGS)
+	$(WASM_BUILD_ENV) bun $(UBRN) generate wasm2 bindings --async \
+	  --library $(WASM_TARGET_DIR)/$(WASM_TARGET_TRIPLE)/$(UBRN_PROFILE)/core_crypto_ffi.wasm \
+	  --ts-dir $(BROWSER_GEN_DIR) \
 	  $(WASM_OPT)
 	@touch $(WASM_GEN)
 .PHONY: wasm-build
