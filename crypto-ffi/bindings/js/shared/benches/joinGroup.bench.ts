@@ -6,14 +6,7 @@ import { runBenchmark, userBenchmarkParameters } from "./utils";
 export async function setupJoinGroupBench() {
     const parameters = await userBenchmarkParameters();
     await runOnPlatform(async (parameters) => {
-        globalThis.bench = new tinybench.Bench({
-            name: "JoinGroup",
-            time: 1000,
-            iterations: 5,
-            warmupIterations: 1,
-            setup: globalThis.tinybenchSetup,
-            teardown: globalThis.tinybenchTeardown,
-        });
+        globalThis.bench = newBench("JoinGroup");
         for (const { userCount, cipherSuite, cipherSuiteLabel } of parameters) {
             // The existing members only provide key packages, so each task creates them
             // once and every iteration takes fresh key packages from them.

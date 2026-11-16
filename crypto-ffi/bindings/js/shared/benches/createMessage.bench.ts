@@ -4,14 +4,7 @@ import { messageBenchmarkParameters, runBenchmark } from "./utils";
 export async function setupCreateMessageBench() {
     const parameters = await messageBenchmarkParameters();
     await runOnPlatform(async (parameters) => {
-        globalThis.bench = new tinybench.Bench({
-            name: "CreateMessage",
-            time: 1000,
-            iterations: 5,
-            warmupIterations: 1,
-            setup: globalThis.tinybenchSetup,
-            teardown: globalThis.tinybenchTeardown,
-        });
+        globalThis.bench = newBench("CreateMessage");
 
         for (const {
             count,

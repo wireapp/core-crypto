@@ -1,4 +1,4 @@
-import type { Bench, Task } from "tinybench";
+import type { Bench, BenchOptions, Task } from "tinybench";
 import type { CipherSuite } from "#core-crypto";
 import { isNumberObject } from "node:util/types";
 import { mkdir } from "node:fs/promises";
@@ -14,6 +14,7 @@ declare global {
     var tinybenchSetup: () => void;
     var tinybenchTeardown: () => Promise<void> | void;
     var bench: Bench;
+    var newBench: (name: string, options?: BenchOptions) => Bench;
 }
 
 export { sharedTeardown as teardown } from "../shared/utils";
@@ -39,6 +40,19 @@ export async function setup() {
     if (globalThis.tinybenchSetup === undefined) {
         globalThis.tinybenchSetup = tinybenchSetup;
     }
+    await runOnPlatform(() => {
+        // The settings all benchmarks share. A benchmark may override them.
+        globalThis.newBench = (name, options) =>
+            new tinybench.Bench({
+                name,
+                time: 1000,
+                iterations: 5,
+                warmupIterations: 1,
+                setup: globalThis.tinybenchSetup,
+                teardown: globalThis.tinybenchTeardown,
+                ...options,
+            });
+    });
 }
 
 type MessageParameterSet = {

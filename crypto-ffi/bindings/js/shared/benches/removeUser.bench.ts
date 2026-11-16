@@ -7,15 +7,11 @@ export async function setupRemoveUserBench() {
     const parameters = await userBenchmarkParameters();
 
     await runOnPlatform(async (parameters) => {
-        globalThis.bench = new tinybench.Bench({
-            name: "RemoveUser",
+        globalThis.bench = newBench("RemoveUser", {
             time: 0,
             iterations: 10,
             warmup: true,
-            warmupIterations: 1,
             warmupTime: 0,
-            setup: globalThis.tinybenchSetup,
-            teardown: globalThis.tinybenchTeardown,
         });
         for (const { userCount, cipherSuite, cipherSuiteLabel } of parameters) {
             // Users only provide key packages, so each task creates them once and every

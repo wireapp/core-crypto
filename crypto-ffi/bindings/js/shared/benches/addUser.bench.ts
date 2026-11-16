@@ -6,14 +6,7 @@ import { runOnPlatform } from "../shared/utils";
 export async function setupAddUserBench() {
     const parameters = await userBenchmarkParameters();
     await runOnPlatform(async (parameters) => {
-        globalThis.bench = new globalThis.tinybench.Bench({
-            name: "AddUser",
-            time: 1000,
-            iterations: 5,
-            warmupIterations: 1,
-            setup: globalThis.tinybenchSetup,
-            teardown: globalThis.tinybenchTeardown,
-        });
+        globalThis.bench = newBench("AddUser");
         for (const { userCount, cipherSuite, cipherSuiteLabel } of parameters) {
             // Users only provide key packages, so each task creates them once and every
             // iteration takes fresh key packages from them.
