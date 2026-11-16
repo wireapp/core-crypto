@@ -59,7 +59,7 @@ pub struct Transaction {
     /// - by using the synchronous version, the compiler ensures we don't hold a guard over an await point, which would
     ///   deadlock everything
     /// - ensures that no two threads race on `conn.prepare` / `prepare_cached`
-    conn: Arc<parking_lot::Mutex<Option<MutexGuardArc<crate::connection::ManagedConnection>>>>,
+    conn: Arc<parking_lot::Mutex<Option<MutexGuardArc<rusqlite::Connection>>>>,
     /// Whether the database detected external modifications to the connection when this transaction
     /// was created.
     ///

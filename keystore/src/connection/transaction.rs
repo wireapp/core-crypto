@@ -79,7 +79,7 @@ impl Database {
         #[derive(derive_more::From)]
         enum ConnectionGuard<'a> {
             Transaction(TransactionConnection),
-            Database(MutexGuard<'a, super::ManagedConnection>),
+            Database(MutexGuard<'a, Connection>),
         }
 
         impl<'a> Deref for ConnectionGuard<'a> {

@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use sqlite_wasm_rs::{WasmOsCallback, vfs::VfsFilesManager as _};
 use sqlite_wasm_vfs::sahpool::{OpfsSAHError, OpfsSAHPoolCfgBuilder, OpfsSAHPoolUtil};
 
-use super::{ManagedConnection, legacy_opfs};
+use super::legacy_opfs;
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey};
 
 /// The pool's directory in the OPFS root.
@@ -71,7 +71,7 @@ fn validate_name(name: &str) -> CryptoKeystoreResult<()> {
 /// Migration: moves a CoreCrypto 11 database at the same location into the pool. Might partially migrate the
 /// database, if it detects that a legacy IDB database exists whose data has not yet been imported. A final
 /// migration to latest version will be necessary!
-pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<(ManagedConnection, FsAbstraction)> {
+pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<(rusqlite::Connection, FsAbstraction)> {
     validate_name(name)?;
     super::idb_migration::reject_core_crypto_10_database(name).await?;
 
@@ -90,13 +90,13 @@ pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<
         .map_err(CryptoKeystoreError::opfs("checking database existence"))?;
     // the flags we use here are equivalent to the defaults, except we don't engage uri handling
     // https://docs.rs/rusqlite/latest/rusqlite/struct.Connection.html#method.open
-    let mut conn = ManagedConnection::from(rusqlite::Connection::open_with_flags_and_vfs(
+    let mut conn = rusqlite::Connection::open_with_flags_and_vfs(
         name,
         rusqlite::OpenFlags::SQLITE_OPEN_CREATE
             | rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
             | rusqlite::OpenFlags::SQLITE_OPEN_NO_MUTEX,
         VFS_NAME,
-    )?);
+    )?;
 
     // Set before encryption, schema reads, or reopening a database already in WAL mode.
     // The pool has no shared memory, so WAL needs exclusive locking.

@@ -9,7 +9,6 @@ pub(crate) mod idb_migration;
 pub(crate) mod ios_wal_compat;
 #[cfg(target_os = "unknown")]
 mod legacy_opfs;
-pub(crate) mod managed_connection;
 mod mls;
 #[cfg(target_os = "unknown")]
 mod os_unknown;
@@ -28,7 +27,6 @@ pub use self::idb_migration::{delete_legacy_idb, legacy_idb_exists};
 pub use self::mls::{deser, ser};
 pub(crate) use self::{
     filesystem::Filesystem,
-    managed_connection::ManagedConnection,
     transaction_lock::{TransactionGuard, TransactionLock},
 };
 pub use crate::migrations::migrate_db_key_type_to_bytes;
@@ -54,7 +52,7 @@ pub struct Database {
     // which is gone by the time `take` runs. For now I don't believe it's
     // worth the effort of making a `UniqueArc` work here, but if this proves
     // to be a problem, we might make that effort in the future.
-    conn: Arc<Mutex<ManagedConnection>>,
+    conn: Arc<Mutex<Connection>>,
     // handler with which to delete the database;
     // mutexed to provide `Sync`
     pub(crate) filesystem: Mutex<Box<dyn Filesystem>>,
@@ -75,7 +73,7 @@ impl Database {
     async fn open_internal(
         path: &str,
         database_key: &DatabaseKey,
-    ) -> CryptoKeystoreResult<(ManagedConnection, Box<dyn Filesystem>)> {
+    ) -> CryptoKeystoreResult<(Connection, Box<dyn Filesystem>)> {
         #[cfg(target_os = "unknown")]
         let (conn, filesystem) = { os_unknown::open(path, database_key).await? };
 
@@ -98,7 +96,7 @@ impl Database {
                 ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
             }
 
-            (conn.into(), filesystem::NativeFs)
+            (conn, filesystem::NativeFs)
         };
 
         let filesystem = Box::new(filesystem);
@@ -112,7 +110,7 @@ impl Database {
     /// Sets appropriate pragmas and performs migrations and general initialization work.
     #[cfg(test)]
     async fn init(
-        conn: ManagedConnection,
+        conn: Connection,
         filesystem: Box<dyn Filesystem>,
         migration_target: MigrationTarget,
     ) -> CryptoKeystoreResult<Self> {
@@ -125,7 +123,7 @@ impl Database {
 
     /// Initialize while holding `transaction_lock`, or with a private in-memory connection.
     fn init_with_lock(
-        mut conn: ManagedConnection,
+        mut conn: Connection,
         filesystem: Box<dyn Filesystem>,
         migration_target: MigrationTarget,
         transaction_lock: TransactionLock,
@@ -173,7 +171,7 @@ impl Database {
     ///
     /// In-memory databases are never encrypted.
     pub fn open_in_memory() -> CryptoKeystoreResult<Arc<Self>> {
-        let connection = ManagedConnection::from(Connection::open_in_memory()?);
+        let connection = Connection::open_in_memory()?;
         Self::init_with_lock(
             connection,
             Box::new(filesystem::Nop),
@@ -211,7 +209,7 @@ impl Database {
     ///
     /// The returned guard keeps other processes out for as long as the caller holds it, so that
     /// teardown is not interleaved with somebody else's transaction.
-    async fn take(self) -> CryptoKeystoreResult<(ManagedConnection, Box<dyn Filesystem>, TransactionGuard)> {
+    async fn take(self) -> CryptoKeystoreResult<(Connection, Box<dyn Filesystem>, TransactionGuard)> {
         // Nobody ever clones `self.conn`; the Arc is only so we can have a lifetime-free guard over
         // the interior mutex, so the strong count here is 1.
         let conn = Arc::into_inner(self.conn)
@@ -224,7 +222,7 @@ impl Database {
     // Close this database connection
     pub async fn close(self) -> CryptoKeystoreResult<()> {
         let (conn, _fs, _guard) = self.take().await?;
-        conn.into_inner().close().map_err(|(_conn, err)| err)?;
+        conn.close().map_err(|(_conn, err)| err)?;
         Ok(())
     }
 
@@ -244,7 +242,7 @@ impl Database {
         ",
         )?;
         let location = conn.path().map(ToOwned::to_owned);
-        conn.into_inner().close().map_err(|(_conn, err)| err)?;
+        conn.close().map_err(|(_conn, err)| err)?;
         if let Some(path) = location {
             // not in-memory
             fs.delete(&path).await?;
@@ -261,7 +259,7 @@ impl Database {
     /// **CAUTION**: this will block until the in-flight transaction completes, if one exists.
     ///
     /// Most users should prefer [`Self::conn`].
-    pub(crate) async fn raw_conn(&self) -> MutexGuardArc<ManagedConnection> {
+    pub(crate) async fn raw_conn(&self) -> MutexGuardArc<Connection> {
         self.conn.lock_arc().await
     }
 

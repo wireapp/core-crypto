@@ -8,7 +8,7 @@ use super::{GUARD_EXPECTATION, Transaction};
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, unique_arc::ArcWithReadGuard};
 
 /// The type of the guard we end up holding over the connection.
-type InternalGuard = ArcMutexGuard<RawMutex, Option<MutexGuardArc<crate::connection::ManagedConnection>>>;
+type InternalGuard = ArcMutexGuard<RawMutex, Option<MutexGuardArc<rusqlite::Connection>>>;
 /// Keeps the wrapper alive for as long as this guard exists.
 ///
 /// - `None` when the caller already holds a [`&Transaction`][Transaction], where borrowck provides the same guarantee.
