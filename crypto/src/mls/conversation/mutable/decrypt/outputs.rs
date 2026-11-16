@@ -120,6 +120,8 @@ pub enum RejectionReason {
     InvalidSignature,
     /// The sender's X509 certificate chain could not be parsed.
     MalformedCredential(openmls::prelude::CredentialError),
+    /// The sender's X509 certificate chain is not correctly signed.
+    UntrustedCredential(openmls_traits::types::CryptoError),
 }
 
 /// Outcome of attempting to decrypt a message.

@@ -133,6 +133,7 @@ pub(super) async fn process_message(
                     Err(ProcessMessageError::CredentialError(err)) => {
                         Ok(RejectionReason::MalformedCredential(err).into())
                     }
+                    Err(ProcessMessageError::CryptoError(err)) => Ok(RejectionReason::UntrustedCredential(err).into()),
 
                     // everything else gets a generic wrapping
                     Err(err) => Err(OpenMlsError::wrap("processing message")(err).into()),
