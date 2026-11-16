@@ -105,9 +105,12 @@ impl ConversationMut {
 
         // Remove padding from plaintext: VLBytes contains a length prefix which tells the deserializer the plaintext
         // length.
-        let plaintext = VLBytes::tls_deserialize(&mut padded_plaintext.as_slice())
-            .map_err(TlsCodecError::deserialize("TargetedMessageContent"))?
-            .into();
+        let plaintext = match VLBytes::tls_deserialize(&mut padded_plaintext.as_slice()) {
+            Ok(bytes) => bytes.into(),
+            Err(err) => {
+                return Ok(RejectionReason::from(TlsCodecError::deserialize("TargetedMessageContent")(err)).into());
+            }
+        };
 
         let decrypted_bytes = self.extract_sender_id(sender, plaintext).await?;
 

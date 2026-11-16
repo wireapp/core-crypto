@@ -68,6 +68,7 @@ impl ConversationMut {
             match maybe_message {
                 Ok((inbox, incoming)) => Some((incoming, inbox.message.into())),
                 Err(err) => {
+                    // this case should be rare given that every message is parsed before ever being inserted into the inbox
                     warn!(err:err, group_id = id.clone(); "failed to parse buffered message while taking from inbox; dropping");
                     None
                 }
@@ -75,7 +76,10 @@ impl ConversationMut {
         };
 
         let bytes = bytes.into();
-        let incoming_message = IncomingMessage::parse(&bytes)?;
+        let incoming_message = match IncomingMessage::parse(&bytes) {
+            Ok(message) => message,
+            Err(err) => return Ok(vec![RejectionReason::from(err).into()]),
+        };
         let mut queue = VecDeque::from([(incoming_message, bytes)]);
         let mut decrypted_messages = Vec::new();
 

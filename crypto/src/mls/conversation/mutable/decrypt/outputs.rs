@@ -1,4 +1,4 @@
-use crate::{ClientId, WireIdentity};
+use crate::{ClientId, TlsCodecError, WireIdentity};
 
 /// Decrypted Bytes
 #[derive(Debug)]
@@ -75,7 +75,7 @@ pub enum DeferralReason {
 }
 
 /// A reason why this message could not be decrypted.
-#[derive(Debug)]
+#[derive(Debug, derive_more::From)]
 pub enum RejectionReason {
     /// This message has already been processed, or replays a message which has.
     DuplicateMessage,
@@ -106,6 +106,8 @@ pub enum RejectionReason {
     /// The ciphertext may have been corrupted or tampered with, or encrypted with keys we don't have.
     /// Authenticated encryption deliberately doesn't distinguish between these.
     InvalidAuthentication,
+    /// This message could not be deserialized.
+    Unparseable(TlsCodecError),
 }
 
 /// Outcome of attempting to decrypt a message.
