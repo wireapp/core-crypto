@@ -124,9 +124,6 @@
             <a href="../../Enums.html">Enumerations</a>
             <ul class="nav-group-tasks">
               <li class="nav-group-task">
-                <a href="../../WireCoreCryptoUniffi/Enums/BufferedDecryptedMessage.html">BufferedDecryptedMessage</a>
-              </li>
-              <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Enums/CipherSuite.html">CipherSuite</a>
               </li>
               <li class="nav-group-task">
@@ -679,9 +676,9 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC14decryptMessage14conversationId7payloadAA09DecryptedG0OAA012ConversationI0C_10Foundation4DataVtYaKF"></a>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC14decryptMessage14conversationId7payloadSayAA09DecryptedG0OGAA012ConversationI0C_10Foundation4DataVtYaKF"></a>
                     <a name="//apple_ref/swift/Method/decryptMessage(conversationId:payload:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC14decryptMessage14conversationId7payloadAA09DecryptedG0OAA012ConversationI0C_10Foundation4DataVtYaKF">decryptMessage(conversationId:<wbr>payload:<wbr>)</a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC14decryptMessage14conversationId7payloadSayAA09DecryptedG0OGAA012ConversationI0C_10Foundation4DataVtYaKF">decryptMessage(conversationId:<wbr>payload:<wbr>)</a>
                     </code>
                       <span class="declaration-note">
                         Asynchronous
@@ -698,12 +695,35 @@
  proposals it references. Our own commit, delivered back to us, is merged. Proposals and
  application messages leave local pending state untouched.</p>
 
+<p>If the decrypted message is deferred for processing after some future event, the returned
+ list is empty. If the returned list is not empty, then its first item is the result of decrypting
+ the provided payload.</p>
+
+<p>If the decrypted message produces an event causing previously-buffered messages to be decrypted,
+ they are appended to the returned list in processing order.</p>
+
+<p>If a commit ejects us from the group, no further messages are considered. This means that
+ if we are ejected, the final message will always be a <code>Commit</code> variant with <code>isActive: false</code>.</p>
+
+<p>When decrypting buffered messages, we distinguish betwen infrastructural errors and other errors.
+ Infrastructural errors are those which we would expect not to reappear if we re-attempted the decryption
+ in a new, perfectly healthy environment.</p>
+
+<p>If decryption of a buffered message triggers an infrastructural
+ error, that error is propagated so that the transaction is rolled back. Once the environment is healthy,
+ reattempting can be expected to succeed.</p>
+
+<p>Non-infrastructural errors when decrypting buffered messages produce a log line, but they are not
+ propagated, and the buffered message is dropped.</p>
+
+<p>All errors produced when decrypting the initial message are propagated, whether or not they are infrastructural.</p>
+
                       </div>
                       <div class="declaration">
                         <h4>Declaration</h4>
                         <div class="language">
                           <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">decryptMessage</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">payload</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/DecryptedMessage.html">DecryptedMessage</a></span></code></pre>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">decryptMessage</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">payload</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/DecryptedMessage.html">DecryptedMessage</a></span><span class="p">]</span></code></pre>
 
                         </div>
                       </div>
@@ -2017,7 +2037,7 @@
           </section>
         </section>
         <section id="footer">
-          <p>&copy; 2026 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2026-11-13)</p>
+          <p>&copy; 2026 <a class="link" href="" target="_blank" rel="external noopener"></a>. All rights reserved. (Last updated: 2026-11-16)</p>
           <p>Generated by <a class="link" href="https://github.com/realm/jazzy" target="_blank" rel="external noopener">jazzy ♪♫ v0.15.5</a>, a <a class="link" href="https://realm.io" target="_blank" rel="external noopener">Realm</a> project.</p>
         </section>
       </article>
