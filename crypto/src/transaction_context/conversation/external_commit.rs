@@ -161,7 +161,10 @@ mod tests {
 
     use core_crypto_keystore::{entities::PersistedMlsGroup, traits::FetchFromDatabase as _};
 
-    use crate::{ConversationConfiguration, test_utils::*, transaction_context::Error};
+    use crate::{
+        ConversationConfiguration, DecryptedMessage, DecryptionOutcome, DeferralReason, test_utils::*,
+        transaction_context::Error,
+    };
 
     #[apply(all_cred_cipher)]
     async fn join_by_external_commit_should_succeed(case: TestContext) {
@@ -178,7 +181,7 @@ mod tests {
             let (external_commit, result) = external_commit.notify_member_fallible(&alice).await;
             assert_eq!(external_commit.conversation().members_counted_by(&alice).await, 2);
 
-            let decrypted = result.unwrap().into_single();
+            let decrypted = result.unwrap().into_single_decrypted();
             // verify Bob's (sender) identity
             bob.verify_sender_identity(&case, &bob.initial_credential, &decrypted)
                 .await;
@@ -470,7 +473,7 @@ mod tests {
             .await
             .unwrap();
         assert!(
-            decrypted.is_empty(),
+            matches!(decrypted.into_single_deferred(), DeferralReason::FutureEpoch { .. }),
             "Alice can't decrypt Bob's message without his commit"
         );
         assert_eq!(alice.transaction.count_entities().await.pending_messages, 1);
@@ -499,7 +502,7 @@ mod tests {
             .await
             .unwrap();
         assert!(
-            decrypted.is_empty(),
+            matches!(decrypted.into_single_deferred(), DeferralReason::PendingJoin),
             "Alice's rejoin is still pending, so she must defer Bob's message"
         );
         assert_eq!(alice.transaction.count_entities().await.pending_messages, 1);
@@ -512,11 +515,14 @@ mod tests {
             .unwrap()
             .into_iter();
         assert!(
-            decrypted.next().unwrap().is_commit(),
+            matches!(
+                decrypted.next(),
+                Some(DecryptionOutcome::Decrypted(DecryptedMessage::Commit(_)))
+            ),
             "the first message must be Alice's own join commit"
         );
         let replayed = decrypted
-            .map(|message| message.into_application_message().unwrap().plaintext)
+            .map(|outcome| outcome.into_decrypted().into_application_message().unwrap().plaintext)
             .collect::<Vec<_>>();
         assert_eq!(replayed, [b"fresh".to_vec()]);
         assert_eq!(alice.transaction.count_entities().await.pending_messages, 0);
@@ -541,7 +547,7 @@ mod tests {
             .await
             .unwrap();
         assert!(
-            decrypted.is_empty(),
+            matches!(decrypted.into_single_deferred(), DeferralReason::PendingJoin),
             "Bob's join is pending, so he must defer Alice's message"
         );
         assert_eq!(bob.transaction.count_entities().await.pending_messages, 1);
@@ -564,7 +570,7 @@ mod tests {
             .unwrap();
         assert_eq!(decrypted.len(), 1, "nothing buffered may be replayed");
         assert!(
-            decrypted[0].is_commit(),
+            matches!(decrypted[0], DecryptionOutcome::Decrypted(DecryptedMessage::Commit(_))),
             "the only message must be Bob's own join commit"
         );
         assert!(conversation.is_functional_and_contains([&alice, &bob]).await);

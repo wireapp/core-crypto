@@ -195,7 +195,7 @@ impl<'a> TestConversation<'a> {
             .decrypt_message(encrypted)
             .await
             .map_err(RecursiveError::context("decrypting message; receiver <- sender"))?
-            .into_single()
+            .into_single_decrypted()
             .into_application_message()
             .map_err(|_| TestError::ImplementationError)?
             .plaintext;

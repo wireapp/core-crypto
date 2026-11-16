@@ -206,7 +206,11 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(
-            decrypted.into_single().as_application_message().unwrap().plaintext,
+            decrypted
+                .into_single_decrypted()
+                .as_application_message()
+                .unwrap()
+                .plaintext,
             b"hello"
         );
     }

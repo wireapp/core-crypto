@@ -202,7 +202,7 @@ mod tests {
             .decrypt_message(encrypted)
             .await
             .unwrap()
-            .into_single()
+            .into_single_decrypted()
             .into_transient()
             .unwrap()
             .plaintext;
@@ -230,7 +230,7 @@ mod tests {
             .decrypt_message(&encrypted)
             .await
             .unwrap()
-            .into_single()
+            .into_single_decrypted()
             .into_transient()
             .unwrap()
             .plaintext;

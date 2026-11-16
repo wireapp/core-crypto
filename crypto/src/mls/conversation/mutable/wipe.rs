@@ -54,7 +54,7 @@ impl ConversationMut {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::*;
+    use crate::{DeferralReason, test_utils::*};
 
     /// Wiping a conversation abandons the messages it had buffered.
     #[apply(all_cred_cipher)]
@@ -82,7 +82,13 @@ mod tests {
             // Alice cannot decrypt a message from an epoch she has not reached yet, so she buffers it
             // until the commit which advances her own epoch arrives.
             let decrypt = conversation.guard_of(&alice).await.decrypt_message(app_msg).await;
-            assert!(decrypt.unwrap().is_empty(), "the message must have been deferred");
+            assert!(
+                matches!(
+                    decrypt.unwrap().into_single_deferred(),
+                    DeferralReason::FutureEpoch { .. }
+                ),
+                "the message must have been deferred"
+            );
             assert_eq!(
                 alice.transaction.count_entities().await.pending_messages,
                 1,
@@ -125,7 +131,10 @@ mod tests {
             // received that proposal — cannot apply the commit, and buffers it to retry once she does.
             let commit_guard = conversation.acting_as(&bob).await.commit_pending_proposals().await;
             let (commit_guard, result) = commit_guard.notify_member_fallible(&alice).await;
-            assert!(result.unwrap().is_empty(), "the message must have been deferred");
+            assert!(
+                matches!(result.unwrap().into_single_deferred(), DeferralReason::MissingProposal),
+                "the commit must have been deferred until its proposal arrives"
+            );
             let conversation = commit_guard.finish();
 
             assert_eq!(

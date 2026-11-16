@@ -6,7 +6,7 @@ mod tests {
     };
     use openmls::prelude::ContentType;
 
-    use crate::{DecryptedMessage, test_utils::*};
+    use crate::{DecryptedMessage, DecryptionOutcome, DeferralReason, test_utils::*};
 
     /// Set up the common scenario for these tests: Alice has buffered Bob's commit, which removes
     /// Charlie, because it refers to a proposal she never received.
@@ -26,8 +26,8 @@ mod tests {
         let commit_guard = conversation.acting_as(bob).await.commit_pending_proposals().await;
         let (commit_guard, result) = commit_guard.notify_member_fallible(alice).await;
         assert!(
-            result.unwrap().is_empty(),
-            "a deferred commit must not decrypt anything"
+            matches!(result.unwrap().into_single_deferred(), DeferralReason::MissingProposal),
+            "a commit referencing an unknown proposal must be deferred until the proposal arrives"
         );
         let conversation = commit_guard.finish();
         assert_eq!(
@@ -55,7 +55,10 @@ mod tests {
         let proposal_guard = conversation.acting_as(&charlie).await.remove_proposal(&bob).await;
         let (proposal_guard, result) = proposal_guard.notify_member_fallible(&alice).await;
         assert!(
-            matches!(result.as_deref(), Ok([DecryptedMessage::Proposal(_)])),
+            matches!(
+                result.as_deref(),
+                Ok([DecryptionOutcome::Decrypted(DecryptedMessage::Proposal(_))])
+            ),
             "the unrelated proposal must decrypt as a proposal, and nothing else: {result:?}"
         );
         let conversation = proposal_guard.finish();
@@ -75,7 +78,10 @@ mod tests {
         assert!(
             matches!(
                 decrypted.as_slice(),
-                [DecryptedMessage::Proposal(_), DecryptedMessage::Commit(_)]
+                [
+                    DecryptionOutcome::Decrypted(DecryptedMessage::Proposal(_)),
+                    DecryptionOutcome::Decrypted(DecryptedMessage::Commit(_))
+                ]
             ),
             "the missing proposal must decrypt, then apply the buffered commit: {decrypted:?}"
         );
@@ -97,7 +103,10 @@ mod tests {
         assert!(
             matches!(
                 decrypted.as_slice(),
-                [DecryptedMessage::Proposal(_), DecryptedMessage::Commit(_)]
+                [
+                    DecryptionOutcome::Decrypted(DecryptedMessage::Proposal(_)),
+                    DecryptionOutcome::Decrypted(DecryptedMessage::Commit(_))
+                ]
             ),
             "the missing proposal must decrypt, then apply the buffered commit: {decrypted:?}"
         );
@@ -123,7 +132,10 @@ mod tests {
         let proposal_guard = conversation.acting_as(&bob).await.invite_proposal(&charlie).await;
         let (proposal_guard, result) = proposal_guard.notify_member_fallible(&alice).await;
         assert!(
-            result.unwrap().is_empty(),
+            matches!(
+                result.unwrap().into_single_deferred(),
+                DeferralReason::FutureEpoch { epoch: 2 }
+            ),
             "a proposal from a future epoch must be deferred"
         );
         let conversation = proposal_guard.finish();
@@ -138,9 +150,9 @@ mod tests {
             matches!(
                 decrypted.as_slice(),
                 [
-                    DecryptedMessage::Proposal(_),
-                    DecryptedMessage::Commit(_),
-                    DecryptedMessage::Proposal(_)
+                    DecryptionOutcome::Decrypted(DecryptedMessage::Proposal(_)),
+                    DecryptionOutcome::Decrypted(DecryptedMessage::Commit(_)),
+                    DecryptionOutcome::Decrypted(DecryptedMessage::Proposal(_))
                 ]
             ),
             "the missing proposal must apply the buffered commit, \
@@ -183,7 +195,10 @@ mod tests {
             assert!(
                 matches!(
                     decrypted.as_deref(),
-                    Ok([DecryptedMessage::Proposal(_), DecryptedMessage::Commit(_)])
+                    Ok([
+                        DecryptionOutcome::Decrypted(DecryptedMessage::Proposal(_)),
+                        DecryptionOutcome::Decrypted(DecryptedMessage::Commit(_))
+                    ])
                 ),
                 "the proposal completes the buffered commit, which must apply, \
                  and the undecodable message must not be reported as replayed: {decrypted:?}"
@@ -249,8 +264,8 @@ mod tests {
             .await;
         let (commit_guard, result) = commit_guard.notify_member_fallible(&alice).await;
         assert!(
-            result.unwrap().is_empty(),
-            "a deferred commit must not decrypt anything"
+            matches!(result.unwrap().into_single_deferred(), DeferralReason::MissingProposal),
+            "a commit referencing an unknown proposal must be deferred until the proposal arrives"
         );
         let conversation = commit_guard.finish();
         assert_eq!(

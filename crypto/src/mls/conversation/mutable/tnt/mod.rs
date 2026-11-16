@@ -533,7 +533,10 @@ mod tests {
             .decrypt_message(second)
             .await
             .unwrap();
-        assert_eq!(second.into_single().into_transient().unwrap().plaintext, b"second");
+        assert_eq!(
+            second.into_single_decrypted().into_transient().unwrap().plaintext,
+            b"second"
+        );
     }
 
     #[apply(all_cred_cipher)]
@@ -589,7 +592,7 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(
-            decrypted.into_single().into_transient().unwrap().plaintext,
+            decrypted.into_single_decrypted().into_transient().unwrap().plaintext,
             b"new epoch"
         );
         let counter = alice

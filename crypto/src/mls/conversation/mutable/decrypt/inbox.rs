@@ -102,7 +102,10 @@ impl ConversationMut {
 
 #[cfg(test)]
 mod tests {
-    use crate::{DecryptedMessage, mls::conversation::config::OUT_OF_ORDER_TOLERANCE, test_utils::*};
+    use crate::{
+        DecryptedMessage, DecryptionOutcome, DeferralReason, mls::conversation::config::OUT_OF_ORDER_TOLERANCE,
+        test_utils::*,
+    };
 
     #[apply(all_cred_cipher)]
     async fn can_operate_with_pending_commit_wpb_17356(case: TestContext) {
@@ -157,7 +160,13 @@ mod tests {
                 .chain(std::iter::once(app_msg));
             for m in messages {
                 let decrypt = conversation.guard_of(&bob).await.decrypt_message(m).await;
-                assert!(decrypt.unwrap().is_empty(), "the message must have been deferred");
+                assert!(
+                    matches!(
+                        decrypt.unwrap().into_single_deferred(),
+                        DeferralReason::FutureEpoch { .. }
+                    ),
+                    "the message must have been deferred"
+                );
             }
 
             // Bob should have buffered the messages
@@ -179,9 +188,10 @@ mod tests {
                 .unwrap();
             // the first decrypted message is the commit; the rest were restored from the inbox
             assert!(
-                restored_messages
-                    .first()
-                    .is_some_and(|message| message.as_commit().is_some()),
+                restored_messages.first().is_some_and(|outcome| matches!(
+                    outcome,
+                    DecryptionOutcome::Decrypted(DecryptedMessage::Commit(_))
+                )),
                 "the commit must be decrypted first: {restored_messages:?}"
             );
             let restored_messages = restored_messages.split_off(1);
@@ -191,7 +201,7 @@ mod tests {
             );
 
             for (idx, buffered_message) in restored_messages.into_iter().enumerate() {
-                let text = buffered_message.into_application_message();
+                let text = buffered_message.into_decrypted().into_application_message();
                 if idx == 0 {
                     // this is the application message
                     assert_eq!(text.unwrap().plaintext, b"Hello Bob !");
@@ -256,10 +266,22 @@ mod tests {
             let messages = vec![commit, proposal].into_iter().map(|m| m.to_bytes().unwrap());
             for m in messages {
                 let decrypt = conversation.guard_of(&alice).await.decrypt_message(m).await;
-                assert!(decrypt.unwrap().is_empty(), "the message must have been deferred");
+                assert!(
+                    matches!(
+                        decrypt.unwrap().into_single_deferred(),
+                        DeferralReason::FutureEpoch { .. }
+                    ),
+                    "the message must have been deferred"
+                );
             }
             let decrypt = conversation.guard().await.decrypt_message(app_msg).await;
-            assert!(decrypt.unwrap().is_empty(), "the message must have been deferred");
+            assert!(
+                matches!(
+                    decrypt.unwrap().into_single_deferred(),
+                    DeferralReason::FutureEpoch { .. }
+                ),
+                "the message must have been deferred"
+            );
 
             // Alice should have buffered the messages
             assert_eq!(alice.transaction.count_entities().await.pending_messages, 3);
@@ -282,9 +304,10 @@ mod tests {
                 .unwrap();
             // the first decrypted message is the commit; the rest were restored from the inbox
             assert!(
-                restored_messages
-                    .first()
-                    .is_some_and(|message| message.as_commit().is_some()),
+                restored_messages.first().is_some_and(|outcome| matches!(
+                    outcome,
+                    DecryptionOutcome::Decrypted(DecryptedMessage::Commit(_))
+                )),
                 "the commit must be decrypted first: {restored_messages:?}"
             );
             let restored_messages = restored_messages.split_off(1);
@@ -293,7 +316,7 @@ mod tests {
                 "Alice's messages should have been restored at this point"
             );
             for (idx, buffered_message) in restored_messages.into_iter().enumerate() {
-                let text = buffered_message.into_application_message();
+                let text = buffered_message.into_decrypted().into_application_message();
                 if idx == 0 {
                     assert_eq!(text.unwrap().plaintext, b"Hello Alice !");
                 } else {
@@ -361,7 +384,13 @@ mod tests {
 
         // Alice is still at epoch 1, so she buffers the message.
         let decrypt = conversation.guard_of(&alice).await.decrypt_message(app_msg).await;
-        assert!(decrypt.unwrap().is_empty(), "the message must have been deferred");
+        assert!(
+            matches!(
+                decrypt.unwrap().into_single_deferred(),
+                DeferralReason::FutureEpoch { .. }
+            ),
+            "the message must have been deferred"
+        );
         assert_eq!(
             alice.transaction.count_entities().await.pending_messages,
             1,
@@ -382,7 +411,7 @@ mod tests {
             .decrypt_message(&removal_commit)
             .await
             .expect("Alice must be able to process her own removal")
-            .into_single()
+            .into_single_decrypted()
             .into_commit()
             .unwrap();
         assert!(
@@ -440,7 +469,13 @@ mod tests {
             .await
             .decrypt_message(&removal_commit)
             .await;
-        assert!(decrypt.unwrap().is_empty(), "the message must have been deferred");
+        assert!(
+            matches!(
+                decrypt.unwrap().into_single_deferred(),
+                DeferralReason::FutureEpoch { .. }
+            ),
+            "the message must have been deferred"
+        );
         assert_eq!(
             alice.transaction.count_entities().await.pending_messages,
             1,
@@ -462,8 +497,8 @@ mod tests {
             .await
             .expect("the earlier commit must apply");
         let [
-            DecryptedMessage::Commit(first_commit),
-            DecryptedMessage::Commit(removal_commit),
+            DecryptionOutcome::Decrypted(DecryptedMessage::Commit(first_commit)),
+            DecryptionOutcome::Decrypted(DecryptedMessage::Commit(removal_commit)),
         ] = decrypted.as_slice()
         else {
             panic!("expected the earlier commit, then the restored removal: {decrypted:?}");
@@ -524,7 +559,13 @@ mod tests {
         // so each one gets buffered individually, in that same order.
         for msg in app_messages.iter().rev() {
             let decrypt = conversation.guard_of(&alice).await.decrypt_message(msg).await;
-            assert!(decrypt.unwrap().is_empty(), "the message must have been deferred");
+            assert!(
+                matches!(
+                    decrypt.unwrap().into_single_deferred(),
+                    DeferralReason::FutureEpoch { .. }
+                ),
+                "the message must have been deferred"
+            );
         }
         assert_eq!(
             alice.transaction.count_entities().await.pending_messages,
@@ -541,14 +582,16 @@ mod tests {
             .expect("the commit must merge even though some buffered messages can't be decrypted");
         // the first decrypted message is the commit; the rest were restored from the inbox
         assert!(
-            restored.first().is_some_and(|message| message.as_commit().is_some()),
+            restored
+                .first()
+                .is_some_and(|outcome| matches!(outcome, DecryptionOutcome::Decrypted(DecryptedMessage::Commit(_)))),
             "the commit must be decrypted first: {restored:?}"
         );
         let restored = restored.split_off(1);
 
         let restored_plaintexts = restored
             .into_iter()
-            .map(|m| m.into_application_message().unwrap().plaintext[0])
+            .map(|m| m.into_decrypted().into_application_message().unwrap().plaintext[0])
             .collect::<Vec<_>>();
         let expected_plaintexts = ((MESSAGE_COUNT - OUT_OF_ORDER_TOLERANCE as u8)..MESSAGE_COUNT)
             .rev()
@@ -628,7 +671,13 @@ mod tests {
                 .await
                 .decrypt_message(&proposal_remove_114_2.to_bytes().unwrap())
                 .await;
-            assert!(result.unwrap().is_empty(), "the message must have been deferred");
+            assert!(
+                matches!(
+                    result.unwrap().into_single_deferred(),
+                    DeferralReason::FutureEpoch { .. }
+                ),
+                "the message must have been deferred"
+            );
             println!("executing commit adding new user");
             conversation
                 .guard()
@@ -676,7 +725,13 @@ mod tests {
                 .await
                 .decrypt_message(&proposal_remove_114_2.to_bytes().unwrap())
                 .await;
-            assert!(result.unwrap().is_empty(), "the message must have been deferred");
+            assert!(
+                matches!(
+                    result.unwrap().into_single_deferred(),
+                    DeferralReason::FutureEpoch { .. }
+                ),
+                "the message must have been deferred"
+            );
             conversation
                 .guard_of(&member_27)
                 .await
@@ -710,7 +765,10 @@ mod tests {
             // In this case, new_member receives the commit before the proposal. This means that
             // the commit has to be buffered until the proposal it references is received.
             let (commit_guard, result) = commit_guard.notify_member_fallible(&new_member).await;
-            assert!(result.unwrap().is_empty(), "the message must have been deferred");
+            assert!(
+                matches!(result.unwrap().into_single_deferred(), DeferralReason::MissingProposal),
+                "the commit must have been deferred until its proposal arrives"
+            );
             let conversation = commit_guard.process_member_changes().await.finish();
             conversation
                 .guard_of(&new_member)

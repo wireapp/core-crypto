@@ -43,7 +43,9 @@ impl CommitBundle {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{mls::conversation::Error, test_utils::*, transaction_context::Error as TransactionError};
+    use crate::{
+        DeferralReason, mls::conversation::Error, test_utils::*, transaction_context::Error as TransactionError,
+    };
 
     mod add_members {
         use std::sync::Arc;
@@ -319,7 +321,13 @@ mod tests {
                     .unwrap()
                     .decrypt_message(&commit2)
                     .await;
-                assert!(out_of_order.unwrap().is_empty(), "the message must have been deferred");
+                assert!(
+                    matches!(
+                        out_of_order.unwrap().into_single_deferred(),
+                        DeferralReason::FutureEpoch { .. }
+                    ),
+                    "the message must have been deferred"
+                );
 
                 // works in the right order though
                 // NB: here 'commit2' has been buffered so it is also applied when we decrypt commit1

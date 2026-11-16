@@ -243,7 +243,7 @@ mod tests {
             let decrypted = result.expect("a member must be able to process its own eviction");
             assert!(
                 decrypted
-                    .into_single()
+                    .into_single_decrypted()
                     .as_commit()
                     .is_some_and(|commit| !commit.is_active),
                 "the commit must report the conversation as no longer active"

@@ -304,6 +304,7 @@ impl ConversationMut {
 #[cfg(test)]
 mod tests {
     use crate::{
+        DecryptedMessage, DecryptionOutcome, DeferralReason,
         mls::conversation::{
             config::{MAX_PAST_EPOCHS, OUT_OF_ORDER_TOLERANCE},
             error::Error,
@@ -327,7 +328,7 @@ mod tests {
                     .await
                     .notify_member_fallible(&alice)
                     .await;
-                let decrypted = decrypted.unwrap().into_single();
+                let decrypted = decrypted.unwrap().into_single_decrypted();
                 assert!(decrypted.as_commit().is_some_and(|commit| commit.is_active))
             })
             .await
@@ -346,7 +347,7 @@ mod tests {
                     .await
                     .notify_member_fallible(&alice)
                     .await;
-                let decrypted = decrypted.unwrap().into_single();
+                let decrypted = decrypted.unwrap().into_single_decrypted();
                 assert!(decrypted.as_commit().is_some_and(|commit| !commit.is_active))
             })
             .await
@@ -372,7 +373,7 @@ mod tests {
                 let epoch_before = conversation.guard().await.epoch().await;
 
                 let (commit, decrypted) = conversation.update().await.notify_member_fallible(&bob).await;
-                let decrypted = decrypted.unwrap().into_single();
+                let decrypted = decrypted.unwrap().into_single_decrypted();
 
                 let epoch_after = commit.finish().guard_of(&bob).await.epoch().await;
                 assert_eq!(epoch_after, epoch_before + 1);
@@ -395,7 +396,7 @@ mod tests {
 
                 let (_commit, decrypted) = conversation.update().await.notify_member_fallible(&bob).await;
 
-                assert!(decrypted.unwrap().into_single().as_commit().is_some());
+                assert!(decrypted.unwrap().into_single_decrypted().as_commit().is_some());
             })
             .await
         }
@@ -416,7 +417,7 @@ mod tests {
                     .notify_member_fallible(&bob)
                     .await;
 
-                assert!(decrypted.unwrap().into_single().as_proposal().is_some());
+                assert!(decrypted.unwrap().into_single_decrypted().as_proposal().is_some());
             })
             .await
         }
@@ -454,7 +455,7 @@ mod tests {
                     .decrypt_message(encrypted)
                     .await
                     .unwrap()
-                    .into_single();
+                    .into_single_decrypted();
                 let dec_msg = &decrypted.as_application_message().unwrap().plaintext;
                 assert_eq!(dec_msg, msg);
                 assert!(!bob_observer.has_changed().await);
@@ -471,7 +472,7 @@ mod tests {
                     .decrypt_message(encrypted)
                     .await
                     .unwrap()
-                    .into_single();
+                    .into_single_decrypted();
                 let dec_msg = &decrypted.as_application_message().unwrap().plaintext;
                 assert_eq!(dec_msg, &msg[..]);
                 assert!(!alice_observer.has_changed().await);
@@ -518,14 +519,20 @@ mod tests {
 
                 // which Bob cannot decrypt because he won't have epoch 2 keys until he receives the commit
                 let decrypt = conversation.guard_of(&bob).await.decrypt_message(encrypted).await;
-                assert!(decrypt.unwrap().is_empty(), "the message must have been deferred");
+                assert!(
+                    matches!(
+                        decrypt.unwrap().into_single_deferred(),
+                        DeferralReason::FutureEpoch { .. }
+                    ),
+                    "the message must have been deferred"
+                );
 
                 // once the commit arrives, the buffered message is decrypted right after it
                 let (_, decrypted) = commit_guard.notify_member_fallible(&bob).await;
                 let decrypted = decrypted.unwrap();
                 let [
-                    crate::DecryptedMessage::Commit(_),
-                    crate::DecryptedMessage::ApplicationMessage(decrypted_msg),
+                    DecryptionOutcome::Decrypted(DecryptedMessage::Commit(_)),
+                    DecryptionOutcome::Decrypted(DecryptedMessage::ApplicationMessage(decrypted_msg)),
                 ] = decrypted.as_slice()
                 else {
                     panic!("expected the commit, then the buffered message: {decrypted:?}");
@@ -555,7 +562,7 @@ mod tests {
                 for (i, (original, encrypted)) in messages.iter().rev().enumerate() {
                     let decrypt = conversation.guard_of(&bob).await.decrypt_message(encrypted).await;
                     if i < OUT_OF_ORDER_TOLERANCE as usize {
-                        let decrypt = decrypt.unwrap().into_single();
+                        let decrypt = decrypt.unwrap().into_single_decrypted();
                         let decrypted = &decrypt.as_application_message().unwrap().plaintext;
                         assert_eq!(decrypted, original.as_bytes());
                     } else {
@@ -582,7 +589,7 @@ mod tests {
                     .decrypt_message(encrypted)
                     .await
                     .unwrap()
-                    .into_single();
+                    .into_single_decrypted();
 
                 let sender_client_id = &decrypted.as_application_message().unwrap().sender_client_id;
                 assert_eq!(sender_client_id, &alice.get_client_id().await);
@@ -622,7 +629,11 @@ mod tests {
                     .await
                     .unwrap();
                 assert_eq!(
-                    decrypt.into_single().as_application_message().unwrap().plaintext,
+                    decrypt
+                        .into_single_decrypted()
+                        .as_application_message()
+                        .unwrap()
+                        .plaintext,
                     b"Hello Bob"
                 );
 

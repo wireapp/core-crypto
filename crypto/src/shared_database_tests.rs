@@ -275,7 +275,7 @@ mod mls {
             .unwrap()
             .decrypt_message(message)
             .await
-            .map(DecryptedMessagesExt::into_single);
+            .map(DecryptedMessagesExt::into_single_decrypted);
         match result {
             Ok(DecryptedMessage::ApplicationMessage(decrypted)) => {
                 transaction.finish().await.unwrap();

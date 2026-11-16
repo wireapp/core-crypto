@@ -3,7 +3,7 @@ use std::{collections::HashSet, marker::PhantomData};
 use openmls::prelude::MlsMessageOut;
 
 use super::{SessionContext, TestConversation};
-use crate::{CredentialRef, DecryptedMessage};
+use crate::{CredentialRef, DecryptionOutcome, test_utils::DecryptionOutcomeExt as _};
 
 pub struct Commit;
 
@@ -121,7 +121,11 @@ impl<'a, T> OperationGuard<'a, T> {
         let result = self.notify_member_inner(member).await.unwrap();
         let sender = self.conversation().actor();
         // the first decrypted message is the one we just sent; any others were replayed from the inbox
-        if let Some(decrypted) = result.as_ref().and_then(|messages| messages.first()) {
+        if let Some(decrypted) = result
+            .as_ref()
+            .and_then(|outcomes| outcomes.first())
+            .and_then(|outcome| outcome.as_decrypted())
+        {
             sender
                 .verify_sender_identity(self.conversation().case, credential_ref, decrypted)
                 .await;
@@ -132,7 +136,7 @@ impl<'a, T> OperationGuard<'a, T> {
     async fn notify_member_inner(
         &mut self,
         member: &SessionContext,
-    ) -> crate::mls::conversation::Result<Option<Vec<DecryptedMessage>>> {
+    ) -> crate::mls::conversation::Result<Option<Vec<DecryptionOutcome>>> {
         let member_index = self.conversation().member_index(member).await;
         if self.already_notified.contains(&member_index) {
             return Ok(None);
@@ -151,12 +155,12 @@ impl<'a, T> OperationGuard<'a, T> {
         result.map(Some)
     }
 
-    /// Use this if you need access to the [`DecryptedMessage`][crate::DecryptedMessage]s or potential
+    /// Use this if you need access to the [`DecryptionOutcome`]s or potential
     /// error returned when the member is notified about this.
     pub async fn notify_member_fallible(
         mut self,
         member: &SessionContext,
-    ) -> (Self, crate::mls::conversation::Result<Vec<DecryptedMessage>>) {
+    ) -> (Self, crate::mls::conversation::Result<Vec<DecryptionOutcome>>) {
         let result = self.notify_member_inner(member).await;
         (
             self,

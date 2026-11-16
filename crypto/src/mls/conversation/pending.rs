@@ -170,7 +170,7 @@ impl PendingConversation {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::*;
+    use crate::{DecryptedMessage, DecryptionOutcome, DeferralReason, test_utils::*};
 
     /// Abandoning an external join abandons the messages buffered while it was pending.
     ///
@@ -209,7 +209,10 @@ mod tests {
                 .decrypt_message(app_msg)
                 .await
                 .unwrap();
-            assert!(decrypted.is_empty(), "Alice's message must have been deferred");
+            assert!(
+                matches!(decrypted.into_single_deferred(), DeferralReason::PendingJoin),
+                "Alice's message must have been deferred"
+            );
 
             let counts = bob.transaction.count_entities().await;
             assert_eq!(counts.pending_group, 1, "Bob's join is still pending");
@@ -288,7 +291,10 @@ mod tests {
             let messages = [remove_proposal, commit].map(|m| m.to_bytes().unwrap());
             for message in messages.into_iter().chain([app_msg]) {
                 let decrypted = bob_conversation.decrypt_message(message).await.unwrap();
-                assert!(decrypted.is_empty(), "the message must have been deferred");
+                assert!(
+                    matches!(decrypted.into_single_deferred(), DeferralReason::PendingJoin),
+                    "the message must have been deferred"
+                );
             }
 
             // Bob should have buffered the messages
@@ -308,7 +314,10 @@ mod tests {
                 .unwrap()
                 .into_iter();
             assert!(
-                decrypted.next().unwrap().is_commit(),
+                matches!(
+                    decrypted.next(),
+                    Some(DecryptionOutcome::Decrypted(DecryptedMessage::Commit(_)))
+                ),
                 "the first message must be Bob's own join commit"
             );
             assert!(
@@ -316,7 +325,7 @@ mod tests {
                 "merging the join commit must have made the conversation established"
             );
 
-            let restored = decrypted.collect::<Vec<_>>();
+            let restored = decrypted.map(DecryptionOutcomeExt::into_decrypted).collect::<Vec<_>>();
             assert_eq!(restored.len(), 3, "all buffered messages must have been restored");
             let plaintexts = restored
                 .iter()
@@ -364,9 +373,21 @@ mod tests {
             let conversation = commit_guard.finish();
             // Since Alice missed Bob's commit she should buffer this message
             let decrypt = conversation.guard().await.decrypt_message(msg1).await;
-            assert!(decrypt.unwrap().is_empty(), "the message must have been deferred");
+            assert!(
+                matches!(
+                    decrypt.unwrap().into_single_deferred(),
+                    DeferralReason::FutureEpoch { .. }
+                ),
+                "the message must have been deferred"
+            );
             let decrypt = conversation.guard().await.decrypt_message(msg2).await;
-            assert!(decrypt.unwrap().is_empty(), "the message must have been deferred");
+            assert!(
+                matches!(
+                    decrypt.unwrap().into_single_deferred(),
+                    DeferralReason::FutureEpoch { .. }
+                ),
+                "the message must have been deferred"
+            );
             assert_eq!(alice.transaction.count_entities().await.pending_messages, 2);
 
             let conversation = conversation.acting_as(&bob).await.external_join_notify(&alice).await;

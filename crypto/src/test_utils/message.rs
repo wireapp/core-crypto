@@ -31,18 +31,59 @@ impl MessageExt for MlsMessageOut {
 pub trait DecryptedMessagesExt {
     /// Take the only decrypted message.
     ///
-    /// Panics unless there is exactly one: either the input message was deferred, or it unblocked some buffered
-    /// messages which were decrypted along with it.
-    fn into_single(self) -> crate::DecryptedMessage;
+    /// Panics unless there is exactly one outcome, which is a decryption.
+    fn into_single_decrypted(self) -> crate::DecryptedMessage;
+
+    /// Take the reason the input message was deferred.
+    ///
+    /// Panics unless there is exactly one outcome, and it is a deferral.
+    fn into_single_deferred(self) -> crate::DeferralReason;
 }
 
-impl DecryptedMessagesExt for Vec<crate::DecryptedMessage> {
+impl DecryptedMessagesExt for Vec<crate::DecryptionOutcome> {
     #[track_caller]
-    fn into_single(self) -> crate::DecryptedMessage {
+    fn into_single_decrypted(self) -> crate::DecryptedMessage {
         let len = self.len();
-        let Ok([message]) = <[_; 1]>::try_from(self) else {
-            panic!("expected exactly one decrypted message, but got {len}");
+        let Ok([crate::DecryptionOutcome::Decrypted(message)]) = <[_; 1]>::try_from(self) else {
+            panic!("expected exactly one decrypted message, but got {len} outcome(s)");
         };
         message
+    }
+
+    #[track_caller]
+    fn into_single_deferred(self) -> crate::DeferralReason {
+        let len = self.len();
+        let Ok([crate::DecryptionOutcome::Deferred(reason)]) = <[_; 1]>::try_from(self) else {
+            panic!("expected exactly one deferred message, but got {len} outcome(s)");
+        };
+        reason
+    }
+}
+
+/// Helpers for a single outcome returned by `ConversationMut::decrypt_message`.
+pub trait DecryptionOutcomeExt {
+    /// The decrypted message, if the message was decrypted.
+    fn as_decrypted(&self) -> Option<&crate::DecryptedMessage>;
+
+    /// Take the decrypted message.
+    ///
+    /// Panics if the message was not decrypted.
+    fn into_decrypted(self) -> crate::DecryptedMessage;
+}
+
+impl DecryptionOutcomeExt for crate::DecryptionOutcome {
+    fn as_decrypted(&self) -> Option<&crate::DecryptedMessage> {
+        match self {
+            crate::DecryptionOutcome::Decrypted(message) => Some(message),
+            _ => None,
+        }
+    }
+
+    #[track_caller]
+    fn into_decrypted(self) -> crate::DecryptedMessage {
+        match self {
+            crate::DecryptionOutcome::Decrypted(message) => message,
+            other => panic!("expected a decrypted message, but got {other:?}"),
+        }
     }
 }
