@@ -132,6 +132,8 @@ pub enum RejectionReason {
     InvalidMembershipTag,
     /// This message comes from an external sender not authorized in this conversation.
     UnauthorizedExternalSender,
+    /// This external proposal is of a type which external senders may not send.
+    UnsupportedProposalType,
 }
 
 /// Outcome of attempting to decrypt a message.
