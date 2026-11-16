@@ -99,9 +99,9 @@ fi
 endef
 
 # The wasm-bindgen CLI must exactly match the `wasm-bindgen` crate in `Cargo.lock`. Its schema
-# version check only catches some mismatches; others fail later, e.g. with "failed to instrument
-# module for JSPI" when the CLI expects runtime symbols from a newer crate. In `Cargo.lock`, each
-# package's `version` line directly follows its `name` line.
+# version check only catches some mismatches; others fail later, when the CLI expects runtime
+# symbols from a newer crate. In `Cargo.lock`, each package's `version` line directly follows its
+# `name` line.
 WASM_BINDGEN_LOCKED_VERSION = $(shell cargo metadata --format-version 1 --locked 2>/dev/null | jq -r '.packages[] | select(.name == "wasm-bindgen") | .version')
 
 define check-wasm-bindgen
@@ -135,17 +135,14 @@ WASM_GEN := \
 	$(BROWSER_GEN_DIR)/core_crypto_ffi_bg.js \
 	$(BROWSER_GEN_DIR)/core_crypto_ffi.ts \
 	$(BROWSER_GEN_DIR)/core_crypto_ffi-ffi.ts \
-	$(BROWSER_GEN_DIR)/index.ts \
-	$(BROWSER_GEN_DIR)/uniffi-jspi.ts \
-	$(BROWSER_GEN_DIR)/wasm-imports.ts
+	$(BROWSER_GEN_DIR)/index.ts
 
 # In release builds, shrink the generated wasm for size. wasm-opt is slow, so we only run
 # it when RELEASE is set. We use `-Os` rather than `-Oz` because the extra space savings of
 # `-Oz` don't justify the runtime performance penalty.
 WASM_OPT := $(if $(RELEASE),&& wasm-opt -Os $(BROWSER_WASM) -o $(BROWSER_WASM))
 
-WASM_IMPORTS_SCRIPT := scripts/wasm-imports.sh
-wasm-build-deps := $(RUST_SOURCES) $(UNIFFI_TOML) $(UBRN_CONFIG) $(WASM_IMPORTS_SCRIPT) $(BUN_LOCK) $(NODE_MODULES)
+wasm-build-deps := $(RUST_SOURCES) $(UNIFFI_TOML) $(UBRN_CONFIG) $(BUN_LOCK) $(NODE_MODULES)
 # Build the library in a dedicated target dir so we do not mix the shared target outputs used
 # by ios/jvm builds.
 $(WASM_GEN) &: $(wasm-build-deps)
@@ -155,7 +152,6 @@ $(WASM_GEN) &: $(wasm-build-deps)
 	$(WASM_BUILD_ENV) \
 	  bun ubrn build wasm2 --config ubrn.config.yaml $(UBRN_BUILD_ARGS) \
 	  $(WASM_OPT)
-	$(SHELL) $(WASM_IMPORTS_SCRIPT) $(BROWSER_GEN_DIR) core_crypto_ffi
 	@touch $(WASM_GEN)
 .PHONY: wasm-build
 wasm-build: $(WASM_GEN)
