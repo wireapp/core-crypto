@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use sqlite_wasm_rs::{WasmOsCallback, vfs::VfsFilesManager as _};
 use sqlite_wasm_vfs::sahpool::{OpfsSAHError, OpfsSAHPoolCfgBuilder, OpfsSAHPoolUtil};
 
-use super::ManagedConnection;
+use super::{ManagedConnection, legacy_opfs};
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey};
 
 /// The pool's directory in the OPFS root.
@@ -53,24 +53,37 @@ pub(super) async fn pool() -> CryptoKeystoreResult<OpfsSAHPoolUtil> {
     Ok(pool)
 }
 
+/// Reject names CoreCrypto 11 rejected, so that every valid name maps to a legacy OPFS path.
+///
+/// CoreCrypto 11 read `/` as a directory separator. An element can't be blank, `.`, or `..`.
+fn validate_name(name: &str) -> CryptoKeystoreResult<()> {
+    if name.split('/').any(|element| matches!(element, "" | "." | "..")) {
+        return Err(CryptoKeystoreError::InvalidDatabaseName(name.to_owned()));
+    }
+    Ok(())
+}
+
 /// Open the encrypted database at the specified location, creating the database if necessary.
 ///
 /// Encryption: if the database exists, it is assumed to be already encrypted, and decrypted with the provided key.
 /// If it does not yet exist, the provided key is set.
 ///
-/// Migration: might partially migrate the database, if it detects that a legacy IDB database exists whose
-/// data has not yet been imported. A final migration to latest version will be necessary!
+/// Migration: moves a CoreCrypto 11 database at the same location into the pool. Might partially migrate the
+/// database, if it detects that a legacy IDB database exists whose data has not yet been imported. A final
+/// migration to latest version will be necessary!
 pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<(ManagedConnection, FsAbstraction)> {
+    validate_name(name)?;
     super::idb_migration::reject_core_crypto_10_database(name).await?;
 
     let pool = pool().await?;
-
+    // Before the migration, which takes one of these slots for the database it imports.
     let slots = pool
         .len()
         .map_err(CryptoKeystoreError::opfs("counting files in the OPFS pool"))?;
     pool.ensure_capacity(slots + SLOT_HEADROOM)
         .await
         .map_err(CryptoKeystoreError::opfs("growing the OPFS pool"))?;
+    legacy_opfs::migrate(&pool, name, key).await?;
 
     let already_exists = pool
         .contains(name)

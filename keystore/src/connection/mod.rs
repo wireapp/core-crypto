@@ -9,6 +9,8 @@ pub(crate) mod idb_migration;
 pub(crate) mod ios_wal_compat;
 #[cfg(target_os = "unknown")]
 mod jspi_test;
+#[cfg(target_os = "unknown")]
+mod legacy_opfs;
 pub(crate) mod managed_connection;
 mod mls;
 #[cfg(target_os = "unknown")]

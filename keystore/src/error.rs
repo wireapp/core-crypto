@@ -112,6 +112,16 @@ pub enum CryptoKeystoreError {
         #[source]
         error: OpfsSAHError,
     },
+    #[cfg(target_os = "unknown")]
+    #[error("{context}")]
+    LegacyOpfsMigration {
+        context: &'static str,
+        #[source]
+        error: Box<dyn std::error::Error>,
+    },
+    #[cfg(target_os = "unknown")]
+    #[error("Invalid database name {0:?}: elements separated by '/' can't be blank, '.' or '..'")]
+    InvalidDatabaseName(String),
     #[error("The database includes migrations newer than this version of CC knows about")]
     DatabaseFromTheFuture,
 }
@@ -140,6 +150,14 @@ impl CryptoKeystoreError {
     #[cfg(target_os = "unknown")]
     pub(crate) fn opfs(context: &'static str) -> impl FnOnce(OpfsSAHError) -> Self {
         move |error| Self::OpfsError { context, error }
+    }
+
+    #[cfg(target_os = "unknown")]
+    pub(crate) fn legacy_opfs<E: std::error::Error + 'static>(context: &'static str) -> impl FnOnce(E) -> Self {
+        move |error| Self::LegacyOpfsMigration {
+            context,
+            error: Box::new(error),
+        }
     }
 }
 
