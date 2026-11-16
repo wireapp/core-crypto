@@ -28,8 +28,7 @@ impl Infrastructural for crate::mls::conversation::Error {
             Self::Keystore(_) | Self::SessionDropped => true,
             Self::OpenMls(openmls) => openmls.is_infrastructure(),
             Self::Recursive(recursive) => recursive.is_infrastructure(),
-            Self::InappropriateMessageBodyType
-            | Self::MemberNotFound(_)
+            Self::MemberNotFound(_)
             | Self::TntMessageCounterOverflow
             | Self::MessageRejected { .. }
             | Self::IdentityInitializationError

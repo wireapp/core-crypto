@@ -108,6 +108,10 @@ pub enum RejectionReason {
     InvalidAuthentication,
     /// This message could not be deserialized.
     Unparseable(TlsCodecError),
+    /// This message is valid MLS, but not a public or private message, so it cannot be decrypted.
+    ///
+    /// For example, a welcome or a key package.
+    InappropriateMessageBodyType,
 }
 
 /// Outcome of attempting to decrypt a message.

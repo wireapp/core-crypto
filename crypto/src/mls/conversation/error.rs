@@ -9,8 +9,6 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("Message body type not suitable for restoration")]
-    InappropriateMessageBodyType,
     #[error("Member with id {_0} doesn't exist")]
     MemberNotFound(ClientId),
     #[error(
