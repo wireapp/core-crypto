@@ -128,6 +128,8 @@ pub enum RejectionReason {
     UnknownMember,
     /// This targeted message is addressed to a different member of the conversation.
     WrongRecipient,
+    /// This public message's membership tag is missing or invalid.
+    InvalidMembershipTag,
 }
 
 /// Outcome of attempting to decrypt a message.
