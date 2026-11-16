@@ -50,9 +50,7 @@ impl ConversationMut {
         );
 
         if message.recipient != own_leaf_index {
-            return Err(Error::MlsMessageInvalidState(
-                "TargetedMessage wasn't targeted to this client",
-            ));
+            return Ok(RejectionReason::WrongRecipient.into());
         }
 
         let message_epoch = message.epoch.as_u64();

@@ -126,6 +126,8 @@ pub enum RejectionReason {
     WrongGroupId,
     /// This message's sender is not a member of the conversation in the message's epoch.
     UnknownMember,
+    /// This targeted message is addressed to a different member of the conversation.
+    WrongRecipient,
 }
 
 /// Outcome of attempting to decrypt a message.
