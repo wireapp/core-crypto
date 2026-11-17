@@ -20,7 +20,6 @@ async fn main() -> anyhow::Result<()> {
         path: String,
     }
 
-    use chrono::TimeZone;
     use clap::Parser as _;
     use core_crypto_keystore::{Database as Keystore, DatabaseKey, entities::*, traits::FetchFromDatabase};
     use openmls::prelude::TlsDeserializeTrait;
@@ -50,10 +49,7 @@ async fn main() -> anyhow::Result<()> {
             cred.private_key.to_owned(),
             cred.public_key.to_owned(),
         );
-        let date = chrono::Utc
-            .timestamp_opt(cred.created_at as i64, 0)
-            .single()
-            .ok_or_else(|| anyhow!("Cannot parse credential creation date"))?;
+        let date = jiff::Timestamp::from_second(cred.created_at as i64)?;
 
         credentials.push(serde_json::json!({
             "session_id": cred.session_id,
