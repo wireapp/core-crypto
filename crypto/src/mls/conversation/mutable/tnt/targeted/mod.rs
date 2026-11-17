@@ -140,8 +140,9 @@ mod tests {
     use super::TargetedMessagePolicy;
     use crate::{
         CertificateBundle, Credential, CredentialRef, DecryptedMessage, DecryptionOutcome, DeferralReason,
+        RejectionReason,
         mls::conversation::{
-            ConversationMut, Error,
+            ConversationMut,
             mutable::tnt::{TntMessage, TntMessageBody},
         },
         test_utils::*,
@@ -240,6 +241,7 @@ mod tests {
             .unwrap();
 
         // Bob will fail to decrypt this message after advancing MAX_PAST_EPOCHS + 1
+        let message_epoch = conversation.guard().await.epoch().await;
         let beyond_retention = conversation
             .guard()
             .await
@@ -269,13 +271,29 @@ mod tests {
         // MAX_PAST_EPOCHS + 1
         conversation = conversation.acting_as(&bob).await.update_notify().await;
 
-        let error = conversation
+        let group_epoch = conversation.guard_of(&bob).await.epoch().await;
+        let reason = conversation
             .guard_of(&bob)
             .await
             .decrypt_message(beyond_retention)
             .await
-            .unwrap_err();
-        assert!(matches!(error, crate::mls::conversation::Error::MessageEpochTooOld));
+            .unwrap()
+            .into_single_rejected();
+        let RejectionReason::MessageEpochTooOld {
+            message_epoch: reported_message_epoch,
+            group_epoch: reported_group_epoch,
+        } = reason
+        else {
+            panic!("a targeted message beyond retention must be rejected as too old, got {reason:?}");
+        };
+        assert_eq!(
+            reported_message_epoch, message_epoch,
+            "the rejection must report the message's epoch"
+        );
+        assert_eq!(
+            reported_group_epoch, group_epoch,
+            "the rejection must report the group's epoch"
+        );
     }
 
     #[apply(all_cred_cipher)]
@@ -306,13 +324,14 @@ mod tests {
 
         assert_eq!(&decrypted, &message);
 
-        let error = conversation
+        let reason = conversation
             .guard_of(&bob)
             .await
             .decrypt_message(encrypted)
             .await
-            .unwrap_err();
-        assert!(matches!(error, crate::mls::conversation::Error::DuplicateMessage));
+            .unwrap()
+            .into_single_rejected();
+        assert!(matches!(reason, RejectionReason::DuplicateMessage));
     }
 
     #[apply(all_cred_cipher)]
@@ -863,21 +882,16 @@ mod tests {
             .unwrap();
         let forged = backdate(&encrypted, charlies_epoch, &conversation.guard_of(&dave).await).await;
 
-        let error = conversation
+        let reason = conversation
             .guard_of(&bob)
             .await
             .decrypt_message(forged)
             .await
-            .unwrap_err();
+            .unwrap()
+            .into_single_rejected();
         assert!(
-            matches!(
-                error,
-                Error::OpenMls(crate::OpenMlsError {
-                    context: "verifying tnt message signature",
-                    ..
-                })
-            ),
-            "a message claiming an old epoch must be verified against that epoch's occupant of the leaf, got {error:?}"
+            matches!(reason, RejectionReason::InvalidSignature),
+            "a message claiming an old epoch must be verified against that epoch's occupant of the leaf, got {reason:?}"
         );
     }
 
@@ -900,18 +914,16 @@ mod tests {
             .unwrap();
         let forged = backdate(&encrypted, epoch_before_charlie, &conversation.guard_of(&charlie).await).await;
 
-        let error = conversation
+        let reason = conversation
             .guard_of(&bob)
             .await
             .decrypt_message(forged)
             .await
-            .unwrap_err();
+            .unwrap()
+            .into_single_rejected();
         assert!(
-            matches!(
-                error,
-                Error::MlsMessageInvalidState("old epoch member data not found for the sender")
-            ),
-            "a sender with no leaf in the claimed epoch must be rejected, got {error:?}"
+            matches!(reason, RejectionReason::UnknownMember),
+            "a sender with no leaf in the claimed epoch must be rejected, got {reason:?}"
         );
     }
 
@@ -920,6 +932,7 @@ mod tests {
         let [alice, bob] = case.sessions().await;
         let conversation = case.create_conversation([&alice, &bob]).await;
 
+        let message_epoch = conversation.guard().await.epoch().await;
         let encrypted = conversation
             .guard()
             .await
@@ -933,15 +946,28 @@ mod tests {
 
         let conversation = conversation.update_notify().await;
 
-        let error = conversation
+        let group_epoch = conversation.guard_of(&bob).await.epoch().await;
+        let reason = conversation
             .guard_of(&bob)
             .await
             .decrypt_message(encrypted)
             .await
-            .unwrap_err();
-        assert!(
-            matches!(error, Error::InvalidTransientMessageEpoch { .. }),
-            "transient messages must only be decrypted in the epoch they were sent, got {error:?}"
+            .unwrap()
+            .into_single_rejected();
+        let RejectionReason::MessageEpochTooOld {
+            message_epoch: reported_message_epoch,
+            group_epoch: reported_group_epoch,
+        } = reason
+        else {
+            panic!("transient messages must only be decrypted in the epoch they were sent, got {reason:?}");
+        };
+        assert_eq!(
+            reported_message_epoch, message_epoch,
+            "the rejection must report the message's epoch"
+        );
+        assert_eq!(
+            reported_group_epoch, group_epoch,
+            "the rejection must report the group's epoch"
         );
     }
 

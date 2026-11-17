@@ -44,7 +44,8 @@ impl CommitBundle {
 mod tests {
     use super::*;
     use crate::{
-        DeferralReason, mls::conversation::Error, test_utils::*, transaction_context::Error as TransactionError,
+        DeferralReason, RejectionReason, mls::conversation::Error, test_utils::*,
+        transaction_context::Error as TransactionError,
     };
 
     mod add_members {
@@ -347,7 +348,10 @@ mod tests {
                     .unwrap()
                     .decrypt_message(&commit1)
                     .await;
-                assert!(matches!(past_commit.unwrap_err(), Error::StaleCommit));
+                assert!(matches!(
+                    past_commit.unwrap().into_single_rejected(),
+                    RejectionReason::StaleCommit
+                ));
             })
             .await;
         }

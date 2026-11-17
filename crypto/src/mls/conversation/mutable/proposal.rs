@@ -46,7 +46,7 @@ impl ConversationMut {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::*;
+    use crate::{RejectionReason, test_utils::*};
 
     mod propose_add_members {
         use super::*;
@@ -107,10 +107,7 @@ mod tests {
     }
 
     mod external_propose_remove {
-        use openmls::prelude::{ProcessMessageError, ValidationError};
-
         use super::*;
-        use crate::{OpenMlsError, OpenMlsErrorKind};
 
         #[apply(all_cred_cipher)]
         async fn ds_should_remove_guest_from_conversation(mut case: TestContext) {
@@ -136,9 +133,7 @@ mod tests {
         }
 
         #[apply(all_cred_cipher)]
-        async fn should_fail_when_invalid_external_sender(mut case: TestContext) {
-            use crate::mls;
-
+        async fn should_reject_when_invalid_external_sender(mut case: TestContext) {
             let [owner, guest, ds, attacker] = case.sessions().await;
             Box::pin(async move {
                 // Delivery service key is used in the group..
@@ -155,33 +150,21 @@ mod tests {
                 let (proposal_guard, owner_decrypt) = proposal_guard.notify_member_fallible(&owner).await;
 
                 assert!(matches!(
-                    owner_decrypt.unwrap_err(),
-                    mls::conversation::Error::OpenMls(OpenMlsError {
-                        source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
-                            ValidationError::UnauthorizedExternalSender
-                        )),
-                        ..
-                    })
+                    owner_decrypt.unwrap().into_single_rejected(),
+                    RejectionReason::UnauthorizedExternalSender
                 ));
 
                 let (_, guest_decrypt) = proposal_guard.notify_member_fallible(&guest).await;
                 assert!(matches!(
-                    guest_decrypt.unwrap_err(),
-                    mls::conversation::Error::OpenMls(OpenMlsError {
-                        source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
-                            ValidationError::UnauthorizedExternalSender
-                        )),
-                        ..
-                    })
+                    guest_decrypt.unwrap().into_single_rejected(),
+                    RejectionReason::UnauthorizedExternalSender
                 ));
             })
             .await
         }
 
         #[apply(all_cred_cipher)]
-        async fn should_fail_when_wrong_signature_key(mut case: TestContext) {
-            use crate::mls;
-
+        async fn should_reject_when_wrong_signature_key(mut case: TestContext) {
             let [owner, guest, ds] = case.sessions().await;
             Box::pin(async move {
                 // Here we're going to add the Delivery Service's (DS) signature key to the
@@ -198,20 +181,14 @@ mod tests {
 
                 let (proposal_guard, owner_decrypt) = proposal_guard.notify_member_fallible(&owner).await;
                 assert!(matches!(
-                    owner_decrypt.unwrap_err(),
-                    mls::conversation::Error::OpenMls(OpenMlsError {
-                        source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidSignature),
-                        ..
-                    })
+                    owner_decrypt.unwrap().into_single_rejected(),
+                    RejectionReason::InvalidSignature
                 ));
 
                 let (_, guest_decrypt) = proposal_guard.notify_member_fallible(&guest).await;
                 assert!(matches!(
-                    guest_decrypt.unwrap_err(),
-                    mls::conversation::Error::OpenMls(OpenMlsError {
-                        source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidSignature),
-                        ..
-                    })
+                    guest_decrypt.unwrap().into_single_rejected(),
+                    RejectionReason::InvalidSignature
                 ));
             })
             .await
@@ -293,8 +270,6 @@ mod tests {
         async fn should_prevent_out_of_order_proposals(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
-                use crate::mls::conversation::Error;
-
                 let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
                 let id = conversation.id().clone();
 
@@ -317,7 +292,10 @@ mod tests {
                     .unwrap()
                     .decrypt_message(&proposal.to_bytes().unwrap())
                     .await;
-                assert!(matches!(past_proposal.unwrap_err(), Error::StaleProposal));
+                assert!(matches!(
+                    past_proposal.unwrap().into_single_rejected(),
+                    RejectionReason::StaleProposal
+                ));
             })
             .await;
         }

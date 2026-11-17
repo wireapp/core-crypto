@@ -4,10 +4,10 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::{mls::conversation::Error, test_utils::*};
+    use crate::{RejectionReason, test_utils::*};
 
     #[apply(all_cred_cipher)]
-    async fn decrypting_duplicate_member_commit_should_fail(case: TestContext) {
+    async fn decrypting_duplicate_member_commit_should_be_rejected(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice, &bob]).await;
@@ -29,7 +29,10 @@ mod tests {
                 .await
                 .decrypt_message(&commit.to_bytes().unwrap())
                 .await;
-            assert!(matches!(decrypt_duplicate.unwrap_err(), Error::DuplicateMessage));
+            assert!(matches!(
+                decrypt_duplicate.unwrap().into_single_rejected(),
+                RejectionReason::DuplicateMessage
+            ));
 
             // Decrypting unknown commit.
             // It fails with this error since it's not the commit who has created this epoch
@@ -38,13 +41,16 @@ mod tests {
                 .await
                 .decrypt_message(&unknown_commit.to_bytes().unwrap())
                 .await;
-            assert!(matches!(decrypt_lost_commit.unwrap_err(), Error::StaleCommit));
+            assert!(matches!(
+                decrypt_lost_commit.unwrap().into_single_rejected(),
+                RejectionReason::StaleCommit
+            ));
         })
         .await
     }
 
     #[apply(all_cred_cipher)]
-    async fn decrypting_duplicate_external_commit_should_fail(case: TestContext) {
+    async fn decrypting_duplicate_external_commit_should_be_rejected(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice]).await;
@@ -66,7 +72,10 @@ mod tests {
                 .await
                 .decrypt_message(&ext_commit.to_bytes().unwrap())
                 .await;
-            assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
+            assert!(matches!(
+                decryption.unwrap().into_single_rejected(),
+                RejectionReason::DuplicateMessage
+            ));
 
             // Decrypting unknown external commit.
             // It fails with this error since it's not the external commit who has created this epoch
@@ -75,13 +84,16 @@ mod tests {
                 .await
                 .decrypt_message(&unknown_ext_commit.to_bytes().unwrap())
                 .await;
-            assert!(matches!(decryption.unwrap_err(), Error::StaleCommit));
+            assert!(matches!(
+                decryption.unwrap().into_single_rejected(),
+                RejectionReason::StaleCommit
+            ));
         })
         .await
     }
 
     #[apply(all_cred_cipher)]
-    async fn decrypting_duplicate_proposal_should_fail(case: TestContext) {
+    async fn decrypting_duplicate_proposal_should_be_rejected(case: TestContext) {
         let [alice, bob, charlie] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
@@ -98,7 +110,10 @@ mod tests {
                 .await
                 .decrypt_message(&proposal.to_bytes().unwrap())
                 .await;
-            assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
+            assert!(matches!(
+                decryption.unwrap().into_single_rejected(),
+                RejectionReason::DuplicateMessage
+            ));
 
             // advance Bob's epoch to trigger failure
             let conversation = conversation
@@ -113,14 +128,17 @@ mod tests {
                 .await
                 .decrypt_message(&proposal.to_bytes().unwrap())
                 .await;
-            assert!(matches!(decryption.unwrap_err(), Error::StaleProposal));
+            assert!(matches!(
+                decryption.unwrap().into_single_rejected(),
+                RejectionReason::StaleProposal
+            ));
         })
         .await
     }
 
     // Ensures decrypting an application message is durable (we increment the messages generation & persist the group)
     #[apply(all_cred_cipher)]
-    async fn decrypting_duplicate_application_message_should_fail(case: TestContext) {
+    async fn decrypting_duplicate_application_message_should_be_rejected(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice, &bob]).await;
@@ -137,7 +155,10 @@ mod tests {
                 .unwrap();
             // decrypt twice .. not ok
             let decryption = conversation.guard_of(&bob).await.decrypt_message(&encrypted).await;
-            assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
+            assert!(matches!(
+                decryption.unwrap().into_single_rejected(),
+                RejectionReason::DuplicateMessage
+            ));
         })
         .await
     }

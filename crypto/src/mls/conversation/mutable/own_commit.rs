@@ -74,10 +74,8 @@ impl ConversationMut {
 
 #[cfg(test)]
 mod tests {
-    use openmls::prelude::{ProcessMessageError, ValidationError};
-
     use super::super::super::error::Error;
-    use crate::{CredentialRef, OpenMlsError, test_utils::*};
+    use crate::{CredentialRef, RejectionReason, test_utils::*};
 
     // If there’s a pending commit & it matches the incoming commit: mark pending commit as accepted
     #[apply(all_cred_cipher)]
@@ -189,9 +187,7 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    pub async fn should_fail_when_tampering_with_incoming_own_commit_same_as_pending(case: TestContext) {
-        use crate::OpenMlsErrorKind;
-
+    pub async fn should_reject_when_tampering_with_incoming_own_commit_same_as_pending(case: TestContext) {
         let [alice] = case.sessions().await;
         let conversation = case.create_conversation([&alice]).await;
         Box::pin(async move {
@@ -208,8 +204,7 @@ mod tests {
 
             let commit_serialized = &mut add_bob_message.to_bytes().unwrap();
 
-            // Tamper with the commit's membership tag; this will result in an
-            // invalid membership tag error emitted by openmls.
+            // Tamper with the commit's membership tag, so that it is rejected for its invalid membership tag.
             //
             // The membership tag is located right at the end of PublicMessage,
             // see https://www.rfc-editor.org/rfc/rfc9420.html#section-6.2.
@@ -218,15 +213,9 @@ mod tests {
             commit_serialized[offset] ^= 0xff;
 
             let decryption_result = conversation.guard().await.decrypt_message(&*commit_serialized).await;
-            let error = decryption_result.unwrap_err();
             assert!(matches!(
-                error,
-                Error::OpenMls(OpenMlsError {
-                    source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
-                        ValidationError::InvalidMembershipTag
-                    )),
-                    ..
-                })
+                decryption_result.unwrap().into_single_rejected(),
+                RejectionReason::InvalidMembershipTag
             ));
 
             // There is still a pending commit.

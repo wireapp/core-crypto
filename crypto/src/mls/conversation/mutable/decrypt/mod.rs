@@ -67,7 +67,8 @@ impl ConversationMut {
             match maybe_message {
                 Ok((inbox, incoming)) => Some((incoming, inbox.message.into())),
                 Err(reason) => {
-                    // this case should be rare given that every message is parsed before ever being inserted into the inbox
+                    // this case should be rare given that every message is parsed before ever being inserted into the
+                    // inbox
                     warn!(reason:?, group_id = id.clone(); "failed to parse buffered message while taking from inbox; dropping");
                     None
                 }
@@ -313,11 +314,8 @@ impl ConversationMut {
 #[cfg(test)]
 mod tests {
     use crate::{
-        DecryptedMessage, DecryptionOutcome, DeferralReason,
-        mls::conversation::{
-            config::{MAX_PAST_EPOCHS, OUT_OF_ORDER_TOLERANCE},
-            error::Error,
-        },
+        DecryptedMessage, DecryptionOutcome, DeferralReason, RejectionReason,
+        mls::conversation::config::{MAX_PAST_EPOCHS, OUT_OF_ORDER_TOLERANCE},
         test_utils::*,
     };
 
@@ -507,7 +505,10 @@ mod tests {
 
                 // fails because of Forward Secrecy
                 let decrypt = conversation.guard_of(&bob).await.decrypt_message(encrypted).await;
-                assert!(matches!(decrypt.unwrap_err(), Error::DecryptionError));
+                assert!(matches!(
+                    decrypt.unwrap().into_single_rejected(),
+                    RejectionReason::InvalidAuthentication
+                ));
             })
             .await
         }
@@ -575,7 +576,10 @@ mod tests {
                         let decrypted = &decrypt.as_application_message().unwrap().plaintext;
                         assert_eq!(decrypted, original.as_bytes());
                     } else {
-                        assert!(matches!(decrypt.unwrap_err(), Error::DuplicateMessage))
+                        assert!(matches!(
+                            decrypt.unwrap().into_single_rejected(),
+                            RejectionReason::DuplicateMessage
+                        ))
                     }
                 }
             })
@@ -611,12 +615,13 @@ mod tests {
         use super::*;
 
         #[apply(all_cred_cipher)]
-        async fn should_throw_specialized_error_when_epoch_too_old(case: TestContext) {
+        async fn should_reject_message_when_epoch_too_old(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
                 let mut conversation = case.create_conversation([&alice, &bob]).await;
 
                 // Alice encrypts a message to Bob
+                let message_epoch = conversation.guard().await.epoch().await;
                 let bob_message1 = conversation.guard().await.encrypt_message(b"Hello Bob").await.unwrap();
                 let bob_message2 = conversation
                     .guard()
@@ -649,14 +654,35 @@ mod tests {
                 // Moving the epochs once more should cause an error
                 let conversation = conversation.update_notify().await;
 
-                let decrypt = conversation.guard_of(&bob).await.decrypt_message(&bob_message2).await;
-                assert!(matches!(decrypt.unwrap_err(), Error::MessageEpochTooOld));
+                let group_epoch = conversation.guard_of(&bob).await.epoch().await;
+                let reason = conversation
+                    .guard_of(&bob)
+                    .await
+                    .decrypt_message(&bob_message2)
+                    .await
+                    .unwrap()
+                    .into_single_rejected();
+                let RejectionReason::MessageEpochTooOld {
+                    message_epoch: reported_message_epoch,
+                    group_epoch: reported_group_epoch,
+                } = reason
+                else {
+                    panic!("a message from an epoch beyond retention must be rejected as too old, got {reason:?}");
+                };
+                assert_eq!(
+                    reported_message_epoch, message_epoch,
+                    "the rejection must report the message's epoch"
+                );
+                assert_eq!(
+                    reported_group_epoch, group_epoch,
+                    "the rejection must report the group's epoch"
+                );
             })
             .await
         }
 
         #[apply(all_cred_cipher)]
-        async fn should_throw_specialized_error_when_epoch_desynchronized(case: TestContext) {
+        async fn should_reject_outdated_messages_when_epoch_desynchronized(case: TestContext) {
             let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
                 let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
@@ -688,18 +714,20 @@ mod tests {
                     .await
                     .decrypt_message(&old_message)
                     .await
-                    .unwrap_err();
+                    .unwrap()
+                    .into_single_rejected();
 
-                assert!(matches!(decrypt_err, Error::StaleProposal));
+                assert!(matches!(decrypt_err, RejectionReason::StaleProposal));
 
                 let decrypt_err = conversation
                     .guard_of(&bob)
                     .await
                     .decrypt_message(&old_commit)
                     .await
-                    .unwrap_err();
+                    .unwrap()
+                    .into_single_rejected();
 
-                assert!(matches!(decrypt_err, Error::StaleCommit));
+                assert!(matches!(decrypt_err, RejectionReason::StaleCommit));
             })
             .await
         }
@@ -709,7 +737,7 @@ mod tests {
         use super::*;
 
         #[macro_rules_attribute::apply(smol_macros::test)]
-        async fn too_short_message_is_a_tls_error() {
+        async fn too_short_message_is_rejected_as_unparseable() {
             let case = TestContext::default();
             let [alice] = case.sessions().await;
             let conversation = case.create_conversation([&alice]).await;
@@ -717,11 +745,17 @@ mod tests {
             // Anything shorter than 4 bytes can't hold the protocol version and wire format.
             for len in 0..4 {
                 let message = vec![0; len];
-                // notably, attempting to decrypt a short message produces an error, not a panic
-                let decrypt_err = conversation.guard().await.decrypt_message(&message).await.unwrap_err();
+                // notably, attempting to decrypt a short message produces a rejection, not a panic
+                let reason = conversation
+                    .guard()
+                    .await
+                    .decrypt_message(&message)
+                    .await
+                    .unwrap()
+                    .into_single_rejected();
                 assert!(
-                    matches!(decrypt_err, Error::Tls(_)),
-                    "{len}-byte message: unexpected error {decrypt_err:?}"
+                    matches!(reason, RejectionReason::Unparseable(_)),
+                    "{len}-byte message: unexpected rejection {reason:?}"
                 );
             }
         }

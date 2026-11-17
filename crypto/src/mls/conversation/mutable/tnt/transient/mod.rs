@@ -149,6 +149,7 @@ mod tests {
     use tls_codec::{Deserialize as _, Serialize as _};
 
     use crate::{
+        RejectionReason,
         mls::conversation::mutable::tnt::{TntMessage, TntMessageBody},
         test_utils::*,
     };
@@ -237,12 +238,13 @@ mod tests {
 
         assert_eq!(&decrypted, &message);
 
-        let error = conversation
+        let reason = conversation
             .guard_of(&bob)
             .await
             .decrypt_message(encrypted)
             .await
-            .unwrap_err();
-        assert!(matches!(error, crate::mls::conversation::Error::DuplicateMessage));
+            .unwrap()
+            .into_single_rejected();
+        assert!(matches!(reason, RejectionReason::DuplicateMessage));
     }
 }

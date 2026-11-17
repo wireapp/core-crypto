@@ -103,8 +103,8 @@ impl ConversationMut {
 #[cfg(test)]
 mod tests {
     use crate::{
-        DecryptedMessage, DecryptionOutcome, DeferralReason, mls::conversation::config::OUT_OF_ORDER_TOLERANCE,
-        test_utils::*,
+        DecryptedMessage, DecryptionOutcome, DeferralReason, RejectionReason,
+        mls::conversation::config::OUT_OF_ORDER_TOLERANCE, test_utils::*,
     };
 
     #[apply(all_cred_cipher)]
@@ -535,6 +535,7 @@ mod tests {
     /// reach them. We accept that loss, but it has to stay contained: the commit itself must
     /// still merge and report success, and the buffer must still be cleared, so that an
     /// undecryptable message can neither fail the commit nor poison every future restore.
+    /// Each message we lose must still be reported to the caller, as a rejection.
     #[apply(all_cred_cipher)]
     async fn buffered_messages_are_restored_within_out_of_order_tolerance(case: TestContext) {
         const MESSAGE_COUNT: u8 = 4;
@@ -588,8 +589,19 @@ mod tests {
             "the commit must be decrypted first: {restored:?}"
         );
         let restored = restored.split_off(1);
+        assert_eq!(
+            restored.len(),
+            usize::from(MESSAGE_COUNT),
+            "every buffered message must be reported, whether or not it could be decrypted: {restored:?}"
+        );
 
-        let restored_plaintexts = restored
+        let (decrypted, rejected): (Vec<_>, Vec<_>) = restored.into_iter().partition(DecryptionOutcome::is_decrypted);
+        assert!(
+            rejected.iter().all(DecryptionOutcome::is_rejected),
+            "buffered messages which can't be decrypted must be reported as rejected: {rejected:?}"
+        );
+
+        let restored_plaintexts = decrypted
             .into_iter()
             .map(|m| m.into_decrypted().into_application_message().unwrap().plaintext[0])
             .collect::<Vec<_>>();
@@ -694,8 +706,9 @@ mod tests {
                     .await
                     .decrypt_message(&proposal_remove_114_1.to_bytes().unwrap())
                     .await
-                    .unwrap_err(),
-                crate::mls::conversation::Error::StaleProposal,
+                    .unwrap()
+                    .into_single_rejected(),
+                RejectionReason::StaleProposal,
             ));
             println!("new_member executing second proposal");
             conversation

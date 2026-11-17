@@ -162,7 +162,7 @@ mod tests {
     use core_crypto_keystore::{entities::PersistedMlsGroup, traits::FetchFromDatabase as _};
 
     use crate::{
-        ConversationConfiguration, DecryptedMessage, DecryptionOutcome, DeferralReason, test_utils::*,
+        ConversationConfiguration, DecryptedMessage, DecryptionOutcome, DeferralReason, RejectionReason, test_utils::*,
         transaction_context::Error,
     };
 
@@ -241,9 +241,7 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    async fn should_fail_when_bad_epoch(case: TestContext) {
-        use crate::mls;
-
+    async fn should_reject_when_bad_epoch(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice]).await;
@@ -261,7 +259,10 @@ mod tests {
                 .await
                 .decrypt_message(&external_commit.to_bytes().unwrap())
                 .await;
-            assert!(matches!(result.unwrap_err(), mls::conversation::Error::StaleCommit));
+            assert!(matches!(
+                result.unwrap().into_single_rejected(),
+                RejectionReason::StaleCommit
+            ));
         })
         .await
     }
