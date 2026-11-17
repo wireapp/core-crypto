@@ -48,14 +48,13 @@ mod tests {
 
     #[test]
     fn test_mls_error_mapping() {
-        let duplicate_message_error = RecursiveError::context("test duplicate message error")(
-            core_crypto::mls::conversation::Error::DuplicateMessage,
-        );
-        let mapped_error = CoreCryptoError::from(duplicate_message_error);
+        let orphan_welcome_error =
+            RecursiveError::context("test orphan welcome error")(core_crypto::mls::conversation::Error::OrphanWelcome);
+        let mapped_error = CoreCryptoError::from(orphan_welcome_error);
         assert!(matches!(
             mapped_error,
             CoreCryptoError::Mls {
-                mls_error: MlsError::DuplicateMessage
+                mls_error: MlsError::OrphanWelcome
             }
         ));
 
@@ -118,12 +117,11 @@ mod tests {
     #[test]
     fn test_recursive_error_is_logged_when_converted() {
         testing_logger::setup();
-        let duplicate_message_error = RecursiveError::context("test duplicate message error")(
-            core_crypto::mls::conversation::Error::DuplicateMessage,
-        );
+        let orphan_welcome_error =
+            RecursiveError::context("test orphan welcome error")(core_crypto::mls::conversation::Error::OrphanWelcome);
 
         // this conversion should trigger a log
-        let _ = CoreCryptoError::from(duplicate_message_error);
+        let _ = CoreCryptoError::from(orphan_welcome_error);
 
         testing_logger::validate(|captured_logs| {
             assert!(
