@@ -1,9 +1,9 @@
-use openmls::prelude::{ContentType, MlsMessageIn, MlsMessageInBody};
+use openmls::prelude::{ContentType, MlsMessageIn, MlsMessageInBody, ProtocolMessage};
 use tls_codec::Deserialize as _;
 
-use super::{Error, Result};
+use super::Result;
 use crate::{
-    TlsCodecError,
+    RejectionReason, TlsCodecError,
     mls::conversation::mutable::tnt::{TntMessage, TntWireFormat},
 };
 
@@ -15,13 +15,13 @@ use crate::{
 #[expect(clippy::large_enum_variant)]
 #[derive(Clone, derive_more::From)]
 pub(in crate::mls::conversation) enum ParsedMessage {
-    Mls(MlsMessageIn),
+    Mls(ProtocolMessage),
     Tnt(TntMessage),
 }
 
 impl ParsedMessage {
     /// Parse some bytes into either an MLS message or a TNT message.
-    fn parse(bytes: &[u8]) -> Result<Self, TlsCodecError> {
+    fn parse(bytes: &[u8]) -> Result<Self, RejectionReason> {
         // Bytes 0 and 1 are the protocol version, bytes 2 and 3 are the wire format.
         let wire_format_bytes = bytes.get(2..=3).ok_or(TlsCodecError::deserialize("u16 (wire format)")(
             tls_codec::Error::EndOfStream,
@@ -33,39 +33,35 @@ impl ParsedMessage {
             TntWireFormat::MIN..=TntWireFormat::MAX => TntMessage::tls_deserialize_exact(bytes)
                 .map_err(TlsCodecError::deserialize("TntMessage"))?
                 .into(),
-            _ => MlsMessageIn::tls_deserialize_exact(bytes)
+            _ => match MlsMessageIn::tls_deserialize_exact(bytes)
                 .map_err(TlsCodecError::deserialize("mls message in"))?
-                .into(),
+                .extract()
+            {
+                MlsMessageInBody::PublicMessage(public_message_in) => ProtocolMessage::from(public_message_in),
+                MlsMessageInBody::PrivateMessage(private_message_in) => private_message_in.into(),
+                _ => return Err(RejectionReason::InappropriateMessageBodyType),
+            }
+            .into(),
         };
 
         Ok(incoming_message)
     }
 
     /// Get the content type of this message.
-    ///
-    /// All TNT messages have Application content type. Public and Private MLS messages take the content type from
-    /// their message bodies, and other MLS messages return an `InappropriateMessageBodyType` error.
-    pub(in crate::mls::conversation) fn content_type(&self) -> Result<ContentType> {
-        let content_type = match self {
+    pub(in crate::mls::conversation) fn content_type(&self) -> ContentType {
+        match self {
             ParsedMessage::Tnt(_) => ContentType::Application,
-            ParsedMessage::Mls(mls_message_in) => match mls_message_in.body_as_ref() {
-                MlsMessageInBody::PublicMessage(m) => m.content_type(),
-                MlsMessageInBody::PrivateMessage(m) => m.content_type(),
-                _ => return Err(Error::InappropriateMessageBodyType),
-            },
-        };
-        Ok(content_type)
+            ParsedMessage::Mls(ProtocolMessage::PrivateMessage(m)) => m.content_type(),
+            ParsedMessage::Mls(ProtocolMessage::PublicMessage(m)) => m.content_type(),
+        }
     }
 
     /// Get the epoch of this message.
-    pub(in crate::mls::conversation) fn epoch(&self) -> Result<u64> {
+    pub(in crate::mls::conversation) fn epoch(&self) -> u64 {
         match self {
-            ParsedMessage::Mls(mls_message_in) => match mls_message_in.body_as_ref() {
-                MlsMessageInBody::PublicMessage(public_message_in) => Ok(public_message_in.epoch().as_u64()),
-                MlsMessageInBody::PrivateMessage(private_message_in) => Ok(private_message_in.epoch().as_u64()),
-                _ => Err(Error::InappropriateMessageBodyType),
-            },
-            ParsedMessage::Tnt(tnt_message) => Ok(tnt_message.epoch()),
+            ParsedMessage::Tnt(tnt_message) => tnt_message.epoch(),
+            ParsedMessage::Mls(ProtocolMessage::PrivateMessage(m)) => m.epoch().as_u64(),
+            ParsedMessage::Mls(ProtocolMessage::PublicMessage(m)) => m.epoch().as_u64(),
         }
     }
 }
@@ -89,7 +85,7 @@ pub(in crate::mls::conversation) struct IncomingMessage {
 
 impl IncomingMessage {
     /// Parse some bytes into a parsed message, paired with the arrival sequence.
-    pub(in crate::mls::conversation) fn parse(bytes: &[u8]) -> Result<Self, TlsCodecError> {
+    pub(in crate::mls::conversation) fn parse(bytes: &[u8]) -> Result<Self, RejectionReason> {
         let parsed = ParsedMessage::parse(bytes)?;
         Ok(Self {
             parsed,

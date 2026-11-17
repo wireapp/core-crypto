@@ -20,9 +20,8 @@ use std::{borrow::Cow, collections::VecDeque};
 use core_crypto_keystore::entities::{InboxMessage, WaitingFor};
 use log::warn;
 use openmls::{
-    framing::MlsMessageIn,
     group::MlsGroup,
-    prelude::{CredentialType, LeafNodeIndex, Member, MlsMessageInBody, ProcessedMessageContent, StagedCommit},
+    prelude::{CredentialType, LeafNodeIndex, Member, ProcessedMessageContent, ProtocolMessage, StagedCommit},
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
 
@@ -36,7 +35,7 @@ use self::{
 };
 use super::{ConversationMut, Result};
 use crate::{
-    E2eiConversationState, RecursiveError, Session, TlsCodecError,
+    E2eiConversationState, RecursiveError, Session,
     error::infrastructure::Infrastructural as _,
     mls::{conversation::Error, credential::ext::CredentialExt as _},
 };
@@ -63,13 +62,13 @@ impl ConversationMut {
         let id = self.id.clone();
         let log_and_skip_unparseable_buffered_messages = move |maybe_message: Result<
             (InboxMessage, IncomingMessage),
-            TlsCodecError,
+            RejectionReason,
         >| {
             match maybe_message {
                 Ok((inbox, incoming)) => Some((incoming, inbox.message.into())),
-                Err(err) => {
+                Err(reason) => {
                     // this case should be rare given that every message is parsed before ever being inserted into the inbox
-                    warn!(err:err, group_id = id.clone(); "failed to parse buffered message while taking from inbox; dropping");
+                    warn!(reason:?, group_id = id.clone(); "failed to parse buffered message while taking from inbox; dropping");
                     None
                 }
             }
@@ -78,7 +77,7 @@ impl ConversationMut {
         let bytes = bytes.into();
         let incoming_message = match IncomingMessage::parse(&bytes) {
             Ok(message) => message,
-            Err(err) => return Ok(vec![RejectionReason::from(err).into()]),
+            Err(reason) => return Ok(vec![reason.into()]),
         };
         let mut queue = VecDeque::from([(incoming_message, bytes)]);
         let mut decrypted_messages = Vec::new();
@@ -91,8 +90,8 @@ impl ConversationMut {
             // we don't swallow these errors even when processing buffered messages:
             // for a message to be buffered, it must previously have been parseable, so these
             // should only ever propagate on the first item in the queue.
-            let content_type = message.parsed.content_type()?;
-            let epoch = message.parsed.epoch()?;
+            let content_type = message.parsed.content_type();
+            let epoch = message.parsed.epoch();
             let arrival_sequence = message.arrival_sequence;
             let was_pending = self.group().await.is_pending;
 
@@ -104,7 +103,7 @@ impl ConversationMut {
                             return Ok(outcome);
                         }
                         match message.parsed {
-                            ParsedMessage::Mls(mls_message_in) => self.decrypt_mls_message(mls_message_in).await,
+                            ParsedMessage::Mls(protocol_message) => self.decrypt_mls_message(protocol_message).await,
                             ParsedMessage::Tnt(tnt_message) => self.decrypt_tnt_message(tnt_message).await,
                         }
                     },
@@ -212,7 +211,7 @@ impl ConversationMut {
         }
 
         if let ParsedMessage::Mls(mls) = &message.parsed
-            && let MlsMessageInBody::PublicMessage(public_message) = mls.body_as_ref()
+            && let ProtocolMessage::PublicMessage(public_message) = mls
         {
             let pending_confirmation_tag = group
                 .mls_group()
@@ -230,7 +229,7 @@ impl ConversationMut {
     }
 
     /// Decrypt a single MLS message, reporting but not taking action on its outcome.
-    async fn decrypt_mls_message(&mut self, message: MlsMessageIn) -> Result<DecryptionOutcome> {
+    async fn decrypt_mls_message(&mut self, message: ProtocolMessage) -> Result<DecryptionOutcome> {
         let message = match process_message(self, message).await? {
             // processing succeeded
             ProcessedMessage::Content(message) => message,

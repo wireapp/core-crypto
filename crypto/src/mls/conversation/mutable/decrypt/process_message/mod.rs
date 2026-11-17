@@ -3,8 +3,8 @@ mod protocol_message_ext;
 use openmls::{
     framing::errors::{MessageDecryptionError, SecretTreeError},
     prelude::{
-        ConfirmationTag, ContentType, MlsMessageIn, MlsMessageInBody, ProcessMessageError,
-        ProcessedMessage as MlsProcessedMessage, ProtocolMessage, StageCommitError, ValidationError,
+        ConfirmationTag, ContentType, ProcessMessageError, ProcessedMessage as MlsProcessedMessage, ProtocolMessage,
+        StageCommitError, ValidationError,
     },
 };
 
@@ -27,19 +27,8 @@ pub(super) enum ProcessedMessage {
 /// Parse and process a message. This is the step which actually performs decryption.
 pub(super) async fn process_message(
     conversation: &mut ConversationMut,
-    message: MlsMessageIn,
+    protocol_message: ProtocolMessage,
 ) -> Result<ProcessedMessage> {
-    // Parse the incoming message
-    let protocol_message: ProtocolMessage = match message.extract() {
-        MlsMessageInBody::PublicMessage(public_message_in) => public_message_in.into(),
-        MlsMessageInBody::PrivateMessage(private_message_in) => private_message_in.into(),
-        _ => {
-            return Err(
-                OpenMlsError::wrap("parsing inbound message")(ProcessMessageError::IncompatibleWireFormat).into(),
-            );
-        }
-    };
-
     let is_duplicate = protocol_message.is_duplicate(conversation).await?;
     let message_epoch = protocol_message.epoch().as_u64();
     let content_type = protocol_message.content_type();

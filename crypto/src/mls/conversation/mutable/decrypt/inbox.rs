@@ -8,7 +8,7 @@ use log::info;
 use openmls::prelude::ContentType;
 
 use super::{IncomingMessage, Result};
-use crate::{DeferralReason, KeystoreError, RecursiveError, TlsCodecError, mls::conversation::ConversationMut};
+use crate::{DeferralReason, KeystoreError, RecursiveError, RejectionReason, mls::conversation::ConversationMut};
 
 impl ConversationMut {
     /// Send an incoming message to the inbox for processing later, once its deferral reason is satisfied.
@@ -81,7 +81,7 @@ impl ConversationMut {
         &self,
         waiting_for: WaitingFor,
         epoch: Option<u64>,
-    ) -> Result<impl use<> + ExactSizeIterator<Item = Result<(InboxMessage, IncomingMessage), TlsCodecError>>> {
+    ) -> Result<impl use<> + ExactSizeIterator<Item = Result<(InboxMessage, IncomingMessage), RejectionReason>>> {
         let tx_context_inner = self
             .tx_context
             .inner()
