@@ -3,7 +3,7 @@ use std::{collections::HashSet, marker::PhantomData};
 use openmls::prelude::MlsMessageOut;
 
 use super::{SessionContext, TestConversation};
-use crate::{CredentialRef, DecryptionOutcome, test_utils::DecryptionOutcomeExt as _};
+use crate::{CredentialRef, DecryptionOutcome, RejectionReason, test_utils::DecryptionOutcomeExt as _};
 
 pub struct Commit;
 
@@ -107,8 +107,13 @@ impl<'a, T> OperationGuard<'a, T> {
     }
 
     /// Notify a single member about this.
+    ///
+    /// Panics if the member fails to process the message, or rejects it.
     pub async fn notify_member(mut self, member: &SessionContext) -> Self {
-        self.notify_member_inner(member).await.unwrap();
+        let outcomes = self.notify_member_inner(member).await.unwrap();
+        if let Some(DecryptionOutcome::Rejected(reason)) = outcomes.as_ref().and_then(|outcomes| outcomes.first()) {
+            panic!("member rejected the message: {reason:?}");
+        }
         self
     }
 
@@ -149,7 +154,11 @@ impl<'a, T> OperationGuard<'a, T> {
             .unwrap()
             .decrypt_message(&message_bytes)
             .await;
-        if result.is_ok() {
+        // A rejected message hasn't reached the member, so they may still be notified later.
+        let was_rejected = result
+            .as_ref()
+            .is_ok_and(|outcomes| outcomes.first().is_some_and(DecryptionOutcome::is_rejected));
+        if result.is_ok() && !was_rejected {
             self.already_notified.insert(member_index);
         }
         result.map(Some)
@@ -157,6 +166,9 @@ impl<'a, T> OperationGuard<'a, T> {
 
     /// Use this if you need access to the [`DecryptionOutcome`]s or potential
     /// error returned when the member is notified about this.
+    ///
+    /// If the member has already been notified, this reports the message as a rejected duplicate,
+    /// which is what decrypting it again would produce.
     pub async fn notify_member_fallible(
         mut self,
         member: &SessionContext,
@@ -164,7 +176,9 @@ impl<'a, T> OperationGuard<'a, T> {
         let result = self.notify_member_inner(member).await;
         (
             self,
-            result.and_then(|option| option.ok_or(crate::mls::conversation::Error::DuplicateMessage)),
+            result.map(|option| {
+                option.unwrap_or_else(|| vec![DecryptionOutcome::Rejected(RejectionReason::DuplicateMessage)])
+            }),
         )
     }
 }
