@@ -38,14 +38,23 @@ pub trait DecryptedMessagesExt {
     ///
     /// Panics unless there is exactly one outcome, and it is a deferral.
     fn into_single_deferred(self) -> crate::DeferralReason;
+
+    /// Take the reason that the input message was rejected.
+    ///
+    /// Panics unless there is exactly one outcome, and it is a rejection.
+    fn into_single_rejected(self) -> crate::RejectionReason;
 }
 
 impl DecryptedMessagesExt for Vec<crate::DecryptionOutcome> {
     #[track_caller]
     fn into_single_decrypted(self) -> crate::DecryptedMessage {
         let len = self.len();
-        let Ok([crate::DecryptionOutcome::Decrypted(message)]) = <[_; 1]>::try_from(self) else {
-            panic!("expected exactly one decrypted message, but got {len} outcome(s)");
+        let Ok([outcome]) = <[_; 1]>::try_from(self) else {
+            panic!("expected exactly one decryption outcome, but got {len}");
+        };
+        let crate::DecryptionOutcome::Decrypted(message) = outcome else {
+            dbg!(&outcome);
+            panic!("expected a decrypted message but got another outcome");
         };
         message
     }
@@ -53,8 +62,25 @@ impl DecryptedMessagesExt for Vec<crate::DecryptionOutcome> {
     #[track_caller]
     fn into_single_deferred(self) -> crate::DeferralReason {
         let len = self.len();
-        let Ok([crate::DecryptionOutcome::Deferred(reason)]) = <[_; 1]>::try_from(self) else {
-            panic!("expected exactly one deferred message, but got {len} outcome(s)");
+        let Ok([outcome]) = <[_; 1]>::try_from(self) else {
+            panic!("expected exactly one decryption outcome, but got {len}");
+        };
+        let crate::DecryptionOutcome::Deferred(reason) = outcome else {
+            dbg!(&outcome);
+            panic!("expected a deferral reason but got another outcome");
+        };
+        reason
+    }
+
+    #[track_caller]
+    fn into_single_rejected(self) -> crate::RejectionReason {
+        let len = self.len();
+        let Ok([outcome]) = <[_; 1]>::try_from(self) else {
+            panic!("expected exactly one decryption outcome, but got {len}");
+        };
+        let crate::DecryptionOutcome::Rejected(reason) = outcome else {
+            dbg!(&outcome);
+            panic!("expected a rejection reason but got another outcome");
         };
         reason
     }
