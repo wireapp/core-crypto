@@ -492,19 +492,27 @@ async function setHelpers() {
                 );
 
                 if (
-                    ccModule.DecryptedMessage.ApplicationMessage.instanceOf(
+                    ccModule.DecryptionOutcome.Decrypted.instanceOf(
                         decryptedByClient1,
                     ) &&
                     ccModule.DecryptedMessage.ApplicationMessage.instanceOf(
+                        decryptedByClient1.inner.decryptedMessage,
+                    ) &&
+                    ccModule.DecryptionOutcome.Decrypted.instanceOf(
                         decryptedByClient2,
+                    ) &&
+                    ccModule.DecryptedMessage.ApplicationMessage.instanceOf(
+                        decryptedByClient2.inner.decryptedMessage,
                     )
                 ) {
                     const decoder = new TextDecoder();
                     const result1 = decoder.decode(
-                        decryptedByClient1.inner.plaintext,
+                        decryptedByClient1.inner.decryptedMessage.inner
+                            .plaintext,
                     );
                     const result2 = decoder.decode(
-                        decryptedByClient2.inner.plaintext,
+                        decryptedByClient2.inner.decryptedMessage.inner
+                            .plaintext,
                     );
                     return [result1, result2];
                 }

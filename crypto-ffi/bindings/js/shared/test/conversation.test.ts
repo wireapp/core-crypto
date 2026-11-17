@@ -93,18 +93,30 @@ describe("conversation", () => {
             return {
                 persistedMessage: decoder.decode(persistedMessage),
                 persistedPlaintext:
-                    ccModule.DecryptedMessage.PersistedTargeted.instanceOf(
+                    ccModule.DecryptionOutcome.Decrypted.instanceOf(
                         persistedDecrypted,
+                    ) &&
+                    ccModule.DecryptedMessage.PersistedTargeted.instanceOf(
+                        persistedDecrypted.inner.decryptedMessage,
                     )
-                        ? decoder.decode(persistedDecrypted.inner.plaintext)
-                        : "wrong decrypted variant",
+                        ? decoder.decode(
+                              persistedDecrypted.inner.decryptedMessage.inner
+                                  .plaintext,
+                          )
+                        : "wrong decryption outcome",
                 transientMessage: decoder.decode(transientMessage),
                 transientPlaintext:
-                    ccModule.DecryptedMessage.TransientTargeted.instanceOf(
+                    ccModule.DecryptionOutcome.Decrypted.instanceOf(
                         transientDecrypted,
+                    ) &&
+                    ccModule.DecryptedMessage.TransientTargeted.instanceOf(
+                        transientDecrypted.inner.decryptedMessage,
                     )
-                        ? decoder.decode(transientDecrypted.inner.plaintext)
-                        : "wrong decrypted variant",
+                        ? decoder.decode(
+                              transientDecrypted.inner.decryptedMessage.inner
+                                  .plaintext,
+                          )
+                        : "wrong decryption outcome",
             };
         });
 
@@ -133,11 +145,17 @@ describe("conversation", () => {
 
             return {
                 message: decoder.decode(message),
-                plaintext: ccModule.DecryptedMessage.Transient.instanceOf(
-                    decrypted,
-                )
-                    ? decoder.decode(decrypted.inner.plaintext)
-                    : "wrong decrypted variant",
+                plaintext:
+                    ccModule.DecryptionOutcome.Decrypted.instanceOf(
+                        decrypted,
+                    ) &&
+                    ccModule.DecryptedMessage.Transient.instanceOf(
+                        decrypted.inner.decryptedMessage,
+                    )
+                        ? decoder.decode(
+                              decrypted.inner.decryptedMessage.inner.plaintext,
+                          )
+                        : "wrong decryption outcome",
             };
         });
 
