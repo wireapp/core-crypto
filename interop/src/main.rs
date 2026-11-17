@@ -348,13 +348,16 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
 
 /// Take the only message decrypted from a single input.
 ///
-/// None of the messages in this test should be deferred, or unblock any buffered messages.
+/// None of the messages in this test should be deferred or rejected, or unblock any buffered messages.
 #[cfg(not(target_os = "unknown"))]
-fn single_message(messages: Vec<core_crypto::DecryptedMessage>) -> Result<core_crypto::DecryptedMessage> {
-    let count = messages.len();
-    let [message] = <[_; 1]>::try_from(messages)
-        .map_err(|_| anyhow!("[MLS] expected exactly one decrypted message, but got {count}"))?;
-    Ok(message)
+fn single_message(outcomes: Vec<core_crypto::DecryptionOutcome>) -> Result<core_crypto::DecryptedMessage> {
+    let count = outcomes.len();
+    let [outcome] = <[_; 1]>::try_from(outcomes)
+        .map_err(|_| anyhow!("[MLS] expected exactly one decryption outcome, but got {count}"))?;
+    match outcome {
+        core_crypto::DecryptionOutcome::Decrypted(message) => Ok(message),
+        other => Err(anyhow!("[MLS] expected a decrypted message, but got {other:?}")),
+    }
 }
 
 #[cfg(all(not(target_os = "unknown"), feature = "proteus"))]

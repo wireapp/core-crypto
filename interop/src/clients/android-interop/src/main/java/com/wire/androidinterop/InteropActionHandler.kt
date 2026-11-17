@@ -7,6 +7,7 @@ import com.wire.crypto.CoreCrypto
 import com.wire.crypto.Credential
 import com.wire.crypto.DatabaseKey
 import com.wire.crypto.DecryptedMessage
+import com.wire.crypto.DecryptionOutcome
 import com.wire.crypto.DeviceId
 import com.wire.crypto.HistorySecret
 import com.wire.crypto.KeyPackage
@@ -69,15 +70,17 @@ class InteropActionHandler(val coreCrypto: CoreCrypto) {
             }
 
             is InteropAction.MLS.DecryptMessage -> {
-                val decryptedMessages = coreCrypto.transaction { context ->
+                val outcomes = coreCrypto.transaction { context ->
                     context.decryptMessage(ConversationId(bytes = action.conversationId), action.message)
                 }
-                val decryptedMessage = decryptedMessages.singleOrNull()
+                val outcome = outcomes.singleOrNull()
                     ?: return Result.failure(
                         IllegalStateException(
-                            "expected exactly one decrypted message, but got ${decryptedMessages.size}"
+                            "expected exactly one decryption outcome, but got ${outcomes.size}"
                         )
                     )
+                val decryptedMessage = (outcome as? DecryptionOutcome.Decrypted)?.decryptedMessage
+                    ?: return Result.failure(IllegalStateException("expected a decrypted message, but got $outcome"))
                 when (decryptedMessage) {
                     is DecryptedMessage.ApplicationMessage -> Result.success(Base64.Default.encode(decryptedMessage.plaintext))
 

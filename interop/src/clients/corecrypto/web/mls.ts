@@ -134,18 +134,22 @@ export async function encryptTransientMessage() {
 }
 
 export async function decryptMessage() {
-    const { ConversationId, DecryptedMessage } = await import("./corecrypto.js");
+    const { ConversationId, DecryptedMessage, DecryptionOutcome } = await import("./corecrypto.js");
     const [cId, encMessage] = arguments;
     const conversationId = await ConversationId.create(Uint8Array.from(Object.values(cId)));
     const encryptedMessage = Uint8Array.from(Object.values(encMessage));
 
-    const decryptedMessages = await window.cc.transaction((ctx) =>
+    const outcomes = await window.cc.transaction((ctx) =>
         ctx.decryptMessage(conversationId, encryptedMessage)
     );
-    if (decryptedMessages.length !== 1) {
-        throw new Error(`expected exactly one decrypted message, but got ${decryptedMessages.length}`);
+    if (outcomes.length !== 1) {
+        throw new Error(`expected exactly one decryption outcome, but got ${outcomes.length}`);
     }
-    const [decryptedMessage] = decryptedMessages;
+    const [outcome] = outcomes;
+    if (!DecryptionOutcome.Decrypted.instanceOf(outcome)) {
+        throw new Error(`expected a decrypted message, but got ${outcome.tag}`);
+    }
+    const decryptedMessage = outcome.inner.decryptedMessage;
     if (DecryptedMessage.ApplicationMessage.instanceOf(decryptedMessage)
         || DecryptedMessage.Transient.instanceOf(decryptedMessage)
         || DecryptedMessage.PersistedTargeted.instanceOf(decryptedMessage)
