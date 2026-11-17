@@ -126,9 +126,10 @@ pub(super) async fn process_message(
                     Err(ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
                         MessageDecryptionError::AeadError,
                     ))) => Ok(RejectionReason::InvalidAuthentication.into()),
-                    Err(ProcessMessageError::IncompatibleWireFormat) => {
-                        Ok(RejectionReason::IncompatibleWireFormat.into())
-                    }
+                    Err(
+                        ProcessMessageError::IncompatibleWireFormat
+                        | ProcessMessageError::ValidationError(ValidationError::UnencryptedApplicationMessage),
+                    ) => Ok(RejectionReason::IncompatibleWireFormat.into()),
                     Err(ProcessMessageError::InvalidSignature) => Ok(RejectionReason::InvalidSignature.into()),
                     Err(ProcessMessageError::CredentialError(err)) => {
                         Ok(RejectionReason::MalformedCredential(err).into())
