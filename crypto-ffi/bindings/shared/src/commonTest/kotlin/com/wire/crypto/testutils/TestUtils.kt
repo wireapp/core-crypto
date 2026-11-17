@@ -41,6 +41,14 @@ fun genConversationId(): ConversationId {
     return ConversationId(uuidBytes())
 }
 
+/** Take the only decrypted message, failing unless there is exactly one outcome and it is a decryption. */
+fun List<DecryptionOutcome>.singleDecrypted(): DecryptedMessage =
+    assertIs<DecryptionOutcome.Decrypted>(single()).decryptedMessage
+
+/** Take the reason the only message was rejected, failing unless there is exactly one outcome and it is a rejection. */
+fun List<DecryptionOutcome>.singleRejected(): RejectionReason =
+    assertIs<DecryptionOutcome.Rejected>(single()).rejectionReason
+
 class LongRunningCallbacks : MlsTransport {
     val sendCommitStarted = CompletableDeferred<Unit>()
     val sendCommitExited = CompletableDeferred<Unit>()
