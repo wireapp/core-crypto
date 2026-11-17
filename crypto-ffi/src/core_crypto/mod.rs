@@ -49,12 +49,3 @@ pub fn core_crypto_new(database: &Arc<Database>) -> CoreCryptoResult<CoreCryptoF
         pki_environment: Default::default(),
     })
 }
-
-#[cfg_attr(any(feature = "wasm", feature = "napi"), uniffi::export)]
-impl CoreCryptoFfi {
-    /// This is only needed to allow TS inheritance and should be hidden from library consumers.
-    #[uniffi::constructor]
-    pub fn new(instance: Arc<Self>) -> Arc<Self> {
-        instance
-    }
-}
