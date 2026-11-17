@@ -33,7 +33,7 @@ mod credential;
 mod credential_ref;
 mod credential_type;
 mod database;
-mod decrypted_message;
+mod decryption_outcome;
 mod e2ei;
 mod ephemeral;
 mod error;
@@ -70,7 +70,7 @@ pub use credential_type::CredentialType;
 pub use database::{Database, DatabaseKey, migrate_database_key_type_to_bytes};
 #[cfg(not(any(feature = "wasm", feature = "napi", target_os = "unknown")))]
 pub use database::{export_database_copy, in_memory_database, open_database};
-pub use decrypted_message::DecryptedMessage;
+pub use decryption_outcome::{DecryptedMessage, DecryptionOutcome, DeferralReason, RejectionReason};
 #[cfg(not(any(feature = "wasm", feature = "napi", target_os = "unknown")))]
 pub use e2ei::x509_credential_acquisition_from_credential_ref::x509_credential_acquisition_new_from_credential_ref;
 pub use e2ei::{E2eiConversationState, X509CredentialAcquisition, X509CredentialAcquisitionConfiguration};

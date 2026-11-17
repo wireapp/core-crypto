@@ -10,18 +10,9 @@ pub enum MlsError {
     /// <https://github.com/mozilla/uniffi-rs/issues/2409>.
     #[error("Conversation already exists")]
     ConversationAlreadyExists { conversation_id: Vec<u8> },
-    #[error("We already decrypted this message once")]
-    DuplicateMessage,
-    #[error("Incoming message is from an epoch too far in the future to buffer.")]
-    WrongEpoch,
-    #[error("The epoch in which message was encrypted is older than allowed")]
-    MessageEpochTooOld,
+    /// If this error is produced, we have likely forked our state from the state of the DS.
     #[error("Tried to decrypt a commit created by self which is likely to have been replayed by the DS")]
     SelfCommitIgnored,
-    #[error("The received proposal is deemed stale and is from an older epoch.")]
-    StaleProposal,
-    #[error("The received commit is deemed stale and is from an older epoch.")]
-    StaleCommit,
     /// A Welcome message references a KeyPackage that has already been deleted locally.
     ///
     /// This happens when the distribution service cannot flag KeyPackages as claimed. A client

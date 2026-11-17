@@ -155,12 +155,7 @@ impl From<RecursiveError> for CoreCryptoError {
 
         match_heterogenous!(innermost => {
             core_crypto::transaction_context::Error::ConversationAlreadyExists(id) => MlsError::ConversationAlreadyExists { conversation_id: id.clone().into() }.into(),
-            core_crypto::mls::conversation::Error::DuplicateMessage => MlsError::DuplicateMessage.into(),
-            core_crypto::mls::conversation::Error::MessageEpochTooOld => MlsError::MessageEpochTooOld.into(),
             core_crypto::mls::conversation::Error::SelfCommitIgnored => MlsError::SelfCommitIgnored.into(),
-            core_crypto::mls::conversation::Error::StaleCommit => MlsError::StaleCommit.into(),
-            core_crypto::mls::conversation::Error::StaleProposal => MlsError::StaleProposal.into(),
-            core_crypto::mls::conversation::Error::UnbufferedFarFutureMessage => MlsError::WrongEpoch.into(),
             core_crypto::mls::conversation::Error::MessageRejected { reason } => MlsError::MessageRejected { reason: reason.clone() }.into(),
             core_crypto::mls::conversation::Error::OrphanWelcome => MlsError::OrphanWelcome.into(),
             ||=> MlsError::Other { msg: error.innermost_error_message() }.into(),

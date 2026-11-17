@@ -4,7 +4,7 @@ use core_crypto::ConversationConfiguration;
 
 use crate::{
     CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, Credential,
-    CredentialRef, DecryptedMessage, ExternalSender, KeyPackage, KeyPackageRef, MlsTransport,
+    CredentialRef, DecryptionOutcome, ExternalSender, KeyPackage, KeyPackageRef, MlsTransport,
     bytes_wrapper::bytes_wrapper, core_crypto::mls_transport::callback_shim,
 };
 
@@ -278,19 +278,35 @@ impl CoreCryptoContext {
 
     /// Decrypts an MLS message received in the given conversation.
     ///
+    /// ## Commit races
+    ///
     /// A commit from another member supersedes any local pending commit and consumes the pending
     /// proposals it references. Our own commit, delivered back to us, is merged. Proposals and
     /// application messages leave local pending state untouched.
     ///
-    /// If the decrypted message is deferred for processing after some future event, the returned
-    /// list is empty. If the returned list is not empty, then its first item is the result of decrypting
-    /// the provided payload.
+    /// ## Decryption produces a list of outcomes
+    ///
+    /// The first item in the returned list is always the outcome of decrypting the provided payload.
+    /// This function will never return an empty list.
+    ///
+    /// Sometimes a decrypted message is not yet processable, but is expected to be processable
+    /// later given an appropriate trigger. For example, a commit may be delivered for decryption
+    /// before a proposal it references. In that case, the message is buffered for automatic
+    /// inclusion in a later decryption and the `Deferred` outcome variant is returned, indicating
+    /// what this message is waiting for.
+    ///
+    /// Sometimes a decrypted message is incorrect in some way which means it will never be processable.
+    /// In that case, the `Rejected` outcome variant is returned, indicating what is wrong with the
+    /// message. Rejected variants are not errors and will not cause transaction rollback.
     ///
     /// If the decrypted message produces an event causing previously-buffered messages to be decrypted,
-    /// they are appended to the returned list in processing order.
+    /// i.e. an out-of-order proposal arriving after a commit which was deferred, the outcomes of
+    /// those messages' decryption are appended to the output list in processing order.
     ///
     /// If a commit ejects us from the group, no further messages are considered. This means that
     /// if we are ejected, the final message will always be a `Commit` variant with `isActive: false`.
+    ///
+    /// ## Error handling
     ///
     /// When decrypting buffered messages, we distinguish betwen infrastructural errors and other errors.
     /// Infrastructural errors are those which we would expect not to reappear if we re-attempted the decryption
@@ -308,7 +324,7 @@ impl CoreCryptoContext {
         &self,
         conversation_id: &ConversationId,
         payload: Vec<u8>,
-    ) -> CoreCryptoResult<Vec<DecryptedMessage>> {
+    ) -> CoreCryptoResult<Vec<DecryptionOutcome>> {
         self.inner
             .decrypt_message(conversation_id.as_ref(), &payload)
             .await
