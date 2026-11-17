@@ -590,7 +590,7 @@ final class WireCoreCryptoTests: XCTestCase {
             try await ctx.decryptMessage(conversationId: conversationId, payload: commit!)
         }
         XCTAssertEqual(decrypted.count, 1)
-        guard case .commit? = decrypted.first else {
+        guard case .decrypted(.commit)? = decrypted.first else {
             XCTFail("Expected a decrypted commit")
             return
         }
@@ -616,18 +616,19 @@ final class WireCoreCryptoTests: XCTestCase {
             try await ctx.decryptMessage(conversationId: conversationId, payload: ciphertext)
         }
         XCTAssertEqual(decrypted.count, 1)
-        guard case .applicationMessage(let plaintext, _, _)? = decrypted.first else {
+        guard case .decrypted(.applicationMessage(let plaintext, _, _))? = decrypted.first else {
             XCTFail("Expected decrypted text")
             return
         }
         XCTAssertEqual(plaintext, message)
 
-        try await bob.transaction { context in
-            await self.XCTAssertThrowsErrorAsync(CoreCryptoError.Mls(mlsError: .DuplicateMessage)) {
-                _ = try await context.decryptMessage(
-                    conversationId: conversationId, payload: ciphertext
-                )
-            }
+        let duplicate = try await bob.transaction { ctx in
+            try await ctx.decryptMessage(conversationId: conversationId, payload: ciphertext)
+        }
+        XCTAssertEqual(duplicate.count, 1)
+        guard case .rejected(.duplicateMessage)? = duplicate.first else {
+            XCTFail("Expected the duplicate message to be rejected")
+            return
         }
     }
 
@@ -657,7 +658,8 @@ final class WireCoreCryptoTests: XCTestCase {
             )
         }
         XCTAssertEqual(persistedDecrypted.count, 1)
-        guard case .persistedTargeted(let plaintext, _, _)? = persistedDecrypted.first else {
+        guard case .decrypted(.persistedTargeted(let plaintext, _, _))? = persistedDecrypted.first
+        else {
             XCTFail("Expected a decrypted persisted targeted message")
             return
         }
@@ -681,7 +683,8 @@ final class WireCoreCryptoTests: XCTestCase {
             )
         }
         XCTAssertEqual(transientDecrypted.count, 1)
-        guard case .transientTargeted(let plaintext, _, _)? = transientDecrypted.first else {
+        guard case .decrypted(.transientTargeted(let plaintext, _, _))? = transientDecrypted.first
+        else {
             XCTFail("Expected a decrypted transient targeted message")
             return
         }
@@ -711,7 +714,7 @@ final class WireCoreCryptoTests: XCTestCase {
             )
         }
         XCTAssertEqual(decrypted.count, 1)
-        guard case .transient(let plaintext, _, _)? = decrypted.first else {
+        guard case .decrypted(.transient(let plaintext, _, _))? = decrypted.first else {
             XCTFail("Expected a decrypted transient message")
             return
         }
