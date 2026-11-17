@@ -170,6 +170,23 @@ mod tests {
         resigned.tls_serialize_detached().unwrap()
     }
 
+    /// Corrupt the HPKE ciphertext of a persisted targeted message, then re-sign it as `signer`.
+    ///
+    /// The result passes signature verification, so it exercises decryption itself.
+    async fn corrupt_ciphertext(encrypted: &[u8], signer: &ConversationMut) -> Vec<u8> {
+        let TntMessage { mut content, .. } = TntMessage::tls_deserialize_exact(encrypted).unwrap();
+        let TntMessageBody::Targeted(targeted) = &mut content.body else {
+            panic!("expected a persisted targeted message");
+        };
+        let mut ciphertext = targeted.payload.ciphertext.as_slice().to_vec();
+        ciphertext[0] ^= 0xff;
+        targeted.payload.ciphertext = ciphertext.into();
+
+        let credential = signer.find_current_credential().await.unwrap();
+        let resigned: TntMessage = content.sign(credential.signature_key()).unwrap();
+        resigned.tls_serialize_detached().unwrap()
+    }
+
     #[apply(all_cred_cipher)]
     async fn can_decrypt_targeted_message(case: TestContext) {
         let [alice, bob] = case.sessions().await;
@@ -892,6 +909,36 @@ mod tests {
         assert!(
             matches!(reason, RejectionReason::InvalidSignature),
             "a message claiming an old epoch must be verified against that epoch's occupant of the leaf, got {reason:?}"
+        );
+    }
+
+    #[apply(all_cred_cipher)]
+    async fn targeted_message_which_fails_to_decrypt_is_rejected(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+
+        let encrypted = conversation
+            .guard()
+            .await
+            .encrypt_targeted(
+                &bob.get_client_id().await,
+                TargetedMessagePolicy::Persisted,
+                b"this ciphertext will not survive the trip".to_vec(),
+            )
+            .await
+            .unwrap();
+        let corrupted = corrupt_ciphertext(&encrypted, &conversation.guard().await).await;
+
+        let reason = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(corrupted)
+            .await
+            .unwrap()
+            .into_single_rejected();
+        assert!(
+            matches!(reason, RejectionReason::InvalidAuthentication),
+            "a validly signed targeted message whose ciphertext doesn't authenticate must be rejected, got {reason:?}"
         );
     }
 
