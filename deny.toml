@@ -39,6 +39,9 @@ ignore = [
   # but refinery doesn't allow rusqlite 0.42 yet. The bug needs a
   # database and -wal file written by someone else.
   "RUSTSEC-2026-0502",
+  # `chrono` is unmaintained, but oauth2 is still using it:
+  # https://github.com/ramosbugs/oauth2-rs/issues/351
+  "RUSTSEC-2026-0543",
 ]
 
 [bans]
