@@ -4,6 +4,12 @@
 
 ### Unreleased
 
+- The `decrypt_message` API has changed. Decryption now produces a list of outcomes, and several error variants were
+  removed. See [What's New](cc12/whats-new.md#new-decrypt_message-api).
+- CC now checks the conversation ID of transient and targeted messages during decryption; non-matches are rejected.
+- The epoch observer now receives epoch change notifications in several cases for which those notifications were
+  accidentally omitted in the past.
+
 #### TypeScript
 
 - Browser: removed `Database.close()`. Calls can be removed as it was a noop.
