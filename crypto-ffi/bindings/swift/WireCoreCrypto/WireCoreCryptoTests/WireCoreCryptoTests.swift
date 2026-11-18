@@ -632,6 +632,7 @@ final class WireCoreCryptoTests: XCTestCase {
         }
     }
 
+    // swiftlint:disable:next function_body_length
     func testTargetedMessagesCanBeDecryptedByReceiver() async throws {
         let alice = try await ccInit()
         let bobId = genClientId()
