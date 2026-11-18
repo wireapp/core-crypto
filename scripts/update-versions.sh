@@ -8,18 +8,12 @@ perl -0777 -pi -e \
 # Make sure workspace Cargo.lock is updated with new versions.
 cargo update -w
 
-# Update the NPM packages version. Be careful not to overwrite the same
-# file we're reading from.
-js_path=crypto-ffi/bindings/js/packages
-packages=(browser native)
-
-for pkg in "${packages[@]}"; do
-  file="${js_path}/${pkg}/package.json"
-  tmp="${file}.new"
-
-  jq --indent 4 "setpath([\"version\"]; \"${new_version}\")" "$file" > "$tmp" \
-    && mv "$tmp" "$file"
+# Update the NPM package versions, and the copies recorded in bun.lock.
+js=crypto-ffi/bindings/js
+for pkg in browser native; do
+  (cd "$js/packages/$pkg" && bun pm version "$new_version" --no-git-tag-version)
 done
+(cd "$js" && bun update --lockfile-only @wireapp/core-crypto @wireapp/core-crypto-native)
 
 # Update Maven package version.
 perl -pi -e 's/^VERSION_NAME=[0-9A-Za-z._-]+/VERSION_NAME='"$new_version"'/' crypto-ffi/bindings/gradle.properties
