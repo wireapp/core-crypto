@@ -12,7 +12,7 @@ use crate::{
 // We choose to accept the size difference here--approx. 300 bytes--on the basis that
 // memory isn't particularly constrained for this application, and this struct is
 // short-lived.
-#[expect(clippy::large_enum_variant)]
+#[cfg_attr(not(target_os = "unknown"), expect(clippy::large_enum_variant))]
 #[derive(Clone, derive_more::From)]
 pub(in crate::mls::conversation) enum ParsedMessage {
     Mls(ProtocolMessage),
