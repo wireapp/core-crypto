@@ -517,7 +517,8 @@ We're using [taplo](https://taplo.tamasfe.dev/) to format .toml files.
 ### Nightly run<a name="nightly-run"></a>
 
 Every night we run benchmarks on the `main` branch and publish the results on the
-[CoreCrypto Benchmarks dashboard](https://grafana.zinfra.io/d/ja65pzb/corecrypto-benchmarks) (restricted read access).
+[CoreCrypto Benchmarks dashboard](https://grafana.nexus.zinfra.io/d/ja65pzb/corecrypto-benchmarks) (restricted read
+access).
 
 ### FFI Bindings<a name="ffi-bindings"></a>
 
