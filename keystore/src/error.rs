@@ -1,4 +1,6 @@
 pub use rusqlite::{Error as RusqliteError, ErrorCode as RusqliteErrorCode};
+#[cfg(target_os = "unknown")]
+use sqlite_wasm_vfs::sahpool::OpfsSAHError;
 
 /// Error type to represent various errors that can happen in the KeyStore
 #[derive(Debug, thiserror::Error)]
@@ -108,7 +110,7 @@ pub enum CryptoKeystoreError {
     OpfsError {
         context: &'static str,
         #[source]
-        error: rsqlite_vfs::VfsError,
+        error: OpfsSAHError,
     },
     #[error("The database includes migrations newer than this version of CC knows about")]
     DatabaseFromTheFuture,
@@ -136,7 +138,7 @@ impl CryptoKeystoreError {
     }
 
     #[cfg(target_os = "unknown")]
-    pub(crate) fn opfs(context: &'static str) -> impl FnOnce(rsqlite_vfs::VfsError) -> Self {
+    pub(crate) fn opfs(context: &'static str) -> impl FnOnce(OpfsSAHError) -> Self {
         move |error| Self::OpfsError { context, error }
     }
 }

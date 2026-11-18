@@ -159,7 +159,7 @@ impl Database {
     /// Open an encrypted Sqlite `Database` at the provided location.
     ///
     /// The database is encrypted via sqlcipher. When compiled with `target_os = "unknown"`,
-    /// it is stored in OPFS via JSPI, and WAL uses exclusive locking and an in-memory index.
+    /// it is stored in OPFS, and WAL uses exclusive locking and an in-memory index.
     /// Otherwise, it is stored at a path in the local filesystem.
     pub async fn open(path: &str, database_key: &DatabaseKey) -> CryptoKeystoreResult<Arc<Self>> {
         let transaction_lock = TransactionLock::new(path)?;

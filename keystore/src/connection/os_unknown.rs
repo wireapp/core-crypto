@@ -1,18 +1,56 @@
 //! This module is compiled only when `target_os = "unknown"`.
 //!
-//! This gives us a place to put OPFS-specific items.
+//! Databases live in OPFS, in the `opfs-sahpool` VFS provided by `sqlite-wasm-vfs`.
 
 use async_trait::async_trait;
-use sqlite_wasm_rs::WasmOsCallback;
+use sqlite_wasm_rs::{WasmOsCallback, vfs::VfsFilesManager as _};
+use sqlite_wasm_vfs::sahpool::{OpfsSAHError, OpfsSAHPoolCfgBuilder, OpfsSAHPoolUtil};
 
-use super::{ManagedConnection, SqliteGuard, opfs_vfs};
+use super::ManagedConnection;
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey};
 
-const VFS_NAME: &str = "core-crypto";
+/// The pool's directory in the OPFS root.
+///
+/// Can't use `core-crypto`: that's where CoreCrypto 11 kept its databases.
+const POOL_DIRECTORY: &str = "core-crypto-sahpool";
 
-/// The caller must hold `SqliteGuard`.
-pub(super) fn ensure_vfs_installed(guard: &SqliteGuard) -> CryptoKeystoreResult<()> {
-    opfs_vfs::install(VFS_NAME, WasmOsCallback, guard).map_err(CryptoKeystoreError::opfs("installing the OPFS VFS"))
+const VFS_NAME: &str = POOL_DIRECTORY;
+
+/// Free slots to make sure of before opening a database.
+///
+/// Every file SQLite opens takes a slot: the database, its WAL and rollback journal, and temporary
+/// files that some queries may create. This number may not be as low as possible, but six should be
+/// sufficient.
+const SLOT_HEADROOM: usize = 6;
+
+/// What SQLite appends to a database's name to name its WAL and rollback journal, after the empty suffix of the
+/// database itself.
+pub(super) const FILE_SUFFIXES: [&str; 3] = ["", "-wal", "-journal"];
+
+/// Install the pool, or get the one already installed in this worker.
+pub(super) async fn pool() -> CryptoKeystoreResult<OpfsSAHPoolUtil> {
+    let config = OpfsSAHPoolCfgBuilder::new()
+        .vfs_name(VFS_NAME)
+        .directory(POOL_DIRECTORY)
+        .build();
+    // Installs or gets an already-existing pool. In the latter case, this can be a paused pool or a
+    // pool that needs recovery (which will surface only after)
+    let pool = sqlite_wasm_vfs::sahpool::install::<WasmOsCallback>(&config, false)
+        .await
+        .map_err(CryptoKeystoreError::opfs("installing the OPFS pool"))?;
+
+    // A pool is left paused after a previous I/O operation failed.
+    // pool.len() probes whether the pool's needs_recovery flag is set. Both states are fixed by
+    // `.pause()`/`.resume()`.
+    if pool.is_paused() || matches!(pool.len(), Err(OpfsSAHError::NeedsRecovery)) {
+        log::warn!("recovering the OPFS pool after an I/O error");
+        pool.pause()
+            .map_err(CryptoKeystoreError::opfs("recovering the OPFS pool"))?;
+        pool.resume()
+            .await
+            .map_err(CryptoKeystoreError::opfs("recovering the OPFS pool"))?;
+    }
+    Ok(pool)
 }
 
 /// Open the encrypted database at the specified location, creating the database if necessary.
@@ -25,9 +63,18 @@ pub(super) fn ensure_vfs_installed(guard: &SqliteGuard) -> CryptoKeystoreResult<
 pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<(ManagedConnection, FsAbstraction)> {
     super::idb_migration::reject_core_crypto_10_database(name).await?;
 
-    let sqlite = SqliteGuard::lock();
-    ensure_vfs_installed(&sqlite)?;
-    let already_exists = opfs_vfs::contains(name).map_err(CryptoKeystoreError::opfs("checking database existence"))?;
+    let pool = pool().await?;
+
+    let slots = pool
+        .len()
+        .map_err(CryptoKeystoreError::opfs("counting files in the OPFS pool"))?;
+    pool.ensure_capacity(slots + SLOT_HEADROOM)
+        .await
+        .map_err(CryptoKeystoreError::opfs("growing the OPFS pool"))?;
+
+    let already_exists = pool
+        .contains(name)
+        .map_err(CryptoKeystoreError::opfs("checking database existence"))?;
     // the flags we use here are equivalent to the defaults, except we don't engage uri handling
     // https://docs.rs/rusqlite/latest/rusqlite/struct.Connection.html#method.open
     let mut conn = ManagedConnection::from(rusqlite::Connection::open_with_flags_and_vfs(
@@ -39,7 +86,7 @@ pub(super) async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<
     )?);
 
     // Set before encryption, schema reads, or reopening a database already in WAL mode.
-    // A second connection to this file cannot acquire its OPFS access handle, so the VFS needs no locking.
+    // The pool has no shared memory, so WAL needs exclusive locking.
     conn.pragma_update(None, "locking_mode", "EXCLUSIVE")?;
 
     if already_exists {
@@ -61,14 +108,11 @@ pub(super) struct FsAbstraction;
 #[async_trait(?Send)]
 impl super::Filesystem for FsAbstraction {
     async fn delete(&self, path: &str) -> CryptoKeystoreResult<()> {
-        let _sqlite = SqliteGuard::lock();
+        let pool = pool().await?;
         // SQLite normally removes these on close, but persistent journals may remain.
-        for name in [path.to_owned(), format!("{path}-journal"), format!("{path}-wal")] {
-            if let Err(error) = opfs_vfs::delete(&name)
-                && error.code() != rsqlite_vfs::VfsErrorCode::IoDeleteNoEntry
-            {
-                return Err(CryptoKeystoreError::opfs("deleting file")(error));
-            }
+        for suffix in FILE_SUFFIXES {
+            pool.remove(&format!("{path}{suffix}"))
+                .map_err(CryptoKeystoreError::opfs("deleting file"))?;
         }
         Ok(())
     }
