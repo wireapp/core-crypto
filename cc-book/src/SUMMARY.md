@@ -10,6 +10,11 @@
   - [The Database](concepts/client/database.md)
   - [Transactions](concepts/client/transactions.md)
 
+# Unreleased
+
+- [Migration Guide](unreleased/migration-guide.md)
+  - [TypeScript](unreleased/migration/typescript.md)
+
 # CoreCrypto 11
 
 - [What's New](cc11/whats-new.md)
