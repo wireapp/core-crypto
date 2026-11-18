@@ -64,11 +64,11 @@ impl ConversationMut {
 
         let message_sender = message.sender();
         let message_counter = message.counter;
-        if let Some(rejection_reason) = self
-            .ensure_no_duplicate_message(message_epoch, message_type, message_sender, message_counter)
+        if self
+            .message_is_duplicate(message_epoch, message_type, message_sender, message_counter)
             .await?
         {
-            return Ok(rejection_reason.into());
+            return Ok(RejectionReason::DuplicateMessage.into());
         }
 
         let crypto_provider = self.crypto_provider().await?;

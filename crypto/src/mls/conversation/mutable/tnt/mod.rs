@@ -412,21 +412,21 @@ impl ConversationMut {
     /// The additional complexity introduced by this split is worthwhile, because each message type may be delivered in
     /// a unique way. We don't want to assume that messages arrive in order across different message types. This is why
     /// we're just checking the counter of the same message type, which is enough for duplicate message detection.
-    async fn ensure_no_duplicate_message(
+    async fn message_is_duplicate(
         &self,
         group_epoch: u64,
         message_type: TntWireFormat,
         message_sender: LeafNodeIndex,
         message_counter: TntMessageCounter,
-    ) -> Result<Option<RejectionReason>> {
+    ) -> Result<bool> {
         let database = self.database()?;
         let counter_pk = MessageRxCounterPkRef::new(self.id.as_ref().into(), message_sender.u32(), group_epoch);
         let existing_counter = message_type.current_rx_counter(database.as_ref(), counter_pk).await?;
 
         if u32::from(message_counter) > existing_counter {
-            Ok(None)
+            Ok(false)
         } else {
-            Ok(Some(RejectionReason::DuplicateMessage))
+            Ok(true)
         }
     }
 
