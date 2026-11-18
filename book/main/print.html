@@ -37,10 +37,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-1f56dcef.js";
+            window.path_to_searchindex_js = "searchindex-4e45ad90.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e64f8d46.js"></script>
+        <script src="toc-41793143.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -548,7 +548,7 @@ the database file is stored in OPFS. Data is encrypted at rest.</p>
 <div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
 <div class="langtabs-content">
 <div class="langtabs-code active" data-lang="typescript-0">
-<pre><code class="language-typescript">const key = DatabaseKey.new(bytes)  // bytes must be exactly 32 bytes
+<pre><code class="language-typescript">const key = await DatabaseKey.create(bytes)  // bytes must be exactly 32 bytes
 </code></pre>
 </div>
 
@@ -835,6 +835,45 @@ exists, in its separate slot. The returned guards keep the slots filled for exac
 so both slots are cleared before dropping the context that releases the semaphore. Consequently, the next transaction
 cannot observe the previous transaction’s token. If cancellation wins a callback race, dropping the Rust future also
 causes UniFFI’s generated foreign-language binding to cancel the task executing that callback.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="migrating-from-v11-to-v12"><a class="header" href="#migrating-from-v11-to-v12">Migrating from v11 to v12</a></h1>
+<p>So far, the changes in CC 12 only affect the browser package. They are covered on the
+<a href="#migrating-to-cc-12-typescript">TypeScript</a> page.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="migrating-to-cc-12-typescript"><a class="header" href="#migrating-to-cc-12-typescript">Migrating to CC 12: TypeScript</a></h1>
+<p>See the <a href="#migrating-from-v11-to-v12">common migration guide</a> for changes that apply to all platforms.</p>
+<h2 id="corecrypto-runs-in-a-worker-browser"><a class="header" href="#corecrypto-runs-in-a-worker-browser">CoreCrypto Runs in a Worker (Browser)</a></h2>
+<p>The native package, <code>@wireapp/core-crypto-native</code>, is not affected by anything in this section.</p>
+<h3 id="serving-the-worker"><a class="header" href="#serving-the-worker">Serving the worker</a></h3>
+<p><code>initWasmModule()</code> compiles the wasm module and starts the worker from <code>worker.js</code>, which ships next to <code>corecrypto.js</code>
+in the package. If your bundler understands <code>new URL("./worker.js", import.meta.url)</code>, it picks the file up on its own.
+Otherwise, make sure <code>worker.js</code> is served from the same directory as <code>corecrypto.js</code>.</p>
+<h3 id="every-call-is-async"><a class="header" href="#every-call-is-async">Every call is async</a></h3>
+<p>Each call into CoreCrypto is now a message to the worker, so every call returns a promise. This includes calls that used
+to be synchronous, such as constructors, methods on FFI objects and module-level functions:</p>
+<pre><code class="language-typescript">// before
+const clientId = new ClientId(new Uuid(userId), DeviceId.fromHexString(deviceId), "wire.com");
+const cc = CoreCrypto.new(database);
+const bytes = keyPackage.serialize();
+
+// after
+const clientId = await ClientId.create(await Uuid.create(userId), await DeviceId.fromHexString(deviceId), "wire.com");
+const cc = await CoreCrypto.new(database);
+const bytes = await keyPackage.serialize();
+</code></pre>
+<p>Constructors became static <code>create</code> methods, because a JavaScript constructor can’t return a promise. For the same
+reason, types that implement <code>toString</code> now provide <code>asyncToString</code> instead. <code>toString</code> itself falls back to
+JavaScript’s default, so string interpolation of these types no longer gives a useful result.</p>
+<p>If you share code between the browser and the native package, it’s fine to <code>await</code> everywhere. Awaiting a value that
+isn’t a promise just returns the value.</p>
+<h3 id="logging"><a class="header" href="#logging">Logging</a></h3>
+<p><code>CoreCryptoLogger.log</code> is still a synchronous function, but each log message is now sent from the worker to the page,
+and CoreCrypto doesn’t wait for your logger to handle it. Two things follow from that:</p>
+<ul>
+<li>If your logger throws, CoreCrypto can’t report the error back to you. It only shows up in the console.</li>
+<li>A log message can arrive after the call that produced it has returned. Code that inspects logs straight after awaiting
+a call, for example in tests, may need to wait for them.</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="whats-new-in-cc-11"><a class="header" href="#whats-new-in-cc-11">What’s New in CC 11</a></h1>
 <p>CC 11 adds two new kinds of MLS message and a set of post-quantum cipher suites. It also includes various smaller
@@ -1130,6 +1169,32 @@ both changes at once.</p>
 <code>dist/autogenerated/core_crypto_ffi.wasm</code>. If you pass its location to <code>initWasmModule</code>, or your bundler or server
 copies it by path, update the path. If you call <code>initWasmModule()</code> without a path, it now loads the module from next
 to <code>corecrypto.js</code>.</p>
+</li>
+<li>
+<p>Browser: CoreCrypto now runs in a dedicated web worker, which <code>initWasmModule()</code> starts from <code>dist/worker.js</code>. Serve
+that file next to <code>corecrypto.js</code>. Bundlers that understand <code>new URL("./worker.js", import.meta.url)</code> pick it up
+themselves.</p>
+</li>
+<li>
+<p>Browsers no longer need to support JSPI.</p>
+</li>
+<li>
+<p>Browser: every call into CoreCrypto now returns a promise. Add <code>await</code> where a call didn’t need one before. In
+particular:</p>
+<ul>
+<li>Regular constructors became static <code>create</code> methods: <code>new ClientId(...)</code> is now <code>await ClientId.create(...)</code>.</li>
+<li>So do module-level functions such as <code>version</code>, <code>buildMetadata</code>, <code>cipherSuiteDefault</code> and <code>cipherSuiteFromU16</code>.</li>
+<li>Where a type implements <code>toString</code>, it’s now <code>asyncToString</code>. <code>toString</code> falls back to JavaScript’s default.</li>
+</ul>
+</li>
+<li>
+<p>Browser: <code>CoreCryptoLogger.log</code> stays synchronous, but CoreCrypto no longer waits for it. If it throws, the error is
+only reported to the console. Log messages can also arrive after their caller has returned, so code that inspects logs
+right after awaiting a call may need to wait for them.</p>
+</li>
+<li>
+<p>Browser: databases are stored in a different directory in OPFS. A CoreCrypto 11 database moves there the first time
+it’s opened, with the same location and key.</p>
 </li>
 </ul>
 <h4 id="bug-fixes"><a class="header" href="#bug-fixes">Bug Fixes</a></h4>
@@ -2298,7 +2363,8 @@ each of the page.</li>
 <h3 id="wasm"><a class="header" href="#wasm">WASM</a></h3>
 <p>The same as native, except:</p>
 <ul>
-<li>Backing store: a file in OPFS, accessed through a custom VFS</li>
+<li>Backing store: OPFS, through the <code>opfs-sahpool</code> VFS of <a href="https://github.com/Spxg/sqlite-wasm-rs">sqlite-wasm-rs</a>, in a
+dedicated worker</li>
 <li>Crypto primitives provider: <a href="https://github.com/libtom/libtomcrypt">LibTomCrypt</a></li>
 <li>PRNG provider: <a href="https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues">Crypto.getRandomValues</a></li>
 </ul>

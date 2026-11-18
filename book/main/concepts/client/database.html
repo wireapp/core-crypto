@@ -36,10 +36,10 @@
             const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../../searchindex-1f56dcef.js";
+            window.path_to_searchindex_js = "../../searchindex-4e45ad90.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../../toc-e64f8d46.js"></script>
+        <script src="../../toc-41793143.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -202,7 +202,7 @@ the database file is stored in OPFS. Data is encrypted at rest.</p>
 <div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
 <div class="langtabs-content">
 <div class="langtabs-code active" data-lang="typescript-0">
-<pre><code class="language-typescript">const key = DatabaseKey.new(bytes)  // bytes must be exactly 32 bytes
+<pre><code class="language-typescript">const key = await DatabaseKey.create(bytes)  // bytes must be exactly 32 bytes
 </code></pre>
 </div>
 

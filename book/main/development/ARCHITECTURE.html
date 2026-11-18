@@ -36,10 +36,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-1f56dcef.js";
+            window.path_to_searchindex_js = "../searchindex-4e45ad90.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e64f8d46.js"></script>
+        <script src="../toc-41793143.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -302,7 +302,8 @@ each of the page.</li>
 <h3 id="wasm"><a class="header" href="#wasm">WASM</a></h3>
 <p>The same as native, except:</p>
 <ul>
-<li>Backing store: a file in OPFS, accessed through a custom VFS</li>
+<li>Backing store: OPFS, through the <code>opfs-sahpool</code> VFS of <a href="https://github.com/Spxg/sqlite-wasm-rs">sqlite-wasm-rs</a>, in a
+dedicated worker</li>
 <li>Crypto primitives provider: <a href="https://github.com/libtom/libtomcrypt">LibTomCrypt</a></li>
 <li>PRNG provider: <a href="https://www.w3.org/TR/WebCryptoAPI/#Crypto-method-getRandomValues">Crypto.getRandomValues</a></li>
 </ul>
