@@ -487,9 +487,59 @@ mod tests {
     use core_crypto_keystore::{entities::PersistedMlsGroup, traits::FetchFromDatabase as _};
 
     use crate::{
-        mls::conversation::{Conversation, ConversationMut},
+        RejectionReason,
+        mls::conversation::{Conversation, ConversationMut, config::MAX_FUTURE_EPOCHS},
         test_utils::*,
     };
+
+    #[apply(all_cred_cipher)]
+    async fn tnt_message_too_far_in_the_future_is_rejected(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+
+        // Alice commits twice without Bob hearing of it, so she is two epochs ahead of him.
+        let conversation = conversation.update().await.finish().update().await.finish();
+        let message_epoch = conversation.guard().await.epoch().await;
+        let group_epoch = conversation.guard_of(&bob).await.epoch().await;
+        assert!(
+            message_epoch > group_epoch + MAX_FUTURE_EPOCHS,
+            "the test is only meaningful if the message is beyond the epochs we buffer"
+        );
+
+        let encrypted = conversation
+            .guard()
+            .await
+            .encrypt_transient(b"too soon".to_vec())
+            .await
+            .unwrap();
+        let reason = conversation
+            .guard_of(&bob)
+            .await
+            .decrypt_message(&encrypted)
+            .await
+            .unwrap()
+            .into_single_rejected();
+        let RejectionReason::UnbufferedFarFutureMessage {
+            message_epoch: reported_message_epoch,
+            group_epoch: reported_group_epoch,
+        } = reason
+        else {
+            panic!("a TNT message beyond the epochs we buffer must be rejected, got {reason:?}");
+        };
+        assert_eq!(
+            reported_message_epoch, message_epoch,
+            "the rejection must report the message's epoch"
+        );
+        assert_eq!(
+            reported_group_epoch, group_epoch,
+            "the rejection must report the group's epoch"
+        );
+        assert_eq!(
+            bob.transaction.count_entities().await.pending_messages,
+            0,
+            "a rejected message must not be buffered"
+        );
+    }
 
     #[apply(all_cred_cipher)]
     async fn unrelated_mutation_after_reload_preserves_tnt_counter(case: TestContext) {

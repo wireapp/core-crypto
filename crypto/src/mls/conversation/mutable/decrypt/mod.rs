@@ -613,6 +613,51 @@ mod tests {
 
     mod epoch_sync {
         use super::*;
+        use crate::mls::conversation::config::MAX_FUTURE_EPOCHS;
+
+        #[apply(all_cred_cipher)]
+        async fn should_reject_message_when_epoch_too_far_in_the_future(case: TestContext) {
+            let [alice, bob] = case.sessions().await;
+            let conversation = case.create_conversation([&alice, &bob]).await;
+
+            // Alice commits twice without Bob hearing of it, so she is two epochs ahead of him.
+            let conversation = conversation.update().await.finish().update().await.finish();
+            let message_epoch = conversation.guard().await.epoch().await;
+            let group_epoch = conversation.guard_of(&bob).await.epoch().await;
+            assert!(
+                message_epoch > group_epoch + MAX_FUTURE_EPOCHS,
+                "the test is only meaningful if the message is beyond the epochs we buffer"
+            );
+
+            let encrypted = conversation.guard().await.encrypt_message(b"too soon").await.unwrap();
+            let reason = conversation
+                .guard_of(&bob)
+                .await
+                .decrypt_message(&encrypted)
+                .await
+                .unwrap()
+                .into_single_rejected();
+            let RejectionReason::UnbufferedFarFutureMessage {
+                message_epoch: reported_message_epoch,
+                group_epoch: reported_group_epoch,
+            } = reason
+            else {
+                panic!("a message beyond the epochs we buffer must be rejected, got {reason:?}");
+            };
+            assert_eq!(
+                reported_message_epoch, message_epoch,
+                "the rejection must report the message's epoch"
+            );
+            assert_eq!(
+                reported_group_epoch, group_epoch,
+                "the rejection must report the group's epoch"
+            );
+            assert_eq!(
+                bob.transaction.count_entities().await.pending_messages,
+                0,
+                "a rejected message must not be buffered"
+            );
+        }
 
         #[apply(all_cred_cipher)]
         async fn should_reject_message_when_epoch_too_old(case: TestContext) {
