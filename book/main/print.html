@@ -37,10 +37,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-4e45ad90.js";
+            window.path_to_searchindex_js = "searchindex-430ee93b.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-41793143.js"></script>
+        <script src="toc-779a2ee0.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -836,9 +836,147 @@ so both slots are cleared before dropping the context that releases the semaphor
 cannot observe the previous transaction’s token. If cancellation wins a callback race, dropping the Rust future also
 causes UniFFI’s generated foreign-language binding to cancel the task executing that callback.</p>
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="whats-new-in-cc-12"><a class="header" href="#whats-new-in-cc-12">What’s New in CC 12</a></h1>
+<p>CC 12 changes the MLS <code>decrypt_message</code> API.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>Some of these changes break existing code. We provide a <a href="#migrating-from-v11-to-v12">migration guide</a>.</p>
+</blockquote>
+<h2 id="new-decrypt_message-api"><a class="header" href="#new-decrypt_message-api">New <code>decrypt_message</code> API</a></h2>
+<p>In CC 11 and earlier, <code>decrypt_message</code> returned a single value, the primary message. This implementation had many
+quirks: clients had to capture several error variants to ensure that they wouldn’t cause the transaction to roll back,
+and in case the primary message was a commit, it had to be inspected for potential buffered decrypted messages.
+Sometimes, the primary message wasn’t even the message passed in to <code>decrypt_message</code>!</p>
+<p>In CC 12, <code>decrypt_message</code> returns a list of outcomes. The list is never empty; the first outcome is always that of
+decrypting the actual message passed in. If decrypting this message unblocked some previously-buffered messages, then
+the outcomes of those decrypted messages are simply appended to the list in replay order.</p>
+<p>There are three possible outcomes:</p>
+<ul>
+<li><code>Decrypted</code>, which contains nearly the same <code>DecryptedMessage</code> type from earlier CC versions, and indicates successful
+decryption.</li>
+<li><code>Deferred</code> indicates that the input message was not processable yet, but was buffered in the expectation that a future
+message will make decryption possible automatically. Deferred messages can be waiting for a future epoch, a missing
+proposal, or a pending join; the deferral variant contains a reason indicating which of these was the case.</li>
+<li><code>Rejected</code> messages are unable to be used. This isn’t an <a href="#infrastructural-errors">infrastructural error</a>; it’s a
+problem with the message itself. Replay will produce the same result. The rejected variant also contains a reason
+explaining why the message was rejected.</li>
+</ul>
+<p>Clients do not need to do anything in particular when decryption produces a <code>Deferred</code> or <code>Rejected</code> outcome; these
+outcomes are informational. They might be useful for logging or user feedback.</p>
+<p>Several <code>MlsError</code> variants were replaced by <code>Deferred</code> or <code>Rejected</code> variants. Clients no longer need to catch these to
+handle them; existing error-catching code should simply adjust what the handlers watch for:</p>
+<ul>
+<li><code>BufferedFutureMessage</code> -&gt; <code>Deferred(FutureEpoch)</code></li>
+<li><code>BufferedCommit</code> -&gt; <code>Deferred(MissingProposal)</code></li>
+<li><code>UnmergedPendingGroup</code> -&gt; <code>Deferred(PendingJoin)</code></li>
+<li><code>WrongEpoch</code> -&gt; <code>Rejected(UnbufferedFarFutureMessage)</code></li>
+<li><code>DuplicateMessage</code>, <code>StaleCommit</code>, <code>StaleProposal</code>, <code>MessageEpochTooOld</code> -&gt; <code>Rejected</code> with the same variant name</li>
+</ul>
+<p>In addition, several failures that used to surface as <code>MlsError.Other</code> are now rejections.</p>
+<h3 id="infrastructural-errors"><a class="header" href="#infrastructural-errors">Infrastructural errors</a></h3>
+<p>Decryption now distinguishes between two categories of error: those that are infrastructural, and those which are not.</p>
+<p>An infrastructural error is one arising from the infrastructure: the underlying database, transaction machinery, and the
+like. They do not arise from the message being decrypted.</p>
+<p>The general heuristic is: if we tried the operation again in a healthy environment, an infrastructural error would
+succeed; a non-infrastructural error would fail in the same way.</p>
+<h3 id="behavioral-changes"><a class="header" href="#behavioral-changes">Behavioral changes</a></h3>
+<p>As deferrals and rejections are no longer errors, clients require much less strict error-matching to avoid inadvertently
+canceling the transaction. The errors which are produced are intended to be those for which canceling the transaction is
+the appropriate response.</p>
+<p>When a proposal completes a buffered commit, CC 11 and earlier would drop the outcome of the proposal, returning the
+un-buffered <code>Commit</code> as the primary message. Now, you get <code>[Proposal, Commit, ... replayed messages]</code>.</p>
+<p><code>isActive</code> on a <code>Commit</code> used to be set from the state after all replays, not the state as of that particular commit.
+With these new changes, it is set <code>false</code> only for the decrypted commit which actually removed the device from the
+conversation. However, as message processing stops when a commit removes this device from the group, callers need only
+check the final outcome to determine whether or not they have been removed from the conversation.</p>
+<p>A replayed message that is rejected now produces a <code>Rejected</code> outcome. CC 11 and earlier used to log and drop them.</p>
+<p>Infrastructural errors during replay now propagate. For example, if the database runs out of space during replay, the
+outermost call returns that error instead of the outcomes list, so that the transaction rolls back. In earlier CC
+versions, errors during replay were swallowed.</p>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="migrating-from-v11-to-v12"><a class="header" href="#migrating-from-v11-to-v12">Migrating from v11 to v12</a></h1>
-<p>So far, the changes in CC 12 only affect the browser package. They are covered on the
-<a href="#migrating-to-cc-12-typescript">TypeScript</a> page.</p>
+<p>The migrations in this file apply to all platforms. In addition, there are some migrations required for particular
+platforms:</p>
+<ul>
+<li><a href="#migrating-to-cc-12-typescript">Typescript</a></li>
+</ul>
+<h2 id="new-decrypt_message-api-1"><a class="header" href="#new-decrypt_message-api-1">New <code>decrypt_message</code> API</a></h2>
+<ul>
+<li><code>DecryptedMessage.Commit</code> lost its <code>bufferedMessages</code> field; these messages now appear in the list returned by
+<code>decryptMessage</code>.</li>
+<li><code>BufferedDecryptedMessage</code> no longer exists; remove any related helpers.</li>
+<li>The following errors have been converted to outcomes. Any <code>catch</code> blocks which existed only to suppress them must be
+deleted; those with behavior should be rewritten to trigger based on inspection of the outcomes.
+<ul>
+<li><code>BufferedFutureMessage</code></li>
+<li><code>BufferedCommit</code></li>
+<li><code>UnmergedPendingGroup</code></li>
+<li><code>DuplicateMessage</code></li>
+<li><code>StaleCommit</code></li>
+<li><code>StaleProposal</code></li>
+<li><code>MessageEpochTooOld</code></li>
+<li><code>WrongEpoch</code></li>
+</ul>
+</li>
+</ul>
+<div class="langtabs">
+<div class="langtabs-header"><button class="langtabs-tab active" data-lang="typescript-0"><i class="langtabs-icon devicon-typescript-plain"></i>TypeScript</button><button class="langtabs-tab" data-lang="swift-1"><i class="langtabs-icon devicon-swift-plain"></i>Swift</button><button class="langtabs-tab" data-lang="kotlin-2"><i class="langtabs-icon devicon-kotlin-plain"></i>Kotlin</button></div>
+<div class="langtabs-content">
+<div class="langtabs-code active" data-lang="typescript-0">
+<pre><code class="language-typescript">const outcomes = await ctx.decryptMessage(conversationId, messageBytes);
+for (const outcome of outcomes) {
+    // example: we care about buffered commits
+    if (
+        DecryptionOutcome.Deferred.instanceOf(outcome) &amp;&amp;
+        DeferralReason.MissingProposal.instanceOf(outcome.inner.deferralReason)
+    ) {
+        handleBufferedCommit();
+    }
+    // and decrypted messages can go through the normal path
+    else if (DecryptionOutcome.Decrypted.instanceOf(outcome)) {
+        handleDecryptedMessage(outcome.inner.decryptedMessage);
+    }
+    // any outcomes we don't care about can be dropped
+}
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="swift-1">
+<pre><code class="language-swift">let outcomes = try await ctx.decryptMessage(conversationId: conversationId, payload: messageBytes)
+for outcome in outcomes {
+    switch outcome {
+    // example: we care about buffered commits
+    case .deferred(.missingProposal):
+        handleBufferedCommit()
+    // and decrypted messages can go through the normal path
+    case .decrypted(let decryptedMessage):
+        handleDecryptedMessage(decryptedMessage)
+    // any outcomes we don't care about can be dropped
+    default:
+        break
+    }
+}
+</code></pre>
+</div>
+
+<div class="langtabs-code" data-lang="kotlin-2">
+<pre><code class="language-kotlin">val outcomes = ctx.decryptMessage(conversationId, messageBytes)
+for (outcome in outcomes) {
+    when (outcome) {
+        // example: we care about buffered commits
+        is DecryptionOutcome.Deferred -&gt;
+            if (outcome.deferralReason is DeferralReason.MissingProposal) handleBufferedCommit()
+        // and decrypted messages can go through the normal path
+        is DecryptionOutcome.Decrypted -&gt; handleDecryptedMessage(outcome.decryptedMessage)
+        // any outcomes we don't care about can be dropped
+        else -&gt; {}
+    }
+}
+</code></pre>
+</div>
+</div>
+</div>
+
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="migrating-to-cc-12-typescript"><a class="header" href="#migrating-to-cc-12-typescript">Migrating to CC 12: TypeScript</a></h1>
 <p>See the <a href="#migrating-from-v11-to-v12">common migration guide</a> for changes that apply to all platforms.</p>
@@ -1159,6 +1297,13 @@ both changes at once.</p>
 <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
 <h2 id="corecrypto-12"><a class="header" href="#corecrypto-12">CoreCrypto 12</a></h2>
 <h3 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h3>
+<ul>
+<li>The <code>decrypt_message</code> API has changed. Decryption now produces a list of outcomes, and several error variants were
+removed. See <a href="#new-decrypt_message-api">What’s New</a>.</li>
+<li>CC now checks the conversation ID of transient and targeted messages during decryption; non-matches are rejected.</li>
+<li>The epoch observer now receives epoch change notifications in several cases for which those notifications were
+accidentally omitted in the past.</li>
+</ul>
 <h4 id="typescript-2"><a class="header" href="#typescript-2">TypeScript</a></h4>
 <ul>
 <li>

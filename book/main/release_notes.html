@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-4e45ad90.js";
+            window.path_to_searchindex_js = "searchindex-430ee93b.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-41793143.js"></script>
+        <script src="toc-779a2ee0.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -178,6 +178,13 @@
                         <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
 <h2 id="corecrypto-12"><a class="header" href="#corecrypto-12">CoreCrypto 12</a></h2>
 <h3 id="unreleased"><a class="header" href="#unreleased">Unreleased</a></h3>
+<ul>
+<li>The <code>decrypt_message</code> API has changed. Decryption now produces a list of outcomes, and several error variants were
+removed. See <a href="cc12/whats-new.html#new-decrypt_message-api">What’s New</a>.</li>
+<li>CC now checks the conversation ID of transient and targeted messages during decryption; non-matches are rejected.</li>
+<li>The epoch observer now receives epoch change notifications in several cases for which those notifications were
+accidentally omitted in the past.</li>
+</ul>
 <h4 id="typescript"><a class="header" href="#typescript">TypeScript</a></h4>
 <ul>
 <li>
