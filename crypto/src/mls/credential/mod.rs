@@ -212,7 +212,7 @@ impl PartialEq for Credential {
 mod tests {
     use openmls_traits::OpenMlsCryptoProvider as _;
     use rusty_jwt_tools::jsonwebtoken::DecodingKey;
-    use wire_e2e_identity::CiphersuiteExt as _;
+    use wire_e2e_identity::{CiphersuiteExt as _, pki_env::PkiEnvironment};
     use x509_cert::der::Encode as _;
 
     use super::{x509::CertificateBundle, *};
@@ -572,5 +572,48 @@ mod tests {
             .unwrap();
 
         assert!(alice.transaction.check_credentials().await.is_err());
+    }
+
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn revoked_cert_should_stay_revoked_after_recreating_pki_environment() {
+        let case = TestContext::default_x509();
+        let [alice] = case.sessions_x509().await;
+
+        let chain = alice.x509_chain_unchecked();
+        let intermediate = &chain.intermediates[0];
+        let cert = &chain.actors[0].certificate.certificate;
+        let serial = cert.tbs_certificate().serial_number();
+        let crl = intermediate
+            .pki_keypair
+            .revoke_certs(&intermediate.certificate, vec![serial.as_bytes().to_vec()])
+            .unwrap();
+        let pki_env = alice
+            .session
+            .read()
+            .await
+            .crypto_provider
+            .authentication_service()
+            .pki_env()
+            .await
+            .unwrap();
+
+        let inner = alice.transaction.inner().unwrap();
+        pki_env
+            .save_crl(inner.transaction(), &intermediate.crl_dps[0], &crl.to_der().unwrap())
+            .await
+            .unwrap();
+        drop(inner);
+
+        assert!(pki_env.validate_cert(cert).await.is_err());
+        alice.transaction.finish().await.unwrap();
+
+        let restored = PkiEnvironment::new(Arc::new(DummyPkiEnvironmentHooks), pki_env.database_arc())
+            .await
+            .unwrap();
+        let result = restored.validate_cert(cert).await;
+        assert!(
+            result.is_err(),
+            "revoked certificate was accepted after restoration: {result:?}"
+        );
     }
 }
