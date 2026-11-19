@@ -15,6 +15,7 @@ type IssuerMap = BTreeMap<String, Vec<usize>>;
 type SkidMap = BTreeMap<Vec<u8>, Vec<usize>>;
 type DpMap = BTreeMap<Vec<u8>, Vec<usize>>;
 
+#[derive(Default)]
 pub(super) struct CrlStore {
     crls: Arc<Mutex<Vec<CertificateList<Raw>>>>,
     crl_info: Arc<Mutex<Vec<CrlInfo>>>,
@@ -23,15 +24,15 @@ pub(super) struct CrlStore {
     dps: Arc<Mutex<DpMap>>,
 }
 
-impl From<&[CertificateList<Raw>]> for CrlStore {
-    fn from(value: &[CertificateList<Raw>]) -> Self {
-        Self {
-            crls: Mutex::new(value.to_vec()).into(),
-            crl_info: Default::default(),
-            issuers: Default::default(),
-            sk_ids: Default::default(),
-            dps: Default::default(),
+impl TryFrom<&[CertificateList<Raw>]> for CrlStore {
+    type Error = certval::Error;
+
+    fn try_from(value: &[CertificateList<Raw>]) -> certval::Result<Self> {
+        let store = Self::default();
+        for crl in value {
+            store.add_crl(&[], crl, "")?;
         }
+        Ok(store)
     }
 }
 
