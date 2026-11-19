@@ -167,7 +167,7 @@ pub(crate) fn prepare_environment(
     let revocation_cache = RevocationCache::default();
 
     // Make a CRL source
-    let crl_source = CrlStore::from(crls);
+    let crl_source = CrlStore::try_from(crls)?;
 
     let mut pe = certval::environment::PkiEnvironment::default();
     pe.populate_5280_pki_environment();
