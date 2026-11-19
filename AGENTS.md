@@ -98,8 +98,10 @@ and a native package (napi). So `crypto-ffi` targets wasm even though it contain
 `wasm` and `napi` features and the `cfg(target_arch = "wasm32")` dependencies in `crypto-ffi/Cargo.toml` are where it
 shows. Anything exposed through the FFI has to work there too.
 
-The book under `cc-book/` holds the architecture docs (`cc-book/src/development/`) and the migration guide for the next
-release (`cc-book/src/unreleased/`). `README.md` covers platform setup in detail.
+The book under `cc-book/` holds the architecture docs (`cc-book/src/development/`) and a migration guide in each major
+version chapter listed in `cc-book/src/SUMMARY.md`. When a new major version is released, the previous major version's
+chapter is removed from the current book. Older editions remain available online. `README.md` covers platform setup in
+detail.
 
 ### Building and testing
 
@@ -153,9 +155,9 @@ Any PR that changes something a library consumer can see needs a note under "Unr
 release notes are a plain list of changes. Write each note for the consumer: what changed, who is affected, and what
 they need to do.
 
-The migration guide in `cc-book/src/unreleased/` does a different job. It explains the principles behind a change: why
-it happened, and how clients are expected to benefit. A PR that changes how a client thinks about core-crypto needs an
-entry there. Most small changes, including deprecations with a mechanical replacement, belong only in the release notes.
+The migration guide for the next major version explains why a change happened and how clients are expected to benefit. A
+PR that changes how a client thinks about core-crypto needs an entry there. Most small changes, including deprecations
+with a mechanical replacement, belong only in the release notes.
 
 ## Code conventions
 

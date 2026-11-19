@@ -12,11 +12,11 @@ These rules extend the root `AGENTS.md` for work on the keystore crate.
     to edit it or add a new migration. There's no team convention for this yet.
   - Released: don't edit it. Fix forward with a new migration. We have occasionally edited released migrations to fix
     catastrophic bugs, but that's a team decision, not something to propose casually.
-- Some tables are rebuilt by later migrations, so the `CREATE TABLE` in any single file can be misleading. To see the
-  real end state, use `compile-schema` (<https://github.com/wireapp/compile-schema>):
-  `compile-schema keystore/src/connection/migrations`. The migrations register a custom `sha256_blob` function, so the
-  plain `sqlite3` CLI can't apply them.
-- `keystore/src/connection/composite-schema.sql` is generated. CI fails if it's stale. Regenerate it with
+- Some tables are rebuilt by later migrations, so the `CREATE TABLE` in any single file can be misleading. Run
+  `compile-schema keystore/src/migrations` to see the final schema. The migrations register a custom `sha256_blob`
+  function, so the plain `sqlite3` CLI can't apply them. The tool is available at
+  <https://github.com/wireapp/compile-schema>.
+- `keystore/src/migrations/composite-schema.sql` is generated. CI fails if it's stale. Regenerate it with
   `compile-schema` after changing migrations. Never edit it by hand, and never add comments to it.
 - `released_migration_checksums_are_unchanged` pins every migration's checksum. Append an entry when you add a
   migration; the failing test prints the tuple to add. Editing an unreleased migration means updating its entry. For a
@@ -38,4 +38,4 @@ These rules extend the root `AGENTS.md` for work on the keystore crate.
   minimal-maintenance mode. If a change there works, it ships. Don't propose style or fidelity cleanups.
 - The import writes into the schema as of V22, through each entity's `save`. When an entity's shape changes, the import
   needs a frozen copy of the old shape, like `StoredCredentialV36` or `V33StoredEpochEncryptionKeypair` in
-  `keystore/src/migrations.rs`.
+  `keystore/src/migrations/historical.rs`.
