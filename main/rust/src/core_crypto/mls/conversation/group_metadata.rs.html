@@ -243,7 +243,7 @@
 <a href=#243 id=243 data-nosnippet>243</a>            </span><span class="kw">let </span>decrypted = result.expect(<span class="string">"a member must be able to process its own eviction"</span>);
 <a href=#244 id=244 data-nosnippet>244</a>            <span class="macro">assert!</span>(
 <a href=#245 id=245 data-nosnippet>245</a>                decrypted
-<a href=#246 id=246 data-nosnippet>246</a>                    .into_single()
+<a href=#246 id=246 data-nosnippet>246</a>                    .into_single_decrypted()
 <a href=#247 id=247 data-nosnippet>247</a>                    .as_commit()
 <a href=#248 id=248 data-nosnippet>248</a>                    .is_some_and(|commit| !commit.is_active),
 <a href=#249 id=249 data-nosnippet>249</a>                <span class="string">"the commit must report the conversation as no longer active"

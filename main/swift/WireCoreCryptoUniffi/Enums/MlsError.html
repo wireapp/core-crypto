@@ -17,7 +17,7 @@
     <a title="MlsError Enumeration Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="../../index.html">WireCoreCrypto Docs</a> (90% documented)</p>
+        <p><a href="../../index.html">WireCoreCrypto Docs</a> (91% documented)</p>
         <div class="header-right">
           <form role="search" action="../../search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -139,6 +139,12 @@
                 <a href="../../WireCoreCryptoUniffi/Enums/DecryptedMessage.html">DecryptedMessage</a>
               </li>
               <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/DecryptionOutcome.html">DecryptionOutcome</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/DeferralReason.html">DeferralReason</a>
+              </li>
+              <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Enums/DeviceStatus.html">DeviceStatus</a>
               </li>
               <li class="nav-group-task">
@@ -176,6 +182,9 @@
               </li>
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Enums/ProteusError.html">ProteusError</a>
+              </li>
+              <li class="nav-group-task">
+                <a href="../../WireCoreCryptoUniffi/Enums/RejectionReason.html">RejectionReason</a>
               </li>
               <li class="nav-group-task">
                 <a href="../../WireCoreCryptoUniffi/Enums/SignatureScheme.html">SignatureScheme</a>
@@ -431,87 +440,6 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi8MlsErrorO16DuplicateMessageyA2CmF"></a>
-                    <a name="//apple_ref/swift/Element/DuplicateMessage" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi8MlsErrorO16DuplicateMessageyA2CmF">DuplicateMessage</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Undocumented</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">case</span> <span class="kt">DuplicateMessage</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi8MlsErrorO10WrongEpochyA2CmF"></a>
-                    <a name="//apple_ref/swift/Element/WrongEpoch" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi8MlsErrorO10WrongEpochyA2CmF">WrongEpoch</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Undocumented</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">case</span> <span class="kt">WrongEpoch</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi8MlsErrorO18MessageEpochTooOldyA2CmF"></a>
-                    <a name="//apple_ref/swift/Element/MessageEpochTooOld" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi8MlsErrorO18MessageEpochTooOldyA2CmF">MessageEpochTooOld</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Undocumented</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">case</span> <span class="kt">MessageEpochTooOld</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
                     <a name="/s:20WireCoreCryptoUniffi8MlsErrorO17SelfCommitIgnoredyA2CmF"></a>
                     <a name="//apple_ref/swift/Element/SelfCommitIgnored" class="dashAnchor"></a>
                     <a class="token" href="#/s:20WireCoreCryptoUniffi8MlsErrorO17SelfCommitIgnoredyA2CmF">SelfCommitIgnored</a>
@@ -522,7 +450,7 @@
                     <section class="section">
                       <div class="pointer"></div>
                       <div class="abstract">
-                        <p>Undocumented</p>
+                        <p>If this error is produced, we have likely forked our state from the state of the DS.</p>
 
                       </div>
                       <div class="declaration">
@@ -530,60 +458,6 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="k">case</span> <span class="kt">SelfCommitIgnored</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi8MlsErrorO13StaleProposalyA2CmF"></a>
-                    <a name="//apple_ref/swift/Element/StaleProposal" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi8MlsErrorO13StaleProposalyA2CmF">StaleProposal</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Undocumented</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">case</span> <span class="kt">StaleProposal</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi8MlsErrorO11StaleCommityA2CmF"></a>
-                    <a name="//apple_ref/swift/Element/StaleCommit" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi8MlsErrorO11StaleCommityA2CmF">StaleCommit</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Undocumented</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="k">case</span> <span class="kt">StaleCommit</span></code></pre>
 
                         </div>
                       </div>

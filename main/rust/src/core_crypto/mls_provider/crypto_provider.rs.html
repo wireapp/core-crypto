@@ -597,8 +597,8 @@
 <a href=#597 id=597 data-nosnippet>597</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;, CryptoError&gt; {
 <a href=#598 id=598 data-nosnippet>598</a>        <span class="kw">use </span>hpke::Deserializable <span class="kw">as _</span>;
 <a href=#599 id=599 data-nosnippet>599</a>        <span class="kw">let </span>encapped_key = Kem::EncappedKey::from_bytes(kem_output).map_err(|<span class="kw">_</span>| CryptoError::HpkeDecryptionError)<span class="question-mark">?</span>;
-<a href=#600 id=600 data-nosnippet>600</a>        <span class="kw">let </span>key = Kem::PrivateKey::from_bytes(private_key).map_err(|<span class="kw">_</span>| CryptoError::HpkeDecryptionError)<span class="question-mark">?</span>;
-<a href=#601 id=601 data-nosnippet>601</a>        <span class="kw">let </span>psk_bundle = PskBundle::new(psk, psk_id).map_err(|<span class="kw">_</span>| CryptoError::HpkeDecryptionError)<span class="question-mark">?</span>;
+<a href=#600 id=600 data-nosnippet>600</a>        <span class="kw">let </span>key = Kem::PrivateKey::from_bytes(private_key).map_err(|<span class="kw">_</span>| CryptoError::InvalidKey)<span class="question-mark">?</span>;
+<a href=#601 id=601 data-nosnippet>601</a>        <span class="kw">let </span>psk_bundle = PskBundle::new(psk, psk_id).map_err(|<span class="kw">_</span>| CryptoError::InvalidKey)<span class="question-mark">?</span>;
 <a href=#602 id=602 data-nosnippet>602</a>        <span class="kw">let </span>plaintext = hpke::single_shot_open::&lt;Aead, Kdf, Kem&gt;(
 <a href=#603 id=603 data-nosnippet>603</a>            <span class="kw-2">&amp;</span>hpke::OpModeR::Psk(psk_bundle),
 <a href=#604 id=604 data-nosnippet>604</a>            <span class="kw-2">&amp;</span>key,
