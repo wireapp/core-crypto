@@ -1,9 +1,8 @@
-//! The methods in this module handle keystore transactions.
+//! This module manages the lifecycle of keystore transactions.
 //!
-//! Keystore transactions are "fake", in-memory persistence of database operations over time.
-//! They're required because actual [`rusqlite::Transaction`] is `!Send + !Sync`, and we need
-//! `Send` at a minimum in order to keep the transaction around and manipulate it concurrently
-//! from various tasks.
+//! The keystore holds the database connection for the life of the SQLite transaction. Writes
+//! run on that connection as they are issued. The keystore's [`Transaction`] wrapper can be
+//! shared across async tasks, which requires `Send` and `Sync`.
 
 use std::{ops::Deref, sync::Arc};
 
