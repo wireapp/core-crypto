@@ -3411,6 +3411,7 @@ version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f6d49c3f3f0e10e18ca975ffda66f8da0ec36521c1d911adcbc521bf0743f5c"
 dependencies = [
+ "const-oid 0.10.2",
  "crypto-common 0.2.2",
  "ctutils",
  "hybrid-array",
@@ -3635,6 +3636,7 @@ version = "0.10.0-rc.1"
 source = "git+https://github.com/wireapp/openmls?rev=d8b7304b6667dd371abeadf6559aca4cefcedcd2#d8b7304b6667dd371abeadf6559aca4cefcedcd2"
 dependencies = [
  "log",
+ "openmls_basic_credential",
  "openmls_serialization_helpers",
  "openmls_traits",
  "rayon",
@@ -3652,6 +3654,7 @@ source = "git+https://github.com/wireapp/openmls?rev=d8b7304b6667dd371abeadf6559
 dependencies = [
  "ed25519-dalek 3.0.0",
  "getrandom 0.4.3",
+ "ml-dsa",
  "openmls_traits",
  "p256",
  "p384",
