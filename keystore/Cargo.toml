@@ -31,7 +31,7 @@ derive_more.workspace = true
 hex.workspace = true
 log = { workspace = true }
 obfuscate = { workspace = true, features = ["openmls"] }
-openmls = { workspace = true }
+openmls = { workspace = true, features = ["migration-import"] }
 openmls_traits = { workspace = true }
 openmls-legacy.workspace = true
 openmls_basic_credential-legacy.workspace = true
