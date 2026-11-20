@@ -313,7 +313,6 @@ mod tests {
     fn make_group(id: &[u8]) -> PersistedMlsGroup {
         PersistedMlsGroup {
             id: id.into(),
-            state: b"group state".to_vec(),
             epoch: 2,
             ciphersuite: 1,
             credential_id: Sha256Hash::hash_from(OWN_PUBLIC_KEY),

@@ -74,7 +74,6 @@ where
 {
     PersistedMlsGroup {
         id: conversation_id.into(),
-        state: b"group state".to_vec(),
         epoch: 1,
         ciphersuite: 1,
         credential_id: Sha256Hash::hash_from(OWN_PUBLIC_KEY),

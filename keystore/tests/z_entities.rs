@@ -953,10 +953,8 @@ pub mod utils {
         fn random() -> Self {
             let uuid = uuid::Uuid::new_v4();
             let id: [u8; 16] = uuid.into_bytes();
-            let state = random_blob();
             Self {
                 id: id.as_slice().into(),
-                state,
                 epoch: (u64::from(rand::random::<u32>())),
                 ciphersuite: (rand::random()),
                 credential_id: {
@@ -975,7 +973,8 @@ pub mod utils {
 
     impl EntityRandomUpdateExt for PersistedMlsGroup {
         fn random_update(&mut self) {
-            self.state = random_blob();
+            self.epoch = u64::from(rand::random::<u32>());
+            self.tnt_tx_counter = rand::random();
         }
     }
 }
