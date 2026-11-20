@@ -206,6 +206,7 @@ fn run_meta_migration(version: i32, conn: &mut rusqlite::Connection) -> CryptoKe
         meta_migrations::v45::VERSION => meta_migrations::v45::meta_migration(&tx)?,
         meta_migrations::v49::VERSION => meta_migrations::v49::meta_migration(&tx)?,
         meta_migrations::v51::VERSION => meta_migrations::v51::meta_migration(&tx)?,
+        meta_migrations::v53::VERSION => meta_migrations::v53::meta_migration(&tx)?,
         _ => {}
     }
 
@@ -833,7 +834,7 @@ r9IJmL6kDQ==
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        let db = seed_then_migrate(path, &key, 11, |conn| {
+        let db = seed_then_migrate_to(path, &key, 11, MigrationTarget::Version(52), |conn| {
             conn.execute("INSERT INTO mls_psk_bundles (psk_id, psk) VALUES (?, ?)", (PSK_ID, PSK))
                 .expect("inserting a pre-V12 psk bundle");
         })
@@ -1016,6 +1017,218 @@ r9IJmL6kDQ==
         );
     }
 
+    /// The V53 meta migration converts the group the old openmls fork stored in `state` into the state openmls
+    /// stores now. The converted group must be the same group: openmls loads it, with the epoch, own leaf, members and
+    /// epoch secrets the fork had, and `state` is cleared.
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn v53_meta_migration_converts_a_legacy_group() {
+        let mut db_file = NamedTempFile::new().unwrap();
+        db_file.write_all(DB).unwrap();
+        let path = db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode");
+
+        let new_key = DatabaseKey::generate();
+        migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key).await.unwrap();
+
+        // The fork's view of the group, from just before the conversion.
+        let (id, legacy_group) = {
+            let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(52))
+                .await
+                .unwrap();
+            let conn = db.conn().await;
+            let (id, state): (Vec<u8>, Vec<u8>) = conn
+                .query_row("SELECT id, state FROM mls_groups", [], |row| {
+                    Ok((row.get(0)?, row.get(1)?))
+                })
+                .unwrap();
+            (id, crate::deser::<openmls_legacy::group::MlsGroup>(&state).unwrap())
+        };
+
+        let db = Database::open(path, &new_key).await.unwrap();
+        let state: Option<Vec<u8>> = db
+            .conn()
+            .await
+            .query_row("SELECT state FROM mls_groups WHERE id = ?", [&id], |row| row.get(0))
+            .unwrap();
+        assert_eq!(state, None, "the converted group's legacy state must be cleared");
+
+        let group = openmls::group::MlsGroup::load(
+            &crate::MlsStorage::read_only(&db),
+            &openmls::group::GroupId::from_slice(&id),
+        )
+        .unwrap()
+        .expect("openmls must load the converted group");
+
+        assert_eq!(group.epoch().as_u64(), legacy_group.epoch().as_u64());
+        assert_eq!(group.own_leaf_index().u32(), legacy_group.own_leaf_index().u32());
+        assert_eq!(group.ciphersuite() as u16, legacy_group.ciphersuite() as u16);
+        assert_eq!(
+            group.epoch_authenticator().as_slice(),
+            legacy_group.epoch_authenticator().as_slice()
+        );
+        // Members by signature key and credential, the credential in the encoding RFC 9420 defines, which the
+        // fork and openmls share.
+        let members = group
+            .members()
+            .map(|member| {
+                use openmls::prelude::tls_codec::Serialize as _;
+                (
+                    member.signature_key,
+                    member.credential.tls_serialize_detached().unwrap(),
+                )
+            })
+            .collect::<Vec<_>>();
+        let legacy_members = legacy_group
+            .members()
+            .map(|member| {
+                use openmls_legacy::prelude::TlsSerializeTrait as _;
+                (
+                    member.signature_key,
+                    member.credential.tls_serialize_detached().unwrap(),
+                )
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(members, legacy_members);
+    }
+
+    /// A group that the V53 meta migration fails to convert is dropped, and the database still opens.
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn v53_meta_migration_drops_a_group_it_fails_to_convert() {
+        let mut db_file = NamedTempFile::new().unwrap();
+        db_file.write_all(DB).unwrap();
+        let path = db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode");
+
+        let new_key = DatabaseKey::generate();
+        migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key).await.unwrap();
+
+        {
+            let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(52))
+                .await
+                .unwrap();
+            let conn = db.conn().await;
+            let groups: i64 = conn
+                .query_row("SELECT count(*) FROM mls_groups", [], |row| row.get(0))
+                .unwrap();
+            assert!(groups > 0, "the bundled database must have a group");
+            // Clearing `state` is the last step of converting a group, so this makes the conversion fail after
+            // openmls has stored the whole group.
+            conn.execute_batch(
+                "CREATE TRIGGER fail_clearing_state BEFORE UPDATE OF state ON mls_groups
+                BEGIN SELECT RAISE(ABORT, 'refusing to clear the state'); END",
+            )
+            .unwrap();
+        }
+
+        let db = Database::open(path, &new_key)
+            .await
+            .expect("a group that fails to convert must not keep the database from opening");
+        let groups: i64 = db
+            .conn()
+            .await
+            .query_row("SELECT count(*) FROM mls_groups", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(groups, 0, "the group that failed to convert must be dropped");
+    }
+
+    /// The V53 meta migration converts the key packages the old openmls fork stored: openmls must read each back as a
+    /// bundle with the same key package, and the init and leaf private keys the fork had.
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn v53_meta_migration_converts_legacy_key_packages() {
+        use openmls::prelude::{KeyPackageBundle, KeyPackageRef, tls_codec::Serialize as _};
+        use openmls_traits::storage::StorageProvider as _;
+
+        let mut db_file = NamedTempFile::new().unwrap();
+        db_file.write_all(DB).unwrap();
+        let path = db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode");
+
+        let new_key = DatabaseKey::generate();
+        migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key).await.unwrap();
+
+        // The fork's key packages and private keys, from just before the conversion.
+        let legacy = {
+            let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(52))
+                .await
+                .unwrap();
+            let conn = db.conn().await;
+            let mut stmt = conn
+                .prepare(
+                    "SELECT key_package_ref, key_package, hpke_init_private_key, sk
+                    FROM mls_key_packages JOIN mls_encryption_keypairs ON pk_sha256 = leaf_encryption_key_hash",
+                )
+                .unwrap();
+            stmt.query_map([], |row| {
+                Ok((
+                    row.get::<_, Vec<u8>>(0)?,
+                    row.get::<_, Vec<u8>>(1)?,
+                    row.get::<_, Vec<u8>>(2)?,
+                    row.get::<_, Vec<u8>>(3)?,
+                ))
+            })
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap()
+        };
+        assert!(!legacy.is_empty(), "the bundled database must have key packages");
+
+        let db = Database::open(path, &new_key).await.unwrap();
+        let storage = crate::MlsStorage::read_only(&db);
+        for (key_package_ref, legacy_key_package, legacy_init_key, legacy_key_pair) in legacy {
+            let bundle = storage
+                .key_package::<_, KeyPackageBundle>(
+                    // A hash reference is a byte string, and serialized as one.
+                    &crate::deser::<KeyPackageRef>(
+                        &crate::ser(&openmls::prelude::tls_codec::VLBytes::from(key_package_ref.clone())).unwrap(),
+                    )
+                    .unwrap(),
+                )
+                .unwrap()
+                .expect("openmls must find every converted key package");
+
+            let legacy_key_package = crate::deser::<openmls_legacy::prelude::KeyPackage>(&legacy_key_package).unwrap();
+            assert_eq!(
+                bundle.key_package().tls_serialize_detached().unwrap(),
+                legacy_key_package.tls_serialize_detached().unwrap(),
+                "the converted key package must be the same key package"
+            );
+            assert_eq!(
+                crate::ser(bundle.init_private_key()).unwrap(),
+                legacy_init_key,
+                "the init private key must be the fork's"
+            );
+            // The fork stored the whole leaf key pair; its private key is its last part.
+            let private_key = crate::ser(
+                &serde_json::to_value(&bundle).unwrap()["private_encryption_key"]["key"]["vec"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|byte| byte.as_u64().unwrap() as u8)
+                    .collect::<Vec<_>>(),
+            )
+            .unwrap();
+            assert!(
+                legacy_key_pair.ends_with(&private_key),
+                "the leaf private key must be the fork's"
+            );
+        }
+        let leftover_key_pairs: i64 = db
+            .conn()
+            .await
+            .query_row("SELECT count(*) FROM mls_encryption_keypairs", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(
+            leftover_key_pairs, 0,
+            "the key packages' key pairs must have moved into them"
+        );
+    }
+
     /// V39 unifies `mls_groups`/`mls_pending_groups`, but can't populate `epoch`, `ciphersuite`,
     /// `own_leaf_index`, `credential_id`, or `credential_type` in SQL: those values only exist
     /// inside the postcard-serialized `MlsGroup` in `state`. The v39 meta migration backfills them
@@ -1033,7 +1246,9 @@ r9IJmL6kDQ==
         let new_key = DatabaseKey::generate();
         migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key).await.unwrap();
 
-        let db = Database::open(path, &new_key).await.unwrap();
+        let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(52))
+            .await
+            .unwrap();
         let conn = db.conn().await;
 
         struct BackfilledGroupRow {
@@ -1129,7 +1344,7 @@ r9IJmL6kDQ==
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        let db = seed_then_migrate(path, &key, 40, |conn| {
+        let db = seed_then_migrate_to(path, &key, 40, MigrationTarget::Version(52), |conn| {
             // V40 made `mls_groups.credential_id` a foreign key onto `mls_credentials`, so the
             // credential has to exist before the conversation which refers to it.
             conn.execute(
@@ -1656,7 +1871,7 @@ r9IJmL6kDQ==
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        let db = seed_then_migrate(path, &key, 48, |conn| {
+        let db = seed_then_migrate_to(path, &key, 48, MigrationTarget::Version(52), |conn| {
             insert_v48_credential(conn, &public_key, X509, &x509_credential, INSERTION_TIME);
             conn.execute(
                 "INSERT INTO mls_groups \
@@ -1710,7 +1925,7 @@ r9IJmL6kDQ==
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        let db = seed_then_migrate(path, &key, 48, |conn| {
+        let db = seed_then_migrate_to(path, &key, 48, MigrationTarget::Version(52), |conn| {
             insert_v48_credential(conn, PUBLIC_KEY, X509, b"not a serialized credential", 1_700_000_000);
         })
         .await;
@@ -1812,7 +2027,7 @@ r9IJmL6kDQ==
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        let db = seed_then_migrate(path, &key, 48, |conn| {
+        let db = seed_then_migrate_to(path, &key, 48, MigrationTarget::Version(52), |conn| {
             insert_v48_credential(conn, PUBLIC_KEY, BASIC, CREDENTIAL, CREATED_AT);
         })
         .await;
@@ -1837,7 +2052,7 @@ r9IJmL6kDQ==
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        let db = seed_then_migrate(path, &key, 48, |conn| {
+        let db = seed_then_migrate_to(path, &key, 48, MigrationTarget::Version(52), |conn| {
             insert_v48_credential(conn, PUBLIC_KEY, BASIC, CREDENTIAL, 0);
             conn.execute("UPDATE mls_credentials SET created_at = NULL", [])
                 .expect("clearing created_at");
@@ -1917,7 +2132,7 @@ r9IJmL6kDQ==
         use openmls::prelude::ContentType;
         use rstest::rstest;
 
-        use super::{seed_then_migrate, temp_db};
+        use super::{MigrationTarget, seed_then_migrate_to, temp_db};
         use crate::{
             Sha256Hash,
             entities::{InboxMessage, WaitingFor},
@@ -2051,7 +2266,7 @@ r9IJmL6kDQ==
             let (db_file, key) = temp_db();
             let path = db_file.path().to_str().unwrap();
 
-            let db = seed_then_migrate(path, &key, 48, |conn| {
+            let db = seed_then_migrate_to(path, &key, 48, MigrationTarget::Version(52), |conn| {
                 seed_conversation(conn, 3, is_pending);
                 seed_message(conn, table, Some(&message));
             })
@@ -2082,7 +2297,7 @@ r9IJmL6kDQ==
             let (db_file, key) = temp_db();
             let path = db_file.path().to_str().unwrap();
 
-            let db = seed_then_migrate(path, &key, 48, |conn| {
+            let db = seed_then_migrate_to(path, &key, 48, MigrationTarget::Version(52), |conn| {
                 seed_conversation(conn, 3, false);
                 seed_message(conn, Table::BufferedCommits, None);
             })
@@ -2106,7 +2321,7 @@ r9IJmL6kDQ==
             let (db_file, key) = temp_db();
             let path = db_file.path().to_str().unwrap();
 
-            let db = seed_then_migrate(path, &key, 48, |conn| {
+            let db = seed_then_migrate_to(path, &key, 48, MigrationTarget::Version(52), |conn| {
                 seed_conversation(conn, 3, false);
                 // seed the commit first, to show that the order comes from the tables, not from insertion
                 seed_message(conn, Table::BufferedCommits, Some(&commit));
@@ -2137,7 +2352,7 @@ r9IJmL6kDQ==
             let (db_file, key) = temp_db();
             let path = db_file.path().to_str().unwrap();
 
-            let db = seed_then_migrate(path, &key, 48, |conn| {
+            let db = seed_then_migrate_to(path, &key, 48, MigrationTarget::Version(52), |conn| {
                 seed_conversation(conn, 3, true);
                 seed_message(conn, Table::PendingMessages, Some(&commit));
                 seed_message(conn, Table::BufferedCommits, Some(&commit));

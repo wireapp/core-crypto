@@ -31,7 +31,7 @@ use crate::{
     },
     entities::{
         ConsumerData, InboxMessage, PersistedMlsGroup, StoredCredential, StoredCredentialPk,
-        StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef, StoredKeyPackage, WaitingFor, X509Crl,
+        StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef, StoredKeyPackage, X509Crl,
         X509IntermediateCert, X509TrustAnchor,
     },
     traits::FetchFromDatabase as _,
@@ -579,12 +579,14 @@ async fn assert_imported_and_migrated(db: &Database, credential_created_at: u64)
         .expect("the encryption keypair survives the import");
     assert_eq!(encryption_keypair.sk, seed::ENCRYPTION_SK);
 
-    let psk_bundle = db
-        .get_borrowed::<StoredPskBundle>(seed::PSK_ID)
-        .await
-        .unwrap()
-        .expect("the psk bundle survives the import");
-    assert_eq!(psk_bundle.psk, seed::PSK);
+    // The import copies the psk bundle across, as `assert_imported_at_v22` pins, but V53 drops every psk bundle.
+    assert!(
+        db.get_borrowed::<StoredPskBundle>(seed::PSK_ID)
+            .await
+            .unwrap()
+            .is_none(),
+        "V53 drops the psk bundles the old openmls fork stored"
+    );
 
     // [`seed::KEY_PACKAGE`] explains why the key package and its HPKE init key only reach the V22 checkpoint.
     // `assert_imported_at_v22` pins that the import copied both across, and
@@ -935,66 +937,48 @@ async fn imports_a_database_captured_from_v9_3_4() {
     assert_eq!(established.credential_id, Sha256Hash::hash_from(&credential.public_key));
     assert_eq!(established.credential_type, credential.credential_type);
 
-    // the conversation being joined by external commit, which V39 keeps so that the join can be recovered
-    let pending = db
-        .get_borrowed::<PersistedMlsGroup>(ConversationIdRef::new(captured::PENDING_CONVERSATION_ID))
-        .await
-        .unwrap()
-        .expect("the pending external join survives every migration");
-    assert!(pending.is_pending);
-    assert_eq!(pending.credential_id, Sha256Hash::hash_from(&credential.public_key));
-
-    // V51 moves the buffered message into the inbox, working out why it waits from the message and its group.
-    let inbox_messages = db
-        .search::<InboxMessage, _>(ConversationIdRef::new(captured::PENDING_CONVERSATION_ID))
-        .await
-        .unwrap();
-    let [inbox_message] = inbox_messages.as_slice() else {
-        panic!(
-            "the message buffered for the pending join must survive as exactly one inbox message, found {}",
-            inbox_messages.len()
-        );
-    };
-    assert_eq!(
-        inbox_message.waiting_for,
-        WaitingFor::PendingJoin,
-        "a message buffered for a pending conversation waits for the join, whatever its epoch"
-    );
-    assert_eq!(
-        inbox_message.content_type,
-        ContentType::Application,
-        "the captured message is an application message from bob"
-    );
-    // bob created the conversation at epoch 0 and updated his key material to reach epoch 1, then encrypted without
-    // ever seeing alice's join
-    assert_eq!(
-        inbox_message.epoch, 1,
-        "the inbox message must carry the epoch bob encrypted it in"
-    );
-
-    // keying material, copied one for one
-    let epoch_keypairs = db.load_all::<StoredEpochEncryptionKeypair>().await.unwrap();
-    assert_eq!(
-        epoch_keypairs.len(),
-        captured_row_count(LEGACY_FIXTURE_V9_3_4, "mls_epoch_encryption_keypairs")
-    );
-    // the client generated epoch keypairs both for the conversation it created and for the one it is joining
+    // The conversation being joined by external commit. V39 keeps it and V51 moves its buffered message into the
+    // inbox, but V53 drops it, since openmls has no form for a pending external join, and the inbox message goes
+    // with it.
     assert!(
-        epoch_keypairs.iter().all(|keypair| {
-            [captured::ESTABLISHED_CONVERSATION_ID, captured::PENDING_CONVERSATION_ID]
-                .contains(&keypair.conversation_id.bytes())
-        }),
-        "V34 splits each epoch keypair's key into the conversation it belongs to"
+        db.get_borrowed::<PersistedMlsGroup>(ConversationIdRef::new(captured::PENDING_CONVERSATION_ID))
+            .await
+            .unwrap()
+            .is_none(),
+        "V53 drops the pending external join"
+    );
+    assert!(
+        db.search::<InboxMessage, _>(ConversationIdRef::new(captured::PENDING_CONVERSATION_ID))
+            .await
+            .unwrap()
+            .is_empty(),
+        "the message buffered for the dropped pending join goes with it"
+    );
+
+    // keying material
+    //
+    // The client generated epoch keypairs both for the conversation it created and for the one it is joining. V34
+    // splits each one's key into the conversation it belongs to, and those of the pending join go with it in V53.
+    let epoch_keypairs = db.load_all::<StoredEpochEncryptionKeypair>().await.unwrap();
+    assert!(
+        captured_row_count(LEGACY_FIXTURE_V9_3_4, "mls_epoch_encryption_keypairs") > epoch_keypairs.len(),
+        "the capture must have epoch keypairs of the pending join for this test to mean anything"
+    );
+    assert!(
+        !epoch_keypairs.is_empty(),
+        "the established conversation has an epoch keypair"
     );
     assert!(
         epoch_keypairs
             .iter()
-            .any(|keypair| keypair.conversation_id.bytes() == captured::ESTABLISHED_CONVERSATION_ID),
-        "the established conversation has an epoch keypair"
+            .all(|keypair| keypair.conversation_id.bytes() == captured::ESTABLISHED_CONVERSATION_ID),
+        "only the epoch keypairs of the established conversation survive"
     );
+    // V53 moves each key package's leaf encryption keypair out of `mls_encryption_keypairs` and into the key package
     assert_eq!(
         db.count::<StoredEncryptionKeyPair>().await.unwrap() as usize,
         captured_row_count(LEGACY_FIXTURE_V9_3_4, "mls_encryption_keypairs")
+            - captured_row_count(LEGACY_FIXTURE_V9_3_4, "mls_keypackages")
     );
     assert_eq!(
         db.count::<crate::entities::StoredHpkePrivateKey>().await.unwrap() as usize,
