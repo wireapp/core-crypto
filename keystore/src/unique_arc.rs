@@ -122,6 +122,11 @@ impl<T> UniqueWeak<T> {
     /// `into_inner`'s future is dropped while parked waiting for readers to drain,
     /// the value survives, yet this call already reported it gone.
     pub fn upgrade_sync(&self) -> Option<impl Deref<Target = T>> {
+        self.upgrade_sync_without_type_erasure()
+    }
+
+    /// As [`Self::upgrade_sync`], for callers who need the concrete type.
+    pub(crate) fn upgrade_sync_without_type_erasure(&self) -> Option<ArcWithReadGuard<T>> {
         let _guard = self.gate.try_read_arc()?;
         self.weak.upgrade().map(move |t| ArcWithReadGuard { _guard, t })
     }
