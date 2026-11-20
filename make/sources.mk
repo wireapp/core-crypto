@@ -43,12 +43,17 @@ UNIFFI_TOML := crypto-ffi/uniffi.toml
 UNIFFI_ANDROID_TOML := crypto-ffi/uniffi-android.toml
 
 # Used by CI to calculate a hash of prerequisite files of a make rule
+#
+# The file list goes through a temporary file rather than the command line. On Windows it is
+# longer than the 32 KiB command-line limit.
 %-hash-deps:
-	@if [ -z "$($*-deps)" ]; then \
+	@if [ -z "$(if $(strip $($*-deps)),x)" ]; then \
 	  echo "ERROR: The \"$*-deps\" variable doesn't exist in the Makefile."; exit 1; \
 	fi
+	$(if $(strip $($*-deps)),$(file >$@.in,$($*-deps)))
 	@set -euo pipefail; \
-	hash=$$(sha256sum $($*-deps) | awk '{print $$1}' | sha256sum | awk '{print $$1}'); \
+	trap 'rm -f $@.in' EXIT; \
+	hash=$$(sha256sum $$(cat $@.in) | awk '{print $$1}' | sha256sum | awk '{print $$1}'); \
 	echo "$$hash"
 
 #-------------------------------------------------------------------------------
