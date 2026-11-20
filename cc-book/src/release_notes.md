@@ -2,7 +2,7 @@
 
 ## CoreCrypto 11
 
-### Unreleased
+### v11.0.2 - 2026-11-21
 
 - InvalidCredentials is now a typed error. Clients can now catch and swallow it to avoid a transaction rollback.
 
