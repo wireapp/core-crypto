@@ -21,15 +21,17 @@
 //! Any attempt to encrypt a message will fail because the client cannot retrieve the signature key from
 //! its keystore.
 
+mod history_key_package;
+
 use std::{borrow::Borrow, sync::Arc};
 
 use core_crypto_keystore::Database;
 use obfuscate::{Obfuscate, Obfuscated};
-use openmls::prelude::KeyPackageSecretEncapsulation;
 
+use self::history_key_package::HistoryKeyPackage;
 use crate::{
     CipherSuite, ClientId, ClientIdRef, CoreCrypto, CoreCryptoTransportNotImplementedProvider, Credential, Error,
-    OpenMlsError, RecursiveError, Result, Session, mls_provider::CryptoProvider,
+    RecursiveError, Result, Session, mls_provider::CryptoProvider,
 };
 
 /// We always instantiate history clients with this prefix in their client id, so
@@ -42,7 +44,8 @@ pub const HISTORY_CLIENT_ID_PREFIX: &str = "history-client";
 pub struct HistorySecret {
     /// Client id of the associated history client
     pub client_id: ClientId,
-    pub(crate) key_package: KeyPackageSecretEncapsulation,
+    #[serde(with = "history_key_package::wire")]
+    pub(crate) key_package: HistoryKeyPackage,
 }
 
 impl Obfuscate for HistorySecret {
@@ -97,9 +100,14 @@ pub(crate) async fn generate_history_secret(cipher_suite: CipherSuite) -> Result
         .generate_key_package(&credential_ref, None)
         .await
         .map_err(RecursiveError::context("generating keypackage"))?;
-    let key_package = KeyPackageSecretEncapsulation::load(&session.crypto_provider, key_package)
-        .await
-        .map_err(OpenMlsError::wrap("encapsulating key package"))?;
+    let key_package = HistoryKeyPackage::load(
+        &session.crypto_provider.with_transaction(
+            tx.inner()
+                .map_err(RecursiveError::context("getting the transaction"))?
+                .transaction(),
+        ),
+        &key_package,
+    )?;
 
     // we don't need to finish the transaction here--the point of the ephemeral CC was that no mutations would be saved
     // there
@@ -148,12 +156,17 @@ impl CoreCrypto {
             transport,
         );
 
-        let credential = session
-            .restore_from_history_secret(history_secret)
-            .await
-            .map_err(RecursiveError::context(
-                "restoring ephemeral session from history secret",
-            ))?;
+        // The history client joins conversations by welcome, which needs this key package and its private keys.
+        history_secret.key_package.store(
+            &session.crypto_provider.with_transaction(
+                tx.inner()
+                    .map_err(RecursiveError::context("getting the transaction"))?
+                    .transaction(),
+            ),
+        )?;
+        let credential = Credential::public_only(history_secret.key_package.key_package()).map_err(
+            RecursiveError::context("recovering the history client's credential from its key package"),
+        )?;
 
         tx.set_mls_session(session)
             .await
