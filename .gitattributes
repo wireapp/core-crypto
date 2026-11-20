@@ -1,0 +1,8 @@
+# Check out text files with LF line endings everywhere, whatever `core.autocrlf` says. Builds embed
+# some files byte for byte: the keystore migrations are checksummed, so a Windows checkout with CRLF
+# would build migrations that no longer match the databases they created. Scripts run through bash
+# on Windows break with CRLF too.
+* text=auto eol=lf
+
+# Windows batch files are stored with CRLF and must stay that way.
+*.bat -text
