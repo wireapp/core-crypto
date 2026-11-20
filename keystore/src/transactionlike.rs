@@ -1,26 +1,4 @@
-use std::ops::Deref;
-
-use rusqlite::Connection;
-
-use crate::{CryptoKeystoreResult, transaction::TransactionConnection};
-
-/// A guard unifying the types of connection provided by [`Transactionlike`].
-#[derive(derive_more::From)]
-pub(crate) enum ConnectionGuard<'a> {
-    Rusqlite(&'a rusqlite::Transaction<'a>),
-    Keystore(TransactionConnection),
-}
-
-impl<'a> Deref for ConnectionGuard<'a> {
-    type Target = Connection;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            ConnectionGuard::Rusqlite(transaction) => (*transaction).deref(),
-            ConnectionGuard::Keystore(transaction_connection) => transaction_connection.deref(),
-        }
-    }
-}
+use crate::{CryptoKeystoreResult, connection::ConnectionGuard};
 
 /// A transaction which might come from our own keystore implementation, or directly from rusqlite.
 ///

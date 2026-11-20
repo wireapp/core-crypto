@@ -27,6 +27,7 @@ pub use self::idb_migration::{delete_legacy_idb, legacy_idb_exists};
 pub use self::mls::{deser, ser};
 pub(crate) use self::{
     filesystem::Filesystem,
+    transaction::ConnectionGuard,
     transaction_lock::{TransactionGuard, TransactionLock},
 };
 pub use crate::migrations::migrate_db_key_type_to_bytes;

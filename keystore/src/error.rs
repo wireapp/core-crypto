@@ -11,6 +11,8 @@ pub enum CryptoKeystoreError {
     MutatingOperationWithoutTransaction,
     #[error("cannot open a new transaction as there exists another transaction currently in progress")]
     TransactionInProgress,
+    #[error("the database is in use, and this operation can't wait for it")]
+    Busy,
     #[error("the transaction was unexpectedly rolled back by sqlite")]
     UnexpectedRollback,
     #[error("failed to operate the cross-process transaction lock at {path}")]
