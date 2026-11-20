@@ -2,6 +2,14 @@
 
 ## CoreCrypto 11
 
+### Unreleased
+
+- InvalidCredentials is now a typed error. Clients can now catch and swallow it to avoid a transaction rollback.
+
+#### Bug fixes
+
+- Recreating a `PkiEnvironment` now preserves revocations from stored CRLs.
+
 ### v11.0.1 - 2026-11-13
 
 #### Bug fixes
@@ -14,7 +22,6 @@
   processes.
 - CRL handling has been fixed such that revoked X509 certificates immediately cause credentials relying on them to be
   invalidated. Previously revocation was having an effect only after reconstructing the `PkiEnvironment`.
-- Recreating a `PkiEnvironment` now preserves revocations from stored CRLs.
 
 ### v11.0.0 - 2026-10-30
 
