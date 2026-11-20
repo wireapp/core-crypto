@@ -56,7 +56,6 @@ thiserror.workspace = true
 x509-cert = { workspace = true, features = ["fingerprint"] }
 zeroize = { workspace = true, features = ["zeroize_derive"] }
 parking_lot = { version = "0.13.0", features = ["arc_lock"] }
-typeid = "1.0.3"
 
 [target.'cfg(target_os = "ios")'.dependencies]
 security-framework = "3.7"
