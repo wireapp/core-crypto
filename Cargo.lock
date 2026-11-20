@@ -1231,7 +1231,6 @@ dependencies = [
  "macro_rules_attribute",
  "obfuscate",
  "openmls",
- "openmls_basic_credential",
  "openmls_traits",
  "parking_lot 0.13.0",
  "paste",

@@ -32,7 +32,6 @@ hex.workspace = true
 log = { workspace = true }
 obfuscate = { workspace = true, features = ["openmls"] }
 openmls = { workspace = true }
-openmls_basic_credential = { workspace = true }
 openmls_traits = { workspace = true }
 postcard = { version = "1.1", default-features = false, features = ["use-std"] }
 proteus-traits = { workspace = true, optional = true }
