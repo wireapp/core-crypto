@@ -1135,6 +1135,7 @@ dependencies = [
  "p384",
  "p521",
  "pem 4.0.0",
+ "percent-encoding",
  "proteus-traits",
  "proteus-wasm",
  "rand 0.10.3",
