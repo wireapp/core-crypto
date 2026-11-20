@@ -9,6 +9,7 @@
 - CC now checks the conversation ID of transient and targeted messages during decryption; non-matches are rejected.
 - The epoch observer now receives epoch change notifications in several cases for which those notifications were
   accidentally omitted in the past.
+- InvalidCredentials is now a typed error. Clients can now catch and swallow it to avoid a transaction rollback.
 
 #### TypeScript
 
