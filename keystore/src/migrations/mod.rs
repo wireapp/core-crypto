@@ -276,7 +276,7 @@ pub async fn migrate_db_key_type_to_bytes(
 mod test {
     use std::io::Write;
 
-    use openmls::prelude::{Ciphersuite, Credential as MlsCredential, TlsSerializeTrait as _};
+    use openmls_legacy::prelude::{Ciphersuite, Credential as MlsCredential, TlsSerializeTrait as _};
     use tempfile::NamedTempFile;
     use x509_cert::der::{DecodePem as _, Encode as _};
 
@@ -502,8 +502,8 @@ IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
     /// enrollment was a replacement of the basic credential, but the X509 credential must survive.
     #[macro_rules_attribute::apply(smol_macros::test)]
     async fn e2ei_enrolled_v9_client_keeps_its_x509_credential() {
-        use openmls::prelude::{CredentialType, SignatureScheme};
-        use openmls_basic_credential::SignatureKeyPair;
+        use openmls_basic_credential_legacy::SignatureKeyPair;
+        use openmls_legacy::prelude::{CredentialType, SignatureScheme};
 
         let certificate = x509_cert::Certificate::from_pem(CERTIFICATE_PEM).unwrap();
         let public_key = certificate
@@ -1078,8 +1078,8 @@ r9IJmL6kDQ==
 
         // parsed independently of the meta migration's own implementation, so this pins the
         // backfill against the state blob rather than against itself
-        let group =
-            crate::deser::<openmls::group::MlsGroup>(&state).expect("the bundled group's state must deserialize");
+        let group = crate::deser::<openmls_legacy::group::MlsGroup>(&state)
+            .expect("the bundled group's state must deserialize");
 
         assert_eq!(epoch, Some(group.epoch().as_u64() as i64));
         assert_eq!(ciphersuite, Some(group.ciphersuite() as u16));
@@ -1242,7 +1242,7 @@ r9IJmL6kDQ==
     async fn v45_through_v46_move_key_package_key_material_into_mls_key_packages() {
         use std::collections::HashMap;
 
-        use openmls::prelude::KeyPackage;
+        use openmls_legacy::prelude::KeyPackage;
 
         const UNPARSEABLE_REF: &[u8] = b"ref of a key package which does not deserialize";
         const UNPARSEABLE_KEY_PACKAGE: &[u8] = b"not a serialized key package";
