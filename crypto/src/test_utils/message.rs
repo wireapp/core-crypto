@@ -1,5 +1,5 @@
 use openmls::{
-    framing::MlsMessageInBody,
+    framing::MlsMessageBodyIn,
     prelude::{GroupEpoch, MlsMessageIn, MlsMessageOut, group_info::VerifiableGroupInfo},
 };
 
@@ -12,8 +12,8 @@ impl MessageExt for MlsMessageOut {
     fn epoch(&self) -> Option<GroupEpoch> {
         let msg_in = MlsMessageIn::from(self.clone());
         match msg_in.extract() {
-            MlsMessageInBody::PublicMessage(m) => Some(m.epoch()),
-            MlsMessageInBody::PrivateMessage(m) => Some(m.epoch()),
+            MlsMessageBodyIn::PublicMessage(m) => Some(m.epoch()),
+            MlsMessageBodyIn::PrivateMessage(m) => Some(m.epoch()),
             _ => None,
         }
     }
@@ -21,7 +21,7 @@ impl MessageExt for MlsMessageOut {
     fn group_info(&self) -> Option<VerifiableGroupInfo> {
         let msg_in = MlsMessageIn::from(self.clone());
         match msg_in.extract() {
-            MlsMessageInBody::GroupInfo(vgi) => Some(vgi),
+            MlsMessageBodyIn::GroupInfo(vgi) => Some(vgi),
             _ => None,
         }
     }

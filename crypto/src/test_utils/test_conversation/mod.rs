@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use openmls::prelude::group_info::VerifiableGroupInfo;
-use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::IdentityStatus;
 
 use super::{
@@ -12,7 +11,7 @@ use crate::{
     ConversationId, CredentialRef, E2eiConversationState, RecursiveError,
     mls::{
         conversation::ConversationMut,
-        credential::{Credential, ext::CredentialExt as _},
+        credential::{Credential, ext::CredentialExt as _, identity::credential_identity},
     },
 };
 
@@ -93,7 +92,7 @@ impl<'a> TestConversation<'a> {
 
         let gi = group
             .export_group_info(
-                &self.actor().session().await.crypto_provider,
+                self.actor().session().await.crypto_provider.crypto(),
                 &credential.signature_key_pair,
                 true,
             )
@@ -326,7 +325,7 @@ impl<'a> TestConversation<'a> {
             .group()
             .await
             .members()
-            .find(|k| k.credential.identity() == client_id.as_bytes())
+            .find(|k| credential_identity(&k.credential).unwrap().as_ref() == client_id.as_bytes())
             .unwrap()
             .encryption_key
     }
@@ -382,7 +381,10 @@ impl<'a> TestConversation<'a> {
             signature_key,
         };
 
-        assert_eq!(credential.credential.identity(), cid.as_bytes());
+        assert_eq!(
+            credential_identity(&credential.credential).unwrap().as_ref(),
+            cid.as_bytes()
+        );
         let keystore_identity = credential
             .extract_identity(signature_scheme, pki_env.as_deref())
             .await

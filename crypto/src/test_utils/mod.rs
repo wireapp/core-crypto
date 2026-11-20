@@ -18,7 +18,6 @@ use std::sync::Arc;
 
 use async_lock::RwLock;
 use openmls::framing::MlsMessageOut;
-use openmls_traits::OpenMlsCryptoProvider as _;
 pub use openmls_traits::types::SignatureScheme;
 use uuid::Uuid;
 use wire_e2e_identity::pki_env::PkiEnvironment;
