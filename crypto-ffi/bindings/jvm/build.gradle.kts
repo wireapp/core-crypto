@@ -38,19 +38,22 @@ dependencies {
 val buildType = if (System.getenv("RELEASE") == "1") "release" else "debug"
 
 // A native library we can bundle. `jnaPrefix` is the classpath directory JNA searches
-// for the library on that platform, and `makeRule` is the rule that builds it.
-data class FfiTarget(val rustTarget: String, val jnaPrefix: String, val ext: String, val makeRule: String)
+// for the library on that platform, `libName` is the file name JNA looks for there, and
+// `makeRule` is the rule that builds it.
+data class FfiTarget(val rustTarget: String, val jnaPrefix: String, val libName: String, val makeRule: String)
 
 val ffiTargets = listOf(
-    FfiTarget("x86_64-unknown-linux-gnu", "linux-x86-64", "so", "jvm-linux"),
-    FfiTarget("aarch64-apple-darwin", "darwin-aarch64", "dylib", "jvm-darwin"),
+    FfiTarget("x86_64-unknown-linux-gnu", "linux-x86-64", "libcore_crypto_ffi.so", "jvm-linux"),
+    FfiTarget("aarch64-apple-darwin", "darwin-aarch64", "libcore_crypto_ffi.dylib", "jvm-darwin"),
+    // Windows library names have no `lib` prefix.
+    FfiTarget("x86_64-pc-windows-msvc", "win32-x86-64", "core_crypto_ffi.dll", "jvm-windows"),
 )
 
 // One copy task per target. Each one places its library at `<jnaPrefix>/<libName>` under
 // its own output directory, so that directory can go straight onto a classpath or into a jar.
 // A missing library is always an error: nothing asks for a library it doesn't need.
 val copyFfiLibrary = ffiTargets.associate { target ->
-    val libName = "libcore_crypto_ffi.${target.ext}"
+    val libName = target.libName
     val src = projectDir.resolve("../../../target/${target.rustTarget}/$buildType/$libName").normalize()
     val outDir = layout.buildDirectory.dir("ffiLibs/$buildType/${target.jnaPrefix}")
     target.jnaPrefix to tasks.register("copyFfiLibrary-${target.jnaPrefix}") {
@@ -76,6 +79,7 @@ val hostJnaPrefix: String? = run {
     when {
         os.startsWith("linux") && arch == "amd64" -> "linux-x86-64"
         os.startsWith("mac") && arch == "aarch64" -> "darwin-aarch64"
+        os.startsWith("windows") && arch == "amd64" -> "win32-x86-64"
         else -> null
     }
 }
