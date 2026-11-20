@@ -1,0 +1,104 @@
+name: Fetch the KMP package's libraries
+description: |
+  Download the release libraries the KMP package ships into `target`, where `make kmp` and OxiKT
+  take them from: three Android ABIs and five JVM platforms, and on macOS also the Apple static
+  libraries with their linker options. Assumes the jobs building them have run.
+
+inputs:
+  gh-token:
+    required: true
+  artifact-generation:
+    description: suffix for artifact names that allows us to easily invalidate artifacts
+
+runs:
+  using: composite
+  steps:
+    - name: download armv7-linux-androideabi library
+      uses: ./.github/actions/make/android/lib
+      with:
+        task: android-armv7
+        gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
+
+    - name: download aarch64-linux-android library
+      uses: ./.github/actions/make/android/lib
+      with:
+        task: android-armv8
+        gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
+
+    - name: download x86_64-linux-android library
+      uses: ./.github/actions/make/android/lib
+      with:
+        task: android-x86
+        gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
+
+    # The JVM artifacts are named after their make rules. The generic action fetches them on any
+    # runner, while the `jvm` action only fetches the runner's own platform.
+    - name: download aarch64-apple-darwin library
+      uses: ./.github/actions/make
+      with:
+        key: jvm-darwin
+        make-rule: jvm-darwin
+        target-path: |
+          target/aarch64-apple-darwin/release/libcore_crypto_ffi.dylib
+          target/aarch64-apple-darwin/release/libcore_crypto_ffi.a
+          target/aarch64-apple-darwin/release/core_crypto_ffi.native-static-libs
+        gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
+
+    - name: download x86_64-apple-darwin library
+      uses: ./.github/actions/make
+      with:
+        key: jvm-darwin-x86
+        make-rule: jvm-darwin-x86
+        target-path: target/x86_64-apple-darwin/release/libcore_crypto_ffi.dylib
+        gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
+
+    - name: download x86_64-unknown-linux-gnu library
+      uses: ./.github/actions/make
+      with:
+        key: jvm-linux
+        make-rule: jvm-linux
+        target-path: |
+          target/x86_64-unknown-linux-gnu/release/libcore_crypto_ffi.so
+          target/x86_64-unknown-linux-gnu/release/libcore_crypto_ffi.a
+        gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
+
+    - name: download aarch64-unknown-linux-gnu library
+      uses: ./.github/actions/make
+      with:
+        key: jvm-linux-arm
+        make-rule: jvm-linux-arm
+        target-path: target/aarch64-unknown-linux-gnu/release/libcore_crypto_ffi.so
+        gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
+
+    - name: download x86_64-pc-windows-gnu library
+      uses: ./.github/actions/make
+      with:
+        key: jvm-windows
+        make-rule: jvm-windows
+        target-path: target/x86_64-pc-windows-gnu/release/core_crypto_ffi.dll
+        gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
+
+    # Kotlin/Native only builds the Apple targets on macOS.
+    - name: download aarch64-apple-ios library
+      if: runner.os == 'macOS'
+      uses: ./.github/actions/make/ios/build
+      with:
+        task: ios-device
+        gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
+
+    - name: download aarch64-apple-ios-sim library
+      if: runner.os == 'macOS'
+      uses: ./.github/actions/make/ios/build
+      with:
+        task: ios-simulator-arm
+        gh-token: ${{ inputs.gh-token }}
+        artifact-generation: ${{ inputs.artifact-generation }}
