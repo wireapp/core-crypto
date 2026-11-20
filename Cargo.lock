@@ -3,6 +3,21 @@
 version = 4
 
 [[package]]
+name = "addr2line"
+version = "0.27.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e567177890eb1617b1f774005b66b26b2377afd138a2ca37aae7d8f0c81429d4"
+dependencies = [
+ "gimli",
+]
+
+[[package]]
+name = "adler2"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "320119579fcad9c21884f5c4861d16174d0e06250625266f50fe6898340abefa"
+
+[[package]]
 name = "aead"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -458,6 +473,21 @@ dependencies = [
  "sync_wrapper",
  "tower-layer",
  "tower-service",
+]
+
+[[package]]
+name = "backtrace"
+version = "0.3.77"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "42f4220217f3288537b83684130f42fad43320b1c3b805f1910d683d52ded24f"
+dependencies = [
+ "addr2line",
+ "cfg-if",
+ "libc",
+ "miniz_oxide",
+ "object",
+ "rustc-demangle",
+ "windows-link 0.2.1",
 ]
 
 [[package]]
@@ -1132,9 +1162,9 @@ dependencies = [
  "macro_rules_attribute",
  "ml-dsa",
  "obfuscate",
- "openmls",
- "openmls_basic_credential",
- "openmls_traits",
+ "openmls 0.10.0-rc.1",
+ "openmls_basic_credential 0.7.0-rc.1",
+ "openmls_traits 0.7.0-rc.1",
  "p256",
  "p384",
  "p521",
@@ -1230,8 +1260,12 @@ dependencies = [
  "log",
  "macro_rules_attribute",
  "obfuscate",
- "openmls",
- "openmls_traits",
+ "openmls 0.10.0-rc.1",
+ "openmls 1.0.0",
+ "openmls_basic_credential 0.2.0",
+ "openmls_traits 0.2.0",
+ "openmls_traits 0.7.0-rc.1",
+ "openmls_x509_credential",
  "parking_lot 0.13.0",
  "paste",
  "postcard",
@@ -2230,6 +2264,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "gimli"
+version = "0.34.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1033caf0b349c518623b5396bfb2cf0bddf44f0306d543a250e5743297aafd10"
+
+[[package]]
 name = "glob"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2958,7 +2998,7 @@ dependencies = [
  "fantoccini",
  "hex",
  "log",
- "openmls",
+ "openmls 0.10.0-rc.1",
  "proteus-wasm",
  "rand 0.10.4",
  "serde",
@@ -2996,6 +3036,15 @@ name = "is_terminal_polyfill"
 version = "1.70.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7943c866cc5cd64cbc25b2e01621d07fa8eb2a1a23160ee81ce38704e97b8ecf"
+
+[[package]]
+name = "itertools"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
+dependencies = [
+ "either",
+]
 
 [[package]]
 name = "itertools"
@@ -3177,9 +3226,9 @@ dependencies = [
  "hex",
  "jiff 1.0.1",
  "macro_rules_attribute",
- "openmls",
- "openmls_basic_credential",
- "openmls_traits",
+ "openmls 0.10.0-rc.1",
+ "openmls_basic_credential 0.7.0-rc.1",
+ "openmls_traits 0.7.0-rc.1",
  "postcard",
  "proteus-wasm",
  "serde",
@@ -3394,6 +3443,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
+name = "miniz_oxide"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b63fbc4a50860e98e7b2aa7804ded1db5cbc3aff9193adaff57a6931bf7c4b4c"
+dependencies = [
+ "adler2",
+]
+
+[[package]]
 name = "mio"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3410,7 +3468,7 @@ version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6f6d49c3f3f0e10e18ca975ffda66f8da0ec36521c1d911adcbc521bf0743f5c"
 dependencies = [
- "const-oid 0.10.2",
+ "const-oid 0.10.3",
  "crypto-common 0.2.2",
  "ctutils",
  "hybrid-array",
@@ -3604,11 +3662,20 @@ dependencies = [
  "derive_more",
  "hex",
  "log",
- "openmls",
- "openmls_basic_credential",
+ "openmls 0.10.0-rc.1",
+ "openmls_basic_credential 0.7.0-rc.1",
  "rand 0.10.4",
  "rusty-jwt-tools",
  "sha2 0.11.1",
+]
+
+[[package]]
+name = "object"
+version = "0.40.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd229a0361b9d0d4396176e02d65897f487eebeab7caa6d443855ee152ca0b9c"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]
@@ -3636,9 +3703,9 @@ source = "git+https://github.com/wireapp/openmls?rev=d8b7304b6667dd371abeadf6559
 dependencies = [
  "getrandom 0.4.3",
  "log",
- "openmls_basic_credential",
+ "openmls_basic_credential 0.7.0-rc.1",
  "openmls_serialization_helpers",
- "openmls_traits",
+ "openmls_traits 0.7.0-rc.1",
  "rayon",
  "serde",
  "serde_bytes",
@@ -3649,6 +3716,48 @@ dependencies = [
 ]
 
 [[package]]
+name = "openmls"
+version = "1.0.0"
+source = "git+https://github.com/wireapp/openmls?rev=8145f8e70d884159c3cdf719d6f3856fa0596533#8145f8e70d884159c3cdf719d6f3856fa0596533"
+dependencies = [
+ "async-trait",
+ "backtrace",
+ "hex",
+ "indexmap 2.14.0",
+ "itertools 0.12.1",
+ "log",
+ "openmls_basic_credential 0.2.0",
+ "openmls_traits 0.2.0",
+ "openmls_x509_credential",
+ "serde",
+ "subtle",
+ "thiserror 1.0.69",
+ "tls_codec 0.5.0",
+ "web-time",
+ "x509-cert",
+]
+
+[[package]]
+name = "openmls_basic_credential"
+version = "0.2.0"
+source = "git+https://github.com/wireapp/openmls?rev=8145f8e70d884159c3cdf719d6f3856fa0596533#8145f8e70d884159c3cdf719d6f3856fa0596533"
+dependencies = [
+ "async-trait",
+ "ed25519-dalek 3.0.0",
+ "elliptic-curve",
+ "getrandom 0.4.3",
+ "ml-dsa",
+ "openmls_traits 0.2.0",
+ "p256",
+ "p384",
+ "p521",
+ "rand_core 0.10.1",
+ "secrecy",
+ "serde",
+ "tls_codec 0.5.0",
+]
+
+[[package]]
 name = "openmls_basic_credential"
 version = "0.7.0-rc.1"
 source = "git+https://github.com/wireapp/openmls?rev=d8b7304b6667dd371abeadf6559aca4cefcedcd2#d8b7304b6667dd371abeadf6559aca4cefcedcd2"
@@ -3656,7 +3765,7 @@ dependencies = [
  "ed25519-dalek 3.0.0",
  "getrandom 0.4.3",
  "ml-dsa",
- "openmls_traits",
+ "openmls_traits 0.7.0-rc.1",
  "p256",
  "p384",
  "rand_core 0.10.1",
@@ -3678,12 +3787,49 @@ dependencies = [
 
 [[package]]
 name = "openmls_traits"
+version = "0.2.0"
+source = "git+https://github.com/wireapp/openmls?rev=8145f8e70d884159c3cdf719d6f3856fa0596533#8145f8e70d884159c3cdf719d6f3856fa0596533"
+dependencies = [
+ "async-trait",
+ "ed25519-dalek 3.0.0",
+ "ml-dsa",
+ "p256",
+ "p384",
+ "p521",
+ "rand_core 0.10.1",
+ "serde",
+ "signature 3.0.0",
+ "tls_codec 0.5.0",
+ "zeroize",
+]
+
+[[package]]
+name = "openmls_traits"
 version = "0.7.0-rc.1"
 source = "git+https://github.com/wireapp/openmls?rev=d8b7304b6667dd371abeadf6559aca4cefcedcd2#d8b7304b6667dd371abeadf6559aca4cefcedcd2"
 dependencies = [
  "maybe-async",
  "serde",
  "tls_codec 0.5.0",
+]
+
+[[package]]
+name = "openmls_x509_credential"
+version = "0.2.0"
+source = "git+https://github.com/wireapp/openmls?rev=8145f8e70d884159c3cdf719d6f3856fa0596533#8145f8e70d884159c3cdf719d6f3856fa0596533"
+dependencies = [
+ "async-trait",
+ "base64 0.21.7",
+ "const-oid 0.10.3",
+ "openmls_basic_credential 0.2.0",
+ "openmls_traits 0.2.0",
+ "percent-encoding",
+ "secrecy",
+ "serde",
+ "tls_codec 0.5.0",
+ "uuid",
+ "web-time",
+ "x509-cert",
 ]
 
 [[package]]
@@ -4712,6 +4858,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustc-demangle"
+version = "0.1.28"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b74b56ffa8bb2830709a538c2cbcae9aa062db0d2a42563bfb09bdaae44020eb"
+
+[[package]]
 name = "rustc-hash"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4945,6 +5097,16 @@ dependencies = [
  "der 0.8.3",
  "hybrid-array",
  "subtle",
+ "zeroize",
+]
+
+[[package]]
+name = "secrecy"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9bd1c54ea06cfd2f6b63219704de0b9b4f72dcc2b8fdef820be6cd799780e91e"
+dependencies = [
+ "serde",
  "zeroize",
 ]
 
@@ -7242,7 +7404,7 @@ dependencies = [
  "log",
  "oauth2",
  "obfuscate",
- "openmls_traits",
+ "openmls_traits 0.7.0-rc.1",
  "p256",
  "p384",
  "p521",
