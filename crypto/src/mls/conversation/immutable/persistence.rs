@@ -1,22 +1,31 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Weak},
+use std::{collections::HashMap, sync::Arc};
+
+use core_crypto_keystore::{
+    CryptoKeystoreError, ancillary::ConversationIdRef, entities::PersistedMlsGroup, traits::FetchFromDatabase,
 };
+use openmls::group::{GroupId, MlsGroup};
+use openmls_traits::storage::{CURRENT_VERSION, StorageProvider};
 
-use core_crypto_keystore::{ancillary::ConversationIdRef, entities::PersistedMlsGroup, traits::FetchFromDatabase};
-use openmls::group::MlsGroup;
-
-use super::Result;
+use super::{Error, Result};
 use crate::{
     ConversationConfiguration, ConversationId, KeystoreError, PendingStatus, Session,
     mls::conversation::{Conversation, MlsGroupState},
 };
 
 impl Conversation {
-    /// restore the conversation from a persisted group
-    fn from_persisted(session: Weak<Session>, persisted: &PersistedMlsGroup) -> Result<Self> {
-        let group: MlsGroup =
-            core_crypto_keystore::deser(&persisted.state).map_err(KeystoreError::wrap("deserializing group state"))?;
+    /// Restore the conversation of a persisted group, loading openmls's state of it from `storage`.
+    fn from_persisted(
+        session: &Arc<Session>,
+        storage: &impl StorageProvider<CURRENT_VERSION, Error = CryptoKeystoreError>,
+        persisted: &PersistedMlsGroup,
+    ) -> Result<Self> {
+        let group = MlsGroup::load(storage, &GroupId::from_slice(persisted.id.bytes()))
+            .map_err(KeystoreError::wrap("loading mls group"))?
+            // openmls only loads a group when every piece of its state is there. A row without them was written by the
+            // old openmls fork and hasn't been converted.
+            .ok_or(Error::MlsGroupInvalidState(
+                "the group's row has no openmls state; it may still be in the old openmls fork's format",
+            ))?;
         let id = ConversationId::from(group.group_id().as_slice());
         let mut configuration = ConversationConfiguration {
             cipher_suite: group.ciphersuite().into(),
@@ -38,7 +47,7 @@ impl Conversation {
             id,
             group,
             configuration,
-            session,
+            session: Arc::downgrade(session),
         })
     }
 
@@ -62,7 +71,8 @@ impl Conversation {
         let Some(group) = group else {
             return Ok(None);
         };
-        let conversation = Self::from_persisted(Arc::downgrade(session), &group)?;
+        let connection = session.database().mls_read_connection().await;
+        let conversation = Self::from_persisted(session, &connection.storage(), &group)?;
         Ok(Some(conversation))
     }
 
@@ -107,6 +117,8 @@ impl Conversation {
             .load_all::<PersistedMlsGroup>()
             .await
             .map_err(KeystoreError::wrap("finding all persisted mls groups"))?;
+        let connection = session.database().mls_read_connection().await;
+        let storage = connection.storage();
         groups
             .into_iter()
             .filter(|group| !group.is_pending)
@@ -114,7 +126,7 @@ impl Conversation {
                 // we can't just destructure the fields straight out of the group, because we derive `Zeroize`, which
                 // zeroizes on drop, which means we are forced to clone all the group's fields, because
                 // otherwise the drop impl couldn't run.
-                let conversation = Self::from_persisted(Arc::downgrade(session), &group)?;
+                let conversation = Self::from_persisted(session, &storage, &group)?;
                 Ok((conversation.id.clone(), conversation))
             })
             .collect()

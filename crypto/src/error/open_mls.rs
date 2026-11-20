@@ -57,9 +57,6 @@ pub enum OpenMlsErrorKind {
     /// deserializing JSON data.
     #[error(transparent)]
     MlsKeystoreSerializationError(#[from] serde_json::Error),
-    /// External Commit error
-    #[error(transparent)]
-    MlsExternalCommitError(#[from] openmls::prelude::ExternalCommitError<core_crypto_keystore::CryptoKeystoreError>),
     /// OpenMls crypto error
     #[error(transparent)]
     MlsCryptoError(#[from] openmls::prelude::CryptoError),

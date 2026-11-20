@@ -1,6 +1,6 @@
 //! This module contains transactional conversation operations that are related to processing welcome messages.
 
-use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
+use openmls::prelude::{MlsMessageBodyIn, MlsMessageIn};
 
 use super::{Error, Result, TransactionContext};
 use crate::{ConversationConfiguration, ConversationId};
@@ -20,7 +20,7 @@ impl TransactionContext {
     /// * if the message can't be decrypted
     #[cfg_attr(test, crate::dispotent)]
     pub async fn process_welcome_message(&self, welcome: impl Into<MlsMessageIn>) -> Result<ConversationId> {
-        let MlsMessageInBody::Welcome(welcome) = welcome.into().extract() else {
+        let MlsMessageBodyIn::Welcome(welcome) = welcome.into().extract() else {
             return Err(Error::CallerError(
                 "the message provided to process_welcome_message was not a welcome message",
             ));
@@ -71,7 +71,7 @@ mod tests {
             let next_count = bob.transaction.count_entities().await;
             assert_eq!(next_count.key_package, prev_count.key_package - 1);
             assert_eq!(next_count.hpke_private_key, prev_count.hpke_private_key - 1);
-            assert_eq!(next_count.encryption_keypair, prev_count.encryption_keypair - 1);
+            // The key package's leaf encryption key is stored with the key package, so it went with it.
         })
         .await;
     }
