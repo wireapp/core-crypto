@@ -1,12 +1,6 @@
 use std::fmt::Formatter;
 
-use openmls::{
-    credentials::Certificate,
-    prelude::{
-        BasicCredential, Credential, KeyPackageSecretEncapsulation, Member, MlsCredentialType, Proposal,
-        QueuedProposal, Sender,
-    },
-};
+use openmls::prelude::{Credential, Member, Proposal, QueuedProposal, Sender};
 
 use crate::{Obfuscate, compute_hash};
 
@@ -19,21 +13,16 @@ impl Obfuscate for Proposal {
             Proposal::PreSharedKey(_) => "PreSharedKey",
             Proposal::ReInit(_) => "ReInit",
             Proposal::ExternalInit(_) => "ExternalInit",
-            Proposal::AppAck(_) => "AppAck",
             Proposal::GroupContextExtensions(_) => "GroupContextExtensions",
+            Proposal::SelfRemove => "SelfRemove",
+            Proposal::Custom(_) => "Custom",
         })
-    }
-}
-
-impl Obfuscate for KeyPackageSecretEncapsulation {
-    fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str("<secret>")
     }
 }
 
 impl Obfuscate for QueuedProposal {
     fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        self.proposal.obfuscate(f)
+        self.proposal().obfuscate(f)
     }
 }
 
@@ -58,35 +47,14 @@ impl Obfuscate for Member {
     }
 }
 
+/// openmls keeps a credential's content as opaque bytes, so this hashes them whatever the credential's type.
 impl Obfuscate for Credential {
-    fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        self.mls_credential().obfuscate(f)
-    }
-}
-
-impl Obfuscate for BasicCredential {
     fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(
             f,
-            "BasicCredential( {} )",
-            hex::encode(compute_hash(format!("{:?}", self).as_bytes())).as_str()
+            "Credential({:?}, {})",
+            self.credential_type(),
+            hex::encode(compute_hash(self.serialized_content()))
         )
-    }
-}
-
-impl Obfuscate for Certificate {
-    fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        f.write_str("Certificate( ")?;
-        self.identity.obfuscate(f)?;
-        f.write_str(")")
-    }
-}
-
-impl Obfuscate for MlsCredentialType {
-    fn obfuscate(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        match self {
-            MlsCredentialType::Basic(basic_credential) => basic_credential.obfuscate(f),
-            MlsCredentialType::X509(identity_cert) => identity_cert.obfuscate(f),
-        }
     }
 }

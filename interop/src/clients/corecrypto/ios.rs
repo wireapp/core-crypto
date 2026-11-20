@@ -9,9 +9,8 @@ use std::{
 
 use anyhow::{Context as _, Result};
 use base64::{Engine as _, engine::general_purpose};
-use core_crypto::{ClientId, KeyPackageIn, Keypackage, mls::conversation::TargetedMessagePolicy};
+use core_crypto::{ClientId, mls::conversation::TargetedMessagePolicy};
 use thiserror::Error;
-use tls_codec::Deserialize;
 
 use crate::{
     CIPHERSUITE_IN_USE,
@@ -218,14 +217,14 @@ impl EmulatedMlsClient for CoreCryptoIosClient {
             .driver
             .execute(format!("get-key-package?cipherSuite={}", cipher_suite))?;
         let kp_raw = general_purpose::STANDARD.decode(kp_base64)?;
-        let kp: Keypackage = KeyPackageIn::tls_deserialize(&mut kp_raw.as_slice())?.into();
+        let init_key = super::hex_init_key(&kp_raw)?;
 
         log::info!(
             "KP Init Key [took {}ms]: Client {} [{}] - {}",
             start.elapsed().as_millis(),
             self.client_name(),
             hex::encode(&self.client_id),
-            hex::encode(kp.hpke_init_key()),
+            init_key,
         );
 
         Ok(kp_raw)
