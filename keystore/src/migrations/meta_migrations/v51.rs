@@ -4,7 +4,7 @@
 //! recovered by parsing each message and comparing it with the current state of its group.
 
 use log::warn;
-use openmls::prelude::{ContentType, MlsMessageIn, MlsMessageInBody, ProtocolMessage, TlsDeserializeTrait as _};
+use openmls_legacy::prelude::{ContentType, MlsMessageIn, MlsMessageInBody, ProtocolMessage, TlsDeserializeTrait as _};
 
 use crate::{
     CryptoKeystoreResult,
@@ -29,7 +29,7 @@ pub(crate) fn meta_migration(tx: &rusqlite::Transaction<'_>) -> CryptoKeystoreRe
             InboxMessage {
                 conversation_id,
                 message,
-                content_type,
+                content_type: inbox_content_type(content_type),
                 waiting_for,
                 epoch,
                 arrival_sequence,
@@ -134,6 +134,15 @@ fn parse_message(message: &[u8]) -> Option<(ContentType, u64)> {
     };
 
     Some((protocol_message.content_type(), protocol_message.epoch().as_u64()))
+}
+
+/// The content type as the inbox stores it, which is openmls's.
+fn inbox_content_type(content_type: ContentType) -> openmls::prelude::ContentType {
+    match content_type {
+        ContentType::Application => openmls::prelude::ContentType::Application,
+        ContentType::Proposal => openmls::prelude::ContentType::Proposal,
+        ContentType::Commit => openmls::prelude::ContentType::Commit,
+    }
 }
 
 /// compute the number of bytes occupied by a vlbytes field starting at `initial_offset`

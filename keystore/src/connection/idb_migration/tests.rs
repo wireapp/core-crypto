@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use idb::{Factory, KeyPath, TransactionMode, builder::ObjectStoreBuilder};
 use js_sys::{Array, Object, Reflect, Uint8Array};
-use openmls::prelude::{ContentType, Credential as MlsCredential, TlsSerializeTrait as _};
+use openmls_legacy::prelude::{Credential as MlsCredential, TlsSerializeTrait as _};
 use rand::distr::{Alphanumeric, SampleString as _};
 use rusqlite::Connection;
 use wasm_bindgen::JsValue;
