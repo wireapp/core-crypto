@@ -724,6 +724,10 @@ $dokka.location:com.wire.crypto/MlsException.ConversationAlreadyExists/conversat
 $dokka.location:com.wire.crypto/MlsException.ConversationAlreadyExists/message/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-conversation-already-exists/message.html
 $dokka.location:com.wire.crypto/MlsException.ErrorHandler///PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-error-handler/index.html
 $dokka.location:com.wire.crypto/MlsException.ErrorHandler/lift/#com.wire.crypto.RustBuffer.ByValue/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-error-handler/lift.html
+$dokka.location:com.wire.crypto/MlsException.InvalidCredentials///PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-invalid-credentials/index.html
+$dokka.location:com.wire.crypto/MlsException.InvalidCredentials/InvalidCredentials/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-invalid-credentials/-invalid-credentials.html
+$dokka.location:com.wire.crypto/MlsException.InvalidCredentials/message/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-invalid-credentials/message.html
+$dokka.location:com.wire.crypto/MlsException.InvalidCredentials/reason/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-invalid-credentials/reason.html
 $dokka.location:com.wire.crypto/MlsException.MessageRejected///PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-message-rejected/index.html
 $dokka.location:com.wire.crypto/MlsException.MessageRejected/MessageRejected/#kotlin.String/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-message-rejected/-message-rejected.html
 $dokka.location:com.wire.crypto/MlsException.MessageRejected/message/#/PointingToDeclaration/-core-crypto/com.wire.crypto/-mls-exception/-message-rejected/message.html

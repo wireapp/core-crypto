@@ -158,92 +158,93 @@
 <a href=#158 id=158 data-nosnippet>158</a>            core_crypto::mls::conversation::Error::SelfCommitIgnored =&gt; MlsError::SelfCommitIgnored.into(),
 <a href=#159 id=159 data-nosnippet>159</a>            core_crypto::mls::conversation::Error::MessageRejected { reason } =&gt; MlsError::MessageRejected { reason: reason.clone() }.into(),
 <a href=#160 id=160 data-nosnippet>160</a>            core_crypto::mls::conversation::Error::OrphanWelcome =&gt; MlsError::OrphanWelcome.into(),
-<a href=#161 id=161 data-nosnippet>161</a>            ||=&gt; MlsError::Other { msg: error.innermost_error_message() }.into(),
-<a href=#162 id=162 data-nosnippet>162</a>        })
-<a href=#163 id=163 data-nosnippet>163</a>    }
-<a href=#164 id=164 data-nosnippet>164</a>}
-<a href=#165 id=165 data-nosnippet>165</a>
-<a href=#166 id=166 data-nosnippet>166</a><span class="comment">// This implementation is intended to be temporary; we're going to be completely restructuring the way we handle
-<a href=#167 id=167 data-nosnippet>167</a>// errors in `core-crypto` soon. We can replace this with better error patterns when we do.
-<a href=#168 id=168 data-nosnippet>168</a>//
-<a href=#169 id=169 data-nosnippet>169</a>// Certain error mappings could apply to both MLS and Proteus. In all such cases, we map them to the MLS variant.
-<a href=#170 id=170 data-nosnippet>170</a>// When we redesign the errors in `core-crypto`, these ambiguities should disappear anyway.
-<a href=#171 id=171 data-nosnippet>171</a></span><span class="kw">impl </span>From&lt;core_crypto::Error&gt; <span class="kw">for </span>CoreCryptoError {
-<a href=#172 id=172 data-nosnippet>172</a>    <span class="kw">fn </span>from(error: core_crypto::Error) -&gt; <span class="self">Self </span>{
-<a href=#173 id=173 data-nosnippet>173</a>        log_error(<span class="kw-2">&amp;</span>error);
-<a href=#174 id=174 data-nosnippet>174</a>
-<a href=#175 id=175 data-nosnippet>175</a>        <span class="kw">match </span>error {
-<a href=#176 id=176 data-nosnippet>176</a>            <span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
-<a href=#177 id=177 data-nosnippet>177</a>            </span>core_crypto::Error::ProteusNotInitialized =&gt; <span class="self">Self</span>::Other { msg: error.to_string() },
-<a href=#178 id=178 data-nosnippet>178</a>            <span class="attr">#[cfg(not(feature = <span class="string">"proteus"</span>))]
-<a href=#179 id=179 data-nosnippet>179</a>            </span>core_crypto::Error::ProteusNotInitialized =&gt; <span class="self">Self</span>::Other {
-<a href=#180 id=180 data-nosnippet>180</a>                msg: <span class="string">"proteus not initialized"</span>.into(),
-<a href=#181 id=181 data-nosnippet>181</a>            },
-<a href=#182 id=182 data-nosnippet>182</a>            <span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
-<a href=#183 id=183 data-nosnippet>183</a>            </span>core_crypto::Error::Proteus(proteus) =&gt; <span class="self">Self</span>::Proteus {
-<a href=#184 id=184 data-nosnippet>184</a>                exception: proteus.into(),
-<a href=#185 id=185 data-nosnippet>185</a>            },
-<a href=#186 id=186 data-nosnippet>186</a>            <span class="attr">#[cfg(not(feature = <span class="string">"proteus"</span>))]
-<a href=#187 id=187 data-nosnippet>187</a>            </span>core_crypto::Error::Proteus(_proteus) =&gt; {
-<a href=#188 id=188 data-nosnippet>188</a>                <span class="macro">unreachable!</span>(<span class="string">"we don't raise proteus errors when building without proteus"</span>)
-<a href=#189 id=189 data-nosnippet>189</a>            }
-<a href=#190 id=190 data-nosnippet>190</a>            core_crypto::Error::OpenMls(mls) =&gt; <span class="self">Self</span>::Mls {
-<a href=#191 id=191 data-nosnippet>191</a>                mls_error: MlsError::from(mls),
-<a href=#192 id=192 data-nosnippet>192</a>            },
-<a href=#193 id=193 data-nosnippet>193</a>            core_crypto::Error::MlsTransportNotProvided =&gt; <span class="self">Self</span>::Other { msg: error.to_string() },
-<a href=#194 id=194 data-nosnippet>194</a>            core_crypto::Error::ErrorDuringMlsTransport(error_message) =&gt; <span class="self">Self</span>::Other { msg: error_message },
-<a href=#195 id=195 data-nosnippet>195</a>            core_crypto::Error::Identity(err) =&gt; E2eiError::Other { msg: err.to_string() }.into(),
-<a href=#196 id=196 data-nosnippet>196</a>            core_crypto::Error::Keystore(keystore_error) =&gt; <span class="self">Self</span>::Other {
-<a href=#197 id=197 data-nosnippet>197</a>                msg: keystore_error.innermost_error_message(),
-<a href=#198 id=198 data-nosnippet>198</a>            },
-<a href=#199 id=199 data-nosnippet>199</a>            core_crypto::Error::Recursive(recursive_error) =&gt; recursive_error.into(),
-<a href=#200 id=200 data-nosnippet>200</a>            core_crypto::Error::RustyJwt(err) =&gt; <span class="self">Self</span>::RustyJwt { msg: err.to_string() },
-<a href=#201 id=201 data-nosnippet>201</a>            core_crypto::Error::FeatureDisabled(<span class="kw">_</span>) | core_crypto::Error::InvalidHistorySecret(<span class="kw">_</span>) =&gt; {
-<a href=#202 id=202 data-nosnippet>202</a>                <span class="self">Self</span>::Other { msg: error.to_string() }
-<a href=#203 id=203 data-nosnippet>203</a>            }
-<a href=#204 id=204 data-nosnippet>204</a>        }
-<a href=#205 id=205 data-nosnippet>205</a>    }
-<a href=#206 id=206 data-nosnippet>206</a>}
-<a href=#207 id=207 data-nosnippet>207</a>
-<a href=#208 id=208 data-nosnippet>208</a><span class="doccomment">/// We can't do a generic `impl&lt;E: ToRecursiveError&gt; From&lt;E&gt; for CoreCryptoError`
-<a href=#209 id=209 data-nosnippet>209</a>/// because that has the potential to cause breaking conflicts later on: what if
-<a href=#210 id=210 data-nosnippet>210</a>/// core-crypto later did `impl ToRecursiveError for core_crypto::Error`? That would
-<a href=#211 id=211 data-nosnippet>211</a>/// cause a duplicate `From` impl.
-<a href=#212 id=212 data-nosnippet>212</a>///
-<a href=#213 id=213 data-nosnippet>213</a>/// Instead, we explicitly specify every variant which can be converted to a
-<a href=#214 id=214 data-nosnippet>214</a>/// `CoreCryptoError`, and implement its `From` block directly.
-<a href=#215 id=215 data-nosnippet>215</a></span><span class="macro">macro_rules!</span> impl_from_via_recursive_error {
-<a href=#216 id=216 data-nosnippet>216</a>    ($(<span class="macro-nonterminal">$t</span>:ty),+ $(,)<span class="question-mark">?</span>) =&gt; {
-<a href=#217 id=217 data-nosnippet>217</a>        $(
-<a href=#218 id=218 data-nosnippet>218</a>            <span class="kw">impl </span>From&lt;<span class="macro-nonterminal">$t</span>&gt; <span class="kw">for </span>CoreCryptoError {
-<a href=#219 id=219 data-nosnippet>219</a>                <span class="kw">fn </span>from(error: <span class="macro-nonterminal">$t</span>) -&gt; <span class="self">Self </span>{
-<a href=#220 id=220 data-nosnippet>220</a>                    <span class="kw">use </span>core_crypto::ToRecursiveError;
-<a href=#221 id=221 data-nosnippet>221</a>                    error
-<a href=#222 id=222 data-nosnippet>222</a>                        .construct_recursive(<span class="string">"converting to ffi error"</span>)
-<a href=#223 id=223 data-nosnippet>223</a>                        .into()
-<a href=#224 id=224 data-nosnippet>224</a>                }
-<a href=#225 id=225 data-nosnippet>225</a>            }
-<a href=#226 id=226 data-nosnippet>226</a>        )*
-<a href=#227 id=227 data-nosnippet>227</a>    };
-<a href=#228 id=228 data-nosnippet>228</a>}
-<a href=#229 id=229 data-nosnippet>229</a>
-<a href=#230 id=230 data-nosnippet>230</a><span class="macro">impl_from_via_recursive_error!</span>(
-<a href=#231 id=231 data-nosnippet>231</a>    core_crypto::mls::conversation::Error,
-<a href=#232 id=232 data-nosnippet>232</a>    core_crypto::mls::credential::Error,
-<a href=#233 id=233 data-nosnippet>233</a>    wire_e2e_identity::E2eIdentityError,
-<a href=#234 id=234 data-nosnippet>234</a>    core_crypto::transaction_context::Error,
-<a href=#235 id=235 data-nosnippet>235</a>);
-<a href=#236 id=236 data-nosnippet>236</a>
-<a href=#237 id=237 data-nosnippet>237</a><span class="kw">impl </span>CoreCryptoError {
-<a href=#238 id=238 data-nosnippet>238</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>generic&lt;E&gt;() -&gt; <span class="kw">impl </span>FnOnce(E) -&gt; <span class="self">Self
-<a href=#239 id=239 data-nosnippet>239</a>    </span><span class="kw">where
-<a href=#240 id=240 data-nosnippet>240</a>        </span>E: ToString,
-<a href=#241 id=241 data-nosnippet>241</a>    {
-<a href=#242 id=242 data-nosnippet>242</a>        |err| <span class="self">Self</span>::Other { msg: err.to_string() }
-<a href=#243 id=243 data-nosnippet>243</a>    }
-<a href=#244 id=244 data-nosnippet>244</a>
-<a href=#245 id=245 data-nosnippet>245</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>ad_hoc(err: <span class="kw">impl </span>ToString) -&gt; <span class="self">Self </span>{
-<a href=#246 id=246 data-nosnippet>246</a>        <span class="self">Self</span>::Other { msg: err.to_string() }
-<a href=#247 id=247 data-nosnippet>247</a>    }
-<a href=#248 id=248 data-nosnippet>248</a>}
+<a href=#161 id=161 data-nosnippet>161</a>            core_crypto::transaction_context::Error::InvalidCredentials(<span class="kw">_</span>) =&gt; MlsError::InvalidCredentials { reason: error.innermost_error_message() }.into(),
+<a href=#162 id=162 data-nosnippet>162</a>            ||=&gt; MlsError::Other { msg: error.innermost_error_message() }.into(),
+<a href=#163 id=163 data-nosnippet>163</a>        })
+<a href=#164 id=164 data-nosnippet>164</a>    }
+<a href=#165 id=165 data-nosnippet>165</a>}
+<a href=#166 id=166 data-nosnippet>166</a>
+<a href=#167 id=167 data-nosnippet>167</a><span class="comment">// This implementation is intended to be temporary; we're going to be completely restructuring the way we handle
+<a href=#168 id=168 data-nosnippet>168</a>// errors in `core-crypto` soon. We can replace this with better error patterns when we do.
+<a href=#169 id=169 data-nosnippet>169</a>//
+<a href=#170 id=170 data-nosnippet>170</a>// Certain error mappings could apply to both MLS and Proteus. In all such cases, we map them to the MLS variant.
+<a href=#171 id=171 data-nosnippet>171</a>// When we redesign the errors in `core-crypto`, these ambiguities should disappear anyway.
+<a href=#172 id=172 data-nosnippet>172</a></span><span class="kw">impl </span>From&lt;core_crypto::Error&gt; <span class="kw">for </span>CoreCryptoError {
+<a href=#173 id=173 data-nosnippet>173</a>    <span class="kw">fn </span>from(error: core_crypto::Error) -&gt; <span class="self">Self </span>{
+<a href=#174 id=174 data-nosnippet>174</a>        log_error(<span class="kw-2">&amp;</span>error);
+<a href=#175 id=175 data-nosnippet>175</a>
+<a href=#176 id=176 data-nosnippet>176</a>        <span class="kw">match </span>error {
+<a href=#177 id=177 data-nosnippet>177</a>            <span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
+<a href=#178 id=178 data-nosnippet>178</a>            </span>core_crypto::Error::ProteusNotInitialized =&gt; <span class="self">Self</span>::Other { msg: error.to_string() },
+<a href=#179 id=179 data-nosnippet>179</a>            <span class="attr">#[cfg(not(feature = <span class="string">"proteus"</span>))]
+<a href=#180 id=180 data-nosnippet>180</a>            </span>core_crypto::Error::ProteusNotInitialized =&gt; <span class="self">Self</span>::Other {
+<a href=#181 id=181 data-nosnippet>181</a>                msg: <span class="string">"proteus not initialized"</span>.into(),
+<a href=#182 id=182 data-nosnippet>182</a>            },
+<a href=#183 id=183 data-nosnippet>183</a>            <span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
+<a href=#184 id=184 data-nosnippet>184</a>            </span>core_crypto::Error::Proteus(proteus) =&gt; <span class="self">Self</span>::Proteus {
+<a href=#185 id=185 data-nosnippet>185</a>                exception: proteus.into(),
+<a href=#186 id=186 data-nosnippet>186</a>            },
+<a href=#187 id=187 data-nosnippet>187</a>            <span class="attr">#[cfg(not(feature = <span class="string">"proteus"</span>))]
+<a href=#188 id=188 data-nosnippet>188</a>            </span>core_crypto::Error::Proteus(_proteus) =&gt; {
+<a href=#189 id=189 data-nosnippet>189</a>                <span class="macro">unreachable!</span>(<span class="string">"we don't raise proteus errors when building without proteus"</span>)
+<a href=#190 id=190 data-nosnippet>190</a>            }
+<a href=#191 id=191 data-nosnippet>191</a>            core_crypto::Error::OpenMls(mls) =&gt; <span class="self">Self</span>::Mls {
+<a href=#192 id=192 data-nosnippet>192</a>                mls_error: MlsError::from(mls),
+<a href=#193 id=193 data-nosnippet>193</a>            },
+<a href=#194 id=194 data-nosnippet>194</a>            core_crypto::Error::MlsTransportNotProvided =&gt; <span class="self">Self</span>::Other { msg: error.to_string() },
+<a href=#195 id=195 data-nosnippet>195</a>            core_crypto::Error::ErrorDuringMlsTransport(error_message) =&gt; <span class="self">Self</span>::Other { msg: error_message },
+<a href=#196 id=196 data-nosnippet>196</a>            core_crypto::Error::Identity(err) =&gt; E2eiError::Other { msg: err.to_string() }.into(),
+<a href=#197 id=197 data-nosnippet>197</a>            core_crypto::Error::Keystore(keystore_error) =&gt; <span class="self">Self</span>::Other {
+<a href=#198 id=198 data-nosnippet>198</a>                msg: keystore_error.innermost_error_message(),
+<a href=#199 id=199 data-nosnippet>199</a>            },
+<a href=#200 id=200 data-nosnippet>200</a>            core_crypto::Error::Recursive(recursive_error) =&gt; recursive_error.into(),
+<a href=#201 id=201 data-nosnippet>201</a>            core_crypto::Error::RustyJwt(err) =&gt; <span class="self">Self</span>::RustyJwt { msg: err.to_string() },
+<a href=#202 id=202 data-nosnippet>202</a>            core_crypto::Error::FeatureDisabled(<span class="kw">_</span>) | core_crypto::Error::InvalidHistorySecret(<span class="kw">_</span>) =&gt; {
+<a href=#203 id=203 data-nosnippet>203</a>                <span class="self">Self</span>::Other { msg: error.to_string() }
+<a href=#204 id=204 data-nosnippet>204</a>            }
+<a href=#205 id=205 data-nosnippet>205</a>        }
+<a href=#206 id=206 data-nosnippet>206</a>    }
+<a href=#207 id=207 data-nosnippet>207</a>}
+<a href=#208 id=208 data-nosnippet>208</a>
+<a href=#209 id=209 data-nosnippet>209</a><span class="doccomment">/// We can't do a generic `impl&lt;E: ToRecursiveError&gt; From&lt;E&gt; for CoreCryptoError`
+<a href=#210 id=210 data-nosnippet>210</a>/// because that has the potential to cause breaking conflicts later on: what if
+<a href=#211 id=211 data-nosnippet>211</a>/// core-crypto later did `impl ToRecursiveError for core_crypto::Error`? That would
+<a href=#212 id=212 data-nosnippet>212</a>/// cause a duplicate `From` impl.
+<a href=#213 id=213 data-nosnippet>213</a>///
+<a href=#214 id=214 data-nosnippet>214</a>/// Instead, we explicitly specify every variant which can be converted to a
+<a href=#215 id=215 data-nosnippet>215</a>/// `CoreCryptoError`, and implement its `From` block directly.
+<a href=#216 id=216 data-nosnippet>216</a></span><span class="macro">macro_rules!</span> impl_from_via_recursive_error {
+<a href=#217 id=217 data-nosnippet>217</a>    ($(<span class="macro-nonterminal">$t</span>:ty),+ $(,)<span class="question-mark">?</span>) =&gt; {
+<a href=#218 id=218 data-nosnippet>218</a>        $(
+<a href=#219 id=219 data-nosnippet>219</a>            <span class="kw">impl </span>From&lt;<span class="macro-nonterminal">$t</span>&gt; <span class="kw">for </span>CoreCryptoError {
+<a href=#220 id=220 data-nosnippet>220</a>                <span class="kw">fn </span>from(error: <span class="macro-nonterminal">$t</span>) -&gt; <span class="self">Self </span>{
+<a href=#221 id=221 data-nosnippet>221</a>                    <span class="kw">use </span>core_crypto::ToRecursiveError;
+<a href=#222 id=222 data-nosnippet>222</a>                    error
+<a href=#223 id=223 data-nosnippet>223</a>                        .construct_recursive(<span class="string">"converting to ffi error"</span>)
+<a href=#224 id=224 data-nosnippet>224</a>                        .into()
+<a href=#225 id=225 data-nosnippet>225</a>                }
+<a href=#226 id=226 data-nosnippet>226</a>            }
+<a href=#227 id=227 data-nosnippet>227</a>        )*
+<a href=#228 id=228 data-nosnippet>228</a>    };
+<a href=#229 id=229 data-nosnippet>229</a>}
+<a href=#230 id=230 data-nosnippet>230</a>
+<a href=#231 id=231 data-nosnippet>231</a><span class="macro">impl_from_via_recursive_error!</span>(
+<a href=#232 id=232 data-nosnippet>232</a>    core_crypto::mls::conversation::Error,
+<a href=#233 id=233 data-nosnippet>233</a>    core_crypto::mls::credential::Error,
+<a href=#234 id=234 data-nosnippet>234</a>    wire_e2e_identity::E2eIdentityError,
+<a href=#235 id=235 data-nosnippet>235</a>    core_crypto::transaction_context::Error,
+<a href=#236 id=236 data-nosnippet>236</a>);
+<a href=#237 id=237 data-nosnippet>237</a>
+<a href=#238 id=238 data-nosnippet>238</a><span class="kw">impl </span>CoreCryptoError {
+<a href=#239 id=239 data-nosnippet>239</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>generic&lt;E&gt;() -&gt; <span class="kw">impl </span>FnOnce(E) -&gt; <span class="self">Self
+<a href=#240 id=240 data-nosnippet>240</a>    </span><span class="kw">where
+<a href=#241 id=241 data-nosnippet>241</a>        </span>E: ToString,
+<a href=#242 id=242 data-nosnippet>242</a>    {
+<a href=#243 id=243 data-nosnippet>243</a>        |err| <span class="self">Self</span>::Other { msg: err.to_string() }
+<a href=#244 id=244 data-nosnippet>244</a>    }
+<a href=#245 id=245 data-nosnippet>245</a>
+<a href=#246 id=246 data-nosnippet>246</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>ad_hoc(err: <span class="kw">impl </span>ToString) -&gt; <span class="self">Self </span>{
+<a href=#247 id=247 data-nosnippet>247</a>        <span class="self">Self</span>::Other { msg: err.to_string() }
+<a href=#248 id=248 data-nosnippet>248</a>    }
+<a href=#249 id=249 data-nosnippet>249</a>}
 </code></pre></div></section></main></body></html>
