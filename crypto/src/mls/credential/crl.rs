@@ -41,7 +41,7 @@ pub(crate) fn extract_dp(cert: &Certificate) -> Result<CrlUris> {
         .iter()
         .try_fold(CrlUris::new(), |mut acc, cert| -> Result<CrlUris> {
             use x509_cert::der::Decode as _;
-            let cert = x509_cert::Certificate::from_der(cert.as_slice()).map_err(Error::DecodeX509)?;
+            let cert = x509_cert::Certificate::from_der(cert).map_err(Error::DecodeX509)?;
             if let Some(crl_uris) =
                 extract_crl_uris(&cert).map_err(RecursiveError::e2e_identity("extracting crl urls"))?
             {
