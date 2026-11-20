@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-430ee93b.js";
+            window.path_to_searchindex_js = "searchindex-80516378.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-779a2ee0.js"></script>
@@ -233,6 +233,7 @@ Proteus caches, so that fresh state is loaded on-demand from the DB.</li>
 processes.</li>
 <li>CRL handling has been fixed such that revoked X509 certificates immediately cause credentials relying on them to be
 invalidated. Previously revocation was having an effect only after reconstructing the <code>PkiEnvironment</code>.</li>
+<li>Recreating a <code>PkiEnvironment</code> now preserves revocations from stored CRLs.</li>
 </ul>
 <h2 id="corecrypto-11"><a class="header" href="#corecrypto-11">CoreCrypto 11</a></h2>
 <h3 id="v1100---2026-10-30"><a class="header" href="#v1100---2026-10-30">v11.0.0 - 2026-10-30</a></h3>
