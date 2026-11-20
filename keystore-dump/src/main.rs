@@ -22,7 +22,7 @@ async fn main() -> anyhow::Result<()> {
 
     use clap::Parser as _;
     use core_crypto_keystore::{Database as Keystore, DatabaseKey, entities::*, traits::FetchFromDatabase};
-    use openmls::prelude::TlsDeserializeTrait;
+    use openmls::prelude::tls_codec::Deserialize as _;
     use serde::ser::{SerializeMap, Serializer};
 
     let args = Args::parse();
@@ -70,19 +70,28 @@ async fn main() -> anyhow::Result<()> {
         .collect::<postcard::Result<_>>()?;
     json_map.serialize_entry("mls_hpke_private_keys", &hpke_sks)?;
 
-    let hpke_keypairs: Vec<openmls_traits::types::HpkeKeyPair> = keystore
+    /// openmls's `EncryptionKeyPair`, which is private to it.
+    #[derive(serde::Serialize, serde::Deserialize)]
+    struct EncryptionKeyPair {
+        public_key: Vec<u8>,
+        private_key: openmls_traits::types::HpkePrivateKey,
+    }
+
+    let hpke_keypairs: Vec<EncryptionKeyPair> = keystore
         .load_all::<StoredEncryptionKeyPair>()
         .await?
         .into_iter()
-        .map(|hpke_kp| postcard::from_bytes::<openmls_traits::types::HpkeKeyPair>(&hpke_kp.sk))
+        .map(|hpke_kp| postcard::from_bytes::<EncryptionKeyPair>(&hpke_kp.sk))
         .collect::<postcard::Result<_>>()?;
     json_map.serialize_entry("mls_hpke_keypairs", &hpke_keypairs)?;
 
-    let mut external_psks: std::collections::HashMap<String, openmls::schedule::psk::PskBundle> = Default::default();
-    for psk in keystore.load_all::<StoredPskBundle>().await?.into_iter() {
-        let mls_psk = postcard::from_bytes::<openmls::schedule::psk::PskBundle>(&psk.psk)?;
-        external_psks.insert(hex::encode(&psk.psk_id), mls_psk);
-    }
+    // openmls's `PskBundle` is private to it, so these are dumped as they're stored.
+    let external_psks: std::collections::HashMap<String, String> = keystore
+        .load_all::<StoredPskBundle>()
+        .await?
+        .into_iter()
+        .map(|psk| (hex::encode(&psk.psk_id), hex::encode(&psk.psk)))
+        .collect();
 
     json_map.serialize_entry("external_psks", &external_psks)?;
 
@@ -94,20 +103,25 @@ async fn main() -> anyhow::Result<()> {
         .collect::<postcard::Result<_>>()?;
     json_map.serialize_entry("mls_keypackages", &keypackages)?;
 
+    // openmls's state of each group isn't dumped: it can't be serialized as a whole.
     let all_groups = keystore.load_all::<PersistedMlsGroup>().await?;
     let (pending_groups, groups) = all_groups.into_iter().partition::<Vec<_>, _>(|group| group.is_pending);
-
-    let groups = groups
-        .into_iter()
-        .map(|group| core_crypto_keystore::deser::<openmls::prelude::MlsGroup>(&group.state))
-        .collect::<Result<Vec<_>, _>>()?;
-    json_map.serialize_entry("mls_groups", &groups)?;
-
-    let pending_groups = pending_groups
-        .into_iter()
-        .map(|group| core_crypto_keystore::deser::<openmls::prelude::MlsGroup>(&group.state))
-        .collect::<Result<Vec<_>, _>>()?;
-    json_map.serialize_entry("mls_pending_groups", &pending_groups)?;
+    let group_json = |group: &PersistedMlsGroup| {
+        serde_json::json!({
+            "id": hex::encode(&*group.id),
+            "epoch": group.epoch,
+            "ciphersuite": group.ciphersuite,
+            "credential_id": hex::encode(group.credential_id),
+            "credential_type": group.credential_type,
+            "credential_not_before": group.credential_not_before,
+            "own_leaf_index": group.own_leaf_index,
+        })
+    };
+    json_map.serialize_entry("mls_groups", &groups.iter().map(|g| group_json(g)).collect::<Vec<_>>())?;
+    json_map.serialize_entry(
+        "mls_pending_groups",
+        &pending_groups.iter().map(|g| group_json(g)).collect::<Vec<_>>(),
+    )?;
 
     if let Some(proteus_identity) = keystore.get_unique::<ProteusIdentity>().await? {
         let identity = {
