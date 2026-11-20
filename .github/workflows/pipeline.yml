@@ -131,6 +131,23 @@ jobs:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
+  #################
+  # JVM Windows
+
+  build-jvm-windows:
+    needs: artifact-generation
+    runs-on: windows-latest
+    outputs:
+      artifact-name: ${{ steps.build.outputs.artifact-name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/make/setup
+      - id: build
+        uses: ./.github/actions/make/jvm
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
+
   bindings-jvm:
     needs:
       - artifact-generation

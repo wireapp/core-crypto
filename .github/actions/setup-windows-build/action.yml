@@ -1,0 +1,43 @@
+name: Set up a Windows build
+description: >
+  Install what `make jvm-windows` needs on a Windows runner beyond the runner image: GNU make and
+  NASM, both pinned and checked against a SHA-256. Also point the vendored OpenSSL build at the
+  image's Strawberry Perl.
+
+runs:
+  using: composite
+  steps:
+    - name: install pinned build tools
+      shell: bash -euo pipefail {0}
+      env:
+        # ezwinports' native Windows build of GNU make. The hash matches its winget manifest.
+        MAKE_URL: https://downloads.sourceforge.net/project/ezwinports/make-4.4.1-without-guile-w32-bin.zip
+        MAKE_SHA256: fb66a02b530f7466f6222ce53c0b602c5288e601547a034e4156a512dd895ee7
+        # nasm.us publishes no checksums. The hash matches Scoop's manifest for this release.
+        NASM_VERSION: 2.16.03
+        NASM_SHA256: 3ee4782247bcb874378d02f7eab4e294a84d3d15f3f6ee2de2f47a46aa7226e6
+      run: |
+        tools="$RUNNER_TEMP/windows-build-tools"
+        mkdir -p "$tools"
+
+        fetch() {
+          local name="$1" url="$2" sha256="$3"
+          curl -fsSL --retry 3 -o "$tools/$name.zip" "$url"
+          echo "$sha256  $tools/$name.zip" | sha256sum --check --strict -
+          unzip -q -o "$tools/$name.zip" -d "$tools/$name"
+        }
+
+        fetch make "$MAKE_URL" "$MAKE_SHA256"
+        fetch nasm "https://www.nasm.us/pub/nasm/releasebuilds/$NASM_VERSION/win64/nasm-$NASM_VERSION-win64.zip" "$NASM_SHA256"
+        {
+          cygpath -w "$tools/make/bin"
+          cygpath -w "$tools/nasm/nasm-$NASM_VERSION"
+        } >> "$GITHUB_PATH"
+
+        # Git Bash's perl can't configure the vendored OpenSSL; it needs a native Windows perl.
+        perl_exe="C:/Strawberry/perl/bin/perl.exe"
+        if [ ! -f "$perl_exe" ]; then
+          echo "::error::Strawberry Perl wasn't found at $perl_exe"
+          exit 1
+        fi
+        echo "OPENSSL_SRC_PERL=$perl_exe" >> "$GITHUB_ENV"
