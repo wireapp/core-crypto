@@ -114,3 +114,20 @@ pub fn cipher_suite_from_u16(discriminant: u16) -> CoreCryptoResult<CipherSuite>
 pub fn cipher_suite_default() -> CipherSuite {
     CipherSuite::default()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Every cipher suite crosses the FFI boundary in both directions as itself.
+    #[test]
+    fn every_cipher_suite_converts_to_openmls_and_back() {
+        for discriminant in 0..=u16::MAX {
+            if let Ok(cipher_suite) = CipherSuite::try_from(discriminant) {
+                let mls = MlsCipherSuite::from(cipher_suite);
+                assert_eq!(u16::from(mls), discriminant, "{cipher_suite:?}");
+                assert_eq!(CipherSuite::from(mls), cipher_suite);
+            }
+        }
+    }
+}
