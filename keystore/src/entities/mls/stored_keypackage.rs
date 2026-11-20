@@ -135,8 +135,7 @@ impl StoredKeyPackage {
 
     /// Load the serialized key package with this reference, together with its private keys.
     ///
-    /// Returns `None` if there is no such key package. Fails if the key package lacks a private key, as key
-    /// packages stored by the old openmls fork do.
+    /// Returns `None` if there is no such key package. Fails if the key package lacks a private key.
     pub(crate) fn load_with_private_keys(
         conn: &Connection,
         key_package_ref: &[u8],
