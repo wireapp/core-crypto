@@ -4,6 +4,7 @@ use super::{
     super::{SessionContext, TestConversation},
     operation_guard::{AddGuard, OperationGuard, Proposal, TestOperation},
 };
+use crate::mls::credential::identity::credential_identity;
 
 impl<'a> TestConversation<'a> {
     /// Propose inviting a member and notify all members.
@@ -41,7 +42,7 @@ impl<'a> TestConversation<'a> {
             .mutate_group_test(async |_, group, _| {
                 Ok(group
                     .members()
-                    .find(|member| member.credential.identity() == member_id.as_slice())
+                    .find(|member| credential_identity(&member.credential).unwrap().as_ref() == member_id.as_slice())
                     .map(|member| member.index)
                     .unwrap())
             })
@@ -91,7 +92,7 @@ impl<'a> TestConversation<'a> {
             .group()
             .await
             .members()
-            .find(|k| k.credential.identity() == client_id.as_slice())
+            .find(|k| credential_identity(&k.credential).unwrap().as_ref() == client_id.as_slice())
             .unwrap()
             .index;
         let sender_index = openmls::prelude::SenderExtensionIndex::new(sender_index);
@@ -101,7 +102,7 @@ impl<'a> TestConversation<'a> {
 
         let group_id = openmls::group::GroupId::from_slice(self.id().as_ref().as_ref());
         let epoch = self.guard().await.epoch().await;
-        let proposal = ExternalProposal::new_remove(
+        let proposal = ExternalProposal::new_remove::<crate::mls_provider::MlsProviderRef<'_>>(
             to_remove_index,
             group_id,
             epoch.into(),

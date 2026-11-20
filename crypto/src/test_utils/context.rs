@@ -4,8 +4,8 @@ use core_crypto_keystore::{
     entities::{StoredCredential, StoredEncryptionKeyPair, StoredHpkePrivateKey, StoredKeyPackage},
     traits::FetchFromDatabase,
 };
-use openmls::prelude::{Credential as MlsCredential, ExternalSender, KeyPackage, SignaturePublicKey};
-use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto};
+use openmls::prelude::{ExternalSender, KeyPackage, SignaturePublicKey};
+use openmls_traits::crypto::OpenMlsCrypto;
 use tls_codec::Serialize;
 use uuid::Uuid;
 use wire_e2e_identity::{IdentityStatus, WireIdentityReader};
@@ -205,14 +205,14 @@ impl SessionContext {
     ) {
         let database = self.transaction.database().unwrap();
         let expected_credential = expected_credential_ref.load(&*database).await.unwrap();
-        if let openmls::prelude::MlsCredentialType::X509(certificate) =
-            &expected_credential.mls_credential().mls_credential()
-        {
+        if expected_credential.mls_credential().credential_type() == openmls::prelude::CredentialType::X509 {
+            let certificate = expected_credential.mls_credential();
             let session = self.session().await;
             let pki_env = session.mls_provider.authentication_service().pki_env().await;
             assert!(pki_env.is_some());
 
-            let mls_identity = certificate
+            let mls_identity = expected_credential
+                .to_mls_credential_with_key()
                 .extract_identity(case.signature_scheme(), pki_env.as_deref())
                 .await
                 .unwrap();
@@ -221,13 +221,10 @@ impl SessionContext {
 
             let decrypted_identity = decrypted.identity();
 
-            let leaf: Vec<u8> = certificate.certificates.first().unwrap().clone().into();
-            let identity = leaf
-                .as_slice()
-                .extract_identity(pki_env.as_deref().unwrap())
-                .await
-                .unwrap();
-            let identity = WireIdentity::try_from((identity, leaf.as_slice())).unwrap();
+            let certificate = openmls::prelude::X509Credential::try_from(certificate.clone()).unwrap();
+            let leaf = certificate.certificates().first().unwrap().as_slice();
+            let identity = leaf.extract_identity(pki_env.as_deref().unwrap()).await.unwrap();
+            let identity = WireIdentity::try_from((identity, leaf)).unwrap();
 
             assert_eq!(decrypted_identity.client_id, identity.client_id);
             assert_eq!(
@@ -285,7 +282,7 @@ impl SessionContext {
 
         let signature_key = SignaturePublicKey::from(pk);
 
-        let credential = MlsCredential::new_basic(b"server".to_vec());
+        let credential = openmls::prelude::BasicCredential::new(b"server".to_vec()).into();
 
         ExternalSender::new(signature_key, credential)
     }
