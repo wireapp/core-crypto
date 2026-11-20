@@ -37,7 +37,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-80516378.js";
+            window.path_to_searchindex_js = "searchindex-35c1ef28.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-779a2ee0.js"></script>
@@ -1303,6 +1303,7 @@ removed. See <a href="#new-decrypt_message-api">What’s New</a>.</li>
 <li>CC now checks the conversation ID of transient and targeted messages during decryption; non-matches are rejected.</li>
 <li>The epoch observer now receives epoch change notifications in several cases for which those notifications were
 accidentally omitted in the past.</li>
+<li>InvalidCredentials is now a typed error. Clients can now catch and swallow it to avoid a transaction rollback.</li>
 </ul>
 <h4 id="typescript-2"><a class="header" href="#typescript-2">TypeScript</a></h4>
 <ul>
