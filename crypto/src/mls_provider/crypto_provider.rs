@@ -206,7 +206,7 @@ impl OpenMlsCrypto for RustCrypto {
             | Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
             | Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
             | Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521
-            // PQ ciphersuites from draft-ietf-mls-pq-ciphersuites-06
+            // PQ ciphersuites from draft-ietf-mls-pq-ciphersuites-08
             | Ciphersuite::MLS_128_MLKEM768X25519_AES128GCM_SHA256_Ed25519
             | Ciphersuite::MLS_128_MLKEM768X25519_AES256GCM_SHA384_Ed25519
             | Ciphersuite::MLS_128_MLKEM768P256_AES128GCM_SHA256_P256
@@ -229,7 +229,7 @@ impl OpenMlsCrypto for RustCrypto {
             Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
             Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
             Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
-            // PQ ciphersuites from draft-ietf-mls-pq-ciphersuites-06
+            // PQ ciphersuites from draft-ietf-mls-pq-ciphersuites-08
             Ciphersuite::MLS_128_MLKEM768X25519_AES128GCM_SHA256_Ed25519,
             Ciphersuite::MLS_128_MLKEM768X25519_AES256GCM_SHA384_Ed25519,
             Ciphersuite::MLS_128_MLKEM768P256_AES128GCM_SHA256_P256,
