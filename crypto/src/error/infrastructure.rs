@@ -127,69 +127,52 @@ impl Infrastructural for crate::OpenMlsError {
     }
 }
 
-// openmls writes through our keystore, and reports a failure there as a `KeyStoreError` variant, either directly or
+// openmls writes through our keystore, and reports a failure there as a `StorageError` variant, either directly or
 // nested inside another error. Errors without such a variant can't carry one.
 impl Infrastructural for crate::OpenMlsErrorKind {
     fn is_infrastructure(&self) -> bool {
+        use openmls::prelude::{
+            AddMembersError, CommitToPendingProposalsError, ExternalCommitBuilderError,
+            ExternalCommitBuilderFinalizeError, ExternalCommitError, KeyPackageNewError, MergePendingCommitError,
+            NewGroupError, ProcessMessageError, ProposeAddMemberError, ProposeRemoveMemberError, RemoveMembersError,
+            SelfUpdateError, WelcomeError,
+        };
+
         match self {
             Self::KeystoreError(_) => true,
             // a failure of the process's source of randomness, not of the input
             Self::ProviderError(
                 crate::mls_provider::Error::RngLockPoison | crate::mls_provider::Error::InsufficientEntropy,
             ) => true,
-            Self::MlsWelcomeError(err) => err.is_infrastructure(),
-            Self::MlsNewGroupError(openmls::prelude::NewGroupError::KeyStoreError(_)) => true,
-            Self::MlsAddMembersError(openmls::prelude::AddMembersError::CreateCommitError(err))
-            | Self::MlsRemoveMembersError(openmls::prelude::RemoveMembersError::CreateCommitError(err))
-            | Self::MlsSelfUpdateError(openmls::prelude::SelfUpdateError::CreateCommitError(err))
-            | Self::MlsCommitToPendingProposalsError(
-                openmls::prelude::CommitToPendingProposalsError::CreateCommitError(err),
-            ) => err.is_infrastructure(),
-            Self::MlsSelfUpdateError(openmls::prelude::SelfUpdateError::KeyStoreError(_)) => true,
-            Self::MlsKeyPackageBundleNewError(err) => err.is_infrastructure(),
+            Self::MlsWelcomeError(WelcomeError::StorageError(_))
+            | Self::MlsNewGroupError(NewGroupError::StorageError(_))
+            | Self::MlsAddMembersError(AddMembersError::StorageError(_))
+            | Self::MlsRemoveMembersError(RemoveMembersError::StorageError(_))
+            | Self::MlsSelfUpdateError(SelfUpdateError::StorageError(_))
+            | Self::MlsCommitToPendingProposalsError(CommitToPendingProposalsError::StorageError(_))
+            | Self::MlsMessageError(ProcessMessageError::StorageError(_))
+            | Self::MlsExternalCommitError(ExternalCommitError::StorageError(_))
+            | Self::MlsExternalCommitBuilderError(ExternalCommitBuilderError::StorageError(_))
+            | Self::MlsExternalCommitBuilderFinalizeError(ExternalCommitBuilderFinalizeError::StorageError(_))
+            | Self::ProposeAddMemberError(ProposeAddMemberError::StorageError(_))
+            | Self::ProposeRemoveMemberError(ProposeRemoveMemberError::StorageError(_))
+            | Self::MlsKeyPackageBundleNewError(KeyPackageNewError::StorageError)
+            | Self::MlsRemoveProposalError(openmls::group::RemoveProposalError::Storage(_)) => true,
+            Self::MlsCommitBuilderStageError(err)
+            | Self::MlsAddMembersError(AddMembersError::CommitBuilderStageError(err))
+            | Self::MlsRemoveMembersError(RemoveMembersError::CommitBuilderStageError(err))
+            | Self::MlsSelfUpdateError(SelfUpdateError::CommitBuilderStageError(err))
+            | Self::MlsCommitToPendingProposalsError(CommitToPendingProposalsError::CommitBuilderStageError(err)) => {
+                matches!(err, openmls::prelude::CommitBuilderStageError::KeyStoreError(_))
+            }
             Self::MlsMergeCommitError(err)
-            | Self::MlsMergePendingCommitError(openmls::prelude::MergePendingCommitError::MergeCommitError(err)) => {
-                err.is_infrastructure()
+            | Self::MlsMergePendingCommitError(MergePendingCommitError::MergeCommitError(err))
+            | Self::MlsExternalCommitBuilderFinalizeError(ExternalCommitBuilderFinalizeError::MergeCommitError(
+                MergePendingCommitError::MergeCommitError(err),
+            )) => {
+                matches!(err, openmls::prelude::MergeCommitError::StorageError(_))
             }
             _ => false,
         }
-    }
-}
-
-impl Infrastructural for openmls::prelude::WelcomeError<core_crypto_keystore::CryptoKeystoreError> {
-    fn is_infrastructure(&self) -> bool {
-        match self {
-            Self::KeyStoreError(_) => true,
-            Self::KeyPackageDeleteError(err) => err.is_infrastructure(),
-            _ => false,
-        }
-    }
-}
-
-impl Infrastructural for openmls::prelude::CreateCommitError<core_crypto_keystore::CryptoKeystoreError> {
-    fn is_infrastructure(&self) -> bool {
-        match self {
-            Self::KeyStoreError(_) => true,
-            Self::KeyPackageGenerationError(err) => err.is_infrastructure(),
-            _ => false,
-        }
-    }
-}
-
-impl Infrastructural for openmls::prelude::KeyPackageNewError<core_crypto_keystore::CryptoKeystoreError> {
-    fn is_infrastructure(&self) -> bool {
-        matches!(self, Self::KeyStoreError(_))
-    }
-}
-
-impl Infrastructural for openmls::prelude::KeyPackageDeleteError<core_crypto_keystore::CryptoKeystoreError> {
-    fn is_infrastructure(&self) -> bool {
-        matches!(self, Self::KeyStoreError(_))
-    }
-}
-
-impl Infrastructural for openmls::prelude::MergeCommitError<core_crypto_keystore::CryptoKeystoreError> {
-    fn is_infrastructure(&self) -> bool {
-        matches!(self, Self::KeyStoreError(_))
     }
 }

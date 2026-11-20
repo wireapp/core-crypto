@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_lock::RwLock;
-use core_crypto_keystore::Database;
+use core_crypto_keystore::{Database, MlsStorage, Transaction};
 
 mod crypto_provider;
 mod error;
@@ -12,14 +12,14 @@ pub(crate) use crypto_provider::CRYPTO;
 pub use crypto_provider::RustCrypto;
 pub(crate) use error::{Error, MlsProviderResult};
 use openmls_traits::{
-    authentication_service::{CredentialAuthenticationStatus, CredentialRef},
+    OpenMlsProvider,
     crypto::OpenMlsCrypto,
     types::{
         AeadType, Ciphersuite, CryptoError, ExporterSecret, HashType, HpkeCiphertext, HpkeConfig, HpkeKeyPair,
         KemOutput, SignatureScheme,
     },
 };
-use wire_e2e_identity::pki_env::PkiEnvironment;
+use wire_e2e_identity::pki_env::{CredentialAuthenticationStatus, CredentialRef, PkiEnvironment};
 
 /// 32-byte raw entropy seed
 pub type RawEntropySeed = <rand_chacha::ChaCha20Rng as rand::SeedableRng>::Seed;
@@ -93,12 +93,12 @@ impl AuthenticationService {
     pub async fn pki_env(&self) -> Option<Arc<PkiEnvironment>> {
         self.pki_env.read().await.clone()
     }
-}
 
-#[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
-impl openmls_traits::authentication_service::AuthenticationServiceDelegate for AuthenticationService {
-    async fn validate_credential<'a>(&'a self, credential: CredentialRef<'a>) -> CredentialAuthenticationStatus {
+    /// Validate a credential against the PKI environment.
+    ///
+    /// Basic credentials are always valid. An X509 credential's status is unknown while the PKI environment is
+    /// unset.
+    pub async fn validate_credential<'a>(&'a self, credential: CredentialRef<'a>) -> CredentialAuthenticationStatus {
         match credential {
             // We assume that Basic credentials are always valid
             CredentialRef::Basic { .. } => CredentialAuthenticationStatus::Valid,
@@ -162,6 +162,35 @@ impl CryptoProvider {
         self.auth_service.pki_env.read().await.is_some()
     }
 
+    /// Our implementation of the cryptographic primitives openmls uses, which is also our randomness source.
+    pub fn crypto(&self) -> &RustCrypto {
+        &self.crypto
+    }
+
+    /// The service which validates credentials against the PKI environment.
+    pub fn authentication_service(&self) -> &AuthenticationService {
+        &self.auth_service
+    }
+
+    /// A provider for openmls whose reads and writes go to this transaction.
+    pub fn with_transaction<'a>(&'a self, transaction: &'a Transaction) -> MlsProvider<'a> {
+        MlsProvider {
+            crypto: &self.crypto,
+            storage: MlsStorage::from(transaction),
+        }
+    }
+
+    /// A provider for openmls which reads through the database and can't write.
+    ///
+    /// Reads see the writes of a transaction in flight. They fail rather than wait if the database is busy, and
+    /// writes always fail.
+    pub fn read_only(&self) -> MlsProvider<'_> {
+        MlsProvider {
+            crypto: &self.crypto,
+            storage: MlsStorage::read_only(&self.key_store),
+        }
+    }
+
     /// Reseeds the internal CSPRNG.
     ///
     /// If [None] is provided, the new seed is pulled from the current OS target's capabilities.
@@ -203,26 +232,28 @@ impl CryptoProvider {
     }
 }
 
-impl openmls_traits::OpenMlsCryptoProvider for CryptoProvider {
+/// What openmls needs for an operation: our crypto, and the storage its reads and writes go to.
+#[derive(Clone, Copy)]
+pub struct MlsProvider<'a> {
+    crypto: &'a RustCrypto,
+    storage: MlsStorage<'a>,
+}
+
+impl<'a> OpenMlsProvider for MlsProvider<'a> {
     type CryptoProvider = RustCrypto;
     type RandProvider = RustCrypto;
-    type KeyStoreProvider = Database;
-    type AuthenticationServiceProvider = AuthenticationService;
+    type StorageProvider = MlsStorage<'a>;
+
+    fn storage(&self) -> &Self::StorageProvider {
+        &self.storage
+    }
 
     fn crypto(&self) -> &Self::CryptoProvider {
-        &self.crypto
+        self.crypto
     }
 
     fn rand(&self) -> &Self::RandProvider {
-        &self.crypto
-    }
-
-    fn key_store(&self) -> &Self::KeyStoreProvider {
-        &self.key_store
-    }
-
-    fn authentication_service(&self) -> &Self::AuthenticationServiceProvider {
-        &self.auth_service
+        self.crypto
     }
 }
 
@@ -243,6 +274,10 @@ impl OpenMlsCrypto for &CryptoProvider {
         ikm: &[u8],
     ) -> Result<tls_codec::SecretVLBytes, CryptoError> {
         self.crypto.hkdf_extract(hash_type, salt, ikm)
+    }
+
+    fn hmac(&self, hash_type: HashType, key: &[u8], message: &[u8]) -> Result<tls_codec::SecretVLBytes, CryptoError> {
+        self.crypto.hmac(hash_type, key, message)
     }
 
     fn hkdf_expand(
@@ -283,14 +318,6 @@ impl OpenMlsCrypto for &CryptoProvider {
 
     fn signature_key_gen(&self, alg: SignatureScheme) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
         self.crypto.signature_key_gen(alg)
-    }
-
-    fn signature_public_key_len(&self, alg: SignatureScheme) -> usize {
-        self.crypto.signature_public_key_len(alg)
-    }
-
-    fn validate_signature_key(&self, alg: SignatureScheme, key: &[u8]) -> Result<(), CryptoError> {
-        self.crypto.validate_signature_key(alg, key)
     }
 
     fn verify_signature(

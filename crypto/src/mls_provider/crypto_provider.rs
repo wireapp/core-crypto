@@ -1,4 +1,4 @@
-use std::sync::{Arc, LazyLock, RwLock, RwLockWriteGuard};
+use std::sync::{Arc, LazyLock, RwLock};
 
 use aes_gcm::{
     Aes128Gcm, Aes256Gcm, KeyInit,
@@ -8,11 +8,11 @@ use chacha20poly1305::ChaCha20Poly1305;
 use crypto_common::KeySizeUser as _;
 use elliptic_curve::{Generate as _, sec1};
 use hkdf::Hkdf;
+use hmac::{Hmac, Mac as _};
 use ml_dsa::{MlDsa44, MlDsa65, MlDsa87};
 use openmls::prelude::HpkeCiphertext;
 use openmls_traits::{
     crypto::OpenMlsCrypto,
-    mldsa,
     random::OpenMlsRand,
     types::{
         self, AeadType, Ciphersuite, CryptoError, ExporterSecret, HashType, HpkeAeadType, HpkeConfig, HpkeKdfType,
@@ -62,11 +62,11 @@ macro_rules! hpke_dispatch {
                 hpke_core::$f::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha384, hpke::kem::DhP384HkdfSha384>($($arg),*),
             HpkeConfig(HpkeKemType::DhKemP521, HpkeKdfType::HkdfSha512, HpkeAeadType::AesGcm256) =>
                 hpke_core::$f::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha512, hpke::kem::DhP521HkdfSha512>($($arg),*),
-            HpkeConfig(HpkeKemType::MlKem768X25519, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) =>
+            HpkeConfig(HpkeKemType::XWingKemDraft6, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) =>
                 hpke_core::$f::<hpke::aead::AesGcm128, hpke::kdf::HkdfSha256, hpke::kem::XWing>($($arg),*),
-            HpkeConfig(HpkeKemType::MlKem768X25519, HpkeKdfType::HkdfSha384, HpkeAeadType::AesGcm256) =>
+            HpkeConfig(HpkeKemType::XWingKemDraft6, HpkeKdfType::HkdfSha384, HpkeAeadType::AesGcm256) =>
                 hpke_core::$f::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha384, hpke::kem::XWing>($($arg),*),
-            HpkeConfig(HpkeKemType::MlKem768X25519, HpkeKdfType::HkdfSha384, HpkeAeadType::ChaCha20Poly1305) =>
+            HpkeConfig(HpkeKemType::XWingKemDraft6, HpkeKdfType::HkdfSha384, HpkeAeadType::ChaCha20Poly1305) =>
                 hpke_core::$f::<hpke::aead::ChaCha20Poly1305, hpke::kdf::HkdfSha384, hpke::kem::XWing>($($arg),*),
             HpkeConfig(HpkeKemType::MlKem768P256, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) =>
                 hpke_core::$f::<hpke::aead::AesGcm128, hpke::kdf::HkdfSha256, hpke::kem::MlKem768P256>($($arg),*),
@@ -78,7 +78,7 @@ macro_rules! hpke_dispatch {
                 hpke_core::$f::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha384, hpke::kem::MlKem768>($($arg),*),
             HpkeConfig(HpkeKemType::MlKem1024, HpkeKdfType::HkdfSha384, HpkeAeadType::AesGcm256) =>
                 hpke_core::$f::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha384, hpke::kem::MlKem1024>($($arg),*),
-            _ => Err(CryptoError::UnsupportedKem),
+            _ => Err(CryptoError::UnsupportedCiphersuite),
         }
     };
 }
@@ -90,12 +90,12 @@ macro_rules! hpke_kem_dispatch {
             HpkeKemType::DhKemP256 => hpke_core::$f::<hpke::kem::DhP256HkdfSha256>($($arg),*),
             HpkeKemType::DhKemP384 => hpke_core::$f::<hpke::kem::DhP384HkdfSha384>($($arg),*),
             HpkeKemType::DhKemP521 => hpke_core::$f::<hpke::kem::DhP521HkdfSha512>($($arg),*),
-            HpkeKemType::MlKem768X25519 => hpke_core::$f::<hpke::kem::XWing>($($arg),*),
+            HpkeKemType::XWingKemDraft6 => hpke_core::$f::<hpke::kem::XWing>($($arg),*),
             HpkeKemType::MlKem768P256 => hpke_core::$f::<hpke::kem::MlKem768P256>($($arg),*),
             HpkeKemType::MlKem1024P384 => hpke_core::$f::<hpke::kem::MlKem1024P384>($($arg),*),
             HpkeKemType::MlKem768 => hpke_core::$f::<hpke::kem::MlKem768>($($arg),*),
             HpkeKemType::MlKem1024 => hpke_core::$f::<hpke::kem::MlKem1024>($($arg),*),
-            HpkeKemType::DhKem448 => Err(CryptoError::UnsupportedKem),
+            HpkeKemType::DhKem448 => Err(CryptoError::UnsupportedCiphersuite),
         }
     };
 }
@@ -119,6 +119,52 @@ impl RustCrypto {
 
         let mut val = self.rng.write().map_err(|_| Error::RngLockPoison)?;
         *val = rand_chacha::ChaCha20Rng::from_seed(seed);
+        Ok(())
+    }
+
+    /// The length of a public key of this signature scheme, as [`OpenMlsCrypto::signature_key_gen`] produces it.
+    pub fn signature_public_key_len(&self, signature_scheme: SignatureScheme) -> usize {
+        // `signature_key_gen` emits ECDSA public keys as uncompressed SEC1 points -- a 0x04 tag
+        // byte followed by the two field elements -- so the serialized length is not the field
+        // size. Returning the field size here would make `Self::validate_signature_key` reject every key this
+        // provider produces.
+        match signature_scheme {
+            SignatureScheme::ECDSA_SECP256R1_SHA256 => sec1::Tag::Uncompressed
+                .message_len(<p256::NistP256 as p256::elliptic_curve::Curve>::FieldBytesSize::to_usize()),
+            SignatureScheme::ECDSA_SECP384R1_SHA384 => sec1::Tag::Uncompressed
+                .message_len(<p384::NistP384 as p384::elliptic_curve::Curve>::FieldBytesSize::to_usize()),
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => sec1::Tag::Uncompressed
+                .message_len(<p521::NistP521 as p521::elliptic_curve::Curve>::FieldBytesSize::to_usize()),
+            SignatureScheme::ED25519 => ed25519_dalek::PUBLIC_KEY_LENGTH,
+            SignatureScheme::ED448 => 57,
+            SignatureScheme::MLDSA44 => ml_dsa::VerifyingKey::<ml_dsa::MlDsa44>::key_size(),
+            SignatureScheme::MLDSA65 => ml_dsa::VerifyingKey::<ml_dsa::MlDsa65>::key_size(),
+            SignatureScheme::MLDSA87 => ml_dsa::VerifyingKey::<ml_dsa::MlDsa87>::key_size(),
+        }
+    }
+
+    /// Check that `key` is a well-formed public key of this signature scheme.
+    pub fn validate_signature_key(&self, alg: SignatureScheme, key: &[u8]) -> Result<(), CryptoError> {
+        match alg {
+            SignatureScheme::ED25519 => {
+                ed25519_dalek::VerifyingKey::try_from(key).map_err(|_| CryptoError::InvalidPublicKey)?;
+            }
+            SignatureScheme::ECDSA_SECP256R1_SHA256 => {
+                p256::ecdsa::VerifyingKey::try_from(key).map_err(|_| CryptoError::InvalidPublicKey)?;
+            }
+            SignatureScheme::ECDSA_SECP384R1_SHA384 => {
+                p384::ecdsa::VerifyingKey::try_from(key).map_err(|_| CryptoError::InvalidPublicKey)?;
+            }
+            SignatureScheme::ECDSA_SECP521R1_SHA512 => {
+                p521::ecdsa::VerifyingKey::from_sec1_bytes(key).map_err(|_| CryptoError::InvalidPublicKey)?;
+            }
+            SignatureScheme::ED448 => {
+                return Err(CryptoError::UnsupportedSignatureScheme);
+            }
+            SignatureScheme::MLDSA44 | SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87 => {
+                (self.signature_public_key_len(alg) == key.len()).ok_or(CryptoError::InvalidPublicKey)?
+            }
+        }
         Ok(())
     }
 
@@ -179,26 +225,6 @@ fn validate_psk(psk: &[u8], psk_id: &[u8]) -> Result<(), CryptoError> {
 }
 
 impl OpenMlsCrypto for RustCrypto {
-    fn signature_public_key_len(&self, signature_scheme: SignatureScheme) -> usize {
-        // `signature_key_gen` emits ECDSA public keys as uncompressed SEC1 points -- a 0x04 tag
-        // byte followed by the two field elements -- so the serialized length is not the field
-        // size. Returning the field size here makes the `OpenMlsCrypto::validate_signature_key`
-        // default reject every key this provider produces.
-        match signature_scheme {
-            SignatureScheme::ECDSA_SECP256R1_SHA256 => sec1::Tag::Uncompressed
-                .message_len(<p256::NistP256 as p256::elliptic_curve::Curve>::FieldBytesSize::to_usize()),
-            SignatureScheme::ECDSA_SECP384R1_SHA384 => sec1::Tag::Uncompressed
-                .message_len(<p384::NistP384 as p384::elliptic_curve::Curve>::FieldBytesSize::to_usize()),
-            SignatureScheme::ECDSA_SECP521R1_SHA512 => sec1::Tag::Uncompressed
-                .message_len(<p521::NistP521 as p521::elliptic_curve::Curve>::FieldBytesSize::to_usize()),
-            SignatureScheme::ED25519 => ed25519_dalek::PUBLIC_KEY_LENGTH,
-            SignatureScheme::ED448 => 57,
-            SignatureScheme::MLDSA44 => ml_dsa::VerifyingKey::<ml_dsa::MlDsa44>::key_size(),
-            SignatureScheme::MLDSA65 => ml_dsa::VerifyingKey::<ml_dsa::MlDsa65>::key_size(),
-            SignatureScheme::MLDSA87 => ml_dsa::VerifyingKey::<ml_dsa::MlDsa87>::key_size(),
-        }
-    }
-
     fn supports(&self, cipher_suite: Ciphersuite) -> Result<(), CryptoError> {
         match cipher_suite {
             Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
@@ -249,6 +275,20 @@ impl OpenMlsCrypto for RustCrypto {
             HashType::Sha2_256 => Ok(Hkdf::<Sha256>::extract(Some(salt), ikm).0.as_slice().into()),
             HashType::Sha2_384 => Ok(Hkdf::<Sha384>::extract(Some(salt), ikm).0.as_slice().into()),
             HashType::Sha2_512 => Ok(Hkdf::<Sha512>::extract(Some(salt), ikm).0.as_slice().into()),
+        }
+    }
+
+    fn hmac(&self, hash_type: HashType, key: &[u8], message: &[u8]) -> Result<SecretVLBytes, CryptoError> {
+        fn hmac<D: hmac::EagerHash>(key: &[u8], message: &[u8]) -> Result<SecretVLBytes, CryptoError> {
+            let mut mac = Hmac::<D>::new_from_slice(key).map_err(|_| CryptoError::InvalidLength)?;
+            mac.update(message);
+            Ok(mac.finalize().into_bytes().as_slice().into())
+        }
+
+        match hash_type {
+            HashType::Sha2_256 => hmac::<Sha256>(key, message),
+            HashType::Sha2_384 => hmac::<Sha384>(key, message),
+            HashType::Sha2_512 => hmac::<Sha512>(key, message),
         }
     }
 
@@ -406,30 +446,6 @@ impl OpenMlsCrypto for RustCrypto {
         }
     }
 
-    fn validate_signature_key(&self, alg: SignatureScheme, key: &[u8]) -> Result<(), CryptoError> {
-        match alg {
-            SignatureScheme::ED25519 => {
-                ed25519_dalek::VerifyingKey::try_from(key).map_err(|_| CryptoError::InvalidKey)?;
-            }
-            SignatureScheme::ECDSA_SECP256R1_SHA256 => {
-                p256::ecdsa::VerifyingKey::try_from(key).map_err(|_| CryptoError::InvalidKey)?;
-            }
-            SignatureScheme::ECDSA_SECP384R1_SHA384 => {
-                p384::ecdsa::VerifyingKey::try_from(key).map_err(|_| CryptoError::InvalidKey)?;
-            }
-            SignatureScheme::ECDSA_SECP521R1_SHA512 => {
-                p521::ecdsa::VerifyingKey::from_sec1_bytes(key).map_err(|_| CryptoError::InvalidKey)?;
-            }
-            SignatureScheme::ED448 => {
-                return Err(CryptoError::UnsupportedSignatureScheme);
-            }
-            SignatureScheme::MLDSA44 | SignatureScheme::MLDSA65 | SignatureScheme::MLDSA87 => {
-                (self.signature_public_key_len(alg) == key.len()).ok_or(CryptoError::InvalidKey)?
-            }
-        }
-        Ok(())
-    }
-
     fn verify_signature(
         &self,
         alg: SignatureScheme,
@@ -562,6 +578,34 @@ impl OpenMlsCrypto for RustCrypto {
 
     fn derive_hpke_keypair(&self, config: HpkeConfig, ikm: &[u8]) -> Result<types::HpkeKeyPair, CryptoError> {
         hpke_kem_dispatch!(config.0, hpke_derive_keypair, ikm)
+    }
+}
+
+/// ML-DSA key generation, signing and verification.
+///
+/// openmls's traits crate used to provide these. Upstream keeps them private to its own crypto provider.
+mod mldsa {
+    use ml_dsa::{Generate as _, KeyInit, MlDsaParams, Signature, SigningKey, VerifyingKey};
+    use openmls_traits::types::CryptoError;
+
+    /// Generate a key pair. The private half is the 32-byte seed.
+    pub(super) fn key_gen<P: MlDsaParams>(
+        rng: &mut impl rand_core::CryptoRng,
+    ) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
+        let signing_key = SigningKey::<P>::generate_from_rng(rng);
+        let private = signing_key.as_seed().to_vec();
+        let public = signing_key.expanded_key().verifying_key().encode().to_vec();
+        Ok((private, public))
+    }
+
+    /// Verify a signature made with an empty context string.
+    pub(super) fn verify<P: MlDsaParams>(payload: &[u8], public: &[u8], signature: &[u8]) -> Result<(), CryptoError> {
+        let verifying_key =
+            <VerifyingKey<P> as KeyInit>::new_from_slice(public).map_err(|_| CryptoError::InvalidPublicKey)?;
+        let signature = Signature::<P>::try_from(signature).map_err(|_| CryptoError::InvalidSignature)?;
+        verifying_key
+            .verify_with_context(payload, &[], &signature)
+            .ok_or(CryptoError::InvalidSignature)
     }
 }
 
@@ -723,22 +767,15 @@ mod hpke_core {
 impl OpenMlsRand for RustCrypto {
     type Error = Error;
 
-    type RandImpl = rand_chacha::ChaCha20Rng;
-    type BorrowTarget<'a> = RwLockWriteGuard<'a, Self::RandImpl>;
-
-    fn borrow_rand(&self) -> Result<Self::BorrowTarget<'_>, Self::Error> {
-        self.rng.write().map_err(|_| Error::RngLockPoison)
-    }
-
     fn random_array<const N: usize>(&self) -> Result<[u8; N], Self::Error> {
-        let mut rng = self.borrow_rand()?;
+        let mut rng = self.rng.write().map_err(|_| Error::RngLockPoison)?;
         let mut out = [0u8; N];
         rng.fill_bytes(&mut out);
         Ok(out)
     }
 
     fn random_vec(&self, len: usize) -> Result<Vec<u8>, Self::Error> {
-        let mut rng = self.borrow_rand()?;
+        let mut rng = self.rng.write().map_err(|_| Error::RngLockPoison)?;
         let mut out = vec![0u8; len];
         rng.fill_bytes(&mut out);
         Ok(out)
@@ -750,10 +787,37 @@ mod tests {
     use openmls_traits::{
         crypto::OpenMlsCrypto as _,
         random::OpenMlsRand as _,
-        types::{CryptoError, HpkeAeadType, HpkeCiphertext, HpkeConfig, HpkeKdfType, HpkeKemType, SignatureScheme},
+        types::{
+            CryptoError, HashType, HpkeAeadType, HpkeCiphertext, HpkeConfig, HpkeKdfType, HpkeKemType, SignatureScheme,
+        },
     };
 
     use super::{EntropySeed, RawEntropySeed, RustCrypto};
+
+    /// RFC 4231, test case 2.
+    #[test]
+    fn hmac_matches_the_rfc_4231_test_vectors() {
+        let crypto = RustCrypto::default();
+        let key = b"Jefe";
+        let message = b"what do ya want for nothing?";
+        for (hash_type, expected) in [
+            (
+                HashType::Sha2_256,
+                "5bdcc146bf60754e6a042426089575c75a003f089d2739839dec58b964ec3843",
+            ),
+            (
+                HashType::Sha2_384,
+                "af45d2e376484031617f78d2b58a6b1b9c7ef464f5a01b47e42ec3736322445e8e2240ca5e69e2c78b3239ecfab21649",
+            ),
+            (
+                HashType::Sha2_512,
+                "164b7a7bfcf819e2e395fbe73b56e0a387bd64222e831fd610270cd7ea2505549758bf75c05a994a6d034f65f8f0e6fdcaeab1a34d4a6b4b636e070a38bce737",
+            ),
+        ] {
+            let mac = crypto.hmac(hash_type, key, message).unwrap();
+            assert_eq!(hex::encode(mac.as_slice()), expected, "{hash_type:?}");
+        }
+    }
 
     /// `signature_public_key_len` exists so that callers can size a buffer for, or validate the
     /// length of, a public key this provider produced. It is only meaningful if it agrees with
