@@ -155,6 +155,18 @@ CREATE TABLE "mls_groups" (
   -- this field distinguishes between proper groups and pending groups
   is_pending BOOLEAN NOT NULL DEFAULT 0,
   tnt_tx_counter INTEGER NOT NULL DEFAULT 0,
+  join_config BLOB,
+  tree BLOB,
+  context BLOB,
+  interim_transcript_hash BLOB,
+  confirmation_tag BLOB,
+  group_status INTEGER CHECK (group_status IN (0, 1, 2)),
+  pending_commit BLOB CHECK (
+    (pending_commit IS NOT NULL) = (group_status IS 1)
+  ),
+  message_secrets BLOB,
+  resumption_psk_store BLOB,
+  epoch_secrets BLOB,
   FOREIGN KEY (
     credential_id,
     credential_type,
@@ -173,6 +185,7 @@ CREATE TABLE "mls_key_packages" (
   -- this has to be nullable because openmls insists on filling it in a separate statement
   -- because it thinks it's a separate entity
   hpke_init_private_key BLOB NULL,
+  leaf_encryption_private_key BLOB,
   -- Deferred so that the credential only has to exist by the time the transaction commits. A history
   -- client stores its key package before it can add the credential: it recovers the credential from
   -- the stored key package.
@@ -222,3 +235,20 @@ CREATE TABLE mls_inbox (
 );
 
 CREATE INDEX idx_mls_inbox_conversation_id_waiting_for_epoch ON mls_inbox (conversation_id, waiting_for, epoch);
+
+CREATE TABLE mls_group_own_leaf_nodes (
+  id INTEGER PRIMARY KEY,
+  group_id BLOB NOT NULL,
+  leaf_node BLOB NOT NULL,
+  FOREIGN KEY (group_id) REFERENCES mls_groups (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_mls_group_own_leaf_nodes_group_id ON mls_group_own_leaf_nodes (group_id);
+
+CREATE TABLE mls_group_queued_proposals (
+  group_id BLOB NOT NULL,
+  proposal_ref BLOB NOT NULL,
+  proposal BLOB NOT NULL,
+  PRIMARY KEY (group_id, proposal_ref),
+  FOREIGN KEY (group_id) REFERENCES mls_groups (id) ON DELETE CASCADE
+);
