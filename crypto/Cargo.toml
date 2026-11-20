@@ -78,6 +78,7 @@ rand_core = "0.10"
 rand_chacha = "0.10"
 ml-dsa = { version = "0.1", default-features = false, features = [
   "alloc",
+  "rand_core",
   "zeroize",
 ] }
 crypto-common = "0.2"
