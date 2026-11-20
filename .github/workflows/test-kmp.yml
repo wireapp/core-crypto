@@ -14,6 +14,7 @@ on:
         type: string
   workflow_dispatch:
 
+# The libraries the jobs building them upload are release builds.
 env:
   RELEASE: 1
 
@@ -39,14 +40,8 @@ jobs:
         with:
           cache-provider: basic
 
-      - name: download ffi library
-        uses: ./.github/actions/make/ffi-library
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
-
-      - name: download platform jvm library
-        uses: ./.github/actions/make/jvm
+      - name: download the libraries
+        uses: ./.github/actions/make/kmp-libs
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}

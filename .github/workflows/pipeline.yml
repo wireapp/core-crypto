@@ -243,10 +243,13 @@ jobs:
   test-kmp:
     needs:
       - artifact-generation
-      - ffi-library-linux
-      - ffi-library-macos
-      - build-jvm-linux
+      - build-android
+      - build-ios
       - build-jvm-darwin
+      - build-jvm-darwin-x86
+      - build-jvm-linux
+      - build-jvm-linux-arm
+      - build-jvm-windows
     uses: ./.github/workflows/test-kmp.yml
     with:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
