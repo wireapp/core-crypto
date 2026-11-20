@@ -25,6 +25,8 @@ pub enum MlsError {
     OrphanWelcome,
     #[error("Message rejected by the delivery service. Reason: {reason}")]
     MessageRejected { reason: String },
+    #[error("One or several of your own credentials are invalid/revoked")]
+    InvalidCredentials { reason: String },
     #[error("{msg}")]
     Other { msg: String },
 }

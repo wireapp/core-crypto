@@ -158,6 +158,7 @@ impl From<RecursiveError> for CoreCryptoError {
             core_crypto::mls::conversation::Error::SelfCommitIgnored => MlsError::SelfCommitIgnored.into(),
             core_crypto::mls::conversation::Error::MessageRejected { reason } => MlsError::MessageRejected { reason: reason.clone() }.into(),
             core_crypto::mls::conversation::Error::OrphanWelcome => MlsError::OrphanWelcome.into(),
+            core_crypto::transaction_context::Error::InvalidCredentials(_) => MlsError::InvalidCredentials { reason: error.innermost_error_message() }.into(),
             ||=> MlsError::Other { msg: error.innermost_error_message() }.into(),
         })
     }
