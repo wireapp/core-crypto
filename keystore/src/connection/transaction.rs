@@ -15,6 +15,24 @@ use crate::{
     unique_arc::ArcWithReadGuard,
 };
 
+/// A connection to the database: the in-flight transaction's, or the database's own.
+#[derive(derive_more::From)]
+pub(crate) enum ConnectionGuard<'a> {
+    Transaction(TransactionConnection),
+    Database(MutexGuard<'a, Connection>),
+}
+
+impl Deref for ConnectionGuard<'_> {
+    type Target = Connection;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            ConnectionGuard::Transaction(transaction_connection) => transaction_connection.deref(),
+            ConnectionGuard::Database(mutex_guard) => mutex_guard.deref(),
+        }
+    }
+}
+
 /// These impls control the keystore transaction lifecycle.
 impl Database {
     /// Waits for the current transaction to be committed or rolled back, then starts a new one.
@@ -76,23 +94,6 @@ impl Database {
     /// which is synchronous (for good reason, see field-level docs on `Transaction::conn`);
     /// holding that lock across an await point would wedge the database.
     pub(crate) async fn conn<'a>(&'a self) -> impl 'a + Deref<Target = Connection> {
-        #[derive(derive_more::From)]
-        enum ConnectionGuard<'a> {
-            Transaction(TransactionConnection),
-            Database(MutexGuard<'a, Connection>),
-        }
-
-        impl<'a> Deref for ConnectionGuard<'a> {
-            type Target = Connection;
-
-            fn deref(&self) -> &Self::Target {
-                match self {
-                    ConnectionGuard::Transaction(transaction_connection) => transaction_connection.deref(),
-                    ConnectionGuard::Database(mutex_guard) => mutex_guard.deref(),
-                }
-            }
-        }
-
         if let Some(weak) = self.transaction.lock().await.clone()
             && let Some(wrapper) = weak.upgrade_without_type_erasure().await
             && let Ok(transaction_connection) = TransactionConnection::shared(wrapper)
@@ -101,6 +102,22 @@ impl Database {
         } else {
             self.conn.lock().await.into()
         }
+    }
+
+    /// The connection on which to perform a read, without waiting for a lock.
+    ///
+    /// This picks the connection the same way [`Self::conn`] does. Where that would wait for a lock, this fails with
+    /// [`CryptoKeystoreError::Busy`] instead, for example while a transaction is being committed.
+    pub(crate) fn try_conn(&self) -> CryptoKeystoreResult<ConnectionGuard<'_>> {
+        let transaction = self.transaction.try_lock().ok_or(CryptoKeystoreError::Busy)?.clone();
+        if let Some(weak) = transaction
+            && let Some(wrapper) = weak.upgrade_sync_without_type_erasure()
+            && let Ok(transaction_connection) = TransactionConnection::shared(wrapper)
+        {
+            return Ok(transaction_connection.into());
+        }
+        // While a transaction is in flight, it holds this lock.
+        self.conn.try_lock().map(Into::into).ok_or(CryptoKeystoreError::Busy)
     }
 
     /// Ensure a transaction exists, passing it to the operation.
