@@ -133,10 +133,9 @@ reqwest = { version = "0.13", default-features = false, features = [
 testcontainers = { version = "0.28", features = ["reusable-containers"] }
 
 # our OpenMLS fork
-openmls = { git = "https://github.com/wireapp/openmls", rev = "8145f8e70d884159c3cdf719d6f3856fa0596533", version = "1" }
-openmls_basic_credential = { git = "https://github.com/wireapp/openmls", rev = "8145f8e70d884159c3cdf719d6f3856fa0596533", version = "0.2" }
-openmls_traits = { git = "https://github.com/wireapp/openmls", rev = "8145f8e70d884159c3cdf719d6f3856fa0596533", version = "0.2" }
-openmls_x509_credential = { git = "https://github.com/wireapp/openmls", rev = "8145f8e70d884159c3cdf719d6f3856fa0596533", version = "0.2" }
+openmls = { git = "https://github.com/wireapp/openmls", rev = "d8b7304b6667dd371abeadf6559aca4cefcedcd2" }
+openmls_basic_credential = { git = "https://github.com/wireapp/openmls", rev = "d8b7304b6667dd371abeadf6559aca4cefcedcd2" }
+openmls_traits = { git = "https://github.com/wireapp/openmls", rev = "d8b7304b6667dd371abeadf6559aca4cefcedcd2" }
 
 # proteus
 proteus-traits = { git = "https://github.com/wireapp/proteus", tag = "v3.0.1" }
