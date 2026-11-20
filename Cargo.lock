@@ -1121,6 +1121,7 @@ dependencies = [
  "hex",
  "hex-literal",
  "hkdf 0.13.0",
+ "hmac 0.13.0",
  "hpke",
  "itertools 0.15.0",
  "log",
