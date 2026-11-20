@@ -3636,6 +3636,7 @@ name = "openmls"
 version = "0.10.0-rc.1"
 source = "git+https://github.com/wireapp/openmls?rev=014d4408f679baa2dc34d0ab13e1fba33b8488b6#014d4408f679baa2dc34d0ab13e1fba33b8488b6"
 dependencies = [
+ "getrandom 0.4.3",
  "log",
  "openmls_basic_credential",
  "openmls_serialization_helpers",
@@ -3645,6 +3646,7 @@ dependencies = [
  "serde_bytes",
  "thiserror 2.0.21",
  "tls_codec 0.5.0",
+ "web-time",
  "zeroize",
 ]
 
@@ -6820,6 +6822,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a6580f308b1fad9207618087a65c04e7a10bc77e02c8e84e9b00dd4b12fa0bb"
 dependencies = [
  "js-sys",
+ "serde",
  "wasm-bindgen",
 ]
 

@@ -70,6 +70,8 @@ rusqlite = { version = "0.41", default-features = false, features = [
 
 [target.'cfg(target_os = "unknown")'.dependencies]
 aes-gcm = "0.11"
+# openmls needs this in the browser, for randomness and the current time
+openmls = { workspace = true, features = ["js"] }
 idb.workspace = true
 js-sys.workspace = true
 paste = "1.0.5"
