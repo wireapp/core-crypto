@@ -154,10 +154,13 @@ jobs:
       - uniffi-bindgen-linux
       - ffi-library-linux
     runs-on: ubuntu-latest
+    outputs:
+      artifact-name: ${{ steps.bindings.outputs.artifact-name }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/make/setup
-      - uses: ./.github/actions/make/bindings-kotlin-jvm
+      - id: bindings
+        uses: ./.github/actions/make/bindings-kotlin-jvm
         with:
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
@@ -170,6 +173,15 @@ jobs:
     uses: ./.github/workflows/test-jvm.yml
     with:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
+
+  test-jvm-windows:
+    needs:
+      - bindings-jvm
+      - build-jvm-windows
+    uses: ./.github/workflows/test-jvm-windows.yml
+    with:
+      library_artifact: ${{ needs.build-jvm-windows.outputs.artifact-name }}
+      bindings_artifact: ${{ needs.bindings-jvm.outputs.artifact-name }}
 
   check-kotlin:
     needs:
