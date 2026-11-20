@@ -39,7 +39,7 @@ impl GroupInfoBundle {
 
     pub fn get_group_info(self) -> openmls::prelude::group_info::VerifiableGroupInfo {
         match self.get_payload().extract() {
-            openmls::prelude::MlsMessageInBody::GroupInfo(vgi) => vgi,
+            openmls::prelude::MlsMessageBodyIn::GroupInfo(vgi) => vgi,
             _ => panic!("This payload should contain a GroupInfo"),
         }
     }

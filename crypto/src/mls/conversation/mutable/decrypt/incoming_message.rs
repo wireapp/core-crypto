@@ -1,4 +1,4 @@
-use openmls::prelude::{ContentType, MlsMessageIn, MlsMessageInBody, ProtocolMessage};
+use openmls::prelude::{ContentType, MlsMessageBodyIn, MlsMessageIn, ProtocolMessage};
 use tls_codec::Deserialize as _;
 
 use super::Result;
@@ -8,11 +8,6 @@ use crate::{
 };
 
 /// An incoming message, parsed into an appropriate container.
-//
-// We choose to accept the size difference here--approx. 300 bytes--on the basis that
-// memory isn't particularly constrained for this application, and this struct is
-// short-lived.
-#[cfg_attr(not(target_os = "unknown"), expect(clippy::large_enum_variant))]
 #[derive(Clone, derive_more::From)]
 pub(in crate::mls::conversation) enum ParsedMessage {
     Mls(ProtocolMessage),
@@ -37,8 +32,8 @@ impl ParsedMessage {
                 .map_err(TlsCodecError::deserialize("mls message in"))?
                 .extract()
             {
-                MlsMessageInBody::PublicMessage(public_message_in) => ProtocolMessage::from(public_message_in),
-                MlsMessageInBody::PrivateMessage(private_message_in) => private_message_in.into(),
+                MlsMessageBodyIn::PublicMessage(public_message_in) => ProtocolMessage::from(public_message_in),
+                MlsMessageBodyIn::PrivateMessage(private_message_in) => private_message_in.into(),
                 _ => return Err(RejectionReason::InappropriateMessageBodyType),
             }
             .into(),

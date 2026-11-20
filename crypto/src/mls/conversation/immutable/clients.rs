@@ -1,21 +1,29 @@
-use std::collections::HashSet;
+use std::{borrow::Cow, collections::HashSet};
 
 use log::trace;
 use openmls::prelude::{LeafNodeIndex, Proposal};
 
-use crate::{ClientId, HISTORY_CLIENT_ID_PREFIX, RecursiveError, mls::conversation::immutable::Result};
+use crate::{
+    ClientId, HISTORY_CLIENT_ID_PREFIX, RecursiveError,
+    mls::conversation::{immutable::Result, member_identity},
+};
 
 impl super::Conversation {
     /// Exports the clients from a conversation
     /// Does NOT include history client ids.
     pub async fn get_client_ids(&self) -> Result<Vec<ClientId>> {
         let prefix = HISTORY_CLIENT_ID_PREFIX.as_bytes();
-        self.group()
+        let identities = self
+            .group()
             .await
             .members()
-            .filter(|member| !member.credential.identity().starts_with(prefix))
-            .map(|kp| {
-                ClientId::new_from_bytes(kp.credential.identity().to_owned())
+            .map(|member| member_identity(&member.credential).map(Cow::into_owned))
+            .collect::<Result<Vec<_>>>()?;
+        identities
+            .into_iter()
+            .filter(|identity| !identity.starts_with(prefix))
+            .map(|identity| {
+                ClientId::new_from_bytes(identity.into())
                     .map_err(RecursiveError::context("new client id from bytes"))
                     .map_err(Into::into)
             })
@@ -29,10 +37,10 @@ impl super::Conversation {
         self.group()
             .await
             .members()
-            .filter_map(|kp| {
-                let identity = kp.credential.identity();
-
-                identity.starts_with(prefix).then(|| identity.to_owned())
+            .filter_map(|member| {
+                // History clients have basic credentials, whose identity can always be read.
+                let identity = member_identity(&member.credential).ok()?;
+                identity.starts_with(prefix).then(|| identity.into_owned().into())
             })
             .collect()
     }
@@ -57,9 +65,11 @@ impl super::Conversation {
             .members()
             .filter_map(|member| {
                 if !pending_removals.contains(&member.index) {
-                    let client_id_result = ClientId::new_from_bytes(member.credential.identity().to_owned())
-                        .map_err(RecursiveError::context("new client id from bytes"))
-                        .map_err(Into::into);
+                    let client_id_result = member_identity(&member.credential).and_then(|identity| {
+                        ClientId::new_from_bytes(identity.into_owned().into())
+                            .map_err(RecursiveError::context("new client id from bytes"))
+                            .map_err(Into::into)
+                    });
                     Some(client_id_result)
                 } else {
                     trace!(client_index:% = member.index; "Client is pending removal");

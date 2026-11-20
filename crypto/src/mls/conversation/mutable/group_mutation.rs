@@ -1,5 +1,4 @@
 use core_crypto_keystore::{
-    Transaction,
     ancillary::ConversationEpochsOlderThan,
     entities::{InboxMessage, OldEpochData, TargetedMessageRxCounter, TransientMessageRxCounter},
     traits::DeletableBySearchKey as _,
@@ -9,6 +8,7 @@ use super::{ConversationMut, Result};
 use crate::{
     KeystoreError, RecursiveError,
     mls::conversation::{Conversation, ConversationIdRef, MlsGroupState, config::MAX_PAST_EPOCHS},
+    mls_provider::MlsProviderRef,
 };
 
 impl ConversationMut {
@@ -34,7 +34,7 @@ impl ConversationMut {
     /// if any lock already exists on that conversation.
     pub(super) async fn mutate_group_with_operation_check<T>(
         &mut self,
-        operation: impl AsyncFnOnce(&Transaction, &mut MlsGroupState, &ConversationIdRef) -> Result<T>,
+        operation: impl AsyncFnOnce(&MlsProviderRef<'_>, &mut MlsGroupState, &ConversationIdRef) -> Result<T>,
         is_immutable_operation: impl FnOnce(&T) -> bool,
     ) -> Result<T> {
         // we can't get the transaction if the transaction context has been invalidated,
@@ -44,6 +44,8 @@ impl ConversationMut {
             .inner()
             .map_err(RecursiveError::context("getting inner from context to mutate group"))?;
         let tx = context_inner.transaction();
+        let crypto_provider = self.crypto_provider().await?;
+        let provider = crypto_provider.with_transaction(tx);
 
         let Conversation { group, id, .. } = &*self.inner;
         context_inner.conversation_touched(id).await;
@@ -53,7 +55,7 @@ impl ConversationMut {
         }
         let epoch_before_operation = group.epoch();
 
-        let ok_result = operation(tx, &mut *group, id).await?;
+        let ok_result = operation(&provider, &mut *group, id).await?;
 
         if is_immutable_operation(&ok_result) {
             return Ok(ok_result);
@@ -103,7 +105,7 @@ impl ConversationMut {
     /// if any lock already exists on that conversation.
     pub(super) async fn mutate_group<T>(
         &mut self,
-        operation: impl AsyncFnOnce(&Transaction, &mut MlsGroupState, &ConversationIdRef) -> Result<T>,
+        operation: impl AsyncFnOnce(&MlsProviderRef<'_>, &mut MlsGroupState, &ConversationIdRef) -> Result<T>,
     ) -> Result<T> {
         self.mutate_group_with_operation_check(operation, |_| false).await
     }
@@ -112,7 +114,7 @@ impl ConversationMut {
     #[cfg(test)]
     pub(crate) async fn mutate_group_test<T>(
         &mut self,
-        operation: impl AsyncFnOnce(&Transaction, &mut MlsGroupState, &ConversationIdRef) -> Result<T>,
+        operation: impl AsyncFnOnce(&MlsProviderRef<'_>, &mut MlsGroupState, &ConversationIdRef) -> Result<T>,
     ) -> Result<T> {
         self.mutate_group(operation).await
     }

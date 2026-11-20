@@ -1,5 +1,4 @@
 use openmls::prelude::{CryptoError, Member, OpenMlsCrypto};
-use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Deserialize as _, Serialize, VLBytes};
 
 use super::Result;
@@ -38,7 +37,7 @@ impl ConversationMut {
         let crypto_provider = self.crypto_provider().await?;
         let cipher_suite = self.cipher_suite().await;
         let aad = message.aad(protocol_version);
-        let secrets = transient_message_secrets(&crypto_provider, &aad, &mls_group)?;
+        let secrets = transient_message_secrets(crypto_provider.crypto(), &aad, &mls_group)?;
         let aad_bytes = message
             .aad(protocol_version)
             .tls_serialize_detached()

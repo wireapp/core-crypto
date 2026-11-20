@@ -6,7 +6,7 @@ use core_crypto_keystore::{
     entities::StoredKeyPackage,
     traits::{DeletableBySearchKey, EntityDeleteBorrowed as _},
 };
-use openmls::prelude::{CryptoConfig, Lifetime};
+use openmls::prelude::Lifetime;
 
 use super::{Error, Result, TransactionContext};
 use crate::{ConversationConfiguration, CredentialRef, Keypackage, KeypackageRef, KeystoreError, RecursiveError};
@@ -42,22 +42,20 @@ impl TransactionContext {
             .load(&inner.transaction)
             .await
             .map_err(RecursiveError::context("loading credential"))?;
-        let config = CryptoConfig {
-            ciphersuite: credential.cipher_suite.into(),
-            version: openmls::versions::ProtocolVersion::default(),
-        };
+        let crypto_provider = self.mls_provider().await?;
 
-        Keypackage::builder()
+        // The bundle also holds the key package's private keys, which openmls has just stored.
+        let bundle = Keypackage::builder()
             .leaf_node_capabilities(ConversationConfiguration::default_leaf_capabilities())
             .key_package_lifetime(lifetime)
             .build(
-                config,
-                &self.mls_provider().await?,
+                credential.cipher_suite.into(),
+                &crypto_provider.with_transaction(inner.transaction()),
                 &credential.signature_key_pair,
                 credential.to_mls_credential_with_key(),
             )
-            .await
-            .map_err(Error::key_package_new())
+            .map_err(Error::key_package_new())?;
+        Ok(bundle.into_key_package())
     }
 
     /// Get all [`KeypackageRef`]s known to the keystore.

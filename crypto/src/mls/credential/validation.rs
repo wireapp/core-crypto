@@ -94,7 +94,7 @@ mod tests {
     use x509_cert::der::Encode as _;
 
     use crate::{
-        CertificateBundle, ConversationConfiguration, Credential, CredentialRef,
+        CertificateBundle, ConversationConfiguration, Credential, CredentialRef, RejectionReason,
         test_utils::{
             x509::{CertificateParams, X509TestChain},
             *,
@@ -163,16 +163,14 @@ mod tests {
     /// Add a member with openmls directly, skipping core-crypto's checks, as a client without them would.
     async fn add_unchecked(conversation: &TestConversation<'_>, key_package: KeyPackage) -> MlsMessageOut {
         let credential = conversation.credential().await;
-        let provider = conversation.actor().transaction.crypto_provider().await.unwrap();
         conversation
             .guard()
             .await
-            .mutate_group_test(async |tx, group, _| {
-                let provider = provider.with_transaction(tx);
+            .mutate_group_test(async |provider, group, _| {
                 let (commit, ..) = group
-                    .add_members(&provider, &credential.signature_key_pair, &[key_package])
+                    .add_members(provider, &credential.signature_key_pair, &[key_package])
                     .unwrap();
-                group.merge_pending_commit(&provider).unwrap();
+                group.merge_pending_commit(provider).unwrap();
                 Ok(commit)
             })
             .await
@@ -184,6 +182,15 @@ mod tests {
             assert!(innermost_source_matches!(
                 $result.unwrap_err(),
                 crate::mls::credential::Error::CredentialRejected(_)
+            ))
+        };
+    }
+
+    macro_rules! assert_untrusted {
+        ($result:expr) => {
+            assert!(matches!(
+                $result.unwrap().into_single_rejected(),
+                RejectionReason::UntrustedCredential(crate::mls::credential::Error::CredentialRejected(_))
             ))
         };
     }
@@ -218,7 +225,7 @@ mod tests {
             .decrypt_message(commit.to_bytes().unwrap())
             .await;
 
-        assert_rejected!(result);
+        assert_untrusted!(result);
     }
 
     #[apply(all_cred_cipher)]
@@ -254,9 +261,9 @@ mod tests {
             .decrypt_message(commit.to_bytes().unwrap())
             .await;
 
-        assert!(innermost_source_matches!(
-            result.unwrap_err(),
-            crate::mls::credential::Error::InvalidIdentity
+        assert!(matches!(
+            result.unwrap().into_single_rejected(),
+            RejectionReason::MalformedCredential(crate::mls::credential::Error::InvalidIdentity)
         ));
         assert!(
             conversation.guard_of(&bob).await.get_client_ids().await.is_ok(),
@@ -273,17 +280,12 @@ mod tests {
         let conversation = case.create_conversation([&alice, &bob]).await;
         let key_package = untrusted_key_package(&case, &mallory).await;
         let credential = conversation.credential().await;
-        let provider = alice.transaction.crypto_provider().await.unwrap();
         let proposal = conversation
             .guard()
             .await
-            .mutate_group_test(async |tx, group, _| {
+            .mutate_group_test(async |provider, group, _| {
                 let (proposal, _) = group
-                    .propose_add_member(
-                        &provider.with_transaction(tx),
-                        &credential.signature_key_pair,
-                        &key_package,
-                    )
+                    .propose_add_member(provider, &credential.signature_key_pair, &key_package)
                     .unwrap();
                 Ok(proposal)
             })
@@ -296,7 +298,7 @@ mod tests {
             .decrypt_message(proposal.to_bytes().unwrap())
             .await;
 
-        assert_rejected!(result);
+        assert_untrusted!(result);
     }
 
     #[apply(all_cred_cipher)]

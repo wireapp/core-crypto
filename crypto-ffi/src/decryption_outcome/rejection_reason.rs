@@ -47,14 +47,14 @@ pub enum RejectionReason {
     IncompatibleWireFormat,
     /// This message's signature doesn't match its sender's signature key.
     InvalidSignature,
-    /// The sender's X509 certificate chain could not be parsed.
+    /// A credential this message brings into the conversation could not be read.
     MalformedCredential {
-        /// What went wrong when attempting to parse the certificate chain.
+        /// What went wrong when reading the credential.
         error: String,
     },
-    /// The sender's X509 certificate chain is not correctly signed.
+    /// The authentication service doesn't accept a credential this message brings into the conversation.
     UntrustedCredential {
-        /// What went wrong when validating the signatures of the certificate chain.
+        /// Why the authentication service doesn't accept the credential.
         error: String,
     },
     /// This message belongs to a different conversation.
@@ -88,8 +88,8 @@ impl From<CcRejectionReason> for RejectionReason {
             CcRejectionReason::MalformedCredential(credential_error) => Self::MalformedCredential {
                 error: credential_error.to_string(),
             },
-            CcRejectionReason::UntrustedCredential(crypto_error) => Self::UntrustedCredential {
-                error: crypto_error.to_string(),
+            CcRejectionReason::UntrustedCredential(credential_error) => Self::UntrustedCredential {
+                error: credential_error.to_string(),
             },
             CcRejectionReason::DuplicateMessage => Self::DuplicateMessage,
             CcRejectionReason::StaleCommit => Self::StaleCommit,

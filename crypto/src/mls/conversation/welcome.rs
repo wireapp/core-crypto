@@ -38,7 +38,7 @@ impl From<MlsMessageOut> for WelcomeMessage {
 impl WelcomeMessage {
     /// Serialize this message per the TLS encoding in the spec
     pub fn serialize(&self) -> Result<Vec<u8>> {
-        MlsMessageOut::from(self.0.clone())
+        self.0
             .tls_serialize_detached()
             .map_err(TlsCodecError::serialize("welcome message as MlsMessageOut"))
             .map_err(Into::into)
