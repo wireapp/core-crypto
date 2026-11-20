@@ -5,7 +5,7 @@
 //! `openmls::group::MlsGroup` stored in `state`.
 
 use log::warn;
-use openmls::{
+use openmls_legacy::{
     group::{MlsGroup, QueuedProposal},
     prelude::{LeafNode, LeafNodeIndex, Proposal, Sender},
 };

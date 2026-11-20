@@ -1,12 +1,12 @@
 //! These entities and helpers are preserved as of a specific historical revision, for the benefit of meta-migrations
 //! and the indexeddb import.
 
-use openmls::{
+use openmls_basic_credential_legacy::SignatureKeyPair;
+use openmls_legacy::{
     group::MlsGroup,
     prelude::{Ciphersuite, Credential as MlsCredential, MlsCredentialType, SignatureScheme, TlsDeserializeTrait as _},
 };
-use openmls_basic_credential::SignatureKeyPair;
-use openmls_x509_credential::X509Ext as _;
+use openmls_x509_credential_legacy::X509Ext as _;
 use x509_cert::der::Decode as _;
 use zeroize::Zeroize;
 
@@ -105,10 +105,11 @@ pub(crate) fn credential_type_from_serialized(credential: &[u8]) -> CryptoKeysto
 /// This is the last column of an X509 credential's primary key. Fails for anything but an X509 credential with a leaf
 /// certificate that decodes.
 pub(crate) fn not_before_from_serialized(credential: &[u8]) -> CryptoKeystoreResult<u64> {
-    let credential = MlsCredential::tls_deserialize_exact(credential)
+    // A credential's encoding is the one RFC 9420 defines, which the old fork and openmls share.
+    let credential = openmls::prelude::Credential::tls_deserialize_exact(credential)
         .map_err(|e| CryptoKeystoreError::MigrationFailed(format!("deserializing stored credential: {e}")))?;
 
-    if !matches!(credential.mls_credential(), MlsCredentialType::X509(_)) {
+    if credential.credential_type() != openmls::prelude::CredentialType::X509 {
         return Err(CryptoKeystoreError::MigrationFailed(
             "expected an X509 credential".into(),
         ));

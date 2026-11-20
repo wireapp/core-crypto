@@ -4,7 +4,8 @@
 //! recovered by parsing each message and comparing it with the current state of its group.
 
 use log::warn;
-use openmls::prelude::{ContentType, MlsMessageIn, MlsMessageInBody, ProtocolMessage, TlsDeserializeTrait as _};
+use openmls::prelude::ContentType;
+use openmls_legacy::prelude::{MlsMessageIn, MlsMessageInBody, ProtocolMessage, TlsDeserializeTrait as _};
 
 use crate::{
     CryptoKeystoreResult,
@@ -133,7 +134,9 @@ fn parse_message(message: &[u8]) -> Option<(ContentType, u64)> {
         _ => return None,
     };
 
-    Some((protocol_message.content_type(), protocol_message.epoch().as_u64()))
+    // The content type of the old openmls fork, as the one openmls has now.
+    let content_type = ContentType::try_from(protocol_message.content_type() as u8).ok()?;
+    Some((content_type, protocol_message.epoch().as_u64()))
 }
 
 /// compute the number of bytes occupied by a vlbytes field starting at `initial_offset`

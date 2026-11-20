@@ -4,7 +4,7 @@
 //! inside the serialized key package. The init private key is copied over from `mls_hpke_private_keys`.
 
 use log::warn;
-use openmls::prelude::KeyPackage;
+use openmls_legacy::prelude::KeyPackage;
 use rusqlite::{OptionalExtension, named_params, params};
 
 use crate::{CryptoKeystoreResult, Sha256Hash, deser};
