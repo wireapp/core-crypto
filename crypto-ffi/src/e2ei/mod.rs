@@ -142,10 +142,10 @@ impl X509CredentialAcquisition {
 
     /// Deserialize a credential acquisition flow.
     #[uniffi::constructor(name = "fromBytes")]
-    pub fn from_bytes(pki_environment: Arc<PkiEnvironment>, bytes: &[u8]) -> CoreCryptoResult<Self> {
+    pub fn from_bytes(pki_environment: Arc<PkiEnvironment>, bytes: Vec<u8>) -> CoreCryptoResult<Self> {
         let snapshot = wire_e2e_identity::X509CredentialAcquisition::<states::DpopChallengeCompleted>::deserialize(
             pki_environment.clone_inner(),
-            bytes,
+            &bytes,
         )?;
 
         let cipher_suite = snapshot.cipher_suite().into();

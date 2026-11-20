@@ -28,6 +28,11 @@ jobs:
   kmp:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: macos-latest
+    env:
+      # OxiKT packages every release target, taking the libraries from `target`, where the steps
+      # below download them.
+      ORG_GRADLE_PROJECT_releaseBuild: "true"
+      ORG_GRADLE_PROJECT_prebuiltLibraries: ${{ github.workspace }}/target
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -44,61 +49,9 @@ jobs:
         with:
           cache-provider: basic
 
-      - name: download ffi library
-        uses: ./.github/actions/make/ffi-library
+      - name: download the libraries
+        uses: ./.github/actions/make/kmp-libs
         with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
-
-      - name: download armv7-linux-androideabi binaries
-        uses: ./.github/actions/make/android/lib
-        with:
-          task: android-armv7
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
-
-      - name: download aarch64-linux-android binaries
-        uses: ./.github/actions/make/android/lib
-        with:
-          task: android-armv8
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
-
-      - name: download x86_64-linux-android binaries
-        uses: ./.github/actions/make/android/lib
-        with:
-          task: android-x86
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
-
-      - name: download artifacts for ios device
-        uses: ./.github/actions/make/ios/build
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          task: ios-device
-          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
-
-      - name: download artifacts for ios simulator
-        uses: ./.github/actions/make/ios/build
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          task: ios-simulator-arm
-          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
-
-      - name: download aarch64 apple darwin artifact
-        uses: ./.github/actions/make/jvm
-        with:
-          gh-token: ${{ secrets.GITHUB_TOKEN }}
-          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
-
-      # The specific jvm action uses `uname -s` to determine which `jvm` make rule to call.
-      # Because this workflow runs on macOS, we're using the generic action
-      - name: download x86_64 linux artifact
-        uses: ./.github/actions/make
-        with:
-          key: jvm-linux
-          make-rule: jvm-linux
-          target-path: target/x86_64-unknown-linux-gnu/release/libcore_crypto_ffi.a
           gh-token: ${{ secrets.GITHUB_TOKEN }}
           artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 

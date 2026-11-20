@@ -375,12 +375,12 @@ impl PkiEnvironment {
 
     /// Remove a trust anchor by providing the certificates Subject Public Key Info (SPKI) fingerprint as bytes.
     /// Trying to remove trust anchor that doesn't exist in the database will just succeed.
-    pub async fn remove_trust_anchor(&self, fingerprint: &[u8]) -> CoreCryptoResult<()> {
+    pub async fn remove_trust_anchor(&self, fingerprint: Vec<u8>) -> CoreCryptoResult<()> {
         self.database()
             .ensure_transaction::<_, CoreCryptoError>(
                 async |tx| {
                     self.inner
-                        .remove_trust_anchor(tx, fingerprint)
+                        .remove_trust_anchor(tx, &fingerprint)
                         .await
                         .map_err(Into::into)
                 },

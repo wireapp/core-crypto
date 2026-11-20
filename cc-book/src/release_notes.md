@@ -10,6 +10,8 @@
 - The epoch observer now receives epoch change notifications in several cases for which those notifications were
   accidentally omitted in the past.
 - InvalidCredentials is now a typed error. Clients can now catch and swallow it to avoid a transaction rollback.
+- The JVM, Android and KMP packages are now compiled with Kotlin 2.4. Projects using them need at least Kotlin 2.3 to
+  read them.
 
 #### TypeScript
 
@@ -39,6 +41,22 @@
 
 - Browser: databases are stored in a different directory in OPFS. A CoreCrypto 11 database moves there the first time
   it's opened, with the same location and key.
+
+#### Kotlin Multiplatform
+
+- The package is now built with OxiKT (<https://oxikt.dev>) instead of Gobley, and depends on `dev.oxikt:runtime`
+  instead of Gobley's runtime.
+
+- Android projects need to compile against at least SDK 37 (`compileSdk = 37`), which the OxiKT runtime requires.
+
+- The JVM jar now contains the native library for aarch64 and x86_64 macOS, aarch64 and x86_64 Linux, and x86_64
+  Windows. Before, it only contained aarch64 macOS and x86_64 Linux.
+
+#### Swift
+
+- Generated objects now wrap a handle instead of a raw pointer: `init(unsafeFromRawPointer:)` became
+  `init(unsafeFromHandle:)`, and `uniffiClonePointer()` became `uniffiCloneHandle()`. This only affects code that uses
+  these low-level members directly.
 
 #### Bug Fixes
 
