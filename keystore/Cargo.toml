@@ -34,7 +34,6 @@ obfuscate = { workspace = true, features = ["openmls"] }
 openmls = { workspace = true }
 openmls_basic_credential = { workspace = true }
 openmls_traits = { workspace = true }
-openmls_x509_credential = { workspace = true }
 postcard = { version = "1.1", default-features = false, features = ["use-std"] }
 proteus-traits = { workspace = true, optional = true }
 rand.workspace = true
@@ -101,7 +100,7 @@ web-time.workspace = true
 core-crypto-keystore = { path = ".", features = ["log-queries"] }
 env_logger.workspace = true
 futures-lite = "2.6"
-openmls = { workspace = true, features = ["crypto-subtle"] }
+openmls.workspace = true
 proteus-wasm = { workspace = true }
 rstest.workspace = true
 rstest_reuse.workspace = true

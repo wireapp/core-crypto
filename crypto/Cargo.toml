@@ -30,9 +30,8 @@ enum-as-inner.workspace = true
 thiserror.workspace = true
 hex.workspace = true
 
-openmls = { workspace = true, features = ["crypto-subtle"] }
+openmls.workspace = true
 openmls_basic_credential = { workspace = true, features = ["clonable"] }
-openmls_x509_credential.workspace = true
 openmls_traits.workspace = true
 
 rusty-jwt-tools.workspace = true
