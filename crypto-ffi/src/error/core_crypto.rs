@@ -169,6 +169,7 @@ impl From<RecursiveError> for CoreCryptoError {
             // Since we're re-designing the `BufferedMessage` errors soon, it's not worth producing
             // an additional breaking change until then, so the names are inconsistent.
             core_crypto::mls::conversation::Error::BufferedForPendingConversation => MlsError::UnmergedPendingGroup.into(),
+            core_crypto::transaction_context::Error::InvalidCredentials(_) => MlsError::InvalidCredentials { reason: error.innermost_error_message() }.into(),
             ||=> MlsError::Other { msg: error.innermost_error_message() }.into(),
         })
     }
