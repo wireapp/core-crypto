@@ -22,8 +22,10 @@ jobs:
   test-jvm:
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+        include:
+          - runs-on: ubuntu-latest
+          - runs-on: [self-hosted, core-crypto]
+    runs-on: ${{ matrix.runs-on }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -39,6 +41,13 @@ jobs:
         uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
         with:
           cache-provider: basic
+
+      # Gradle only includes the KMP module with `ANDROID_HOME` set.
+      - name: setup android sdk
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          # Don't download unnecessary packages.
+          packages: ''
 
       - name: download the libraries
         uses: ./.github/actions/make/kmp-libs
