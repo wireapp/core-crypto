@@ -71,6 +71,17 @@ mod tests {
                 mls_error: MlsError::ConversationAlreadyExists { conversation_id: _ }
             }
         ));
+
+        let invalid_credentials_error = RecursiveError::context("test invalid credentials error")(
+            core_crypto::transaction_context::Error::InvalidCredentials(Vec::new()),
+        );
+        let mapped_error = CoreCryptoError::from(invalid_credentials_error);
+        assert!(matches!(
+            mapped_error,
+            CoreCryptoError::Mls {
+                mls_error: MlsError::InvalidCredentials { reason: _ }
+            }
+        ));
     }
 
     #[test]
