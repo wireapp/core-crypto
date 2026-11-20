@@ -16,6 +16,10 @@ ifeq ($(UNAME_S),Linux)
 TS_NATIVE_TARGET_TRIPLE ?= $(TS_NATIVE_LINUX_TARGET)
 else ifeq ($(UNAME_S),Darwin)
 TS_NATIVE_TARGET_TRIPLE ?= $(TS_NATIVE_DARWIN_TARGET)
+else ifeq ($(UNAME_S),Windows)
+# ts-native isn't supported on Windows. Don't stop the other rules from parsing; cargo rejects
+# this triple if a ts-native rule runs.
+TS_NATIVE_TARGET_TRIPLE ?= unsupported-on-windows
 else
 $(error Unsupported host platform for ts-native: $(UNAME_S))
 endif

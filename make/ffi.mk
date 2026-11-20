@@ -20,7 +20,7 @@ $(UNIFFI_VERSION_FILE): Cargo.lock
 	    echo "$$current_version" > $@; \
 	fi
 
-UNIFFI_BINDGEN := $(TARGET_DIR)/uniffi-bindgen
+UNIFFI_BINDGEN := $(TARGET_DIR)/uniffi-bindgen$(EXE_SUFFIX)
 uniffi-bindgen-deps := $(UNIFFI_VERSION_FILE)
 $(UNIFFI_BINDGEN): $(uniffi-bindgen-deps)
 	cargo build $(CARGO_BUILD_ARGS) \
@@ -29,7 +29,7 @@ $(UNIFFI_BINDGEN): $(uniffi-bindgen-deps)
 		--bin uniffi-bindgen
 
 # Build the FFI library
-FFI_LIBRARY := $(TARGET_DIR)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+FFI_LIBRARY := $(TARGET_DIR)/$(LIBRARY_PREFIX)core_crypto_ffi.$(LIBRARY_EXTENSION)
 ffi-library-deps := $(RUST_SOURCES)
 $(FFI_LIBRARY): $(ffi-library-deps)
 	cargo build $(NATIVE_CARGO_BUILD_ARGS) \

@@ -68,6 +68,11 @@ else ifeq ($(UNAME_S),Darwin)
 ANDROID_TEST_LIB := $(ANDROID_ARMv8)
 android-test-lib-deps := $(android-armv8-deps)
 android-test-lib: android-armv8
+else ifeq ($(UNAME_S),Windows)
+# Android isn't supported on Windows hosts. Fail when the rule runs, not while parsing, so that
+# the JVM rules still work.
+android-test-lib:
+	$(error Unsupported host platform for android-test-lib: $(UNAME_S))
 else
 $(error Unsupported host platform for android-test-lib: $(UNAME_S))
 endif
