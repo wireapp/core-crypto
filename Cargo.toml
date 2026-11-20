@@ -143,6 +143,12 @@ openmls_traits = { git = "https://github.com/wireapp/openmls", rev = "014d4408f6
   "draft-ietf-mls-pq-ciphersuites",
 ] }
 
+# The old openmls fork. Only the keystore's migrations use it, to read data the fork wrote.
+openmls-legacy = { package = "openmls", git = "https://github.com/wireapp/openmls", rev = "8145f8e70d884159c3cdf719d6f3856fa0596533", version = "1" }
+openmls_basic_credential-legacy = { package = "openmls_basic_credential", git = "https://github.com/wireapp/openmls", rev = "8145f8e70d884159c3cdf719d6f3856fa0596533", version = "0.2" }
+openmls_traits-legacy = { package = "openmls_traits", git = "https://github.com/wireapp/openmls", rev = "8145f8e70d884159c3cdf719d6f3856fa0596533", version = "0.2" }
+openmls_x509_credential-legacy = { package = "openmls_x509_credential", git = "https://github.com/wireapp/openmls", rev = "8145f8e70d884159c3cdf719d6f3856fa0596533", version = "0.2" }
+
 # proteus
 proteus-traits = { git = "https://github.com/wireapp/proteus", tag = "v3.0.1" }
 proteus-wasm = { git = "https://github.com/wireapp/proteus", tag = "v3.0.1" }
