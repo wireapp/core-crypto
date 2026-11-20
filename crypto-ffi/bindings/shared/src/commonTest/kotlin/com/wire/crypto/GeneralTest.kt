@@ -101,7 +101,8 @@ class DatabaseKeyTest {
 
         val oldKey = "secret"
         val tmpdir = createTempDirectory("cc-test-")
-        var path = Path(object {}.javaClass.getResource("/db-v10002003.sqlite")!!.getPath())
+        // Go through the URI: `URL.getPath()` gives `/C:/...` on Windows, which isn't a valid path.
+        var path = object {}.javaClass.getResource("/db-v10002003.sqlite")!!.toURI().toPath()
         path = path.copyTo(tmpdir / path.name)
 
         val newKey = genDatabaseKey()
