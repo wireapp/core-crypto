@@ -89,28 +89,29 @@ impl TransactionContext {
         ))?;
 
         let config = configuration
-            .as_openmls_default_configuration()
-            .map_err(RecursiveError::context("converting config to openmls default"))?;
+            .as_openmls_create_config()
+            .map_err(RecursiveError::context(
+                "converting configuration to openmls create config",
+            ))?;
 
-        // there's a deferred constraint on epoch encryption keypairs.
-        // openmls creates the keypairs before it hands us the `group` which we can use to
-        // persist the conversation, so the constraint _can't_ be fulfilled immediately;
-        // it gets checked at the outermost commit.
-        // wrapping these two operations in an explicit savepoint means that these two operations
-        // are bundled together; failing to persist the group un-persists the keypairs.
+        // openmls writes the new group's state into its row, so the row has to exist first, and either both happen
+        // or neither: failing to build the group must not leave the row behind.
         self.inner()?
             .with_savepoint(
                 "new_conversation",
                 async || {
+                    self.insert_group_row(id, &credential_ref.keystore_pk(), false)?;
+
+                    let inner = self.inner()?;
                     let group = MlsGroup::new_with_group_id(
-                        &provider,
+                        &provider.with_transaction(inner.transaction()),
                         &credential.signature_key_pair,
                         &config,
                         openmls::prelude::GroupId::from_slice(id.as_ref()),
                         credential.to_mls_credential_with_key(),
                     )
-                    .await
                     .map_err(OpenMlsError::wrap("creating group with id"))?;
+                    drop(inner);
 
                     self.persist_conversation_from_mls_group(group, configuration).await?;
 

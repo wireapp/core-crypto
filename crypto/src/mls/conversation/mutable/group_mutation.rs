@@ -4,7 +4,6 @@ use core_crypto_keystore::{
     entities::{InboxMessage, OldEpochData, TargetedMessageRxCounter, TransientMessageRxCounter},
     traits::DeletableBySearchKey as _,
 };
-use openmls::group::InnerState;
 
 use super::{ConversationMut, Result};
 use crate::{
@@ -56,7 +55,7 @@ impl ConversationMut {
 
         let ok_result = operation(tx, &mut *group, id).await?;
 
-        if group.state_changed() == InnerState::Persisted || is_immutable_operation(&ok_result) {
+        if is_immutable_operation(&ok_result) {
             return Ok(ok_result);
         }
 

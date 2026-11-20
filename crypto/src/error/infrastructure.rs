@@ -133,9 +133,9 @@ impl Infrastructural for crate::OpenMlsErrorKind {
     fn is_infrastructure(&self) -> bool {
         use openmls::prelude::{
             AddMembersError, CommitToPendingProposalsError, ExternalCommitBuilderError,
-            ExternalCommitBuilderFinalizeError, ExternalCommitError, KeyPackageNewError, MergePendingCommitError,
-            NewGroupError, ProcessMessageError, ProposeAddMemberError, ProposeRemoveMemberError, RemoveMembersError,
-            SelfUpdateError, WelcomeError,
+            ExternalCommitBuilderFinalizeError, KeyPackageNewError, MergePendingCommitError, NewGroupError,
+            ProcessMessageError, ProposeAddMemberError, ProposeRemoveMemberError, RemoveMembersError, SelfUpdateError,
+            WelcomeError,
         };
 
         match self {
@@ -151,7 +151,6 @@ impl Infrastructural for crate::OpenMlsErrorKind {
             | Self::MlsSelfUpdateError(SelfUpdateError::StorageError(_))
             | Self::MlsCommitToPendingProposalsError(CommitToPendingProposalsError::StorageError(_))
             | Self::MlsMessageError(ProcessMessageError::StorageError(_))
-            | Self::MlsExternalCommitError(ExternalCommitError::StorageError(_))
             | Self::MlsExternalCommitBuilderError(ExternalCommitBuilderError::StorageError(_))
             | Self::MlsExternalCommitBuilderFinalizeError(ExternalCommitBuilderFinalizeError::StorageError(_))
             | Self::ProposeAddMemberError(ProposeAddMemberError::StorageError(_))

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use core_crypto_keystore::{
-    CryptoKeystoreResult, Database,
+    CryptoKeystoreResult, Database, MlsReadConnection,
     traits::{BorrowPrimaryKey, Entity, EntityGetBorrowed, FetchFromDatabase, SearchableEntity},
 };
 
@@ -15,6 +15,15 @@ use core_crypto_keystore::{
 /// can still access the mutable variant on request.
 #[derive(Debug, Clone, derive_more::From)]
 pub struct ImmutableDatabase(Arc<Database>);
+
+impl ImmutableDatabase {
+    /// Wait for a connection to read openmls's storage through.
+    ///
+    /// It holds a lock on the database until it is dropped, so don't hold it across an `await`.
+    pub(crate) async fn mls_read_connection(&self) -> MlsReadConnection<'_> {
+        self.0.mls_read_connection().await
+    }
+}
 
 #[cfg_attr(not(target_os = "unknown"), async_trait)]
 #[cfg_attr(target_os = "unknown", async_trait(?Send))]

@@ -1,17 +1,18 @@
 //! This module contains the implementation of [TransactionContext::join_by_external_commit].
 
 use core_crypto_keystore::{entities::InboxMessage, traits::DeletableBySearchKey as _};
-use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
+use openmls::prelude::{LeafNodeParameters, MlsGroup, group_info::VerifiableGroupInfo};
+use openmls_traits::OpenMlsProvider as _;
 
-use super::Result;
 use crate::{
-    CommitBundle, ConversationConfiguration, ConversationId, CredentialRef, GroupInfoBundle, KeystoreError,
-    OpenMlsError, RecursiveError,
+    CommitBundle, ConversationConfiguration, ConversationId, CredentialRef, KeystoreError, OpenMlsError,
+    RecursiveError,
     mls::{
         self,
-        conversation::{ConversationIdRef, PendingConversation},
+        conversation::{ConversationIdRef, ConversationMut, PendingConversation},
+        credential::validation::validate_credentials,
     },
-    transaction_context::TransactionContext,
+    transaction_context::{Error, Result, TransactionContext},
 };
 
 impl TransactionContext {
@@ -25,16 +26,14 @@ impl TransactionContext {
     /// merged in order to get back a functional MLS group. If it rejects it, you can retry by
     /// calling [Self::join_by_external_commit] again.
     ///
-    /// **Rejoining an existing conversation overwrites it as soon as anything here reaches the
-    /// keystore.** A pending join shares its row with any established conversation of the same id,
-    /// rather than a separate one, so retrying after a failure (which persists the attempt within
-    /// the current transaction, to make the retry possible) leaves the previous conversation's
-    /// state unrecoverable even if this call, or the retry, never succeeds. Note that every path
-    /// which saves the attempt also returns an error, so whether the saved row survives is up to
-    /// the caller: by default an error crossing the FFI aborts the transaction and rolls it back. This is fine because
-    /// the only reason to call this on a conversation you already have is that its local state is already
-    /// considered unusable — that is what "rejoin" means here — so there is nothing worth preserving in the row it
-    /// replaces.
+    /// If the Delivery Service rejects the commit, everything this did is undone: in particular, a conversation
+    /// being rejoined is left as it was. If sending fails for any other reason, or merging fails, the pending
+    /// conversation is kept in the transaction so the join can be recovered. **That replaces any conversation
+    /// being rejoined,** and the previous state can't be recovered, even if the join never succeeds. Whether the
+    /// kept state survives is up to the caller: by default an error crossing the FFI aborts the transaction and
+    /// rolls it back. This is fine because the only reason to call this on a conversation you already have is that
+    /// its local state is already considered unusable — that is what "rejoin" means here — so there is nothing worth
+    /// preserving in the state it replaces.
     ///
     /// If this join is a rejoin of an existing group, any messages currently buffered for that group are discarded.
     ///
@@ -52,86 +51,125 @@ impl TransactionContext {
         group_info: VerifiableGroupInfo,
         credential_ref: &CredentialRef,
     ) -> Result<ConversationId> {
-        let (commit_bundle, id, mut pending_conversation) =
-            self.create_external_join_commit(group_info, credential_ref).await?;
+        let inner = self.inner()?;
+        // The outer result decides what happens to the savepoint. An error rolls back everything the join wrote.
+        // `Ok(Err(_))` keeps the pending conversation, for a join that failed in a way it can recover from.
+        inner
+            .with_savepoint(
+                "join_by_external_commit",
+                async || {
+                    let (commit_bundle, id, mut pending_conversation) =
+                        self.create_external_join_commit(group_info, credential_ref).await?;
 
-        if let Err(err) = pending_conversation.send_commit(commit_bundle).await {
-            let is_message_rejected = matches!(err, mls::conversation::Error::MessageRejected { .. });
-            let err = RecursiveError::context("sending commit")(err).into();
-            if !is_message_rejected {
-                // for anything except a message rejected, attempt to save here so we can recover later
-                // (a message rejected error will always be that though, don't bother in that case)
-                // (and don't shadow the existing error)
-                let _ = pending_conversation.save().await;
-            }
-            return Err(err);
-        }
+                    if let Err(err) = pending_conversation.send_commit(commit_bundle).await {
+                        let is_message_rejected = matches!(err, mls::conversation::Error::MessageRejected { .. });
+                        let err = RecursiveError::context("sending commit")(err).into();
+                        return if is_message_rejected { Err(err) } else { Ok(Err(err)) };
+                    }
 
-        if let Err(err) = pending_conversation.merge().await {
-            // here also, we need to attempt to persist the pending conversation for recovery later
-            // and once again, the existing error is more important than a failure to save
-            let _ = pending_conversation.save().await;
-            return Err(RecursiveError::context("merging from external commit")(err).into());
-        }
-
-        Ok(id)
+                    Ok(pending_conversation
+                        .merge()
+                        .await
+                        .map(|()| id)
+                        .map_err(|err| RecursiveError::context("merging from external commit")(err).into()))
+                },
+                Error::savepoint,
+            )
+            .await?
     }
 
+    /// Build an external commit to join a group, and store the group as pending.
+    ///
+    /// openmls merges an external commit as soon as it has built it, so the stored group is already in the epoch
+    /// the commit starts. It stays marked pending until the Delivery Service has accepted the commit.
     pub(crate) async fn create_external_join_commit(
         &self,
         group_info: VerifiableGroupInfo,
         credential_ref: &CredentialRef,
     ) -> Result<(CommitBundle, ConversationId, PendingConversation)> {
         let inner = self.inner()?;
-        let cipher_suite = group_info.ciphersuite().into();
-        let mls_provider = self.crypto_provider().await?;
+        let crypto_provider = self.crypto_provider().await?;
+        let provider = crypto_provider.with_transaction(inner.transaction());
         let credential = credential_ref
             .load(&inner.transaction)
             .await
             .map_err(RecursiveError::context("loading credential"))?;
 
+        let ciphersuite = group_info.ciphersuite();
+        let group_id = group_info.group_id().clone();
+        let id = ConversationIdRef::new(group_id.as_slice()).to_owned();
+
         let configuration = ConversationConfiguration {
-            cipher_suite,
+            cipher_suite: ciphersuite.into(),
             ..Default::default()
         };
-
-        let id = ConversationIdRef::new(group_info.group_id().as_slice()).to_owned();
-        if self.conversation_exists(&id, Some(false)).await? {
-            // rejoining replaces the group without going through `mutate_group`, so we have to
-            // capture epoch data from an existing group here
-            let conversation = self.conversation(&id).await?;
-            conversation
-                .record_epoch_data(conversation.group().await.mls_group())
-                .await
-                .map_err(RecursiveError::context("recording epoch data before rejoin"))?;
-        }
-
-        let (group, commit, group_info) = MlsGroup::join_by_external_commit(
-            &mls_provider,
-            &credential.signature_key_pair,
-            None,
-            group_info,
-            &configuration
-                .as_openmls_default_configuration()
-                .map_err(RecursiveError::context(
-                    "using configuration as openmls default configuration",
-                ))?,
-            &[],
-            credential.to_mls_credential_with_key(),
+        let verified_group = MlsGroup::external_commit_builder()
+            .with_config(configuration.as_openmls_join_config())
+            .verify_group(&provider, group_info)
+            .map_err(OpenMlsError::wrap("verifying the group to join by external commit"))?;
+        // Check the members before anything is written.
+        validate_credentials(
+            crypto_provider.authentication_service(),
+            &verified_group
+                .members()
+                .map(|member| member.credential)
+                .collect::<Vec<_>>(),
         )
         .await
-        .map_err(OpenMlsError::wrap("joining mls group by external commit"))?;
+        .map_err(RecursiveError::mls_credential(
+            "checking the credentials of the group we're joining",
+        ))?;
 
-        // We should always have ratchet tree extension turned on hence GroupInfo should always be present
-        let group_info = group_info
-            .ok_or(mls::conversation::Error::MissingGroupInfo)
-            .map_err(RecursiveError::context("retrieving group info"))?;
-        let group_info = GroupInfoBundle::try_new_full_plaintext(group_info)
-            .map_err(RecursiveError::context("trying new full plaintext group info bundle"))?;
+        // A rejoin, or a retry of a pending join.
+        if self.conversation_exists(&id, None).await? {
+            if self.conversation_exists(&id, Some(false)).await? {
+                // rejoining replaces the group without going through `mutate_group`, so we have to
+                // capture epoch data from an existing group here
+                let conversation = self.conversation(&id).await?;
+                conversation
+                    .record_epoch_data(conversation.group().await.mls_group())
+                    .await
+                    .map_err(RecursiveError::context("recording epoch data before rejoin"))?;
+            }
 
-        let pending_conversation = PendingConversation::from_mls_group(group, self.clone())
-            .await
-            .map_err(RecursiveError::context("creating pending conversation"))?;
+            // The group we build replaces this one. Drop openmls's state of the old group, so none of it outlives
+            // it. The row, which other tables refer to, stays.
+            if let Some(mut group) = MlsGroup::load(provider.storage(), &group_id)
+                .map_err(KeystoreError::wrap("loading the group we're replacing"))?
+            {
+                group
+                    .delete(provider.storage())
+                    .map_err(KeystoreError::wrap("deleting the state of the group we're replacing"))?;
+            }
+            self.mls_groups().await?.remove(&id);
+        }
+
+        // openmls writes the group into its row, so the row has to exist first.
+        self.insert_group_row(&id, &credential_ref.keystore_pk(), true)?;
+
+        let (_, bundle) = verified_group
+            .build_group(&provider, credential.to_mls_credential_with_key())
+            .map_err(OpenMlsError::wrap("building the group to join by external commit"))?
+            // Our new leaf has to support what the group requires, X509 credentials among them.
+            .leaf_node_parameters(
+                LeafNodeParameters::builder()
+                    .with_capabilities(ConversationConfiguration::default_leaf_capabilities())
+                    .build(),
+            )
+            .load_psks(provider.storage())
+            .map_err(OpenMlsError::wrap("loading psks for the external commit"))?
+            .build(
+                provider.rand(),
+                provider.crypto(),
+                &credential.signature_key_pair,
+                |_| true,
+            )
+            .map_err(OpenMlsError::wrap("building the external commit"))?
+            .finalize(&provider)
+            .map_err(OpenMlsError::wrap("finalizing the external commit"))?;
+
+        let commit_bundle =
+            ConversationMut::commit_bundle(bundle).map_err(RecursiveError::context("bundling the external commit"))?;
 
         // Having just built a join commit, we clear any inbox messages which may be stored.
         //
@@ -145,13 +183,7 @@ impl TransactionContext {
             "deleting all inbox messages for conversation when creating external join commit",
         ))?;
 
-        let commit_bundle = CommitBundle {
-            welcome: None,
-            commit,
-            group_info,
-            encrypted_message: None,
-        };
-
+        let pending_conversation = PendingConversation::new(id.clone(), self.clone());
         Ok((commit_bundle, id, pending_conversation))
     }
 }
@@ -397,7 +429,7 @@ mod tests {
                 .mutate_group_test(async move |_, group, _| {
                     let gi = group
                         .export_group_info(
-                            &mls_provider,
+                            mls_provider.crypto(),
                             &credential.signature_key_pair,
                             // joining by external commit assumes we include a ratchet tree, but this `false`
                             // says to leave it out
@@ -417,7 +449,9 @@ mod tests {
 
         assert!(innermost_source_matches!(
             join_ext_commit.unwrap_err(),
-            crate::OpenMlsErrorKind::MlsExternalCommitError(openmls::prelude::ExternalCommitError::MissingRatchetTree),
+            crate::OpenMlsErrorKind::MlsExternalCommitBuilderError(
+                openmls::prelude::ExternalCommitBuilderError::MissingRatchetTree
+            ),
         ));
     }
 
@@ -434,7 +468,7 @@ mod tests {
                 .await;
             let group = &conversation.group().await;
 
-            let capabilities = group.group_context_extensions().required_capabilities().unwrap();
+            let capabilities = group.extensions().required_capabilities().unwrap();
 
             // see https://www.rfc-editor.org/rfc/rfc9420.html#section-11.1
             assert!(capabilities.extension_types().is_empty());

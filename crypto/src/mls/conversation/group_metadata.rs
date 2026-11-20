@@ -18,31 +18,10 @@ use super::{Error, Result};
 use crate::KeystoreError;
 
 /// The leaf node whose credential should be treated as "current": the target of a pending own
-/// update proposal if one exists, otherwise the actually-committed own leaf, otherwise the leaf we
-/// are about to occupy according to our own pending commit.
-///
-/// That last fallback covers joining by external commit: `MlsGroup::join_by_external_commit` builds
-/// the ratchet tree from the group info, which does not contain our leaf yet, so
-/// [`MlsGroup::own_leaf_index`] points at the blank slot we are about to fill and
-/// [`MlsGroup::own_leaf`] is `None`. Our leaf lives in the staged commit until it is merged. Note
-/// that the group is *active* in that state, so an `is_active` check does not distinguish it.
+/// update proposal if one exists, otherwise the actually-committed own leaf.
 pub(super) fn current_own_leaf(group: &MlsGroup) -> Option<&LeafNode> {
     extract_own_updated_node_from_proposals(&group.own_leaf_index(), group.pending_proposals())
         .or_else(|| group.own_leaf())
-        .or_else(|| own_leaf_from_pending_commit(group))
-}
-
-/// Our own leaf as staged by our own pending commit, if we have one which contains an update path.
-///
-/// [`MlsGroup::pending_commit`] only ever returns a commit *we* created; commits received from
-/// others are merged directly instead of being staged here. The update path leaf of a commit we
-/// authored is therefore always our own leaf.
-///
-/// This is deliberately consulted only after [`MlsGroup::own_leaf`]: while a commit is pending, the
-/// credential actually in force is still the committed one, so the staged leaf is only "current"
-/// when we have no leaf in the tree at all.
-fn own_leaf_from_pending_commit(group: &MlsGroup) -> Option<&LeafNode> {
-    group.pending_commit()?.get_update_path_leaf_node()
 }
 
 fn extract_own_updated_node_from_proposals<'a>(
