@@ -33,6 +33,10 @@ log = { workspace = true }
 obfuscate = { workspace = true, features = ["openmls"] }
 openmls = { workspace = true }
 openmls_traits = { workspace = true }
+openmls-legacy.workspace = true
+openmls_basic_credential-legacy.workspace = true
+openmls_traits-legacy.workspace = true
+openmls_x509_credential-legacy.workspace = true
 postcard = { version = "1.1", default-features = false, features = ["use-std"] }
 proteus-traits = { workspace = true, optional = true }
 rand.workspace = true
