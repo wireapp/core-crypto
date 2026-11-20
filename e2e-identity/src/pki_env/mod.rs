@@ -1,5 +1,6 @@
 //! PKI Environment API
 
+mod credential;
 mod crl;
 pub mod hooks;
 
@@ -18,12 +19,12 @@ use core_crypto_keystore::{
     entities::{X509Crl, X509IntermediateCert, X509TrustAnchor},
     traits::{EntityDatabaseMutation as _, EntityDeleteBorrowed, FetchFromDatabase},
 };
-use openmls_traits::authentication_service::{CredentialAuthenticationStatus, CredentialRef};
 use x509_cert::{
     Certificate,
     der::{Decode as _, Encode as _},
 };
 
+pub use self::credential::{CredentialAuthenticationStatus, CredentialRef};
 use crate::{
     pki_env::hooks::PkiEnvironmentHooks,
     validation,
