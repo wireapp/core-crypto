@@ -527,6 +527,7 @@ jobs:
       - bindings-ts-native-darwin
       - build-jvm-linux
       - build-jvm-darwin
+      - build-jvm-windows
       - bindings-jvm
     if: github.ref_type == 'tag'
     uses: ./.github/workflows/prepare-publish.yml
