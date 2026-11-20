@@ -23,10 +23,10 @@ impl TransactionContext {
         &self,
         group: MlsGroup,
         configuration: ConversationConfiguration,
+        is_pending: bool,
     ) -> Result<ConversationMut> {
         let id = ConversationId::from(group.group_id().as_slice());
-        // A conversation created in this way is never pending.
-        let mut group_state = MlsGroupState::new(group, Default::default(), false);
+        let mut group_state = MlsGroupState::new(group, Default::default(), is_pending);
 
         let context_inner = self.inner()?;
         group_state
@@ -47,15 +47,17 @@ impl TransactionContext {
         let inner = group_store.insert(conversation);
         let conversation = ConversationMut::new(inner, self.clone());
 
-        // this place is a convergence point where every path to a new group gets saved,
-        // so we can use it for the initial epoch data recording
-        // (the call path in `mutate_group` only ever handle subsequent epochs, not the initial)
-        conversation
-            .record_initial_epoch_data()
-            .await
-            .map_err(RecursiveError::context(
-                "recording initial epoch data when persisting from mls group",
-            ))?;
+        if !is_pending {
+            // this place is a convergence point where every path to a new group gets saved,
+            // so we can use it for the initial epoch data recording
+            // (the call path in `mutate_group` only ever handle subsequent epochs, not the initial)
+            conversation
+                .record_initial_epoch_data()
+                .await
+                .map_err(RecursiveError::context(
+                    "recording initial epoch data when persisting from mls group",
+                ))?;
+        }
 
         Ok(conversation)
     }
@@ -96,6 +98,7 @@ impl TransactionContext {
             return Err(Error::ConversationAlreadyExists(id));
         }
 
-        self.persist_conversation_from_mls_group(group, configuration).await
+        self.persist_conversation_from_mls_group(group, configuration, false)
+            .await
     }
 }
