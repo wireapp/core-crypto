@@ -18,6 +18,8 @@ mod error;
 mod identity;
 mod immutable_database;
 
+#[cfg(all(test, not(target_os = "unknown")))]
+mod legacy_database_tests;
 /// MLS Abstraction
 pub mod mls;
 mod mls_provider;
