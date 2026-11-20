@@ -33,6 +33,34 @@
 - Browser: databases are stored in a different directory in OPFS. A CoreCrypto 11 database moves there the first time
   it's opened, with the same location and key.
 
+#### MLS
+
+- CoreCrypto now uses upstream openmls instead of Wire's fork. The database is migrated the first time it's opened.
+  Conversations, credentials and key packages carry over, with three exceptions:
+
+  - A pending external join is dropped. Call `joinByExternalCommit` again.
+  - A commit that was sent but not yet merged is dropped. If the delivery service did accept it, decrypting it now fails
+    with `SelfCommitIgnored`, as for any other commit the client cleared, and the conversation has to be rejoined. A
+    commit without an update path, such as one that only adds members, is merged instead.
+  - A conversation that can't be converted is deleted, and a warning is logged.
+
+- History secrets are encoded differently. CoreCrypto 12 can't read ones made by CoreCrypto 11, and vice versa.
+
+- A message, welcome or external join with a credential the authentication service rejects now fails with a credential
+  error, "the authentication service rejected a credential", instead of an openmls validation error.
+
+- Adding a member, or processing a message, welcome or external join, now fails with "client presented an invalid
+  identity" if a credential has no identity CoreCrypto can read, such as an X509 certificate without a `wireapp://`
+  client ID. The old openmls fork rejected these credentials too, with an openmls error.
+
+- Decrypting a commit the client sent itself, but cleared or lost, now merges it if it has no update path and no other
+  commit is pending, instead of failing with `SelfCommitIgnored`. A commit that only adds members has no update path.
+  Commits with an update path still fail with `SelfCommitIgnored`.
+
+- A message that arrives too far behind its sender's later messages to be decrypted now fails with `MessageEpochTooOld`,
+  not `DuplicateMessage`, even when it's from the current epoch. CoreCrypto can't tell whether it was decrypted before,
+  so treat it as a message that couldn't be decrypted rather than dropping it silently.
+
 #### Bug Fixes
 
 - It's now possible to rotate a existing x509 credential with a new x509 credential which has the same public key.
