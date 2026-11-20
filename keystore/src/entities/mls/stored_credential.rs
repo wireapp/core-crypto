@@ -1,4 +1,4 @@
-use openmls::prelude::{Credential as MlsCredential, MlsCredentialType};
+use openmls::prelude::{Credential as MlsCredential, CredentialType, X509Credential};
 use x509_cert::der::Decode as _;
 use zeroize::Zeroize;
 
@@ -92,15 +92,15 @@ impl StoredCredential {
 /// For an X509 credential this is the leaf certificate's `not_before`, as a unix timestamp in seconds. Any other
 /// credential has no certificate, and gets [`StoredCredential::NOT_BEFORE_WITHOUT_CERTIFICATE`].
 pub fn credential_not_before(credential: &MlsCredential) -> CryptoKeystoreResult<u64> {
-    let MlsCredentialType::X509(certificate) = credential.mls_credential() else {
+    if credential.credential_type() != CredentialType::X509 {
         return Ok(StoredCredential::NOT_BEFORE_WITHOUT_CERTIFICATE);
-    };
-    let leaf = certificate
-        .certificates
+    }
+    let credential = X509Credential::try_from(credential.clone())
+        .map_err(|e| CryptoKeystoreError::InvalidX509Credential(format!("decoding the chain: {e}")))?;
+    let leaf = credential
+        .certificates()
         .first()
-        .ok_or(CryptoKeystoreError::InvalidX509Credential(
-            "the certificate chain is empty".into(),
-        ))?;
+        .ok_or_else(|| CryptoKeystoreError::InvalidX509Credential("the certificate chain is empty".into()))?;
     let leaf = x509_cert::Certificate::from_der(leaf.as_slice())
         .map_err(|e| CryptoKeystoreError::InvalidX509Credential(format!("decoding the leaf certificate: {e}")))?;
     Ok(leaf

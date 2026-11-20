@@ -44,7 +44,7 @@ impl Credential {
         // unnecessary allocation; we still have to allocate for all the certificates' bytes and also
         // their output string, but at least we're not also allocating a new vector.
         for certificate in &credential.certificates {
-            let pem = Pem::new("CERTIFICATE", certificate.as_slice());
+            let pem = Pem::new("CERTIFICATE", *certificate);
             pem_document.push_str(&pem::encode(&pem));
         }
 
