@@ -3,10 +3,10 @@ mod encrypt;
 
 use const_format::concatcp;
 use openmls::{
-    group::{GroupEpoch, MlsGroup, group_context::GroupContext},
-    prelude::{LeafNodeIndex, OpenMlsCrypto as _},
+    group::{GroupContext, GroupEpoch, MlsGroup},
+    prelude::LeafNodeIndex,
 };
-use openmls_traits::OpenMlsCryptoProvider;
+use openmls_traits::crypto::OpenMlsCrypto;
 use tls_codec::{SecretVLBytes, Serialize as _, TlsDeserialize, TlsSerialize, TlsSize};
 
 use super::Result;
@@ -95,7 +95,7 @@ struct TransientMessageSecrets {
 }
 
 fn transient_message_secrets(
-    crypto_provider: &impl OpenMlsCryptoProvider,
+    crypto: &impl OpenMlsCrypto,
     aad: &TransientMessageAad,
     mls_group: &MlsGroup,
 ) -> Result<TransientMessageSecrets> {
@@ -108,7 +108,7 @@ fn transient_message_secrets(
         .map_err(TlsCodecError::serialize("LeafNodeIndex"))?;
     let nonce_secret = mls_group
         .export_secret(
-            crypto_provider,
+            crypto,
             TransientMessage::AEAD_NONCE_SECRET_LABEL,
             &sender_index_bytes,
             cipher_suite.hash_length(),
@@ -119,11 +119,10 @@ fn transient_message_secrets(
         .counter
         .tls_serialize_detached()
         .map_err(TlsCodecError::serialize("TntMessageCounter"))?;
-    let aead_nonce = crypto_provider
-        .crypto()
+    let aead_nonce = crypto
         .hkdf_expand(
             cipher_suite.hash_algorithm(),
-            &nonce_secret,
+            nonce_secret.as_slice(),
             &counter_bytes,
             cipher_suite.aead_nonce_length(),
         )
@@ -131,7 +130,7 @@ fn transient_message_secrets(
 
     let secret_key = mls_group
         .export_secret(
-            crypto_provider,
+            crypto,
             TransientMessage::AEAD_SECRET_KEY_LABEL,
             &sender_index_bytes,
             cipher_suite.aead_key_length(),
@@ -140,7 +139,7 @@ fn transient_message_secrets(
 
     Ok(TransientMessageSecrets {
         aead_nonce,
-        secret_key: secret_key.into(),
+        secret_key: zeroize::Zeroizing::new(secret_key.as_slice().to_vec()),
     })
 }
 

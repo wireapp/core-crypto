@@ -2,15 +2,19 @@
 //!
 //! Use [ConversationConfiguration] when creating a conversation.
 
-use openmls::prelude::{
-    Capabilities, CredentialType, PURE_CIPHERTEXT_WIRE_FORMAT_POLICY, PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
-    ProtocolVersion, RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy,
+use openmls::{
+    group::{MlsGroupCreateConfig, MlsGroupJoinConfig},
+    prelude::{
+        Capabilities, CredentialType, Extension, Extensions, PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
+        PURE_PLAINTEXT_WIRE_FORMAT_POLICY, ProtocolVersion, RequiredCapabilitiesExtension, SenderRatchetConfiguration,
+        WireFormatPolicy,
+    },
 };
 use openmls_traits::types::Ciphersuite as MlsCiphersuite;
 use serde::{Deserialize, Serialize};
 
 use super::Result;
-use crate::{CipherSuite, ExternalSender};
+use crate::{CipherSuite, ExternalSender, OpenMlsError};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -69,28 +73,49 @@ impl ConversationConfiguration {
     /// Not used at the moment
     const NUMBER_RESUMPTION_PSK: usize = 1;
 
-    /// Generates an `MlsGroupConfig` from this configuration
-    #[inline(always)]
-    pub fn as_openmls_default_configuration(&self) -> Result<openmls::group::MlsGroupConfig> {
-        let crypto_config = openmls::prelude::CryptoConfig {
-            version: Self::DEFAULT_PROTOCOL_VERSION,
-            ciphersuite: self.cipher_suite.into(),
-        };
-        Ok(openmls::group::MlsGroupConfig::builder()
+    /// The openmls configuration for creating a group.
+    pub fn as_openmls_create_config(&self) -> Result<MlsGroupCreateConfig> {
+        let mut group_context_extensions = vec![Extension::RequiredCapabilities(self.default_required_capabilities())];
+        if !self.external_senders.is_empty() {
+            group_context_extensions.push(Extension::ExternalSenders(
+                self.external_senders.iter().cloned().map(Into::into).collect(),
+            ));
+        }
+        let group_context_extensions = Extensions::from_vec(group_context_extensions)
+            .map_err(OpenMlsError::wrap("building group context extensions"))?;
+
+        Ok(MlsGroupCreateConfig::builder()
+            .ciphersuite(self.cipher_suite.into())
             .wire_format_policy(WirePolicy::Plaintext.into())
             .max_past_epochs(MAX_PAST_EPOCHS)
             .padding_size(Self::PADDING_SIZE)
             .number_of_resumption_psks(Self::NUMBER_RESUMPTION_PSK)
-            .leaf_capabilities(Self::default_leaf_capabilities())
-            .required_capabilities(self.default_required_capabilities())
+            .capabilities(Self::default_leaf_capabilities())
+            .with_group_context_extensions(group_context_extensions)
             .sender_ratchet_configuration(SenderRatchetConfiguration::new(
                 OUT_OF_ORDER_TOLERANCE,
                 MAXIMUM_FORWARD_DISTANCE,
             ))
             .use_ratchet_tree_extension(true)
-            .external_senders(self.external_senders.iter().cloned().map(Into::into).collect())
-            .crypto_config(crypto_config)
             .build())
+    }
+
+    /// The openmls configuration for joining a group.
+    ///
+    /// Unlike [`Self::as_openmls_create_config`], this only covers how we handle the group locally. The group's
+    /// ciphersuite, capabilities and external senders come from the group we join.
+    pub fn as_openmls_join_config(&self) -> MlsGroupJoinConfig {
+        MlsGroupJoinConfig::builder()
+            .wire_format_policy(WirePolicy::Plaintext.into())
+            .max_past_epochs(MAX_PAST_EPOCHS)
+            .padding_size(Self::PADDING_SIZE)
+            .number_of_resumption_psks(Self::NUMBER_RESUMPTION_PSK)
+            .sender_ratchet_configuration(SenderRatchetConfiguration::new(
+                OUT_OF_ORDER_TOLERANCE,
+                MAXIMUM_FORWARD_DISTANCE,
+            ))
+            .use_ratchet_tree_extension(true)
+            .build()
     }
 
     /// Default capabilities for every generated [openmls::prelude::KeyPackage]
@@ -139,7 +164,7 @@ impl From<WirePolicy> for WireFormatPolicy {
 #[cfg(test)]
 mod tests {
     use openmls::prelude::ProtocolVersion;
-    use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::VerifiableCiphersuite};
+    use openmls_traits::{crypto::OpenMlsCrypto, types::VerifiableCiphersuite};
     use wire_e2e_identity::SignatureSchemeExt as _;
 
     use crate::{ConversationConfiguration, Credential, ExternalSender, test_utils::*};
@@ -154,7 +179,7 @@ mod tests {
             let guard = conversation.guard().await;
             let group = guard.group().await;
 
-            let capabilities = group.group_context_extensions().required_capabilities().unwrap();
+            let capabilities = group.extensions().required_capabilities().unwrap();
 
             // see https://www.rfc-editor.org/rfc/rfc9420.html#section-11.1
             assert!(capabilities.extension_types().is_empty());

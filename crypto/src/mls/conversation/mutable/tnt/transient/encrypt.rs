@@ -43,9 +43,13 @@ impl ConversationMut {
     ) -> Result<TransientMessage> {
         let counter = group_state.obtain_tnt_message_tx_counter()?;
         let mls_group = group_state.mls_group();
-        let aad = TransientMessageAad::new(mls_group.own_leaf_index(), counter, mls_group.export_group_context());
+        let aad = TransientMessageAad::new(
+            mls_group.own_leaf_index(),
+            counter,
+            mls_group.public_group().group_context(),
+        );
 
-        let secrets = transient_message_secrets(crypto_provider, &aad, mls_group)?;
+        let secrets = transient_message_secrets(crypto_provider.crypto(), &aad, mls_group)?;
         let message = tls_serialize_padded(message).map_err(TlsCodecError::serialize("transient message content"))?;
         let cipher_suite = mls_group.ciphersuite();
         let aad = aad
@@ -62,7 +66,7 @@ impl ConversationMut {
             .map_err(OpenMlsError::wrap("encrypting transient message"))?;
 
         let sender = mls_group.own_leaf_index();
-        let group_context = mls_group.export_group_context().clone();
+        let group_context = mls_group.public_group().group_context().clone();
 
         let transient_message = TransientMessage::new(group_context, sender, counter, payload);
         Ok(transient_message)

@@ -163,16 +163,14 @@ mod tests {
     /// Add a member with openmls directly, skipping core-crypto's checks, as a client without them would.
     async fn add_unchecked(conversation: &TestConversation<'_>, key_package: KeyPackage) -> MlsMessageOut {
         let credential = conversation.credential().await;
-        let provider = conversation.actor().transaction.crypto_provider().await.unwrap();
         conversation
             .guard()
             .await
-            .mutate_group_test(async |tx, group, _| {
-                let provider = provider.with_transaction(tx);
+            .mutate_group_test(async |provider, group, _| {
                 let (commit, ..) = group
-                    .add_members(&provider, &credential.signature_key_pair, &[key_package])
+                    .add_members(provider, &credential.signature_key_pair, &[key_package])
                     .unwrap();
-                group.merge_pending_commit(&provider).unwrap();
+                group.merge_pending_commit(provider).unwrap();
                 Ok(commit)
             })
             .await
@@ -273,17 +271,12 @@ mod tests {
         let conversation = case.create_conversation([&alice, &bob]).await;
         let key_package = untrusted_key_package(&case, &mallory).await;
         let credential = conversation.credential().await;
-        let provider = alice.transaction.crypto_provider().await.unwrap();
         let proposal = conversation
             .guard()
             .await
-            .mutate_group_test(async |tx, group, _| {
+            .mutate_group_test(async |provider, group, _| {
                 let (proposal, _) = group
-                    .propose_add_member(
-                        &provider.with_transaction(tx),
-                        &credential.signature_key_pair,
-                        &key_package,
-                    )
+                    .propose_add_member(provider, &credential.signature_key_pair, &key_package)
                     .unwrap();
                 Ok(proposal)
             })

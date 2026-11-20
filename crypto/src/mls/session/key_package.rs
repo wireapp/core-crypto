@@ -76,16 +76,14 @@ mod tests {
 
             // make sure it's valid
             let _ = KeyPackageIn::from(kp.clone())
-                .standalone_validate(
-                    &cc.transaction.crypto_provider().await.unwrap(),
+                .validate(
+                    cc.transaction.crypto_provider().await.unwrap().crypto(),
                     ProtocolVersion::Mls10,
-                    true,
                 )
-                .await
                 .unwrap();
 
             // see https://www.rfc-editor.org/rfc/rfc9420.html#section-10-10
-            assert!(kp.extensions().is_empty());
+            assert_eq!(kp.extensions().iter().count(), 0);
 
             assert_eq!(kp.leaf_node().capabilities().versions(), &[ProtocolVersion::Mls10]);
             assert_eq!(

@@ -3,8 +3,8 @@ mod protocol_message_ext;
 use openmls::{
     framing::errors::{MessageDecryptionError, SecretTreeError},
     prelude::{
-        ConfirmationTag, ContentType, MlsMessageIn, MlsMessageInBody, ProcessMessageError,
-        ProcessedMessage as MlsProcessedMessage, ProtocolMessage, StageCommitError, ValidationError,
+        ContentType, MlsMessageBodyIn, ProcessMessageError, ProcessedMessage as MlsProcessedMessage,
+        ProcessedMessageContent, ProtocolMessage, Sender, StageCommitError, ValidationError,
     },
 };
 
@@ -19,19 +19,24 @@ use crate::{
 #[derive(derive_more::From)]
 pub(super) enum ProcessedMessage {
     Content(MlsProcessedMessage),
-    OwnCommit(ConfirmationTag),
+    /// A commit we sent ourselves, which the delivery service fanned back out to us.
+    #[from(skip)]
+    OwnCommit {
+        /// Whether it is the commit we have pending.
+        matches_pending_commit: bool,
+    },
     Deferred(DeferralReason),
 }
 
 /// Parse and process a message. This is the step which actually performs decryption.
 pub(super) async fn process_message(
     conversation: &mut ConversationMut,
-    message: MlsMessageIn,
+    message: MlsMessageBodyIn,
 ) -> Result<ProcessedMessage> {
     // Parse the incoming message
-    let protocol_message: ProtocolMessage = match message.extract() {
-        MlsMessageInBody::PublicMessage(public_message_in) => public_message_in.into(),
-        MlsMessageInBody::PrivateMessage(private_message_in) => private_message_in.into(),
+    let protocol_message: ProtocolMessage = match message {
+        MlsMessageBodyIn::PublicMessage(public_message_in) => public_message_in.into(),
+        MlsMessageBodyIn::PrivateMessage(private_message_in) => private_message_in.into(),
         _ => {
             return Err(
                 OpenMlsError::wrap("parsing inbound message")(ProcessMessageError::IncompatibleWireFormat).into(),
@@ -42,26 +47,41 @@ pub(super) async fn process_message(
     let is_duplicate = protocol_message.is_duplicate(conversation).await?;
     let msg_epoch = protocol_message.epoch().as_u64();
     let content_type = protocol_message.content_type();
-    // we need to compute the confirmation tag now, but it's only relevant in a particular case of processing the
-    // message, so don't propagate the error yet.
-    let confirmation_tag_result = protocol_message
-        .own_commit_confirmation_tag(conversation.group().await.own_leaf_index())
-        .map(ToOwned::to_owned);
-
-    let backend = conversation.crypto_provider().await?;
     conversation
         .mutate_group_with_operation_check(
-            async move |_, group, _| {
+            async move |provider, group, _| {
                 let group_epoch = group.epoch().as_u64();
+                let own_leaf_index = group.own_leaf_index();
+                let has_pending_commit = group.pending_commit().is_some();
 
                 // Here, we inspect the results OpenMLS retured to us and map those to our own, hopefully-more-helpful
                 // response types.
-                //
-                // It's worth noting that `group.process_message` unconditionally sets the group's
-                // `InnerState::Changed`, and `mutate_group` uses only two signals to determine
-                match group.process_message(&backend, protocol_message).await {
+                match group.process_message(provider, protocol_message) {
                     // now that openmls has handled the message, we can return the duplicate message error
                     Ok(_) if is_duplicate => Err(Error::DuplicateMessage),
+                    // a private message of ours, which we can't decrypt: we have it already
+                    Ok(processed) if matches!(processed.content(), ProcessedMessageContent::OwnPrivateMessage) => {
+                        Err(Error::DuplicateMessage)
+                    }
+                    // openmls recognized our own pending commit
+                    Ok(processed) if matches!(processed.content(), ProcessedMessageContent::OwnPendingCommit) => {
+                        Ok(ProcessedMessage::OwnCommit {
+                            matches_pending_commit: true,
+                        })
+                    }
+                    // A commit of ours, while we have a different one pending. openmls only refuses such a commit
+                    // when it has an update path, which it can't decrypt. Without one, it stages the commit as if
+                    // another member had sent it, and merging it would silently discard the pending commit. With
+                    // nothing pending, merging it is what we want: the delivery service accepted a commit we lost.
+                    Ok(processed)
+                        if has_pending_commit
+                            && matches!(processed.content(), ProcessedMessageContent::StagedCommitMessage(_))
+                            && matches!(processed.sender(), Sender::Member(sender) if *sender == own_leaf_index) =>
+                    {
+                        Ok(ProcessedMessage::OwnCommit {
+                            matches_pending_commit: false,
+                        })
+                    }
                     // processing message went well
                     Ok(processed) => Ok(processed.into()),
 
@@ -76,6 +96,11 @@ pub(super) async fn process_message(
                         // `DuplicateMessage` is more likely than the other two, so that's what we unpack here.
                         Err(Error::DuplicateMessage)
                     }
+                    // openmls deletes a message's secret once it has decrypted the message, so a secret it can't find
+                    // again means we have decrypted this message before.
+                    Err(ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
+                        MessageDecryptionError::SecretTreeError(SecretTreeError::SecretReuseError),
+                    ))) => Err(Error::DuplicateMessage),
                     Err(ProcessMessageError::ValidationError(ValidationError::WrongEpoch)) if is_duplicate => {
                         Err(Error::DuplicateMessage)
                     }
@@ -106,6 +131,10 @@ pub(super) async fn process_message(
                     Err(ProcessMessageError::ValidationError(ValidationError::WrongEpoch)) => {
                         Err(Error::UnbufferedFarFutureMessage)
                     }
+                    // openmls says this both when it no longer has the secrets of the message's epoch, and when the
+                    // message is from the current epoch but too far behind the others from its sender. In the latter
+                    // case openmls no longer knows whether it decrypted the message, so we can't call it a duplicate:
+                    // that would hide a message which was lost.
                     Err(ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
                         MessageDecryptionError::SecretTreeError(SecretTreeError::TooDistantInThePast),
                     ))) => Err(Error::MessageEpochTooOld),
@@ -114,8 +143,11 @@ pub(super) async fn process_message(
                     Err(ProcessMessageError::InvalidCommit(StageCommitError::MissingProposal)) => {
                         Ok(ProcessedMessage::Deferred(DeferralReason::MissingProposal))
                     }
-                    Err(ProcessMessageError::InvalidCommit(StageCommitError::OwnCommit)) => {
-                        confirmation_tag_result.map(Into::into)
+                    // a commit of ours that isn't the one we have pending
+                    Err(ProcessMessageError::InvalidCommit(StageCommitError::OwnCommitMismatch)) => {
+                        Ok(ProcessedMessage::OwnCommit {
+                            matches_pending_commit: false,
+                        })
                     }
                     Err(ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
                         MessageDecryptionError::AeadError,

@@ -1,6 +1,6 @@
 //! The methods in this module are concerned with message encryption.
 
-use openmls::prelude::MlsMessageOutBody;
+use openmls::prelude::MlsMessageBodyOut;
 
 use super::{ConversationMut, Result};
 use crate::OpenMlsError;
@@ -33,16 +33,15 @@ impl ConversationMut {
             );
         }
 
-        let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
         let signer = credential.signature_key();
 
-        self.mutate_group(async |_, group, _| {
+        self.mutate_group(async |provider, group, _| {
             let encrypted = group
-                .create_message(&backend, signer, message.as_ref())
+                .create_message(provider, signer, message.as_ref())
                 .map_err(OpenMlsError::wrap("creating encrypted message"))?;
             // all application messages must be encrypted
-            debug_assert!(matches!(encrypted.body, MlsMessageOutBody::PrivateMessage(_)));
+            debug_assert!(matches!(encrypted.body(), MlsMessageBodyOut::PrivateMessage(_)));
             encrypted
                 .to_bytes()
                 .map_err(OpenMlsError::wrap("constructing byte vector of encrypted message"))

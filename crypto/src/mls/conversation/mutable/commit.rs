@@ -2,14 +2,18 @@
 
 use std::{borrow::Borrow, collections::HashMap};
 
-use openmls::prelude::KeyPackageIn;
+use openmls::{
+    group::CommitMessageBundle,
+    prelude::{KeyPackage, KeyPackageIn, LeafNodeParameters, NewSignerBundle},
+};
+use openmls_traits::OpenMlsProvider as _;
 
 use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
     ClientId, ClientIdRef, CredentialRef, GroupInfoBundle, OpenMlsError, RecursiveError,
     mls::{
-        conversation::{ConversationMut, Error, Result, commit::CommitBundle},
-        credential::Credential,
+        conversation::{ConversationMut, Error, Result, commit::CommitBundle, member_identity},
+        credential::{Credential, validation::validate_key_packages},
     },
 };
 
@@ -74,20 +78,24 @@ impl ConversationMut {
         let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
 
-        self.mutate_group(async |_, group, _| {
-            let signer = credential.signature_key();
-            let (commit, welcome, group_info) = group
-                .add_members(&backend, signer, key_packages.clone())
+        let key_packages =
+            validate_key_packages(&backend, key_packages)
                 .await
-                .map_err(|err| {
-                    if Self::err_is_duplicate_signature_key(&err) {
-                        Self::clients_with_duplicate_signature_keys(key_packages.as_ref())
-                            .map(|affected_clients| Error::DuplicateSignature { affected_clients })
-                            .unwrap_or_else(|e| e)
-                    } else {
-                        OpenMlsError::wrap("group add members")(err).into()
-                    }
-                })?;
+                .map_err(RecursiveError::mls_credential(
+                    "validating the key packages of the members to add",
+                ))?;
+
+        self.mutate_group(async |provider, group, _| {
+            let signer = credential.signature_key();
+            let (commit, welcome, group_info) = group.add_members(provider, signer, &key_packages).map_err(|err| {
+                if Self::err_is_duplicate_signature_key(&err) {
+                    Self::clients_with_duplicate_signature_keys(&key_packages)
+                        .map(|affected_clients| Error::DuplicateSignature { affected_clients })
+                        .unwrap_or_else(|e| e)
+                } else {
+                    OpenMlsError::wrap("group add members")(err).into()
+                }
+            })?;
 
             Ok(CommitBundle {
                 commit,
@@ -112,16 +120,15 @@ impl ConversationMut {
         )
     }
 
-    fn clients_with_duplicate_signature_keys(key_packages: &[KeyPackageIn]) -> Result<Vec<(ClientId, ClientId)>> {
+    fn clients_with_duplicate_signature_keys(key_packages: &[KeyPackage]) -> Result<Vec<(ClientId, ClientId)>> {
         let mut seen_signature_keys = HashMap::new();
         let mut duplicate_pairs = Vec::new();
 
         for key_package in key_packages {
-            let signature_key = key_package.unverified_credential().signature_key.as_slice().to_vec();
+            let signature_key = key_package.leaf_node().signature_key().as_slice().to_vec();
 
-            let client_id: ClientId = key_package
-                .credential()
-                .identity()
+            let client_id: ClientId = member_identity(key_package.leaf_node().credential())?
+                .as_ref()
                 .try_into()
                 .map_err(RecursiveError::context("client id from bytes"))?;
 
@@ -148,23 +155,23 @@ impl ConversationMut {
         clients: impl Iterator<Item = &[u8]> + Clone,
     ) -> Result<()> {
         self.ensure_no_pending_commit().await?;
-        let backend = self.crypto_provider().await?;
         let credential = self.credential().await?;
         let signer = credential.signature_key();
         let (commit, welcome, group_info) = self
-            .mutate_group(async |_, group, _| {
+            .mutate_group(async |provider, group, _| {
                 let members = group
                     .members()
                     .filter_map(|member| {
+                        // A member whose identity can't be read isn't one of the clients to remove.
+                        let identity = member_identity(&member.credential).ok()?;
                         clients
                             .clone()
-                            .any(move |client_id| client_id == member.credential.identity())
+                            .any(|client_id| client_id == identity.as_ref())
                             .then_some(member.index)
                     })
                     .collect::<Vec<_>>();
                 group
-                    .remove_members(&backend, signer, &members)
-                    .await
+                    .remove_members(provider, signer, &members)
                     .map_err(OpenMlsError::wrap("group remove members"))
                     .map_err(Into::into)
             })
@@ -204,43 +211,54 @@ impl ConversationMut {
     /// committed.
     pub(crate) async fn set_credential_inner(&mut self, credential: &Credential) -> Result<CommitBundle> {
         self.ensure_no_pending_commit().await?;
-        let backend = self.crypto_provider().await?;
-        let credential = credential.clone();
+        let current_credential = self.credential().await?;
+        let new_credential = credential.clone();
 
-        self.mutate_group(async |_, group, _| {
-            // If the credential remains the same and we still want to update, we explicitly need to pass `None` to
-            // openmls, if we just passed an unchanged leaf node, no update commit would be created.
-            // Also, we can avoid cloning in the case we don't need to create a new leaf node.
-            let updated_leaf_node = {
-                let leaf_node = group
-                    .own_leaf()
-                    .ok_or(Error::MlsGroupInvalidState("own leaf node not found"))?;
-                if leaf_node.credential() == &credential.mls_credential {
-                    None
-                } else {
-                    let mut leaf_node = leaf_node.clone();
-                    leaf_node.set_credential_with_key(credential.to_mls_credential_with_key());
-                    Some(leaf_node)
-                }
-            };
+        self.mutate_group(async |provider, group, _| {
+            let leaf_node = group
+                .own_leaf_node()
+                .ok_or(Error::MlsGroupInvalidState("own leaf node not found"))?;
+            let new_credential_with_key = new_credential.to_mls_credential_with_key();
+            let credential_unchanged = leaf_node.credential() == &new_credential_with_key.credential
+                && leaf_node.signature_key() == &new_credential_with_key.signature_key;
 
-            let (commit, welcome, group_info) = group
-                .explicit_self_update(&backend, &credential.signature_key_pair, updated_leaf_node)
-                .await
-                .map_err(OpenMlsError::wrap("group self update"))?;
+            // A self-update with an unchanged credential still renews our encryption key. A new credential comes with
+            // its own signature key: the commit is signed with the key we have now, and our new leaf node with the
+            // new one.
+            let bundle = if credential_unchanged {
+                group.self_update(
+                    provider,
+                    &current_credential.signature_key_pair,
+                    LeafNodeParameters::default(),
+                )
+            } else {
+                group.self_update_with_new_signer(
+                    provider,
+                    &current_credential.signature_key_pair,
+                    NewSignerBundle {
+                        signer: &new_credential.signature_key_pair,
+                        credential_with_key: new_credential_with_key,
+                    },
+                    LeafNodeParameters::default(),
+                )
+            }
+            .map_err(OpenMlsError::wrap("group self update"))?;
 
-            // We should always have ratchet tree extension turned on hence GroupInfo should always be present
-            let group_info = group_info.ok_or(Error::MissingGroupInfo)?;
-            let group_info = GroupInfoBundle::try_new_full_plaintext(group_info)?;
-
-            Ok(CommitBundle {
-                welcome,
-                commit,
-                group_info,
-                encrypted_message: None,
-            })
+            Self::commit_bundle(bundle)
         })
         .await
+    }
+
+    /// Our [CommitBundle] for a commit openmls has staged.
+    pub(crate) fn commit_bundle(bundle: CommitMessageBundle) -> Result<CommitBundle> {
+        let welcome = bundle.to_welcome_msg();
+        let (commit, _, group_info) = bundle.into_contents();
+        Ok(CommitBundle {
+            welcome,
+            commit,
+            group_info: Self::group_info(group_info)?,
+            encrypted_message: None,
+        })
     }
 
     /// Commits all pending proposals of the group
@@ -258,15 +276,13 @@ impl ConversationMut {
             return Ok(None);
         }
 
-        let crypto_provider = self.crypto_provider().await?;
         let credential = self.credential().await?;
 
         let (commit, welcome, openmls_group_info) = self
-            .mutate_group(async |_, group, _| {
+            .mutate_group(async |provider, group, _| {
                 let signer = &credential.signature_key_pair;
                 group
-                    .commit_to_pending_proposals(&crypto_provider, signer)
-                    .await
+                    .commit_to_pending_proposals(provider, signer)
                     .map_err(OpenMlsError::wrap("group commit to pending proposals"))
                     .map_err(Into::into)
             })
@@ -291,28 +307,24 @@ impl ConversationMut {
             return Ok(None);
         }
 
-        let provider = &self.crypto_provider().await?;
         let credential = self.credential().await?;
 
-        let (commit, welcome, openmls_group_info) = self
-            .mutate_group(async |_, group, _| {
-                let signer = &credential.signature_key_pair;
-                group
-                    .commit_to_inline_proposals(provider, signer, proposals)
-                    .await
-                    .map_err(OpenMlsError::wrap("group commit to pending proposals"))
-                    .map_err(Into::into)
-            })
-            .await?;
-        let group_info = GroupInfoBundle::try_new_full_plaintext(
-            openmls_group_info.expect("creating a commit always produces a group info"),
-        )?;
-
-        Ok(Some(CommitBundle {
-            welcome,
-            commit,
-            group_info,
-            encrypted_message: None,
-        }))
+        self.mutate_group(async |provider, group, _| {
+            let signer = &credential.signature_key_pair;
+            // Commit only these proposals; any pending ones stay pending.
+            let bundle = group
+                .commit_builder()
+                .consume_proposal_store(false)
+                .add_proposals(proposals)
+                .load_psks(provider.storage())
+                .map_err(OpenMlsError::wrap("loading psks for commit to inline proposals"))?
+                .build(provider.rand(), provider.crypto(), signer, |_| true)
+                .map_err(OpenMlsError::wrap("building commit to inline proposals"))?
+                .stage_commit(provider)
+                .map_err(OpenMlsError::wrap("staging commit to inline proposals"))?;
+            Self::commit_bundle(bundle)
+        })
+        .await
+        .map(Some)
     }
 }

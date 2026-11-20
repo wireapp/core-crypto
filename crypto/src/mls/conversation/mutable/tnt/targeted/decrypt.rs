@@ -3,11 +3,10 @@ use core_crypto_keystore::{
     traits::FetchFromDatabase as _,
 };
 use openmls::{
-    group::{MlsGroup, group_context::GroupContext},
-    prelude::{HpkePrivateKey, Member},
+    group::{GroupContext, MlsGroup},
+    prelude::{HpkePrivateKey, LeafNodeIndex, Member},
     treesync::EncryptionKey,
 };
-use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 use serde::{Deserialize, Serialize};
 use tls_codec::{Deserialize as _, Serialize as _, VLBytes};
 
@@ -46,7 +45,7 @@ impl ConversationMut {
 
         let own_leaf_index = old_epoch_data.as_deref().map_or_else(
             || mls_group.own_leaf_index(),
-            |old_epoch_data| old_epoch_data.own_leaf_index.into(),
+            |old_epoch_data| LeafNodeIndex::new(old_epoch_data.own_leaf_index),
         );
 
         if message.recipient != own_leaf_index {
@@ -131,9 +130,9 @@ impl ConversationMut {
                 policy,
                 message.sender(),
                 message.recipient,
-                mls_group.export_group_context().clone(),
+                mls_group.public_group().group_context().clone(),
             );
-            let context_data = extract_hpke_context_data(crypto_provider, &context, mls_group)?;
+            let context_data = extract_hpke_context_data(crypto_provider.crypto(), &context, mls_group)?;
             let decryption_key = self.load_decryption_key(mls_group).await?;
             return Ok((context_data, decryption_key));
         };
@@ -168,7 +167,7 @@ impl ConversationMut {
     ) -> Result<OldEpochData> {
         let crypto_provider = self.crypto_provider().await?;
         let hpke_private_key = self.load_decryption_key(mls_group).await?;
-        let targeted_message_psk = derive_targeted_message_psk(&crypto_provider, mls_group)?;
+        let targeted_message_psk = derive_targeted_message_psk(crypto_provider.crypto(), mls_group)?;
         let own_leaf_index = mls_group.own_leaf_index().u32();
 
         Ok(OldEpochData {
@@ -177,7 +176,8 @@ impl ConversationMut {
             hpke_private_key: core_crypto_keystore::ser(&hpke_private_key)
                 .map_err(KeystoreError::wrap("serializing tnt hpke private key"))?,
             group_context: mls_group
-                .export_group_context()
+                .public_group()
+                .group_context()
                 .tls_serialize_detached()
                 .map_err(TlsCodecError::serialize("TntSecret GroupContext"))?,
             targeted_message_psk: targeted_message_psk.to_vec(),
@@ -211,7 +211,7 @@ impl ConversationMut {
         keypairs
             .0
             .into_iter()
-            .find(|keypair| keypair.public_key.as_slice() == own_encryption_key.as_slice())
+            .find(|keypair| &keypair.public_key == own_encryption_key)
             .map(|keypair| keypair.private_key.key)
             .ok_or(Error::MlsGroupInvalidState("own leaf encryption keypair is missing"))
     }
@@ -219,10 +219,6 @@ impl ConversationMut {
 
 #[derive(Serialize, Deserialize)]
 struct PersistedEpochEncryptionKeypairs(Vec<PersistedEncryptionKeypair>);
-
-impl MlsEntity for PersistedEpochEncryptionKeypairs {
-    const ID: MlsEntityId = MlsEntityId::EpochEncryptionKeyPair;
-}
 
 #[derive(Serialize, Deserialize)]
 struct PersistedEncryptionKeypair {

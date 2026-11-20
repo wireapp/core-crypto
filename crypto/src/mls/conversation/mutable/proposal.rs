@@ -5,10 +5,10 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
-use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn};
+use openmls::{framing::MlsMessageOut, key_packages::KeyPackageIn, prelude::LeafNodeIndex};
 
 use super::{ConversationMut, Result};
-use crate::OpenMlsError;
+use crate::{OpenMlsError, RecursiveError, mls::credential::validation::validate_key_packages};
 
 /// Creating proposals
 impl ConversationMut {
@@ -16,11 +16,17 @@ impl ConversationMut {
     pub(crate) async fn propose_add_member(&mut self, key_package: KeyPackageIn) -> Result<MlsMessageOut> {
         let crypto_provider = self.crypto_provider().await?;
         let signer = &self.credential().await?.signature_key_pair;
+        let [key_package] = validate_key_packages(&crypto_provider, [key_package])
+            .await
+            .map_err(RecursiveError::mls_credential(
+                "validating the key package of the member to add",
+            ))?
+            .try_into()
+            .expect("one key package in, one key package out");
         let (proposal, _ref) = self
-            .mutate_group(async |_, group, _| {
+            .mutate_group(async |provider, group, _| {
                 group
-                    .propose_add_member(&crypto_provider, signer, key_package)
-                    .await
+                    .propose_add_member(provider, signer, &key_package)
                     .map_err(OpenMlsError::wrap("propose add member"))
                     .map_err(Into::into)
             })
@@ -30,12 +36,11 @@ impl ConversationMut {
 
     /// Used when updating the history client.
     pub(crate) async fn propose_remove_member(&mut self, member: LeafNodeIndex) -> Result<MlsMessageOut> {
-        let crypto_provider = self.crypto_provider().await?;
         let signer = &self.credential().await?.signature_key_pair;
         let (proposal, _ref) = self
-            .mutate_group(async |_, group, _| {
+            .mutate_group(async |provider, group, _| {
                 group
-                    .propose_remove_member(&crypto_provider, signer, member)
+                    .propose_remove_member(provider, signer, member)
                     .map_err(OpenMlsError::wrap("propose remove member"))
                     .map_err(Into::into)
             })
@@ -200,7 +205,9 @@ mod tests {
                 assert!(matches!(
                     owner_decrypt.unwrap_err(),
                     mls::conversation::Error::OpenMls(OpenMlsError {
-                        source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidSignature),
+                        source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
+                            openmls::prelude::ValidationError::InvalidSignature
+                        )),
                         ..
                     })
                 ));
@@ -209,7 +216,9 @@ mod tests {
                 assert!(matches!(
                     guest_decrypt.unwrap_err(),
                     mls::conversation::Error::OpenMls(OpenMlsError {
-                        source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::InvalidSignature),
+                        source: OpenMlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
+                            openmls::prelude::ValidationError::InvalidSignature
+                        )),
                         ..
                     })
                 ));

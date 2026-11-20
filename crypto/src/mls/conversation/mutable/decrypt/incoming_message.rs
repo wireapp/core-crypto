@@ -1,4 +1,4 @@
-use openmls::prelude::{ContentType, MlsMessageIn, MlsMessageInBody};
+use openmls::prelude::{ContentType, MlsMessageBodyIn, MlsMessageIn};
 use tls_codec::Deserialize as _;
 
 use super::{Error, Result};
@@ -8,14 +8,11 @@ use crate::{
 };
 
 /// An incoming message, parsed into an appropriate container.
-//
-// We choose to accept the size difference here--approx. 300 bytes--on the basis that
-// memory isn't particularly constrained for this application, and this struct is
-// short-lived.
-#[expect(clippy::large_enum_variant)]
 #[derive(Clone, derive_more::From)]
 pub(in crate::mls::conversation) enum ParsedMessage {
-    Mls(MlsMessageIn),
+    /// The body of an MLS message. openmls only hands out the body of an `MlsMessageIn` by value, so we take it
+    /// once, here.
+    Mls(MlsMessageBodyIn),
     Tnt(TntMessage),
 }
 
@@ -35,6 +32,7 @@ impl ParsedMessage {
                 .into(),
             _ => MlsMessageIn::tls_deserialize_exact(bytes)
                 .map_err(TlsCodecError::deserialize("mls message in"))?
+                .extract()
                 .into(),
         };
 
@@ -48,9 +46,9 @@ impl ParsedMessage {
     pub(in crate::mls::conversation) fn content_type(&self) -> Result<ContentType> {
         let content_type = match self {
             ParsedMessage::Tnt(_) => ContentType::Application,
-            ParsedMessage::Mls(mls_message_in) => match mls_message_in.body_as_ref() {
-                MlsMessageInBody::PublicMessage(m) => m.content_type(),
-                MlsMessageInBody::PrivateMessage(m) => m.content_type(),
+            ParsedMessage::Mls(body) => match body {
+                MlsMessageBodyIn::PublicMessage(m) => m.content_type(),
+                MlsMessageBodyIn::PrivateMessage(m) => m.content_type(),
                 _ => return Err(Error::InappropriateMessageBodyType),
             },
         };
@@ -60,9 +58,9 @@ impl ParsedMessage {
     /// Get the epoch of this message.
     pub(in crate::mls::conversation) fn epoch(&self) -> Result<u64> {
         match self {
-            ParsedMessage::Mls(mls_message_in) => match mls_message_in.body_as_ref() {
-                MlsMessageInBody::PublicMessage(public_message_in) => Ok(public_message_in.epoch().as_u64()),
-                MlsMessageInBody::PrivateMessage(private_message_in) => Ok(private_message_in.epoch().as_u64()),
+            ParsedMessage::Mls(body) => match body {
+                MlsMessageBodyIn::PublicMessage(public_message_in) => Ok(public_message_in.epoch().as_u64()),
+                MlsMessageBodyIn::PrivateMessage(private_message_in) => Ok(private_message_in.epoch().as_u64()),
                 _ => Err(Error::InappropriateMessageBodyType),
             },
             ParsedMessage::Tnt(tnt_message) => Ok(tnt_message.epoch()),

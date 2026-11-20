@@ -7,7 +7,7 @@ use super::{TargetedMessage, TargetedMessageContext, extract_hpke_context_data};
 use crate::{
     ClientIdRef, CryptoProvider, OpenMlsError, RecursiveError, TlsCodecError,
     mls::conversation::{
-        ConversationMut, Error, MlsGroupState, Result,
+        ConversationMut, Error, MlsGroupState, Result, member_identity,
         mutable::tnt::{TntMessageTBS, tls_serialize_padded},
     },
 };
@@ -52,7 +52,10 @@ impl ConversationMut {
                 let recipient = group_state
                     .mls_group()
                     .members()
-                    .find(|member| ClientIdRef::new(member.credential.identity()) == recipient.borrow())
+                    .find(|member| {
+                        member_identity(&member.credential)
+                            .is_ok_and(|identity| ClientIdRef::new(&identity) == recipient.borrow())
+                    })
                     .ok_or_else(|| Error::MemberNotFound(recipient.borrow().to_owned()))?;
                 Self::create_targeted_message(policy, group_state, &crypto_provider, &recipient, &message)
             })
@@ -79,11 +82,11 @@ impl ConversationMut {
             .map_err(TlsCodecError::serialize("TntMessageCounter"))?;
         let context = TargetedMessageContext::new_with_current_protocol_version(
             policy,
-            mls_group.export_group_context(),
+            mls_group.public_group().group_context(),
             mls_group.own_leaf_index(),
             recipient.index,
         );
-        let context_data = extract_hpke_context_data(crypto_provider, &context, mls_group)?;
+        let context_data = extract_hpke_context_data(crypto_provider.crypto(), &context, mls_group)?;
         let message = tls_serialize_padded(message).map_err(TlsCodecError::serialize("TargetedMessageContent"))?;
         let payload = crypto_provider
             .hpke_seal_psk(
@@ -105,7 +108,7 @@ impl ConversationMut {
             counter,
             sender,
             recipient.index,
-            recipient.credential.identity().to_owned(),
+            member_identity(&recipient.credential)?.into_owned(),
             epoch,
             group_id.clone(),
             payload,
