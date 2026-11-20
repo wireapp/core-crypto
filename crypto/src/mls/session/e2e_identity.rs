@@ -1,31 +1,25 @@
 use openmls::{
-    prelude::{Credential, Node, group_info::VerifiableGroupInfo},
-    treesync::RatchetTree,
+    group::MlsGroup,
+    prelude::{Credential, group_info::VerifiableGroupInfo},
 };
-use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::WireIdentityReader as _;
 
 use super::{Result, Session};
 use crate::{
-    CredentialType, E2eiConversationState, OpenMlsError, mls::credential::ext::CredentialExt as _,
-    mls_provider::AuthenticationService,
+    CredentialType, E2eiConversationState, OpenMlsError,
+    mls::credential::{ext::CredentialExt as _, identity::is_time_valid},
+    mls_provider::{AuthenticationService, MlsProvider},
 };
 
 impl Session {
     /// Verifies a Group state before joining it
     pub async fn e2ei_verify_group_state(&self, group_info: VerifiableGroupInfo) -> Result<E2eiConversationState> {
-        let is_sender = true; // verify the ratchet tree as sender to turn on hardened verification
-        let Ok(rt) = group_info.take_ratchet_tree(&self.crypto_provider, is_sender).await else {
+        let Ok(credentials) = Self::verified_member_credentials(&self.crypto_provider.read_only(), group_info) else {
             return Ok(E2eiConversationState::NotVerified);
         };
 
-        let credentials = rt.iter().filter_map(|n| match n {
-            Some(Node::LeafNode(ln)) => Some(ln.credential()),
-            _ => None,
-        });
-
         Ok(Self::compute_conversation_state(
-            credentials,
+            credentials.iter(),
             CredentialType::X509,
             self.crypto_provider.authentication_service(),
         )
@@ -39,27 +33,30 @@ impl Session {
         group_info: VerifiableGroupInfo,
         credential_type: CredentialType,
     ) -> Result<E2eiConversationState> {
-        // Not verifying the supplied the GroupInfo here could let attackers lure the clients about
-        // the e2ei state of a conversation and as a consequence degrade this conversation for all
-        // participants once joining it.
-        // This 👇 verifies the GroupInfo and the RatchetTree btw
-        let rt = group_info
-            .take_ratchet_tree(&self.crypto_provider, false)
-            .await
-            .map_err(OpenMlsError::wrap("taking ratchet tree"))?;
-        Self::get_credential_in_use_in_ratchet_tree(rt, credential_type, self.crypto_provider.authentication_service())
-            .await
+        let credentials = Self::verified_member_credentials(&self.crypto_provider.read_only(), group_info)?;
+        Ok(Self::compute_conversation_state(
+            credentials.iter(),
+            credential_type,
+            self.crypto_provider.authentication_service(),
+        )
+        .await)
     }
-    pub(crate) async fn get_credential_in_use_in_ratchet_tree(
-        ratchet_tree: RatchetTree,
-        credential_type: CredentialType,
-        auth_service: &AuthenticationService,
-    ) -> Result<E2eiConversationState> {
-        let credentials = ratchet_tree.iter().filter_map(|n| match n {
-            Some(Node::LeafNode(ln)) => Some(ln.credential()),
-            _ => None,
-        });
-        Ok(Self::compute_conversation_state(credentials, credential_type, auth_service).await)
+
+    /// The credentials of the members of the group a GroupInfo describes.
+    ///
+    /// Not verifying a GroupInfo could let attackers lure clients about the e2ei state of a conversation, and as a
+    /// consequence degrade the conversation for all participants once joining it. So openmls verifies the GroupInfo
+    /// and the ratchet tree in its extension first.
+    pub(crate) fn verified_member_credentials(
+        provider: &MlsProvider<'_>,
+        group_info: VerifiableGroupInfo,
+    ) -> Result<Vec<Credential>> {
+        Ok(MlsGroup::external_commit_builder()
+            .verify_group(provider, group_info)
+            .map_err(OpenMlsError::wrap("verifying group info and ratchet tree"))?
+            .members()
+            .map(|member| member.credential)
+            .collect())
     }
 
     /// _credential_type will be used in the future to get the usage of VC Credentials, even Basics one.
@@ -90,9 +87,7 @@ impl Session {
 
             let invalid_identity = cert.extract_identity(&env).await.is_err();
 
-            use openmls_x509_credential::X509Ext as _;
-            let is_time_valid = cert.is_time_valid().unwrap_or(false);
-            let is_time_invalid = !is_time_valid;
+            let is_time_invalid = !is_time_valid(&cert);
             let is_revoked_or_invalid = env.validate_cert(&cert).await.is_err();
             let is_invalid = invalid_identity || is_time_invalid || is_revoked_or_invalid;
             if is_invalid {

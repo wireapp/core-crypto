@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use openmls::{
     group::MlsGroup,
-    prelude::{Certificate, MlsCredentialType},
+    prelude::{Credential as MlsCredential, CredentialType as MlsCredentialType, X509Credential},
 };
 use wire_e2e_identity::validation::extract_crl_uris;
 
@@ -21,11 +21,11 @@ use crate::RecursiveError;
 pub(crate) struct CrlUris(HashSet<String>);
 
 pub(crate) fn extract_crl_uris_from_credentials<'a>(
-    mut credentials: impl Iterator<Item = &'a MlsCredentialType>,
+    mut credentials: impl Iterator<Item = &'a MlsCredential>,
 ) -> Result<CrlUris> {
-    credentials.try_fold(CrlUris::new(), |mut acc, cred| {
-        if let MlsCredentialType::X509(cert) = cred {
-            acc.extend(extract_dp(cert)?);
+    credentials.try_fold(CrlUris::new(), |mut acc, credential| {
+        if credential.credential_type() == MlsCredentialType::X509 {
+            acc.extend(extract_dp(credential)?);
         }
 
         Ok(acc)
@@ -33,15 +33,19 @@ pub(crate) fn extract_crl_uris_from_credentials<'a>(
 }
 
 pub(crate) fn extract_crl_uris_from_group(group: &MlsGroup) -> Result<CrlUris> {
-    extract_crl_uris_from_credentials(group.members_credentials().map(|c| c.mls_credential()))
+    let credentials = group.members().map(|member| member.credential).collect::<Vec<_>>();
+    extract_crl_uris_from_credentials(credentials.iter())
 }
 
-pub(crate) fn extract_dp(cert: &Certificate) -> Result<CrlUris> {
-    cert.certificates
+/// The CRL distribution points of every certificate in an X509 credential's chain.
+pub(crate) fn extract_dp(credential: &MlsCredential) -> Result<CrlUris> {
+    X509Credential::try_from(credential.clone())
+        .map_err(Error::DecodeX509Chain)?
+        .certificates()
         .iter()
         .try_fold(CrlUris::new(), |mut acc, cert| -> Result<CrlUris> {
             use x509_cert::der::Decode as _;
-            let cert = x509_cert::Certificate::from_der(cert).map_err(Error::DecodeX509)?;
+            let cert = x509_cert::Certificate::from_der(cert.as_slice()).map_err(Error::DecodeX509)?;
             if let Some(crl_uris) =
                 extract_crl_uris(&cert).map_err(RecursiveError::e2e_identity("extracting crl urls"))?
             {

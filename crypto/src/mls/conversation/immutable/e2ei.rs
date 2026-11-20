@@ -1,6 +1,5 @@
 use std::{borrow::Borrow, collections::HashMap};
 
-use openmls_traits::OpenMlsCryptoProvider as _;
 use uuid::Uuid;
 
 use super::{Error, Result};
@@ -15,8 +14,14 @@ impl super::Conversation {
     pub async fn e2ei_conversation_state(&self) -> Result<E2eiConversationState> {
         let backend = &self.session()?.crypto_provider;
 
+        let credentials = self
+            .group()
+            .await
+            .members()
+            .map(|member| member.credential)
+            .collect::<Vec<_>>();
         let state = Session::compute_conversation_state(
-            self.group().await.members_credentials(),
+            credentials.iter(),
             CredentialType::X509,
             backend.authentication_service(),
         )
