@@ -38,12 +38,13 @@ jvm-windows-deps := $(RUST_SOURCES)
 # losing AES-NI and the constant-time implementations. Require it.
 #
 # The vendored OpenSSL builds with nmake, which reads `MAKEFLAGS` too and rejects GNU make's
-# (e.g. ` -- RELEASE=1`), so clear them.
+# (e.g. ` -- RELEASE=1`), so clear them. nmake also takes `MAKE` from the environment, where CI
+# sets it, and would run GNU make on its own makefiles, so remove that.
 #
 # Link the C runtime statically, so the library loads on machines without the Visual C++
 # Redistributable. It goes in `RUSTFLAGS` so that the C dependencies build against it too.
 $(JVM_WINDOWS_LIB): $(jvm-windows-deps)
-	MAKEFLAGS= MFLAGS= OPENSSL_RUST_USE_NASM=1 \
+	env -u MAKE MAKEFLAGS= MFLAGS= OPENSSL_RUST_USE_NASM=1 \
 	RUSTFLAGS="$${RUSTFLAGS:-} -C target-feature=+crt-static" \
 	cargo rustc --locked \
 	  --target x86_64-pc-windows-msvc \
