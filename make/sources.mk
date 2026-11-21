@@ -45,15 +45,22 @@ UNIFFI_ANDROID_TOML := crypto-ffi/uniffi-android.toml
 # Used by CI to calculate a hash of prerequisite files of a make rule
 #
 # The file list goes through a temporary file rather than the command line. On Windows it is
-# longer than the 32 KiB command-line limit.
+# longer than the 32 KiB command-line limit. `$(file)` needs GNU make 4.0, and the make that ships
+# with macOS is 3.81, so that one still passes the list on the command line. It ignores the
+# function without a word, which would make every hash the hash of no files at all.
+ifeq ($(filter 3.%,$(MAKE_VERSION)),)
+hash-deps-files = $(if $(strip $($*-deps)),$(file >$@.in,$($*-deps)))$$(cat $@.in)
+else
+hash-deps-files = $($*-deps)
+endif
+
 %-hash-deps:
 	@if [ -z "$(if $(strip $($*-deps)),x)" ]; then \
 	  echo "ERROR: The \"$*-deps\" variable doesn't exist in the Makefile."; exit 1; \
 	fi
-	$(if $(strip $($*-deps)),$(file >$@.in,$($*-deps)))
 	@set -euo pipefail; \
 	trap 'rm -f $@.in' EXIT; \
-	hash=$$(sha256sum $$(cat $@.in) | awk '{print $$1}' | sha256sum | awk '{print $$1}'); \
+	hash=$$(sha256sum $(hash-deps-files) | awk '{print $$1}' | sha256sum | awk '{print $$1}'); \
 	echo "$$hash"
 
 #-------------------------------------------------------------------------------
