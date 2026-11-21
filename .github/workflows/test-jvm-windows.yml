@@ -1,0 +1,55 @@
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-test-jvm-windows"
+  cancel-in-progress: true
+
+on:
+  workflow_call:
+    inputs:
+      library_artifact:
+        description: Full name of the Windows library artifact in the calling run
+        required: true
+        type: string
+      bindings_artifact:
+        description: Full name of the Kotlin JVM bindings artifact in the calling run
+        required: true
+        type: string
+
+env:
+  RELEASE: 1
+
+jobs:
+  test-jvm-windows:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: set up jdk 25
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          java-version: 25
+          distribution: temurin
+      - name: gradle setup
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-provider: basic
+
+      - name: download windows library
+        uses: ./.github/actions/make/fetch-artifact
+        with:
+          artifact-name: ${{ inputs.library_artifact }}
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: download kotlin bindings
+        uses: ./.github/actions/make/fetch-artifact
+        with:
+          artifact-name: ${{ inputs.bindings_artifact }}
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Run gradle directly rather than `make jvm-test`. On Windows, make would see the bindings'
+      # prerequisites (the host library and uniffi-bindgen, at their Windows paths) as missing, and
+      # rebuild everything instead of testing what the other jobs built.
+      - name: test jvm package
+        working-directory: crypto-ffi/bindings
+        run: ./gradlew jvm:test --rerun
+        shell: bash -euo pipefail {0}

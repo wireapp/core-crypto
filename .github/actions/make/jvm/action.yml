@@ -6,6 +6,11 @@ inputs:
   artifact-generation:
     description: suffix for artifact names that allows us to easily invalidate artifacts
 
+outputs:
+  artifact-name:
+    description: The full name of the library artifact in the current run
+    value: ${{ steps.jvm.outputs.artifact-name }}
+
 runs:
   using: composite
 
@@ -15,26 +20,41 @@ runs:
         run: |
           os="$(uname -s)"
           if [ "$os" = "Linux" ]; then
-            library_extension="so"
             target="x86_64-unknown-linux-gnu"
             rule="jvm-linux"
+            # The jvm-darwin/jvm-linux make rules build both a dynamic library (dylib/so) and a
+            # static library (.a); upload both so consumers that link statically can use the .a.
+            libs="libcore_crypto_ffi.so libcore_crypto_ffi.a"
           elif [ "$os" = "Darwin" ]; then
-            library_extension="dylib"
             target="aarch64-apple-darwin"
             rule="jvm-darwin"
+            libs="libcore_crypto_ffi.dylib libcore_crypto_ffi.a"
+          elif [[ "$os" == MINGW* || "$os" == MSYS* ]]; then
+            target="x86_64-pc-windows-msvc"
+            rule="jvm-windows"
+            # The jvm-windows rule only builds the dynamic library.
+            libs="core_crypto_ffi.dll"
+          else
+            echo "::error::Unsupported runner OS for the jvm library: $os"
+            exit 1
           fi
-          # The jvm-darwin/jvm-linux make rules build both a dynamic library (dylib/so) and a
-          # static library (.a); upload both so consumers that link statically can use the .a.
           {
             echo "target-path<<EOF"
-            echo "target/${target}/release/libcore_crypto_ffi.${library_extension}"
-            echo "target/${target}/release/libcore_crypto_ffi.a"
+            for lib in $libs; do echo "target/${target}/release/${lib}"; done
             echo "EOF"
-          } >> $GITHUB_OUTPUT
-          echo "rule=${rule}" >> $GITHUB_OUTPUT
-          echo "target=${target}" >> $GITHUB_OUTPUT
+            echo "rule=${rule}"
+            echo "target=${target}"
+          } >> "$GITHUB_OUTPUT"
         shell: bash -euo pipefail {0}
-      - uses: ./.github/actions/make
+
+      # Only needed to build, but quick, and the make action can't run anything between finding
+      # no artifact and building. It also computes the artifact key with make, so this goes first.
+      - name: set up the windows toolchain
+        if: runner.os == 'Windows'
+        uses: ./.github/actions/setup-windows-build
+
+      - id: jvm
+        uses: ./.github/actions/make
         with:
           key: ${{ steps.platform-specs.outputs.rule }}
           make-rule: ${{ steps.platform-specs.outputs.rule }}

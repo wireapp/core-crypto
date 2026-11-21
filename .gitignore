@@ -221,6 +221,8 @@ dist
 
 # Make stampfile directory for timestamp comparisons
 .stamps
+# File lists written by the `%-hash-deps` rule; normally deleted straight away
+*-hash-deps.in
 
 crypto-ffi/bindings/build
 interop/src/clients/build

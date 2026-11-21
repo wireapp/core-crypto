@@ -28,6 +28,7 @@ express prior written consent of Wire Swiss GmbH.
     - [iOS](#ios)
     - [MacOS](#macos)
     - [Linux](#linux)
+    - [Windows](#windows)
     - [WASM](#wasm)
     - [Bindings](#bindings)
   - [Testing](#testing)
@@ -173,6 +174,34 @@ Install Linux targets:
 rustup target add x86_64-unknown-linux-gnu
 ```
 
+### Windows<a name="windows"></a>
+
+Only the JVM library can be built on Windows, for 64-bit Windows (`make jvm` and `make jvm-test`). Run `make` from Git
+Bash.
+
+Install the Visual Studio Build Tools with the C++ workload. The Visual Studio IDE isn't needed. Then install the other
+tools:
+
+```powershell
+winget install --id Microsoft.VisualStudio.2022.BuildTools --exact --override "--passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+winget install --id Git.Git --exact
+winget install --id Rustlang.Rustup --exact
+winget install --id ezwinports.make --exact
+winget install --id sharkdp.fd --exact
+winget install --id StrawberryPerl.StrawberryPerl --exact
+winget install --id EclipseAdoptium.Temurin.25.JDK --exact
+```
+
+The vendored OpenSSL needs a native Windows Perl. Git Bash's own `perl` can't configure it, so point the build at
+Strawberry Perl:
+
+```sh
+export OPENSSL_SRC_PERL=C:/Strawberry/perl/bin/perl.exe
+```
+
+OpenSSL also needs NASM, which comes with Strawberry Perl. The build fails if `nasm` isn't on the `PATH`, rather than
+building OpenSSL without its assembly routines.
+
 ### WASM<a name="wasm"></a>
 
 Make sure you have all prerequisites:
@@ -252,7 +281,7 @@ make ts-test  # make the typescript target and run tests
 Build bindings for Android, JVM, iOS and WASM
 
 ```sh
-# builds bindings and targets for the JVM (macOS / Linux)
+# builds bindings and targets for the JVM (macOS / Linux / Windows)
 make jvm
 
 # builds bindings and targets for Android

@@ -1,5 +1,5 @@
 #-------------------------------------------------------------------------------
-# JVM native builds (Darwin + Linux)
+# JVM native builds (Darwin, Linux and Windows)
 #-------------------------------------------------------------------------------
 
 # darwin build
@@ -27,6 +27,34 @@ $(JVM_LINUX_LIB): $(jvm-linux-deps)
 .PHONY: jvm-linux
 jvm-linux: $(JVM_LINUX_LIB) ## Build core-crypto-ffi for JVM on x86_64-unknown-linux-gnu
 
+# windows build
+#
+# Windows libraries have no `lib` prefix. Only the dynamic library is built: the static library
+# is for Kotlin/Native consumers, and there's no Windows Kotlin/Native target.
+JVM_WINDOWS_LIB := target/x86_64-pc-windows-msvc/$(RELEASE_MODE)/core_crypto_ffi.dll
+jvm-windows-deps := $(RUST_SOURCES)
+#
+# Without NASM on the `PATH`, the vendored OpenSSL quietly builds without its assembly routines,
+# losing AES-NI and the constant-time implementations. Require it.
+#
+# The vendored OpenSSL builds with nmake, which reads `MAKEFLAGS` too and rejects GNU make's
+# (e.g. ` -- RELEASE=1`), so clear them. nmake also takes `MAKE` from the environment, where CI
+# sets it, and would run GNU make on its own makefiles, so remove that.
+#
+# Link the C runtime statically, so the library loads on machines without the Visual C++
+# Redistributable. It goes in `RUSTFLAGS` so that the C dependencies build against it too.
+$(JVM_WINDOWS_LIB): $(jvm-windows-deps)
+	env -u MAKE MAKEFLAGS= MFLAGS= OPENSSL_RUST_USE_NASM=1 \
+	RUSTFLAGS="$${RUSTFLAGS:-} -C target-feature=+crt-static" \
+	cargo rustc --locked \
+	  --target x86_64-pc-windows-msvc \
+	  --package core-crypto-ffi \
+	  --crate-type=cdylib \
+	  $(NATIVE_CARGO_BUILD_ARGS) -- $(RUST_STRIP_FLAGS)
+
+.PHONY: jvm-windows
+jvm-windows: $(JVM_WINDOWS_LIB) ## Build core-crypto-ffi for JVM on x86_64-pc-windows-msvc
+
 .PHONY: jvm
 ifeq ($(UNAME_S),Linux)
 JVM_LIB := $(JVM_LINUX_LIB)
@@ -34,6 +62,9 @@ jvm: jvm-linux ## Build core-crypto-ffi for JVM (automatically select the target
 else ifeq ($(UNAME_S),Darwin)
 JVM_LIB := $(JVM_DARWIN_LIB)
 jvm: jvm-darwin
+else ifeq ($(UNAME_S),Windows)
+JVM_LIB := $(JVM_WINDOWS_LIB)
+jvm: jvm-windows
 else
 $(error Unsupported host platform for jvm: $(UNAME_S))
 endif

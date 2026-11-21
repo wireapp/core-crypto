@@ -40,6 +40,12 @@
 - Browser: databases are stored in a different directory in OPFS. A CoreCrypto 11 database moves there the first time
   it's opened, with the same location and key.
 
+#### Kotlin
+
+- JVM: the `core-crypto-jvm` jar now includes a library for 64-bit Windows, `win32-x86-64/core_crypto_ffi.dll`. It links
+  the C runtime statically, so it doesn't need the Visual C++ Redistributable. If you copy the jar's native libraries
+  elsewhere, include `win32-x86-64`.
+
 #### Bug Fixes
 
 - It's now possible to rotate a existing x509 credential with a new x509 credential which has the same public key.

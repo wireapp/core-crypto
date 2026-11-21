@@ -29,18 +29,34 @@ TARGET_DIR := target/$(RELEASE_MODE)
 
 # Detect host platform for NDK and library extensions
 UNAME_S := $(shell uname -s)
+# Git Bash and MSYS2 report e.g. `MINGW64_NT-10.0-26200` or `MSYS_NT-10.0-26200`. Windows also
+# sets `OS=Windows_NT`, which catches other shells whose `uname` reports something else.
+ifneq ($(filter MINGW% MSYS%,$(UNAME_S))$(filter Windows_NT,$(OS)),)
+  UNAME_S := Windows
+endif
+
+# Windows doesn't prefix library names with `lib`, and executables end in `.exe`.
+LIBRARY_PREFIX := lib
+EXE_SUFFIX :=
 ifeq ($(UNAME_S),Linux)
   PLATFORM_DIR       := linux-x86_64
   LIBRARY_EXTENSION  := so
 else ifeq ($(UNAME_S),Darwin)
   PLATFORM_DIR       := darwin-x86_64
   LIBRARY_EXTENSION  := dylib
+else ifeq ($(UNAME_S),Windows)
+  # Only the JVM library is supported on Windows hosts; there's no Android NDK `PLATFORM_DIR`.
+  LIBRARY_PREFIX     :=
+  LIBRARY_EXTENSION  := dll
+  EXE_SUFFIX         := .exe
 else
   $(error Unsupported host platform $(UNAME_S))
 endif
 
 # Make platform-specific LLVM toolchain available to Android builds.
+ifneq ($(PLATFORM_DIR),)
 export PATH := $(PATH):$(ANDROID_NDK_HOME)/toolchains/llvm/prebuilt/$(PLATFORM_DIR)/bin
+endif
 
 # Directory we store timestamps in
 STAMPS := .stamps
