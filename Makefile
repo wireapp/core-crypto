@@ -17,6 +17,7 @@ include make/ffi.mk
 include make/ios.mk
 include make/android.mk
 include make/jvm.mk
+include make/kmp.mk
 include make/ts.mk
 include make/interop.mk
 include make/docs.mk

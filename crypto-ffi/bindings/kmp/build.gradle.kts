@@ -1,3 +1,4 @@
+import dev.oxikt.gradle.plugin.tasks.BuildBindingsTask
 import org.gradle.api.publish.maven.tasks.AbstractPublishToMaven
 import org.gradle.api.tasks.bundling.Jar
 import org.gradle.plugins.signing.Sign
@@ -113,6 +114,17 @@ uniffi {
 cargo {
     // Point to the crypto-ffi crate directory
     packageDirectory = layout.projectDirectory.dir("../..")
+
+    // make builds the libraries into `target`, so that they aren't built twice.
+    prebuiltLibraries = layout.projectDirectory.dir("../../../target")
+}
+
+// Stripped Linux libraries lack the metadata the bindings are generated from, so for release builds,
+// make passes the unstripped library it generates its own bindings from.
+providers.gradleProperty("bindingsLibrary").orNull?.let { library ->
+    tasks.withType<BuildBindingsTask>().configureEach {
+        libraryFile.set(layout.projectDirectory.file(library))
+    }
 }
 
 afterEvaluate {

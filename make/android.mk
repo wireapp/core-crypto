@@ -62,10 +62,12 @@ android: $(android-deps) ## Build all Android targets
 
 ifeq ($(UNAME_S),Linux)
 ANDROID_TEST_LIB := $(ANDROID_X86)
+ANDROID_TEST_ABI := x86_64
 android-test-lib-deps := $(android-x86-deps)
 android-test-lib: android-x86 ## Build core-crypto-ffi for Android (automatically select the target based on the host machine)
 else ifeq ($(UNAME_S),Darwin)
 ANDROID_TEST_LIB := $(ANDROID_ARMv8)
+ANDROID_TEST_ABI := arm64-v8a
 android-test-lib-deps := $(android-armv8-deps)
 android-test-lib: android-armv8
 else

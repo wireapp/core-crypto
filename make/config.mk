@@ -22,6 +22,10 @@ endif
 
 UBRN_BUILD_ARGS := --profile $(UBRN_PROFILE)
 
+# Has rustc write the static library's linker options next to it, for Kotlin/Native.
+# `=`, not `:=`, so that `$(@D)` is the directory of the library being built.
+NATIVE_STATIC_LIBS_FLAGS = --print native-static-libs=$(abspath $(@D))/core_crypto_ffi.native-static-libs
+
 NATIVE_CARGO_BUILD_ARGS := $(CARGO_BUILD_ARGS) --features cancellable-transactions
 DARWIN_CARGO_BUILD_ARGS := $(CARGO_BUILD_ARGS) --features cancellable-transactions,cross-process-lock
 

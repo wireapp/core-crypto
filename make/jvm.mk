@@ -3,19 +3,19 @@
 #-------------------------------------------------------------------------------
 
 # darwin build
-JVM_DARWIN_LIB := target/aarch64-apple-darwin/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+JVM_DARWIN_LIB := target/aarch64-apple-darwin/$(RELEASE_MODE)/libcore_crypto_ffi.dylib
 jvm-darwin-deps := $(RUST_SOURCES)
 $(JVM_DARWIN_LIB): $(jvm-darwin-deps)
 	cargo rustc --locked \
 	  --target aarch64-apple-darwin \
 	  --package core-crypto-ffi \
 	  --crate-type=cdylib --crate-type=staticlib \
-	  $(DARWIN_CARGO_BUILD_ARGS) -- $(RUST_STRIP_FLAGS)
+	  $(DARWIN_CARGO_BUILD_ARGS) -- $(RUST_STRIP_FLAGS) $(NATIVE_STATIC_LIBS_FLAGS)
 .PHONY: jvm-darwin
 jvm-darwin: $(JVM_DARWIN_LIB) ## Build core-crypto-ffi for JVM on aarch64-apple-darwin
 
 # linux build
-JVM_LINUX_LIB := target/x86_64-unknown-linux-gnu/$(RELEASE_MODE)/libcore_crypto_ffi.$(LIBRARY_EXTENSION)
+JVM_LINUX_LIB := target/x86_64-unknown-linux-gnu/$(RELEASE_MODE)/libcore_crypto_ffi.so
 jvm-linux-deps := $(RUST_SOURCES)
 $(JVM_LINUX_LIB): $(jvm-linux-deps)
 	cargo rustc --locked \
@@ -69,14 +69,3 @@ jvm-bench: $(jvm-test-deps) $(KT_BENCHMARKS) ## Run the JVM benchmarks
 		GRADLE_ARGS="$$GRADLE_ARGS -Pprofile"; \
 	fi; \
 	./gradlew :jvm:jmh $$GRADLE_ARGS
-
-#-------------------------------------------------------------------------------
-# KMP (Kotlin Multiplatform) builds
-#-------------------------------------------------------------------------------
-
-kmp-jvm-test-deps := $(FFI_LIBRARY) $(JVM_LIB) $(KT_FILES) $(KT_BUILD_FILES)
-
-$(STAMPS)/kmp-jvm-test: $(kmp-jvm-test-deps)
-	cd crypto-ffi/bindings && \
-	./gradlew core-crypto-kmp:jvmTest --rerun
-	$(TOUCH_STAMP)
