@@ -806,7 +806,7 @@ dependencies = [
  "ciborium",
  "cidr",
  "cms",
- "const-oid 0.10.2",
+ "const-oid 0.10.3",
  "der 0.8.3",
  "ecdsa",
  "ed25519-dalek 3.0.0",
@@ -992,7 +992,7 @@ version = "0.3.0-rc.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d089eddc8a5c984d82fcf1427367a6fa0d019d5af04b6e3197e86c8989533b8d"
 dependencies = [
- "const-oid 0.10.2",
+ "const-oid 0.10.3",
  "der 0.8.3",
  "spki 0.8.1",
  "x509-cert",
@@ -1050,9 +1050,9 @@ checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
 
 [[package]]
 name = "const-oid"
-version = "0.10.2"
+version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6ef517f0926dd24a1582492c791b6a4818a4d94e789a334894aa15b0d12f55c"
+checksum = "be95d4a884358a21a199689323c29e9256b4a1b315e22f183d155422041d3a9a"
 
 [[package]]
 name = "const_format"
@@ -1589,7 +1589,7 @@ version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a996a108feb8b427a6e12fcf6af4aa83409b79d72c15337d7741368131ee004"
 dependencies = [
- "const-oid 0.10.2",
+ "const-oid 0.10.3",
  "der_derive",
  "flagset",
  "pem-rfc7468",
@@ -1657,7 +1657,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4850db49bf08e663084f7fb5c87d202ef91a3907271aff24a94eb97ff039153c"
 dependencies = [
  "block-buffer 0.12.0",
- "const-oid 0.10.2",
+ "const-oid 0.10.3",
  "crypto-common 0.2.2",
  "ctutils",
  "zeroize",
@@ -3732,7 +3732,7 @@ source = "git+https://github.com/wireapp/openmls?rev=8145f8e70d884159c3cdf719d6f
 dependencies = [
  "async-trait",
  "base64 0.21.7",
- "const-oid 0.10.2",
+ "const-oid 0.10.3",
  "openmls_basic_credential",
  "openmls_traits",
  "percent-encoding",
@@ -4672,7 +4672,7 @@ version = "0.10.0-rc.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "47cf9537fc2210e5db7a35a1cdda9d8d451b9df6fba234ec1cf0cd746c120c35"
 dependencies = [
- "const-oid 0.10.2",
+ "const-oid 0.10.3",
  "crypto-bigint",
  "crypto-common 0.2.2",
  "crypto-primes",
@@ -7281,7 +7281,7 @@ dependencies = [
  "async-trait",
  "base64 0.23.1",
  "certval",
- "const-oid 0.10.2",
+ "const-oid 0.10.3",
  "core-crypto-keystore",
  "core-crypto-macros",
  "der 0.8.3",
@@ -7403,7 +7403,7 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "105ef4642d9cb137ef83d623d0e4bf08b8adf69e9918ca904a174adb6d3d038b"
 dependencies = [
- "const-oid 0.10.2",
+ "const-oid 0.10.3",
  "der 0.8.3",
  "sha1 0.11.0",
  "signature 3.0.0",
@@ -7416,7 +7416,7 @@ name = "x509-ocsp"
 version = "0.3.0-rc.1"
 source = "git+https://github.com/RustCrypto/formats.git#6a44b94a3d48506eca55ea641e533f8c39090c76"
 dependencies = [
- "const-oid 0.10.2",
+ "const-oid 0.10.3",
  "der 0.8.3",
  "spki 0.8.1",
  "x509-cert",
