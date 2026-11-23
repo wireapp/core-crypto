@@ -25,6 +25,7 @@ express prior written consent of Wire Swiss GmbH.
       - [Pre-commit](#pre-commit)
     - [JVM](#jvm)
     - [Android](#android)
+    - [KMP](#kmp)
     - [iOS](#ios)
     - [MacOS](#macos)
     - [Linux](#linux)
@@ -37,6 +38,7 @@ express prior written consent of Wire Swiss GmbH.
     - [Platform-specific tests for WASM/Web](#platform-specific-tests-for-wasmweb)
     - [Platform-specific tests for Kotlin/JVM](#platform-specific-tests-for-kotlinjvm)
     - [Platform-specific tests for Android](#platform-specific-tests-for-android)
+    - [Platform-specific tests for KMP](#platform-specific-tests-for-kmp)
     - [Swift/iOS](#swiftios)
     - [Interop](#interop)
     - [End-to-end-identity (E2EI) testing](#end-to-end-identity-e2ei-testing)
@@ -95,7 +97,7 @@ express prior written consent of Wire Swiss GmbH.
 ### JVM<a name="jvm"></a>
 
 - Install [SDKMAN!](https://sdkman.io/): `curl -s "https://get.sdkman.io" | bash`
-- Install Java 17: `sdk install java 17.0.17-tem`
+- Install Java 25 (Temurin), e.g. `sdk install java 25.0.5-tem`
 - Install Kotlin: `sdk install kotlin`
 
 ```sh
@@ -105,7 +107,8 @@ make jvm-test  # make and test the JVM target
 
 ### Android<a name="android"></a>
 
-[Install Android SDK](https://developer.android.com/studio) and Build-Tools for API level 30+
+[Install Android SDK](https://developer.android.com/studio) with the platform for API level 37, which the bindings
+compile against, and Build-Tools.
 
 > [!IMPORTANT]
 > If you are building on macOS you'll need to setup `$ANDROID_SDK_ROOT` path variable manually:
@@ -128,6 +131,21 @@ Build:
 ```sh
 make android
 ```
+
+### KMP<a name="kmp"></a>
+
+The Kotlin Multiplatform package covers Android, iOS and macOS, and Linux and Windows through its JVM target. It needs
+the [JVM](#jvm) and [Android](#android) requirements above: Gradle only includes the KMP module when `ANDROID_HOME` is
+set. Building the Apple targets needs macOS with Xcode; elsewhere they're skipped.
+
+```sh
+make kmp           # build the package
+make kmp-jvm-test  # run the JVM tests
+```
+
+make builds the Rust libraries, and [OxiKT](https://oxikt.dev) packages them. Debug builds only need the host's
+libraries. Release builds (`RELEASE=1`) need the libraries of every platform the package ships, so they're made in CI,
+where each library is built by its own job. The Windows library is cross-compiled with mingw-w64 (`make jvm-windows`).
 
 ### iOS<a name="ios"></a>
 
@@ -258,6 +276,9 @@ make jvm
 # builds bindings and targets for Android
 make android
 
+# builds the Kotlin Multiplatform package
+make kmp
+
 # builds iOS framework
 make ios-create-xcframework
 
@@ -322,6 +343,12 @@ make jvm-test
 
 ```sh
 make android-test
+```
+
+### Platform-specific tests for KMP<a name="platform-specific-tests-for-kmp"></a>
+
+```sh
+make kmp-jvm-test
 ```
 
 ### Swift/iOS<a name="swiftios"></a>
