@@ -655,6 +655,32 @@ mod tests {
             })
             .await
         }
+
+        #[apply(all_cred_cipher)]
+        async fn app_message_from_a_member_removed_since_names_its_sender(case: TestContext) {
+            let [alice, bob, charlie] = case.sessions().await;
+            let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
+
+            let encrypted = conversation
+                .guard_of(&charlie)
+                .await
+                .encrypt_message(b"Hello from the previous epoch")
+                .await
+                .unwrap();
+            let conversation = conversation.remove_notify(&charlie).await;
+
+            let decrypted = conversation
+                .guard_of(&bob)
+                .await
+                .decrypt_message(encrypted)
+                .await
+                .unwrap()
+                .into_single();
+
+            let message = decrypted.as_application_message().unwrap();
+            assert_eq!(message.plaintext, b"Hello from the previous epoch");
+            assert_eq!(message.sender_client_id, charlie.get_client_id().await);
+        }
     }
 
     mod epoch_sync {
