@@ -25,9 +25,8 @@ use log::warn;
 use openmls::{
     group::MlsGroup,
     prelude::{
-        Credential as MlsCredential, CredentialType, CredentialWithKey, LeafNodeIndex, Member,
-        ProcessedMessage as MlsProcessedMessage, ProcessedMessageContent, Proposal as MlsProposal, ProtocolMessage,
-        Sender, SenderExtensionIndex, StagedCommit, tls_codec::Serialize as _,
+        Credential as MlsCredential, CredentialType, CredentialWithKey, LeafNodeIndex, Member, ProcessedMessageContent,
+        ProtocolMessage, StagedCommit,
     },
 };
 
@@ -46,7 +45,6 @@ use crate::{
     mls::{
         conversation::Error,
         credential::{self, ext::CredentialExt as _, identity::credential_identity, validation::validate_credentials},
-        external_sender::external_sender_parts,
     },
 };
 
@@ -243,10 +241,9 @@ impl ConversationMut {
             ProcessedMessage::Rejected(reason) => return Ok(reason.into()),
         };
 
-        let sender_signature_key = Self::sender_signature_key(self.group().await.mls_group(), &message)?;
         let credential = CredentialWithKey {
             credential: message.credential().clone(),
-            signature_key: sender_signature_key.into(),
+            signature_key: message.signature_key().clone(),
         };
         let epoch = message.epoch();
 
@@ -286,38 +283,6 @@ impl ConversationMut {
         };
 
         Ok(decrypted.into())
-    }
-
-    /// The signature key of the sender of a message openmls has processed.
-    ///
-    /// openmls hands out only the sender's credential. The key is in the sender's leaf node, wherever the sender
-    /// sits: in the group for a member, in the commit for a client joining by external commit, in the key package
-    /// for a client proposing to join, and among the group's external senders for an external sender. The group
-    /// hasn't merged the message yet, so a member's leaf is still the one it signed with.
-    fn sender_signature_key(group: &MlsGroup, message: &MlsProcessedMessage) -> Result<Vec<u8>> {
-        let key = match message.sender() {
-            Sender::Member(index) => group.member_at(*index).map(|member| member.signature_key),
-            Sender::NewMemberCommit => match message.content() {
-                ProcessedMessageContent::StagedCommitMessage(staged_commit) => staged_commit
-                    .update_path_leaf_node()
-                    .map(|leaf| leaf.signature_key().as_slice().to_vec()),
-                _ => None,
-            },
-            Sender::NewMemberProposal => match message.content() {
-                ProcessedMessageContent::ProposalMessage(proposal)
-                | ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => match proposal.proposal() {
-                    MlsProposal::Add(add) => Some(add.key_package().leaf_node().signature_key().as_slice().to_vec()),
-                    _ => None,
-                },
-                _ => None,
-            },
-            Sender::External(index) => external_sender_index(index)
-                .and_then(|index| group.extensions().external_senders()?.get(index))
-                .and_then(|sender| external_sender_parts(sender).ok().map(|(key, _credential)| key)),
-        };
-        key.ok_or(Error::MlsMessageInvalidState(
-            "the sender's signature key isn't where the sender is",
-        ))
     }
 
     fn members_at_indices(indices: Vec<LeafNodeIndex>, group: &MlsGroup) -> Vec<Member> {
@@ -383,14 +348,6 @@ impl ConversationMut {
         }
         Ok(None)
     }
-}
-
-/// The position of an external sender among the group's external senders.
-///
-/// openmls keeps the index to itself. RFC 9420 encodes it as a `uint32`.
-fn external_sender_index(index: &SenderExtensionIndex) -> Option<usize> {
-    let encoded: [u8; 4] = index.tls_serialize_detached().ok()?.try_into().ok()?;
-    usize::try_from(u32::from_be_bytes(encoded)).ok()
 }
 
 #[cfg(test)]
