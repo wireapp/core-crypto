@@ -1,0 +1,31 @@
+name: Fetch or make OxiKT's bindgen
+description: Fetch or build the bindgen binary that OxiKT generates the KMP bindings with
+inputs:
+  gh-token:
+    required: true
+  artifact-generation:
+    description: suffix for artifact names that allows us to easily invalidate artifacts
+
+runs:
+  using: composite
+
+  steps:
+    - name: write OxiKT version file
+      run: $MAKE .stamps/oxikt-version
+      shell: bash -euo pipefail {0}
+
+    - uses: ./.github/actions/make
+      with:
+        key: oxikt-bindgen-${{ runner.os }}
+        make-rule: oxikt-bindgen
+        target-path: target/oxikt/bin/uniffi-bindgen-kotlin-multiplatform
+        gh-token: ${{ inputs.gh-token }}
+        uses-rust: true
+        # The Rust cache is keyed on our Cargo.lock and shared with ffi-library, but `cargo install`
+        # builds OxiKT's dependencies in a temporary directory. A cache entry saved here would be
+        # nearly empty, and would keep ffi-library from saving its own.
+        rust-cache: false
+        artifact-generation: ${{ inputs.artifact-generation }}
+
+    - run: chmod +x target/oxikt/bin/uniffi-bindgen-kotlin-multiplatform
+      shell: bash -euo pipefail {0}

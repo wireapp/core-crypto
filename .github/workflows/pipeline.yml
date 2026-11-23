@@ -184,6 +184,20 @@ jobs:
           rust-target: x86_64-pc-windows-gnu
           artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
 
+  oxikt-bindgen:
+    needs: artifact-generation
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/make/setup
+      - uses: ./.github/actions/make/oxikt-bindgen
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ needs.artifact-generation.outputs.generation }}
+
   bindings-jvm:
     needs:
       - artifact-generation
@@ -252,6 +266,7 @@ jobs:
       - build-jvm-linux
       - build-jvm-linux-arm
       - build-jvm-windows
+      - oxikt-bindgen
     uses: ./.github/workflows/test-kmp.yml
     with:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
@@ -559,6 +574,7 @@ jobs:
       - build-jvm-darwin-x86
       - build-jvm-linux-arm
       - build-jvm-windows
+      - oxikt-bindgen
       - bindings-jvm
     if: github.ref_type == 'tag'
     uses: ./.github/workflows/prepare-publish.yml

@@ -31,6 +31,7 @@ jobs:
     env:
       ORG_GRADLE_PROJECT_releaseBuild: "true"
       ORG_GRADLE_PROJECT_bindingsLibrary: ${{ github.workspace }}/target/release/libcore_crypto_ffi.dylib
+      ORG_GRADLE_PROJECT_bindgen: ${{ github.workspace }}/target/oxikt/bin/uniffi-bindgen-kotlin-multiplatform
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -51,6 +52,12 @@ jobs:
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: '26.6.0'
+
+      - name: fetch the bindgen
+        uses: ./.github/actions/make/oxikt-bindgen
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
 
       - name: download the libraries
         uses: ./.github/actions/make/kmp-libs

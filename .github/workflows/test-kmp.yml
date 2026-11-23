@@ -47,6 +47,12 @@ jobs:
         with:
           xcode-version: '26.6.0'
 
+      - name: fetch the bindgen
+        uses: ./.github/actions/make/oxikt-bindgen
+        with:
+          gh-token: ${{ secrets.GITHUB_TOKEN }}
+          artifact-generation: ${{ inputs.artifact_generation || vars.ARTIFACT_GENERATION }}
+
       - name: download the libraries
         uses: ./.github/actions/make/kmp-libs
         with:
