@@ -26,6 +26,10 @@ inputs:
   rust-target:
     description: Additional target support to install via setup-and-cache-rust
     required: false
+  rust-cache:
+    description: Whether setup-and-cache-rust caches the cargo registry and build artifacts
+    required: false
+    default: 'true'
   rust-rustflags:
     description: Set the value of RUSTFLAGS via setup-and-cache-rust
     required: false
@@ -119,6 +123,7 @@ runs:
       with:
         target: ${{ inputs.rust-target }}
         rustflags: ${{ inputs.rust-rustflags }}
+        cache: ${{ inputs.rust-cache }}
 
     - name: Run make ${{ inputs.make-rule }} if needed
       if: steps.download.outputs.found != 'true' || inputs.always-run == 'true'

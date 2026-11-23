@@ -26,6 +26,10 @@ inputs:
   toolchain:
     description: Set this to overwrite the toolchain specified in rust-toolchain.toml
     required: false
+  cache:
+    description: Whether to cache the cargo registry and build artifacts
+    required: false
+    default: 'true'
 runs:
   using: composite
   steps:
@@ -58,6 +62,7 @@ runs:
           post: |
             sh ./scripts/clean.sh
     - name: Cache build artifacts
+      if: inputs.cache == 'true'
       uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
