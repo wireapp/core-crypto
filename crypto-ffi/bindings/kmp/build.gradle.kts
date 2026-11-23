@@ -127,6 +127,16 @@ providers.gradleProperty("bindingsLibrary").orNull?.let { library ->
     }
 }
 
+// make builds OxiKT's bindgen, so that it survives clean builds and CI can share it. Pointing the
+// task's input at it also drops the dependency on the task that would build it.
+providers.gradleProperty("bindgen").orNull?.let { path ->
+    val bindgenFile = layout.projectDirectory.file(path)
+    tasks.withType<BuildBindingsTask>().configureEach {
+        bindgen.set(bindgenFile)
+        bindgenReadyFile.set(bindgenFile)
+    }
+}
+
 afterEvaluate {
     publishing {
         publications.withType<MavenPublication>().configureEach {

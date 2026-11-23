@@ -40,11 +40,35 @@ $(JVM_WINDOWS_LIB): $(jvm-windows-deps)
 .PHONY: jvm-windows
 jvm-windows: $(JVM_WINDOWS_LIB) ## Build core-crypto-ffi for JVM on x86_64-pc-windows-gnu (needs mingw-w64)
 
+# OxiKT's bindgen. Gradle would build it into its build directory, which a clean build or CI
+# doesn't keep. Like uniffi-bindgen, it only depends on the version.
+GET_OXIKT_VERSION = perl -ne 'print "$$1\n" if /^oxikt\s=\s"([^"]+)"/' crypto-ffi/bindings/gradle/libs.versions.toml
+OXIKT_VERSION_FILE := $(STAMPS)/oxikt-version
+
+# Version file: only rewrite if version changed
+$(OXIKT_VERSION_FILE): crypto-ffi/bindings/gradle/libs.versions.toml
+	current_version="$$( $(GET_OXIKT_VERSION) )"; \
+	if [ ! -f $@ ] || [ "$$(cat $@)" != "$$current_version" ]; then \
+		mkdir -p $(STAMPS); \
+		echo "$$current_version" > $@; \
+	fi
+
+OXIKT_BINDGEN := target/oxikt/bin/uniffi-bindgen-kotlin-multiplatform
+oxikt-bindgen-deps := $(OXIKT_VERSION_FILE)
+$(OXIKT_BINDGEN): $(oxikt-bindgen-deps)
+	cargo install --locked --force --root target/oxikt \
+		--git https://github.com/UbiqueInnovation/oxikt.git --tag v$$(cat $(OXIKT_VERSION_FILE)) \
+		--bin uniffi-bindgen-kotlin-multiplatform uniffi_bindgen_kotlin_multiplatform
+
+.PHONY: oxikt-bindgen
+oxikt-bindgen: $(OXIKT_BINDGEN) ## Build OxiKT's bindgen binary
+
 # OxiKT packages the libraries make builds in `target`. Debug builds need the host's JVM and
 # Android libraries, release builds every JVM and Android library. On macOS, both also need the
 # Apple static libraries; elsewhere Kotlin/Native skips the Apple targets. For debug builds, OxiKT
 # picks the Android ABIs by the host's architecture, which doesn't always match the one make builds.
-KMP_GRADLE_ARGS := $(if $(RELEASE),-PreleaseBuild=true -PbindingsLibrary=$(abspath $(FFI_LIBRARY)),-PandroidAbis=$(ANDROID_TEST_ABI))
+KMP_GRADLE_ARGS := -Pbindgen=$(abspath $(OXIKT_BINDGEN)) \
+	$(if $(RELEASE),-PreleaseBuild=true -PbindingsLibrary=$(abspath $(FFI_LIBRARY)),-PandroidAbis=$(ANDROID_TEST_ABI))
 
 # The static library and its linker options, built with the given dynamic library
 kmp-apple-files = $(basename $(1)).a $(dir $(1))core_crypto_ffi.native-static-libs
@@ -71,7 +95,7 @@ KMP_ARTIFACT_TASKS := allMetadataJar jvmJar bundleAndroidMainAar iosArm64MainKli
 
 .PHONY: kmp
 kmp-deps := $(RUST_SOURCES) $(KT_FILES) $(KT_BUILD_FILES)
-kmp: $(KMP_LIBS) $(if $(RELEASE),$(FFI_LIBRARY)) ## Build the Kotlin multi-platform package
+kmp: $(KMP_LIBS) $(if $(RELEASE),$(FFI_LIBRARY)) | $(OXIKT_BINDGEN) ## Build the Kotlin multi-platform package
 	cd crypto-ffi/bindings && \
 	./gradlew $(addprefix core-crypto-kmp:,$(KMP_ARTIFACT_TASKS)) $(KMP_GRADLE_ARGS)
 
@@ -79,7 +103,8 @@ kmp: $(KMP_LIBS) $(if $(RELEASE),$(FFI_LIBRARY)) ## Build the Kotlin multi-platf
 # the jar with every JVM library.
 kmp-jvm-test-deps := $(RUST_SOURCES) $(KT_FILES) $(KT_BUILD_FILES)
 
-$(STAMPS)/kmp-jvm-test: $(kmp-jvm-test-deps) $(if $(RELEASE),$(KMP_JVM_RELEASE_LIBS) $(FFI_LIBRARY),$(JVM_LIB))
+$(STAMPS)/kmp-jvm-test: $(kmp-jvm-test-deps) $(if $(RELEASE),$(KMP_JVM_RELEASE_LIBS) $(FFI_LIBRARY),$(JVM_LIB)) \
+	| $(OXIKT_BINDGEN)
 	cd crypto-ffi/bindings && \
 	./gradlew core-crypto-kmp:jvmTest --rerun $(KMP_GRADLE_ARGS)
 	$(TOUCH_STAMP)
