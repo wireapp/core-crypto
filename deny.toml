@@ -42,6 +42,9 @@ ignore = [
   # `chrono` is unmaintained, but oauth2 is still using it:
   # https://github.com/ramosbugs/oauth2-rs/issues/351
   "RUSTSEC-2026-0543",
+  # fantoccini depends on an affected version of cookie; drop this
+  # once fantoccini is released with an updated cookie.
+  "RUSTSEC-2026-0594",
 ]
 
 [bans]
