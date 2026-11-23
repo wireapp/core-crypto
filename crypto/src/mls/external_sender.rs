@@ -1,9 +1,6 @@
 use openmls::{
     extensions::ExternalSender as MlsExternalSender,
-    prelude::{
-        BasicCredential, Credential as MlsCredential, OpenMlsSignaturePublicKey, SignatureScheme,
-        tls_codec::{Deserialize as _, Serialize as _, VLBytes},
-    },
+    prelude::{BasicCredential, OpenMlsSignaturePublicKey, SignatureScheme},
 };
 use rusty_jwt_tools::{
     jsonwebtoken::{
@@ -18,15 +15,6 @@ use crate::{Error, OpenMlsError, Result, mls_provider::CRYPTO};
 
 const WIRE_SERVER_IDENTITY: &str = "wire-server";
 
-/// The signature key and the credential of an external sender.
-///
-/// openmls keeps the fields of an `ExternalSender` to itself. RFC 9420 encodes an external sender as its signature
-/// key, an `opaque<V>`, followed by its credential.
-pub(crate) fn external_sender_parts(sender: &MlsExternalSender) -> Result<(Vec<u8>, MlsCredential), tls_codec::Error> {
-    let (key, credential) = <(VLBytes, MlsCredential)>::tls_deserialize_exact(sender.tls_serialize_detached()?)?;
-    Ok((key.into(), credential))
-}
-
 /// A RFC 9420 External Sender
 ///
 /// This can be used to initialize a subconversation.
@@ -40,9 +28,7 @@ impl ExternalSender {
     ///
     /// This produces the public key and matches [`Self::parse_public_key`].
     pub fn serialize(&self) -> Vec<u8> {
-        external_sender_parts(&self.0)
-            .expect("an external sender's encoding is its signature key and credential")
-            .0
+        self.0.signature_key().as_slice().to_vec()
     }
 
     /// Parse an external sender given a JWK.
