@@ -12,7 +12,8 @@ use async_lock::MutexGuardArc;
 use parking_lot::Mutex;
 use rusqlite::Connection;
 
-pub(crate) use self::{conn::TransactionConnection, mls::read_mls_entity};
+pub use self::mls::{MlsReadConnection, MlsStorage};
+pub(crate) use self::{conn::TransactionConnection, mls::MigrationStorage};
 use crate::{CryptoKeystoreResult, Database, UniqueArc, connection::TransactionGuard, entities::InboxMessage};
 
 const GUARD_EXPECTATION: &str = "connection guard is present for the lifetime of the transaction wrapper";

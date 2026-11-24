@@ -20,6 +20,6 @@ pub use self::{
     connection::{Database, deser, ser},
     database_key::DatabaseKey,
     error::{CryptoKeystoreError, CryptoKeystoreResult, RusqliteError, RusqliteErrorCode},
-    transaction::Transaction,
+    transaction::{MlsReadConnection, MlsStorage, Transaction},
     transactionlike::Transactionlike,
 };
