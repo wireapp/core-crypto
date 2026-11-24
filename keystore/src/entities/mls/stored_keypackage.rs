@@ -1,11 +1,10 @@
 use const_format::formatcp;
 use openmls::prelude::KeyPackage;
-use openmls_traits::key_store::MlsEntity;
 use rusqlite::{Connection, OptionalExtension as _, Row, named_params, params};
 use zeroize::ZeroizeOnDrop;
 
 use crate::{
-    CryptoKeystoreResult, Sha256Hash, Transactionlike,
+    CryptoKeystoreError, CryptoKeystoreResult, Sha256Hash, Transactionlike,
     ancillary::helpers,
     entities::StoredCredentialPk,
     traits::{
@@ -19,8 +18,7 @@ use crate::{
 /// This entity cannot be updated in the DB: the primary key is the OpenMLS hash reference of the
 /// key package itself, so two rows sharing a key necessarily share their contents. A save which
 /// disagrees is a bug, and reports
-/// [`CryptoKeystoreError::AlreadyExists`][crate::CryptoKeystoreError::AlreadyExists] instead of
-/// silently replacing the stored key package.
+/// [`CryptoKeystoreError::AlreadyExists`] instead of silently replacing the stored key package.
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, ZeroizeOnDrop)]
 pub struct StoredKeyPackage {
     pub key_package_ref: Vec<u8>,
@@ -32,6 +30,16 @@ pub struct StoredKeyPackage {
     pub hpke_init_public_key_hash: Sha256Hash,
     #[zeroize(skip)]
     pub leaf_encryption_key_hash: Sha256Hash,
+}
+
+/// A serialized key package together with its serialized private keys.
+///
+/// These are the three parts of an openmls `KeyPackageBundle`.
+#[derive(ZeroizeOnDrop)]
+pub(crate) struct KeyPackageWithPrivateKeys {
+    pub(crate) key_package: Vec<u8>,
+    pub(crate) hpke_init_private_key: Vec<u8>,
+    pub(crate) leaf_encryption_private_key: Vec<u8>,
 }
 
 impl StoredKeyPackage {
@@ -68,42 +76,18 @@ impl StoredKeyPackage {
         table_name = StoredKeyPackage::TABLE_NAME,
     );
 
-    /// Construct an instance from a pre-computed id, serialization, and a dynamic openmls entity
+    /// Construct an instance from a key package, its hash reference and its serialization.
     ///
-    /// Panics if `V` is not a `KeyPackage`. Fails if the key package's credential is X509 and its leaf certificate
-    /// can't be decoded, since then there's no `not_before` to find the credential by.
-    pub(crate) fn from_openmls<V: MlsEntity>(
-        id: &[u8],
+    /// Fails if the key package's credential is X509 and its leaf certificate can't be decoded, since then there's no
+    /// `not_before` to find the credential by.
+    pub(crate) fn from_key_package(
+        key_package_ref: Vec<u8>,
         serialization: Vec<u8>,
-        value: &V,
+        key_package: &KeyPackage,
     ) -> CryptoKeystoreResult<Self> {
-        // Ideally we'd write this whole section like
-        //
-        // ```rust
-        // let Some(key_package) = value.downcast::<KeyPackage>() else {
-        //     panic!();
-        // };
-        // ```
-        //
-        // but it turns out the `MlsEntity::downcast` impl is broken and just recurses infinitely.
-
-        // we use typeid and not the `MlsEntity::ID` const, because it's not a sealed trait and anything
-        // can claim any id there.
-        // we use typeid and not `std::any::TypeId::of` (or for that matter `std::any::Any::downcast`)
-        // because the std version requires `T: 'static`, which we can't get here without changing openmls
-        assert_eq!(
-            typeid::of::<V>(),
-            typeid::of::<KeyPackage>(),
-            "implementation error: only call this on a value known to be a key package"
-        );
-
-        // SAFETY: we just checked the type identity, and `KeyPackage` has no lifetime parameters,
-        // so we know this must be valid.
-        let key_package = unsafe { &*std::ptr::from_ref(value).cast::<KeyPackage>() };
-
         let leaf_node = key_package.leaf_node();
         Ok(Self {
-            key_package_ref: id.to_owned(),
+            key_package_ref,
             key_package: serialization,
             credential: StoredCredentialPk::from_mls_credential(
                 leaf_node.signature_key().as_slice(),
@@ -112,6 +96,82 @@ impl StoredKeyPackage {
             hpke_init_public_key_hash: Sha256Hash::hash_from(key_package.hpke_init_key().as_slice()),
             leaf_encryption_key_hash: Sha256Hash::hash_from(leaf_node.encryption_key().as_slice()),
         })
+    }
+
+    /// Store the private keys of the key package with this reference.
+    ///
+    /// The key package itself must already be saved.
+    pub(crate) fn save_private_keys<'a, Tx>(
+        tx: &'a Tx,
+        key_package_ref: &[u8],
+        hpke_init_private_key: &[u8],
+        leaf_encryption_private_key: &[u8],
+    ) -> CryptoKeystoreResult<()>
+    where
+        &'a Tx: Into<Transactionlike<'a>>,
+    {
+        let conn = tx.into().conn()?;
+        let changed = conn
+            .prepare_cached(formatcp!(
+                "UPDATE {table_name}
+                SET hpke_init_private_key = :hpke_init_private_key,
+                    leaf_encryption_private_key = :leaf_encryption_private_key
+                WHERE key_package_ref = :key_package_ref",
+                table_name = StoredKeyPackage::TABLE_NAME,
+            ))?
+            .execute(named_params! {
+                ":hpke_init_private_key": hpke_init_private_key,
+                ":leaf_encryption_private_key": leaf_encryption_private_key,
+                ":key_package_ref": key_package_ref,
+            })?;
+        if changed == 0 {
+            return Err(CryptoKeystoreError::NotFound(
+                "key package",
+                hex::encode(key_package_ref),
+            ));
+        }
+        Ok(())
+    }
+
+    /// Load the serialized key package with this reference, together with its private keys.
+    ///
+    /// Returns `None` if there is no such key package. Fails if the key package lacks a private key, as key
+    /// packages stored by the old openmls fork do.
+    pub(crate) fn load_with_private_keys(
+        conn: &Connection,
+        key_package_ref: &[u8],
+    ) -> CryptoKeystoreResult<Option<KeyPackageWithPrivateKeys>> {
+        let row = conn
+            .prepare_cached(formatcp!(
+                "SELECT key_package, hpke_init_private_key, leaf_encryption_private_key
+                FROM {table_name}
+                WHERE key_package_ref = ?",
+                table_name = StoredKeyPackage::TABLE_NAME,
+            ))?
+            .query_row(params![key_package_ref], |row| {
+                Ok((
+                    row.get::<_, Vec<u8>>("key_package")?,
+                    row.get::<_, Option<Vec<u8>>>("hpke_init_private_key")?,
+                    row.get::<_, Option<Vec<u8>>>("leaf_encryption_private_key")?,
+                ))
+            })
+            .optional()?;
+        let Some((key_package, hpke_init_private_key, leaf_encryption_private_key)) = row else {
+            return Ok(None);
+        };
+        let (Some(hpke_init_private_key), Some(leaf_encryption_private_key)) =
+            (hpke_init_private_key, leaf_encryption_private_key)
+        else {
+            return Err(CryptoKeystoreError::MlsKeyStoreError(format!(
+                "key package {} is missing a private key",
+                hex::encode(key_package_ref)
+            )));
+        };
+        Ok(Some(KeyPackageWithPrivateKeys {
+            key_package,
+            hpke_init_private_key,
+            leaf_encryption_private_key,
+        }))
     }
 
     fn from_row(row: &Row<'_>) -> rusqlite::Result<Self> {
