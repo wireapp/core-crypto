@@ -189,7 +189,6 @@ $(BROWSER_OUT) &: $(ts-browser-deps)
 	  --project packages/browser/tsconfig.json \
 	  -o $(BROWSER_OUT_DIR)/corecrypto.d.ts \
 	  --no-check \
-	  --export-referenced-types false \
 	  --external-inlines @ubjs/core \
 	  -- packages/browser/src/CoreCrypto.ts
 	@touch $@
@@ -250,7 +249,6 @@ $(TS_NATIVE_OUT) &: $(ts-native-deps)
 	  --project packages/native/tsconfig.json \
 	  -o $(TS_NATIVE_OUT_DIR)/corecrypto.d.ts \
 	  --no-check \
-	  --export-referenced-types false \
 	  packages/native/src/CoreCrypto.ts
 
 ts-native-darwin-deps := $(ts-native-deps)
