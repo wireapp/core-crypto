@@ -31,8 +31,7 @@ jobs:
       - name: all ubrn versions in corrections file must match version in package.json
         run: |
           ubrn_version="$(
-            jq -r '.devDependencies."uniffi-bindgen-react-native"' "$PACKAGE_JSON" |
-            sed -e 's/^[\^~]//'
+            jq -r '.devDependencies."uniffi-bindgen-react-native" | ltrimstr("^") | ltrimstr("~")' "$PACKAGE_JSON"
           )"
 
           yq -r '.manual_dependency_entries[] | select(.name | test("^@ubjs")) | .version' "$CORRECTIONS" |
