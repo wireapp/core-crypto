@@ -85,8 +85,8 @@
 <a href=#85 id=85 data-nosnippet>85</a></span><span class="kw">impl </span>KeyPackage {
 <a href=#86 id=86 data-nosnippet>86</a>    <span class="doccomment">/// Construct a new `Keypackage` from a byte array.
 <a href=#87 id=87 data-nosnippet>87</a>    </span><span class="attr">#[uniffi::constructor]
-<a href=#88 id=88 data-nosnippet>88</a>    </span><span class="kw">pub fn </span>new(bytes: <span class="kw-2">&amp;</span>[u8]) -&gt; CoreCryptoResult&lt;<span class="self">Self</span>&gt; {
-<a href=#89 id=89 data-nosnippet>89</a>        KeyPackageIn::tls_deserialize_exact(bytes)
+<a href=#88 id=88 data-nosnippet>88</a>    </span><span class="kw">pub fn </span>new(bytes: Vec&lt;u8&gt;) -&gt; CoreCryptoResult&lt;<span class="self">Self</span>&gt; {
+<a href=#89 id=89 data-nosnippet>89</a>        KeyPackageIn::tls_deserialize_exact(<span class="kw-2">&amp;</span>bytes)
 <a href=#90 id=90 data-nosnippet>90</a>            .map(|kp_in| <span class="self">Self</span>(Inner::In(kp_in)))
 <a href=#91 id=91 data-nosnippet>91</a>            .map_err(TlsCodecError::deserialize(<span class="string">"keypackagein"</span>))
 <a href=#92 id=92 data-nosnippet>92</a>            .map_err(RecursiveError::mls_conversation(<span class="string">"deserializing keypackage"</span>))

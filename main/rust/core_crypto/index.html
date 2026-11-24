@@ -34,12 +34,13 @@ express prior written consent of Wire Swiss GmbH.</p>
 <h4 id="jvm"><a class="doc-anchor" href="#jvm">§</a>JVM<a name="jvm"></a></h4>
 <ul>
 <li>Install <a href="https://sdkman.io/">SDKMAN!</a>: <code>curl -s "https://get.sdkman.io" | bash</code></li>
-<li>Install Java 17: <code>sdk install java 17.0.17-tem</code></li>
+<li>Install Java 25 (Temurin), e.g. <code>sdk install java 25.0.5-tem</code></li>
 <li>Install Kotlin: <code>sdk install kotlin</code></li>
 </ul>
 <div class="example-wrap"><pre class="language-sh"><code>make jvm       # make the JVM target
 make jvm-test  # make and test the JVM target</code></pre></div><h4 id="android"><a class="doc-anchor" href="#android">§</a>Android<a name="android"></a></h4>
-<p><a href="https://developer.android.com/studio">Install Android SDK</a> and Build-Tools for API level 30+</p>
+<p><a href="https://developer.android.com/studio">Install Android SDK</a> with the platform for API level 37, which the bindings
+compile against, and Build-Tools.</p>
 <blockquote>
 <p>If you are building on macOS you’ll need to setup <code>$ANDROID_SDK_ROOT</code> path variable manually:</p>
 <div class="example-wrap"><pre class="language-sh"><code>export ANDROID_SDK_ROOT=~/Android/Sdk</code></pre></div></blockquote>
@@ -48,7 +49,16 @@ make jvm-test  # make and test the JVM target</code></pre></div><h4 id="android"
 <p>Install android rust targets:</p>
 <div class="example-wrap"><pre class="language-sh"><code>rustup target add x86_64-linux-android aarch64-linux-android armv7-linux-androideabi</code></pre></div>
 <p>Build:</p>
-<div class="example-wrap"><pre class="language-sh"><code>make android</code></pre></div><h4 id="ios"><a class="doc-anchor" href="#ios">§</a>iOS<a name="ios"></a></h4>
+<div class="example-wrap"><pre class="language-sh"><code>make android</code></pre></div><h4 id="kmp"><a class="doc-anchor" href="#kmp">§</a>KMP<a name="kmp"></a></h4>
+<p>The Kotlin Multiplatform package covers Android, iOS and macOS, and Linux and Windows through its JVM target. It needs
+the <a href="#jvm">JVM</a> and <a href="#android">Android</a> requirements above: Gradle only includes the KMP module when <code>ANDROID_HOME</code> is
+set. Building the Apple targets needs macOS with Xcode; elsewhere they’re skipped.</p>
+<div class="example-wrap"><pre class="language-sh"><code>make kmp           # build the package
+make kmp-jvm-test  # run the JVM tests</code></pre></div>
+<p>make builds the Rust libraries, and <a href="https://oxikt.dev">OxiKT</a> packages them. Debug builds only need the host’s
+libraries. Release builds (<code>RELEASE=1</code>) need the libraries of every platform the package ships, so they’re made in CI,
+where each library is built by its own job. The Windows library is cross-compiled with mingw-w64 (<code>make jvm-windows</code>).</p>
+<h4 id="ios"><a class="doc-anchor" href="#ios">§</a>iOS<a name="ios"></a></h4>
 <p>Install Xcode &amp; its command-line tools: <a href="https://developer.apple.com/xcode/">https://developer.apple.com/xcode/</a>.</p>
 <p>Install <a href="https://github.com/krzysztofzablocki/sourcery">Sourcery</a></p>
 <div class="example-wrap"><pre class="language-sh"><code>brew install sourcery</code></pre></div>
@@ -133,6 +143,9 @@ make jvm
 # builds bindings and targets for Android
 make android
 
+# builds the Kotlin Multiplatform package
+make kmp
+
 # builds iOS framework
 make ios-create-xcframework
 
@@ -155,7 +168,7 @@ make ts</code></pre></div><h3 id="testing"><a class="doc-anchor" href="#testing"
 <h4 id="platform-specific-tests-for-wasmweb"><a class="doc-anchor" href="#platform-specific-tests-for-wasmweb">§</a>Platform-specific tests for WASM/Web<a name="platform-specific-tests-for-wasmweb"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make ts-test</code></pre></div>
 <p>Note the <code>CC_TEST_LOG_LEVEL</code> environment variable. At 1 it emits browser console logs; at 2 it also emits CoreCrypto
 logs.</p>
-<h4 id="platform-specific-tests-for-kotlinjvm"><a class="doc-anchor" href="#platform-specific-tests-for-kotlinjvm">§</a>Platform-specific tests for Kotlin/JVM<a name="platform-specific-tests-for-kotlinjvm"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make jvm-test</code></pre></div><h4 id="platform-specific-tests-for-android"><a class="doc-anchor" href="#platform-specific-tests-for-android">§</a>Platform-specific tests for Android<a name="platform-specific-tests-for-android"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make android-test</code></pre></div><h4 id="swiftios"><a class="doc-anchor" href="#swiftios">§</a>Swift/iOS<a name="swiftios"></a></h4>
+<h4 id="platform-specific-tests-for-kotlinjvm"><a class="doc-anchor" href="#platform-specific-tests-for-kotlinjvm">§</a>Platform-specific tests for Kotlin/JVM<a name="platform-specific-tests-for-kotlinjvm"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make jvm-test</code></pre></div><h4 id="platform-specific-tests-for-android"><a class="doc-anchor" href="#platform-specific-tests-for-android">§</a>Platform-specific tests for Android<a name="platform-specific-tests-for-android"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make android-test</code></pre></div><h4 id="platform-specific-tests-for-kmp"><a class="doc-anchor" href="#platform-specific-tests-for-kmp">§</a>Platform-specific tests for KMP<a name="platform-specific-tests-for-kmp"></a></h4><div class="example-wrap"><pre class="language-sh"><code>make kmp-jvm-test</code></pre></div><h4 id="swiftios"><a class="doc-anchor" href="#swiftios">§</a>Swift/iOS<a name="swiftios"></a></h4>
 <p>Currently works on macOS only.</p>
 <div class="example-wrap"><pre class="language-sh"><code>make ios-test</code></pre></div><h4 id="interop"><a class="doc-anchor" href="#interop">§</a>Interop<a name="interop"></a></h4>
 <ol>

@@ -375,12 +375,12 @@
 <a href=#375 id=375 data-nosnippet>375</a>
 <a href=#376 id=376 data-nosnippet>376</a>    <span class="doccomment">/// Remove a trust anchor by providing the certificates Subject Public Key Info (SPKI) fingerprint as bytes.
 <a href=#377 id=377 data-nosnippet>377</a>    /// Trying to remove trust anchor that doesn't exist in the database will just succeed.
-<a href=#378 id=378 data-nosnippet>378</a>    </span><span class="kw">pub async fn </span>remove_trust_anchor(<span class="kw-2">&amp;</span><span class="self">self</span>, fingerprint: <span class="kw-2">&amp;</span>[u8]) -&gt; CoreCryptoResult&lt;()&gt; {
+<a href=#378 id=378 data-nosnippet>378</a>    </span><span class="kw">pub async fn </span>remove_trust_anchor(<span class="kw-2">&amp;</span><span class="self">self</span>, fingerprint: Vec&lt;u8&gt;) -&gt; CoreCryptoResult&lt;()&gt; {
 <a href=#379 id=379 data-nosnippet>379</a>        <span class="self">self</span>.database()
 <a href=#380 id=380 data-nosnippet>380</a>            .ensure_transaction::&lt;<span class="kw">_</span>, CoreCryptoError&gt;(
 <a href=#381 id=381 data-nosnippet>381</a>                <span class="kw">async </span>|tx| {
 <a href=#382 id=382 data-nosnippet>382</a>                    <span class="self">self</span>.inner
-<a href=#383 id=383 data-nosnippet>383</a>                        .remove_trust_anchor(tx, fingerprint)
+<a href=#383 id=383 data-nosnippet>383</a>                        .remove_trust_anchor(tx, <span class="kw-2">&amp;</span>fingerprint)
 <a href=#384 id=384 data-nosnippet>384</a>                        .<span class="kw">await
 <a href=#385 id=385 data-nosnippet>385</a>                        </span>.map_err(Into::into)
 <a href=#386 id=386 data-nosnippet>386</a>                },

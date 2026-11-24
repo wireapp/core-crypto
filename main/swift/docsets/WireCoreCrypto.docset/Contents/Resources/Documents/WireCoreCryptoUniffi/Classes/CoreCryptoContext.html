@@ -17,7 +17,7 @@
     <a title="CoreCryptoContext Class Reference"></a>
     <header>
       <div class="content-wrapper">
-        <p><a href="../../index.html">WireCoreCrypto Docs</a> (91% documented)</p>
+        <p><a href="../../index.html">WireCoreCrypto Docs</a> (90% documented)</p>
         <div class="header-right">
           <form role="search" action="../../search.json">
             <input type="text" placeholder="Search documentation" data-typeahead>
@@ -412,6 +412,186 @@
                 <li class="item">
                   <div>
                     <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC7getData10Foundation0G0VSgyYaKF"></a>
+                    <a name="//apple_ref/swift/Method/getData()" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC7getData10Foundation0G0VSgyYaKF">getData()</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returns data previously stored by <code>set_data</code>, or <code>None</code> if no data has been stored.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">getData</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span><span class="p">?</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC11randomBytes3len10Foundation4DataVs6UInt32V_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/randomBytes(len:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC11randomBytes3len10Foundation4DataVs6UInt32V_tYaKF">randomBytes(len:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Generates <code>len</code> random bytes from the cryptographically secure RNG.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">randomBytes</span><span class="p">(</span><span class="nv">len</span><span class="p">:</span> <span class="kt">UInt32</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC7setData4datay10Foundation0G0V_tKF"></a>
+                    <a name="//apple_ref/swift/Method/setData(data:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC7setData4datay10Foundation0G0V_tKF">setData(data:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Stores arbitrary data to be used as a transaction checkpoint.</p>
+
+<p>The stored data can be retrieved via <code>get_data</code>. Keep the data size reasonable;
+ this is not a general-purpose key-value store.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">setData</span><span class="p">(</span><span class="nv">data</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC21e2eiConversationState14conversationIdAA04E2eigH0OAA0gJ0C_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/e2eiConversationState(conversationId:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC21e2eiConversationState14conversationIdAA04E2eigH0OAA0gJ0C_tYaKF">e2eiConversationState(conversationId:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returns the end-to-end identity verification state of the given conversation.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">e2eiConversationState</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/E2eiConversationState.html">E2eiConversationState</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC19getDeviceIdentities14conversationId9deviceIdsSayAA0A8IdentityVGAA012ConversationJ0C_SayAA06ClientJ0CGtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/getDeviceIdentities(conversationId:deviceIds:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC19getDeviceIdentities14conversationId9deviceIdsSayAA0A8IdentityVGAA012ConversationJ0C_SayAA06ClientJ0CGtYaKF">getDeviceIdentities(conversationId:<wbr>deviceIds:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returns the E2EI identity claims for the specified devices in the given conversation.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">getDeviceIdentities</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">deviceIds</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></span><span class="p">])</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/WireIdentity.html">WireIdentity</a></span><span class="p">]</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC17getUserIdentities14conversationId7userIdsSDyAA4UuidCSayAA0A8IdentityVGGAA012ConversationJ0C_SayAHGtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/getUserIdentities(conversationId:userIds:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC17getUserIdentities14conversationId7userIdsSDyAA4UuidCSayAA0A8IdentityVGGAA012ConversationJ0C_SayAHGtYaKF">getUserIdentities(conversationId:<wbr>userIds:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Returns the E2EI identity claims for the specified users in the given conversation, grouped by user ID.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">getUserIdentities</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">userIds</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/Uuid.html">Uuid</a></span><span class="p">])</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/Uuid.html">Uuid</a></span> <span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/WireIdentity.html">WireIdentity</a></span><span class="p">]]</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
                     <a name="/s:20WireCoreCryptoUniffi0bC7ContextC24addClientsToConversation14conversationId11keyPackagesyAA0iK0C_SayAA10KeyPackageCGtYaKF"></a>
                     <a name="//apple_ref/swift/Method/addClientsToConversation(conversationId:keyPackages:)" class="dashAnchor"></a>
                     <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC24addClientsToConversation14conversationId11keyPackagesyAA0iK0C_SayAA10KeyPackageCGtYaKF">addClientsToConversation(conversationId:<wbr>keyPackages:<wbr>)</a>
@@ -788,36 +968,6 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC21e2eiConversationState14conversationIdAA04E2eigH0OAA0gJ0C_tYaKF"></a>
-                    <a name="//apple_ref/swift/Method/e2eiConversationState(conversationId:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC21e2eiConversationState14conversationIdAA04E2eigH0OAA0gJ0C_tYaKF">e2eiConversationState(conversationId:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Returns the end-to-end identity verification state of the given conversation.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">e2eiConversationState</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Enums/E2eiConversationState.html">E2eiConversationState</a></span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
                     <a name="/s:20WireCoreCryptoUniffi0bC7ContextC20enableHistorySharing14conversationIdyAA012ConversationJ0C_tYaKF"></a>
                     <a name="//apple_ref/swift/Method/enableHistorySharing(conversationId:)" class="dashAnchor"></a>
                     <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC20enableHistorySharing14conversationIdyAA012ConversationJ0C_tYaKF">enableHistorySharing(conversationId:<wbr>)</a>
@@ -1043,66 +1193,6 @@
                 <li class="item">
                   <div>
                     <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC7getData10Foundation0G0VSgyYaKF"></a>
-                    <a name="//apple_ref/swift/Method/getData()" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC7getData10Foundation0G0VSgyYaKF">getData()</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Returns data previously stored by <code>set_data</code>, or <code>None</code> if no data has been stored.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">getData</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span><span class="p">?</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC19getDeviceIdentities14conversationId9deviceIdsSayAA0A8IdentityVGAA012ConversationJ0C_SayAA06ClientJ0CGtYaKF"></a>
-                    <a name="//apple_ref/swift/Method/getDeviceIdentities(conversationId:deviceIds:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC19getDeviceIdentities14conversationId9deviceIdsSayAA0A8IdentityVGAA012ConversationJ0C_SayAA06ClientJ0CGtYaKF">getDeviceIdentities(conversationId:<wbr>deviceIds:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Returns the E2EI identity claims for the specified devices in the given conversation.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">getDeviceIdentities</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">deviceIds</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></span><span class="p">])</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/WireIdentity.html">WireIdentity</a></span><span class="p">]</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
                     <a name="/s:20WireCoreCryptoUniffi0bC7ContextC17getExternalSender14conversationIdAA0gH0CAA012ConversationJ0C_tYaKF"></a>
                     <a name="//apple_ref/swift/Method/getExternalSender(conversationId:)" class="dashAnchor"></a>
                     <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC17getExternalSender14conversationIdAA0gH0CAA012ConversationJ0C_tYaKF">getExternalSender(conversationId:<wbr>)</a>
@@ -1154,36 +1244,6 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">getKeyPackages</span><span class="p">()</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/KeyPackageRef.html">KeyPackageRef</a></span><span class="p">]</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC17getUserIdentities14conversationId7userIdsSDyAA4UuidCSayAA0A8IdentityVGGAA012ConversationJ0C_SayAHGtYaKF"></a>
-                    <a name="//apple_ref/swift/Method/getUserIdentities(conversationId:userIds:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC17getUserIdentities14conversationId7userIdsSDyAA4UuidCSayAA0A8IdentityVGGAA012ConversationJ0C_SayAHGtYaKF">getUserIdentities(conversationId:<wbr>userIds:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Returns the E2EI identity claims for the specified users in the given conversation, grouped by user ID.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">getUserIdentities</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">userIds</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/Uuid.html">Uuid</a></span><span class="p">])</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/Uuid.html">Uuid</a></span> <span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Structs/WireIdentity.html">WireIdentity</a></span><span class="p">]]</span></code></pre>
 
                         </div>
                       </div>
@@ -1283,6 +1343,210 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">processWelcomeMessage</span><span class="p">(</span><span class="nv">welcomeMessage</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/Welcome.html">Welcome</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC29removeClientsFromConversation14conversationId7clientsyAA0iK0C_SayAA06ClientK0CGtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/removeClientsFromConversation(conversationId:clients:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC29removeClientsFromConversation14conversationId7clientsyAA0iK0C_SayAA06ClientK0CGtYaKF">removeClientsFromConversation(conversationId:<wbr>clients:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Removes the specified clients from the conversation, sending the resulting commit via the transport.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">removeClientsFromConversation</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">clients</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></span><span class="p">])</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC16removeCredential13credentialRefyAA0gI0C_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/removeCredential(credentialRef:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC16removeCredential13credentialRefyAA0gI0C_tYaKF">removeCredential(credentialRef:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Removes a <code><a href="../../WireCoreCryptoUniffi/Classes/Credential.html">Credential</a></code> from this client.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">removeCredential</span><span class="p">(</span><span class="nv">credentialRef</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/CredentialRef.html">CredentialRef</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC16removeKeyPackage5kpRefyAA0ghJ0C_tKF"></a>
+                    <a name="//apple_ref/swift/Method/removeKeyPackage(kpRef:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC16removeKeyPackage5kpRefyAA0ghJ0C_tKF">removeKeyPackage(kpRef:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Remove a <code><a href="../../WireCoreCryptoUniffi/Classes/KeyPackage.html">KeyPackage</a></code> from the database.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">removeKeyPackage</span><span class="p">(</span><span class="nv">kpRef</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/KeyPackageRef.html">KeyPackageRef</a></span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC20removeKeyPackagesFor13credentialRefyAA010CredentialK0C_tKF"></a>
+                    <a name="//apple_ref/swift/Method/removeKeyPackagesFor(credentialRef:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC20removeKeyPackagesFor13credentialRefyAA010CredentialK0C_tKF">removeKeyPackagesFor(credentialRef:<wbr>)</a>
+                    </code>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Remove all <code><a href="../../WireCoreCryptoUniffi/Classes/KeyPackage.html">KeyPackage</a></code>s associated with this credential ref.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">removeKeyPackagesFor</span><span class="p">(</span><span class="nv">credentialRef</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/CredentialRef.html">CredentialRef</a></span><span class="p">)</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC25setConversationCredential14conversationId13credentialRefyAA0gJ0C_AA0hL0CtYaKF"></a>
+                    <a name="//apple_ref/swift/Method/setConversationCredential(conversationId:credentialRef:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC25setConversationCredential14conversationId13credentialRefyAA0gJ0C_AA0hL0CtYaKF">setConversationCredential(conversationId:<wbr>credentialRef:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Set the credential ref for the given conversation.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">setConversationCredential</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">credentialRef</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/CredentialRef.html">CredentialRef</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC20updateKeyingMaterial14conversationIdyAA012ConversationJ0C_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/updateKeyingMaterial(conversationId:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC20updateKeyingMaterial14conversationIdyAA012ConversationJ0C_tYaKF">updateKeyingMaterial(conversationId:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Updates this client&rsquo;s key material in the conversation by sending an update commit.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">updateKeyingMaterial</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
+
+                        </div>
+                      </div>
+                    </section>
+                  </div>
+                </li>
+                <li class="item">
+                  <div>
+                    <code>
+                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC16wipeConversation14conversationIdyAA0gI0C_tYaKF"></a>
+                    <a name="//apple_ref/swift/Method/wipeConversation(conversationId:)" class="dashAnchor"></a>
+                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC16wipeConversation14conversationIdyAA0gI0C_tYaKF">wipeConversation(conversationId:<wbr>)</a>
+                    </code>
+                      <span class="declaration-note">
+                        Asynchronous
+                      </span>
+                  </div>
+                  <div class="height-container">
+                    <div class="pointer-container"></div>
+                    <section class="section">
+                      <div class="pointer"></div>
+                      <div class="abstract">
+                        <p>Destroys the local state of the given conversation; it can no longer be used locally after this call.</p>
+
+                      </div>
+                      <div class="declaration">
+                        <h4>Declaration</h4>
+                        <div class="language">
+                          <p class="aside-title">Swift</p>
+                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">wipeConversation</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
@@ -1787,270 +2051,6 @@
                         <div class="language">
                           <p class="aside-title">Swift</p>
                           <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">proteusSessionSave</span><span class="p">(</span><span class="nv">sessionId</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC11randomBytes3len10Foundation4DataVs6UInt32V_tYaKF"></a>
-                    <a name="//apple_ref/swift/Method/randomBytes(len:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC11randomBytes3len10Foundation4DataVs6UInt32V_tYaKF">randomBytes(len:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Generates <code>len</code> random bytes from the cryptographically secure RNG.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">randomBytes</span><span class="p">(</span><span class="nv">len</span><span class="p">:</span> <span class="kt">UInt32</span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Data</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC29removeClientsFromConversation14conversationId7clientsyAA0iK0C_SayAA06ClientK0CGtYaKF"></a>
-                    <a name="//apple_ref/swift/Method/removeClientsFromConversation(conversationId:clients:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC29removeClientsFromConversation14conversationId7clientsyAA0iK0C_SayAA06ClientK0CGtYaKF">removeClientsFromConversation(conversationId:<wbr>clients:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Removes the specified clients from the conversation, sending the resulting commit via the transport.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">removeClientsFromConversation</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">clients</span><span class="p">:</span> <span class="p">[</span><span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ClientId.html">ClientId</a></span><span class="p">])</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC16removeCredential13credentialRefyAA0gI0C_tYaKF"></a>
-                    <a name="//apple_ref/swift/Method/removeCredential(credentialRef:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC16removeCredential13credentialRefyAA0gI0C_tYaKF">removeCredential(credentialRef:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Removes a <code><a href="../../WireCoreCryptoUniffi/Classes/Credential.html">Credential</a></code> from this client.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">removeCredential</span><span class="p">(</span><span class="nv">credentialRef</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/CredentialRef.html">CredentialRef</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC16removeKeyPackage5kpRefyAA0ghJ0C_tKF"></a>
-                    <a name="//apple_ref/swift/Method/removeKeyPackage(kpRef:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC16removeKeyPackage5kpRefyAA0ghJ0C_tKF">removeKeyPackage(kpRef:<wbr>)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Remove a <code><a href="../../WireCoreCryptoUniffi/Classes/KeyPackage.html">KeyPackage</a></code> from the database.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">removeKeyPackage</span><span class="p">(</span><span class="nv">kpRef</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/KeyPackageRef.html">KeyPackageRef</a></span><span class="p">)</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC20removeKeyPackagesFor13credentialRefyAA010CredentialK0C_tKF"></a>
-                    <a name="//apple_ref/swift/Method/removeKeyPackagesFor(credentialRef:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC20removeKeyPackagesFor13credentialRefyAA010CredentialK0C_tKF">removeKeyPackagesFor(credentialRef:<wbr>)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Remove all <code><a href="../../WireCoreCryptoUniffi/Classes/KeyPackage.html">KeyPackage</a></code>s associated with this credential ref.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">removeKeyPackagesFor</span><span class="p">(</span><span class="nv">credentialRef</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/CredentialRef.html">CredentialRef</a></span><span class="p">)</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC25setConversationCredential14conversationId13credentialRefyAA0gJ0C_AA0hL0CtYaKF"></a>
-                    <a name="//apple_ref/swift/Method/setConversationCredential(conversationId:credentialRef:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC25setConversationCredential14conversationId13credentialRefyAA0gJ0C_AA0hL0CtYaKF">setConversationCredential(conversationId:<wbr>credentialRef:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Set the credential ref for the given conversation.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">setConversationCredential</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">,</span> <span class="nv">credentialRef</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/CredentialRef.html">CredentialRef</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC7setData4datay10Foundation0G0V_tKF"></a>
-                    <a name="//apple_ref/swift/Method/setData(data:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC7setData4datay10Foundation0G0V_tKF">setData(data:<wbr>)</a>
-                    </code>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Stores arbitrary data to be used as a transaction checkpoint.</p>
-
-<p>The stored data can be retrieved via <code>get_data</code>. Keep the data size reasonable;
- this is not a general-purpose key-value store.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">setData</span><span class="p">(</span><span class="nv">data</span><span class="p">:</span> <span class="kt">Data</span><span class="p">)</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC20updateKeyingMaterial14conversationIdyAA012ConversationJ0C_tYaKF"></a>
-                    <a name="//apple_ref/swift/Method/updateKeyingMaterial(conversationId:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC20updateKeyingMaterial14conversationIdyAA012ConversationJ0C_tYaKF">updateKeyingMaterial(conversationId:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Updates this client&rsquo;s key material in the conversation by sending an update commit.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">updateKeyingMaterial</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
-
-                        </div>
-                      </div>
-                    </section>
-                  </div>
-                </li>
-                <li class="item">
-                  <div>
-                    <code>
-                    <a name="/s:20WireCoreCryptoUniffi0bC7ContextC16wipeConversation14conversationIdyAA0gI0C_tYaKF"></a>
-                    <a name="//apple_ref/swift/Method/wipeConversation(conversationId:)" class="dashAnchor"></a>
-                    <a class="token" href="#/s:20WireCoreCryptoUniffi0bC7ContextC16wipeConversation14conversationIdyAA0gI0C_tYaKF">wipeConversation(conversationId:<wbr>)</a>
-                    </code>
-                      <span class="declaration-note">
-                        Asynchronous
-                      </span>
-                  </div>
-                  <div class="height-container">
-                    <div class="pointer-container"></div>
-                    <section class="section">
-                      <div class="pointer"></div>
-                      <div class="abstract">
-                        <p>Destroys the local state of the given conversation; it can no longer be used locally after this call.</p>
-
-                      </div>
-                      <div class="declaration">
-                        <h4>Declaration</h4>
-                        <div class="language">
-                          <p class="aside-title">Swift</p>
-                          <pre class="highlight swift"><code><span class="kd">open</span> <span class="kd">func</span> <span class="nf">wipeConversation</span><span class="p">(</span><span class="nv">conversationId</span><span class="p">:</span> <span class="kt"><a href="../../WireCoreCryptoUniffi/Classes/ConversationId.html">ConversationId</a></span><span class="p">)</span> <span class="k">async</span> <span class="k">throws</span></code></pre>
 
                         </div>
                       </div>
