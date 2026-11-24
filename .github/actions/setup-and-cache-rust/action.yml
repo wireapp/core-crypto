@@ -41,7 +41,7 @@ runs:
     - name: remove toolchain target list
       shell: bash
       run: |
-        perl -0777 -pi -e 's/^targets = \[.*?\]//ms' rust-toolchain.toml
+        yq -i 'del(.toolchain.targets)' rust-toolchain.toml
     - name:
       uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
       with:
