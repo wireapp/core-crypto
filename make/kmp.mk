@@ -42,12 +42,12 @@ jvm-windows: $(JVM_WINDOWS_LIB) ## Build core-crypto-ffi for JVM on x86_64-pc-wi
 
 # OxiKT's bindgen. Gradle would build it into its build directory, which a clean build or CI
 # doesn't keep. Like uniffi-bindgen, it only depends on the version.
-GET_OXIKT_VERSION = perl -ne 'print "$$1\n" if /^oxikt\s=\s"([^"]+)"/' crypto-ffi/bindings/gradle/libs.versions.toml
+GET_OXIKT_VERSION = yq -e -r '.versions.oxikt' crypto-ffi/bindings/gradle/libs.versions.toml
 OXIKT_VERSION_FILE := $(STAMPS)/oxikt-version
 
 # Version file: only rewrite if version changed
 $(OXIKT_VERSION_FILE): crypto-ffi/bindings/gradle/libs.versions.toml
-	current_version="$$( $(GET_OXIKT_VERSION) )"; \
+	current_version="$$( $(GET_OXIKT_VERSION) )" || { echo "Couldn't read the OxiKT version from libs.versions.toml" >&2; exit 1; }; \
 	if [ ! -f $@ ] || [ "$$(cat $@)" != "$$current_version" ]; then \
 		mkdir -p $(STAMPS); \
 		echo "$$current_version" > $@; \

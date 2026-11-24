@@ -9,12 +9,12 @@
 #
 # Avoid `cargo metadata` to get uniffi version. If we used that, the `cargo metadata` call would trigger a toolchain
 # installation in any workflow/step that depends on the uniffi lib.
-GET_UNIFFI_VERSION = perl -ne 'print "$$1\n" if /^uniffi\s=\s"([^"]+)"/' Cargo.toml
+GET_UNIFFI_VERSION = yq -e -r '.workspace.dependencies.uniffi' Cargo.toml
 UNIFFI_VERSION_FILE := $(STAMPS)/uniffi-version
 
 # Version file: only rewrite if version changed
 $(UNIFFI_VERSION_FILE): Cargo.lock
-	current_version="$$( $(GET_UNIFFI_VERSION) )"; \
+	current_version="$$( $(GET_UNIFFI_VERSION) )" || { echo "Couldn't read the uniffi version from Cargo.toml" >&2; exit 1; }; \
 	if [ ! -f $@ ] || [ "$$(cat $@)" != "$$current_version" ]; then \
 		mkdir -p .stamps; \
 	    echo "$$current_version" > $@; \
