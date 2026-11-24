@@ -54,13 +54,13 @@ jobs:
             exit 1
           fi
 
-          CARGO_VERSION=$(sed -n 's/^version = "\([^"]*\)"/\1/p' crypto-ffi/Cargo.toml)
+          CARGO_VERSION=$(yq -e -r '.workspace.package.version' Cargo.toml)
           GRADLE_VERSION=$(sed -n 's/^VERSION_NAME=//p' crypto-ffi/bindings/gradle.properties)
 
           exitcode=0
 
           if [[ "$CARGO_VERSION" != "$EXPECTED_VERSION" ]]; then
-            echo "Cargo package core-crypto-ffi version '$CARGO_VERSION' does not match release tag '$TAG_NAME'"
+            echo "Cargo workspace version '$CARGO_VERSION' does not match release tag '$TAG_NAME'"
             exitcode=1
           fi
 
