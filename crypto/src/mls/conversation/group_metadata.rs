@@ -1,9 +1,7 @@
 //! Deriving `PersistedMlsGroup`'s small denormalized columns from a live `openmls::group::MlsGroup`.
 //!
-//! Shared between [`super::immutable::MlsGroupState::persist`] (an established or newly-merged
-//! group) and [`super::pending::PendingConversation`] (a group awaiting external-commit
-//! confirmation): both need the same derivation, and it has to agree with what
-//! `keystore`'s `v39` and `v49` meta migrations backfilled for existing rows.
+//! Only used by [`super::immutable::MlsGroupState::persist`] (an established or newly-merged
+//! group): it has to agree with what `keystore`'s `v39` and `v49` meta migrations backfilled for existing rows.
 
 use core_crypto_keystore::{
     entities::{StoredCredential, StoredCredentialPk},

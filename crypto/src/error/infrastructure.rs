@@ -37,7 +37,6 @@ impl Infrastructural for crate::mls::conversation::Error {
             | Self::MissingExternalSenderExtension
             | Self::MissingGroupInfo
             | Self::PendingCommitNotFound
-            | Self::PendingConversationNotFound
             | Self::ClearingPendingCommitError
             | Self::SelfCommitIgnored
             | Self::CallerError(_)
