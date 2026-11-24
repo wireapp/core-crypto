@@ -215,13 +215,91 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
 
+    use async_lock::Mutex;
     use core_crypto_keystore::{entities::PersistedMlsGroup, traits::FetchFromDatabase as _};
 
     use crate::{
-        ConversationConfiguration, DecryptedMessage, DecryptionOutcome, DeferralReason, RejectionReason, test_utils::*,
-        transaction_context::Error,
+        CommitBundle, ConversationConfiguration, DecryptedMessage, DecryptionOutcome, DeferralReason, HistorySecret,
+        MlsTransport, RejectionReason, TransportData, test_utils::*, transaction_context::Error,
     };
+
+    #[derive(Debug, Default)]
+    struct TransportWithLostCommitResponse {
+        sent_bundle: Mutex<Option<CommitBundle>>,
+    }
+
+    #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+    #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
+    impl MlsTransport for TransportWithLostCommitResponse {
+        async fn send_commit_bundle(&self, commit_bundle: CommitBundle) -> crate::Result<()> {
+            let replaced = self.sent_bundle.lock().await.replace(commit_bundle);
+            assert!(replaced.is_none(), "this provider only tests sending a single bundle");
+            Err(crate::Error::ErrorDuringMlsTransport("commit response lost".into()))
+        }
+
+        async fn prepare_for_transport(&self, _secret: &HistorySecret) -> crate::Result<TransportData> {
+            unreachable!("this test transport only sends commits")
+        }
+    }
+
+    #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+    #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
+    impl MlsTransportTestExt for TransportWithLostCommitResponse {
+        async fn latest_commit_bundle(&self) -> CommitBundle {
+            self.sent_bundle.lock().await.clone().expect("a commit was sent")
+        }
+    }
+
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn external_join_can_complete_after_a_lost_commit_response() {
+        let case = TestContext::default();
+        let [alice, mut bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice]).await;
+        let id = conversation.id().clone();
+        let group_info = conversation.export_group_info().await;
+        let transport = Arc::new(TransportWithLostCommitResponse::default());
+        bob.replace_transport(transport.clone()).await;
+
+        let err = bob
+            .transaction
+            .join_by_external_commit(group_info, &bob.initial_credential)
+            .await
+            .unwrap_err();
+        assert!(innermost_source_matches!(
+            err,
+            crate::Error::ErrorDuringMlsTransport(message) if message == "commit response lost"
+        ));
+        let join_commit = transport.latest_commit().await.to_bytes().unwrap();
+
+        // The commit reached the delivery service even though Bob missed its response.
+        let outcome = alice
+            .transaction
+            .decrypt_message(&id, join_commit.clone())
+            .await
+            .unwrap();
+        assert!(outcome.into_single_decrypted().is_commit());
+
+        // Bob handles the send error and commits his transaction before receiving his own join commit.
+        bob.commit_transaction().await;
+        let pending = bob
+            .transaction
+            .database()
+            .unwrap()
+            .get_borrowed::<PersistedMlsGroup>(id.as_ref().keystore())
+            .await
+            .unwrap()
+            .expect("a lost commit response must leave the pending join in the database");
+        assert!(pending.is_pending);
+
+        let outcome = bob.transaction.decrypt_message(&id, join_commit).await.unwrap();
+        assert!(outcome.into_single_decrypted().is_commit());
+        assert_eq!(
+            bob.transaction.conversation(&id).await.unwrap().epoch().await,
+            conversation.guard().await.epoch().await
+        );
+    }
 
     #[apply(all_cred_cipher)]
     async fn join_by_external_commit_should_succeed(case: TestContext) {
