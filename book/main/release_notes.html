@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-35c1ef28.js";
+            window.path_to_searchindex_js = "searchindex-17bef76a.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-779a2ee0.js"></script>
@@ -185,6 +185,8 @@ removed. See <a href="cc12/whats-new.html#new-decrypt_message-api">What’s New<
 <li>The epoch observer now receives epoch change notifications in several cases for which those notifications were
 accidentally omitted in the past.</li>
 <li>InvalidCredentials is now a typed error. Clients can now catch and swallow it to avoid a transaction rollback.</li>
+<li>The JVM, Android and KMP packages are now compiled with Kotlin 2.4. Projects using them need at least Kotlin 2.3 to
+read them.</li>
 </ul>
 <h4 id="typescript"><a class="header" href="#typescript">TypeScript</a></h4>
 <ul>
@@ -222,6 +224,20 @@ right after awaiting a call may need to wait for them.</p>
 <li>
 <p>Browser: databases are stored in a different directory in OPFS. A CoreCrypto 11 database moves there the first time
 it’s opened, with the same location and key.</p>
+</li>
+</ul>
+<h4 id="kotlin-multiplatform"><a class="header" href="#kotlin-multiplatform">Kotlin Multiplatform</a></h4>
+<ul>
+<li>
+<p>The package is now built with OxiKT (<a href="https://oxikt.dev">https://oxikt.dev</a>) instead of Gobley, and depends on <code>dev.oxikt:runtime</code>
+instead of Gobley’s runtime.</p>
+</li>
+<li>
+<p>Android projects need to compile against at least SDK 37 (<code>compileSdk = 37</code>), which the OxiKT runtime requires.</p>
+</li>
+<li>
+<p>The JVM jar now contains the native library for aarch64 and x86_64 macOS, aarch64 and x86_64 Linux, and x86_64
+Windows. Before, it only contained aarch64 macOS and x86_64 Linux.</p>
 </li>
 </ul>
 <h4 id="bug-fixes"><a class="header" href="#bug-fixes">Bug Fixes</a></h4>
