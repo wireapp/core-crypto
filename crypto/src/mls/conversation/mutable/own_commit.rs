@@ -1,74 +1,30 @@
-use openmls::{
-    group::MlsGroup,
-    prelude::{ConfirmationTag, CredentialWithKey},
-};
-use openmls_traits::OpenMlsCryptoProvider as _;
+use openmls::prelude::ConfirmationTag;
 
 use super::{ConversationMut, Error, Result};
-use crate::{
-    DecryptedMessage, RecursiveError,
-    mls::{conversation::mutable::decrypt::Commit, credential::ext::CredentialExt},
-};
+use crate::DecryptedMessage;
 
 impl ConversationMut {
-    pub(crate) async fn handle_own_commit(&mut self, ct: &ConfirmationTag) -> Result<DecryptedMessage> {
-        let group = self.group().await;
-        if group.pending_commit().is_none() {
-            // This either means the DS replayed one of our commit OR we cleared a commit accepted by the DS
-            // In both cases, CoreCrypto cannot be of any help since it cannot decrypt self commits
-            // => deflect this case and let the caller handle it
-            return Err(Error::SelfCommitIgnored);
+    /// Ensure that a pending commit exists and has the correct confirmation tag, then merge it.
+    pub(crate) async fn handle_own_commit(&mut self, confirmation_tag: &ConfirmationTag) -> Result<DecryptedMessage> {
+        {
+            let group = self.group().await;
+            let Some(pending_commit) = group.pending_commit() else {
+                // This either means the DS replayed one of our commit OR we cleared a commit accepted by the DS
+                // In both cases, CoreCrypto cannot be of any help since it cannot decrypt self commits
+                // => deflect this case and let the caller handle it
+                return Err(Error::SelfCommitIgnored);
+            };
+            if pending_commit.get_confirmation_tag() != confirmation_tag {
+                // this would mean we created a commit that got accepted by the DS but we cleared it locally
+                // then somehow retried and created another commit. This is a manifest client error
+                // and should be identified as such
+                return Err(Error::ClearingPendingCommitError);
+            }
         }
-
-        if !Self::eq_pending_commit(&group, ct) {
-            // this would mean we created a commit that got accepted by the DS but we cleared it locally
-            // then somehow retried and created another commit. This is a manifest client error
-            // and should be identified as such
-            return Err(Error::ClearingPendingCommitError);
-        }
-        drop(group);
 
         // incoming is from ourselves and it's the same as the local pending commit
         // => merge the pending commit & continue
-        self.merge_pending_commit().await
-    }
-
-    /// Compare incoming commit with local pending commit
-    fn eq_pending_commit(group: &MlsGroup, commit_ct: &ConfirmationTag) -> bool {
-        group
-            .pending_commit()
-            .is_some_and(|pending_commit| pending_commit.get_confirmation_tag() == commit_ct)
-    }
-
-    /// When the incoming commit is sent by ourselves and it's the same as the local pending commit.
-    /// This adapts [Self::commit_accepted] to return the same as
-    /// [crate::mls::conversation::ConversationMut::decrypt_message]
-    pub(crate) async fn merge_pending_commit(&mut self) -> Result<DecryptedMessage> {
-        self.commit_accepted().await?;
-
-        let group = self.group().await;
-
-        let own_leaf = group
-            .own_leaf()
-            .ok_or(Error::MlsGroupInvalidState("own_leaf is None"))?;
-
-        // We return self identity here, probably not necessary to check revocation
-        let own_leaf_credential_with_key = CredentialWithKey {
-            credential: own_leaf.credential().clone(),
-            signature_key: own_leaf.signature_key().clone(),
-        };
-        let pki_env = self.crypto_provider().await?.authentication_service().pki_env().await;
-        let identity = own_leaf_credential_with_key
-            .extract_identity(self.cipher_suite().signature_algorithm(), pki_env.as_deref())
-            .await
-            .map_err(RecursiveError::context("extracting identity"))?;
-
-        let decrypted_message = DecryptedMessage::Commit(Commit {
-            is_active: self.group().await.is_active(),
-            identity,
-        });
-
-        Ok(decrypted_message)
+        self.merge_commit().await
     }
 }
 

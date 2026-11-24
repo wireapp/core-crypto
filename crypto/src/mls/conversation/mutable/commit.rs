@@ -2,14 +2,15 @@
 
 use std::{borrow::Borrow, collections::HashMap};
 
-use openmls::prelude::KeyPackageIn;
+use openmls::prelude::{CredentialWithKey, KeyPackageIn};
+use openmls_traits::OpenMlsCryptoProvider as _;
 
 use super::history_sharing::HistoryClientUpdateOutcome;
 use crate::{
-    ClientId, ClientIdRef, CredentialRef, GroupInfoBundle, OpenMlsError, RecursiveError,
+    ClientId, ClientIdRef, Commit, CredentialRef, DecryptedMessage, GroupInfoBundle, OpenMlsError, RecursiveError,
     mls::{
         conversation::{ConversationMut, Error, Result, commit::CommitBundle},
-        credential::Credential,
+        credential::{Credential, ext::CredentialExt as _},
     },
 };
 
@@ -30,20 +31,45 @@ impl ConversationMut {
             }
             return Err(send_err);
         }
-        self.merge_commit().await
+        self.merge_commit().await.map(|_| ())
     }
 
-    pub(super) async fn merge_commit(&mut self) -> Result<()> {
+    /// Merge the pending commit, returning the [`Commit`] produced.
+    ///
+    /// This adapts [Self::commit_accepted] to return a type compatible with
+    /// [crate::mls::conversation::ConversationMut::decrypt_message], and also
+    /// ensures that the epoch change is propagated.
+    pub(crate) async fn merge_commit(&mut self) -> Result<DecryptedMessage> {
         self.commit_accepted().await?;
-        let conversation_id = self.id().to_owned();
-        let epoch = self.epoch().await;
 
         self.tx_context
-            .queue_epoch_changed(conversation_id, epoch)
+            .queue_epoch_changed(self.id.clone(), self.epoch().await)
             .await
             .map_err(RecursiveError::context("queueing epoch changed notification"))?;
 
-        Ok(())
+        let group = self.group().await;
+
+        let own_leaf = group
+            .own_leaf()
+            .ok_or(Error::MlsGroupInvalidState("own_leaf is None"))?;
+
+        // We return self identity here, probably not necessary to check revocation
+        let own_leaf_credential_with_key = CredentialWithKey {
+            credential: own_leaf.credential().clone(),
+            signature_key: own_leaf.signature_key().clone(),
+        };
+        let pki_env = self.crypto_provider().await?.authentication_service().pki_env().await;
+        let identity = own_leaf_credential_with_key
+            .extract_identity(self.cipher_suite().signature_algorithm(), pki_env.as_deref())
+            .await
+            .map_err(RecursiveError::context("extracting identity"))?;
+
+        let decrypted_message = DecryptedMessage::Commit(Commit {
+            is_active: self.group().await.is_active(),
+            identity,
+        });
+
+        Ok(decrypted_message)
     }
 
     /// Send the commit via [crate::MlsTransport] and handle the response.

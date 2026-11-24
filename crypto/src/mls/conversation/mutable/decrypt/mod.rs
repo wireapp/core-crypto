@@ -170,12 +170,6 @@ impl ConversationMut {
                     );
                 }
                 Effect::EpochAdvanced { new_epoch, is_active } => {
-                    // notify the epoch change in every case
-                    self.tx_context
-                        .queue_epoch_changed(self.id.clone(), new_epoch)
-                        .await
-                        .map_err(RecursiveError::context("queueing epoch change notification"))?;
-
                     // if we're no longer in the group, cleanup is simpler
                     if !is_active {
                         self.wipe().await?;
@@ -223,7 +217,7 @@ impl ConversationMut {
                 .is_some_and(|(pending_ct, message_ct)| pending_ct == message_ct)
             {
                 drop(group);
-                return self.merge_pending_commit().await.map(Into::into).map(Some);
+                return self.merge_commit().await.map(Into::into).map(Some);
             }
         }
         Ok(Some(DeferralReason::PendingJoin.into()))

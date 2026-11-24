@@ -110,11 +110,10 @@ impl TransactionContext {
                 "merge_pending_commit",
                 async || {
                     pending_conversation
-                        .merge_pending_commit()
+                        .merge_commit()
                         .await
-                        .map_err(RecursiveError::context("merging pending commit"))?;
-                    self.queue_epoch_changed(pending_conversation.id().to_owned(), pending_conversation.epoch().await)
-                        .await
+                        .map_err(RecursiveError::context("merging pending commit"))
+                        .map_err(Into::into)
                 },
                 Error::savepoint,
             )
@@ -251,7 +250,7 @@ mod tests {
                 .conversation_regardless_of_pending_status(&id)
                 .await
                 .unwrap()
-                .merge_pending_commit()
+                .merge_commit()
                 .await
                 .unwrap();
             let conversation = external_commit.notify_members().await;

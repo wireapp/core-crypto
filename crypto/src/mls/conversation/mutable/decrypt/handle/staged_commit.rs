@@ -3,7 +3,7 @@ use obfuscate::Obfuscated;
 use openmls::group::StagedCommit;
 
 use crate::{
-    Commit, DecryptedMessage, OpenMlsError, WireIdentity,
+    Commit, DecryptedMessage, OpenMlsError, RecursiveError, WireIdentity,
     mls::conversation::{ConversationMut, Result},
 };
 
@@ -56,6 +56,13 @@ pub(in crate::mls::conversation::mutable::decrypt) async fn handle(
         proposals:? = staged_commit.queued_proposals().map(Obfuscated::from).collect::<Vec<_>>();
         "Epoch advanced"
     );
+    conversation
+        .tx_context
+        .queue_epoch_changed(conversation.id.to_owned(), epoch)
+        .await
+        .map_err(RecursiveError::context(
+            "queueing epoch change notice handling staged commit",
+        ))?;
 
     Ok(DecryptedMessage::Commit(Commit { is_active, identity }))
 }
