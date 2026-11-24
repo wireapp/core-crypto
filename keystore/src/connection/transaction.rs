@@ -20,6 +20,7 @@ use crate::{
 pub(crate) enum ConnectionGuard<'a> {
     Transaction(TransactionConnection),
     Database(MutexGuard<'a, Connection>),
+    Borrowed(&'a Connection),
 }
 
 impl Deref for ConnectionGuard<'_> {
@@ -29,6 +30,7 @@ impl Deref for ConnectionGuard<'_> {
         match self {
             ConnectionGuard::Transaction(transaction_connection) => transaction_connection.deref(),
             ConnectionGuard::Database(mutex_guard) => mutex_guard.deref(),
+            ConnectionGuard::Borrowed(connection) => connection,
         }
     }
 }
@@ -93,7 +95,7 @@ impl Database {
     /// The returned type is deliberately `!Send` because there is an inner lock
     /// which is synchronous (for good reason, see field-level docs on `Transaction::conn`);
     /// holding that lock across an await point would wedge the database.
-    pub(crate) async fn conn<'a>(&'a self) -> impl 'a + Deref<Target = Connection> {
+    pub(crate) async fn conn<'a>(&'a self) -> ConnectionGuard<'a> {
         if let Some(weak) = self.transaction.lock().await.clone()
             && let Some(wrapper) = weak.upgrade_without_type_erasure().await
             && let Ok(transaction_connection) = TransactionConnection::shared(wrapper)

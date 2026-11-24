@@ -10,16 +10,25 @@ use crate::{CryptoKeystoreResult, connection::ConnectionGuard};
 /// - for general usage, our transaction implementation works better in a long-lived async context
 ///
 /// This type generalizes over borrowed instances of each.
-#[derive(derive_more::From)]
+#[derive(Clone, Copy, derive_more::From)]
 pub enum Transactionlike<'a> {
     Rusqlite(&'a rusqlite::Transaction<'a>),
     Keystore(&'a crate::Transaction),
 }
 
+impl<'a, 'b> From<&'b Transactionlike<'a>> for Transactionlike<'b>
+where
+    'a: 'b,
+{
+    fn from(transaction: &'b Transactionlike<'a>) -> Self {
+        *transaction
+    }
+}
+
 impl<'a> Transactionlike<'a> {
     pub(crate) fn conn(&self) -> CryptoKeystoreResult<ConnectionGuard<'a>> {
         let guard = match self {
-            Transactionlike::Rusqlite(transaction) => (*transaction).into(),
+            Transactionlike::Rusqlite(transaction) => ConnectionGuard::Borrowed(transaction),
             Transactionlike::Keystore(transaction) => transaction.conn()?.into(),
         };
         Ok(guard)
