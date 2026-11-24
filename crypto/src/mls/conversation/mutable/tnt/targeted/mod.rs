@@ -848,7 +848,7 @@ mod tests {
         // Normally the DS would reject this as it produces `E+1` in contention
         // with Alice's, but the fundamental requirement for this scenario is
         // that the DS lost Alice's `E+1`.
-        let (commit_guard, _pending_conversation) = conversation
+        let commit_guard = conversation
             .acting_as(&charlie)
             .await
             .external_join_via_group_info_unmerged(&bob, charlies_group_info)

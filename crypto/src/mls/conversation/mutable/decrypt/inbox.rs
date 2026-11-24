@@ -652,12 +652,21 @@ mod tests {
             let proposal_remove_114_1 = proposal_guard.message();
             let conversation = proposal_guard.finish();
 
+            let id = conversation.id().clone();
+
             // now bump the epoch in external_0: the new member has joined
-            let (commit_guard, mut pending_conversation) = conversation.external_join_unmerged(&new_member).await;
+            let commit_guard = conversation.external_join_unmerged(&new_member).await;
 
             let new_member_join_commit = commit_guard.message();
 
-            pending_conversation.merge().await.unwrap();
+            new_member
+                .transaction
+                .conversation_regardless_of_pending_status(&id)
+                .await
+                .unwrap()
+                .merge_pending_commit()
+                .await
+                .unwrap();
             let conversation = commit_guard.process_member_changes().await.finish();
 
             // also create the same proposal with the epoch increased by 1

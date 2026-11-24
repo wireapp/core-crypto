@@ -232,7 +232,7 @@ mod tests {
             let id = conversation.id().clone();
 
             // Bob tries to join Alice's group
-            let (external_commit, mut pending_conversation) = conversation.external_join_unmerged(&bob).await;
+            let external_commit = conversation.external_join_unmerged(&bob).await;
 
             // Alice acks the request and adds the new member
             assert_eq!(external_commit.conversation().member_count().await, 1);
@@ -247,7 +247,13 @@ mod tests {
             // Let's say backend accepted our external commit.
             // So Bob can merge the commit and update the local state
             assert!(bob.transaction.conversation(&id).await.is_err());
-            pending_conversation.merge().await.unwrap();
+            bob.transaction
+                .conversation_regardless_of_pending_status(&id)
+                .await
+                .unwrap()
+                .merge_pending_commit()
+                .await
+                .unwrap();
             let conversation = external_commit.notify_members().await;
             assert_eq!(conversation.member_count().await, 2);
             assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
@@ -283,7 +289,7 @@ mod tests {
             let conversation = case.create_conversation([&alice]).await;
 
             // Bob tries to join Alice's group
-            let (commit_guard, _pending_conversation) = conversation.external_join_unmerged(&bob).await;
+            let commit_guard = conversation.external_join_unmerged(&bob).await;
 
             // BUT for some reason the Delivery Service will reject this external commit
             // e.g. another commit arrived meanwhile and the [GroupInfo] is no longer valid
@@ -361,21 +367,31 @@ mod tests {
     }
 
     #[apply(all_cred_cipher)]
-    async fn clear_pending_group_should_succeed(case: TestContext) {
+    async fn wiping_a_pending_join_removes_the_group(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
             let conversation = case.create_conversation([&alice]).await;
 
-            let initial_count = alice.transaction.count_entities().await;
-
-            // Bob tries to join Alice's group
-            let (_, mut pending_conversation) = conversation.external_join_unmerged(&bob).await;
+            let commit_guard = conversation.external_join_unmerged(&bob).await;
+            let conversation = commit_guard.finish();
+            assert_eq!(bob.transaction.count_entities().await.pending_group, 1);
 
             // But for some reason, Bob wants to abort joining the group
-            pending_conversation.clear().await.unwrap();
+            bob.transaction
+                .conversation_regardless_of_pending_status(conversation.id())
+                .await
+                .unwrap()
+                .wipe()
+                .await
+                .unwrap();
 
-            let final_count = alice.transaction.count_entities().await;
-            assert_eq!(initial_count, final_count);
+            assert_eq!(bob.transaction.count_entities().await.pending_group, 0);
+            assert!(
+                !bob.transaction
+                    .conversation_exists(conversation.id(), None)
+                    .await
+                    .unwrap()
+            );
         })
         .await
     }
@@ -538,8 +554,7 @@ mod tests {
         assert_eq!(alice.transaction.count_entities().await.pending_messages, 1);
 
         // Alice gives up on her desynchronized state and rejoins. The DS hasn't confirmed her join yet.
-        let (commit_guard, _pending_conversation) =
-            conversation.acting_as(&bob).await.external_join_unmerged(&alice).await;
+        let commit_guard = conversation.acting_as(&bob).await.external_join_unmerged(&alice).await;
         assert_eq!(
             alice.transaction.count_entities().await.pending_messages,
             0,
@@ -595,7 +610,7 @@ mod tests {
         let conversation = case.create_conversation([&alice]).await;
 
         // Bob's first attempt to join never reaches the DS, so Alice never sees it.
-        let (commit_guard, _first_attempt) = conversation.external_join_unmerged(&bob).await;
+        let commit_guard = conversation.external_join_unmerged(&bob).await;
         let conversation = commit_guard.finish();
 
         // Meanwhile Alice speaks. Bob's join is pending, so he buffers her message.
@@ -612,7 +627,7 @@ mod tests {
         assert_eq!(bob.transaction.count_entities().await.pending_messages, 1);
 
         // Bob tries again.
-        let (commit_guard, _second_attempt) = conversation.external_join_unmerged(&bob).await;
+        let commit_guard = conversation.external_join_unmerged(&bob).await;
         assert_eq!(
             bob.transaction.count_entities().await.pending_messages,
             0,

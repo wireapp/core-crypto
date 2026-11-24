@@ -56,10 +56,16 @@ mod tests {
             let conversation = case.create_conversation([&alice]).await;
 
             // an external commit to verify that we can still detect wrong epoch correctly
-            let (commit_guard, mut pending_conversation) = conversation.external_join_unmerged(&bob).await;
+            let commit_guard = conversation.external_join_unmerged(&bob).await;
             let unknown_ext_commit = commit_guard.message();
-            pending_conversation.clear().await.unwrap();
             let conversation = commit_guard.finish();
+            bob.transaction
+                .conversation_regardless_of_pending_status(conversation.id())
+                .await
+                .unwrap()
+                .wipe()
+                .await
+                .unwrap();
 
             let commit_guard = conversation.external_join(&bob).await;
             let ext_commit = commit_guard.message();

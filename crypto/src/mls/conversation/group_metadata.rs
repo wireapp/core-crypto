@@ -173,7 +173,7 @@ mod tests {
         let id = conversation.id().clone();
 
         // Bob's leaf is not in the ratchet tree yet: it is in the commit he has just staged.
-        let (commit_guard, mut pending_conversation) = conversation.external_join_unmerged(&bob).await;
+        let commit_guard = conversation.external_join_unmerged(&bob).await;
         assert_eq!(
             persisted_credential(&bob, &id).await,
             expected_credential(&bob.initial_credential),
@@ -181,7 +181,13 @@ mod tests {
         );
 
         let conversation = commit_guard.notify_members().await;
-        pending_conversation.merge().await.unwrap();
+        bob.transaction
+            .conversation_regardless_of_pending_status(&id)
+            .await
+            .unwrap()
+            .merge_pending_commit()
+            .await
+            .unwrap();
 
         // and it still agrees once the leaf really is in the tree
         assert_eq!(

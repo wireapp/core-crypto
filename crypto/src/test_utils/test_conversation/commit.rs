@@ -5,10 +5,7 @@ use super::{
     TestConversation,
     operation_guard::{AddGuard, Commit, OperationGuard, TestOperation},
 };
-use crate::{
-    CredentialRef,
-    mls::{conversation::PendingConversation, credential::Credential},
-};
+use crate::{CredentialRef, mls::credential::Credential};
 
 impl<'a> TestConversation<'a> {
     /// Invite all sessions into this conversation and notify all members, old and new.
@@ -264,12 +261,8 @@ impl<'a> TestConversation<'a> {
         )
     }
 
-    /// Like [Self::external_join], but with "unmerged" state on the joiners session. To merge, call
-    /// [PendingConversation::merge].
-    pub(crate) async fn external_join_unmerged(
-        self,
-        joiner: &'a SessionContext,
-    ) -> (OperationGuard<'a, Commit>, PendingConversation) {
+    /// Like [Self::external_join], but leaves the join pending on the joining session.
+    pub(crate) async fn external_join_unmerged(self, joiner: &'a SessionContext) -> OperationGuard<'a, Commit> {
         let group_info = self.export_group_info().await;
         self.external_join_via_group_info_unmerged(joiner, group_info).await
     }
@@ -280,24 +273,18 @@ impl<'a> TestConversation<'a> {
     /// use the [`notify_members` method][OperationGuard::notify_members] of
     /// the returned item.
     ///
-    /// The pending conversation is persisted before it is returned.
-    /// [`TransactionContext::create_external_join_commit`] deliberately does not do that:
-    /// [`TransactionContext::join_by_external_commit`] merges immediately, so on the happy path
-    /// the row would only ever be written to be deleted again. A caller which holds an unmerged
-    /// pending conversation across other operations is in the state that survives a failed merge,
-    /// and that state is on disk, so this reproduces it.
+    /// The joining session has a persisted pending conversation and can merge it by processing its own commit.
     pub(crate) async fn external_join_via_group_info_unmerged(
         self,
         joiner: &'a SessionContext,
         group_info: VerifiableGroupInfo,
-    ) -> (OperationGuard<'a, Commit>, PendingConversation) {
+    ) -> OperationGuard<'a, Commit> {
         let joiner_credential_ref = joiner.initial_credential.clone();
-        let (join_commit, _, pending_conversation) = joiner
+        let (join_commit, _) = joiner
             .transaction
-            .create_external_join_commit(group_info, &joiner_credential_ref)
+            .create_external_join_commit_test(group_info, &joiner_credential_ref)
             .await
             .unwrap();
-        pending_conversation.save().await.unwrap();
 
         // if this is a rejoin, make sure that the joiner doesn't receive their join commit again
         let already_notified: &[usize] = if self.is_member(joiner).await {
@@ -306,14 +293,11 @@ impl<'a> TestConversation<'a> {
             &[]
         };
 
-        (
-            OperationGuard::new(
-                TestOperation::ExternalJoin(joiner),
-                join_commit.commit,
-                self,
-                already_notified.iter().copied(),
-            ),
-            pending_conversation,
+        OperationGuard::new(
+            TestOperation::ExternalJoin(joiner),
+            join_commit.commit,
+            self,
+            already_notified.iter().copied(),
         )
     }
 
