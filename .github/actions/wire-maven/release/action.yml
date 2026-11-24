@@ -34,7 +34,7 @@ runs:
     - name: release the staging repository
       shell: bash
       run: |
-        scripts/wire-maven.py release "$STAGED" \
-          --version "$(sed -n 's/^VERSION_NAME=//p' crypto-ffi/bindings/gradle.properties)"
+        version=$(yq -e -r '.VERSION_NAME' crypto-ffi/bindings/gradle.properties)
+        scripts/wire-maven.py release "$STAGED" --version "$version"
       env:
         STAGED: ${{ runner.temp }}/wire-maven-${{ inputs.platform }}

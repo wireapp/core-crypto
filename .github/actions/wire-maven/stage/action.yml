@@ -60,8 +60,9 @@ runs:
         for artifact in $ARTIFACTS; do
           expected+=(--expect-artifact "$artifact")
         done
+        version=$(yq -e -r '.VERSION_NAME' crypto-ffi/bindings/gradle.properties)
         scripts/wire-maven.py verify crypto-ffi/bindings/build/wire-maven \
-          --version "$(sed -n 's/^VERSION_NAME=//p' crypto-ffi/bindings/gradle.properties)" \
+          --version "$version" \
           --key-id "$PGP_KEY_ID" \
           "${expected[@]}"
       env:

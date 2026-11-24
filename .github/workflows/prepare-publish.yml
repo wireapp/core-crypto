@@ -55,7 +55,7 @@ jobs:
           fi
 
           CARGO_VERSION=$(yq -e -r '.workspace.package.version' Cargo.toml)
-          GRADLE_VERSION=$(sed -n 's/^VERSION_NAME=//p' crypto-ffi/bindings/gradle.properties)
+          GRADLE_VERSION=$(yq -e -r '.VERSION_NAME' crypto-ffi/bindings/gradle.properties)
 
           exitcode=0
 
