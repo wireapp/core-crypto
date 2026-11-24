@@ -3,13 +3,13 @@
 use core_crypto_keystore::{entities::InboxMessage, traits::DeletableBySearchKey as _};
 use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
-use super::Result;
+use super::{Error, Result};
 use crate::{
     CommitBundle, ConversationConfiguration, ConversationId, CredentialRef, GroupInfoBundle, KeystoreError,
     OpenMlsError, RecursiveError,
     mls::{
         self,
-        conversation::{ConversationIdRef, PendingConversation},
+        conversation::{ConversationIdRef, ConversationMut},
     },
     transaction_context::TransactionContext,
 };
@@ -52,36 +52,83 @@ impl TransactionContext {
         group_info: VerifiableGroupInfo,
         credential_ref: &CredentialRef,
     ) -> Result<ConversationId> {
-        let (commit_bundle, id, mut pending_conversation) =
-            self.create_external_join_commit(group_info, credential_ref).await?;
+        let inner = self.inner()?;
+        // savepoint here: creating external join commit may overwrite an existing conversation, but we need to be able
+        // to roll that back
+        let mut pending_conversation = inner
+            .with_savepoint(
+                "create_external_join_commit",
+                async || {
+                    let (commit_bundle, pending_conversation) =
+                        self.create_external_join_commit(group_info, credential_ref).await?;
+                    let transport = self.mls_transport().await?;
+                    // We want to rollback on exactly one outcome of sending the commit bundle: an explicit rejection.
+                    // Everything else gets propagated, because it allows for the possibility that the DS received
+                    // the commit bundle and then the response got lost.
+                    //
+                    // However, as we don't know ahead of time where in the error chain that rejection
+                    // woudld be reported, we have to just walk the whole chain.
+                    let outcome = transport
+                        .send_commit_bundle(commit_bundle)
+                        .await
+                        .map(|()| pending_conversation)
+                        .map_err(RecursiveError::context(
+                            "sending commit bundle for external join commit",
+                        ))
+                        .map_err(Into::into);
+                    if let Err(outcome_err) = &outcome {
+                        let mut err: &dyn std::error::Error = outcome_err;
+                        let was_rejected = loop {
+                            if let Some(err) = err.downcast_ref()
+                                && matches!(err, mls::conversation::Error::MessageRejected { .. })
+                            {
+                                break true;
+                            }
+                            let Some(inner) = err.source() else {
+                                break false;
+                            };
+                            err = inner;
+                        };
+                        if was_rejected {
+                            // outcome is definitely an error in this branch, so this will never trigger,
+                            // but this map is necessary for the types to work out.
+                            return outcome.map(Ok);
+                        }
+                    }
+                    // We already checked if the outcome was a rejection, so now we can just Ok-wrap it
+                    // so that nothing else causes a savepoint rollback. This ensures we have the capability
+                    // to restore it later if the DS did receive it and then later delivers it to us.
+                    Ok(outcome)
+                },
+                Error::savepoint,
+            )
+            .await??;
 
-        if let Err(err) = pending_conversation.send_commit(commit_bundle).await {
-            let is_message_rejected = matches!(err, mls::conversation::Error::MessageRejected { .. });
-            let err = RecursiveError::context("sending commit")(err).into();
-            if !is_message_rejected {
-                // for anything except a message rejected, attempt to save here so we can recover later
-                // (a message rejected error will always be that though, don't bother in that case)
-                // (and don't shadow the existing error)
-                let _ = pending_conversation.save().await;
-            }
-            return Err(err);
-        }
+        // savepoint here: if merge fails, rollback recovers pending state for recovery
+        inner
+            .with_savepoint(
+                "merge_pending_commit",
+                async || {
+                    pending_conversation
+                        .merge_pending_commit()
+                        .await
+                        .map_err(RecursiveError::context("merging pending commit"))?;
+                    self.queue_epoch_changed(pending_conversation.id().to_owned(), pending_conversation.epoch().await)
+                        .await
+                },
+                Error::savepoint,
+            )
+            .await?;
 
-        if let Err(err) = pending_conversation.merge().await {
-            // here also, we need to attempt to persist the pending conversation for recovery later
-            // and once again, the existing error is more important than a failure to save
-            let _ = pending_conversation.save().await;
-            return Err(RecursiveError::context("merging from external commit")(err).into());
-        }
-
-        Ok(id)
+        Ok(pending_conversation.id().to_owned())
     }
 
-    pub(crate) async fn create_external_join_commit(
+    /// Create an external join commit, persisting the pending conversation.
+    async fn create_external_join_commit(
         &self,
         group_info: VerifiableGroupInfo,
         credential_ref: &CredentialRef,
-    ) -> Result<(CommitBundle, ConversationId, PendingConversation)> {
+    ) -> Result<(CommitBundle, ConversationMut)> {
         let inner = self.inner()?;
         let cipher_suite = group_info.ciphersuite().into();
         let mls_provider = self.crypto_provider().await?;
@@ -129,7 +176,8 @@ impl TransactionContext {
         let group_info = GroupInfoBundle::try_new_full_plaintext(group_info)
             .map_err(RecursiveError::context("trying new full plaintext group info bundle"))?;
 
-        let pending_conversation = PendingConversation::from_mls_group(group, self.clone())
+        let pending_conversation = self
+            .persist_conversation_from_mls_group(group, configuration, true)
             .await
             .map_err(RecursiveError::context("creating pending conversation"))?;
 
@@ -152,7 +200,17 @@ impl TransactionContext {
             encrypted_message: None,
         };
 
-        Ok((commit_bundle, id, pending_conversation))
+        Ok((commit_bundle, pending_conversation))
+    }
+
+    /// Exactly as [`Self::create_external_join_commit`], but crate-public for testing
+    #[cfg(test)]
+    pub(crate) async fn create_external_join_commit_test(
+        &self,
+        group_info: VerifiableGroupInfo,
+        credential_ref: &CredentialRef,
+    ) -> Result<(CommitBundle, ConversationMut)> {
+        self.create_external_join_commit(group_info, credential_ref).await
     }
 }
 
