@@ -602,6 +602,68 @@ mod tests {
         .await
     }
 
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn rejected_rejoin_preserves_the_conversation_and_its_inbox() {
+        let mut case = TestContext::default();
+        let [alice, bob, delivery_service] = case.sessions().await;
+        // A non-default external sender lets us check that rollback restores the configuration too.
+        let conversation = case
+            .create_conversation_with_external_sender(&delivery_service, [&alice, &bob])
+            .await;
+        let id = conversation.id().clone();
+        let established = alice.transaction.conversation(&id).await.unwrap();
+        let established_epoch = established.epoch().await;
+        let external_senders = established.configuration().await.external_senders.clone();
+        assert_eq!(external_senders.len(), 1);
+
+        // Alice misses Bob's update and buffers the application message he sends after it.
+        let update = conversation.acting_as(&bob).await.update().await;
+        let update_bytes = update.message().to_bytes().unwrap();
+        let message = update
+            .conversation()
+            .guard()
+            .await
+            .encrypt_message("buffered")
+            .await
+            .unwrap();
+        let conversation = update.finish().acting_as(&bob).await;
+        let outcome = alice.transaction.decrypt_message(&id, message).await.unwrap();
+        assert!(matches!(
+            outcome.into_single_deferred(),
+            DeferralReason::FutureEpoch { .. }
+        ));
+
+        alice
+            .replace_transport(Arc::new(CoreCryptoTransportAbortProvider))
+            .await;
+        let error = alice
+            .transaction
+            .join_by_external_commit(conversation.export_group_info().await, &alice.initial_credential)
+            .await
+            .unwrap_err();
+        assert!(innermost_source_matches!(
+            error,
+            crate::mls::conversation::Error::MessageRejected { .. }
+        ));
+
+        let restored = alice.transaction.conversation(&id).await.unwrap();
+        assert_eq!(restored.epoch().await, established_epoch);
+        assert_eq!(
+            restored.configuration().await.external_senders,
+            external_senders,
+            "a rejected rejoin must preserve the established conversation's external senders"
+        );
+        let outcomes = alice.transaction.decrypt_message(&id, update_bytes).await.unwrap();
+        let plaintexts = outcomes
+            .into_iter()
+            .filter_map(|outcome| match outcome {
+                DecryptionOutcome::Decrypted(DecryptedMessage::ApplicationMessage(message)) => Some(message.plaintext),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(plaintexts, [b"buffered".to_vec()]);
+    }
+
     /// Starting a rejoin discards the messages the old group had buffered, but messages which arrive while the
     /// rejoin is pending belong to the new group, so they are replayed once the join commit is merged.
     #[apply(all_cred_cipher)]
