@@ -213,8 +213,7 @@ Make sure you have all prerequisites:
 
   ```sh
   wasm_bindgen_version="$(
-    cargo metadata --format-version 1 |
-    jq -r '.packages[] | select (.name == "wasm-bindgen") | .version'
+    yq -p toml -o toml -r '.package[] | select(.name == "wasm-bindgen") | .version' Cargo.lock
   )"
   cargo install wasm-bindgen-cli --version $wasm_bindgen_version
   ```

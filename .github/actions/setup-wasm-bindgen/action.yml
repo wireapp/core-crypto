@@ -7,10 +7,7 @@ runs:
       id: cargo_metadata
       shell: bash
       run: |
-        version=$(
-          cargo metadata --format-version 1 |
-          jq -r '.packages[] | select(.name == "wasm-bindgen") | .version'
-        )
+        version=$(yq -e -p toml -o toml -r '.package[] | select(.name == "wasm-bindgen") | .version' Cargo.lock)
         echo "wasm_bindgen_version=$version" >> "$GITHUB_OUTPUT"
 
     - name: Install wasm-bindgen-cli

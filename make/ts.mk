@@ -100,12 +100,11 @@ endef
 
 # The wasm-bindgen CLI must exactly match the `wasm-bindgen` crate in `Cargo.lock`. Its schema
 # version check only catches some mismatches; others fail later, when the CLI expects runtime
-# symbols from a newer crate. In `Cargo.lock`, each package's `version` line directly follows its
-# `name` line.
-WASM_BINDGEN_LOCKED_VERSION = $(shell cargo metadata --format-version 1 --locked 2>/dev/null | jq -r '.packages[] | select(.name == "wasm-bindgen") | .version')
+# symbols from a newer crate.
+GET_WASM_BINDGEN_LOCKED_VERSION = yq -e -p toml -o toml -r '.package[] | select(.name == "wasm-bindgen") | .version' Cargo.lock
 
 define check-wasm-bindgen
-@locked='$(WASM_BINDGEN_LOCKED_VERSION)'; \
+@locked="$$( $(GET_WASM_BINDGEN_LOCKED_VERSION) )" || { echo "Couldn't read the wasm-bindgen version from Cargo.lock" >&2; exit 1; }; \
 if ! installed=$$(wasm-bindgen --version 2>/dev/null); then \
 	installed='not installed'; \
 else \
