@@ -104,7 +104,7 @@ pub enum CryptoKeystoreError {
     #[error("The migration failed: {0}")]
     MigrationFailed(String),
     #[cfg(target_os = "unknown")]
-    #[error("{context}")]
+    #[error("{context}: {error}")]
     OpfsError {
         context: &'static str,
         #[source]

@@ -2,6 +2,11 @@
 
 ## CoreCrypto 11
 
+### Unreleased
+
+- Browser keystore startup retries once after an OPFS worker initialization timeout and reports the retry failure if it
+  also fails.
+
 ### v11.0.2 - 2026-11-21
 
 - InvalidCredentials is now a typed error. Clients can now catch and swallow it to avoid a transaction rollback.

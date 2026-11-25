@@ -310,9 +310,10 @@ function fail(error) {
 
 /**
  * @param {string} directory
+ * @param {number} timeoutMilliseconds
  * @returns {Promise<void>}
  */
-export async function start(directory) {
+export async function start(directory, timeoutMilliseconds) {
     if (
         !globalThis.navigator?.storage?.getDirectory ||
         !Wasm.Suspending ||
@@ -320,32 +321,110 @@ export async function start(directory) {
     ) {
         throw new Error("OPFS and JSPI are required");
     }
+    const firstTimeoutError = createStartupTimeoutError(timeoutMilliseconds);
+    try {
+        await startWorker({ directory, timeoutMilliseconds, timeoutError: firstTimeoutError });
+    } catch (firstFailure) {
+        if (firstFailure !== firstTimeoutError) {
+            throw firstFailure;
+        }
+
+        const retryTimeoutError = createStartupTimeoutError(timeoutMilliseconds);
+        try {
+            await startWorker({ directory, timeoutMilliseconds, timeoutError: retryTimeoutError });
+        } catch (retryFailure) {
+            const retryMessage = retryFailure instanceof Error
+                ? `${retryFailure.name}: ${retryFailure.message}`
+                : String(retryFailure);
+            throw new Error(
+                `${firstTimeoutError.message}; retry failed: ${retryMessage}`,
+                { cause: retryFailure },
+            );
+        }
+    }
+}
+
+/**
+ * Creates the identity marker for this startup attempt's deadline.
+ *
+ * @param {number} timeoutMilliseconds
+ * @returns {Error}
+ */
+function createStartupTimeoutError(timeoutMilliseconds) {
+    const timeoutError = new Error(`OPFS worker initialization timed out after ${timeoutMilliseconds} ms`);
+    timeoutError.name = "OpfsWorkerStartupTimeout";
+    return timeoutError;
+}
+
+/**
+ * @typedef {object} StartupAttempt
+ * @property {string} directory
+ * @property {number} timeoutMilliseconds
+ * @property {Error} timeoutError
+ */
+
+/**
+ * Starts one worker and rejects if its initialization does not reply before its deadline.
+ *
+ * @param {StartupAttempt} attempt
+ * @returns {Promise<void>}
+ */
+async function startWorker({ directory, timeoutMilliseconds, timeoutError }) {
     // Inlined as a blob so that bundlers don't need to serve a separate worker asset.
     const url = URL.createObjectURL(new Blob([`(${workerMain})();`], { type: "text/javascript" }));
+    /** @type {Worker} */
+    let attemptWorker;
     try {
-        worker = new Worker(url);
+        attemptWorker = new Worker(url);
     } finally {
         URL.revokeObjectURL(url);
     }
+    worker = attemptWorker;
+
     /** @param {MessageEvent<WorkerReply>} event */
-    worker.onmessage = ({ data: { seq, value, error } }) => {
-        // A reply can outlive its call, e.g. once `fail` has rejected it. The sequence number keeps it from
-        // settling a later call.
-        if (inflight?.seq !== seq) return;
+    attemptWorker.onmessage = function handleWorkerMessage({ data: { seq, value, error } }) {
+        // Replies from a worker that timed out must not settle this or any later worker's call.
+        if (worker !== attemptWorker || inflight?.seq !== seq) {
+            return;
+        }
         const call = inflight;
         inflight = undefined;
-        if (error) call.reject(new DOMException(error.message, error.name));
-        else call.resolve(value);
+        if (error) {
+            call.reject(new DOMException(error.message, error.name));
+        } else {
+            call.resolve(value);
+        }
     };
-    worker.onerror = (event) => fail(new Error(event.message || "OPFS worker failed"));
-    worker.onmessageerror = () => fail(new Error("OPFS worker message could not be decoded"));
+    attemptWorker.onerror = function handleWorkerError(event) {
+        if (worker !== attemptWorker) {
+            return;
+        }
+        fail(new Error(event.message || "OPFS worker failed"));
+    };
+    attemptWorker.onmessageerror = function handleWorkerMessageError() {
+        if (worker !== attemptWorker) {
+            return;
+        }
+        fail(new Error("OPFS worker message could not be decoded"));
+    };
+
+    const initPromise = rpc("init", [directory]);
+    const initSequence = inflight?.seq;
+    const timer = setTimeout(function handleStartupTimeout() {
+        if (worker === attemptWorker && inflight?.seq === initSequence) {
+            fail(timeoutError);
+        }
+    }, timeoutMilliseconds);
     try {
-        await rpc("init", [directory]);
-    } catch (error) {
-        // The next open retries with a fresh worker; don't leak this one.
-        worker.terminate();
-        worker = undefined;
-        throw error;
+        await initPromise;
+    } catch (failure) {
+        attemptWorker.terminate();
+        if (worker === attemptWorker) {
+            worker = undefined;
+        }
+        throw failure;
+    } finally {
+        clearTimeout(timer);
     }
 }
 

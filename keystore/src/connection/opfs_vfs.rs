@@ -27,7 +27,7 @@ use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 #[wasm_bindgen(module = "/src/connection/opfs_vfs.js")]
 extern "C" {
-    fn start(directory: &str) -> Promise;
+    fn start(directory: &str, timeout_milliseconds: u32) -> Promise;
     fn exists(name: &str) -> Promise;
     fn open(name: &str, create: bool) -> Promise;
     fn remove(name: &str) -> Promise;
@@ -123,20 +123,29 @@ fn settle(promise: Promise, code: VfsErrorCode) -> VfsResult<JsValue> {
             // Let the next request through.
             abandon();
         }
-        let get = |key: &str| Reflect::get(&value, &key.into()).ok().and_then(|x| x.as_string());
-        let name = get("name");
-        let code = match name.as_deref() {
-            Some("QuotaExceededError") => VfsErrorCode::Full,
-            Some("NoModificationAllowedError") if code == VfsErrorCode::CantOpen => VfsErrorCode::Busy,
-            Some("NotFoundError") if code == VfsErrorCode::IoDelete => VfsErrorCode::IoDeleteNoEntry,
-            _ => code,
-        };
-        let message = get("message").unwrap_or_else(|| format!("{value:?}"));
-        VfsError::new(
-            code,
-            format!("OPFS {}: {message}", name.as_deref().unwrap_or("error")).into(),
-        )
+        vfs_error_from_js(value, code)
     })
+}
+
+/// Converts a rejected JavaScript worker call to the error exposed through SQLite.
+fn vfs_error_from_js(value: JsValue, code: VfsErrorCode) -> VfsError {
+    let get = |key: &str| {
+        Reflect::get(&value, &key.into())
+            .ok()
+            .and_then(|property| property.as_string())
+    };
+    let name = get("name");
+    let code = match name.as_deref() {
+        Some("QuotaExceededError") => VfsErrorCode::Full,
+        Some("NoModificationAllowedError") if code == VfsErrorCode::CantOpen => VfsErrorCode::Busy,
+        Some("NotFoundError") if code == VfsErrorCode::IoDelete => VfsErrorCode::IoDeleteNoEntry,
+        _ => code,
+    };
+    let message = get("message").unwrap_or_else(|| format!("{value:?}"));
+    VfsError::new(
+        code,
+        format!("OPFS {}: {message}", name.as_deref().unwrap_or("error")).into(),
+    )
 }
 
 pub(super) enum WorkerFile {
@@ -287,7 +296,8 @@ pub(super) fn install(name: &str, os: impl OsCallback + 'static, _guard: &Sqlite
     {
         return Ok(());
     }
-    settle(start(name), VfsErrorCode::CantOpen)?;
+    jspi_block_on_promise(&start(name, WORKER_TIMEOUT_MS as u32))
+        .map_err(|error| vfs_error_from_js(error, VfsErrorCode::CantOpen))?;
     // SAFETY: registration is serialized by the caller holding `SqliteGuard`,
     // and `Io`/`Vfs` use the matching store and callback types.
     let registration =
