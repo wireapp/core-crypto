@@ -215,14 +215,14 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
+    use std::sync::{Arc, Weak};
 
     use async_lock::Mutex;
     use core_crypto_keystore::{entities::PersistedMlsGroup, traits::FetchFromDatabase as _};
 
     use crate::{
-        CommitBundle, ConversationConfiguration, DecryptedMessage, DecryptionOutcome, DeferralReason, HistorySecret,
-        MlsTransport, RejectionReason, TransportData, test_utils::*, transaction_context::Error,
+        CommitBundle, ConversationConfiguration, CoreCrypto, DecryptedMessage, DecryptionOutcome, DeferralReason,
+        HistorySecret, MlsTransport, RejectionReason, TransportData, test_utils::*, transaction_context::Error,
     };
 
     #[derive(Debug, Default)]
@@ -298,6 +298,98 @@ mod tests {
         assert_eq!(
             bob.transaction.conversation(&id).await.unwrap().epoch().await,
             conversation.guard().await.epoch().await
+        );
+    }
+
+    #[derive(Debug)]
+    struct TransportThatClearsPkiEnvironment {
+        core_crypto: Weak<CoreCrypto>,
+        sent_bundle: Mutex<Option<CommitBundle>>,
+    }
+
+    #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+    #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
+    impl MlsTransport for TransportThatClearsPkiEnvironment {
+        async fn send_commit_bundle(&self, commit_bundle: CommitBundle) -> crate::Result<()> {
+            *self.sent_bundle.lock().await = Some(commit_bundle);
+            self.core_crypto.upgrade().unwrap().set_pki_environment(None).await;
+            Ok(())
+        }
+
+        async fn prepare_for_transport(&self, _secret: &HistorySecret) -> crate::Result<TransportData> {
+            unreachable!("this test transport only sends commits")
+        }
+    }
+
+    #[cfg_attr(target_os = "unknown", async_trait::async_trait(?Send))]
+    #[cfg_attr(not(target_os = "unknown"), async_trait::async_trait)]
+    impl MlsTransportTestExt for TransportThatClearsPkiEnvironment {
+        async fn latest_commit_bundle(&self) -> CommitBundle {
+            self.sent_bundle.lock().await.clone().expect("a commit was sent")
+        }
+    }
+
+    /// We want to ensure that any rollback during external join restores the pending epoch in both
+    /// the DB and the cache, and can succeed later once the problem is resolved.
+    ///
+    /// We accomplish that by temporarily disabling the PKI environment. That particular error is
+    /// unlikely to be the actual cause of a rollback, but it lets us temporarily induce a failure
+    /// in the right place.
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn failed_external_join_merge_leaves_the_conversation_pending() {
+        let case = TestContext::default_x509();
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice]).await;
+        let id = conversation.id();
+        let epoch_before_join = conversation.guard().await.epoch().await;
+        let group_info = conversation.export_group_info().await;
+        let core_crypto = bob.core_crypto();
+        let pki_environment = core_crypto.get_pki_environment().await.unwrap();
+
+        // The transport accepts the commit and removes the PKI environment before the local merge.
+        bob.replace_transport(Arc::new(TransportThatClearsPkiEnvironment {
+            core_crypto: Arc::downgrade(&core_crypto),
+            sent_bundle: Mutex::new(None),
+        }))
+        .await;
+        let error = bob
+            .transaction
+            .join_by_external_commit(group_info, &bob.initial_credential)
+            .await
+            .unwrap_err();
+        assert!(innermost_source_matches!(
+            error,
+            crate::mls::credential::Error::MissingPKIEnvironment
+        ));
+
+        let persisted = bob
+            .database()
+            .get_borrowed::<PersistedMlsGroup>(id.as_ref().keystore())
+            .await
+            .unwrap()
+            .expect("the pending join must survive a failed merge");
+        assert!(persisted.is_pending);
+        assert_eq!(persisted.epoch, epoch_before_join);
+
+        let cached = bob
+            .transaction
+            .conversation_regardless_of_pending_status(id)
+            .await
+            .unwrap();
+        {
+            let group = cached.group().await;
+            assert!(group.is_pending);
+            assert_eq!(group.epoch().as_u64(), epoch_before_join);
+            assert!(group.pending_commit().is_some());
+        }
+
+        core_crypto.set_pki_environment(Some(pki_environment)).await;
+        let join_commit = bob.mls_transport().await.latest_commit().await.to_bytes().unwrap();
+        let outcome = bob.transaction.decrypt_message(id, join_commit).await.unwrap();
+        assert!(outcome.into_single_decrypted().is_commit());
+        assert_eq!(
+            bob.transaction.conversation(id).await.unwrap().epoch().await,
+            epoch_before_join + 1
         );
     }
 
