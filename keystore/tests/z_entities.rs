@@ -888,7 +888,6 @@ pub mod utils {
                     not_before: StoredCredential::NOT_BEFORE_WITHOUT_CERTIFICATE,
                 },
                 hpke_init_public_key_hash: random_sha256(),
-                leaf_encryption_key_hash: random_sha256(),
             }
         }
     }

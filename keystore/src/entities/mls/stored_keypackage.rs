@@ -28,8 +28,6 @@ pub struct StoredKeyPackage {
     pub credential: StoredCredentialPk,
     #[zeroize(skip)]
     pub hpke_init_public_key_hash: Sha256Hash,
-    #[zeroize(skip)]
-    pub leaf_encryption_key_hash: Sha256Hash,
 }
 
 /// A serialized key package together with its serialized private keys.
@@ -53,8 +51,7 @@ impl StoredKeyPackage {
             credential_id,
             credential_type,
             credential_not_before,
-            hpke_init_public_key_hash,
-            leaf_encryption_key_hash
+            hpke_init_public_key_hash
         FROM {table_name}",
         table_name = StoredKeyPackage::TABLE_NAME,
     );
@@ -94,7 +91,6 @@ impl StoredKeyPackage {
                 leaf_node.credential(),
             )?,
             hpke_init_public_key_hash: Sha256Hash::hash_from(key_package.hpke_init_key().as_slice()),
-            leaf_encryption_key_hash: Sha256Hash::hash_from(leaf_node.encryption_key().as_slice()),
         })
     }
 
@@ -183,7 +179,6 @@ impl StoredKeyPackage {
                 not_before: row.get("credential_not_before")?,
             },
             hpke_init_public_key_hash: row.get("hpke_init_public_key_hash")?,
-            leaf_encryption_key_hash: row.get("leaf_encryption_key_hash")?,
         })
     }
 }
@@ -240,8 +235,7 @@ impl EntityDatabaseMutation for StoredKeyPackage {
                 credential_id,
                 credential_type,
                 credential_not_before,
-                hpke_init_public_key_hash,
-                leaf_encryption_key_hash
+                hpke_init_public_key_hash
             )
             VALUES (
                 :key_package_ref,
@@ -249,8 +243,7 @@ impl EntityDatabaseMutation for StoredKeyPackage {
                 :credential_id,
                 :credential_type,
                 :credential_not_before,
-                :hpke_init_public_key_hash,
-                :leaf_encryption_key_hash
+                :hpke_init_public_key_hash
             )",
         )?;
         stmt.execute(named_params! {
@@ -260,7 +253,6 @@ impl EntityDatabaseMutation for StoredKeyPackage {
             ":credential_type": self.credential.credential_type,
             ":credential_not_before": self.credential.not_before,
             ":hpke_init_public_key_hash": self.hpke_init_public_key_hash,
-            ":leaf_encryption_key_hash": self.leaf_encryption_key_hash,
         })
         .map_err(crate::CryptoKeystoreError::map_already_exists(
             <Self as Entity>::TABLE_NAME,

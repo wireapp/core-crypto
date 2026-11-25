@@ -144,8 +144,6 @@ CREATE TABLE "mls_groups" (
   id BLOB NOT NULL PRIMARY KEY,
   -- we have to keep the whole state in a blob because openmls doesn't expose enough information
   -- to fully persist a mls group in any other way than via this opaque blob
-  state BLOB,
-  -- but we can store several small fields for our own information and sort/search/filter capabilities
   epoch INTEGER NOT NULL,
   ciphersuite INTEGER NOT NULL,
   credential_id BLOB NOT NULL,
@@ -174,49 +172,11 @@ CREATE TABLE "mls_groups" (
   ) REFERENCES mls_credentials (public_key_sha256, credential_type, not_before) ON DELETE RESTRICT
 );
 
-CREATE TABLE "mls_key_packages" (
-  key_package_ref BLOB NOT NULL PRIMARY KEY,
-  key_package BLOB NOT NULL,
-  credential_id BLOB NOT NULL,
-  credential_type INTEGER NOT NULL,
-  credential_not_before INTEGER NOT NULL,
-  hpke_init_public_key_hash BLOB NOT NULL UNIQUE,
-  leaf_encryption_key_hash BLOB NOT NULL UNIQUE,
-  -- this has to be nullable because openmls insists on filling it in a separate statement
-  -- because it thinks it's a separate entity
-  hpke_init_private_key BLOB NULL,
-  leaf_encryption_private_key BLOB,
-  -- Deferred so that the credential only has to exist by the time the transaction commits. A history
-  -- client stores its key package before it can add the credential: it recovers the credential from
-  -- the stored key package.
-  FOREIGN KEY (
-    credential_id,
-    credential_type,
-    credential_not_before
-  ) REFERENCES mls_credentials (public_key_sha256, credential_type, not_before) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
-);
-
 CREATE INDEX idx_mls_groups_credential_fk ON mls_groups (
   credential_id,
   credential_type,
   credential_not_before
 );
-
-CREATE INDEX idx_mls_key_packages_credential_fk ON mls_key_packages (
-  credential_id,
-  credential_type,
-  credential_not_before
-);
-
-CREATE TRIGGER delete_key_package_leaf_keypair
-AFTER
-  DELETE ON mls_key_packages
-BEGIN
-DELETE FROM
-  mls_encryption_keypairs
-WHERE
-  pk_sha256 = OLD.leaf_encryption_key_hash;
-END;
 
 CREATE TABLE mls_inbox (
   conversation_id BLOB NOT NULL,
@@ -246,9 +206,37 @@ CREATE TABLE mls_group_own_leaf_nodes (
 CREATE INDEX idx_mls_group_own_leaf_nodes_group_id ON mls_group_own_leaf_nodes (group_id);
 
 CREATE TABLE mls_group_queued_proposals (
+  id INTEGER PRIMARY KEY,
   group_id BLOB NOT NULL,
   proposal_ref BLOB NOT NULL,
   proposal BLOB NOT NULL,
-  PRIMARY KEY (group_id, proposal_ref),
+  UNIQUE (group_id, proposal_ref),
   FOREIGN KEY (group_id) REFERENCES mls_groups (id) ON DELETE CASCADE
+);
+
+CREATE TABLE "mls_key_packages" (
+  key_package_ref BLOB NOT NULL PRIMARY KEY,
+  key_package BLOB NOT NULL,
+  credential_id BLOB NOT NULL,
+  credential_type INTEGER NOT NULL,
+  credential_not_before INTEGER NOT NULL,
+  hpke_init_public_key_hash BLOB NOT NULL UNIQUE,
+  -- The private keys are nullable because a key package is saved first, and its private keys by a separate
+  -- statement.
+  hpke_init_private_key BLOB,
+  leaf_encryption_private_key BLOB,
+  -- Deferred so that the credential only has to exist by the time the transaction commits. A history
+  -- client stores its key package before it can add the credential: it recovers the credential from
+  -- the stored key package.
+  FOREIGN KEY (
+    credential_id,
+    credential_type,
+    credential_not_before
+  ) REFERENCES mls_credentials (public_key_sha256, credential_type, not_before) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+);
+
+CREATE INDEX idx_mls_key_packages_credential_fk ON mls_key_packages (
+  credential_id,
+  credential_type,
+  credential_not_before
 );
