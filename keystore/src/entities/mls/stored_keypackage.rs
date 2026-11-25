@@ -18,8 +18,7 @@ use crate::{
 /// This entity cannot be updated in the DB: the primary key is the OpenMLS hash reference of the
 /// key package itself, so two rows sharing a key necessarily share their contents. A save which
 /// disagrees is a bug, and reports
-/// [`CryptoKeystoreError::AlreadyExists`][crate::CryptoKeystoreError::AlreadyExists] instead of
-/// silently replacing the stored key package.
+/// [`CryptoKeystoreError::AlreadyExists`] instead of silently replacing the stored key package.
 #[derive(core_crypto_macros::Debug, Clone, PartialEq, Eq, ZeroizeOnDrop)]
 pub struct StoredKeyPackage {
     pub key_package_ref: Vec<u8>,
