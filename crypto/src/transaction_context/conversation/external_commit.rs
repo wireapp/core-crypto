@@ -393,6 +393,31 @@ mod tests {
         );
     }
 
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn immediate_external_join_notifies_epoch_observer_once() {
+        let case = TestContext::default();
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice]).await;
+        let joined_epoch = conversation.guard().await.epoch().await + 1;
+        let observer = TestEpochObserver::new();
+        bob.session()
+            .await
+            .register_epoch_observer(observer.clone())
+            .await
+            .unwrap();
+
+        let id = bob
+            .transaction
+            .join_by_external_commit(conversation.export_group_info().await, &bob.initial_credential)
+            .await
+            .unwrap();
+        assert_eq!(&id, conversation.id());
+        assert!(observer.observed_epochs().await.is_empty());
+
+        bob.transaction.finish().await.unwrap();
+        assert_eq!(observer.observed_epochs().await, [(id, joined_epoch)]);
+    }
+
     #[apply(all_cred_cipher)]
     async fn join_by_external_commit_should_succeed(case: TestContext) {
         let [alice, bob] = case.sessions().await;
