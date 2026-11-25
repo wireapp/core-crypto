@@ -379,6 +379,7 @@ IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
             (51, 6769583600770212455),
             (52, 17645429909226378086),
             (53, 15917551081878733499),
+            (54, 5523949624238805016),
         ];
 
         let runner = super::migrations::runner();
@@ -1070,14 +1071,20 @@ r9IJmL6kDQ==
                 (id, crate::deser::<openmls_legacy::group::MlsGroup>(&state).unwrap())
             };
 
-            let db = Database::open(path, &new_key).await.unwrap();
-            let state: Option<Vec<u8>> = db
-                .conn()
-                .await
-                .query_row("SELECT state FROM mls_groups WHERE id = ?", [&id], |row| row.get(0))
-                .unwrap();
-            assert_eq!(state, None, "the converted group's legacy state must be cleared");
+            {
+                // V54 drops `state`, so it can only be checked right after the conversion.
+                let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(53))
+                    .await
+                    .unwrap();
+                let state: Option<Vec<u8>> = db
+                    .conn()
+                    .await
+                    .query_row("SELECT state FROM mls_groups WHERE id = ?", [&id], |row| row.get(0))
+                    .unwrap();
+                assert_eq!(state, None, "the converted group's legacy state must be cleared");
+            }
 
+            let db = Database::open(path, &new_key).await.unwrap();
             let group = openmls::group::MlsGroup::load(
                 &crate::MlsStorage::read_only(&db),
                 &openmls::group::GroupId::from_slice(&id),
@@ -1150,7 +1157,8 @@ r9IJmL6kDQ==
                 .unwrap();
             }
 
-            let db = Database::open(path, &new_key)
+            // The trigger refers to `state`, which V54 drops, so stop right after the conversion.
+            let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(53))
                 .await
                 .expect("a group that fails to convert must not keep the database from opening");
             let groups: i64 = db
@@ -1256,6 +1264,68 @@ r9IJmL6kDQ==
                 leftover_key_pairs, 0,
                 "the key packages' key pairs must have moved into them"
             );
+        });
+    }
+
+    /// V54 rebuilds `mls_key_packages` without `leaf_encryption_key_hash` and drops `mls_groups.state`. Every key
+    /// package must survive the rebuild unchanged, private keys included, and so must every group.
+    #[test]
+    fn v54_keeps_every_key_package_and_group() {
+        type KeyPackageRow = (Vec<u8>, Vec<u8>, Vec<u8>, u16, u64, Vec<u8>, Vec<u8>, Vec<u8>);
+        const KEY_PACKAGES: &str = "SELECT key_package_ref, key_package,
+                credential_id, credential_type, credential_not_before,
+                hpke_init_public_key_hash, hpke_init_private_key, leaf_encryption_private_key
+            FROM mls_key_packages ORDER BY key_package_ref";
+        fn key_packages(conn: &rusqlite::Connection) -> Vec<KeyPackageRow> {
+            conn.prepare(KEY_PACKAGES)
+                .unwrap()
+                .query_map([], |row| {
+                    Ok((
+                        row.get("key_package_ref")?,
+                        row.get("key_package")?,
+                        row.get("credential_id")?,
+                        row.get("credential_type")?,
+                        row.get("credential_not_before")?,
+                        row.get("hpke_init_public_key_hash")?,
+                        row.get("hpke_init_private_key")?,
+                        row.get("leaf_encryption_private_key")?,
+                    ))
+                })
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap()
+        }
+
+        let mut db_file = NamedTempFile::new().unwrap();
+        db_file.write_all(DB).unwrap();
+        let path = db_file
+            .path()
+            .to_str()
+            .expect("tmpfile path is representable in unicode");
+
+        let new_key = DatabaseKey::generate();
+        smol::block_on(migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key)).unwrap();
+
+        smol::block_on(async {
+            let (key_packages_before, groups_before) = {
+                let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(53))
+                    .await
+                    .unwrap();
+                let conn = db.conn().await;
+                (key_packages(&conn), row_count(&conn, "mls_groups"))
+            };
+            assert!(
+                !key_packages_before.is_empty() && groups_before > 0,
+                "the bundled database must have key packages and groups"
+            );
+
+            let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(54))
+                .await
+                .unwrap();
+            let conn = db.conn().await;
+            assert_eq!(key_packages(&conn), key_packages_before);
+            assert_eq!(row_count(&conn, "mls_groups"), groups_before);
+            assert_eq!(foreign_key_violations(&conn), []);
         });
     }
 
