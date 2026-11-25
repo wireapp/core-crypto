@@ -45,7 +45,7 @@ impl<'a> MlsStorage<'a> {
 
 /// A connection to read openmls's storage through, held until it is dropped.
 ///
-/// Unlike [`MlsStorage::read_only`], which fails while the database is busy, getting this waits for the connection.
+/// Unlike `MlsStorage::read_only`, which fails while the database is busy, getting this waits for the connection.
 /// It holds a lock on the database until it is dropped, so don't hold it across an `await`.
 pub struct MlsReadConnection<'a>(ConnectionGuard<'a>);
 
