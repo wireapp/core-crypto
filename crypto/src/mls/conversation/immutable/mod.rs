@@ -140,8 +140,8 @@ impl Conversation {
     }
 
     /// Returns the conversation's configuration
-    pub fn configuration(&self) -> &ConversationConfiguration {
-        &self.configuration
+    pub async fn configuration(&self) -> RwLockReadGuard<'_, ConversationConfiguration> {
+        self.configuration.read().await
     }
 
     /// Returns current epoch of the MLS group
@@ -150,8 +150,8 @@ impl Conversation {
     }
 
     /// Returns this conversation's cipher suite
-    pub fn cipher_suite(&self) -> CipherSuite {
-        self.configuration.cipher_suite
+    pub async fn cipher_suite(&self) -> CipherSuite {
+        self.configuration().await.cipher_suite
     }
 
     /// Returns a reference to the credential used in this conversation

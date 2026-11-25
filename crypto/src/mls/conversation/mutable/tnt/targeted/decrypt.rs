@@ -72,7 +72,7 @@ impl ConversationMut {
         }
 
         let crypto_provider = self.crypto_provider().await?;
-        let cipher_suite = &self.cipher_suite();
+        let cipher_suite = &self.cipher_suite().await;
         let (context_data, decryption_key) = self
             .load_hpke_decryption_data(
                 &mls_group,

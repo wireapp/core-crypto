@@ -40,7 +40,7 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::context("getting session from tx context to persist"))?;
         let session = std::sync::Arc::downgrade(&session);
-        let conversation = Conversation::new(id, group_state.into(), configuration, session);
+        let conversation = Conversation::new(id, group_state.into(), configuration.into(), session);
         let mut group_store = self.mls_groups().await?;
 
         context_inner.conversation_touched(conversation.id()).await;

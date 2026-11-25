@@ -354,7 +354,7 @@ impl ConversationMut {
         };
 
         let crypto_provider = self.crypto_provider().await?;
-        let signature_algorithm = self.cipher_suite().signature_algorithm();
+        let signature_algorithm = self.cipher_suite().await.signature_algorithm();
 
         let sender_public_key =
             OpenMlsSignaturePublicKey::new(sender.signature_key.clone().into(), signature_algorithm)
@@ -457,7 +457,7 @@ impl ConversationMut {
         };
         let pki_env = crypto_provider.authentication_service().pki_env().await;
         let identity = sender_credential_with_key
-            .extract_identity(self.cipher_suite().signature_algorithm(), pki_env.as_deref())
+            .extract_identity(self.cipher_suite().await.signature_algorithm(), pki_env.as_deref())
             .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
         let sender_client_id = sender
