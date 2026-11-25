@@ -33,4 +33,7 @@ perl -pi -e 's/^VERSION_NAME=[0-9A-Za-z._-]+/VERSION_NAME='"$new_version"'/' cry
 
 # Update Swift package version.
 perl -pi -e 's/^MARKETING_VERSION=[0-9A-Za-z._-]+/MARKETING_VERSION='"$new_version"'/' crypto-ffi/bindings/swift/BuildSettings.xcconfig
-perl -pi -e 's/^CURRENT_PROJECT_VERSION=[0-9A-Za-z._-]+/CURRENT_PROJECT_VERSION='"$new_version"'/' crypto-ffi/bindings/swift/BuildSettings.xcconfig
+
+# Both dylib version settings use the numeric project version.
+swift_project_version=${new_version%%-*}
+perl -pi -e 's/^CURRENT_PROJECT_VERSION=[0-9A-Za-z._-]+/CURRENT_PROJECT_VERSION='"$swift_project_version"'/' crypto-ffi/bindings/swift/BuildSettings.xcconfig
