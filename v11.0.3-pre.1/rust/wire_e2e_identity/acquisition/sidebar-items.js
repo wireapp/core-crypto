@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["AcquisitionError","CertificateError"],"mod":["identity","states","thumbprint"],"struct":["ClientIdDef","X509CredentialAcquisition","X509CredentialConfiguration"],"trait":["CiphersuiteExt","SignatureSchemeExt"],"type":["Result"]};
