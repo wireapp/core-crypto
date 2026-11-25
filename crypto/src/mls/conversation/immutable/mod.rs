@@ -124,7 +124,7 @@ impl MlsGroupState {
 pub struct Conversation {
     pub(in crate::mls::conversation) id: ConversationId,
     pub(in crate::mls::conversation) group: RwLock<MlsGroupState>,
-    pub(in crate::mls::conversation) configuration: ConversationConfiguration,
+    configuration: RwLock<ConversationConfiguration>,
     session: Weak<Session>,
 }
 
