@@ -118,7 +118,12 @@ impl CoreCryptoContext {
 
     /// Returns the cipher suite in use for the given conversation.
     pub async fn conversation_cipher_suite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<CipherSuite> {
-        let cs = self.inner.conversation(conversation_id.as_ref()).await?.cipher_suite();
+        let cs = self
+            .inner
+            .conversation(conversation_id.as_ref())
+            .await?
+            .cipher_suite()
+            .await;
         Ok(CipherSuite::from(cs))
     }
 

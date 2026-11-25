@@ -59,7 +59,8 @@ impl CoreCryptoFfi {
             .map_err(RecursiveError::context(
                 "conversation_cipher_suite: getting raw conversation by id",
             ))?
-            .cipher_suite();
+            .cipher_suite()
+            .await;
         Ok(CipherSuite::from(core_crypto::MlsCiphersuite::from(cs)))
     }
 
