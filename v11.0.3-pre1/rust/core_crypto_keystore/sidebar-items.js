@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["CryptoKeystoreError","RusqliteError","RusqliteErrorCode","Transactionlike"],"mod":["ancillary","connection","entities","traits","transaction"],"struct":["DatabaseKey","Sha256Hash","UniqueArc"],"type":["CryptoKeystoreResult"]};
