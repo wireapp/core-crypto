@@ -196,17 +196,25 @@ impl Conversation {
             .map_err(Into::into)
     }
 
+    /// Returns an iterator over all external senders present in an `MlsGroupState`.
+    fn get_external_sender_from_group(group: &MlsGroup) -> impl Iterator<Item = ExternalSender> {
+        group
+            .group_context_extensions()
+            .external_senders()
+            .into_iter()
+            .flatten()
+            .cloned()
+            .map(Into::into)
+    }
+
     /// Returns the first external sender present in this group.
     ///
     /// This should be used to initialize a subconversation
     pub async fn get_external_sender(&self) -> Result<ExternalSender> {
         let group = self.group().await;
-        let ext_senders = group
-            .group_context_extensions()
-            .external_senders()
-            .ok_or(Error::MissingExternalSenderExtension)?;
-        let ext_sender = ext_senders.first().ok_or(Error::MissingExternalSenderExtension)?;
-        Ok(ext_sender.clone().into())
+        Self::get_external_sender_from_group(&group)
+            .next()
+            .ok_or(Error::MissingExternalSenderExtension)
     }
 }
 

@@ -18,13 +18,17 @@ impl Conversation {
         let group: MlsGroup =
             core_crypto_keystore::deser(&persisted.state).map_err(KeystoreError::wrap("deserializing group state"))?;
         let id = ConversationId::from(group.group_id().as_slice());
-        let configuration = ConversationConfiguration {
+        let mut configuration = ConversationConfiguration {
             cipher_suite: group.ciphersuite().into(),
-            ..Default::default()
+            external_senders: Default::default(),
         };
 
         // The tnt message counter is stored in the same row as the rest of the group.
-        let group = MlsGroupState::new(group, persisted.tnt_tx_counter.into(), persisted.is_pending).into();
+        let group = MlsGroupState::new(group, persisted.tnt_tx_counter.into(), persisted.is_pending);
+        configuration.external_senders = Self::get_external_sender_from_group(&group).collect();
+
+        let group = group.into();
+        let configuration = configuration.into();
 
         Ok(Self {
             id,
@@ -81,6 +85,11 @@ impl Conversation {
         let Some(persisted) = Self::load_including_pending(&session, self.id.as_ref()).await? else {
             return Ok(false);
         };
+        {
+            let mut configuration = self.configuration.write().await;
+            configuration.external_senders = Self::get_external_sender_from_group(&*persisted.group().await).collect();
+            configuration.cipher_suite = persisted.cipher_suite().await;
+        }
         *self.group.write().await = persisted.group.into_inner();
         Ok(true)
     }
