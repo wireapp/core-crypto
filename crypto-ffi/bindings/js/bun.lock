@@ -17,7 +17,7 @@
         "oxfmt": "^0.79.0",
         "oxlint": "^1.94.0",
         "oxlint-tsgolint": "^7.0.2007",
-        "puppeteer": "^25.18.0",
+        "puppeteer": "^25.18.1",
         "tinybench": "^6.2.3",
         "ts-loader": "^9.6.2",
         "typedoc": "0.28.20",
@@ -443,9 +443,9 @@
 
     "punycode.js": ["punycode.js@2.3.1", "", {}, "sha512-uxFIHU0YlHYhDQtV4R9J6a52SLx28BCjT+4ieh7IGbgwVJWO+km431c4yRlREUAsAmt/uMjQUyQHNEPf0M39CA=="],
 
-    "puppeteer": ["puppeteer@25.18.0", "", { "dependencies": { "@puppeteer/browsers": "3.2.7", "chromium-bidi": "157.0.8090-0", "devtools-protocol": "0.0.1717327", "lilconfig": "^3.1.4", "puppeteer-core": "25.18.0", "typed-query-selector": "^2.12.3" }, "bin": { "puppeteer": "lib/puppeteer/node/cli.js" } }, "sha512-rBJUF/0ucVjhPtPdrsBaIs1FRvOiQM/m71OBnMBl0Hw7e1GVxEQBeqiZsSqpD0mkaAhCDY+O5/qyW6rpIDW+XQ=="],
+    "puppeteer": ["puppeteer@25.18.1", "", { "dependencies": { "@puppeteer/browsers": "3.2.7", "chromium-bidi": "157.0.8090-0", "devtools-protocol": "0.0.1717327", "lilconfig": "^3.1.4", "puppeteer-core": "25.18.1", "typed-query-selector": "^2.12.3" }, "bin": { "puppeteer": "lib/puppeteer/node/cli.js" } }, "sha512-fCsfwERKluvC84jsVyhDoBZMNuI8t5FFnWXcTdH1vn3NhMk6clZcrF0Da2se6/Hj6CBJ+2PRPpqeV0qPIETeJA=="],
 
-    "puppeteer-core": ["puppeteer-core@25.18.0", "", { "dependencies": { "@puppeteer/browsers": "3.2.7", "chromium-bidi": "157.0.8090-0", "devtools-protocol": "0.0.1717327", "typed-query-selector": "^2.12.3", "webdriver-bidi-protocol": "1.0.2", "ws": "^8.22.1" } }, "sha512-+pArr1WBEqbU3GhBuNJAHDPvEHp7q0e4zBrmM/SgIMSQeXMSJ59KFpdwsf8tnD8jEYyhgP5o62ssBCMrYPADUg=="],
+    "puppeteer-core": ["puppeteer-core@25.18.1", "", { "dependencies": { "@puppeteer/browsers": "3.2.7", "chromium-bidi": "157.0.8090-0", "devtools-protocol": "0.0.1717327", "typed-query-selector": "^2.12.3", "webdriver-bidi-protocol": "1.0.2", "ws": "^8.22.1" } }, "sha512-C0wHOJHDfAggGBtN5uUfsJGpeSKtPL5jzhgQYDuz4XKeOG1FUkxeZI2M5yK7AUyrdHO+RgDuiCfjmOpcw3PYTA=="],
 
     "randombytes": ["randombytes@2.1.0", "", { "dependencies": { "safe-buffer": "^5.1.0" } }, "sha512-vYl3iOX+4CKUWuxGi9Ukhie6fsqXqS9FE2Zaic4tNFD2N2QQaXOMFbuKK4QmDHC0JO6B1Zp41J0LpT0oR68amQ=="],
 
