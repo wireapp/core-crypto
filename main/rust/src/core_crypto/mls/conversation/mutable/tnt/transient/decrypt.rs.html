@@ -36,7 +36,7 @@
 <a href=#36 id=36 data-nosnippet>36</a>        };
 <a href=#37 id=37 data-nosnippet>37</a>
 <a href=#38 id=38 data-nosnippet>38</a>        <span class="kw">let </span>crypto_provider = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#39 id=39 data-nosnippet>39</a>        <span class="kw">let </span>cipher_suite = <span class="self">self</span>.cipher_suite();
+<a href=#39 id=39 data-nosnippet>39</a>        <span class="kw">let </span>cipher_suite = <span class="self">self</span>.cipher_suite().<span class="kw">await</span>;
 <a href=#40 id=40 data-nosnippet>40</a>        <span class="kw">let </span>aad = message.aad(protocol_version);
 <a href=#41 id=41 data-nosnippet>41</a>        <span class="kw">let </span>secrets = transient_message_secrets(<span class="kw-2">&amp;</span>crypto_provider, <span class="kw-2">&amp;</span>aad, <span class="kw-2">&amp;</span>mls_group)<span class="question-mark">?</span>;
 <a href=#42 id=42 data-nosnippet>42</a>        <span class="kw">let </span>aad_bytes = message

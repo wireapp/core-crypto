@@ -848,7 +848,7 @@
 <a href=#848 id=848 data-nosnippet>848</a>        // Normally the DS would reject this as it produces `E+1` in contention
 <a href=#849 id=849 data-nosnippet>849</a>        // with Alice's, but the fundamental requirement for this scenario is
 <a href=#850 id=850 data-nosnippet>850</a>        // that the DS lost Alice's `E+1`.
-<a href=#851 id=851 data-nosnippet>851</a>        </span><span class="kw">let </span>(commit_guard, _pending_conversation) = conversation
+<a href=#851 id=851 data-nosnippet>851</a>        </span><span class="kw">let </span>commit_guard = conversation
 <a href=#852 id=852 data-nosnippet>852</a>            .acting_as(<span class="kw-2">&amp;</span>charlie)
 <a href=#853 id=853 data-nosnippet>853</a>            .<span class="kw">await
 <a href=#854 id=854 data-nosnippet>854</a>            </span>.external_join_via_group_info_unmerged(<span class="kw-2">&amp;</span>bob, charlies_group_info)

@@ -72,7 +72,7 @@
 <a href=#72 id=72 data-nosnippet>72</a>        }
 <a href=#73 id=73 data-nosnippet>73</a>
 <a href=#74 id=74 data-nosnippet>74</a>        <span class="kw">let </span>crypto_provider = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#75 id=75 data-nosnippet>75</a>        <span class="kw">let </span>cipher_suite = <span class="kw-2">&amp;</span><span class="self">self</span>.cipher_suite();
+<a href=#75 id=75 data-nosnippet>75</a>        <span class="kw">let </span>cipher_suite = <span class="kw-2">&amp;</span><span class="self">self</span>.cipher_suite().<span class="kw">await</span>;
 <a href=#76 id=76 data-nosnippet>76</a>        <span class="kw">let </span>(context_data, decryption_key) = <span class="self">self
 <a href=#77 id=77 data-nosnippet>77</a>            </span>.load_hpke_decryption_data(
 <a href=#78 id=78 data-nosnippet>78</a>                <span class="kw-2">&amp;</span>mls_group,

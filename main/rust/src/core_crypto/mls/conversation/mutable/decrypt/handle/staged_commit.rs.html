@@ -3,7 +3,7 @@
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use </span>openmls::group::StagedCommit;
 <a href=#4 id=4 data-nosnippet>4</a>
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use crate</span>::{
-<a href=#6 id=6 data-nosnippet>6</a>    Commit, DecryptedMessage, OpenMlsError, WireIdentity,
+<a href=#6 id=6 data-nosnippet>6</a>    Commit, DecryptedMessage, OpenMlsError, RecursiveError, WireIdentity,
 <a href=#7 id=7 data-nosnippet>7</a>    mls::conversation::{ConversationMut, <span class="prelude-ty">Result</span>},
 <a href=#8 id=8 data-nosnippet>8</a>};
 <a href=#9 id=9 data-nosnippet>9</a>
@@ -56,7 +56,14 @@
 <a href=#56 id=56 data-nosnippet>56</a>        proposals:<span class="question-mark">? </span>= staged_commit.queued_proposals().map(Obfuscated::from).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
 <a href=#57 id=57 data-nosnippet>57</a>        <span class="string">"Epoch advanced"
 <a href=#58 id=58 data-nosnippet>58</a>    </span>);
-<a href=#59 id=59 data-nosnippet>59</a>
-<a href=#60 id=60 data-nosnippet>60</a>    <span class="prelude-val">Ok</span>(DecryptedMessage::Commit(Commit { is_active, identity }))
-<a href=#61 id=61 data-nosnippet>61</a>}
+<a href=#59 id=59 data-nosnippet>59</a>    conversation
+<a href=#60 id=60 data-nosnippet>60</a>        .tx_context
+<a href=#61 id=61 data-nosnippet>61</a>        .queue_epoch_changed(conversation.id.to_owned(), epoch)
+<a href=#62 id=62 data-nosnippet>62</a>        .<span class="kw">await
+<a href=#63 id=63 data-nosnippet>63</a>        </span>.map_err(RecursiveError::context(
+<a href=#64 id=64 data-nosnippet>64</a>            <span class="string">"queueing epoch change notice handling staged commit"</span>,
+<a href=#65 id=65 data-nosnippet>65</a>        ))<span class="question-mark">?</span>;
+<a href=#66 id=66 data-nosnippet>66</a>
+<a href=#67 id=67 data-nosnippet>67</a>    <span class="prelude-val">Ok</span>(DecryptedMessage::Commit(Commit { is_active, identity }))
+<a href=#68 id=68 data-nosnippet>68</a>}
 </code></pre></div></section></main></body></html>

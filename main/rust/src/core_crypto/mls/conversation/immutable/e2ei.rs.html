@@ -50,7 +50,7 @@
 <a href=#50 id=50 data-nosnippet>50</a>            <span class="kw">if </span>device_ids.iter().any(|client_id| client_id.borrow() == id.as_slice()) {
 <a href=#51 id=51 data-nosnippet>51</a>                identities.push(
 <a href=#52 id=52 data-nosnippet>52</a>                    credential
-<a href=#53 id=53 data-nosnippet>53</a>                        .extract_identity(<span class="self">self</span>.cipher_suite().signature_algorithm(), pki_env.as_deref())
+<a href=#53 id=53 data-nosnippet>53</a>                        .extract_identity(<span class="self">self</span>.cipher_suite().<span class="kw">await</span>.signature_algorithm(), pki_env.as_deref())
 <a href=#54 id=54 data-nosnippet>54</a>                        .<span class="kw">await
 <a href=#55 id=55 data-nosnippet>55</a>                        </span>.map_err(RecursiveError::context(<span class="string">"extracting identity"</span>))<span class="question-mark">?</span>,
 <a href=#56 id=56 data-nosnippet>56</a>                );
@@ -95,7 +95,7 @@
 <a href=#95 id=95 data-nosnippet>95</a>            }
 <a href=#96 id=96 data-nosnippet>96</a>
 <a href=#97 id=97 data-nosnippet>97</a>            <span class="kw">let </span>identity = credential
-<a href=#98 id=98 data-nosnippet>98</a>                .extract_identity(<span class="self">self</span>.cipher_suite().signature_algorithm(), pki_env.as_deref())
+<a href=#98 id=98 data-nosnippet>98</a>                .extract_identity(<span class="self">self</span>.cipher_suite().<span class="kw">await</span>.signature_algorithm(), pki_env.as_deref())
 <a href=#99 id=99 data-nosnippet>99</a>                .<span class="kw">await
 <a href=#100 id=100 data-nosnippet>100</a>                </span>.map_err(RecursiveError::context(<span class="string">"extracting identity"</span>))<span class="question-mark">?</span>;
 <a href=#101 id=101 data-nosnippet>101</a>            <span class="kw">let </span>value = identities.entry(<span class="kw-2">*</span>user_id).or_insert_with(Vec::new);

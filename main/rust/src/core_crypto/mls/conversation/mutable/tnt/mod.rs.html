@@ -354,7 +354,7 @@
 <a href=#354 id=354 data-nosnippet>354</a>        };
 <a href=#355 id=355 data-nosnippet>355</a>
 <a href=#356 id=356 data-nosnippet>356</a>        <span class="kw">let </span>crypto_provider = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#357 id=357 data-nosnippet>357</a>        <span class="kw">let </span>signature_algorithm = <span class="self">self</span>.cipher_suite().signature_algorithm();
+<a href=#357 id=357 data-nosnippet>357</a>        <span class="kw">let </span>signature_algorithm = <span class="self">self</span>.cipher_suite().<span class="kw">await</span>.signature_algorithm();
 <a href=#358 id=358 data-nosnippet>358</a>
 <a href=#359 id=359 data-nosnippet>359</a>        <span class="kw">let </span>sender_public_key =
 <a href=#360 id=360 data-nosnippet>360</a>            OpenMlsSignaturePublicKey::new(sender.signature_key.clone().into(), signature_algorithm)
@@ -457,7 +457,7 @@
 <a href=#457 id=457 data-nosnippet>457</a>        };
 <a href=#458 id=458 data-nosnippet>458</a>        <span class="kw">let </span>pki_env = crypto_provider.authentication_service().pki_env().<span class="kw">await</span>;
 <a href=#459 id=459 data-nosnippet>459</a>        <span class="kw">let </span>identity = sender_credential_with_key
-<a href=#460 id=460 data-nosnippet>460</a>            .extract_identity(<span class="self">self</span>.cipher_suite().signature_algorithm(), pki_env.as_deref())
+<a href=#460 id=460 data-nosnippet>460</a>            .extract_identity(<span class="self">self</span>.cipher_suite().<span class="kw">await</span>.signature_algorithm(), pki_env.as_deref())
 <a href=#461 id=461 data-nosnippet>461</a>            .<span class="kw">await
 <a href=#462 id=462 data-nosnippet>462</a>            </span>.map_err(RecursiveError::mls_credential(<span class="string">"extracting identity"</span>))<span class="question-mark">?</span>;
 <a href=#463 id=463 data-nosnippet>463</a>        <span class="kw">let </span>sender_client_id = sender

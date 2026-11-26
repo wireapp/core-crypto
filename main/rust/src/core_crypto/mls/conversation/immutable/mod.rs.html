@@ -20,7 +20,7 @@
 <a href=#20 id=20 data-nosnippet>20</a><span class="kw">use super</span>::{ConversationIdRef, Error, <span class="prelude-ty">Result</span>, SecretKey, group_metadata};
 <a href=#21 id=21 data-nosnippet>21</a><span class="kw">use crate</span>::{
 <a href=#22 id=22 data-nosnippet>22</a>    CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, ExternalSender, KeystoreError, OpenMlsError,
-<a href=#23 id=23 data-nosnippet>23</a>    Session, mls::TntMessageCounter,
+<a href=#23 id=23 data-nosnippet>23</a>    PendingStatus, Session, mls::TntMessageCounter,
 <a href=#24 id=24 data-nosnippet>24</a>};
 <a href=#25 id=25 data-nosnippet>25</a>
 <a href=#26 id=26 data-nosnippet>26</a><span class="attr">#[derive(derive_more::Constructor, derive_more::Deref, derive_more::DerefMut, derive_more::Debug)]
@@ -37,7 +37,7 @@
 <a href=#37 id=37 data-nosnippet>37</a>    /// message to a receiver, and they check if the counter is greater than any they've seen before.
 <a href=#38 id=38 data-nosnippet>38</a>    </span>tnt_message_tx_counter: TntMessageCounter,
 <a href=#39 id=39 data-nosnippet>39</a>    <span class="doccomment">/// This group is in a pending state, not yet finalized and ready to process messages.
-<a href=#40 id=40 data-nosnippet>40</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) is_pending: bool,
+<a href=#40 id=40 data-nosnippet>40</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) pending_status: PendingStatus,
 <a href=#41 id=41 data-nosnippet>41</a>}
 <a href=#42 id=42 data-nosnippet>42</a>
 <a href=#43 id=43 data-nosnippet>43</a><span class="kw">impl </span>MlsGroupState {
@@ -109,7 +109,7 @@
 <a href=#109 id=109 data-nosnippet>109</a>            credential_type: credential.credential_type,
 <a href=#110 id=110 data-nosnippet>110</a>            credential_not_before: credential.not_before,
 <a href=#111 id=111 data-nosnippet>111</a>            own_leaf_index: group.own_leaf_index().u32(),
-<a href=#112 id=112 data-nosnippet>112</a>            is_pending: <span class="self">self</span>.is_pending,
+<a href=#112 id=112 data-nosnippet>112</a>            is_pending: <span class="self">self</span>.pending_status.is_pending(),
 <a href=#113 id=113 data-nosnippet>113</a>            tnt_tx_counter: <span class="self">self</span>.tnt_message_tx_counter.into(),
 <a href=#114 id=114 data-nosnippet>114</a>        }
 <a href=#115 id=115 data-nosnippet>115</a>        .save(tx)
@@ -124,7 +124,7 @@
 <a href=#124 id=124 data-nosnippet>124</a></span><span class="kw">pub struct </span>Conversation {
 <a href=#125 id=125 data-nosnippet>125</a>    <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::mls::conversation) id: ConversationId,
 <a href=#126 id=126 data-nosnippet>126</a>    <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::mls::conversation) group: RwLock&lt;MlsGroupState&gt;,
-<a href=#127 id=127 data-nosnippet>127</a>    <span class="kw">pub</span>(<span class="kw">in </span><span class="kw">crate</span>::mls::conversation) configuration: ConversationConfiguration,
+<a href=#127 id=127 data-nosnippet>127</a>    configuration: RwLock&lt;ConversationConfiguration&gt;,
 <a href=#128 id=128 data-nosnippet>128</a>    session: Weak&lt;Session&gt;,
 <a href=#129 id=129 data-nosnippet>129</a>}
 <a href=#130 id=130 data-nosnippet>130</a>
@@ -140,9 +140,9 @@
 <a href=#140 id=140 data-nosnippet>140</a>    </span>}
 <a href=#141 id=141 data-nosnippet>141</a>
 <a href=#142 id=142 data-nosnippet>142</a>    <span class="doccomment">/// Returns the conversation's configuration
-<a href=#143 id=143 data-nosnippet>143</a>    </span><span class="kw">pub fn </span>configuration(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>ConversationConfiguration {
-<a href=#144 id=144 data-nosnippet>144</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.configuration
-<a href=#145 id=145 data-nosnippet>145</a>    }
+<a href=#143 id=143 data-nosnippet>143</a>    </span><span class="kw">pub async fn </span>configuration(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; RwLockReadGuard&lt;<span class="lifetime">'_</span>, ConversationConfiguration&gt; {
+<a href=#144 id=144 data-nosnippet>144</a>        <span class="self">self</span>.configuration.read().<span class="kw">await
+<a href=#145 id=145 data-nosnippet>145</a>    </span>}
 <a href=#146 id=146 data-nosnippet>146</a>
 <a href=#147 id=147 data-nosnippet>147</a>    <span class="doccomment">/// Returns current epoch of the MLS group
 <a href=#148 id=148 data-nosnippet>148</a>    </span><span class="kw">pub async fn </span>epoch(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u64 {
@@ -150,8 +150,8 @@
 <a href=#150 id=150 data-nosnippet>150</a>    }
 <a href=#151 id=151 data-nosnippet>151</a>
 <a href=#152 id=152 data-nosnippet>152</a>    <span class="doccomment">/// Returns this conversation's cipher suite
-<a href=#153 id=153 data-nosnippet>153</a>    </span><span class="kw">pub fn </span>cipher_suite(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CipherSuite {
-<a href=#154 id=154 data-nosnippet>154</a>        <span class="self">self</span>.configuration.cipher_suite
+<a href=#153 id=153 data-nosnippet>153</a>    </span><span class="kw">pub async fn </span>cipher_suite(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CipherSuite {
+<a href=#154 id=154 data-nosnippet>154</a>        <span class="self">self</span>.configuration().<span class="kw">await</span>.cipher_suite
 <a href=#155 id=155 data-nosnippet>155</a>    }
 <a href=#156 id=156 data-nosnippet>156</a>
 <a href=#157 id=157 data-nosnippet>157</a>    <span class="doccomment">/// Returns a reference to the credential used in this conversation
@@ -196,45 +196,53 @@
 <a href=#196 id=196 data-nosnippet>196</a>            .map_err(Into::into)
 <a href=#197 id=197 data-nosnippet>197</a>    }
 <a href=#198 id=198 data-nosnippet>198</a>
-<a href=#199 id=199 data-nosnippet>199</a>    <span class="doccomment">/// Returns the first external sender present in this group.
-<a href=#200 id=200 data-nosnippet>200</a>    ///
-<a href=#201 id=201 data-nosnippet>201</a>    /// This should be used to initialize a subconversation
-<a href=#202 id=202 data-nosnippet>202</a>    </span><span class="kw">pub async fn </span>get_external_sender(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;ExternalSender&gt; {
-<a href=#203 id=203 data-nosnippet>203</a>        <span class="kw">let </span>group = <span class="self">self</span>.group().<span class="kw">await</span>;
-<a href=#204 id=204 data-nosnippet>204</a>        <span class="kw">let </span>ext_senders = group
-<a href=#205 id=205 data-nosnippet>205</a>            .group_context_extensions()
-<a href=#206 id=206 data-nosnippet>206</a>            .external_senders()
-<a href=#207 id=207 data-nosnippet>207</a>            .ok_or(Error::MissingExternalSenderExtension)<span class="question-mark">?</span>;
-<a href=#208 id=208 data-nosnippet>208</a>        <span class="kw">let </span>ext_sender = ext_senders.first().ok_or(Error::MissingExternalSenderExtension)<span class="question-mark">?</span>;
-<a href=#209 id=209 data-nosnippet>209</a>        <span class="prelude-val">Ok</span>(ext_sender.clone().into())
-<a href=#210 id=210 data-nosnippet>210</a>    }
-<a href=#211 id=211 data-nosnippet>211</a>}
-<a href=#212 id=212 data-nosnippet>212</a>
-<a href=#213 id=213 data-nosnippet>213</a><span class="attr">#[cfg(test)]
-<a href=#214 id=214 data-nosnippet>214</a></span><span class="kw">mod </span>test_utils {
-<a href=#215 id=215 data-nosnippet>215</a>    <span class="kw">use </span>openmls::prelude::SignaturePublicKey;
-<a href=#216 id=216 data-nosnippet>216</a>
-<a href=#217 id=217 data-nosnippet>217</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
-<a href=#218 id=218 data-nosnippet>218</a>
-<a href=#219 id=219 data-nosnippet>219</a>    <span class="kw">impl </span>Conversation {
-<a href=#220 id=220 data-nosnippet>220</a>        <span class="kw">pub async fn </span>signature_keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;SignaturePublicKey&gt; {
-<a href=#221 id=221 data-nosnippet>221</a>            <span class="kw">let </span>group = <span class="self">self</span>.group().<span class="kw">await</span>;
-<a href=#222 id=222 data-nosnippet>222</a>            group
-<a href=#223 id=223 data-nosnippet>223</a>                .members()
-<a href=#224 id=224 data-nosnippet>224</a>                .map(|m| m.signature_key)
-<a href=#225 id=225 data-nosnippet>225</a>                .map(|mpk| SignaturePublicKey::from(mpk.as_slice()))
-<a href=#226 id=226 data-nosnippet>226</a>                .collect()
-<a href=#227 id=227 data-nosnippet>227</a>        }
-<a href=#228 id=228 data-nosnippet>228</a>
-<a href=#229 id=229 data-nosnippet>229</a>        <span class="kw">pub async fn </span>encryption_keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;Vec&lt;u8&gt;&gt; {
-<a href=#230 id=230 data-nosnippet>230</a>            <span class="kw">let </span>group = <span class="self">self</span>.group().<span class="kw">await</span>;
-<a href=#231 id=231 data-nosnippet>231</a>            group.members().map(|m| m.encryption_key).collect()
-<a href=#232 id=232 data-nosnippet>232</a>        }
-<a href=#233 id=233 data-nosnippet>233</a>
-<a href=#234 id=234 data-nosnippet>234</a>        <span class="kw">pub async fn </span>extensions(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; openmls::prelude::Extensions {
-<a href=#235 id=235 data-nosnippet>235</a>            <span class="kw">let </span>group = <span class="self">self</span>.group().<span class="kw">await</span>;
-<a href=#236 id=236 data-nosnippet>236</a>            group.export_group_context().extensions().to_owned()
-<a href=#237 id=237 data-nosnippet>237</a>        }
-<a href=#238 id=238 data-nosnippet>238</a>    }
-<a href=#239 id=239 data-nosnippet>239</a>}
+<a href=#199 id=199 data-nosnippet>199</a>    <span class="doccomment">/// Returns an iterator over all external senders present in an `MlsGroupState`.
+<a href=#200 id=200 data-nosnippet>200</a>    </span><span class="kw">fn </span>get_external_sender_from_group(group: <span class="kw-2">&amp;</span>MlsGroup) -&gt; <span class="kw">impl </span>Iterator&lt;Item = ExternalSender&gt; {
+<a href=#201 id=201 data-nosnippet>201</a>        group
+<a href=#202 id=202 data-nosnippet>202</a>            .group_context_extensions()
+<a href=#203 id=203 data-nosnippet>203</a>            .external_senders()
+<a href=#204 id=204 data-nosnippet>204</a>            .into_iter()
+<a href=#205 id=205 data-nosnippet>205</a>            .flatten()
+<a href=#206 id=206 data-nosnippet>206</a>            .cloned()
+<a href=#207 id=207 data-nosnippet>207</a>            .map(Into::into)
+<a href=#208 id=208 data-nosnippet>208</a>    }
+<a href=#209 id=209 data-nosnippet>209</a>
+<a href=#210 id=210 data-nosnippet>210</a>    <span class="doccomment">/// Returns the first external sender present in this group.
+<a href=#211 id=211 data-nosnippet>211</a>    ///
+<a href=#212 id=212 data-nosnippet>212</a>    /// This should be used to initialize a subconversation
+<a href=#213 id=213 data-nosnippet>213</a>    </span><span class="kw">pub async fn </span>get_external_sender(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;ExternalSender&gt; {
+<a href=#214 id=214 data-nosnippet>214</a>        <span class="kw">let </span>group = <span class="self">self</span>.group().<span class="kw">await</span>;
+<a href=#215 id=215 data-nosnippet>215</a>        <span class="self">Self</span>::get_external_sender_from_group(<span class="kw-2">&amp;</span>group)
+<a href=#216 id=216 data-nosnippet>216</a>            .next()
+<a href=#217 id=217 data-nosnippet>217</a>            .ok_or(Error::MissingExternalSenderExtension)
+<a href=#218 id=218 data-nosnippet>218</a>    }
+<a href=#219 id=219 data-nosnippet>219</a>}
+<a href=#220 id=220 data-nosnippet>220</a>
+<a href=#221 id=221 data-nosnippet>221</a><span class="attr">#[cfg(test)]
+<a href=#222 id=222 data-nosnippet>222</a></span><span class="kw">mod </span>test_utils {
+<a href=#223 id=223 data-nosnippet>223</a>    <span class="kw">use </span>openmls::prelude::SignaturePublicKey;
+<a href=#224 id=224 data-nosnippet>224</a>
+<a href=#225 id=225 data-nosnippet>225</a>    <span class="kw">use super</span>::<span class="kw-2">*</span>;
+<a href=#226 id=226 data-nosnippet>226</a>
+<a href=#227 id=227 data-nosnippet>227</a>    <span class="kw">impl </span>Conversation {
+<a href=#228 id=228 data-nosnippet>228</a>        <span class="kw">pub async fn </span>signature_keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;SignaturePublicKey&gt; {
+<a href=#229 id=229 data-nosnippet>229</a>            <span class="kw">let </span>group = <span class="self">self</span>.group().<span class="kw">await</span>;
+<a href=#230 id=230 data-nosnippet>230</a>            group
+<a href=#231 id=231 data-nosnippet>231</a>                .members()
+<a href=#232 id=232 data-nosnippet>232</a>                .map(|m| m.signature_key)
+<a href=#233 id=233 data-nosnippet>233</a>                .map(|mpk| SignaturePublicKey::from(mpk.as_slice()))
+<a href=#234 id=234 data-nosnippet>234</a>                .collect()
+<a href=#235 id=235 data-nosnippet>235</a>        }
+<a href=#236 id=236 data-nosnippet>236</a>
+<a href=#237 id=237 data-nosnippet>237</a>        <span class="kw">pub async fn </span>encryption_keys(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Vec&lt;Vec&lt;u8&gt;&gt; {
+<a href=#238 id=238 data-nosnippet>238</a>            <span class="kw">let </span>group = <span class="self">self</span>.group().<span class="kw">await</span>;
+<a href=#239 id=239 data-nosnippet>239</a>            group.members().map(|m| m.encryption_key).collect()
+<a href=#240 id=240 data-nosnippet>240</a>        }
+<a href=#241 id=241 data-nosnippet>241</a>
+<a href=#242 id=242 data-nosnippet>242</a>        <span class="kw">pub async fn </span>extensions(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; openmls::prelude::Extensions {
+<a href=#243 id=243 data-nosnippet>243</a>            <span class="kw">let </span>group = <span class="self">self</span>.group().<span class="kw">await</span>;
+<a href=#244 id=244 data-nosnippet>244</a>            group.export_group_context().extensions().to_owned()
+<a href=#245 id=245 data-nosnippet>245</a>        }
+<a href=#246 id=246 data-nosnippet>246</a>    }
+<a href=#247 id=247 data-nosnippet>247</a>}
 </code></pre></div></section></main></body></html>
