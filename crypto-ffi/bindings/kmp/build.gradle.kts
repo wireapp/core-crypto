@@ -73,6 +73,7 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.coroutines.test)
+                implementation(libs.kotlinx.io.core)
             }
         }
 

@@ -27,6 +27,7 @@ dependencies {
     androidTestImplementation(libs.android.junit)
     androidTestImplementation(libs.espresso)
     androidTestImplementation(libs.coroutines.test)
+    androidTestImplementation(libs.kotlinx.io.core)
 }
 
 val rustTargetsByAndroidAbi = mapOf(
