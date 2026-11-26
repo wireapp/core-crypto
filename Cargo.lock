@@ -1223,6 +1223,7 @@ dependencies = [
  "obfuscate",
  "proteus-wasm",
  "rmp-serde",
+ "rstest",
  "serde_json",
  "smol-macros",
  "testing_logger",
