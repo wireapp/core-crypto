@@ -52,7 +52,7 @@ internal class E2EITest {
         val cc = CoreCrypto(db)
         cc.setPkiEnvironment(pkiEnv)
         val pkiEnv2 = cc.getPkiEnvironment()
-        assert(pkiEnv2 != null)
+        assertNotNull(pkiEnv2)
     }
 
     @Test
