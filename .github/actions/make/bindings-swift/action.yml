@@ -31,6 +31,10 @@ runs:
           uses-rust: false
           artifact-generation: ${{ inputs.artifact-generation }}
 
+      - name: install sourcery if needed
+        shell: bash
+        run: command -v sourcery || brew install sourcery
+
       - uses: ./.github/actions/make
         with:
           key: swift-generate-wrapper
