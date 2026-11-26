@@ -8,7 +8,7 @@ use openmls::group::MlsGroup;
 
 use super::Result;
 use crate::{
-    ConversationConfiguration, ConversationId, KeystoreError, Session,
+    ConversationConfiguration, ConversationId, KeystoreError, PendingStatus, Session,
     mls::conversation::{Conversation, MlsGroupState},
 };
 
@@ -24,7 +24,11 @@ impl Conversation {
         };
 
         // The tnt message counter is stored in the same row as the rest of the group.
-        let group = MlsGroupState::new(group, persisted.tnt_tx_counter.into(), persisted.is_pending);
+        let group = MlsGroupState::new(
+            group,
+            persisted.tnt_tx_counter.into(),
+            PendingStatus::from_is_pending(persisted.is_pending),
+        );
         configuration.external_senders = Self::get_external_sender_from_group(&group).collect();
 
         let group = group.into();
@@ -71,7 +75,7 @@ impl Conversation {
         let Some(conversation) = Self::load_including_pending(session, id).await? else {
             return Ok(None);
         };
-        if conversation.group().await.is_pending {
+        if conversation.group().await.pending_status.is_pending() {
             return Ok(None);
         }
         Ok(Some(conversation))

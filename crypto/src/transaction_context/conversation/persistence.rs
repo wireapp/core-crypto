@@ -1,7 +1,7 @@
 use openmls::{group::MlsGroup, prelude::Welcome};
 
 use crate::{
-    ConversationConfiguration, ConversationId, OpenMlsError, RecursiveError,
+    ConversationConfiguration, ConversationId, OpenMlsError, PendingStatus, RecursiveError,
     mls::conversation::{Conversation, ConversationMut, Error as ConversationError, MlsGroupState},
     transaction_context::{Error, Result, TransactionContext},
 };
@@ -23,10 +23,10 @@ impl TransactionContext {
         &self,
         group: MlsGroup,
         configuration: ConversationConfiguration,
-        is_pending: bool,
+        pending_status: PendingStatus,
     ) -> Result<ConversationMut> {
         let id = ConversationId::from(group.group_id().as_slice());
-        let mut group_state = MlsGroupState::new(group, Default::default(), is_pending);
+        let mut group_state = MlsGroupState::new(group, Default::default(), pending_status);
 
         let context_inner = self.inner()?;
         group_state
@@ -47,7 +47,7 @@ impl TransactionContext {
         let inner = group_store.insert(conversation);
         let conversation = ConversationMut::new(inner, self.clone());
 
-        if !is_pending {
+        if pending_status == PendingStatus::Operational {
             // this place is a convergence point where every path to a new group gets saved,
             // so we can use it for the initial epoch data recording
             // (the call path in `mutate_group` only ever handle subsequent epochs, not the initial)
@@ -98,7 +98,7 @@ impl TransactionContext {
             return Err(Error::ConversationAlreadyExists(id));
         }
 
-        self.persist_conversation_from_mls_group(group, configuration, false)
+        self.persist_conversation_from_mls_group(group, configuration, PendingStatus::Operational)
             .await
     }
 }

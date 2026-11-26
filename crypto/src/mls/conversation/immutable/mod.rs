@@ -20,7 +20,7 @@ use openmls::group::{InnerState, MlsGroup};
 use super::{ConversationIdRef, Error, Result, SecretKey, group_metadata};
 use crate::{
     CipherSuite, ConversationConfiguration, ConversationId, CredentialRef, ExternalSender, KeystoreError, OpenMlsError,
-    Session, mls::TntMessageCounter,
+    PendingStatus, Session, mls::TntMessageCounter,
 };
 
 #[derive(derive_more::Constructor, derive_more::Deref, derive_more::DerefMut, derive_more::Debug)]
@@ -37,7 +37,7 @@ pub(crate) struct MlsGroupState {
     /// message to a receiver, and they check if the counter is greater than any they've seen before.
     tnt_message_tx_counter: TntMessageCounter,
     /// This group is in a pending state, not yet finalized and ready to process messages.
-    pub(crate) is_pending: bool,
+    pub(crate) pending_status: PendingStatus,
 }
 
 impl MlsGroupState {
@@ -109,7 +109,7 @@ impl MlsGroupState {
             credential_type: credential.credential_type,
             credential_not_before: credential.not_before,
             own_leaf_index: group.own_leaf_index().u32(),
-            is_pending: self.is_pending,
+            is_pending: self.pending_status.is_pending(),
             tnt_tx_counter: self.tnt_message_tx_counter.into(),
         }
         .save(tx)

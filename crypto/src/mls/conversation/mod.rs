@@ -20,6 +20,7 @@ mod id;
 mod immutable;
 mod mutable;
 mod orphan_welcome;
+mod pending_status;
 mod welcome;
 
 pub(crate) use immutable::MlsGroupState;
@@ -38,6 +39,7 @@ pub use self::{
             Commit, DecryptedBytes, DecryptedMessage, DecryptionOutcome, DeferralReason, Proposal, RejectionReason,
         },
     },
+    pending_status::PendingStatus,
     welcome::WelcomeMessage,
 };
 use crate::bytes_wrapper;

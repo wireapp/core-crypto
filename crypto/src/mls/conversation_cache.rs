@@ -11,7 +11,9 @@ use core_crypto_keystore::{
 use schnellru::{ByLength, LruMap};
 
 use super::conversation::{ConversationId, ConversationIdRef};
-use crate::{ImmutableDatabase, KeystoreError, RecursiveError, Result, Session, mls::conversation::Conversation};
+use crate::{
+    ImmutableDatabase, KeystoreError, PendingStatus, RecursiveError, Result, Session, mls::conversation::Conversation,
+};
 
 /// LRU cache of live [`Conversation`]s, keyed by conversation id.
 ///
@@ -77,17 +79,17 @@ impl ConversationCache {
     ///
     /// Does not load the converation into the cache or change the order of the LRU cache.
     ///
-    /// If `filter_pending` is set, only returns `true` if a conversation exists whose `is_pending`
+    /// If `filter_pending` is set, only returns `true` if a conversation exists whose pending status
     /// matches the filter.
     pub(crate) async fn exists(
         &self,
         id: &ConversationIdRef,
         database: &ImmutableDatabase,
-        filter_pending: Option<bool>,
+        filter_pending: Option<PendingStatus>,
     ) -> Result<bool> {
         if let Some(conversation) = self.entries.peek(id) {
             if let Some(filter) = filter_pending {
-                return Ok(conversation.group().await.is_pending == filter);
+                return Ok(conversation.group().await.pending_status == filter);
             } else {
                 return Ok(true);
             }
@@ -96,7 +98,7 @@ impl ConversationCache {
         let Some(entry_is_pending) = database
             .get_borrowed::<PersistedMlsGroup>(id.keystore())
             .await
-            .map(|maybe_entry| maybe_entry.map(|entry| entry.is_pending))
+            .map(|maybe_entry| maybe_entry.map(|entry| PendingStatus::from_is_pending(entry.is_pending)))
             .map_err(KeystoreError::wrap("checking for existence of mls group"))?
         else {
             return Ok(false);

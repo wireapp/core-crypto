@@ -28,7 +28,7 @@
 use core_crypto_keystore::{entities::StoredEncryptionKeyPair, traits::EntityDeleteBorrowed};
 
 use super::{ConversationMut, Result};
-use crate::{KeystoreError, OpenMlsError, RecursiveError, mls::conversation::Error};
+use crate::{KeystoreError, OpenMlsError, PendingStatus, RecursiveError, mls::conversation::Error};
 
 impl ConversationMut {
     /// Apply a pending commit
@@ -36,7 +36,7 @@ impl ConversationMut {
         let provider = &self.crypto_provider().await?;
         let was_pending = self
             .mutate_group(async |tx, group, _| {
-                let was_pending = std::mem::replace(&mut group.is_pending, false);
+                let was_pending = std::mem::replace(&mut group.pending_status, PendingStatus::Operational).is_pending();
 
                 // openmls stores here all the encryption keypairs used for update proposals..
                 let previous_own_leaf_nodes = group.own_leaf_nodes.clone();

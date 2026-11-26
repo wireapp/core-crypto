@@ -6,7 +6,7 @@ use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 use super::{Error, Result};
 use crate::{
     CommitBundle, ConversationConfiguration, ConversationId, CredentialRef, GroupInfoBundle, KeystoreError,
-    OpenMlsError, RecursiveError,
+    OpenMlsError, PendingStatus, RecursiveError,
     mls::{
         self,
         conversation::{ConversationIdRef, ConversationMut},
@@ -142,7 +142,7 @@ impl TransactionContext {
         };
 
         let id = ConversationIdRef::new(group_info.group_id().as_slice()).to_owned();
-        if self.conversation_exists(&id, Some(false)).await? {
+        if self.conversation_exists(&id, Some(PendingStatus::Operational)).await? {
             // rejoining replaces the group without going through `mutate_group`, so we have to
             // capture epoch data from an existing group here
             let conversation = self.conversation(&id).await?;
@@ -176,7 +176,7 @@ impl TransactionContext {
             .map_err(RecursiveError::context("trying new full plaintext group info bundle"))?;
 
         let pending_conversation = self
-            .persist_conversation_from_mls_group(group, configuration, true)
+            .persist_conversation_from_mls_group(group, configuration, PendingStatus::Pending)
             .await
             .map_err(RecursiveError::context("creating pending conversation"))?;
 
@@ -378,7 +378,7 @@ mod tests {
             .unwrap();
         {
             let group = cached.group().await;
-            assert!(group.is_pending);
+            assert!(group.pending_status.is_pending());
             assert_eq!(group.epoch().as_u64(), epoch_before_join);
             assert!(group.pending_commit().is_some());
         }
@@ -1058,7 +1058,7 @@ mod tests {
                 "the first message must be Bob's own join commit"
             );
             assert!(
-                !bob_conversation.group().await.is_pending,
+                !bob_conversation.group().await.pending_status.is_pending(),
                 "merging the join commit must have made the conversation established"
             );
 

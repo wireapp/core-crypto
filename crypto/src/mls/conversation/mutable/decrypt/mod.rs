@@ -94,7 +94,7 @@ impl ConversationMut {
             let content_type = message.parsed.content_type();
             let epoch = message.parsed.epoch();
             let arrival_sequence = message.arrival_sequence;
-            let was_pending = self.group().await.is_pending;
+            let was_pending = self.group().await.pending_status.is_pending();
 
             let outcome_result = tx_context_inner
                 .with_savepoint_with_outcome_check(
@@ -131,7 +131,7 @@ impl ConversationMut {
                 }
             };
 
-            if was_pending && !self.group().await.is_pending {
+            if was_pending && !self.group().await.pending_status.is_pending() {
                 // we must have merged the pending group, so let's enqueue whatever in the inbox was waiting for that
                 // before we even begin with the effect
                 queue.extend(
@@ -201,7 +201,7 @@ impl ConversationMut {
     async fn try_resolve_pending(&mut self, message: &IncomingMessage) -> Result<Option<DecryptionOutcome>> {
         let group = self.group().await;
 
-        if !group.is_pending {
+        if !group.pending_status.is_pending() {
             return Ok(None);
         }
 

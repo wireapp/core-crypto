@@ -81,7 +81,7 @@ impl TransactionContextInner {
 
 #[cfg(test)]
 mod tests {
-    use crate::{test_utils::*, transaction_context::Error};
+    use crate::{PendingStatus, test_utils::*, transaction_context::Error};
 
     /// Run `operation` in a savepoint, then fail so the savepoint is rolled back.
     async fn in_rolled_back_savepoint(session: &SessionContext, operation: impl AsyncFnOnce()) {
@@ -135,7 +135,13 @@ mod tests {
         })
         .await;
 
-        assert!(!alice.transaction.conversation_exists(&id, Some(false)).await.unwrap());
+        assert!(
+            !alice
+                .transaction
+                .conversation_exists(&id, Some(PendingStatus::Operational))
+                .await
+                .unwrap()
+        );
     }
 
     /// An epoch change inside a rolled-back savepoint never happened, so observers must not hear of it.

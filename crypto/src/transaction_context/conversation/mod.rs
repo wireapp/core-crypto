@@ -8,7 +8,7 @@ use openmls::group::MlsGroup;
 
 use super::{Error, Result, TransactionContext};
 use crate::{
-    ConversationConfiguration, CredentialRef, OpenMlsError, RecursiveError,
+    ConversationConfiguration, CredentialRef, OpenMlsError, PendingStatus, RecursiveError,
     mls::conversation::{ConversationIdRef, ConversationMut},
 };
 
@@ -17,9 +17,13 @@ impl TransactionContext {
     ///
     /// Somewhat cheaper than `self.conversation(id).is_ok()`.
     ///
-    /// If `filter_pending` is set, only returns `true` if a conversation exists whose `is_pending`
+    /// If `filter_pending` is set, only returns `true` if a conversation exists whose pending status
     /// matches the filter.
-    pub async fn conversation_exists(&self, id: &ConversationIdRef, filter_pending: Option<bool>) -> Result<bool> {
+    pub async fn conversation_exists(
+        &self,
+        id: &ConversationIdRef,
+        filter_pending: Option<PendingStatus>,
+    ) -> Result<bool> {
         let database = self.database()?.into();
         self.mls_groups()
             .await?
@@ -55,7 +59,7 @@ impl TransactionContext {
     /// This helper struct permits mutations on a conversation.
     pub async fn conversation(&self, id: &ConversationIdRef) -> Result<ConversationMut> {
         let conversation = self.conversation_regardless_of_pending_status(id).await?;
-        if conversation.group().await.is_pending {
+        if conversation.group().await.pending_status.is_pending() {
             return Err(Error::PendingConversation(id.to_owned()));
         }
         Ok(conversation)
@@ -112,7 +116,7 @@ impl TransactionContext {
                     .await
                     .map_err(OpenMlsError::wrap("creating group with id"))?;
 
-                    self.persist_conversation_from_mls_group(group, configuration, false)
+                    self.persist_conversation_from_mls_group(group, configuration, PendingStatus::Operational)
                         .await?;
 
                     Ok(())
