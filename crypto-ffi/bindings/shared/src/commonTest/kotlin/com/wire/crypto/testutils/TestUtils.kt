@@ -6,9 +6,9 @@ import com.wire.crypto.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
-import java.io.File
-import java.nio.file.Files
-import java.util.Collections
+import kotlinx.io.files.Path
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.random.Random
 import kotlin.random.nextULong
 import kotlin.test.*
@@ -182,14 +182,20 @@ suspend fun ccInit(
     return cc
 }
 
-private val databaseDirectories = Collections.synchronizedList(mutableListOf<File>())
+// The benchmarks create databases from several threads.
+@OptIn(ExperimentalAtomicApi::class)
+private val databaseDirectories = AtomicReference(emptyList<Path>())
 
+@OptIn(ExperimentalAtomicApi::class)
 suspend fun newDatabase(): Database {
-    val root = Files.createTempDirectory("mls").toFile()
-    databaseDirectories += root
-    val path = root.resolve("keystore-${randomIdentifier()}")
+    val root = newTempDirectory("mls")
+    while (true) {
+        val directories = databaseDirectories.load()
+        if (databaseDirectories.compareAndSet(directories, directories + root)) break
+    }
+    val path = Path(root, "keystore-${randomIdentifier()}")
     val key = genDatabaseKey()
-    return openDatabase(path.absolutePath, key)
+    return openDatabase(path.toString(), key)
 }
 
 /**
@@ -197,11 +203,9 @@ suspend fun newDatabase(): Database {
  *
  * Only call this once nothing uses those databases anymore.
  */
+@OptIn(ExperimentalAtomicApi::class)
 fun deleteDatabases() {
-    synchronized(databaseDirectories) {
-        databaseDirectories.forEach { it.deleteRecursively() }
-        databaseDirectories.clear()
-    }
+    databaseDirectories.exchange(emptyList()).forEach(::deleteRecursively)
 }
 
 suspend fun createConversation(cc: CoreCrypto): ConversationId {

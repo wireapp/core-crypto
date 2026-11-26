@@ -4,9 +4,10 @@ package com.wire.crypto
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.files.Path
 import testutils.genClientId
 import testutils.genDatabaseKey
-import java.nio.file.Files
+import testutils.newTempDirectory
 import kotlin.test.*
 
 typealias SessionId = String
@@ -51,10 +52,10 @@ internal class ProteusClientTest {
     }
 
     private fun newProteusClient(clientId: ClientId): CoreCrypto = runBlocking {
-        val root = Files.createTempDirectory("mls").toFile()
-        val path = root.resolve("keystore-$clientId")
+        val root = newTempDirectory("mls")
+        val path = Path(root, "keystore-$clientId")
         val key = genDatabaseKey()
-        val db = openDatabase(path.absolutePath, key)
+        val db = openDatabase(path.toString(), key)
         val cc = CoreCrypto(db)
         cc.transaction { it.proteusInit() }
         cc

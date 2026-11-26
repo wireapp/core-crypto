@@ -3,11 +3,13 @@
 package com.wire.crypto
 
 import kotlinx.coroutines.test.runTest
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
 import testutils.MockMlsTransportSuccessProvider
+import testutils.deleteRecursively
 import testutils.genClientId
 import testutils.genDatabaseKey
-import java.nio.file.Path
-import kotlin.io.path.*
+import testutils.newTempDirectory
 import kotlin.test.*
 import kotlin.uuid.Uuid as KotlinUuid
 
@@ -37,24 +39,23 @@ class GeneralTest {
 
 class DatabaseTest {
     suspend fun <T> withDatabase(block: suspend (Path, DatabaseKey) -> T): T {
-        val tmpdir = createTempDirectory("cc-test-")
-        val path = tmpdir / "keystore"
+        val tmpdir = newTempDirectory("cc-test-")
+        val path = Path(tmpdir, "keystore")
         val key = genDatabaseKey()
         return try {
             block(path, key)
         } finally {
-            tmpdir.toFile().deleteRecursively()
+            deleteRecursively(tmpdir)
         }
     }
 
     @Test
     fun givenDatabase_getLocation_shouldSucceed() = runTest {
         withDatabase { path, key ->
-            val pathStr = path.absolutePathString()
-            val db = Database.open(pathStr, key)
+            val db = Database.open(path.toString(), key)
             val location = db.getLocation()
             assertNotNull(location)
-            assertEquals(path.toRealPath(), Path(location).toRealPath())
+            assertEquals(SystemFileSystem.resolve(path), SystemFileSystem.resolve(Path(location)))
             db.close()
         }
     }
@@ -62,7 +63,7 @@ class DatabaseTest {
     @Test
     fun givenDatabase_whenUsingSameNameAndKey_thenOpenShouldSucceed() = runTest {
         withDatabase { path, key ->
-            val db = Database.open(path.absolutePathString(), key)
+            val db = Database.open(path.toString(), key)
             db.close()
 
             openDatabase(path.toString(), key)
@@ -72,7 +73,7 @@ class DatabaseTest {
     @Test
     fun givenDatabase_whenUsingWrongKey_thenOpenShouldFail() = runTest {
         withDatabase { path, key ->
-            Database.open(path.absolutePathString(), key)
+            Database.open(path.toString(), key)
 
             val key2 = genDatabaseKey()
             assertFailsWith<CoreCryptoException.Other> { Database.open(path.toString(), key2) }
@@ -90,11 +91,11 @@ class DatabaseKeyTest {
 
     @Test
     fun update_database_key_works() = runTest {
-        val tmpdir = createTempDirectory("cc-test-")
-        val path = tmpdir / "keystore"
+        val tmpdir = newTempDirectory("cc-test-")
+        val path = Path(tmpdir, "keystore")
         val oldKey = genDatabaseKey()
         val clientId = genClientId()
-        val db = openDatabase(path.absolutePathString(), oldKey)
+        val db = openDatabase(path.toString(), oldKey)
         var cc = CoreCrypto(db)
         val transport = MockMlsTransportSuccessProvider()
         cc.transaction { ctx ->
@@ -116,6 +117,6 @@ class DatabaseKeyTest {
         cc.close()
         assertContentEquals(credentialRef1.publicKeyHash(), credentialRef2.publicKeyHash())
 
-        tmpdir.toFile().deleteRecursively()
+        deleteRecursively(tmpdir)
     }
 }
