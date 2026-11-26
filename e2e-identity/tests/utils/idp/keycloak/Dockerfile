@@ -1,5 +1,5 @@
-# Keep keycloak versions in sync (search for this comment to find all places to update)
-FROM quay.io/keycloak/keycloak:26.8.2
+ARG KEYCLOAK_VERSION
+FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
 ARG kc_port
 
 WORKDIR /opt/keycloak

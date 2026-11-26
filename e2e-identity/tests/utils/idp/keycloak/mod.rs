@@ -35,7 +35,6 @@ static KEYCLOAK_PORTS: OnceLock<[ContainerPort; 1]> = OnceLock::new();
 impl KeycloakImage {
     const NAME: &'static str = "wire-keycloak";
     const TAG: &'static str = "latest";
-    // Keep keycloak versions in sync (search for this comment to find all places to update)
     const VERSION: &'static str = "26.8.2";
 
     const USER: &'static str = "admin";
@@ -55,6 +54,8 @@ impl KeycloakImage {
             "--file",
             &format!("{cwd}/tests/utils/idp/keycloak/Dockerfile"),
             "--force-rm=true",
+            "--build-arg",
+            &format!("KEYCLOAK_VERSION={}", Self::VERSION),
             "--build-arg",
             &format!("kc_port={port}"),
             &format!("--tag={}:{}", Self::NAME, Self::TAG),
