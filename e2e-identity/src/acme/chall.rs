@@ -44,31 +44,29 @@ pub(crate) fn oidc_chall_request(
 
 /// 18. parse the response from `POST /acme/challenge/{token}` [RFC 8555 Section 7.5.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1)
 pub(crate) fn new_chall_response(response: serde_json::Value) -> Result<AcmeChallenge> {
-    let chall = serde_json::from_value::<AcmeChallenge>(response)?;
+    let chall = serde_json::from_value::<AcmeChallenge>(response.clone())?;
     match chall.status {
-        Some(AcmeChallengeStatus::Valid) => {}
-        Some(AcmeChallengeStatus::Processing) => return Err(AcmeChallError::Processing)?,
-        Some(AcmeChallengeStatus::Invalid) => return Err(AcmeChallError::Invalid)?,
-        Some(AcmeChallengeStatus::Pending) => {
-            return Err(Error::ClientImplementation(
-                "a challenge is not supposed to be pending at this point. \
+        Some(AcmeChallengeStatus::Valid) => Ok(chall),
+        Some(AcmeChallengeStatus::Processing) => Err(AcmeChallError::Processing.into()),
+        Some(AcmeChallengeStatus::Invalid) => {
+            let detail = response["error"]["detail"].as_str().unwrap_or("").into();
+            Err(AcmeChallError::Invalid(detail).into())
+        }
+        Some(AcmeChallengeStatus::Pending) => Err(Error::ClientImplementation(
+            "a challenge is not supposed to be pending at this point. \
                     It must either be 'valid' or 'processing'.",
-            ));
-        }
-        None => {
-            return Err(Error::ClientImplementation(
-                "at this point a challenge is supposed to have a status",
-            ));
-        }
+        )),
+        None => Err(Error::ClientImplementation(
+            "at this point a challenge is supposed to have a status",
+        )),
     }
-    Ok(chall)
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum AcmeChallError {
     /// This challenge is invalid
-    #[error("This challenge is invalid")]
-    Invalid,
+    #[error("This challenge is invalid: {0}")]
+    Invalid(String),
     /// This challenge is being processed, retry later
     #[error("This challenge is being processed, retry later")]
     Processing,
