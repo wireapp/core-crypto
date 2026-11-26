@@ -107,6 +107,8 @@ sourceSets {
     test {
         kotlin {
             srcDir(sharedTestSources.resolve("kotlin"))
+            // The shared tests that only run on the JVM.
+            srcDir(projectDir.resolve("../shared/src/jvmTest/kotlin"))
         }
     }
 }

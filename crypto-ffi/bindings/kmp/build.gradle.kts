@@ -76,6 +76,11 @@ kotlin {
             }
         }
 
+        getByName("jvmTest") {
+            // The shared tests that only run on the JVM.
+            kotlin.srcDir("../shared/src/jvmTest/kotlin")
+        }
+
         getByName("jvmMain") {
             dependencies {
                 implementation(libs.jna)

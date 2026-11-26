@@ -89,27 +89,6 @@ class DatabaseKeyTest {
     }
 
     @Test
-    fun migrating_key_type_to_bytes_works() = runTest {
-        // Skip this test on Android.
-        if (System.getProperty("java.vm.name") == "Dalvik") {
-            return@runTest
-        }
-
-        val oldKey = "secret"
-        val tmpdir = createTempDirectory("cc-test-")
-        var path = Path(object {}.javaClass.getResource("/db-v10002003.sqlite")!!.getPath())
-        path = path.copyTo(tmpdir / path.name)
-
-        val newKey = genDatabaseKey()
-        migrateDatabaseKeyTypeToBytes(path.absolutePathString(), oldKey, newKey)
-        val db = openDatabase(path.absolutePathString(), newKey)
-
-        CoreCrypto(db)
-
-        tmpdir.toFile().deleteRecursively()
-    }
-
-    @Test
     fun update_database_key_works() = runTest {
         val tmpdir = createTempDirectory("cc-test-")
         val path = tmpdir / "keystore"
