@@ -39,9 +39,9 @@ pub use core_crypto_keystore::{Database, DatabaseKey};
 pub use core_crypto_macros::{dispotent, durable, idempotent};
 pub(crate) use immutable_database::ImmutableDatabase;
 pub use openmls::{
-    group::{MlsGroup, MlsGroupConfig},
+    group::MlsGroup,
     prelude::{
-        Ciphersuite as MlsCiphersuite, GroupEpoch, KeyPackageIn, MlsMessageIn, MlsMessageInBody, Node, SignatureScheme,
+        Ciphersuite as MlsCiphersuite, GroupEpoch, KeyPackageIn, MlsMessageBodyIn, MlsMessageIn, Node, SignatureScheme,
         group_info::VerifiableGroupInfo,
     },
 };
