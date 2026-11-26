@@ -3,7 +3,6 @@
 package com.wire.crypto
 
 import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import testutils.MockMlsTransportSuccessProvider
 import testutils.genClientId
 import testutils.genDatabaseKey
@@ -18,24 +17,21 @@ class GeneralTest {
         val rawUuid = UUID.randomUUID().toString()
         val uuid = Uuid(rawUuid)
 
-        assertThat(uuid.toString()).isEqualTo(rawUuid)
+        assertEquals(rawUuid, uuid.toString())
     }
 
     @Test
     fun get_version() = runTest {
         val version = version()
 
-        assertThat(version).isNotNull()
-        assertThat(version).isNotEmpty()
+        assertTrue(version.isNotEmpty())
     }
 
     @Test
     fun get_build_metadata() = runTest {
         val metadata = buildMetadata()
 
-        assertThat(metadata).isNotNull()
-        assertThat(metadata.gitDescribe).isNotNull()
-        assertThat(metadata.gitDescribe).isNotEmpty()
+        assertTrue(metadata.gitDescribe.isNotEmpty())
     }
 }
 
@@ -89,7 +85,7 @@ class DatabaseKeyTest {
     @Test
     fun invalid_length() = runTest {
         val exc = assertFailsWith<CoreCryptoException.Other> { DatabaseKey(ByteArray(48)) }
-        assertThat(exc.msg.contains("Invalid database key size, expected 32, got 48")).isTrue
+        assertTrue(exc.msg.contains("Invalid database key size, expected 32, got 48"))
     }
 
     @Test

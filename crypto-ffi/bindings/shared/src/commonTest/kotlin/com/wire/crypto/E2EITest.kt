@@ -3,7 +3,6 @@
 package com.wire.crypto
 
 import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import testutils.*
 import java.util.Base64
 import kotlin.test.*
@@ -122,7 +121,7 @@ internal class E2EITest {
             )
         )
 
-        assertThat(acquisition).isNotNull
+        assertNotNull(acquisition)
     }
 
     @Test
@@ -146,7 +145,7 @@ internal class E2EITest {
 
         val acquisition = X509CredentialAcquisition.newFromCredentialRef(pkiEnv, config, credentialRef)
 
-        assertThat(acquisition).isNotNull
+        assertNotNull(acquisition)
     }
 
     @Test
@@ -157,9 +156,13 @@ internal class E2EITest {
 
             val conversationId = createConversation(bob)
             invite(bob, alice, conversationId)
-            assertThat(alice.transaction { ctx -> ctx.e2eiConversationState(conversationId) })
-                .isEqualTo(E2eiConversationState.NOT_ENABLED)
-            assertThat(bob.transaction { ctx -> ctx.e2eiConversationState(conversationId) })
-                .isEqualTo(E2eiConversationState.NOT_ENABLED)
+            assertEquals(
+                E2eiConversationState.NOT_ENABLED,
+                alice.transaction { ctx -> ctx.e2eiConversationState(conversationId) }
+            )
+            assertEquals(
+                E2eiConversationState.NOT_ENABLED,
+                bob.transaction { ctx -> ctx.e2eiConversationState(conversationId) }
+            )
         }
 }

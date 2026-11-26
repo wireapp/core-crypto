@@ -6,8 +6,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
-import org.assertj.core.api.AssertionsForInterfaceTypes.assertThatNoException
 import testutils.*
 import kotlin.collections.toList
 import kotlin.test.*
@@ -22,11 +20,11 @@ class MLSTest {
         val data = "my message processing checkpoint".toByteArray()
 
         cc.transaction { ctx ->
-            assertThat(ctx.getData()).isNull()
+            assertNull(ctx.getData())
             ctx.setData(data)
         }
 
-        cc.transaction { ctx -> assertThat(ctx.getData()).isEqualTo(data) }
+        cc.transaction { ctx -> assertContentEquals(data, ctx.getData()) }
     }
 
     @Test
@@ -170,7 +168,7 @@ class MLSTest {
         }
 
         val data = coreCrypto.transaction { context -> context.getData() }
-        assertThat(data).isNull()
+        assertNull(data)
     }
 
     @Test
@@ -190,19 +188,19 @@ class MLSTest {
     fun findCredentials_should_return_non_empty_result() = runTest {
         val clientId = genClientId()
         val alice = ccInit(CcInitOptions(clientId = clientId))
-        assertThat(alice.findCredentials(clientId = clientId)).isNotEmpty()
+        assertTrue(alice.findCredentials(clientId = clientId).isNotEmpty())
     }
 
     @Test
     fun conversationExists_should_return_true() = runTest {
         val alice = ccInit()
         val conversationId = genConversationId()
-        assertThat(alice.transaction { ctx -> ctx.conversationExists(conversationId) }).isFalse()
+        assertFalse(alice.transaction { ctx -> ctx.conversationExists(conversationId) })
         val credentialRef = alice.getCredentials().last()
         alice.transaction { ctx ->
             ctx.createConversation(conversationId, credentialRef)
         }
-        assertThat(alice.transaction { ctx -> ctx.conversationExists(conversationId) }).isTrue()
+        assertTrue(alice.transaction { ctx -> ctx.conversationExists(conversationId) })
     }
 
     @Test
@@ -210,31 +208,34 @@ class MLSTest {
         val alice = ccInit()
 
         // by default, no key packages are generated
-        assertThat(
+        assertEquals(
+            0,
             alice.transaction { ctx ->
                 ctx.getKeyPackages().size
             }
-        ).isEqualTo(0)
-        assertThat(
+        )
+        assertEquals(
+            200,
             alice.transaction { ctx ->
 
                 val credentialRef = alice.getCredentials().last()
 
                 List(200U.toInt()) { _ -> ctx.generateKeyPackage(credentialRef) }
-            }
-        ).isNotEmpty().hasSize(200)
-        assertThat(
+            }.size
+        )
+        assertEquals(
+            200,
             alice.transaction { ctx ->
                 ctx.getKeyPackages().size
             }
-        ).isEqualTo(200)
+        )
     }
 
     @Test
     fun given_new_conversation_when_calling_conversationEpoch_should_return_epoch_0() = runTest {
         val alice = ccInit()
         val id = createConversation(alice)
-        assertThat(alice.transaction { ctx -> ctx.conversationEpoch(id) }).isEqualTo(0UL)
+        assertEquals(0UL, alice.transaction { ctx -> ctx.conversationEpoch(id) })
     }
 
     @Test
@@ -259,7 +260,7 @@ class MLSTest {
         val conversationId = createConversation(bob)
         val groupId = invite(bob, alice, conversationId)
 
-        assertThat(groupId).isEqualTo(conversationId)
+        assertEquals(conversationId, groupId)
     }
 
     @Test
@@ -272,7 +273,7 @@ class MLSTest {
 
         val msg = "Hello World !".toByteArray()
         val ciphertextMsg = alice.transaction { ctx -> ctx.encryptMessage(groupId, msg) }
-        assertThat(ciphertextMsg).isNotEqualTo(msg)
+        assertFalse(ciphertextMsg.contentEquals(msg))
 
         val plaintextMsg =
             bob.transaction { ctx ->
@@ -280,7 +281,7 @@ class MLSTest {
                     ctx.decryptMessage(groupId, ciphertextMsg).singleDecrypted()
                 ).plaintext
             }
-        assertThat(plaintextMsg).isNotEmpty().isEqualTo(msg)
+        assertContentEquals(msg, plaintextMsg)
 
         val rejection = bob.transaction { ctx -> ctx.decryptMessage(groupId, ciphertextMsg).singleRejected() }
         assertIs<RejectionReason.DuplicateMessage>(rejection)
@@ -304,14 +305,14 @@ class MLSTest {
                 persistedMessage
             )
         }
-        assertThat(persistedCiphertext).isNotEqualTo(persistedMessage)
+        assertFalse(persistedCiphertext.contentEquals(persistedMessage))
 
         val persistedPlaintext = bob.transaction { ctx ->
             assertIs<DecryptedMessage.PersistedTargeted>(
                 ctx.decryptMessage(conversationId, persistedCiphertext).singleDecrypted()
             ).plaintext
         }
-        assertThat(persistedPlaintext).isEqualTo(persistedMessage)
+        assertContentEquals(persistedMessage, persistedPlaintext)
 
         val transientMessage = "This transient message targets Bob".toByteArray()
         val transientCiphertext = alice.transaction { ctx ->
@@ -322,14 +323,14 @@ class MLSTest {
                 transientMessage
             )
         }
-        assertThat(transientCiphertext).isNotEqualTo(transientMessage)
+        assertFalse(transientCiphertext.contentEquals(transientMessage))
 
         val transientPlaintext = bob.transaction { ctx ->
             assertIs<DecryptedMessage.TransientTargeted>(
                 ctx.decryptMessage(conversationId, transientCiphertext).singleDecrypted()
             ).plaintext
         }
-        assertThat(transientPlaintext).isEqualTo(transientMessage)
+        assertContentEquals(transientMessage, transientPlaintext)
     }
 
     @Test
@@ -344,14 +345,14 @@ class MLSTest {
         val ciphertext = alice.transaction { ctx ->
             ctx.encryptTransientMessage(conversationId, message)
         }
-        assertThat(ciphertext).isNotEqualTo(message)
+        assertFalse(ciphertext.contentEquals(message))
 
         val plaintext = bob.transaction { ctx ->
             assertIs<DecryptedMessage.Transient>(
                 ctx.decryptMessage(conversationId, ciphertext).singleDecrypted()
             ).plaintext
         }
-        assertThat(plaintext).isEqualTo(message)
+        assertContentEquals(message, plaintext)
     }
 
     @Test
@@ -373,7 +374,7 @@ class MLSTest {
         assertIs<DecryptedMessage.Commit>(decrypted)
 
         val members = alice.transaction { ctx -> ctx.getClientIds(conversationId) }
-        assertThat(members).containsAll(listOf(aliceId, bobId, carolId))
+        assertTrue(members.containsAll(listOf(aliceId, bobId, carolId)))
     }
 
     @Test
@@ -384,7 +385,7 @@ class MLSTest {
         val id = createConversation(bob)
 
         val groupId = invite(bob, alice, id)
-        assertThat(groupId).isEqualTo(id)
+        assertEquals(id, groupId)
     }
 
     @Test
@@ -412,9 +413,8 @@ class MLSTest {
     fun wipeConversation_should_delete_the_conversation_from_the_keystore() = runTest {
         val alice = ccInit()
         val conversationId = createConversation(alice)
-        assertThatNoException().isThrownBy {
-            runBlocking { alice.transaction { ctx -> ctx.wipeConversation(conversationId) } }
-        }
+        alice.transaction { ctx -> ctx.wipeConversation(conversationId) }
+        assertFalse(alice.transaction { ctx -> ctx.conversationExists(conversationId) })
     }
 
     @Test
@@ -466,10 +466,10 @@ class MLSTest {
         val n = 50
         val secrets = (0 until n).map {
             val secret = alice.transaction { ctx -> ctx.exportSecretKey(conversationId, 32U) }.copyBytes()
-            assertThat(secret).hasSize(32)
+            assertEquals(32, secret.size)
             secret
         }.toSet()
-        assertThat(secrets).hasSize(n)
+        assertEquals(n, secrets.size)
     }
 
     @Test
@@ -664,7 +664,7 @@ class MLSTest {
             val ref = allCredentials.last()
             assertEquals(ref.type(), CredentialType.BASIC)
             assertNotEquals(ref.earliestValidity(), 0uL)
-            assertThat(allCredentials).hasSize(1)
+            assertEquals(1, allCredentials.size)
         }
     }
 
@@ -680,7 +680,7 @@ class MLSTest {
             }
 
             val allCredentials = cc.getCredentials()
-            assertThat(allCredentials).hasSize(0)
+            assertEquals(0, allCredentials.size)
         }
     }
 
@@ -716,8 +716,8 @@ class MLSTest {
             val results1 = cc.findCredentials(cipherSuite = cipherSuite1)
             val results2 = cc.findCredentials(cipherSuite = cipherSuite2)
 
-            assertThat(results1).hasSize(1)
-            assertThat(results2).hasSize(1)
+            assertEquals(1, results1.size)
+            assertEquals(1, results2.size)
             assertNotEquals(results1[0], results2[0])
         }
     }
@@ -768,7 +768,7 @@ class MLSTest {
             }
 
             assertNotNull(keyPackages)
-            assertThat(keyPackages).hasSize(1)
+            assertEquals(1, keyPackages.size)
             assertNotNull(keyPackages[0])
         }
     }
@@ -793,7 +793,7 @@ class MLSTest {
             }
 
             assertNotNull(keyPackages)
-            assertThat(keyPackages).hasSize(1)
+            assertEquals(1, keyPackages.size)
         }
     }
 
@@ -825,13 +825,13 @@ class MLSTest {
                 }
 
                 val kpsBeforeRemoval = ctx.getKeyPackages()
-                assertThat(kpsBeforeRemoval).hasSize(keypackagesPerCredential * 2)
+                assertEquals(keypackagesPerCredential * 2, kpsBeforeRemoval.size)
 
                 // remove all keypackages for one of the credentials
                 ctx.removeKeyPackagesFor(cref1)
 
                 val kps = ctx.getKeyPackages()
-                assertThat(kps).hasSize(keypackagesPerCredential)
+                assertEquals(keypackagesPerCredential, kps.size)
             }
         }
     }
