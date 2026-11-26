@@ -1,6 +1,6 @@
 use std::{fmt, sync::Arc, time::Duration};
 
-use core_crypto::ConversationConfiguration;
+use core_crypto::{ConversationConfiguration, PendingStatus};
 
 use crate::{
     CipherSuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, Credential,
@@ -155,7 +155,7 @@ impl CoreCryptoContext {
     /// Returns true if a conversation with the given id exists in the local state.
     pub async fn conversation_exists(&self, conversation_id: &ConversationId) -> CoreCryptoResult<bool> {
         self.inner
-            .conversation_exists(conversation_id.as_ref(), Some(false))
+            .conversation_exists(conversation_id.as_ref(), Some(PendingStatus::Operational))
             .await
             .map_err(Into::into)
     }
