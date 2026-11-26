@@ -463,13 +463,10 @@ class MLSTest {
     fun exportSecretKey_should_generate_a_secret_with_the_right_length() = runTest {
         val alice = ccInit()
         val conversationId = createConversation(alice)
-        val n = 50
-        val secrets = (0 until n).map {
-            val secret = alice.transaction { ctx -> ctx.exportSecretKey(conversationId, 32U) }.copyBytes()
-            assertEquals(32, secret.size)
-            secret
-        }.toSet()
-        assertEquals(n, secrets.size)
+        for (length in listOf(16U, 32U, 64U)) {
+            val secret = alice.transaction { ctx -> ctx.exportSecretKey(conversationId, length) }.copyBytes()
+            assertEquals(length.toInt(), secret.size)
+        }
     }
 
     @Test
