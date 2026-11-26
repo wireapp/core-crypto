@@ -245,6 +245,10 @@ impl OpenMlsCrypto for &CryptoProvider {
         self.crypto.hkdf_extract(hash_type, salt, ikm)
     }
 
+    fn hmac(&self, hash_type: HashType, key: &[u8], message: &[u8]) -> Result<tls_codec::SecretVLBytes, CryptoError> {
+        self.crypto.hmac(hash_type, key, message)
+    }
+
     fn hkdf_expand(
         &self,
         hash_type: HashType,

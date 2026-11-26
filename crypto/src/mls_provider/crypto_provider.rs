@@ -8,6 +8,7 @@ use chacha20poly1305::ChaCha20Poly1305;
 use crypto_common::KeySizeUser as _;
 use elliptic_curve::{Generate as _, sec1};
 use hkdf::Hkdf;
+use hmac::{Hmac, Mac as _};
 use ml_dsa::{MlDsa44, MlDsa65, MlDsa87};
 use openmls::prelude::HpkeCiphertext;
 use openmls_traits::{
@@ -274,6 +275,20 @@ impl OpenMlsCrypto for RustCrypto {
             HashType::Sha2_256 => Ok(Hkdf::<Sha256>::extract(Some(salt), ikm).0.as_slice().into()),
             HashType::Sha2_384 => Ok(Hkdf::<Sha384>::extract(Some(salt), ikm).0.as_slice().into()),
             HashType::Sha2_512 => Ok(Hkdf::<Sha512>::extract(Some(salt), ikm).0.as_slice().into()),
+        }
+    }
+
+    fn hmac(&self, hash_type: HashType, key: &[u8], message: &[u8]) -> Result<SecretVLBytes, CryptoError> {
+        fn hmac<D: hmac::EagerHash>(key: &[u8], message: &[u8]) -> Result<SecretVLBytes, CryptoError> {
+            let mut mac = Hmac::<D>::new_from_slice(key).map_err(|_| CryptoError::InvalidLength)?;
+            mac.update(message);
+            Ok(mac.finalize().into_bytes().as_slice().into())
+        }
+
+        match hash_type {
+            HashType::Sha2_256 => hmac::<Sha256>(key, message),
+            HashType::Sha2_384 => hmac::<Sha384>(key, message),
+            HashType::Sha2_512 => hmac::<Sha512>(key, message),
         }
     }
 
