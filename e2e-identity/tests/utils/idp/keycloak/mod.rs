@@ -57,7 +57,7 @@ impl KeycloakImage {
             "--build-arg",
             &format!("KEYCLOAK_VERSION={}", Self::VERSION),
             "--build-arg",
-            &format!("kc_port={port}"),
+            &format!("KEYCLOAK_PORT={port}"),
             &format!("--tag={}:{}", Self::NAME, Self::TAG),
             ".",
         ];

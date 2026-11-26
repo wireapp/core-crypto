@@ -1,6 +1,6 @@
 ARG KEYCLOAK_VERSION
 FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
-ARG kc_port
+ARG KEYCLOAK_PORT
 
 WORKDIR /opt/keycloak
 
@@ -15,7 +15,7 @@ RUN keytool -genkeypair \
      -ext "SAN:c=DNS:localhost,IP:127.0.0.1" \
      -keystore conf/server.keystore
 
-ENV KC_HTTP_PORT="${kc_port}"
+ENV KC_HTTP_PORT="${KEYCLOAK_PORT}"
 
 ENV KC_FEATURES="client-policies"
 ENV KC_DB="dev-file"
