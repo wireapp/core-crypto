@@ -4,7 +4,7 @@ const LEN_RANGE: std::ops::RangeInclusive<usize> = 128..=1024;
 
 use hex_literal::hex;
 use openmls::prelude::Ciphersuite;
-use openmls_traits::{OpenMlsCryptoProvider as _, crypto::OpenMlsCrypto, random::OpenMlsRand, types::HpkeKeyPair};
+use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::HpkeKeyPair};
 use rand::{Rng, RngExt as _};
 
 use super::fixtures::*;
@@ -51,7 +51,7 @@ async fn hash_is_consistent(backend: CryptoProvider, cipher_suite: Ciphersuite, 
     let backend = backend.await;
     backend.reseed(entropy_seed).unwrap();
     let len = rand::rng().random_range(LEN_RANGE);
-    let data = backend.rand().random_vec(len).unwrap();
+    let data = backend.crypto().random_vec(len).unwrap();
     let crypto = backend.crypto();
     let output = crypto.hash(cipher_suite.hash_algorithm(), &data).unwrap();
     let supposed_output_len = cipher_suite.hash_length();
@@ -67,10 +67,13 @@ async fn aead_is_consistent_and_can_roundtrip(
     let backend = backend.await;
     backend.reseed(entropy_seed).unwrap();
     let len = rand::rng().random_range(LEN_RANGE);
-    let data = backend.rand().random_vec(len).unwrap();
-    let aad = backend.rand().random_vec(rand::rng().random_range(LEN_RANGE)).unwrap();
-    let nonce = backend.rand().random_vec(cipher_suite.aead_nonce_length()).unwrap();
-    let key = backend.rand().random_vec(cipher_suite.aead_key_length()).unwrap();
+    let data = backend.crypto().random_vec(len).unwrap();
+    let aad = backend
+        .crypto()
+        .random_vec(rand::rng().random_range(LEN_RANGE))
+        .unwrap();
+    let nonce = backend.crypto().random_vec(cipher_suite.aead_nonce_length()).unwrap();
+    let key = backend.crypto().random_vec(cipher_suite.aead_key_length()).unwrap();
 
     let crypto = backend.crypto();
     let encrypted = crypto
@@ -88,21 +91,21 @@ async fn aead_is_consistent_and_can_roundtrip(
 
 #[apply(all_storage_types_and_ciphersuites)]
 async fn hpke_is_consistent(backend: CryptoProvider, cipher_suite: Ciphersuite, entropy_seed: Option<EntropySeed>) {
-    let backend = backend.await;
-    backend.reseed(entropy_seed).unwrap();
+    let provider = backend.await;
+    provider.reseed(entropy_seed).unwrap();
 
-    let crypto = backend.crypto();
+    let crypto = provider.crypto();
 
-    let message = backend.rand().random_vec(rand::rng().random_range(LEN_RANGE)).unwrap();
+    let message = crypto.random_vec(rand::rng().random_range(LEN_RANGE)).unwrap();
 
-    let aad = backend.rand().random_vec(rand::rng().random_range(LEN_RANGE)).unwrap();
+    let aad = crypto.random_vec(rand::rng().random_range(LEN_RANGE)).unwrap();
 
-    let info = backend.rand().random_vec(rand::rng().random_range(LEN_RANGE)).unwrap();
+    let info = crypto.random_vec(rand::rng().random_range(LEN_RANGE)).unwrap();
 
     let alice = crypto
         .derive_hpke_keypair(
             cipher_suite.hpke_config(),
-            &backend.rand().random_vec(rand::rng().random_range(LEN_RANGE)).unwrap(),
+            &crypto.random_vec(rand::rng().random_range(LEN_RANGE)).unwrap(),
         )
         .unwrap();
 
@@ -115,8 +118,8 @@ async fn hpke_is_consistent(backend: CryptoProvider, cipher_suite: Ciphersuite, 
 
     assert_eq!(unsealed_secret_message, message);
 
-    let psk = backend.rand().random_vec(rand::rng().random_range(LEN_RANGE)).unwrap();
-    let psk_id = backend.rand().random_vec(rand::rng().random_range(LEN_RANGE)).unwrap();
+    let psk = crypto.random_vec(rand::rng().random_range(LEN_RANGE)).unwrap();
+    let psk_id = crypto.random_vec(rand::rng().random_range(LEN_RANGE)).unwrap();
     let secret_message = crypto
         .hpke_seal_psk(
             cipher_suite.hpke_config(),

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_lock::RwLock;
-use core_crypto_keystore::Database;
+use core_crypto_keystore::{Database, MlsStorage, Transaction};
 
 mod crypto_provider;
 mod error;
@@ -12,6 +12,7 @@ pub(crate) use crypto_provider::CRYPTO;
 pub use crypto_provider::RustCrypto;
 pub(crate) use error::{Error, MlsProviderResult};
 use openmls_traits::{
+    OpenMlsProvider,
     crypto::OpenMlsCrypto,
     types::{
         AeadType, Ciphersuite, CryptoError, ExporterSecret, HashType, HpkeCiphertext, HpkeConfig, HpkeKeyPair,
@@ -161,6 +162,35 @@ impl CryptoProvider {
         self.auth_service.pki_env.read().await.is_some()
     }
 
+    /// The cryptographic primitives openmls uses.
+    pub fn crypto(&self) -> &RustCrypto {
+        &self.crypto
+    }
+
+    /// The service which validates credentials against the PKI environment.
+    pub fn authentication_service(&self) -> &AuthenticationService {
+        &self.auth_service
+    }
+
+    /// A provider for openmls whose reads and writes go to this transaction.
+    pub fn with_transaction<'a>(&'a self, transaction: &'a Transaction) -> MlsProviderRef<'a> {
+        MlsProviderRef {
+            crypto: &self.crypto,
+            storage: MlsStorage::from(transaction),
+        }
+    }
+
+    /// A provider for openmls which reads through the database and can't write.
+    ///
+    /// Reads see the writes of a transaction in flight. They fail rather than wait if the database is busy, and
+    /// writes always fail.
+    pub fn read_only(&self) -> MlsProviderRef<'_> {
+        MlsProviderRef {
+            crypto: &self.crypto,
+            storage: MlsStorage::read_only(&self.key_store),
+        }
+    }
+
     /// Reseeds the internal CSPRNG.
     ///
     /// If [None] is provided, the new seed is pulled from the current OS target's capabilities.
@@ -202,26 +232,28 @@ impl CryptoProvider {
     }
 }
 
-impl openmls_traits::OpenMlsCryptoProvider for CryptoProvider {
+/// What openmls needs for an operation: our crypto, and the storage its reads and writes go to.
+#[derive(Clone, Copy)]
+pub struct MlsProviderRef<'a> {
+    crypto: &'a RustCrypto,
+    storage: MlsStorage<'a>,
+}
+
+impl<'a> OpenMlsProvider for MlsProviderRef<'a> {
     type CryptoProvider = RustCrypto;
     type RandProvider = RustCrypto;
-    type KeyStoreProvider = Database;
-    type AuthenticationServiceProvider = AuthenticationService;
+    type StorageProvider = MlsStorage<'a>;
+
+    fn storage(&self) -> &Self::StorageProvider {
+        &self.storage
+    }
 
     fn crypto(&self) -> &Self::CryptoProvider {
-        &self.crypto
+        self.crypto
     }
 
     fn rand(&self) -> &Self::RandProvider {
-        &self.crypto
-    }
-
-    fn key_store(&self) -> &Self::KeyStoreProvider {
-        &self.key_store
-    }
-
-    fn authentication_service(&self) -> &Self::AuthenticationServiceProvider {
-        &self.auth_service
+        self.crypto
     }
 }
 

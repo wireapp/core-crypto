@@ -40,7 +40,7 @@ async fn use_provider(
     #[from(setup)]
     #[with(true)]
     #[future]
-    backend: CryptoProvider,
+    backend: MlsProvider,
 ) {
 }
 
@@ -161,7 +161,7 @@ pub fn entropy() -> EntropySeed {
 pub fn all_storage_types_and_ciphersuites(
     #[case]
     #[future]
-    backend: CryptoProvider,
+    backend: MlsProvider,
     #[case] cipher_suite: openmls::prelude::Ciphersuite,
     #[case] entropy_seed: Option<EntropySeed>,
 ) {
