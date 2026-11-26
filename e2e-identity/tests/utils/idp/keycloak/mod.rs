@@ -108,37 +108,6 @@ impl KeycloakImage {
         };
         admin.realm_clients_post(Self::REALM, client).await.unwrap();
 
-        // Now we need to turn on the "oidc-claims-param-token-mapper" mapper to activate the claims request mapping
-        // https://openid.net/specs/openid-connect-core-1_0.html#ClaimsParameter
-        // (event though the discovery endpoint already advertises supporting it)
-        let component_type = "org.keycloak.services.clientregistration.policy.ClientRegistrationPolicy";
-        let components = admin
-            .realm_components_get(Self::REALM, None, None, Some(component_type.to_string()), None)
-            .await
-            .unwrap();
-        let mut component = components
-            .into_iter()
-            .find(|c| {
-                c.provider_id == Some("allowed-protocol-mappers".to_string())
-                    && c.name == Some("Allowed Protocol Mapper Types".to_string())
-                    && c.sub_type == Some("anonymous".to_string())
-            })
-            .unwrap();
-
-        let component_id = component.id.as_ref().unwrap();
-        if let Some(component_cfg) = component.config.as_mut() {
-            component_cfg
-                .entry("allowed-protocol-mapper-types".to_string())
-                .and_modify(|e| {
-                    e.push("oidc-claims-param-value-idtoken-mapper".to_string());
-                });
-        }
-
-        admin
-            .realm_components_with_id_put(Self::REALM, component_id, component.clone())
-            .await
-            .unwrap();
-
         // Configure Keycloak to include extra claims, 'keyauth' and 'acme_aud',
         // in the returned ID token.
         let scopes = admin.realm_client_scopes_get(Self::REALM).await.unwrap();
