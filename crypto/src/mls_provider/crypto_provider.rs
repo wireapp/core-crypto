@@ -752,44 +752,44 @@ mod tests {
         random::OpenMlsRand as _,
         types::{CryptoError, HpkeAeadType, HpkeCiphertext, HpkeConfig, HpkeKdfType, HpkeKemType, SignatureScheme},
     };
+    use rstest::rstest;
 
     use super::{EntropySeed, RawEntropySeed, RustCrypto};
 
     /// `signature_public_key_len` exists so that callers can size a buffer for, or validate the
     /// length of, a public key this provider produced. It is only meaningful if it agrees with
     /// what `signature_key_gen` actually emits.
-    #[test]
-    fn signature_public_key_len_matches_generated_keys() {
+    #[rstest]
+    #[case::ed25519(SignatureScheme::ED25519)]
+    #[case::p256(SignatureScheme::ECDSA_SECP256R1_SHA256)]
+    #[case::p384(SignatureScheme::ECDSA_SECP384R1_SHA384)]
+    #[case::p521(SignatureScheme::ECDSA_SECP521R1_SHA512)]
+    fn signature_public_key_len_matches_generated_keys(#[case] scheme: SignatureScheme) {
         let crypto = RustCrypto::default();
+        let (_sk, pk) = crypto
+            .signature_key_gen(scheme)
+            .expect("this provider supports the requested scheme");
 
-        for scheme in [
-            SignatureScheme::ED25519,
-            SignatureScheme::ECDSA_SECP256R1_SHA256,
-            SignatureScheme::ECDSA_SECP384R1_SHA384,
-            SignatureScheme::ECDSA_SECP521R1_SHA512,
-        ] {
-            let (_sk, pk) = crypto
-                .signature_key_gen(scheme)
-                .expect("this provider supports all four of these schemes");
+        assert_eq!(
+            pk.len(),
+            crypto.signature_public_key_len(scheme),
+            "reported public key length for {scheme:?} must match the generated key"
+        );
 
-            assert_eq!(
-                pk.len(),
-                crypto.signature_public_key_len(scheme),
-                "reported public key length for {scheme:?} must match the generated key"
-            );
-
-            // The generated key must also pass this provider's own validation, which is what the
-            // trait's default implementation would have used the length above to decide.
-            crypto
-                .validate_signature_key(scheme, &pk)
-                .unwrap_or_else(|err| panic!("generated {scheme:?} key must validate: {err:?}"));
-        }
+        // The generated key must also pass this provider's own validation, which is what the
+        // trait's default implementation would have used the length above to decide.
+        crypto
+            .validate_signature_key(scheme, &pk)
+            .unwrap_or_else(|err| panic!("generated {scheme:?} key must validate: {err:?}"));
     }
 
     /// An empty PSK provides no binding, and `hpke` treats such a bundle as plain `Base` mode, so
     /// the `_psk` entry points must not silently accept one.
-    #[test]
-    fn hpke_psk_mode_rejects_a_psk_without_entropy() {
+    #[rstest]
+    #[case::empty_psk_and_id(&[], &[])]
+    #[case::empty_id(&[0u8; 32], &[])]
+    #[case::short_psk(&[0u8; 31], b"id")]
+    fn hpke_psk_mode_rejects_a_psk_without_entropy(#[case] psk: &[u8], #[case] psk_id: &[u8]) {
         let crypto = RustCrypto::default();
         // `HpkeConfig` is neither `Copy` nor `Clone`, so build a fresh one per call.
         let config = || {
@@ -808,22 +808,16 @@ mod tests {
             ciphertext: Vec::new().into(),
         };
 
-        for (psk, psk_id, case) in [
-            (&[][..], &[][..], "empty psk and psk id"),
-            (&[0u8; 32][..], &[][..], "empty psk id"),
-            (&[0u8; 31][..], &b"id"[..], "psk one byte short of 32"),
-        ] {
-            assert_eq!(
-                crypto.hpke_seal_psk(config(), &pk_r, b"info", b"aad", psk, psk_id, b"ptxt"),
-                Err(CryptoError::InvalidLength),
-                "hpke_seal_psk must reject: {case}"
-            );
-            assert_eq!(
-                crypto.hpke_open_psk(config(), &ciphertext, &pk_r, b"info", b"aad", psk, psk_id),
-                Err(CryptoError::InvalidLength),
-                "hpke_open_psk must reject: {case}"
-            );
-        }
+        assert_eq!(
+            crypto.hpke_seal_psk(config(), &pk_r, b"info", b"aad", psk, psk_id, b"ptxt"),
+            Err(CryptoError::InvalidLength),
+            "hpke_seal_psk must reject invalid PSK inputs"
+        );
+        assert_eq!(
+            crypto.hpke_open_psk(config(), &ciphertext, &pk_r, b"info", b"aad", psk, psk_id),
+            Err(CryptoError::InvalidLength),
+            "hpke_open_psk must reject invalid PSK inputs"
+        );
     }
 
     /// Reseeding without a seed must take one from the OS.

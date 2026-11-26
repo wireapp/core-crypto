@@ -149,30 +149,23 @@ mod tests {
         assert_eq!(delay, 0);
     }
 
-    #[test]
-    fn calculate_delay_n() {
+    #[rstest]
+    #[case(0, 15)]
+    #[case(1, 30)]
+    #[case(2, 60)]
+    #[case(3, 87)]
+    #[case(4, 109)]
+    #[case(5, 127)]
+    #[case(6, 143)]
+    #[case(7, 157)]
+    #[case(8, 170)]
+    #[case(9, 0)]
+    #[case::out_of_bounds_index(10, 15)]
+    fn calculate_delay_n(#[case] self_index: u64, #[case] expected_delay: u64) {
         let epoch = 1;
         let nb_members = 10;
-
-        let indexes_delays = [
-            (0, 15),
-            (1, 30),
-            (2, 60),
-            (3, 87),
-            (4, 109),
-            (5, 127),
-            (6, 143),
-            (7, 157),
-            (8, 170),
-            (9, 0),
-            // wrong but it shouldn't cause problems
-            (10, 15),
-        ];
-
-        for (self_index, expected_delay) in indexes_delays {
-            let delay = Conversation::calculate_delay(self_index, epoch, nb_members);
-            assert_eq!(delay, expected_delay);
-        }
+        let delay = Conversation::calculate_delay(self_index, epoch, nb_members);
+        assert_eq!(delay, expected_delay);
     }
 
     #[apply(all_cred_cipher)]

@@ -353,6 +353,7 @@ impl ClientId {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
     use uuid::Uuid;
 
     use super::ClientId;
@@ -367,35 +368,35 @@ mod tests {
     /// `e2e-identity`'s ACME identifier, which sends `to_uri()` to the ACME server). For an X509
     /// credential the client id *is* the certificate's identity, so padding here would put us out
     /// of step with every certificate already issued.
-    #[test]
-    fn device_id_is_encoded_as_unpadded_hex() {
-        for (device_id, expected) in [
-            (0x0, "0"),
-            (0xf, "f"),
-            (0x8e64_2443_0d3b_28be, "8e6424430d3b28be"),
-            (u64::MAX, "ffffffffffffffff"),
-        ] {
-            assert_eq!(ClientId::encode_device_id(device_id), expected);
+    #[rstest]
+    #[case::zero(0x0, "0")]
+    #[case::single_digit(0xf, "f")]
+    #[case::full_width(0x8e64_2443_0d3b_28be, "8e6424430d3b28be")]
+    #[case::max(u64::MAX, "ffffffffffffffff")]
+    fn device_id_is_encoded_as_unpadded_hex(#[case] device_id: u64, #[case] expected: &str) {
+        assert_eq!(ClientId::encode_device_id(device_id), expected);
 
-            let client_id = ClientId::new(USER_ID, device_id, DOMAIN);
-            assert_eq!(
-                std::str::from_utf8(client_id.as_bytes()).unwrap(),
-                format!("{}:{expected}@{DOMAIN}", USER_ID.hyphenated()),
-            );
-        }
+        let client_id = ClientId::new(USER_ID, device_id, DOMAIN);
+        assert_eq!(
+            std::str::from_utf8(client_id.as_bytes()).unwrap(),
+            format!("{}:{expected}@{DOMAIN}", USER_ID.hyphenated()),
+        );
     }
 
     /// Whatever we render a client id as has to parse back to the same field values.
-    #[test]
-    fn client_id_round_trips_through_its_own_encoding() {
-        for device_id in [0x0, 0xf, 0x00ff, 0x8e64_2443_0d3b_28be, u64::MAX] {
-            let client_id = ClientId::new(USER_ID, device_id, DOMAIN);
-            let deserialized = client_id.deserialize().unwrap();
+    #[rstest]
+    #[case::zero(0x0)]
+    #[case::single_digit(0xf)]
+    #[case::two_digits(0x00ff)]
+    #[case::full_width(0x8e64_2443_0d3b_28be)]
+    #[case::max(u64::MAX)]
+    fn client_id_round_trips_through_its_own_encoding(#[case] device_id: u64) {
+        let client_id = ClientId::new(USER_ID, device_id, DOMAIN);
+        let deserialized = client_id.deserialize().unwrap();
 
-            assert_eq!(deserialized.user_id, USER_ID);
-            assert_eq!(deserialized.device_id, device_id);
-            assert_eq!(deserialized.domain, DOMAIN);
-        }
+        assert_eq!(deserialized.user_id, USER_ID);
+        assert_eq!(deserialized.device_id, device_id);
+        assert_eq!(deserialized.domain, DOMAIN);
     }
 
     /// Parsing is lenient about padding even though we never produce it, so a zero-padded id from

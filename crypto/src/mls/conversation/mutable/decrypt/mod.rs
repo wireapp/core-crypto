@@ -775,28 +775,30 @@ mod tests {
     mod malformed {
         use super::*;
 
-        #[macro_rules_attribute::apply(smol_macros::test)]
-        async fn too_short_message_is_rejected_as_unparseable() {
+        // Anything shorter than 4 bytes can't hold the protocol version and wire format.
+        #[rstest]
+        #[test_attr(macro_rules_attribute::apply(smol_macros::test))]
+        #[case(0)]
+        #[case(1)]
+        #[case(2)]
+        #[case(3)]
+        async fn too_short_message_is_rejected_as_unparseable(#[case] len: usize) {
             let case = TestContext::default();
             let [alice] = case.sessions().await;
             let conversation = case.create_conversation([&alice]).await;
 
-            // Anything shorter than 4 bytes can't hold the protocol version and wire format.
-            for len in 0..4 {
-                let message = vec![0; len];
-                // notably, attempting to decrypt a short message produces a rejection, not a panic
-                let reason = conversation
-                    .guard()
-                    .await
-                    .decrypt_message(&message)
-                    .await
-                    .unwrap()
-                    .into_single_rejected();
-                assert!(
-                    matches!(reason, RejectionReason::Unparseable(_)),
-                    "{len}-byte message: unexpected rejection {reason:?}"
-                );
-            }
+            let message = vec![0; len];
+            let reason = conversation
+                .guard()
+                .await
+                .decrypt_message(&message)
+                .await
+                .unwrap()
+                .into_single_rejected();
+            assert!(
+                matches!(reason, RejectionReason::Unparseable(_)),
+                "{len}-byte message: unexpected rejection {reason:?}"
+            );
         }
     }
 }
