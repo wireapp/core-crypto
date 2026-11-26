@@ -196,6 +196,8 @@ TypeScript API references.
 
 ### Tests
 
+Before adding or changing tests, see [Testing Guidelines for CoreCrypto](testing_guidelines.md).
+
 - Test our logic, not our dependencies. A test that only shows SQLite rejecting a `NULL` in a `NOT NULL` column, or
   enforcing a foreign key we declared, adds nothing. Good tests derive the expected value independently and compare it
   with what our code produced.
