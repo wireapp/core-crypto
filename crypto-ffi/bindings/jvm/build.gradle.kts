@@ -32,7 +32,6 @@ dependencies {
     implementation(libs.kotlinx.datetime)
     testImplementation(kotlin("test"))
     testImplementation(libs.coroutines.test)
-    testImplementation(libs.assertj.core)
 }
 
 val buildType = if (System.getenv("RELEASE") == "1") "release" else "debug"

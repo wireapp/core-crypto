@@ -82,12 +82,6 @@ kotlin {
             }
         }
 
-        getByName("jvmTest") {
-            dependencies {
-                implementation(libs.assertj.core)
-            }
-        }
-
         getByName("androidMain") {
             dependencies {
                 implementation("${libs.jna.get()}@aar")
@@ -99,7 +93,6 @@ kotlin {
             dependencies {
                 implementation(libs.android.junit)
                 implementation(libs.espresso)
-                implementation(libs.assertj.core)
             }
         }
     }

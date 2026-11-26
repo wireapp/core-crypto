@@ -212,7 +212,6 @@ ignore.build-time-only:
   entries:
     - kotlin-gradle-plugin
     - dev.*
-    - assertj-core
     - org.jetbrains.kotlin.plugin.*
     - gradle
     - com.android.library
