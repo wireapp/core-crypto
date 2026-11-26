@@ -1,0 +1,58 @@
+name: verify tag
+
+on:
+  workflow_call:
+
+jobs:
+  verify-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Force fetch the tag
+        run: git fetch -f origin "$GITHUB_REF:$GITHUB_REF"
+
+      - name: Ensure the tag is signed
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          if ! git cat-file tag "$TAG_NAME" | grep -q -- '-----BEGIN PGP SIGNATURE-----'; then
+            echo "Tag $TAG_NAME is not signed!"
+            exit 1
+          fi
+
+      - name: Ensure the tag name matches all package versions to publish
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          EXPECTED_VERSION=${TAG_NAME#v}
+
+          if [[ "$TAG_NAME" != v* || -z "$EXPECTED_VERSION" ]]; then
+            echo "Release tag '$TAG_NAME' must have the form v<version>"
+            exit 1
+          fi
+
+          CARGO_VERSION=$(yq -e -r '.workspace.package.version' Cargo.toml)
+          GRADLE_VERSION=$(yq -e -r '.VERSION_NAME' crypto-ffi/bindings/gradle.properties)
+
+          exitcode=0
+
+          if [[ "$CARGO_VERSION" != "$EXPECTED_VERSION" ]]; then
+            echo "Cargo workspace version '$CARGO_VERSION' does not match release tag '$TAG_NAME'"
+            exitcode=1
+          fi
+
+          if [[ "$GRADLE_VERSION" != "$EXPECTED_VERSION" ]]; then
+            echo "Gradle packages version '$GRADLE_VERSION' does not match release tag '$TAG_NAME'"
+            exitcode=1
+          fi
+
+          for package in browser native; do
+            manifest="crypto-ffi/bindings/js/packages/$package/package.json"
+            NPM_VERSION=$(jq -er '.version' "$manifest")
+            NPM_NAME=$(jq -er '.name' "$manifest")
+            if [[ "$NPM_VERSION" != "$EXPECTED_VERSION" ]]; then
+              echo "npm package $NPM_NAME version '$NPM_VERSION' does not match release tag '$TAG_NAME'"
+              exitcode=1
+            fi
+          done
+
+          exit "$exitcode"

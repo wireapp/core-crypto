@@ -561,8 +561,13 @@ jobs:
   #################
   # Publish
 
+  verify-tag:
+    if: github.ref_type == 'tag'
+    uses: ./.github/workflows/verify-tag.yml
+
   prepare-publish:
     needs:
+      - verify-tag
       - artifact-generation
       - package-ios
       - package-android
