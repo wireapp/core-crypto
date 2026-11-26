@@ -129,112 +129,104 @@ mod tests {
         )
     }
 
-    #[test]
-    fn an_immediate_transaction_is_refused_while_another_handle_holds_one() {
-        future::block_on(async {
-            let dir = tempfile::tempdir().unwrap();
-            let (first, second) = two_handles(dir.path()).await;
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn an_immediate_transaction_is_refused_while_another_handle_holds_one() {
+        let dir = tempfile::tempdir().unwrap();
+        let (first, second) = two_handles(dir.path()).await;
 
-            let transaction = first.new_transaction().await.unwrap();
+        let transaction = first.new_transaction().await.unwrap();
 
-            match second.try_new_immediate_transaction().await {
-                Err(CryptoKeystoreError::TransactionInProgress) => {}
-                Err(error) => panic!("expected the second handle to be locked out, got {error}"),
-                Ok(_) => panic!("the second handle started a transaction while the first held one"),
-            }
+        match second.try_new_immediate_transaction().await {
+            Err(CryptoKeystoreError::TransactionInProgress) => {}
+            Err(error) => panic!("expected the second handle to be locked out, got {error}"),
+            Ok(_) => panic!("the second handle started a transaction while the first held one"),
+        }
 
-            // committing releases the lock, so the other handle can take it
-            transaction.commit().await.unwrap();
-            second.try_new_immediate_transaction().await.unwrap();
-        });
+        // committing releases the lock, so the other handle can take it
+        transaction.commit().await.unwrap();
+        second.try_new_immediate_transaction().await.unwrap();
     }
 
-    #[test]
-    fn a_waiting_transaction_blocks_until_the_other_handle_is_done() {
-        future::block_on(async {
-            let dir = tempfile::tempdir().unwrap();
-            let (first, second) = two_handles(dir.path()).await;
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn a_waiting_transaction_blocks_until_the_other_handle_is_done() {
+        let dir = tempfile::tempdir().unwrap();
+        let (first, second) = two_handles(dir.path()).await;
 
-            let transaction = first.new_transaction().await.unwrap();
+        let transaction = first.new_transaction().await.unwrap();
 
-            // the file lock is held elsewhere, so this must not resolve
-            let acquired = future::or(async { Some(second.new_transaction().await) }, async {
-                Timer::after(CONTENTION_WINDOW).await;
-                None
-            })
-            .await;
-            assert!(
-                acquired.is_none(),
-                "the second handle acquired a lock it should have waited for"
-            );
+        // the file lock is held elsewhere, so this must not resolve
+        let acquired = future::or(async { Some(second.new_transaction().await) }, async {
+            Timer::after(CONTENTION_WINDOW).await;
+            None
+        })
+        .await;
+        assert!(
+            acquired.is_none(),
+            "the second handle acquired a lock it should have waited for"
+        );
 
-            // rolling back by drop releases the lock just as committing does
-            drop(transaction);
+        // rolling back by drop releases the lock just as committing does
+        drop(transaction);
 
-            future::or(async { Some(second.new_transaction().await) }, async {
-                Timer::after(TIMEOUT).await;
-                None
-            })
-            .await
-            .expect("timed out waiting for the released lock")
-            .unwrap();
-        });
+        future::or(async { Some(second.new_transaction().await) }, async {
+            Timer::after(TIMEOUT).await;
+            None
+        })
+        .await
+        .expect("timed out waiting for the released lock")
+        .unwrap();
     }
 
     /// Dropping a pending acquisition must not strand the lock: the blocking acquire may still
     /// land after the future is gone, and its guard has to release what it took.
-    #[test]
-    fn abandoning_a_pending_acquisition_leaves_the_lock_free() {
-        future::block_on(async {
-            let dir = tempfile::tempdir().unwrap();
-            let (first, second) = two_handles(dir.path()).await;
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn abandoning_a_pending_acquisition_leaves_the_lock_free() {
+        let dir = tempfile::tempdir().unwrap();
+        let (first, second) = two_handles(dir.path()).await;
 
-            let transaction = first.new_transaction().await.unwrap();
-            // start waiting, then walk away
-            future::or(async { Some(second.new_transaction().await) }, async {
-                Timer::after(CONTENTION_WINDOW).await;
-                None
-            })
-            .await;
-            drop(transaction);
+        let transaction = first.new_transaction().await.unwrap();
+        // start waiting, then walk away
+        future::or(async { Some(second.new_transaction().await) }, async {
+            Timer::after(CONTENTION_WINDOW).await;
+            None
+        })
+        .await;
+        drop(transaction);
 
-            // the abandoned wait may win the race for the lock, but only transiently; retry until
-            // its guard has been dropped
-            let acquired = future::or(
-                async {
-                    loop {
-                        if let Ok(transaction) = second.try_new_immediate_transaction().await {
-                            return Some(transaction);
-                        }
-                        Timer::after(Duration::from_millis(10)).await;
+        // the abandoned wait may win the race for the lock, but only transiently; retry until
+        // its guard has been dropped
+        let acquired = future::or(
+            async {
+                loop {
+                    if let Ok(transaction) = second.try_new_immediate_transaction().await {
+                        return Some(transaction);
                     }
-                },
-                async {
-                    Timer::after(TIMEOUT).await;
-                    None
-                },
-            )
-            .await;
-            assert!(acquired.is_some(), "the abandoned acquisition stranded the file lock");
-        });
+                    Timer::after(Duration::from_millis(10)).await;
+                }
+            },
+            async {
+                Timer::after(TIMEOUT).await;
+                None
+            },
+        )
+        .await;
+        assert!(acquired.is_some(), "the abandoned acquisition stranded the file lock");
     }
 
-    #[test]
-    fn wiping_a_database_removes_its_lock_file() {
-        future::block_on(async {
-            let dir = tempfile::tempdir().unwrap();
-            let path = dir.path().join("keystore.db");
-            let database = Database::open(path.to_str().unwrap(), &DatabaseKey::generate())
-                .await
-                .unwrap();
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn wiping_a_database_removes_its_lock_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("keystore.db");
+        let database = Database::open(path.to_str().unwrap(), &DatabaseKey::generate())
+            .await
+            .unwrap();
 
-            database.new_transaction().await.unwrap().commit().await.unwrap();
+        database.new_transaction().await.unwrap().commit().await.unwrap();
 
-            let lock_file = dir.path().join("keystore.db-cc-tx.lock");
-            assert!(lock_file.exists(), "expected a lock file next to the database");
+        let lock_file = dir.path().join("keystore.db-cc-tx.lock");
+        assert!(lock_file.exists(), "expected a lock file next to the database");
 
-            std::sync::Arc::into_inner(database).unwrap().wipe().await.unwrap();
-            assert!(!lock_file.exists(), "wipe left the lock file behind");
-        });
+        std::sync::Arc::into_inner(database).unwrap().wipe().await.unwrap();
+        assert!(!lock_file.exists(), "wipe left the lock file behind");
     }
 }

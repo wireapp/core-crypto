@@ -447,43 +447,41 @@ IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
         );
     }
 
-    #[test]
-    fn repairs_divergent_v16_checksum_before_running_migrations() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn repairs_divergent_v16_checksum_before_running_migrations() {
         let (db_file, key) = temp_db();
         let path = db_file
             .path()
             .to_str()
             .expect("tmpfile path is representable in unicode");
 
-        smol::block_on(async {
-            let db = Database::open_at_schema_version(path, &key, MigrationTarget::Version(16))
-                .await
-                .expect("opening the database at V16");
-            let conn = db.conn().await;
-            let expected_checksum: String = conn
-                .query_row(
-                    "SELECT checksum FROM refinery_schema_history WHERE version = 16",
-                    [],
-                    |row| row.get(0),
-                )
-                .expect("reading the V16 checksum");
-            let divergent_checksum = (expected_checksum.parse::<u64>().unwrap().wrapping_add(1)).to_string();
-
-            conn.execute(
-                "UPDATE refinery_schema_history SET checksum = ?1 WHERE version = 16",
-                [&divergent_checksum],
+        let db = Database::open_at_schema_version(path, &key, MigrationTarget::Version(16))
+            .await
+            .expect("opening the database at V16");
+        let conn = db.conn().await;
+        let expected_checksum: String = conn
+            .query_row(
+                "SELECT checksum FROM refinery_schema_history WHERE version = 16",
+                [],
+                |row| row.get(0),
             )
-            .expect("replacing the V16 checksum");
+            .expect("reading the V16 checksum");
+        let divergent_checksum = (expected_checksum.parse::<u64>().unwrap().wrapping_add(1)).to_string();
 
-            Database::open(path, &key)
-                .await
-                .expect("reopening and migrating the database");
-        });
+        conn.execute(
+            "UPDATE refinery_schema_history SET checksum = ?1 WHERE version = 16",
+            [&divergent_checksum],
+        )
+        .expect("replacing the V16 checksum");
+
+        Database::open(path, &key)
+            .await
+            .expect("reopening and migrating the database");
     }
 
     // a close replica of the JVM test in `GeneralTest.kt`, but way more debuggable
-    #[test]
-    fn can_migrate_key_type_to_bytes() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn can_migrate_key_type_to_bytes() {
         let mut db_file = NamedTempFile::new().unwrap();
         db_file.write_all(DB).unwrap();
         let path = db_file
@@ -492,9 +490,9 @@ IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
             .expect("tmpfile path is representable in unicode");
 
         let new_key = DatabaseKey::generate();
-        smol::block_on(migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key)).unwrap();
+        migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key).await.unwrap();
 
-        let _db = smol::block_on(Database::open(path, &new_key)).unwrap();
+        let _db = Database::open(path, &new_key).await.unwrap();
     }
 
     /// A v9 client which completed E2EI enrollment keeps its X509 credential through the migration chain.
@@ -502,8 +500,8 @@ IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
     /// In v9, E2EI activation reused the basic credential's signature key for the new X509 credential, and
     /// stored the keypair again, all under the same client id. The basic credential may be dropped, as v9
     /// enrollment was a replacement of the basic credential, but the X509 credential must survive.
-    #[test]
-    fn e2ei_enrolled_v9_client_keeps_its_x509_credential() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn e2ei_enrolled_v9_client_keeps_its_x509_credential() {
         use openmls::prelude::{CredentialType, SignatureScheme};
         use openmls_basic_credential::SignatureKeyPair;
 
@@ -534,62 +532,59 @@ IskA0GpmFaPAdfTnoxFfKzGoH+P3RqM=
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        smol::block_on(async {
-            let db = seed_then_migrate(path, &key, 15, |conn| {
-                // Each v9 `save_identity` call stored a credential and its keypair: once when the basic
-                // credential was created, and again when E2EI activation saved the X509 credential.
-                for (credential, created_at) in [(&basic_credential, 1_700_000_000), (&x509_credential, 1_700_000_100)]
-                {
-                    conn.execute(
-                        "INSERT INTO mls_credentials (id, credential, created_at) \
-                         VALUES (?1, ?2, datetime(?3, 'unixepoch'))",
-                        (CLIENT_ID, credential, created_at),
-                    )
-                    .expect("inserting a v9 credential");
-                    conn.execute(
-                        "INSERT INTO mls_signature_keypairs (signature_scheme, pk, keypair, credential_id) \
-                         VALUES (?1, ?2, ?3, ?4)",
-                        (
-                            SignatureScheme::ECDSA_SECP256R1_SHA256 as u16,
-                            &public_key,
-                            &keypair,
-                            CLIENT_ID,
-                        ),
-                    )
-                    .expect("inserting a v9 signature keypair");
-                }
-            })
-            .await;
-            let conn = db.conn().await;
+        let db = seed_then_migrate(path, &key, 15, |conn| {
+            // Each v9 `save_identity` call stored a credential and its keypair: once when the basic
+            // credential was created, and again when E2EI activation saved the X509 credential.
+            for (credential, created_at) in [(&basic_credential, 1_700_000_000), (&x509_credential, 1_700_000_100)] {
+                conn.execute(
+                    "INSERT INTO mls_credentials (id, credential, created_at) \
+                     VALUES (?1, ?2, datetime(?3, 'unixepoch'))",
+                    (CLIENT_ID, credential, created_at),
+                )
+                .expect("inserting a v9 credential");
+                conn.execute(
+                    "INSERT INTO mls_signature_keypairs (signature_scheme, pk, keypair, credential_id) \
+                     VALUES (?1, ?2, ?3, ?4)",
+                    (
+                        SignatureScheme::ECDSA_SECP256R1_SHA256 as u16,
+                        &public_key,
+                        &keypair,
+                        CLIENT_ID,
+                    ),
+                )
+                .expect("inserting a v9 signature keypair");
+            }
+        })
+        .await;
+        let conn = db.conn().await;
 
-            let stored = StoredCredential::get(
-                &conn,
-                &crate::entities::StoredCredentialPk::new(
-                    Sha256Hash::hash_from(&public_key),
-                    CredentialType::X509.into(),
-                    certificate
-                        .tbs_certificate()
-                        .validity()
-                        .not_before
-                        .to_unix_duration()
-                        .as_secs(),
-                ),
-            )
-            .unwrap()
-            .expect("the X509 credential must survive the migrations");
+        let stored = StoredCredential::get(
+            &conn,
+            &crate::entities::StoredCredentialPk::new(
+                Sha256Hash::hash_from(&public_key),
+                CredentialType::X509.into(),
+                certificate
+                    .tbs_certificate()
+                    .validity()
+                    .not_before
+                    .to_unix_duration()
+                    .as_secs(),
+            ),
+        )
+        .unwrap()
+        .expect("the X509 credential must survive the migrations");
 
-            assert_eq!(stored.credential, x509_credential);
-            assert_eq!(stored.session_id, CLIENT_ID);
-            assert_eq!(stored.private_key, private_key);
-            assert_eq!(
-                stored.ciphersuite,
-                Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 as u16
-            );
-        });
+        assert_eq!(stored.credential, x509_credential);
+        assert_eq!(stored.session_id, CLIENT_ID);
+        assert_eq!(stored.private_key, private_key);
+        assert_eq!(
+            stored.ciphersuite,
+            Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 as u16
+        );
     }
 
-    #[test]
-    fn migrate_to_multiple_trust_anchors() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn migrate_to_multiple_trust_anchors() {
         let test_pem = "-----BEGIN CERTIFICATE-----
 MIIBgzCCATWgAwIBAgIUeN2a19U9hEAnnXPaKGG8/IBnN3EwBQYDK2VwMDcxFTAT
 BgNVBAMMDFRlc3QgUm9vdCBDQTERMA8GA1UECgwIVGVzdCBPcmcxCzAJBgNVBAYT
@@ -613,51 +608,49 @@ r9IJmL6kDQ==
 
         let new_key = DatabaseKey::generate();
 
-        smol::block_on(async {
-            let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(27))
-                .await
-                .unwrap();
-
-            let conn = db.conn().await;
-            let content = cert.to_der().expect("DER from certificate");
-            conn.execute(
-                "INSERT INTO e2ei_acme_ca (id, content) VALUES (?1, ?2)",
-                rusqlite::params![0, content],
-            )
+        let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(27))
+            .await
             .unwrap();
 
-            let count: i32 = conn
-                .query_row("SELECT COUNT(*) FROM e2ei_acme_ca", [], |row| row.get(0))
-                .unwrap();
+        let conn = db.conn().await;
+        let content = cert.to_der().expect("DER from certificate");
+        conn.execute(
+            "INSERT INTO e2ei_acme_ca (id, content) VALUES (?1, ?2)",
+            rusqlite::params![0, content],
+        )
+        .unwrap();
 
-            assert_eq!(count, 1);
+        let count: i32 = conn
+            .query_row("SELECT COUNT(*) FROM e2ei_acme_ca", [], |row| row.get(0))
+            .unwrap();
 
-            drop(conn);
-            drop(db);
+        assert_eq!(count, 1);
 
-            // Open at the new version, triggering v28 -> v29 migration
-            let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(29))
-                .await
-                .unwrap();
+        drop(conn);
+        drop(db);
 
-            let conn = db.conn().await;
+        // Open at the new version, triggering v28 -> v29 migration
+        let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(29))
+            .await
+            .unwrap();
 
-            let (fingerprint, migrated_content): (Vec<u8>, Vec<u8>) = conn
-                .query_row("SELECT fingerprint, content FROM x509_trust_anchor", [], |row| {
-                    Ok((row.get(0)?, row.get(1)?))
-                })
-                .unwrap();
+        let conn = db.conn().await;
 
-            assert_eq!(migrated_content, content);
+        let (fingerprint, migrated_content): (Vec<u8>, Vec<u8>) = conn
+            .query_row("SELECT fingerprint, content FROM x509_trust_anchor", [], |row| {
+                Ok((row.get(0)?, row.get(1)?))
+            })
+            .unwrap();
 
-            let expected = cert
-                .tbs_certificate()
-                .subject_public_key_info()
-                .fingerprint_bytes()
-                .unwrap();
+        assert_eq!(migrated_content, content);
 
-            assert_eq!(fingerprint, expected);
-        });
+        let expected = cert
+            .tbs_certificate()
+            .subject_public_key_info()
+            .fingerprint_bytes()
+            .unwrap();
+
+        assert_eq!(fingerprint, expected);
     }
 
     /// V31 migrates a pending message whose conversation has no `mls_pending_groups` row.
@@ -674,33 +667,31 @@ r9IJmL6kDQ==
     ///
     /// The test stops at V31. V44 deliberately drops a message like this one if its conversation is absent
     /// from `mls_groups`, because by then nothing can reach it.
-    #[test]
-    fn v31_migrates_a_pending_message_whose_conversation_is_not_a_pending_group() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn v31_migrates_a_pending_message_whose_conversation_is_not_a_pending_group() {
         const CONVERSATION_ID: &[u8] = b"an established conversation, absent from mls_pending_groups";
         const MESSAGE: &[u8] = b"a message from epoch n + 1, buffered before the migration ran";
 
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        smol::block_on(async {
-            let db = seed_then_migrate_to(path, &key, 30, MigrationTarget::Version(31), |conn| {
-                conn.pragma_update(None, "foreign_keys", "OFF")
-                    .expect("disabling foreign keys so that the orphan row can be planted at all");
-                conn.execute(
-                    "INSERT INTO mls_pending_messages (id, message) VALUES (?, ?)",
-                    (CONVERSATION_ID, MESSAGE),
-                )
-                .expect("inserting a pending message whose conversation is not a pending group");
-            })
-            .await;
-            let conn = db.conn().await;
+        let db = seed_then_migrate_to(path, &key, 30, MigrationTarget::Version(31), |conn| {
+            conn.pragma_update(None, "foreign_keys", "OFF")
+                .expect("disabling foreign keys so that the orphan row can be planted at all");
+            conn.execute(
+                "INSERT INTO mls_pending_messages (id, message) VALUES (?, ?)",
+                (CONVERSATION_ID, MESSAGE),
+            )
+            .expect("inserting a pending message whose conversation is not a pending group");
+        })
+        .await;
+        let conn = db.conn().await;
 
-            assert_eq!(
-                pending_messages(&conn),
-                [(CONVERSATION_ID.to_vec(), MESSAGE.to_vec())],
-                "V31 must carry an orphan pending message across, not drop it or fail the migration"
-            );
-        });
+        assert_eq!(
+            pending_messages(&conn),
+            [(CONVERSATION_ID.to_vec(), MESSAGE.to_vec())],
+            "V31 must carry an orphan pending message across, not drop it or fail the migration"
+        );
     }
 
     /// V31 collapses pre-existing duplicate pending messages instead of failing the migration.
@@ -713,8 +704,8 @@ r9IJmL6kDQ==
     ///
     /// Dropping the extra copy is the right outcome. The rows are byte-identical, so nothing is lost,
     /// and post-V31 the entity treats a repeated save as a no-op for the same reason.
-    #[test]
-    fn v31_drops_duplicate_pending_messages_rather_than_failing() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn v31_drops_duplicate_pending_messages_rather_than_failing() {
         const CONVERSATION_ID: &[u8] = b"a conversation which buffered the same message twice";
         const DUPLICATED_MESSAGE: &[u8] = b"a message buffered twice before the migration ran";
         const DISTINCT_MESSAGE: &[u8] = b"a different message from the same conversation";
@@ -722,34 +713,32 @@ r9IJmL6kDQ==
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        smol::block_on(async {
-            let db = seed_then_migrate_to(path, &key, 30, MigrationTarget::Version(31), |conn| {
-                // V7's foreign key is still in force at this version, so the parent row has to exist.
+        let db = seed_then_migrate_to(path, &key, 30, MigrationTarget::Version(31), |conn| {
+            // V7's foreign key is still in force at this version, so the parent row has to exist.
+            conn.execute(
+                "INSERT INTO mls_pending_groups (id, state, cfg) VALUES (?, ?, ?)",
+                (CONVERSATION_ID, b"group state", b"custom configuration"),
+            )
+            .expect("inserting the pending group the messages refer to");
+            for message in [DUPLICATED_MESSAGE, DUPLICATED_MESSAGE, DISTINCT_MESSAGE] {
                 conn.execute(
-                    "INSERT INTO mls_pending_groups (id, state, cfg) VALUES (?, ?, ?)",
-                    (CONVERSATION_ID, b"group state", b"custom configuration"),
+                    "INSERT INTO mls_pending_messages (id, message) VALUES (?, ?)",
+                    (CONVERSATION_ID, message),
                 )
-                .expect("inserting the pending group the messages refer to");
-                for message in [DUPLICATED_MESSAGE, DUPLICATED_MESSAGE, DISTINCT_MESSAGE] {
-                    conn.execute(
-                        "INSERT INTO mls_pending_messages (id, message) VALUES (?, ?)",
-                        (CONVERSATION_ID, message),
-                    )
-                    .expect("the pre-V31 table has no uniqueness constraint, so this always succeeds");
-                }
-            })
-            .await;
-            let conn = db.conn().await;
+                .expect("the pre-V31 table has no uniqueness constraint, so this always succeeds");
+            }
+        })
+        .await;
+        let conn = db.conn().await;
 
-            let mut expected =
-                [DISTINCT_MESSAGE, DUPLICATED_MESSAGE].map(|message| (CONVERSATION_ID.to_vec(), message.to_vec()));
-            expected.sort_by(|(_, a), (_, b)| a.cmp(b));
-            assert_eq!(
-                pending_messages(&conn),
-                expected,
-                "V31 must keep one copy of the duplicated message and the distinct one, and lose neither"
-            );
-        });
+        let mut expected =
+            [DISTINCT_MESSAGE, DUPLICATED_MESSAGE].map(|message| (CONVERSATION_ID.to_vec(), message.to_vec()));
+        expected.sort_by(|(_, a), (_, b)| a.cmp(b));
+        assert_eq!(
+            pending_messages(&conn),
+            expected,
+            "V31 must keep one copy of the duplicated message and the distinct one, and lose neither"
+        );
     }
 
     // The tests below all cover the same defect and its repair, one entity at a time.
@@ -765,35 +754,33 @@ r9IJmL6kDQ==
     // without it, so the V31 meta migration rewrites what they left behind.
 
     /// The V31 meta migration repairs `mls_encryption_keypairs.pk_sha256` keys backfilled by V12.
-    #[test]
-    fn v31_meta_migration_repairs_v12_encryption_keypair_keys() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn v31_meta_migration_repairs_v12_encryption_keypair_keys() {
         const PK: &[u8] = b"an encryption public key predating V12";
         const SK: &[u8] = b"the secret key which belongs with it";
 
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        smol::block_on(async {
-            let db = seed_then_migrate(path, &key, 11, |conn| {
-                conn.execute("INSERT INTO mls_encryption_keypairs (pk, sk) VALUES (?, ?)", (PK, SK))
-                    .expect("inserting a pre-V12 encryption keypair");
-            })
-            .await;
-            let conn = db.conn().await;
+        let db = seed_then_migrate(path, &key, 11, |conn| {
+            conn.execute("INSERT INTO mls_encryption_keypairs (pk, sk) VALUES (?, ?)", (PK, SK))
+                .expect("inserting a pre-V12 encryption keypair");
+        })
+        .await;
+        let conn = db.conn().await;
 
-            assert_eq!(
-                StoredEncryptionKeyPair::count(&conn).unwrap(),
-                1,
-                "the migration must not lose the keypair"
-            );
+        assert_eq!(
+            StoredEncryptionKeyPair::count(&conn).unwrap(),
+            1,
+            "the migration must not lose the keypair"
+        );
 
-            let encoding = stored_key_encoding(&conn, "mls_encryption_keypairs", "pk_sha256");
-            assert!(
-                StoredEncryptionKeyPair::get_borrowed(&conn, PK).unwrap().is_some(),
-                "a migrated keypair must be gettable by its public key, but `pk_sha256` is stored as \
-                 {encoding:?} while `Sha256Hash` binds 32 raw bytes"
-            );
-        });
+        let encoding = stored_key_encoding(&conn, "mls_encryption_keypairs", "pk_sha256");
+        assert!(
+            StoredEncryptionKeyPair::get_borrowed(&conn, PK).unwrap().is_some(),
+            "a migrated keypair must be gettable by its public key, but `pk_sha256` is stored as \
+             {encoding:?} while `Sha256Hash` binds 32 raw bytes"
+        );
     }
 
     /// The V31 meta migration repairs `mls_hpke_private_keys.pk_sha256` keys backfilled by V12.
@@ -801,78 +788,74 @@ r9IJmL6kDQ==
     /// V46 folds the private keys into `mls_key_packages` and drops this table, so the test stops at
     /// V45 and checks the table directly, binding the key the way the entity did while the table
     /// existed.
-    #[test]
-    fn v31_meta_migration_repairs_v12_hpke_private_key_keys() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn v31_meta_migration_repairs_v12_hpke_private_key_keys() {
         const PK: &[u8] = b"an HPKE public key predating V12";
         const SK: &[u8] = b"the secret key which belongs with it";
 
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        smol::block_on(async {
-            let db = seed_then_migrate_to(path, &key, 11, MigrationTarget::Version(45), |conn| {
-                conn.execute("INSERT INTO mls_hpke_private_keys (pk, sk) VALUES (?, ?)", (PK, SK))
-                    .expect("inserting a pre-V12 HPKE private key");
-            })
-            .await;
-            let conn = db.conn().await;
+        let db = seed_then_migrate_to(path, &key, 11, MigrationTarget::Version(45), |conn| {
+            conn.execute("INSERT INTO mls_hpke_private_keys (pk, sk) VALUES (?, ?)", (PK, SK))
+                .expect("inserting a pre-V12 HPKE private key");
+        })
+        .await;
+        let conn = db.conn().await;
 
-            let count: u32 = conn
-                .query_row("SELECT count(*) FROM mls_hpke_private_keys", [], |row| row.get(0))
-                .unwrap();
-            assert_eq!(count, 1, "the migration must not lose the private key");
+        let count: u32 = conn
+            .query_row("SELECT count(*) FROM mls_hpke_private_keys", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(count, 1, "the migration must not lose the private key");
 
-            let encoding = stored_key_encoding(&conn, "mls_hpke_private_keys", "pk_sha256");
-            let found: bool = conn
-                .query_row(
-                    "SELECT EXISTS (SELECT 1 FROM mls_hpke_private_keys WHERE pk_sha256 = ?)",
-                    [Sha256Hash::hash_from(PK)],
-                    |row| row.get(0),
-                )
-                .unwrap();
-            assert!(
-                found,
-                "a migrated HPKE private key must be findable by the hash of its public key, but `pk_sha256` is \
-                 stored as {encoding:?} while `Sha256Hash` binds 32 raw bytes"
-            );
-        });
+        let encoding = stored_key_encoding(&conn, "mls_hpke_private_keys", "pk_sha256");
+        let found: bool = conn
+            .query_row(
+                "SELECT EXISTS (SELECT 1 FROM mls_hpke_private_keys WHERE pk_sha256 = ?)",
+                [Sha256Hash::hash_from(PK)],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert!(
+            found,
+            "a migrated HPKE private key must be findable by the hash of its public key, but `pk_sha256` is \
+             stored as {encoding:?} while `Sha256Hash` binds 32 raw bytes"
+        );
     }
 
     /// The V31 meta migration repairs `mls_psk_bundles.id_sha256` keys backfilled by V12.
-    #[test]
-    fn v31_meta_migration_repairs_v12_psk_bundle_keys() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn v31_meta_migration_repairs_v12_psk_bundle_keys() {
         const PSK_ID: &[u8] = b"a psk id predating V12";
         const PSK: &[u8] = b"the pre-shared key itself";
 
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        smol::block_on(async {
-            let db = seed_then_migrate(path, &key, 11, |conn| {
-                conn.execute("INSERT INTO mls_psk_bundles (psk_id, psk) VALUES (?, ?)", (PSK_ID, PSK))
-                    .expect("inserting a pre-V12 psk bundle");
-            })
-            .await;
-            let conn = db.conn().await;
+        let db = seed_then_migrate(path, &key, 11, |conn| {
+            conn.execute("INSERT INTO mls_psk_bundles (psk_id, psk) VALUES (?, ?)", (PSK_ID, PSK))
+                .expect("inserting a pre-V12 psk bundle");
+        })
+        .await;
+        let conn = db.conn().await;
 
-            assert_eq!(
-                StoredPskBundle::count(&conn).unwrap(),
-                1,
-                "the migration must not lose the psk bundle"
-            );
+        assert_eq!(
+            StoredPskBundle::count(&conn).unwrap(),
+            1,
+            "the migration must not lose the psk bundle"
+        );
 
-            let encoding = stored_key_encoding(&conn, "mls_psk_bundles", "id_sha256");
-            assert!(
-                StoredPskBundle::get_borrowed(&conn, PSK_ID).unwrap().is_some(),
-                "a migrated psk bundle must be gettable by its psk id, but `id_sha256` is stored as \
-                 {encoding:?} while `Sha256Hash` binds 32 raw bytes"
-            );
-        });
+        let encoding = stored_key_encoding(&conn, "mls_psk_bundles", "id_sha256");
+        assert!(
+            StoredPskBundle::get_borrowed(&conn, PSK_ID).unwrap().is_some(),
+            "a migrated psk bundle must be gettable by its psk id, but `id_sha256` is stored as \
+             {encoding:?} while `Sha256Hash` binds 32 raw bytes"
+        );
     }
 
     /// The V31 meta migration repairs `mls_credentials.public_key_sha256` keys backfilled by V20.
-    #[test]
-    fn v31_meta_migration_repairs_v20_credential_keys() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn v31_meta_migration_repairs_v20_credential_keys() {
         const PUBLIC_KEY: &[u8] = b"a credential public key predating V20";
 
         let (db_file, key) = temp_db();
@@ -882,46 +865,44 @@ r9IJmL6kDQ==
             .unwrap();
         let credential_type = u16::from(MlsCredential::new_basic(Vec::new()).credential_type());
 
-        smol::block_on(async {
-            let db = seed_then_migrate(path, &key, 19, |conn| {
-                conn.execute(
-                    "INSERT INTO mls_credentials (session_id, credential, ciphersuite, public_key, private_key) \
-                     VALUES (?, ?, ?, ?, ?)",
-                    (
-                        b"a session id".as_slice(),
-                        credential.as_slice(),
-                        Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u16,
-                        PUBLIC_KEY,
-                        b"the private key".as_slice(),
-                    ),
-                )
-                .expect("inserting a pre-V20 credential");
-            })
-            .await;
-            let conn = db.conn().await;
+        let db = seed_then_migrate(path, &key, 19, |conn| {
+            conn.execute(
+                "INSERT INTO mls_credentials (session_id, credential, ciphersuite, public_key, private_key) \
+                 VALUES (?, ?, ?, ?, ?)",
+                (
+                    b"a session id".as_slice(),
+                    credential.as_slice(),
+                    Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 as u16,
+                    PUBLIC_KEY,
+                    b"the private key".as_slice(),
+                ),
+            )
+            .expect("inserting a pre-V20 credential");
+        })
+        .await;
+        let conn = db.conn().await;
 
-            assert_eq!(
-                StoredCredential::count(&conn).unwrap(),
-                1,
-                "the migration must not lose the credential"
-            );
+        assert_eq!(
+            StoredCredential::count(&conn).unwrap(),
+            1,
+            "the migration must not lose the credential"
+        );
 
-            let encoding = stored_key_encoding(&conn, "mls_credentials", "public_key_sha256");
-            assert!(
-                StoredCredential::get(
-                    &conn,
-                    &crate::entities::StoredCredentialPk::new(
-                        Sha256Hash::hash_from(PUBLIC_KEY),
-                        credential_type,
-                        StoredCredential::NOT_BEFORE_WITHOUT_CERTIFICATE,
-                    ),
-                )
-                .unwrap()
-                .is_some(),
-                "a migrated credential must be gettable by the hash of its public key, but \
-                 `public_key_sha256` is stored as {encoding:?} while `Sha256Hash` binds 32 raw bytes"
-            );
-        });
+        let encoding = stored_key_encoding(&conn, "mls_credentials", "public_key_sha256");
+        assert!(
+            StoredCredential::get(
+                &conn,
+                &crate::entities::StoredCredentialPk::new(
+                    Sha256Hash::hash_from(PUBLIC_KEY),
+                    credential_type,
+                    StoredCredential::NOT_BEFORE_WITHOUT_CERTIFICATE,
+                ),
+            )
+            .unwrap()
+            .is_some(),
+            "a migrated credential must be gettable by the hash of its public key, but \
+             `public_key_sha256` is stored as {encoding:?} while `Sha256Hash` binds 32 raw bytes"
+        );
     }
 
     /// A hex key which collides with a key already stored as bytes is dropped, not rewritten.
@@ -930,8 +911,8 @@ r9IJmL6kDQ==
     /// and because that row was invisible to `get`, the code went on to save the same key again —
     /// correctly, as bytes. The byte-keyed row is therefore the live one, and rewriting the hex row
     /// would both resurrect stale data and violate the column's uniqueness constraint.
-    #[test]
-    fn v31_meta_migration_drops_hex_keys_superseded_by_byte_keys() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn v31_meta_migration_drops_hex_keys_superseded_by_byte_keys() {
         const PK: &[u8] = b"a public key saved once before V12 and once after";
         const STALE_SK: &[u8] = b"the secret key stored alongside the hex-keyed row";
         const LIVE_SK: &[u8] = b"the secret key stored alongside the byte-keyed row";
@@ -939,40 +920,38 @@ r9IJmL6kDQ==
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        smol::block_on(async {
-            let hash = Sha256Hash::hash_from(PK);
+        let hash = Sha256Hash::hash_from(PK);
 
-            // Seed after V12 has already run, so both encodings can be planted side by side. They
-            // coexist because the uniqueness constraint sees a text and a blob as distinct values.
-            let db = seed_then_migrate(path, &key, 30, |conn| {
-                conn.execute(
-                    "INSERT INTO mls_encryption_keypairs (pk_sha256, pk, sk) VALUES (?, ?, ?)",
-                    (hash.to_string(), PK, STALE_SK),
-                )
-                .expect("inserting the hex-keyed row V12 would have left behind");
-                conn.execute(
-                    "INSERT INTO mls_encryption_keypairs (pk_sha256, pk, sk) VALUES (?, ?, ?)",
-                    (hash, PK, LIVE_SK),
-                )
-                .expect("inserting the byte-keyed row the entity would have written since");
-            })
-            .await;
-            let conn = db.conn().await;
+        // Seed after V12 has already run, so both encodings can be planted side by side. They
+        // coexist because the uniqueness constraint sees a text and a blob as distinct values.
+        let db = seed_then_migrate(path, &key, 30, |conn| {
+            conn.execute(
+                "INSERT INTO mls_encryption_keypairs (pk_sha256, pk, sk) VALUES (?, ?, ?)",
+                (hash.to_string(), PK, STALE_SK),
+            )
+            .expect("inserting the hex-keyed row V12 would have left behind");
+            conn.execute(
+                "INSERT INTO mls_encryption_keypairs (pk_sha256, pk, sk) VALUES (?, ?, ?)",
+                (hash, PK, LIVE_SK),
+            )
+            .expect("inserting the byte-keyed row the entity would have written since");
+        })
+        .await;
+        let conn = db.conn().await;
 
-            assert_eq!(
-                StoredEncryptionKeyPair::count(&conn).unwrap(),
-                1,
-                "the superseded hex-keyed row must be dropped rather than rewritten"
-            );
+        assert_eq!(
+            StoredEncryptionKeyPair::count(&conn).unwrap(),
+            1,
+            "the superseded hex-keyed row must be dropped rather than rewritten"
+        );
 
-            let survivor = StoredEncryptionKeyPair::get_borrowed(&conn, PK)
-                .unwrap()
-                .expect("the byte-keyed row must survive and stay gettable");
-            assert_eq!(
-                survivor.sk, LIVE_SK,
-                "the surviving row must be the byte-keyed one, not the stale hex-keyed one"
-            );
-        });
+        let survivor = StoredEncryptionKeyPair::get_borrowed(&conn, PK)
+            .unwrap()
+            .expect("the byte-keyed row must survive and stay gettable");
+        assert_eq!(
+            survivor.sk, LIVE_SK,
+            "the surviving row must be the byte-keyed one, not the stale hex-keyed one"
+        );
     }
 
     /// No hex-encoded key survives a full migration of a real legacy database.
@@ -980,8 +959,8 @@ r9IJmL6kDQ==
     /// The tests above each plant a single row by hand. This one runs the meta migration over the
     /// bundled v10002003 dump, which carries real keypairs and credentials in the quantities and
     /// shapes an actual upgrading client would present.
-    #[test]
-    fn v31_meta_migration_leaves_no_hex_keys_in_a_real_legacy_database() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn v31_meta_migration_leaves_no_hex_keys_in_a_real_legacy_database() {
         let mut db_file = NamedTempFile::new().unwrap();
         db_file.write_all(DB).unwrap();
         let path = db_file
@@ -990,52 +969,50 @@ r9IJmL6kDQ==
             .expect("tmpfile path is representable in unicode");
 
         let new_key = DatabaseKey::generate();
-        smol::block_on(migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key)).unwrap();
+        migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key).await.unwrap();
 
-        smol::block_on(async {
-            // V46 folds `mls_hpke_private_keys` into `mls_key_packages` and drops it, so stop at V45 to
-            // check every table V31 repaired.
-            let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(45))
-                .await
-                .unwrap();
-            let conn = db.conn().await;
+        // V46 folds `mls_hpke_private_keys` into `mls_key_packages` and drops it, so stop at V45 to
+        // check every table V31 repaired.
+        let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(45))
+            .await
+            .unwrap();
+        let conn = db.conn().await;
 
-            let mut rows_checked = 0;
-            for (table, column) in [
-                ("mls_encryption_keypairs", "pk_sha256"),
-                ("mls_hpke_private_keys", "pk_sha256"),
-                ("mls_psk_bundles", "id_sha256"),
-                ("mls_credentials", "public_key_sha256"),
-            ] {
-                let (total, as_text) = conn
-                    .query_row(
-                        &format!("SELECT count(*), coalesce(sum(typeof({column}) = 'text'), 0) FROM {table}"),
-                        [],
-                        |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)),
-                    )
-                    .expect("counting stored key encodings");
+        let mut rows_checked = 0;
+        for (table, column) in [
+            ("mls_encryption_keypairs", "pk_sha256"),
+            ("mls_hpke_private_keys", "pk_sha256"),
+            ("mls_psk_bundles", "id_sha256"),
+            ("mls_credentials", "public_key_sha256"),
+        ] {
+            let (total, as_text) = conn
+                .query_row(
+                    &format!("SELECT count(*), coalesce(sum(typeof({column}) = 'text'), 0) FROM {table}"),
+                    [],
+                    |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)),
+                )
+                .expect("counting stored key encodings");
 
-                assert_eq!(
-                    as_text, 0,
-                    "{table}.{column} still stores {as_text} of {total} keys as hex text"
-                );
-                rows_checked += total;
-            }
-
-            assert!(
-                rows_checked > 0,
-                "the bundled database carried no keys at all, so this test proved nothing"
+            assert_eq!(
+                as_text, 0,
+                "{table}.{column} still stores {as_text} of {total} keys as hex text"
             );
+            rows_checked += total;
+        }
 
-            // and the repaired keys are not merely blobs, but the exact blobs the entity queries with
-            let public_key: Vec<u8> = conn
-                .query_row("SELECT pk FROM mls_encryption_keypairs LIMIT 1", [], |row| row.get(0))
-                .expect("reading a migrated public key");
-            assert!(
-                StoredEncryptionKeyPair::get(&conn, &public_key).unwrap().is_some(),
-                "a keypair from the real legacy database must be gettable by its public key"
-            );
-        });
+        assert!(
+            rows_checked > 0,
+            "the bundled database carried no keys at all, so this test proved nothing"
+        );
+
+        // and the repaired keys are not merely blobs, but the exact blobs the entity queries with
+        let public_key: Vec<u8> = conn
+            .query_row("SELECT pk FROM mls_encryption_keypairs LIMIT 1", [], |row| row.get(0))
+            .expect("reading a migrated public key");
+        assert!(
+            StoredEncryptionKeyPair::get(&conn, &public_key).unwrap().is_some(),
+            "a keypair from the real legacy database must be gettable by its public key"
+        );
     }
 
     /// V39 unifies `mls_groups`/`mls_pending_groups`, but can't populate `epoch`, `ciphersuite`,
@@ -1043,8 +1020,8 @@ r9IJmL6kDQ==
     /// inside the postcard-serialized `MlsGroup` in `state`. The v39 meta migration backfills them
     /// by deserializing `state` in Rust; this test pins that backfill against an independent parse
     /// of the same `state` blob, using the one real group the bundled legacy dump carries.
-    #[test]
-    fn v39_meta_migration_backfills_group_columns_from_state() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn v39_meta_migration_backfills_group_columns_from_state() {
         let mut db_file = NamedTempFile::new().unwrap();
         db_file.write_all(DB).unwrap();
         let path = db_file
@@ -1053,82 +1030,80 @@ r9IJmL6kDQ==
             .expect("tmpfile path is representable in unicode");
 
         let new_key = DatabaseKey::generate();
-        smol::block_on(migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key)).unwrap();
+        migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key).await.unwrap();
 
-        smol::block_on(async {
-            let db = Database::open(path, &new_key).await.unwrap();
-            let conn = db.conn().await;
+        let db = Database::open(path, &new_key).await.unwrap();
+        let conn = db.conn().await;
 
-            struct BackfilledGroupRow {
-                state: Vec<u8>,
-                epoch: Option<i64>,
-                ciphersuite: Option<u16>,
-                own_leaf_index: Option<u32>,
-                credential_id: Option<Vec<u8>>,
-                credential_type: Option<u16>,
-                is_pending: bool,
-            }
+        struct BackfilledGroupRow {
+            state: Vec<u8>,
+            epoch: Option<i64>,
+            ciphersuite: Option<u16>,
+            own_leaf_index: Option<u32>,
+            credential_id: Option<Vec<u8>>,
+            credential_type: Option<u16>,
+            is_pending: bool,
+        }
 
-            let BackfilledGroupRow {
-                state,
-                epoch,
-                ciphersuite,
-                own_leaf_index,
-                credential_id,
-                credential_type,
-                is_pending,
-            } = conn
-                .query_row(
-                    "SELECT state, epoch, ciphersuite, own_leaf_index, credential_id, credential_type, is_pending FROM mls_groups",
-                    [],
-                    |row| {
-                        Ok(BackfilledGroupRow {
-                            state: row.get(0)?,
-                            epoch: row.get(1)?,
-                            ciphersuite: row.get(2)?,
-                            own_leaf_index: row.get(3)?,
-                            credential_id: row.get(4)?,
-                            credential_type: row.get(5)?,
-                            is_pending: row.get(6)?,
-                        })
-                    },
-                )
-                .expect("the bundled database carries exactly one real mls group");
+        let BackfilledGroupRow {
+            state,
+            epoch,
+            ciphersuite,
+            own_leaf_index,
+            credential_id,
+            credential_type,
+            is_pending,
+        } = conn
+            .query_row(
+                "SELECT state, epoch, ciphersuite, own_leaf_index, credential_id, credential_type, is_pending FROM mls_groups",
+                [],
+                |row| {
+                    Ok(BackfilledGroupRow {
+                        state: row.get(0)?,
+                        epoch: row.get(1)?,
+                        ciphersuite: row.get(2)?,
+                        own_leaf_index: row.get(3)?,
+                        credential_id: row.get(4)?,
+                        credential_type: row.get(5)?,
+                        is_pending: row.get(6)?,
+                    })
+                },
+            )
+            .expect("the bundled database carries exactly one real mls group");
 
-            assert!(
-                !is_pending,
-                "a row copied from mls_groups, not mls_pending_groups, must not be marked pending"
-            );
+        assert!(
+            !is_pending,
+            "a row copied from mls_groups, not mls_pending_groups, must not be marked pending"
+        );
 
-            // parsed independently of the meta migration's own implementation, so this pins the
-            // backfill against the state blob rather than against itself
-            let group =
-                crate::deser::<openmls::group::MlsGroup>(&state).expect("the bundled group's state must deserialize");
+        // parsed independently of the meta migration's own implementation, so this pins the
+        // backfill against the state blob rather than against itself
+        let group =
+            crate::deser::<openmls::group::MlsGroup>(&state).expect("the bundled group's state must deserialize");
 
-            assert_eq!(epoch, Some(group.epoch().as_u64() as i64));
-            assert_eq!(ciphersuite, Some(group.ciphersuite() as u16));
-            assert_eq!(own_leaf_index, Some(group.own_leaf_index().u32()));
+        assert_eq!(epoch, Some(group.epoch().as_u64() as i64));
+        assert_eq!(ciphersuite, Some(group.ciphersuite() as u16));
+        assert_eq!(own_leaf_index, Some(group.own_leaf_index().u32()));
 
-            let own_leaf = group.own_leaf().expect("the bundled group must have an own leaf node");
-            let expected_credential_id = Sha256Hash::hash_from(own_leaf.signature_key().as_slice());
-            let expected_credential_type: u16 = own_leaf.credential().credential_type().into();
-            assert_eq!(credential_id, Some(expected_credential_id.as_ref().to_vec()));
-            assert_eq!(credential_type, Some(expected_credential_type));
+        let own_leaf = group.own_leaf().expect("the bundled group must have an own leaf node");
+        let expected_credential_id = Sha256Hash::hash_from(own_leaf.signature_key().as_slice());
+        let expected_credential_type: u16 = own_leaf.credential().credential_type().into();
+        assert_eq!(credential_id, Some(expected_credential_id.as_ref().to_vec()));
+        assert_eq!(credential_type, Some(expected_credential_type));
 
-            // and the backfilled (credential_id, credential_type) pair must actually resolve to a
-            // stored credential, since that's the whole point of the columns
-            let credential_exists: bool = conn
-                .query_row(
-                    "SELECT EXISTS(SELECT 1 FROM mls_credentials WHERE public_key_sha256 = ? AND credential_type = ?)",
-                    rusqlite::params![expected_credential_id, expected_credential_type],
-                    |row| row.get(0),
-                )
-                .expect("checking for the credential");
-            assert!(
-                credential_exists,
-                "(credential_id, credential_type) must reference a credential which is actually in mls_credentials"
-            );
-        });
+        // and the backfilled (credential_id, credential_type) pair must actually resolve to a
+        // stored credential, since that's the whole point of the columns
+        let credential_exists: bool = conn
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM mls_credentials WHERE public_key_sha256 = ? AND credential_type = ?)",
+                rusqlite::params![expected_credential_id, expected_credential_type],
+                |row| row.get(0),
+            )
+            .expect("checking for the credential");
+        assert!(
+            credential_exists,
+            "(credential_id, credential_type) must reference a credential which is actually in mls_credentials"
+        );
     }
 
     /// V41 carries a live conversation's epoch keypairs across the table rebuild and leaves orphaned
@@ -1143,8 +1118,8 @@ r9IJmL6kDQ==
     /// The live conversation is seeded with two rows at different leaf indices. Only one of them can be
     /// the conversation's current leaf, so this also pins that the filter selects by conversation rather
     /// than by the full primary key: key material we still need is kept wherever it sits in the table.
-    #[test]
-    fn v41_keeps_a_live_conversations_epoch_keypairs_and_discards_orphaned_ones() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn v41_keeps_a_live_conversations_epoch_keypairs_and_discards_orphaned_ones() {
         const LIVE_CONVERSATION: &[u8] = b"a conversation which still exists when V41 runs";
         const WIPED_CONVERSATION: &[u8] = b"a conversation wiped while nothing cleaned up after it";
         const CREDENTIAL_ID: &[u8] = b"the credential the live conversation was created with";
@@ -1153,110 +1128,108 @@ r9IJmL6kDQ==
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        smol::block_on(async {
-            let db = seed_then_migrate(path, &key, 40, |conn| {
-                // V40 made `mls_groups.credential_id` a foreign key onto `mls_credentials`, so the
-                // credential has to exist before the conversation which refers to it.
-                conn.execute(
-                    "INSERT INTO mls_credentials
-                        (public_key_sha256, credential_type, public_key, session_id, credential, ciphersuite,
-                         private_key)
-                     VALUES (?, ?, ?, ?, ?, ?, ?)",
-                    (
-                        CREDENTIAL_ID,
-                        CREDENTIAL_TYPE,
-                        b"public key".as_slice(),
-                        b"session id".as_slice(),
-                        b"credential".as_slice(),
-                        1,
-                        b"private key".as_slice(),
-                    ),
-                )
-                .expect("inserting the credential the live conversation refers to");
-                conn.execute(
-                    "INSERT INTO mls_groups
-                        (id, state, epoch, ciphersuite, credential_id, credential_type, own_leaf_index, is_pending)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                    (
-                        LIVE_CONVERSATION,
-                        b"group state".as_slice(),
-                        2,
-                        1,
-                        CREDENTIAL_ID,
-                        CREDENTIAL_TYPE,
-                        3,
-                        false,
-                    ),
-                )
-                .expect("inserting the live conversation");
+        let db = seed_then_migrate(path, &key, 40, |conn| {
+            // V40 made `mls_groups.credential_id` a foreign key onto `mls_credentials`, so the
+            // credential has to exist before the conversation which refers to it.
+            conn.execute(
+                "INSERT INTO mls_credentials
+                    (public_key_sha256, credential_type, public_key, session_id, credential, ciphersuite,
+                     private_key)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    CREDENTIAL_ID,
+                    CREDENTIAL_TYPE,
+                    b"public key".as_slice(),
+                    b"session id".as_slice(),
+                    b"credential".as_slice(),
+                    1,
+                    b"private key".as_slice(),
+                ),
+            )
+            .expect("inserting the credential the live conversation refers to");
+            conn.execute(
+                "INSERT INTO mls_groups
+                    (id, state, epoch, ciphersuite, credential_id, credential_type, own_leaf_index, is_pending)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    LIVE_CONVERSATION,
+                    b"group state".as_slice(),
+                    2,
+                    1,
+                    CREDENTIAL_ID,
+                    CREDENTIAL_TYPE,
+                    3,
+                    false,
+                ),
+            )
+            .expect("inserting the live conversation");
 
-                // The pre-V41 table has no foreign key, so the wiped conversation's row inserts just as
-                // readily as the live conversation's.
-                for (conversation_id, own_leaf_index, epoch, keypairs) in [
-                    (
-                        LIVE_CONVERSATION,
-                        3,
-                        2,
-                        b"keypairs at the live conversation's current leaf".as_slice(),
-                    ),
-                    (
-                        LIVE_CONVERSATION,
-                        0,
-                        1,
-                        b"keypairs left at a leaf index we have since moved off".as_slice(),
-                    ),
-                    (
-                        WIPED_CONVERSATION,
-                        0,
-                        1,
-                        b"keypairs of a conversation the user asked us to destroy".as_slice(),
-                    ),
-                ] {
-                    conn.execute(
-                        "INSERT INTO epoch_encryption_keypairs (conversation_id, own_leaf_index, epoch, keypairs)
-                         VALUES (?, ?, ?, ?)",
-                        (conversation_id, own_leaf_index, epoch, keypairs),
-                    )
-                    .expect("inserting an epoch keypair row");
-                }
+            // The pre-V41 table has no foreign key, so the wiped conversation's row inserts just as
+            // readily as the live conversation's.
+            for (conversation_id, own_leaf_index, epoch, keypairs) in [
+                (
+                    LIVE_CONVERSATION,
+                    3,
+                    2,
+                    b"keypairs at the live conversation's current leaf".as_slice(),
+                ),
+                (
+                    LIVE_CONVERSATION,
+                    0,
+                    1,
+                    b"keypairs left at a leaf index we have since moved off".as_slice(),
+                ),
+                (
+                    WIPED_CONVERSATION,
+                    0,
+                    1,
+                    b"keypairs of a conversation the user asked us to destroy".as_slice(),
+                ),
+            ] {
+                conn.execute(
+                    "INSERT INTO epoch_encryption_keypairs (conversation_id, own_leaf_index, epoch, keypairs)
+                     VALUES (?, ?, ?, ?)",
+                    (conversation_id, own_leaf_index, epoch, keypairs),
+                )
+                .expect("inserting an epoch keypair row");
+            }
+        })
+        .await;
+        let conn = db.conn().await;
+
+        let mut migrated = StoredEpochEncryptionKeypair::load_all(&conn).expect("loading migrated keypairs");
+        migrated.sort_by_key(|keypair| keypair.epoch);
+        let migrated = migrated
+            .iter()
+            .map(|keypair| {
+                (
+                    keypair.conversation_id.bytes(),
+                    keypair.own_leaf_idx,
+                    keypair.epoch,
+                    keypair.keypairs.as_slice(),
+                )
             })
-            .await;
-            let conn = db.conn().await;
+            .collect::<Vec<_>>();
 
-            let mut migrated = StoredEpochEncryptionKeypair::load_all(&conn).expect("loading migrated keypairs");
-            migrated.sort_by_key(|keypair| keypair.epoch);
-            let migrated = migrated
-                .iter()
-                .map(|keypair| {
-                    (
-                        keypair.conversation_id.bytes(),
-                        keypair.own_leaf_idx,
-                        keypair.epoch,
-                        keypair.keypairs.as_slice(),
-                    )
-                })
-                .collect::<Vec<_>>();
-
-            assert_eq!(
-                migrated,
-                [
-                    (
-                        LIVE_CONVERSATION,
-                        0,
-                        1,
-                        b"keypairs left at a leaf index we have since moved off".as_slice()
-                    ),
-                    (
-                        LIVE_CONVERSATION,
-                        3,
-                        2,
-                        b"keypairs at the live conversation's current leaf".as_slice()
-                    ),
-                ],
-                "V41 must carry every row of a live conversation across intact, and keep nothing belonging \
-                 to a conversation which no longer has a group"
-            );
-        });
+        assert_eq!(
+            migrated,
+            [
+                (
+                    LIVE_CONVERSATION,
+                    0,
+                    1,
+                    b"keypairs left at a leaf index we have since moved off".as_slice()
+                ),
+                (
+                    LIVE_CONVERSATION,
+                    3,
+                    2,
+                    b"keypairs at the live conversation's current leaf".as_slice()
+                ),
+            ],
+            "V41 must carry every row of a live conversation across intact, and keep nothing belonging \
+             to a conversation which no longer has a group"
+        );
     }
 
     /// V45, its meta migration, and V46 together move each key package's key material into its own row, and make
@@ -1265,8 +1238,8 @@ r9IJmL6kDQ==
     /// This runs over the bundled v10002003 dump, whose key packages are real, with a few rows altered at V44 to
     /// exercise each case the meta migration handles. Every expected value is derived here by parsing the key
     /// packages independently, not by trusting the columns under test.
-    #[test]
-    fn v45_through_v46_move_key_package_key_material_into_mls_key_packages() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn v45_through_v46_move_key_package_key_material_into_mls_key_packages() {
         use std::collections::HashMap;
 
         use openmls::prelude::KeyPackage;
@@ -1308,217 +1281,215 @@ r9IJmL6kDQ==
             .to_str()
             .expect("tmpfile path is representable in unicode");
         let key = DatabaseKey::generate();
-        smol::block_on(migrate_db_key_type_to_bytes(path, OLD_KEY, &key)).unwrap();
+        migrate_db_key_type_to_bytes(path, OLD_KEY, &key).await.unwrap();
 
-        smol::block_on(async {
-            // Before V45: record what each key package should end up with, then alter a few rows.
-            let (original_count, init_private_keys, missing_init_key, missing_credential, missing_leaf_keypair) = {
-                let db = Database::open_at_schema_version(path, &key, MigrationTarget::Version(44))
-                    .await
-                    .unwrap();
-                let conn = db.conn().await;
-
-                let key_packages: Vec<(Vec<u8>, Vec<u8>)> = conn
-                    .prepare("SELECT key_package_ref, key_package FROM mls_key_packages ORDER BY key_package_ref")
-                    .unwrap()
-                    .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
-                    .unwrap()
-                    .collect::<Result<_, _>>()
-                    .unwrap();
-                assert!(
-                    key_packages.len() > 3,
-                    "the bundled database needs a few key packages to spare for the altered rows"
-                );
-
-                let init_private_keys: HashMap<Vec<u8>, Vec<u8>> = conn
-                    .prepare("SELECT pk_sha256, sk FROM mls_hpke_private_keys")
-                    .unwrap()
-                    .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
-                    .unwrap()
-                    .collect::<Result<_, _>>()
-                    .unwrap();
-
-                // a key package which no longer deserializes
-                conn.execute(
-                    "INSERT INTO mls_key_packages (key_package_ref, key_package) VALUES (?, ?)",
-                    (UNPARSEABLE_REF, UNPARSEABLE_KEY_PACKAGE),
-                )
-                .unwrap();
-
-                // a key package whose init private key has gone missing
-                let (missing_init_key_ref, key_package) = &key_packages[0];
-                let missing_init_key = parse(key_package);
-                conn.execute(
-                    "DELETE FROM mls_hpke_private_keys WHERE pk_sha256 = ?",
-                    [init_key_hash(&missing_init_key)],
-                )
-                .unwrap();
-
-                // A key package whose credential the keystore never held. Rewriting its signature key in place
-                // leaves it deserializable, because nothing on the way checks the signature.
-                let (missing_credential_ref, key_package) = &key_packages[1];
-                let original = parse(key_package);
-                let signature_key = original.leaf_node().signature_key().as_slice();
-                let mut occurrences = key_package
-                    .windows(signature_key.len())
-                    .enumerate()
-                    .filter(|(_, window)| *window == signature_key)
-                    .map(|(position, _)| position);
-                let position = occurrences
-                    .next()
-                    .expect("the signature key is in the serialized key package");
-                assert!(
-                    occurrences.next().is_none(),
-                    "the signature key must appear exactly once to be rewritten safely"
-                );
-                let mut altered = key_package.clone();
-                for byte in &mut altered[position..position + signature_key.len()] {
-                    *byte ^= 0xff;
-                }
-                let missing_credential = parse(&altered);
-                assert_ne!(credential_of(&missing_credential), credential_of(&original));
-                assert_eq!(leaf_key_hash(&missing_credential), leaf_key_hash(&original));
-                conn.execute(
-                    "UPDATE mls_key_packages SET key_package = ? WHERE key_package_ref = ?",
-                    (&altered, missing_credential_ref),
-                )
-                .unwrap();
-
-                // a key package whose leaf keypair has gone missing
-                let (missing_leaf_keypair_ref, key_package) = &key_packages[2];
-                conn.execute(
-                    "DELETE FROM mls_encryption_keypairs WHERE pk_sha256 = ?",
-                    [leaf_key_hash(&parse(key_package))],
-                )
-                .unwrap();
-
-                // a leaf keypair no key package owns, standing in for the leaf key of a pending group update
-                conn.execute(
-                    "INSERT INTO mls_encryption_keypairs (pk_sha256, pk, sk) VALUES (?, ?, ?)",
-                    (
-                        Sha256Hash::hash_from(UNRELATED_LEAF_PK),
-                        UNRELATED_LEAF_PK,
-                        UNRELATED_LEAF_SK,
-                    ),
-                )
-                .unwrap();
-
-                (
-                    key_packages.len(),
-                    init_private_keys,
-                    (missing_init_key_ref.clone(), missing_init_key),
-                    (missing_credential_ref.clone(), missing_credential),
-                    missing_leaf_keypair_ref.clone(),
-                )
-            };
-
-            let db = Database::open_at_schema_version(path, &key, MigrationTarget::Version(46))
+        // Before V45: record what each key package should end up with, then alter a few rows.
+        let (original_count, init_private_keys, missing_init_key, missing_credential, missing_leaf_keypair) = {
+            let db = Database::open_at_schema_version(path, &key, MigrationTarget::Version(44))
                 .await
                 .unwrap();
             let conn = db.conn().await;
 
-            let hpke_table_exists: bool = conn
-                .query_row(
-                    "SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'mls_hpke_private_keys')",
-                    [],
-                    |row| row.get(0),
-                )
-                .unwrap();
-            assert!(!hpke_table_exists, "V46 retires `mls_hpke_private_keys`");
-
-            struct MigratedKeyPackage {
-                key_package_ref: Vec<u8>,
-                key_package: Vec<u8>,
-                credential_id: Sha256Hash,
-                credential_type: u16,
-                hpke_init_public_key_hash: Sha256Hash,
-                hpke_init_private_key: Vec<u8>,
-                leaf_encryption_key_hash: Sha256Hash,
-            }
-            let migrated: Vec<MigratedKeyPackage> = conn
-                .prepare(
-                    "SELECT key_package_ref, key_package, credential_id, credential_type,
-                        hpke_init_public_key_hash, hpke_init_private_key, leaf_encryption_key_hash
-                    FROM mls_key_packages",
-                )
+            let key_packages: Vec<(Vec<u8>, Vec<u8>)> = conn
+                .prepare("SELECT key_package_ref, key_package FROM mls_key_packages ORDER BY key_package_ref")
                 .unwrap()
-                .query_map([], |row| {
-                    Ok(MigratedKeyPackage {
-                        key_package_ref: row.get(0)?,
-                        key_package: row.get(1)?,
-                        credential_id: row.get(2)?,
-                        credential_type: row.get(3)?,
-                        hpke_init_public_key_hash: row.get(4)?,
-                        hpke_init_private_key: row.get(5)?,
-                        leaf_encryption_key_hash: row.get(6)?,
-                    })
+                .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap();
+            assert!(
+                key_packages.len() > 3,
+                "the bundled database needs a few key packages to spare for the altered rows"
+            );
+
+            let init_private_keys: HashMap<Vec<u8>, Vec<u8>> = conn
+                .prepare("SELECT pk_sha256, sk FROM mls_hpke_private_keys")
+                .unwrap()
+                .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap();
+
+            // a key package which no longer deserializes
+            conn.execute(
+                "INSERT INTO mls_key_packages (key_package_ref, key_package) VALUES (?, ?)",
+                (UNPARSEABLE_REF, UNPARSEABLE_KEY_PACKAGE),
+            )
+            .unwrap();
+
+            // a key package whose init private key has gone missing
+            let (missing_init_key_ref, key_package) = &key_packages[0];
+            let missing_init_key = parse(key_package);
+            conn.execute(
+                "DELETE FROM mls_hpke_private_keys WHERE pk_sha256 = ?",
+                [init_key_hash(&missing_init_key)],
+            )
+            .unwrap();
+
+            // A key package whose credential the keystore never held. Rewriting its signature key in place
+            // leaves it deserializable, because nothing on the way checks the signature.
+            let (missing_credential_ref, key_package) = &key_packages[1];
+            let original = parse(key_package);
+            let signature_key = original.leaf_node().signature_key().as_slice();
+            let mut occurrences = key_package
+                .windows(signature_key.len())
+                .enumerate()
+                .filter(|(_, window)| *window == signature_key)
+                .map(|(position, _)| position);
+            let position = occurrences
+                .next()
+                .expect("the signature key is in the serialized key package");
+            assert!(
+                occurrences.next().is_none(),
+                "the signature key must appear exactly once to be rewritten safely"
+            );
+            let mut altered = key_package.clone();
+            for byte in &mut altered[position..position + signature_key.len()] {
+                *byte ^= 0xff;
+            }
+            let missing_credential = parse(&altered);
+            assert_ne!(credential_of(&missing_credential), credential_of(&original));
+            assert_eq!(leaf_key_hash(&missing_credential), leaf_key_hash(&original));
+            conn.execute(
+                "UPDATE mls_key_packages SET key_package = ? WHERE key_package_ref = ?",
+                (&altered, missing_credential_ref),
+            )
+            .unwrap();
+
+            // a key package whose leaf keypair has gone missing
+            let (missing_leaf_keypair_ref, key_package) = &key_packages[2];
+            conn.execute(
+                "DELETE FROM mls_encryption_keypairs WHERE pk_sha256 = ?",
+                [leaf_key_hash(&parse(key_package))],
+            )
+            .unwrap();
+
+            // a leaf keypair no key package owns, standing in for the leaf key of a pending group update
+            conn.execute(
+                "INSERT INTO mls_encryption_keypairs (pk_sha256, pk, sk) VALUES (?, ?, ?)",
+                (
+                    Sha256Hash::hash_from(UNRELATED_LEAF_PK),
+                    UNRELATED_LEAF_PK,
+                    UNRELATED_LEAF_SK,
+                ),
+            )
+            .unwrap();
+
+            (
+                key_packages.len(),
+                init_private_keys,
+                (missing_init_key_ref.clone(), missing_init_key),
+                (missing_credential_ref.clone(), missing_credential),
+                missing_leaf_keypair_ref.clone(),
+            )
+        };
+
+        let db = Database::open_at_schema_version(path, &key, MigrationTarget::Version(46))
+            .await
+            .unwrap();
+        let conn = db.conn().await;
+
+        let hpke_table_exists: bool = conn
+            .query_row(
+                "SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'mls_hpke_private_keys')",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert!(!hpke_table_exists, "V46 retires `mls_hpke_private_keys`");
+
+        struct MigratedKeyPackage {
+            key_package_ref: Vec<u8>,
+            key_package: Vec<u8>,
+            credential_id: Sha256Hash,
+            credential_type: u16,
+            hpke_init_public_key_hash: Sha256Hash,
+            hpke_init_private_key: Vec<u8>,
+            leaf_encryption_key_hash: Sha256Hash,
+        }
+        let migrated: Vec<MigratedKeyPackage> = conn
+            .prepare(
+                "SELECT key_package_ref, key_package, credential_id, credential_type,
+                    hpke_init_public_key_hash, hpke_init_private_key, leaf_encryption_key_hash
+                FROM mls_key_packages",
+            )
+            .unwrap()
+            .query_map([], |row| {
+                Ok(MigratedKeyPackage {
+                    key_package_ref: row.get(0)?,
+                    key_package: row.get(1)?,
+                    credential_id: row.get(2)?,
+                    credential_type: row.get(3)?,
+                    hpke_init_public_key_hash: row.get(4)?,
+                    hpke_init_private_key: row.get(5)?,
+                    leaf_encryption_key_hash: row.get(6)?,
                 })
-                .unwrap()
-                .collect::<Result<_, _>>()
-                .unwrap();
+            })
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
 
-            let has_ref = |key_package_ref: &[u8]| migrated.iter().any(|row| row.key_package_ref == key_package_ref);
-            assert!(
-                !has_ref(UNPARSEABLE_REF),
-                "a key package which does not deserialize is dropped"
-            );
-            assert!(
-                !has_ref(&missing_init_key.0),
-                "a key package without its init private key is dropped"
-            );
-            assert!(
-                !has_ref(&missing_credential.0),
-                "a key package without its credential is dropped"
-            );
-            assert!(
-                has_ref(&missing_leaf_keypair),
-                "a missing leaf keypair alone is not reason enough to drop a key package"
-            );
-            assert_eq!(migrated.len(), original_count - 2, "every other key package survives");
+        let has_ref = |key_package_ref: &[u8]| migrated.iter().any(|row| row.key_package_ref == key_package_ref);
+        assert!(
+            !has_ref(UNPARSEABLE_REF),
+            "a key package which does not deserialize is dropped"
+        );
+        assert!(
+            !has_ref(&missing_init_key.0),
+            "a key package without its init private key is dropped"
+        );
+        assert!(
+            !has_ref(&missing_credential.0),
+            "a key package without its credential is dropped"
+        );
+        assert!(
+            has_ref(&missing_leaf_keypair),
+            "a missing leaf keypair alone is not reason enough to drop a key package"
+        );
+        assert_eq!(migrated.len(), original_count - 2, "every other key package survives");
 
-            for row in &migrated {
-                let key_package = parse(&row.key_package);
-                assert_eq!(
-                    (row.credential_id, row.credential_type),
-                    credential_of(&key_package),
-                    "the credential columns name the key package's own credential"
-                );
-                assert_eq!(row.hpke_init_public_key_hash, init_key_hash(&key_package));
-                assert_eq!(row.leaf_encryption_key_hash, leaf_key_hash(&key_package));
-                assert_eq!(
-                    Some(&row.hpke_init_private_key),
-                    init_private_keys.get(init_key_hash(&key_package).as_ref()),
-                    "the init private key is carried over from `mls_hpke_private_keys`"
-                );
-            }
-
-            // A dropped key package takes its leaf keypair with it, while a leaf keypair which belongs to no
-            // key package is left alone.
-            assert!(!leaf_keypair_exists(&conn, leaf_key_hash(&missing_init_key.1)));
-            assert!(!leaf_keypair_exists(&conn, leaf_key_hash(&missing_credential.1)));
-            assert!(leaf_keypair_exists(&conn, Sha256Hash::hash_from(UNRELATED_LEAF_PK)));
-
-            // Deleting the credential now takes its key packages, and their leaf keypairs, with it. The bundled
-            // conversation still uses that credential, which restricts deleting it, so the conversation goes first.
-            conn.execute("DELETE FROM mls_groups", []).unwrap();
-            conn.execute("DELETE FROM mls_credentials", []).unwrap();
-            let remaining_key_packages: u32 = conn
-                .query_row("SELECT count(*) FROM mls_key_packages", [], |row| row.get(0))
-                .unwrap();
-            assert_eq!(remaining_key_packages, 0, "key packages cascade from their credential");
-            let remaining_leaf_keypairs: Vec<Vec<u8>> = conn
-                .prepare("SELECT pk FROM mls_encryption_keypairs")
-                .unwrap()
-                .query_map([], |row| row.get(0))
-                .unwrap()
-                .collect::<Result<_, _>>()
-                .unwrap();
+        for row in &migrated {
+            let key_package = parse(&row.key_package);
             assert_eq!(
-                remaining_leaf_keypairs,
-                [UNRELATED_LEAF_PK],
-                "every key package's leaf keypair goes with it, and nothing else does"
+                (row.credential_id, row.credential_type),
+                credential_of(&key_package),
+                "the credential columns name the key package's own credential"
             );
-        });
+            assert_eq!(row.hpke_init_public_key_hash, init_key_hash(&key_package));
+            assert_eq!(row.leaf_encryption_key_hash, leaf_key_hash(&key_package));
+            assert_eq!(
+                Some(&row.hpke_init_private_key),
+                init_private_keys.get(init_key_hash(&key_package).as_ref()),
+                "the init private key is carried over from `mls_hpke_private_keys`"
+            );
+        }
+
+        // A dropped key package takes its leaf keypair with it, while a leaf keypair which belongs to no
+        // key package is left alone.
+        assert!(!leaf_keypair_exists(&conn, leaf_key_hash(&missing_init_key.1)));
+        assert!(!leaf_keypair_exists(&conn, leaf_key_hash(&missing_credential.1)));
+        assert!(leaf_keypair_exists(&conn, Sha256Hash::hash_from(UNRELATED_LEAF_PK)));
+
+        // Deleting the credential now takes its key packages, and their leaf keypairs, with it. The bundled
+        // conversation still uses that credential, which restricts deleting it, so the conversation goes first.
+        conn.execute("DELETE FROM mls_groups", []).unwrap();
+        conn.execute("DELETE FROM mls_credentials", []).unwrap();
+        let remaining_key_packages: u32 = conn
+            .query_row("SELECT count(*) FROM mls_key_packages", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(remaining_key_packages, 0, "key packages cascade from their credential");
+        let remaining_leaf_keypairs: Vec<Vec<u8>> = conn
+            .prepare("SELECT pk FROM mls_encryption_keypairs")
+            .unwrap()
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(
+            remaining_leaf_keypairs,
+            [UNRELATED_LEAF_PK],
+            "every key package's leaf keypair goes with it, and nothing else does"
+        );
     }
 
     const BASIC: u16 = 1;
@@ -1599,55 +1570,53 @@ r9IJmL6kDQ==
     /// SQLite only accepts a foreign key whose parent columns are the primary key or carry a unique
     /// index. A foreign key left on `(public_key_sha256, credential_type)` once `created_at` joins the
     /// primary key is not rejected when the schema is created, only later, when a write touches it.
-    #[test]
-    fn credential_foreign_keys_reference_the_full_primary_key() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn credential_foreign_keys_reference_the_full_primary_key() {
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        smol::block_on(async {
-            let db = Database::open_at_schema_version(path, &key, MigrationTarget::Latest)
-                .await
-                .unwrap();
-            let conn = db.conn().await;
+        let db = Database::open_at_schema_version(path, &key, MigrationTarget::Latest)
+            .await
+            .unwrap();
+        let conn = db.conn().await;
 
-            let mut primary_key: Vec<String> = conn
-                .prepare("SELECT name FROM pragma_table_info('mls_credentials') WHERE pk > 0")
-                .unwrap()
-                .query_map([], |row| row.get(0))
-                .unwrap()
-                .collect::<Result<_, _>>()
-                .unwrap();
-            primary_key.sort();
+        let mut primary_key: Vec<String> = conn
+            .prepare("SELECT name FROM pragma_table_info('mls_credentials') WHERE pk > 0")
+            .unwrap()
+            .query_map([], |row| row.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        primary_key.sort();
 
-            let referencing: Vec<(String, i64, String)> = conn
-                .prepare(
-                    "SELECT m.name, fk.id, fk.\"to\" \
-                     FROM sqlite_master AS m, pragma_foreign_key_list(m.name) AS fk \
-                     WHERE m.type = 'table' AND fk.\"table\" = 'mls_credentials'",
-                )
-                .unwrap()
-                .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
-                .unwrap()
-                .collect::<Result<_, _>>()
-                .unwrap();
+        let referencing: Vec<(String, i64, String)> = conn
+            .prepare(
+                "SELECT m.name, fk.id, fk.\"to\" \
+                 FROM sqlite_master AS m, pragma_foreign_key_list(m.name) AS fk \
+                 WHERE m.type = 'table' AND fk.\"table\" = 'mls_credentials'",
+            )
+            .unwrap()
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
 
-            let mut by_foreign_key = std::collections::BTreeMap::<(String, i64), Vec<String>>::new();
-            for (table, id, column) in referencing {
-                by_foreign_key.entry((table, id)).or_default().push(column);
-            }
-            assert!(
-                by_foreign_key.keys().any(|(table, _)| table == "mls_groups")
-                    && by_foreign_key.keys().any(|(table, _)| table == "mls_key_packages"),
-                "groups and key packages must both reference their credential, found {by_foreign_key:?}"
+        let mut by_foreign_key = std::collections::BTreeMap::<(String, i64), Vec<String>>::new();
+        for (table, id, column) in referencing {
+            by_foreign_key.entry((table, id)).or_default().push(column);
+        }
+        assert!(
+            by_foreign_key.keys().any(|(table, _)| table == "mls_groups")
+                && by_foreign_key.keys().any(|(table, _)| table == "mls_key_packages"),
+            "groups and key packages must both reference their credential, found {by_foreign_key:?}"
+        );
+        for ((table, _), mut columns) in by_foreign_key {
+            columns.sort();
+            assert_eq!(
+                columns, primary_key,
+                "{table}'s foreign key onto mls_credentials must cover its whole primary key"
             );
-            for ((table, _), mut columns) in by_foreign_key {
-                columns.sort();
-                assert_eq!(
-                    columns, primary_key,
-                    "{table}'s foreign key onto mls_credentials must cover its whole primary key"
-                );
-            }
-        });
+        }
     }
 
     /// An X509 credential is keyed by its leaf certificate's `not_before`, which the migration has to
@@ -1655,8 +1624,8 @@ r9IJmL6kDQ==
     /// `created_at` instead. The migration also has to correct `created_at`, which is the
     /// credential's earliest validity. A credential ref built from it would otherwise point at a key
     /// no row has. Anything referencing the credential must still resolve to it afterwards.
-    #[test]
-    fn x509_credential_is_keyed_by_the_certificate_not_before() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn x509_credential_is_keyed_by_the_certificate_not_before() {
         const INSERTION_TIME: u64 = 1_700_000_100;
         const CONVERSATION_ID: &[u8] = b"a conversation using the X509 credential";
         const KEY_PACKAGE_REF: &[u8] = b"a key package generated from the X509 credential";
@@ -1686,78 +1655,74 @@ r9IJmL6kDQ==
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        smol::block_on(async {
-            let db = seed_then_migrate(path, &key, 48, |conn| {
-                insert_v48_credential(conn, &public_key, X509, &x509_credential, INSERTION_TIME);
-                conn.execute(
-                    "INSERT INTO mls_groups \
-                     (id, state, epoch, ciphersuite, credential_id, credential_type, own_leaf_index, is_pending) \
-                     VALUES (?1, ?2, 1, ?3, ?4, ?5, 0, 0)",
-                    rusqlite::params![
-                        CONVERSATION_ID,
-                        b"opaque group state".as_slice(),
-                        Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 as u16,
-                        Sha256Hash::hash_from(&public_key),
-                        X509,
-                    ],
-                )
-                .expect("inserting a group");
-                conn.execute(
-                    "INSERT INTO mls_key_packages \
-                     (key_package_ref, key_package, credential_id, credential_type, hpke_init_public_key_hash, \
-                      leaf_encryption_key_hash) \
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                    rusqlite::params![
-                        KEY_PACKAGE_REF,
-                        b"opaque key package".as_slice(),
-                        Sha256Hash::hash_from(&public_key),
-                        X509,
-                        Sha256Hash::hash_from(b"an hpke init key"),
-                        Sha256Hash::hash_from(b"a leaf encryption key"),
-                    ],
-                )
-                .expect("inserting a key package");
-            })
-            .await;
-            let conn = db.conn().await;
+        let db = seed_then_migrate(path, &key, 48, |conn| {
+            insert_v48_credential(conn, &public_key, X509, &x509_credential, INSERTION_TIME);
+            conn.execute(
+                "INSERT INTO mls_groups \
+                 (id, state, epoch, ciphersuite, credential_id, credential_type, own_leaf_index, is_pending) \
+                 VALUES (?1, ?2, 1, ?3, ?4, ?5, 0, 0)",
+                rusqlite::params![
+                    CONVERSATION_ID,
+                    b"opaque group state".as_slice(),
+                    Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256 as u16,
+                    Sha256Hash::hash_from(&public_key),
+                    X509,
+                ],
+            )
+            .expect("inserting a group");
+            conn.execute(
+                "INSERT INTO mls_key_packages \
+                 (key_package_ref, key_package, credential_id, credential_type, hpke_init_public_key_hash, \
+                  leaf_encryption_key_hash) \
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                rusqlite::params![
+                    KEY_PACKAGE_REF,
+                    b"opaque key package".as_slice(),
+                    Sha256Hash::hash_from(&public_key),
+                    X509,
+                    Sha256Hash::hash_from(b"an hpke init key"),
+                    Sha256Hash::hash_from(b"a leaf encryption key"),
+                ],
+            )
+            .expect("inserting a key package");
+        })
+        .await;
+        let conn = db.conn().await;
 
-            assert_eq!(credential_not_before(&conn, &public_key, X509), [not_before]);
-            assert_eq!(
-                credential_created_at(&conn, &public_key, X509),
-                [not_before],
-                "created_at must be corrected to the certificate's not_before"
-            );
-            assert_eq!(row_count(&conn, "mls_groups"), 1, "the group must survive");
-            assert_eq!(row_count(&conn, "mls_key_packages"), 1, "the key package must survive");
-            assert_eq!(foreign_key_violations(&conn), []);
-        });
+        assert_eq!(credential_not_before(&conn, &public_key, X509), [not_before]);
+        assert_eq!(
+            credential_created_at(&conn, &public_key, X509),
+            [not_before],
+            "created_at must be corrected to the certificate's not_before"
+        );
+        assert_eq!(row_count(&conn, "mls_groups"), 1, "the group must survive");
+        assert_eq!(row_count(&conn, "mls_key_packages"), 1, "the key package must survive");
+        assert_eq!(foreign_key_violations(&conn), []);
     }
 
     /// An X509 credential whose certificate can't be parsed has no `not_before` to key it by. It was
     /// never loadable anyway, so the migration drops it rather than failing.
-    #[test]
-    fn migration_drops_an_x509_credential_whose_certificate_does_not_parse() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn migration_drops_an_x509_credential_whose_certificate_does_not_parse() {
         const PUBLIC_KEY: &[u8] = b"public key of a credential with a broken certificate";
 
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        smol::block_on(async {
-            let db = seed_then_migrate(path, &key, 48, |conn| {
-                insert_v48_credential(conn, PUBLIC_KEY, X509, b"not a serialized credential", 1_700_000_000);
-            })
-            .await;
-            let conn = db.conn().await;
+        let db = seed_then_migrate(path, &key, 48, |conn| {
+            insert_v48_credential(conn, PUBLIC_KEY, X509, b"not a serialized credential", 1_700_000_000);
+        })
+        .await;
+        let conn = db.conn().await;
 
-            assert_eq!(credential_created_at(&conn, PUBLIC_KEY, X509), [] as [u64; 0]);
-        });
+        assert_eq!(credential_created_at(&conn, PUBLIC_KEY, X509), [] as [u64; 0]);
     }
 
     /// A group whose X509 credential can't be parsed can't be loaded either: there is no credential
     /// to sign with. As in V39, the migration drops such a group along with the credential instead of
     /// failing, and whatever hangs off either of them goes too. Nothing else is touched.
-    #[test]
-    fn migration_drops_groups_using_an_x509_credential_whose_certificate_does_not_parse() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn migration_drops_groups_using_an_x509_credential_whose_certificate_does_not_parse() {
         const BROKEN_PUBLIC_KEY: &[u8] = b"public key of a credential with a broken certificate";
         const BROKEN_CONVERSATION: &[u8] = b"a conversation using the broken credential";
         const BROKEN_KEY_PACKAGE: &[u8] = b"a key package generated from the broken credential";
@@ -1788,59 +1753,57 @@ r9IJmL6kDQ==
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        smol::block_on(async {
-            let db = seed_then_migrate_to(path, &key, 48, MigrationTarget::Version(50), |conn| {
-                insert_v48_credential(
-                    conn,
-                    BROKEN_PUBLIC_KEY,
+        let db = seed_then_migrate_to(path, &key, 48, MigrationTarget::Version(50), |conn| {
+            insert_v48_credential(
+                conn,
+                BROKEN_PUBLIC_KEY,
+                X509,
+                b"not a serialized credential",
+                1_700_000_000,
+            );
+            insert_group(conn, BROKEN_CONVERSATION, BROKEN_PUBLIC_KEY, X509);
+            conn.execute(
+                "INSERT INTO mls_key_packages \
+                 (key_package_ref, key_package, credential_id, credential_type, hpke_init_public_key_hash, \
+                  leaf_encryption_key_hash) \
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                rusqlite::params![
+                    BROKEN_KEY_PACKAGE,
+                    b"opaque key package".as_slice(),
+                    Sha256Hash::hash_from(BROKEN_PUBLIC_KEY),
                     X509,
-                    b"not a serialized credential",
-                    1_700_000_000,
-                );
-                insert_group(conn, BROKEN_CONVERSATION, BROKEN_PUBLIC_KEY, X509);
-                conn.execute(
-                    "INSERT INTO mls_key_packages \
-                     (key_package_ref, key_package, credential_id, credential_type, hpke_init_public_key_hash, \
-                      leaf_encryption_key_hash) \
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                    rusqlite::params![
-                        BROKEN_KEY_PACKAGE,
-                        b"opaque key package".as_slice(),
-                        Sha256Hash::hash_from(BROKEN_PUBLIC_KEY),
-                        X509,
-                        Sha256Hash::hash_from(b"an hpke init key"),
-                        Sha256Hash::hash_from(b"a leaf encryption key"),
-                    ],
-                )
-                .expect("inserting a key package");
+                    Sha256Hash::hash_from(b"an hpke init key"),
+                    Sha256Hash::hash_from(b"a leaf encryption key"),
+                ],
+            )
+            .expect("inserting a key package");
 
-                insert_v48_credential(conn, HEALTHY_PUBLIC_KEY, BASIC, b"a basic credential", 1_700_000_000);
-                insert_group(conn, HEALTHY_CONVERSATION, HEALTHY_PUBLIC_KEY, BASIC);
-            })
-            .await;
-            let conn = db.conn().await;
+            insert_v48_credential(conn, HEALTHY_PUBLIC_KEY, BASIC, b"a basic credential", 1_700_000_000);
+            insert_group(conn, HEALTHY_CONVERSATION, HEALTHY_PUBLIC_KEY, BASIC);
+        })
+        .await;
+        let conn = db.conn().await;
 
-            let ids = |table: &str, column: &str| -> Vec<Vec<u8>> {
-                conn.prepare(&format!("SELECT {column} FROM {table}"))
-                    .unwrap()
-                    .query_map([], |row| row.get(0))
-                    .unwrap()
-                    .collect::<Result<_, _>>()
-                    .unwrap()
-            };
-            assert_eq!(credential_created_at(&conn, BROKEN_PUBLIC_KEY, X509), [] as [u64; 0]);
-            assert_eq!(ids("mls_groups", "id"), [HEALTHY_CONVERSATION]);
-            assert_eq!(ids("mls_buffered_commits", "conversation_id"), [HEALTHY_CONVERSATION]);
-            assert_eq!(row_count(&conn, "mls_key_packages"), 0);
-            assert_eq!(credential_created_at(&conn, HEALTHY_PUBLIC_KEY, BASIC), [1_700_000_000]);
-            assert_eq!(foreign_key_violations(&conn), []);
-        });
+        let ids = |table: &str, column: &str| -> Vec<Vec<u8>> {
+            conn.prepare(&format!("SELECT {column} FROM {table}"))
+                .unwrap()
+                .query_map([], |row| row.get(0))
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap()
+        };
+        assert_eq!(credential_created_at(&conn, BROKEN_PUBLIC_KEY, X509), [] as [u64; 0]);
+        assert_eq!(ids("mls_groups", "id"), [HEALTHY_CONVERSATION]);
+        assert_eq!(ids("mls_buffered_commits", "conversation_id"), [HEALTHY_CONVERSATION]);
+        assert_eq!(row_count(&conn, "mls_key_packages"), 0);
+        assert_eq!(credential_created_at(&conn, HEALTHY_PUBLIC_KEY, BASIC), [1_700_000_000]);
+        assert_eq!(foreign_key_violations(&conn), []);
     }
 
     /// A basic credential has no certificate, so its `created_at` is all there is. The migration must
     /// leave it, and the credential bytes, exactly as they were.
-    #[test]
-    fn migration_keeps_a_basic_credentials_created_at() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn migration_keeps_a_basic_credentials_created_at() {
         const PUBLIC_KEY: &[u8] = b"public key of a basic credential";
         const CREDENTIAL: &[u8] = b"a basic credential, never parsed by the migration";
         const CREATED_AT: u64 = 1_700_000_000;
@@ -1848,53 +1811,49 @@ r9IJmL6kDQ==
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        smol::block_on(async {
-            let db = seed_then_migrate(path, &key, 48, |conn| {
-                insert_v48_credential(conn, PUBLIC_KEY, BASIC, CREDENTIAL, CREATED_AT);
-            })
-            .await;
-            let conn = db.conn().await;
+        let db = seed_then_migrate(path, &key, 48, |conn| {
+            insert_v48_credential(conn, PUBLIC_KEY, BASIC, CREDENTIAL, CREATED_AT);
+        })
+        .await;
+        let conn = db.conn().await;
 
-            assert_eq!(credential_created_at(&conn, PUBLIC_KEY, BASIC), [CREATED_AT]);
-            assert_eq!(credential_not_before(&conn, PUBLIC_KEY, BASIC), [0]);
-            let credential: Vec<u8> = conn
-                .query_row("SELECT credential FROM mls_credentials", [], |row| row.get(0))
-                .unwrap();
-            assert_eq!(credential, CREDENTIAL);
-        });
+        assert_eq!(credential_created_at(&conn, PUBLIC_KEY, BASIC), [CREATED_AT]);
+        assert_eq!(credential_not_before(&conn, PUBLIC_KEY, BASIC), [0]);
+        let credential: Vec<u8> = conn
+            .query_row("SELECT credential FROM mls_credentials", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(credential, CREDENTIAL);
     }
 
     /// `created_at` has always been nullable, and V48 doesn't stop a basic credential from holding a
     /// `NULL` there. The new primary key doesn't involve `created_at`, so such a credential must come
     /// through the rebuild like any other, keyed by a `not_before` of 0.
-    #[test]
-    fn migration_keeps_a_basic_credential_without_created_at() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn migration_keeps_a_basic_credential_without_created_at() {
         const PUBLIC_KEY: &[u8] = b"public key of a basic credential stored without created_at";
         const CREDENTIAL: &[u8] = b"a basic credential, never parsed by the migration";
 
         let (db_file, key) = temp_db();
         let path = db_file.path().to_str().unwrap();
 
-        smol::block_on(async {
-            let db = seed_then_migrate(path, &key, 48, |conn| {
-                insert_v48_credential(conn, PUBLIC_KEY, BASIC, CREDENTIAL, 0);
-                conn.execute("UPDATE mls_credentials SET created_at = NULL", [])
-                    .expect("clearing created_at");
-            })
-            .await;
-            let conn = db.conn().await;
+        let db = seed_then_migrate(path, &key, 48, |conn| {
+            insert_v48_credential(conn, PUBLIC_KEY, BASIC, CREDENTIAL, 0);
+            conn.execute("UPDATE mls_credentials SET created_at = NULL", [])
+                .expect("clearing created_at");
+        })
+        .await;
+        let conn = db.conn().await;
 
-            let (credential, not_before): (Vec<u8>, u64) = conn
-                .query_row(
-                    "SELECT credential, not_before FROM mls_credentials \
-                     WHERE public_key_sha256 = ?1 AND credential_type = ?2",
-                    (Sha256Hash::hash_from(PUBLIC_KEY), BASIC),
-                    |row| Ok((row.get(0)?, row.get(1)?)),
-                )
-                .expect("the basic credential must survive the migration");
-            assert_eq!(credential, CREDENTIAL);
-            assert_eq!(not_before, 0);
-        });
+        let (credential, not_before): (Vec<u8>, u64) = conn
+            .query_row(
+                "SELECT credential, not_before FROM mls_credentials \
+                 WHERE public_key_sha256 = ?1 AND credential_type = ?2",
+                (Sha256Hash::hash_from(PUBLIC_KEY), BASIC),
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .expect("the basic credential must survive the migration");
+        assert_eq!(credential, CREDENTIAL);
+        assert_eq!(not_before, 0);
     }
 
     /// Rebuilding `mls_credentials` must not touch what references it. With foreign keys on, dropping
@@ -1902,8 +1861,8 @@ r9IJmL6kDQ==
     /// shows the rebuild really runs with them off and leaves every reference intact.
     ///
     /// The bundled database carries one basic credential, one group and 99 key packages using it.
-    #[test]
-    fn credential_rebuild_keeps_every_reference_in_a_real_database() {
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn credential_rebuild_keeps_every_reference_in_a_real_database() {
         let mut db_file = NamedTempFile::new().unwrap();
         db_file.write_all(DB).unwrap();
         let path = db_file
@@ -1912,42 +1871,40 @@ r9IJmL6kDQ==
             .expect("tmpfile path is representable in unicode");
 
         let new_key = DatabaseKey::generate();
-        smol::block_on(migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key)).unwrap();
+        migrate_db_key_type_to_bytes(path, OLD_KEY, &new_key).await.unwrap();
 
-        smol::block_on(async {
-            let tables = ["mls_credentials", "mls_groups", "mls_key_packages"];
-            let (before, basic_created_at): (Vec<i64>, Vec<(Vec<u8>, u64)>) = {
-                let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(48))
-                    .await
-                    .unwrap();
-                let conn = db.conn().await;
-                let created_at = conn
-                    .prepare("SELECT public_key, unixepoch(created_at) FROM mls_credentials WHERE credential_type = ?1")
-                    .unwrap()
-                    .query_map([BASIC], |row| Ok((row.get(0)?, row.get(1)?)))
-                    .unwrap()
-                    .collect::<Result<_, _>>()
-                    .unwrap();
-                (tables.map(|table| row_count(&conn, table)).to_vec(), created_at)
-            };
-            assert!(
-                before.iter().all(|&count| count > 0),
-                "the bundled database must have rows in {tables:?}, found {before:?}"
-            );
-
-            let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Latest)
+        let tables = ["mls_credentials", "mls_groups", "mls_key_packages"];
+        let (before, basic_created_at): (Vec<i64>, Vec<(Vec<u8>, u64)>) = {
+            let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Version(48))
                 .await
                 .unwrap();
             let conn = db.conn().await;
+            let created_at = conn
+                .prepare("SELECT public_key, unixepoch(created_at) FROM mls_credentials WHERE credential_type = ?1")
+                .unwrap()
+                .query_map([BASIC], |row| Ok((row.get(0)?, row.get(1)?)))
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap();
+            (tables.map(|table| row_count(&conn, table)).to_vec(), created_at)
+        };
+        assert!(
+            before.iter().all(|&count| count > 0),
+            "the bundled database must have rows in {tables:?}, found {before:?}"
+        );
 
-            let after = tables.map(|table| row_count(&conn, table)).to_vec();
-            assert_eq!(after, before, "row counts of {tables:?}");
-            assert_eq!(foreign_key_violations(&conn), []);
-            for (public_key, created_at) in basic_created_at {
-                assert_eq!(credential_created_at(&conn, &public_key, BASIC), [created_at]);
-                assert_eq!(credential_not_before(&conn, &public_key, BASIC), [0]);
-            }
-        });
+        let db = Database::open_at_schema_version(path, &new_key, MigrationTarget::Latest)
+            .await
+            .unwrap();
+        let conn = db.conn().await;
+
+        let after = tables.map(|table| row_count(&conn, table)).to_vec();
+        assert_eq!(after, before, "row counts of {tables:?}");
+        assert_eq!(foreign_key_violations(&conn), []);
+        for (public_key, created_at) in basic_created_at {
+            assert_eq!(credential_created_at(&conn, &public_key, BASIC), [created_at]);
+            assert_eq!(credential_not_before(&conn, &public_key, BASIC), [0]);
+        }
     }
 
     /// The V51 meta migration moves buffered messages into the inbox, and V52 drops the tables they came from.
@@ -2060,6 +2017,7 @@ r9IJmL6kDQ==
         ///   could never apply otherwise.
         /// - A message which doesn't parse can't be replayed at all.
         #[rstest]
+        #[test_attr(macro_rules_attribute::apply(smol_macros::test))]
         #[case::future_epoch(false, Table::PendingMessages, private_message(1, 4), Some((WaitingFor::Epoch, ContentType::Application, 4)))]
         #[case::future_epoch_transient(false, Table::PendingMessages, transient_message(4), Some((WaitingFor::Epoch, ContentType::Application, 4)))]
         #[case::future_epoch_targeted(false, Table::PendingMessages, targeted_message(TARGETED_WIRE_FORMAT, 4), Some((WaitingFor::Epoch, ContentType::Application, 4)))]
@@ -2083,7 +2041,7 @@ r9IJmL6kDQ==
         #[case::buffered_non_commit(false, Table::BufferedCommits, private_message(1, 3), None)]
         #[case::unparseable_pending_message(false, Table::PendingMessages, b"not a message".to_vec(), None)]
         #[case::unparseable_buffered_commit(false, Table::BufferedCommits, b"not a commit".to_vec(), None)]
-        fn v51_classifies_or_drops_each_buffered_message(
+        async fn v51_classifies_or_drops_each_buffered_message(
             #[case] is_pending: bool,
             #[case] table: Table,
             #[case] message: Vec<u8>,
@@ -2092,49 +2050,45 @@ r9IJmL6kDQ==
             let (db_file, key) = temp_db();
             let path = db_file.path().to_str().unwrap();
 
-            smol::block_on(async {
-                let db = seed_then_migrate(path, &key, 48, |conn| {
-                    seed_conversation(conn, 3, is_pending);
-                    seed_message(conn, table, Some(&message));
-                })
-                .await;
-                let conn = db.conn().await;
+            let db = seed_then_migrate(path, &key, 48, |conn| {
+                seed_conversation(conn, 3, is_pending);
+                seed_message(conn, table, Some(&message));
+            })
+            .await;
+            let conn = db.conn().await;
 
-                let migrated = inbox_messages(&conn)
-                    .into_iter()
-                    .map(|inbox_message| {
-                        assert_eq!(inbox_message.conversation_id.bytes(), CONVERSATION_ID);
-                        assert_eq!(inbox_message.message, message, "the message bytes must survive exactly");
-                        (
-                            inbox_message.waiting_for,
-                            inbox_message.content_type,
-                            inbox_message.epoch,
-                        )
-                    })
-                    .collect::<Vec<_>>();
-                assert_eq!(migrated, Vec::from_iter(expected));
-            });
+            let migrated = inbox_messages(&conn)
+                .into_iter()
+                .map(|inbox_message| {
+                    assert_eq!(inbox_message.conversation_id.bytes(), CONVERSATION_ID);
+                    assert_eq!(inbox_message.message, message, "the message bytes must survive exactly");
+                    (
+                        inbox_message.waiting_for,
+                        inbox_message.content_type,
+                        inbox_message.epoch,
+                    )
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(migrated, Vec::from_iter(expected));
         }
 
         /// V51 drops a buffered commit with no data rather than failing.
         ///
         /// `mls_buffered_commits.commit_data` was nullable, though nothing should have written a null into it. There
         /// is nothing to replay in such a row.
-        #[test]
-        fn v51_drops_a_buffered_commit_without_data() {
+        #[macro_rules_attribute::apply(smol_macros::test)]
+        async fn v51_drops_a_buffered_commit_without_data() {
             let (db_file, key) = temp_db();
             let path = db_file.path().to_str().unwrap();
 
-            smol::block_on(async {
-                let db = seed_then_migrate(path, &key, 48, |conn| {
-                    seed_conversation(conn, 3, false);
-                    seed_message(conn, Table::BufferedCommits, None);
-                })
-                .await;
-                let conn = db.conn().await;
+            let db = seed_then_migrate(path, &key, 48, |conn| {
+                seed_conversation(conn, 3, false);
+                seed_message(conn, Table::BufferedCommits, None);
+            })
+            .await;
+            let conn = db.conn().await;
 
-                assert!(inbox_messages(&conn).is_empty());
-            });
+            assert!(inbox_messages(&conn).is_empty());
         }
 
         /// V51 preserves the order in which buffered messages arrived.
@@ -2142,8 +2096,8 @@ r9IJmL6kDQ==
         /// Pending messages keep the order the database held them in, and the buffered commit comes after all of
         /// them. On replay the commit sorts last regardless, being a commit, but the inbox's own order must not
         /// contradict that.
-        #[test]
-        fn v51_preserves_arrival_order() {
+        #[macro_rules_attribute::apply(smol_macros::test)]
+        async fn v51_preserves_arrival_order() {
             let pending_messages = [b"first".as_slice(), b"second", b"third"]
                 .map(|ciphertext| private_message_with_ciphertext(1, 4, ciphertext));
             let commit = public_message(3, EMPTY_COMMIT, true);
@@ -2151,55 +2105,51 @@ r9IJmL6kDQ==
             let (db_file, key) = temp_db();
             let path = db_file.path().to_str().unwrap();
 
-            smol::block_on(async {
-                let db = seed_then_migrate(path, &key, 48, |conn| {
-                    seed_conversation(conn, 3, false);
-                    // seed the commit first, to show that the order comes from the tables, not from insertion
-                    seed_message(conn, Table::BufferedCommits, Some(&commit));
-                    for message in &pending_messages {
-                        seed_message(conn, Table::PendingMessages, Some(message));
-                    }
-                })
-                .await;
-                let conn = db.conn().await;
+            let db = seed_then_migrate(path, &key, 48, |conn| {
+                seed_conversation(conn, 3, false);
+                // seed the commit first, to show that the order comes from the tables, not from insertion
+                seed_message(conn, Table::BufferedCommits, Some(&commit));
+                for message in &pending_messages {
+                    seed_message(conn, Table::PendingMessages, Some(message));
+                }
+            })
+            .await;
+            let conn = db.conn().await;
 
-                let migrated = inbox_messages(&conn)
-                    .into_iter()
-                    .map(|inbox_message| inbox_message.message)
-                    .collect::<Vec<_>>();
-                let mut expected = pending_messages.to_vec();
-                expected.push(commit);
-                assert_eq!(migrated, expected);
-            });
+            let migrated = inbox_messages(&conn)
+                .into_iter()
+                .map(|inbox_message| inbox_message.message)
+                .collect::<Vec<_>>();
+            let mut expected = pending_messages.to_vec();
+            expected.push(commit);
+            assert_eq!(migrated, expected);
         }
 
         /// V51 keeps one copy of a message buffered in both tables.
         ///
         /// A pending conversation can hold the same commit as a pending message and as its buffered commit. Both
         /// copies wait for the join, and the inbox holds each message once per conversation.
-        #[test]
-        fn v51_keeps_one_copy_of_a_message_in_both_tables() {
+        #[macro_rules_attribute::apply(smol_macros::test)]
+        async fn v51_keeps_one_copy_of_a_message_in_both_tables() {
             let commit = public_message(3, EMPTY_COMMIT, true);
 
             let (db_file, key) = temp_db();
             let path = db_file.path().to_str().unwrap();
 
-            smol::block_on(async {
-                let db = seed_then_migrate(path, &key, 48, |conn| {
-                    seed_conversation(conn, 3, true);
-                    seed_message(conn, Table::PendingMessages, Some(&commit));
-                    seed_message(conn, Table::BufferedCommits, Some(&commit));
-                })
-                .await;
-                let conn = db.conn().await;
+            let db = seed_then_migrate(path, &key, 48, |conn| {
+                seed_conversation(conn, 3, true);
+                seed_message(conn, Table::PendingMessages, Some(&commit));
+                seed_message(conn, Table::BufferedCommits, Some(&commit));
+            })
+            .await;
+            let conn = db.conn().await;
 
-                let migrated = inbox_messages(&conn);
-                let [inbox_message] = migrated.as_slice() else {
-                    panic!("expected exactly one inbox message, found {}", migrated.len());
-                };
-                assert_eq!(inbox_message.message, commit);
-                assert_eq!(inbox_message.waiting_for, WaitingFor::PendingJoin);
-            });
+            let migrated = inbox_messages(&conn);
+            let [inbox_message] = migrated.as_slice() else {
+                panic!("expected exactly one inbox message, found {}", migrated.len());
+            };
+            assert_eq!(inbox_message.message, commit);
+            assert_eq!(inbox_message.waiting_for, WaitingFor::PendingJoin);
         }
     }
 }

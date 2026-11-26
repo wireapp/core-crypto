@@ -299,8 +299,6 @@ impl DeletableBySearchKey<ConversationEpochsOlderThan<'_>> for OldEpochMemberDat
 
 #[cfg(test)]
 mod tests {
-    use futures_lite::future;
-
     use super::*;
     use crate::{
         Database,
@@ -371,8 +369,9 @@ mod tests {
     /// The `drop_unreferenced_foreign_credential` trigger stands in for that cascade. Member rows are
     /// only ever removed by cascade, so this test deletes in the same places the library does: pruning
     /// old epochs from `old_epoch_data`, and wiping a whole conversation from `mls_groups`.
-    #[test]
-    fn foreign_credential_is_dropped_with_its_last_reference() {
+    #[cfg_attr(not(target_os = "unknown"), macro_rules_attribute::apply(smol_macros::test))]
+    #[cfg_attr(target_os = "unknown", wasm_bindgen_test::wasm_bindgen_test)]
+    async fn foreign_credential_is_dropped_with_its_last_reference() {
         // In both conversations, in every epoch.
         let make_shared_oemd = |conversation_id, epoch, leaf_node_index| {
             make_old_epoch_member_data(
@@ -390,64 +389,62 @@ mod tests {
             b"a credential used only in conversation a, epoch 1",
         );
 
-        future::block_on(async {
-            let store = Database::open_in_memory().unwrap();
+        let store = Database::open_in_memory().unwrap();
 
-            let tx = store.new_transaction().await.unwrap();
-            StoredCredential {
-                session_id: b"session id".to_vec(),
-                credential: b"our own credential".to_vec(),
-                created_at: 0,
-                ciphersuite: 1,
-                public_key: OWN_PUBLIC_KEY.to_vec(),
-                credential_type: OWN_CREDENTIAL_TYPE,
-                not_before: StoredCredential::NOT_BEFORE_WITHOUT_CERTIFICATE,
-                private_key: b"private key".to_vec(),
-            }
-            .save(&*tx)
-            .unwrap();
-            for conversation_id in [CONVERSATION_A, CONVERSATION_B] {
-                make_group(conversation_id).save(&*tx).unwrap();
-            }
-            for (conversation_id, epoch_number) in [(CONVERSATION_A, 1), (CONVERSATION_A, 2), (CONVERSATION_B, 1)] {
-                make_old_epoch_data(conversation_id, epoch_number).save(&*tx).unwrap();
-                make_shared_oemd(conversation_id, epoch_number, 0).save(&*tx).unwrap();
-            }
-            rotated_away.save(&*tx).unwrap();
-            tx.commit().await.unwrap();
+        let tx = store.new_transaction().await.unwrap();
+        StoredCredential {
+            session_id: b"session id".to_vec(),
+            credential: b"our own credential".to_vec(),
+            created_at: 0,
+            ciphersuite: 1,
+            public_key: OWN_PUBLIC_KEY.to_vec(),
+            credential_type: OWN_CREDENTIAL_TYPE,
+            not_before: StoredCredential::NOT_BEFORE_WITHOUT_CERTIFICATE,
+            private_key: b"private key".to_vec(),
+        }
+        .save(&*tx)
+        .unwrap();
+        for conversation_id in [CONVERSATION_A, CONVERSATION_B] {
+            make_group(conversation_id).save(&*tx).unwrap();
+        }
+        for (conversation_id, epoch_number) in [(CONVERSATION_A, 1), (CONVERSATION_A, 2), (CONVERSATION_B, 1)] {
+            make_old_epoch_data(conversation_id, epoch_number).save(&*tx).unwrap();
+            make_shared_oemd(conversation_id, epoch_number, 0).save(&*tx).unwrap();
+        }
+        rotated_away.save(&*tx).unwrap();
+        tx.commit().await.unwrap();
 
-            let shared_hash = make_shared_oemd(CONVERSATION_A, 1, 0).foreign_credentials_hash();
+        let shared_hash = make_shared_oemd(CONVERSATION_A, 1, 0).foreign_credentials_hash();
 
-            let tx = store.new_transaction().await.unwrap();
-            OldEpochData::delete_all_matching(
-                &*tx,
-                &ConversationEpochsOlderThan::new(ConversationIdRef::new(CONVERSATION_A), 2),
-            )
-            .unwrap();
-            tx.commit().await.unwrap();
-            assert_eq!(
-                remaining_foreign_credentials(&store).await,
-                [shared_hash],
-                "pruning an epoch must drop the credentials only it referred to, and keep the ones other epochs \
-                 still refer to"
-            );
+        let tx = store.new_transaction().await.unwrap();
+        OldEpochData::delete_all_matching(
+            &*tx,
+            &ConversationEpochsOlderThan::new(ConversationIdRef::new(CONVERSATION_A), 2),
+        )
+        .unwrap();
+        tx.commit().await.unwrap();
+        assert_eq!(
+            remaining_foreign_credentials(&store).await,
+            [shared_hash],
+            "pruning an epoch must drop the credentials only it referred to, and keep the ones other epochs \
+             still refer to"
+        );
 
-            let tx = store.new_transaction().await.unwrap();
-            PersistedMlsGroup::delete(&*tx, &CONVERSATION_A.into()).unwrap();
-            tx.commit().await.unwrap();
-            assert_eq!(
-                remaining_foreign_credentials(&store).await,
-                [shared_hash],
-                "wiping a conversation must keep the credentials another conversation still refers to"
-            );
+        let tx = store.new_transaction().await.unwrap();
+        PersistedMlsGroup::delete(&*tx, &CONVERSATION_A.into()).unwrap();
+        tx.commit().await.unwrap();
+        assert_eq!(
+            remaining_foreign_credentials(&store).await,
+            [shared_hash],
+            "wiping a conversation must keep the credentials another conversation still refers to"
+        );
 
-            let tx = store.new_transaction().await.unwrap();
-            PersistedMlsGroup::delete(&*tx, &CONVERSATION_B.into()).unwrap();
-            tx.commit().await.unwrap();
-            assert!(
-                remaining_foreign_credentials(&store).await.is_empty(),
-                "once nothing refers to a foreign credential it must be gone"
-            );
-        });
+        let tx = store.new_transaction().await.unwrap();
+        PersistedMlsGroup::delete(&*tx, &CONVERSATION_B.into()).unwrap();
+        tx.commit().await.unwrap();
+        assert!(
+            remaining_foreign_credentials(&store).await.is_empty(),
+            "once nothing refers to a foreign credential it must be gone"
+        );
     }
 }

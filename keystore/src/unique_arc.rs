@@ -211,98 +211,88 @@ mod tests {
         assert_eq!(&*arc, &[1, 2, 3]);
     }
 
-    #[test]
-    fn into_inner_returns_the_value() {
-        future::block_on(async {
-            let arc = UniqueArc::from(String::from("hello"));
-            assert_eq!(UniqueArc::into_inner(arc).await, "hello");
-        });
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn into_inner_returns_the_value() {
+        let arc = UniqueArc::from(String::from("hello"));
+        assert_eq!(UniqueArc::into_inner(arc).await, "hello");
     }
 
-    #[test]
-    fn outstanding_weaks_do_not_block_unpacking() {
-        future::block_on(async {
-            // A `UniqueWeak` that never upgrades holds no strong reference, so it must not prevent
-            // `into_inner` from succeeding: weak references are fine, only live upgrades are not.
-            let arc = UniqueArc::from(7_u32);
-            let _weak = UniqueArc::downgrade(&arc);
-            assert_eq!(UniqueArc::into_inner(arc).await, 7);
-        });
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn outstanding_weaks_do_not_block_unpacking() {
+        // A `UniqueWeak` that never upgrades holds no strong reference, so it must not prevent
+        // `into_inner` from succeeding: weak references are fine, only live upgrades are not.
+        let arc = UniqueArc::from(7_u32);
+        let _weak = UniqueArc::downgrade(&arc);
+        assert_eq!(UniqueArc::into_inner(arc).await, 7);
     }
 
-    #[test]
-    fn upgrade_sees_the_value_while_alive() {
-        future::block_on(async {
-            let arc = UniqueArc::from(42_u32);
-            let weak = UniqueArc::downgrade(&arc);
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn upgrade_sees_the_value_while_alive() {
+        let arc = UniqueArc::from(42_u32);
+        let weak = UniqueArc::downgrade(&arc);
 
-            // both variants hand back a guard that derefs to the live value
-            assert_eq!(weak.upgrade().await.as_deref(), Some(&42));
-            assert_eq!(weak.upgrade_sync().as_deref(), Some(&42));
+        // both variants hand back a guard that derefs to the live value
+        assert_eq!(weak.upgrade().await.as_deref(), Some(&42));
+        assert_eq!(weak.upgrade_sync().as_deref(), Some(&42));
 
-            // keep `arc` alive until here
-            assert_eq!(*arc, 42);
-        });
+        // keep `arc` alive until here
+        assert_eq!(*arc, 42);
     }
 
-    #[test]
-    fn upgrade_fails_once_unpacked() {
-        future::block_on(async {
-            let arc = UniqueArc::from(42_u32);
-            let weak = UniqueArc::downgrade(&arc);
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn upgrade_fails_once_unpacked() {
+        let arc = UniqueArc::from(42_u32);
+        let weak = UniqueArc::downgrade(&arc);
 
-            assert_eq!(UniqueArc::into_inner(arc).await, 42);
+        assert_eq!(UniqueArc::into_inner(arc).await, 42);
 
-            // the allocation is gone, so both variants report the value as unavailable
-            assert!(weak.upgrade().await.is_none());
-            assert!(weak.upgrade_sync().is_none());
-        });
+        // the allocation is gone, so both variants report the value as unavailable
+        assert!(weak.upgrade().await.is_none());
+        assert!(weak.upgrade_sync().is_none());
     }
 
     /// Regression test for the original soundness bug: an in-flight upgrade holds a temporary
     /// strong reference (behind the returned guard) across an `.await`, so a naive `into_inner`
     /// would observe two strong references and panic. `into_inner` must instead wait for the guard
     /// to be dropped.
-    #[test]
-    fn into_inner_waits_for_an_in_flight_upgrade() {
-        future::block_on(async {
-            let arc = UniqueArc::from(42_u32);
-            let weak = UniqueArc::downgrade(&arc);
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn into_inner_waits_for_an_in_flight_upgrade() {
+        let arc = UniqueArc::from(42_u32);
+        let weak = UniqueArc::downgrade(&arc);
 
-            // one-shot signals between the two concurrent futures
-            let holding = Semaphore::new(0); // upgrade -> take: "I hold a temporary strong ref"
-            let proceed = Semaphore::new(0); // take -> upgrade: "you may release it now"
-            let unpacked = AtomicBool::new(false);
+        // one-shot signals between the two concurrent futures
+        let holding = Semaphore::new(0); // upgrade -> take: "I hold a temporary strong ref"
+        let proceed = Semaphore::new(0); // take -> upgrade: "you may release it now"
+        let unpacked = AtomicBool::new(false);
 
-            let upgrade = async {
-                let guard = weak.upgrade().await.expect("value is still alive");
-                assert_eq!(*guard, 42);
-                // announce that a temporary strong reference is now live, then hold it
-                holding.add_permits(1);
-                proceed.acquire().await;
-                // `into_inner` must not have unpacked while we still hold the guard
-                assert!(
-                    !unpacked.load(Ordering::SeqCst),
-                    "into_inner unpacked while an upgrade was still live"
-                );
-                *guard
-                // `guard` drops here, releasing the strong reference and then the read lease
-            };
+        let upgrade = async {
+            let guard = weak.upgrade().await.expect("value is still alive");
+            assert_eq!(*guard, 42);
+            // announce that a temporary strong reference is now live, then hold it
+            holding.add_permits(1);
+            proceed.acquire().await;
+            // `into_inner` must not have unpacked while we still hold the guard
+            assert!(
+                !unpacked.load(Ordering::SeqCst),
+                "into_inner unpacked while an upgrade was still live"
+            );
+            *guard
+            // `guard` drops here, releasing the strong reference and then the read lease
+        };
 
-            let take = async {
-                // wait until the upgrade is definitely holding its strong reference ...
-                holding.acquire().await;
-                // ... release it, then take. `into_inner` must wait for the guard to drop
-                // rather than panicking on the transiently-doubled strong count.
-                proceed.add_permits(1);
-                let value = UniqueArc::into_inner(arc).await;
-                unpacked.store(true, Ordering::SeqCst);
-                value
-            };
+        let take = async {
+            // wait until the upgrade is definitely holding its strong reference ...
+            holding.acquire().await;
+            // ... release it, then take. `into_inner` must wait for the guard to drop
+            // rather than panicking on the transiently-doubled strong count.
+            proceed.add_permits(1);
+            let value = UniqueArc::into_inner(arc).await;
+            unpacked.store(true, Ordering::SeqCst);
+            value
+        };
 
-            let (upgraded, taken) = future::zip(upgrade, take).await;
-            assert_eq!(upgraded, 42);
-            assert_eq!(taken, 42);
-        });
+        let (upgraded, taken) = future::zip(upgrade, take).await;
+        assert_eq!(upgraded, 42);
+        assert_eq!(taken, 42);
     }
 }

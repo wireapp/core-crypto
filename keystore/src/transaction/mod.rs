@@ -171,8 +171,6 @@ impl Transaction {
 mod external_modification_tests {
     use std::{path::Path, sync::Arc};
 
-    use futures_lite::future;
-
     use crate::{Database, DatabaseKey, entities::ConsumerData, traits::EntityDatabaseMutation as _};
 
     /// Two handles on the same database file, each with its own connection, as two processes would
@@ -202,72 +200,62 @@ mod external_modification_tests {
         externally_modified
     }
 
-    #[test]
-    fn own_commits_are_not_external_modifications() {
-        future::block_on(async {
-            let dir = tempfile::tempdir().unwrap();
-            let (database, _other) = two_handles(dir.path()).await;
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn own_commits_are_not_external_modifications() {
+        let dir = tempfile::tempdir().unwrap();
+        let (database, _other) = two_handles(dir.path()).await;
 
-            // initialize the data_version state
-            externally_modified(&database).await;
-            write(&database).await;
+        // initialize the data_version state
+        externally_modified(&database).await;
+        write(&database).await;
 
-            assert!(!externally_modified(&database).await);
-        });
+        assert!(!externally_modified(&database).await);
     }
 
-    #[test]
-    fn another_connections_commit_is_an_external_modification() {
-        future::block_on(async {
-            let dir = tempfile::tempdir().unwrap();
-            let (database, other) = two_handles(dir.path()).await;
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn another_connections_commit_is_an_external_modification() {
+        let dir = tempfile::tempdir().unwrap();
+        let (database, other) = two_handles(dir.path()).await;
 
-            externally_modified(&database).await;
-            write(&other).await;
+        externally_modified(&database).await;
+        write(&other).await;
 
-            assert!(externally_modified(&database).await);
-        });
+        assert!(externally_modified(&database).await);
     }
 
-    #[test]
-    fn external_modification_is_reported_once() {
-        future::block_on(async {
-            let dir = tempfile::tempdir().unwrap();
-            let (database, other) = two_handles(dir.path()).await;
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn external_modification_is_reported_once() {
+        let dir = tempfile::tempdir().unwrap();
+        let (database, other) = two_handles(dir.path()).await;
 
-            externally_modified(&database).await;
-            write(&other).await;
-            externally_modified(&database).await;
+        externally_modified(&database).await;
+        write(&other).await;
+        externally_modified(&database).await;
 
-            assert!(!externally_modified(&database).await);
-        });
+        assert!(!externally_modified(&database).await);
     }
 
-    #[test]
-    fn another_connections_rollback_is_not_an_external_modification() {
-        future::block_on(async {
-            let dir = tempfile::tempdir().unwrap();
-            let (database, other) = two_handles(dir.path()).await;
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn another_connections_rollback_is_not_an_external_modification() {
+        let dir = tempfile::tempdir().unwrap();
+        let (database, other) = two_handles(dir.path()).await;
 
-            externally_modified(&database).await;
-            let transaction = other.new_transaction().await.unwrap();
-            ConsumerData::from(b"some data".to_vec()).save(&*transaction).unwrap();
-            transaction.rollback().await.unwrap();
+        externally_modified(&database).await;
+        let transaction = other.new_transaction().await.unwrap();
+        ConsumerData::from(b"some data".to_vec()).save(&*transaction).unwrap();
+        transaction.rollback().await.unwrap();
 
-            assert!(!externally_modified(&database).await);
-        });
+        assert!(!externally_modified(&database).await);
     }
 
-    #[test]
-    fn another_connections_read_only_transaction_is_not_an_external_modification() {
-        future::block_on(async {
-            let dir = tempfile::tempdir().unwrap();
-            let (database, other) = two_handles(dir.path()).await;
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn another_connections_read_only_transaction_is_not_an_external_modification() {
+        let dir = tempfile::tempdir().unwrap();
+        let (database, other) = two_handles(dir.path()).await;
 
-            externally_modified(&database).await;
-            externally_modified(&other).await;
+        externally_modified(&database).await;
+        externally_modified(&other).await;
 
-            assert!(!externally_modified(&database).await);
-        });
+        assert!(!externally_modified(&database).await);
     }
 }

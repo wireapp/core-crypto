@@ -307,84 +307,80 @@ impl Database {
 
 #[cfg(all(test, not(target_os = "unknown")))]
 mod export_test {
-    use futures_lite::future;
-
     use crate::connection::{Database, DatabaseKey};
 
-    #[test]
-    fn can_export_database_copy() {
-        future::block_on(async {
-            // Create temporary directory
-            let temp_dir = tempfile::tempdir().unwrap();
-            let source_path = temp_dir.path().join("test_export_source.db");
-            let dest_path = temp_dir.path().join("test_export_dest.db");
+    #[macro_rules_attribute::apply(smol_macros::test)]
+    async fn can_export_database_copy() {
+        // Create temporary directory
+        let temp_dir = tempfile::tempdir().unwrap();
+        let source_path = temp_dir.path().join("test_export_source.db");
+        let dest_path = temp_dir.path().join("test_export_dest.db");
 
-            // Write test database
-            std::fs::write(&source_path, crate::migrations::test_helpers::DB).unwrap();
+        // Write test database
+        std::fs::write(&source_path, crate::migrations::test_helpers::DB).unwrap();
 
-            // Migrate the database to use the new key format
-            let key = DatabaseKey::generate();
-            crate::migrations::migrate_db_key_type_to_bytes(
-                source_path.to_str().unwrap(),
-                crate::migrations::test_helpers::OLD_KEY,
-                &key,
-            )
-            .await
-            .unwrap();
+        // Migrate the database to use the new key format
+        let key = DatabaseKey::generate();
+        crate::migrations::migrate_db_key_type_to_bytes(
+            source_path.to_str().unwrap(),
+            crate::migrations::test_helpers::OLD_KEY,
+            &key,
+        )
+        .await
+        .unwrap();
 
-            // Open the database
-            let db = Database::open(source_path.to_str().unwrap(), &key).await.unwrap();
+        // Open the database
+        let db = Database::open(source_path.to_str().unwrap(), &key).await.unwrap();
 
-            // Insert test data into a test table
-            let test_data = b"test data for export verification";
-            let test_id = 12345;
-            {
-                // Create a test table
-                db.conn()
-                    .await
-                    .execute(
-                        "CREATE TABLE IF NOT EXISTS test_export_data (id INTEGER PRIMARY KEY, data BLOB)",
-                        [],
-                    )
-                    .unwrap();
+        // Insert test data into a test table
+        let test_data = b"test data for export verification";
+        let test_id = 12345;
+        {
+            // Create a test table
+            db.conn()
+                .await
+                .execute(
+                    "CREATE TABLE IF NOT EXISTS test_export_data (id INTEGER PRIMARY KEY, data BLOB)",
+                    [],
+                )
+                .unwrap();
 
-                // Insert test data
-                db.conn()
-                    .await
-                    .execute(
-                        "INSERT INTO test_export_data (id, data) VALUES (?1, ?2)",
-                        [&test_id as &dyn rusqlite::ToSql, &test_data.as_slice()],
-                    )
-                    .unwrap();
-            }
+            // Insert test data
+            db.conn()
+                .await
+                .execute(
+                    "INSERT INTO test_export_data (id, data) VALUES (?1, ?2)",
+                    [&test_id as &dyn rusqlite::ToSql, &test_data.as_slice()],
+                )
+                .unwrap();
+        }
 
-            // Export the database
-            db.export_copy(dest_path.to_str().unwrap()).await.unwrap();
+        // Export the database
+        db.export_copy(dest_path.to_str().unwrap()).await.unwrap();
 
-            // Verify the exported database can be opened with the same key
-            let exported_db = Database::open(dest_path.to_str().unwrap(), &key).await.unwrap();
+        // Verify the exported database can be opened with the same key
+        let exported_db = Database::open(dest_path.to_str().unwrap(), &key).await.unwrap();
 
-            // Read the data from the exported database
-            {
-                let conn = exported_db.conn().await;
-                let mut stmt = conn
-                    .prepare("SELECT id, data FROM test_export_data WHERE id = ?1")
-                    .unwrap();
-                let mut rows = stmt.query([test_id]).unwrap();
+        // Read the data from the exported database
+        {
+            let conn = exported_db.conn().await;
+            let mut stmt = conn
+                .prepare("SELECT id, data FROM test_export_data WHERE id = ?1")
+                .unwrap();
+            let mut rows = stmt.query([test_id]).unwrap();
 
-                let row = rows.next().unwrap().expect("Expected row to exist");
-                let read_id: i32 = row.get(0).unwrap();
-                let read_data: Vec<u8> = row.get(1).unwrap();
+            let row = rows.next().unwrap().expect("Expected row to exist");
+            let read_id: i32 = row.get(0).unwrap();
+            let read_data: Vec<u8> = row.get(1).unwrap();
 
-                assert_eq!(read_id, test_id, "ID should match in exported database");
-                assert_eq!(read_data, test_data, "Data should match in exported database");
-            }
+            assert_eq!(read_id, test_id, "ID should match in exported database");
+            assert_eq!(read_data, test_data, "Data should match in exported database");
+        }
 
-            // Close databases before cleanup
-            drop(db);
-            drop(exported_db);
+        // Close databases before cleanup
+        drop(db);
+        drop(exported_db);
 
-            // temp_dir is automatically cleaned up when it goes out of scope
-        });
+        // temp_dir is automatically cleaned up when it goes out of scope
     }
 }
