@@ -12,7 +12,6 @@ use ml_dsa::{MlDsa44, MlDsa65, MlDsa87};
 use openmls::prelude::HpkeCiphertext;
 use openmls_traits::{
     crypto::OpenMlsCrypto,
-    mldsa,
     random::OpenMlsRand,
     types::{
         self, AeadType, Ciphersuite, CryptoError, ExporterSecret, HashType, HpkeAeadType, HpkeConfig, HpkeKdfType,
@@ -564,6 +563,34 @@ impl OpenMlsCrypto for RustCrypto {
 
     fn derive_hpke_keypair(&self, config: HpkeConfig, ikm: &[u8]) -> Result<types::HpkeKeyPair, CryptoError> {
         hpke_kem_dispatch!(config.0, hpke_derive_keypair, ikm)
+    }
+}
+
+/// ML-DSA key generation, signing and verification.
+///
+/// openmls's traits crate used to provide these. Upstream keeps them private to its own crypto provider.
+mod mldsa {
+    use ml_dsa::{Generate as _, KeyInit, MlDsaParams, Signature, SigningKey, VerifyingKey};
+    use openmls_traits::types::CryptoError;
+
+    /// Generate a key pair. The private half is the 32-byte seed.
+    pub(super) fn key_gen<P: MlDsaParams>(
+        rng: &mut impl rand_core::CryptoRng,
+    ) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
+        let signing_key = SigningKey::<P>::generate_from_rng(rng);
+        let private = signing_key.as_seed().to_vec();
+        let public = signing_key.expanded_key().verifying_key().encode().to_vec();
+        Ok((private, public))
+    }
+
+    /// Verify a signature made with an empty context string.
+    pub(super) fn verify<P: MlDsaParams>(payload: &[u8], public: &[u8], signature: &[u8]) -> Result<(), CryptoError> {
+        let verifying_key =
+            <VerifyingKey<P> as KeyInit>::new_from_slice(public).map_err(|_| CryptoError::InvalidPublicKey)?;
+        let signature = Signature::<P>::try_from(signature).map_err(|_| CryptoError::InvalidSignature)?;
+        verifying_key
+            .verify_with_context(payload, &[], &signature)
+            .ok_or(CryptoError::InvalidSignature)
     }
 }
 
