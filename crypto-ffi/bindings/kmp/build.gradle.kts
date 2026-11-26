@@ -146,6 +146,12 @@ providers.gradleProperty("bindgen").orNull?.let { path ->
     }
 }
 
+// Kotlin/Native runs the simulator tests outside an app, where the keychain isn't available.
+// scripts/run-kmp-ios-tests.sh runs them inside one.
+tasks.named("iosSimulatorArm64Test") {
+    enabled = false
+}
+
 afterEvaluate {
     publishing {
         publications.withType<MavenPublication>().configureEach {
