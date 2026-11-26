@@ -54,7 +54,7 @@ class DatabaseTest {
             val db = Database.open(pathStr, key)
             val location = db.getLocation()
             assertNotNull(location)
-            assert(location.endsWith(pathStr))
+            assertEquals(path.toRealPath(), Path(location).toRealPath())
             db.close()
         }
     }
