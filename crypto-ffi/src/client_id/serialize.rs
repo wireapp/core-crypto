@@ -51,35 +51,29 @@ impl DeserializedClientId {
 mod tests {
     use std::sync::Arc;
 
+    use rstest::rstest;
+
     use crate::{ClientId, DeviceId, Uuid};
 
     /// `Display` has to reproduce the client id it was deserialized from, including when the
     /// device id's leading nibbles are zero. It previously rendered the device id fixed-width,
     /// which does not match the client id, nor the `wireapp://` SAN of an E2EI certificate.
-    #[test]
-    fn display_round_trips_the_client_id() {
+    #[rstest]
+    #[case::zero(0)]
+    #[case::single_digit(0xf)]
+    #[case::two_digits(0x00ff)]
+    #[case::leading_zero(0x03e7_98f8_29a2_1f2a)]
+    #[case::full_width(0x8e64_2443_0d3b_28be)]
+    #[case::max(u64::MAX)]
+    fn display_round_trips_the_client_id(#[case] device_id: u64) {
         let user_id = Arc::new(Uuid::new("b01ec765-db9d-4502-9859-a9fa8c437c6f").unwrap());
+        let client_id = ClientId::new(user_id, Arc::new(DeviceId::new(device_id)), "wire.com".to_string());
+        let expected = String::from_utf8(client_id.copy_bytes()).unwrap();
 
-        for device_id in [
-            0x0u64,
-            0xf,
-            0x00ff,
-            0x03e7_98f8_29a2_1f2a,
-            0x8e64_2443_0d3b_28be,
-            u64::MAX,
-        ] {
-            let client_id = ClientId::new(
-                user_id.clone(),
-                Arc::new(DeviceId::new(device_id)),
-                "wire.com".to_string(),
-            );
-            let expected = String::from_utf8(client_id.copy_bytes()).unwrap();
-
-            assert_eq!(
-                client_id.deserialize().unwrap().to_string(),
-                expected,
-                "rendering a deserialized client id must reproduce the client id"
-            );
-        }
+        assert_eq!(
+            client_id.deserialize().unwrap().to_string(),
+            expected,
+            "rendering a deserialized client id must reproduce the client id"
+        );
     }
 }

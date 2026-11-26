@@ -42,45 +42,38 @@ fn log_error(error: &dyn std::error::Error) {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto::{ConversationId, RecursiveError};
+    use core_crypto::{
+        ConversationId, RecursiveError, mls::conversation::Error as ConversationError,
+        transaction_context::Error as TransactionError,
+    };
+    use rstest::rstest;
 
     use crate::{CoreCryptoError, MlsError};
 
-    #[test]
-    fn test_mls_error_mapping() {
-        let orphan_welcome_error =
-            RecursiveError::context("test orphan welcome error")(core_crypto::mls::conversation::Error::OrphanWelcome);
-        let mapped_error = CoreCryptoError::from(orphan_welcome_error);
-        assert!(matches!(
-            mapped_error,
-            CoreCryptoError::Mls {
-                mls_error: MlsError::OrphanWelcome
-            }
-        ));
-
-        let conversation_exists_error = RecursiveError::context("test conversation exists error")(
-            core_crypto::transaction_context::Error::ConversationAlreadyExists(ConversationId::from(
-                "test conversation id".as_bytes(),
-            )),
+    #[rstest]
+    #[case::orphan_welcome(
+        RecursiveError::context("test orphan welcome error")(ConversationError::OrphanWelcome),
+        |error: &MlsError| matches!(error, MlsError::OrphanWelcome)
+    )]
+    #[case::conversation_already_exists(
+        RecursiveError::context("test conversation exists error")(TransactionError::ConversationAlreadyExists(
+            ConversationId::from("test conversation id".as_bytes()),
+        )),
+        |error: &MlsError| matches!(error, MlsError::ConversationAlreadyExists { .. })
+    )]
+    #[case::invalid_credentials(
+        RecursiveError::context("test invalid credentials error")(TransactionError::InvalidCredentials(Vec::new())),
+        |error: &MlsError| matches!(error, MlsError::InvalidCredentials { .. })
+    )]
+    fn mls_errors_map_to_the_expected_ffi_variant(
+        #[case] error: RecursiveError,
+        #[case] is_expected: fn(&MlsError) -> bool,
+    ) {
+        let mapped_error = CoreCryptoError::from(error);
+        assert!(
+            matches!(&mapped_error, CoreCryptoError::Mls { mls_error } if is_expected(mls_error)),
+            "unexpected FFI error: {mapped_error:?}"
         );
-        let mapped_error = CoreCryptoError::from(conversation_exists_error);
-        assert!(matches!(
-            mapped_error,
-            CoreCryptoError::Mls {
-                mls_error: MlsError::ConversationAlreadyExists { conversation_id: _ }
-            }
-        ));
-
-        let invalid_credentials_error = RecursiveError::context("test invalid credentials error")(
-            core_crypto::transaction_context::Error::InvalidCredentials(Vec::new()),
-        );
-        let mapped_error = CoreCryptoError::from(invalid_credentials_error);
-        assert!(matches!(
-            mapped_error,
-            CoreCryptoError::Mls {
-                mls_error: MlsError::InvalidCredentials { reason: _ }
-            }
-        ));
     }
 
     #[test]
