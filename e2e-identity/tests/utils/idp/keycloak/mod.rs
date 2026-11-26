@@ -75,7 +75,7 @@ impl KeycloakImage {
                 ("KEYCLOAK_ADMIN_PASSWORD".to_string(), Self::PASSWORD.to_string()),
                 ("KC_LOG_LEVEL".to_string(), Self::LOG_LEVEL.to_string()),
             ]),
-            tag: env::var("KEYCLOAK_VERSION").unwrap_or(Self::TAG.to_string()),
+            tag: Self::TAG.to_string(),
             host_port,
         }
     }
