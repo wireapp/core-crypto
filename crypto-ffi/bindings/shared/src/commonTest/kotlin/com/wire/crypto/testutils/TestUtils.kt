@@ -7,32 +7,21 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
 import java.io.File
-import java.nio.ByteBuffer
 import java.nio.file.Files
-import java.security.SecureRandom
 import java.util.Collections
-import java.util.Locale
-import java.util.UUID
 import kotlin.random.Random
+import kotlin.random.nextULong
 import kotlin.test.*
+import kotlin.uuid.Uuid as KotlinUuid
 
-fun genDatabaseKey(): DatabaseKey {
-    val bytes = ByteArray(32)
-    val random = SecureRandom()
-    random.nextBytes(bytes)
-    return DatabaseKey(bytes)
-}
+fun genDatabaseKey(): DatabaseKey = DatabaseKey(Random.nextBytes(32))
 
-private fun uuidBytes(): ByteArray {
-    val uuid = UUID.randomUUID()
-    return ByteBuffer.allocate(16).putLong(uuid.mostSignificantBits).putLong(uuid.leastSignificantBits).array()
-}
+private fun uuidBytes(): ByteArray = KotlinUuid.random().toByteArray()
 
 fun genClientId(): ClientId {
-    val deviceId = SecureRandom().nextLong().toULong()
     return ClientId(
-        userId = Uuid(UUID.randomUUID().toString()),
-        deviceId = DeviceId(deviceId),
+        userId = Uuid(KotlinUuid.random().toString()),
+        deviceId = DeviceId(Random.nextULong()),
         domain = "wire.com"
     )
 }
@@ -84,13 +73,9 @@ interface MockDeliveryService : MlsTransport {
 // We use a singleton to easily access the mocked provider
 class MockMlsTransportSuccessProvider : MockDeliveryService {
     companion object {
-        @Volatile
-        private var instance: MockMlsTransportSuccessProvider? = null
+        private val shared by lazy { MockMlsTransportSuccessProvider() }
 
-        fun getInstance() =
-            instance ?: synchronized(this) {
-                instance ?: MockMlsTransportSuccessProvider().also { instance = it }
-            }
+        fun getInstance() = shared
     }
 
     private var latestCommitBundle: CommitBundle? = null

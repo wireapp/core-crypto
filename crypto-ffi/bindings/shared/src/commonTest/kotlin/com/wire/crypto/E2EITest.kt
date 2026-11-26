@@ -4,7 +4,6 @@ package com.wire.crypto
 
 import kotlinx.coroutines.test.runTest
 import testutils.*
-import java.util.Base64
 import kotlin.test.*
 import kotlin.test.Test
 import kotlin.test.fail
