@@ -64,7 +64,7 @@ impl Credential {
             credential_type: self.credential_type.into(),
             not_before: credential_not_before(&self.mls_credential)
                 .map_err(KeystoreError::wrap("reading not_before from the credential"))?,
-            private_key: self.signature_key_pair.private().to_owned(),
+            private_key: self.signature_key().private().to_owned(),
             public_key: self.signature_key().public().to_owned(),
         };
         if stored_credential.created_at == 0 {

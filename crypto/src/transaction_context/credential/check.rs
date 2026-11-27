@@ -78,7 +78,7 @@ impl TransactionContext {
     ) -> Result<CrlUris> {
         let mls_credentials = credentials
             .filter(|credential| credential.credential_type == CredentialType::X509)
-            .map(|credential| credential.mls_credential().mls_credential());
+            .map(|credential| credential.mls_credential());
 
         let mut crl_uris = extract_crl_uris_from_credentials(mls_credentials)
             .map_err(RecursiveError::context("extracting CRL URLs from stored credentials"))?;

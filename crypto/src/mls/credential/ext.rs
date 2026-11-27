@@ -1,9 +1,9 @@
-use openmls::prelude::{Credential, CredentialWithKey};
+use openmls::prelude::{Credential, CredentialType as MlsCredentialType, CredentialWithKey, X509Credential};
 use openmls_traits::types::SignatureScheme;
 use wire_e2e_identity::{IdentityStatus, SignatureSchemeExt as _, compute_raw_key_thumbprint, pki_env::PkiEnvironment};
-use x509_cert::{Certificate, der::Decode};
+use x509_cert::Certificate;
 
-use super::{Error, Result};
+use super::{Error, Result, identity::leaf_certificate};
 use crate::{ClientId, CredentialType, WireIdentity};
 
 #[expect(dead_code)]
@@ -33,12 +33,23 @@ impl CredentialExt for CredentialWithKey {
         signature_scheme: SignatureScheme,
         env: Option<&PkiEnvironment>,
     ) -> Result<WireIdentity> {
-        match self.credential.mls_credential() {
-            openmls::prelude::MlsCredentialType::X509(cert) => cert.extract_identity(signature_scheme, env).await,
-            openmls::prelude::MlsCredentialType::Basic(_) => {
+        match self.credential.credential_type() {
+            MlsCredentialType::X509 => {
+                let env = env.ok_or(Error::MissingPKIEnvironment)?;
+                let credential = X509Credential::try_from(self.credential.clone()).map_err(Error::DecodeX509Chain)?;
+                let leaf = credential
+                    .certificates()
+                    .first()
+                    .ok_or(Error::InvalidIdentity)?
+                    .as_slice();
+                use wire_e2e_identity::WireIdentityReader as _;
+                let identity = leaf.extract_identity(env).await.map_err(|_| Error::InvalidIdentity)?;
+                WireIdentity::try_from((identity, leaf)).map_err(|_| Error::InvalidIdentity)
+            }
+            _ => {
                 // in case the ClientId is not a Wire identifier, just returning an empty String is
                 // fine since this is simply informative and for Wire only
-                let client_id_string = std::str::from_utf8(self.credential.identity())
+                let client_id_string = std::str::from_utf8(self.credential.serialized_content())
                     .unwrap_or_default()
                     .to_string();
                 let client_id_bytes = client_id_string.as_bytes();
@@ -72,8 +83,8 @@ impl CredentialExt for CredentialWithKey {
 
 impl CredentialExt for Credential {
     fn parse_leaf_cert(&self) -> Result<Option<Certificate>> {
-        match self.mls_credential() {
-            openmls::prelude::MlsCredentialType::X509(cert) => cert.parse_leaf_cert(),
+        match self.credential_type() {
+            MlsCredentialType::X509 => leaf_certificate(self).map(Some),
             _ => Ok(None),
         }
     }
@@ -94,54 +105,16 @@ impl CredentialExt for Credential {
     }
 
     fn extract_public_key(&self) -> Result<Option<Vec<u8>>> {
-        match self.mls_credential() {
-            openmls::prelude::MlsCredentialType::X509(cert) => cert.extract_public_key(),
-            _ => Ok(None),
-        }
+        let Some(leaf) = self.parse_leaf_cert()? else {
+            return Ok(None);
+        };
+        use wire_e2e_identity::WireIdentityReader as _;
+        let public_key = leaf.extract_public_key().map_err(|_| Error::InvalidIdentity)?;
+        Ok(Some(public_key))
     }
 
     fn is_basic(&self) -> bool {
-        self.credential_type() == openmls::prelude::CredentialType::Basic
-    }
-}
-
-impl CredentialExt for openmls::prelude::Certificate {
-    fn parse_leaf_cert(&self) -> Result<Option<Certificate>> {
-        let leaf = self.certificates.first().ok_or(Error::InvalidIdentity)?;
-        let leaf = Certificate::from_der(leaf.as_slice()).map_err(Error::DecodeX509)?;
-        Ok(Some(leaf))
-    }
-
-    fn get_type(&self) -> Result<CredentialType> {
-        Ok(CredentialType::X509)
-    }
-
-    async fn extract_identity(
-        &self,
-        _signature_scheme: SignatureScheme,
-        env: Option<&PkiEnvironment>,
-    ) -> Result<WireIdentity> {
-        let env = env.ok_or(Error::MissingPKIEnvironment)?;
-        let leaf = self.certificates.first().ok_or(Error::InvalidIdentity)?;
-        let leaf = leaf.as_slice();
-        use wire_e2e_identity::WireIdentityReader as _;
-        let identity = leaf.extract_identity(env).await.map_err(|_| Error::InvalidIdentity)?;
-        let identity = WireIdentity::try_from((identity, leaf)).map_err(|_| Error::InvalidIdentity)?;
-        Ok(identity)
-    }
-
-    fn extract_public_key(&self) -> Result<Option<Vec<u8>>> {
-        let leaf = self.certificates.first().ok_or(Error::InvalidIdentity)?;
-        use wire_e2e_identity::WireIdentityReader as _;
-        let pk = leaf
-            .as_slice()
-            .extract_public_key()
-            .map_err(|_| Error::InvalidIdentity)?;
-        Ok(Some(pk))
-    }
-
-    fn is_basic(&self) -> bool {
-        false
+        self.credential_type() == MlsCredentialType::Basic
     }
 }
 
