@@ -353,63 +353,64 @@
 <a href=#353 id=353 data-nosnippet>353</a>
 <a href=#354 id=354 data-nosnippet>354</a><span class="attr">#[cfg(test)]
 <a href=#355 id=355 data-nosnippet>355</a></span><span class="kw">mod </span>tests {
-<a href=#356 id=356 data-nosnippet>356</a>    <span class="kw">use </span>uuid::Uuid;
-<a href=#357 id=357 data-nosnippet>357</a>
-<a href=#358 id=358 data-nosnippet>358</a>    <span class="kw">use </span><span class="kw">super</span>::ClientId;
-<a href=#359 id=359 data-nosnippet>359</a>
-<a href=#360 id=360 data-nosnippet>360</a>    <span class="kw">const </span>USER_ID: Uuid = Uuid::from_u128(<span class="number">0x0195_7b1e_4f00_7c9b_8a3d_2e11_9c44_0d7f</span>);
-<a href=#361 id=361 data-nosnippet>361</a>    <span class="kw">const </span>DOMAIN: <span class="kw-2">&amp;</span>str = <span class="string">"wire.com"</span>;
-<a href=#362 id=362 data-nosnippet>362</a>
-<a href=#363 id=363 data-nosnippet>363</a>    <span class="doccomment">/// The device id inside a client id is unpadded lowercase hex.
-<a href=#364 id=364 data-nosnippet>364</a>    ///
-<a href=#365 id=365 data-nosnippet>365</a>    /// This has to stay in step with `rusty_jwt_tools`' `hex_encoded_device_id`, which is what
-<a href=#366 id=366 data-nosnippet>366</a>    /// encodes the device id into the `wireapp://` SAN of an E2EI certificate (see
-<a href=#367 id=367 data-nosnippet>367</a>    /// `e2e-identity`'s ACME identifier, which sends `to_uri()` to the ACME server). For an X509
-<a href=#368 id=368 data-nosnippet>368</a>    /// credential the client id *is* the certificate's identity, so padding here would put us out
-<a href=#369 id=369 data-nosnippet>369</a>    /// of step with every certificate already issued.
-<a href=#370 id=370 data-nosnippet>370</a>    </span><span class="attr">#[test]
-<a href=#371 id=371 data-nosnippet>371</a>    </span><span class="kw">fn </span>device_id_is_encoded_as_unpadded_hex() {
-<a href=#372 id=372 data-nosnippet>372</a>        <span class="kw">for </span>(device_id, expected) <span class="kw">in </span>[
-<a href=#373 id=373 data-nosnippet>373</a>            (<span class="number">0x0</span>, <span class="string">"0"</span>),
-<a href=#374 id=374 data-nosnippet>374</a>            (<span class="number">0xf</span>, <span class="string">"f"</span>),
-<a href=#375 id=375 data-nosnippet>375</a>            (<span class="number">0x8e64_2443_0d3b_28be</span>, <span class="string">"8e6424430d3b28be"</span>),
-<a href=#376 id=376 data-nosnippet>376</a>            (u64::MAX, <span class="string">"ffffffffffffffff"</span>),
-<a href=#377 id=377 data-nosnippet>377</a>        ] {
-<a href=#378 id=378 data-nosnippet>378</a>            <span class="macro">assert_eq!</span>(ClientId::encode_device_id(device_id), expected);
-<a href=#379 id=379 data-nosnippet>379</a>
-<a href=#380 id=380 data-nosnippet>380</a>            <span class="kw">let </span>client_id = ClientId::new(USER_ID, device_id, DOMAIN);
-<a href=#381 id=381 data-nosnippet>381</a>            <span class="macro">assert_eq!</span>(
-<a href=#382 id=382 data-nosnippet>382</a>                std::str::from_utf8(client_id.as_bytes()).unwrap(),
-<a href=#383 id=383 data-nosnippet>383</a>                <span class="macro">format!</span>(<span class="string">"{}:{expected}@{DOMAIN}"</span>, USER_ID.hyphenated()),
-<a href=#384 id=384 data-nosnippet>384</a>            );
-<a href=#385 id=385 data-nosnippet>385</a>        }
-<a href=#386 id=386 data-nosnippet>386</a>    }
-<a href=#387 id=387 data-nosnippet>387</a>
-<a href=#388 id=388 data-nosnippet>388</a>    <span class="doccomment">/// Whatever we render a client id as has to parse back to the same field values.
-<a href=#389 id=389 data-nosnippet>389</a>    </span><span class="attr">#[test]
-<a href=#390 id=390 data-nosnippet>390</a>    </span><span class="kw">fn </span>client_id_round_trips_through_its_own_encoding() {
-<a href=#391 id=391 data-nosnippet>391</a>        <span class="kw">for </span>device_id <span class="kw">in </span>[<span class="number">0x0</span>, <span class="number">0xf</span>, <span class="number">0x00ff</span>, <span class="number">0x8e64_2443_0d3b_28be</span>, u64::MAX] {
-<a href=#392 id=392 data-nosnippet>392</a>            <span class="kw">let </span>client_id = ClientId::new(USER_ID, device_id, DOMAIN);
-<a href=#393 id=393 data-nosnippet>393</a>            <span class="kw">let </span>deserialized = client_id.deserialize().unwrap();
-<a href=#394 id=394 data-nosnippet>394</a>
-<a href=#395 id=395 data-nosnippet>395</a>            <span class="macro">assert_eq!</span>(deserialized.user_id, USER_ID);
-<a href=#396 id=396 data-nosnippet>396</a>            <span class="macro">assert_eq!</span>(deserialized.device_id, device_id);
-<a href=#397 id=397 data-nosnippet>397</a>            <span class="macro">assert_eq!</span>(deserialized.domain, DOMAIN);
-<a href=#398 id=398 data-nosnippet>398</a>        }
-<a href=#399 id=399 data-nosnippet>399</a>    }
-<a href=#400 id=400 data-nosnippet>400</a>
-<a href=#401 id=401 data-nosnippet>401</a>    <span class="doccomment">/// Parsing is lenient about padding even though we never produce it, so a zero-padded id from
-<a href=#402 id=402 data-nosnippet>402</a>    /// another implementation still resolves to the right device id. Note that it does not produce
-<a href=#403 id=403 data-nosnippet>403</a>    /// a byte-equal `ClientId`, because parsing preserves the input bytes.
-<a href=#404 id=404 data-nosnippet>404</a>    </span><span class="attr">#[test]
-<a href=#405 id=405 data-nosnippet>405</a>    </span><span class="kw">fn </span>a_padded_device_id_still_parses() {
-<a href=#406 id=406 data-nosnippet>406</a>        <span class="kw">let </span>padded = <span class="macro">format!</span>(<span class="string">"{}:000000000000000f@{DOMAIN}"</span>, USER_ID.hyphenated());
-<a href=#407 id=407 data-nosnippet>407</a>        <span class="kw">let </span>client_id =
-<a href=#408 id=408 data-nosnippet>408</a>            ClientId::new_from_bytes(padded.clone().into_bytes()).expect(<span class="string">"a padded device id must still parse"</span>);
-<a href=#409 id=409 data-nosnippet>409</a>
-<a href=#410 id=410 data-nosnippet>410</a>        <span class="macro">assert_eq!</span>(std::str::from_utf8(client_id.as_bytes()).unwrap(), padded);
-<a href=#411 id=411 data-nosnippet>411</a>        <span class="macro">assert_eq!</span>(client_id.deserialize().unwrap().device_id, <span class="number">0xf</span>);
-<a href=#412 id=412 data-nosnippet>412</a>        <span class="macro">assert_ne!</span>(client_id, ClientId::new(USER_ID, <span class="number">0xf</span>, DOMAIN));
-<a href=#413 id=413 data-nosnippet>413</a>    }
-<a href=#414 id=414 data-nosnippet>414</a>}
+<a href=#356 id=356 data-nosnippet>356</a>    <span class="kw">use </span>rstest::rstest;
+<a href=#357 id=357 data-nosnippet>357</a>    <span class="kw">use </span>uuid::Uuid;
+<a href=#358 id=358 data-nosnippet>358</a>
+<a href=#359 id=359 data-nosnippet>359</a>    <span class="kw">use </span><span class="kw">super</span>::ClientId;
+<a href=#360 id=360 data-nosnippet>360</a>
+<a href=#361 id=361 data-nosnippet>361</a>    <span class="kw">const </span>USER_ID: Uuid = Uuid::from_u128(<span class="number">0x0195_7b1e_4f00_7c9b_8a3d_2e11_9c44_0d7f</span>);
+<a href=#362 id=362 data-nosnippet>362</a>    <span class="kw">const </span>DOMAIN: <span class="kw-2">&amp;</span>str = <span class="string">"wire.com"</span>;
+<a href=#363 id=363 data-nosnippet>363</a>
+<a href=#364 id=364 data-nosnippet>364</a>    <span class="doccomment">/// The device id inside a client id is unpadded lowercase hex.
+<a href=#365 id=365 data-nosnippet>365</a>    ///
+<a href=#366 id=366 data-nosnippet>366</a>    /// This has to stay in step with `rusty_jwt_tools`' `hex_encoded_device_id`, which is what
+<a href=#367 id=367 data-nosnippet>367</a>    /// encodes the device id into the `wireapp://` SAN of an E2EI certificate (see
+<a href=#368 id=368 data-nosnippet>368</a>    /// `e2e-identity`'s ACME identifier, which sends `to_uri()` to the ACME server). For an X509
+<a href=#369 id=369 data-nosnippet>369</a>    /// credential the client id *is* the certificate's identity, so padding here would put us out
+<a href=#370 id=370 data-nosnippet>370</a>    /// of step with every certificate already issued.
+<a href=#371 id=371 data-nosnippet>371</a>    </span><span class="attr">#[rstest]
+<a href=#372 id=372 data-nosnippet>372</a>    #[case::zero(<span class="number">0x0</span>, <span class="string">"0"</span>)]
+<a href=#373 id=373 data-nosnippet>373</a>    #[case::single_digit(<span class="number">0xf</span>, <span class="string">"f"</span>)]
+<a href=#374 id=374 data-nosnippet>374</a>    #[case::full_width(<span class="number">0x8e64_2443_0d3b_28be</span>, <span class="string">"8e6424430d3b28be"</span>)]
+<a href=#375 id=375 data-nosnippet>375</a>    #[case::max(u64::MAX, <span class="string">"ffffffffffffffff"</span>)]
+<a href=#376 id=376 data-nosnippet>376</a>    </span><span class="kw">fn </span>device_id_is_encoded_as_unpadded_hex(<span class="attr">#[case] </span>device_id: u64, <span class="attr">#[case] </span>expected: <span class="kw-2">&amp;</span>str) {
+<a href=#377 id=377 data-nosnippet>377</a>        <span class="macro">assert_eq!</span>(ClientId::encode_device_id(device_id), expected);
+<a href=#378 id=378 data-nosnippet>378</a>
+<a href=#379 id=379 data-nosnippet>379</a>        <span class="kw">let </span>client_id = ClientId::new(USER_ID, device_id, DOMAIN);
+<a href=#380 id=380 data-nosnippet>380</a>        <span class="macro">assert_eq!</span>(
+<a href=#381 id=381 data-nosnippet>381</a>            std::str::from_utf8(client_id.as_bytes()).unwrap(),
+<a href=#382 id=382 data-nosnippet>382</a>            <span class="macro">format!</span>(<span class="string">"{}:{expected}@{DOMAIN}"</span>, USER_ID.hyphenated()),
+<a href=#383 id=383 data-nosnippet>383</a>        );
+<a href=#384 id=384 data-nosnippet>384</a>    }
+<a href=#385 id=385 data-nosnippet>385</a>
+<a href=#386 id=386 data-nosnippet>386</a>    <span class="doccomment">/// Whatever we render a client id as has to parse back to the same field values.
+<a href=#387 id=387 data-nosnippet>387</a>    </span><span class="attr">#[rstest]
+<a href=#388 id=388 data-nosnippet>388</a>    #[case::zero(<span class="number">0x0</span>)]
+<a href=#389 id=389 data-nosnippet>389</a>    #[case::single_digit(<span class="number">0xf</span>)]
+<a href=#390 id=390 data-nosnippet>390</a>    #[case::two_digits(<span class="number">0x00ff</span>)]
+<a href=#391 id=391 data-nosnippet>391</a>    #[case::full_width(<span class="number">0x8e64_2443_0d3b_28be</span>)]
+<a href=#392 id=392 data-nosnippet>392</a>    #[case::max(u64::MAX)]
+<a href=#393 id=393 data-nosnippet>393</a>    </span><span class="kw">fn </span>client_id_round_trips_through_its_own_encoding(<span class="attr">#[case] </span>device_id: u64) {
+<a href=#394 id=394 data-nosnippet>394</a>        <span class="kw">let </span>client_id = ClientId::new(USER_ID, device_id, DOMAIN);
+<a href=#395 id=395 data-nosnippet>395</a>        <span class="kw">let </span>deserialized = client_id.deserialize().unwrap();
+<a href=#396 id=396 data-nosnippet>396</a>
+<a href=#397 id=397 data-nosnippet>397</a>        <span class="macro">assert_eq!</span>(deserialized.user_id, USER_ID);
+<a href=#398 id=398 data-nosnippet>398</a>        <span class="macro">assert_eq!</span>(deserialized.device_id, device_id);
+<a href=#399 id=399 data-nosnippet>399</a>        <span class="macro">assert_eq!</span>(deserialized.domain, DOMAIN);
+<a href=#400 id=400 data-nosnippet>400</a>    }
+<a href=#401 id=401 data-nosnippet>401</a>
+<a href=#402 id=402 data-nosnippet>402</a>    <span class="doccomment">/// Parsing is lenient about padding even though we never produce it, so a zero-padded id from
+<a href=#403 id=403 data-nosnippet>403</a>    /// another implementation still resolves to the right device id. Note that it does not produce
+<a href=#404 id=404 data-nosnippet>404</a>    /// a byte-equal `ClientId`, because parsing preserves the input bytes.
+<a href=#405 id=405 data-nosnippet>405</a>    </span><span class="attr">#[test]
+<a href=#406 id=406 data-nosnippet>406</a>    </span><span class="kw">fn </span>a_padded_device_id_still_parses() {
+<a href=#407 id=407 data-nosnippet>407</a>        <span class="kw">let </span>padded = <span class="macro">format!</span>(<span class="string">"{}:000000000000000f@{DOMAIN}"</span>, USER_ID.hyphenated());
+<a href=#408 id=408 data-nosnippet>408</a>        <span class="kw">let </span>client_id =
+<a href=#409 id=409 data-nosnippet>409</a>            ClientId::new_from_bytes(padded.clone().into_bytes()).expect(<span class="string">"a padded device id must still parse"</span>);
+<a href=#410 id=410 data-nosnippet>410</a>
+<a href=#411 id=411 data-nosnippet>411</a>        <span class="macro">assert_eq!</span>(std::str::from_utf8(client_id.as_bytes()).unwrap(), padded);
+<a href=#412 id=412 data-nosnippet>412</a>        <span class="macro">assert_eq!</span>(client_id.deserialize().unwrap().device_id, <span class="number">0xf</span>);
+<a href=#413 id=413 data-nosnippet>413</a>        <span class="macro">assert_ne!</span>(client_id, ClientId::new(USER_ID, <span class="number">0xf</span>, DOMAIN));
+<a href=#414 id=414 data-nosnippet>414</a>    }
+<a href=#415 id=415 data-nosnippet>415</a>}
 </code></pre></div></section></main></body></html>

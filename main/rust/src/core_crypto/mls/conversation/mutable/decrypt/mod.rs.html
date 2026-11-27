@@ -775,29 +775,31 @@
 <a href=#775 id=775 data-nosnippet>775</a>    <span class="kw">mod </span>malformed {
 <a href=#776 id=776 data-nosnippet>776</a>        <span class="kw">use super</span>::<span class="kw-2">*</span>;
 <a href=#777 id=777 data-nosnippet>777</a>
-<a href=#778 id=778 data-nosnippet>778</a>        <span class="attr">#[macro_rules_attribute::apply(smol_macros::test)]
-<a href=#779 id=779 data-nosnippet>779</a>        </span><span class="kw">async fn </span>too_short_message_is_rejected_as_unparseable() {
-<a href=#780 id=780 data-nosnippet>780</a>            <span class="kw">let </span>case = TestContext::default();
-<a href=#781 id=781 data-nosnippet>781</a>            <span class="kw">let </span>[alice] = case.sessions().<span class="kw">await</span>;
-<a href=#782 id=782 data-nosnippet>782</a>            <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice]).<span class="kw">await</span>;
-<a href=#783 id=783 data-nosnippet>783</a>
-<a href=#784 id=784 data-nosnippet>784</a>            <span class="comment">// Anything shorter than 4 bytes can't hold the protocol version and wire format.
-<a href=#785 id=785 data-nosnippet>785</a>            </span><span class="kw">for </span>len <span class="kw">in </span><span class="number">0</span>..<span class="number">4 </span>{
-<a href=#786 id=786 data-nosnippet>786</a>                <span class="kw">let </span>message = <span class="macro">vec!</span>[<span class="number">0</span>; len];
-<a href=#787 id=787 data-nosnippet>787</a>                <span class="comment">// notably, attempting to decrypt a short message produces a rejection, not a panic
-<a href=#788 id=788 data-nosnippet>788</a>                </span><span class="kw">let </span>reason = conversation
-<a href=#789 id=789 data-nosnippet>789</a>                    .guard()
-<a href=#790 id=790 data-nosnippet>790</a>                    .<span class="kw">await
-<a href=#791 id=791 data-nosnippet>791</a>                    </span>.decrypt_message(<span class="kw-2">&amp;</span>message)
-<a href=#792 id=792 data-nosnippet>792</a>                    .<span class="kw">await
-<a href=#793 id=793 data-nosnippet>793</a>                    </span>.unwrap()
-<a href=#794 id=794 data-nosnippet>794</a>                    .into_single_rejected();
-<a href=#795 id=795 data-nosnippet>795</a>                <span class="macro">assert!</span>(
-<a href=#796 id=796 data-nosnippet>796</a>                    <span class="macro">matches!</span>(reason, RejectionReason::Unparseable(<span class="kw">_</span>)),
-<a href=#797 id=797 data-nosnippet>797</a>                    <span class="string">"{len}-byte message: unexpected rejection {reason:?}"
-<a href=#798 id=798 data-nosnippet>798</a>                </span>);
-<a href=#799 id=799 data-nosnippet>799</a>            }
-<a href=#800 id=800 data-nosnippet>800</a>        }
-<a href=#801 id=801 data-nosnippet>801</a>    }
-<a href=#802 id=802 data-nosnippet>802</a>}
+<a href=#778 id=778 data-nosnippet>778</a>        <span class="comment">// Anything shorter than 4 bytes can't hold the protocol version and wire format.
+<a href=#779 id=779 data-nosnippet>779</a>        </span><span class="attr">#[rstest]
+<a href=#780 id=780 data-nosnippet>780</a>        #[test_attr(macro_rules_attribute::apply(smol_macros::test))]
+<a href=#781 id=781 data-nosnippet>781</a>        #[case(<span class="number">0</span>)]
+<a href=#782 id=782 data-nosnippet>782</a>        #[case(<span class="number">1</span>)]
+<a href=#783 id=783 data-nosnippet>783</a>        #[case(<span class="number">2</span>)]
+<a href=#784 id=784 data-nosnippet>784</a>        #[case(<span class="number">3</span>)]
+<a href=#785 id=785 data-nosnippet>785</a>        </span><span class="kw">async fn </span>too_short_message_is_rejected_as_unparseable(<span class="attr">#[case] </span>len: usize) {
+<a href=#786 id=786 data-nosnippet>786</a>            <span class="kw">let </span>case = TestContext::default();
+<a href=#787 id=787 data-nosnippet>787</a>            <span class="kw">let </span>[alice] = case.sessions().<span class="kw">await</span>;
+<a href=#788 id=788 data-nosnippet>788</a>            <span class="kw">let </span>conversation = case.create_conversation([<span class="kw-2">&amp;</span>alice]).<span class="kw">await</span>;
+<a href=#789 id=789 data-nosnippet>789</a>
+<a href=#790 id=790 data-nosnippet>790</a>            <span class="kw">let </span>message = <span class="macro">vec!</span>[<span class="number">0</span>; len];
+<a href=#791 id=791 data-nosnippet>791</a>            <span class="kw">let </span>reason = conversation
+<a href=#792 id=792 data-nosnippet>792</a>                .guard()
+<a href=#793 id=793 data-nosnippet>793</a>                .<span class="kw">await
+<a href=#794 id=794 data-nosnippet>794</a>                </span>.decrypt_message(<span class="kw-2">&amp;</span>message)
+<a href=#795 id=795 data-nosnippet>795</a>                .<span class="kw">await
+<a href=#796 id=796 data-nosnippet>796</a>                </span>.unwrap()
+<a href=#797 id=797 data-nosnippet>797</a>                .into_single_rejected();
+<a href=#798 id=798 data-nosnippet>798</a>            <span class="macro">assert!</span>(
+<a href=#799 id=799 data-nosnippet>799</a>                <span class="macro">matches!</span>(reason, RejectionReason::Unparseable(<span class="kw">_</span>)),
+<a href=#800 id=800 data-nosnippet>800</a>                <span class="string">"{len}-byte message: unexpected rejection {reason:?}"
+<a href=#801 id=801 data-nosnippet>801</a>            </span>);
+<a href=#802 id=802 data-nosnippet>802</a>        }
+<a href=#803 id=803 data-nosnippet>803</a>    }
+<a href=#804 id=804 data-nosnippet>804</a>}
 </code></pre></div></section></main></body></html>

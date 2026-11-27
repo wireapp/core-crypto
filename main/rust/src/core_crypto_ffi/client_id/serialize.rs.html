@@ -51,36 +51,30 @@
 <a href=#51 id=51 data-nosnippet>51</a></span><span class="kw">mod </span>tests {
 <a href=#52 id=52 data-nosnippet>52</a>    <span class="kw">use </span>std::sync::Arc;
 <a href=#53 id=53 data-nosnippet>53</a>
-<a href=#54 id=54 data-nosnippet>54</a>    <span class="kw">use crate</span>::{ClientId, DeviceId, Uuid};
+<a href=#54 id=54 data-nosnippet>54</a>    <span class="kw">use </span>rstest::rstest;
 <a href=#55 id=55 data-nosnippet>55</a>
-<a href=#56 id=56 data-nosnippet>56</a>    <span class="doccomment">/// `Display` has to reproduce the client id it was deserialized from, including when the
-<a href=#57 id=57 data-nosnippet>57</a>    /// device id's leading nibbles are zero. It previously rendered the device id fixed-width,
-<a href=#58 id=58 data-nosnippet>58</a>    /// which does not match the client id, nor the `wireapp://` SAN of an E2EI certificate.
-<a href=#59 id=59 data-nosnippet>59</a>    </span><span class="attr">#[test]
-<a href=#60 id=60 data-nosnippet>60</a>    </span><span class="kw">fn </span>display_round_trips_the_client_id() {
-<a href=#61 id=61 data-nosnippet>61</a>        <span class="kw">let </span>user_id = Arc::new(Uuid::new(<span class="string">"b01ec765-db9d-4502-9859-a9fa8c437c6f"</span>).unwrap());
-<a href=#62 id=62 data-nosnippet>62</a>
-<a href=#63 id=63 data-nosnippet>63</a>        <span class="kw">for </span>device_id <span class="kw">in </span>[
-<a href=#64 id=64 data-nosnippet>64</a>            <span class="number">0x0u64</span>,
-<a href=#65 id=65 data-nosnippet>65</a>            <span class="number">0xf</span>,
-<a href=#66 id=66 data-nosnippet>66</a>            <span class="number">0x00ff</span>,
-<a href=#67 id=67 data-nosnippet>67</a>            <span class="number">0x03e7_98f8_29a2_1f2a</span>,
-<a href=#68 id=68 data-nosnippet>68</a>            <span class="number">0x8e64_2443_0d3b_28be</span>,
-<a href=#69 id=69 data-nosnippet>69</a>            u64::MAX,
-<a href=#70 id=70 data-nosnippet>70</a>        ] {
-<a href=#71 id=71 data-nosnippet>71</a>            <span class="kw">let </span>client_id = ClientId::new(
-<a href=#72 id=72 data-nosnippet>72</a>                user_id.clone(),
-<a href=#73 id=73 data-nosnippet>73</a>                Arc::new(DeviceId::new(device_id)),
-<a href=#74 id=74 data-nosnippet>74</a>                <span class="string">"wire.com"</span>.to_string(),
-<a href=#75 id=75 data-nosnippet>75</a>            );
-<a href=#76 id=76 data-nosnippet>76</a>            <span class="kw">let </span>expected = String::from_utf8(client_id.copy_bytes()).unwrap();
-<a href=#77 id=77 data-nosnippet>77</a>
-<a href=#78 id=78 data-nosnippet>78</a>            <span class="macro">assert_eq!</span>(
-<a href=#79 id=79 data-nosnippet>79</a>                client_id.deserialize().unwrap().to_string(),
-<a href=#80 id=80 data-nosnippet>80</a>                expected,
-<a href=#81 id=81 data-nosnippet>81</a>                <span class="string">"rendering a deserialized client id must reproduce the client id"
-<a href=#82 id=82 data-nosnippet>82</a>            </span>);
-<a href=#83 id=83 data-nosnippet>83</a>        }
-<a href=#84 id=84 data-nosnippet>84</a>    }
-<a href=#85 id=85 data-nosnippet>85</a>}
+<a href=#56 id=56 data-nosnippet>56</a>    <span class="kw">use crate</span>::{ClientId, DeviceId, Uuid};
+<a href=#57 id=57 data-nosnippet>57</a>
+<a href=#58 id=58 data-nosnippet>58</a>    <span class="doccomment">/// `Display` has to reproduce the client id it was deserialized from, including when the
+<a href=#59 id=59 data-nosnippet>59</a>    /// device id's leading nibbles are zero. It previously rendered the device id fixed-width,
+<a href=#60 id=60 data-nosnippet>60</a>    /// which does not match the client id, nor the `wireapp://` SAN of an E2EI certificate.
+<a href=#61 id=61 data-nosnippet>61</a>    </span><span class="attr">#[rstest]
+<a href=#62 id=62 data-nosnippet>62</a>    #[case::zero(<span class="number">0</span>)]
+<a href=#63 id=63 data-nosnippet>63</a>    #[case::single_digit(<span class="number">0xf</span>)]
+<a href=#64 id=64 data-nosnippet>64</a>    #[case::two_digits(<span class="number">0x00ff</span>)]
+<a href=#65 id=65 data-nosnippet>65</a>    #[case::leading_zero(<span class="number">0x03e7_98f8_29a2_1f2a</span>)]
+<a href=#66 id=66 data-nosnippet>66</a>    #[case::full_width(<span class="number">0x8e64_2443_0d3b_28be</span>)]
+<a href=#67 id=67 data-nosnippet>67</a>    #[case::max(u64::MAX)]
+<a href=#68 id=68 data-nosnippet>68</a>    </span><span class="kw">fn </span>display_round_trips_the_client_id(<span class="attr">#[case] </span>device_id: u64) {
+<a href=#69 id=69 data-nosnippet>69</a>        <span class="kw">let </span>user_id = Arc::new(Uuid::new(<span class="string">"b01ec765-db9d-4502-9859-a9fa8c437c6f"</span>).unwrap());
+<a href=#70 id=70 data-nosnippet>70</a>        <span class="kw">let </span>client_id = ClientId::new(user_id, Arc::new(DeviceId::new(device_id)), <span class="string">"wire.com"</span>.to_string());
+<a href=#71 id=71 data-nosnippet>71</a>        <span class="kw">let </span>expected = String::from_utf8(client_id.copy_bytes()).unwrap();
+<a href=#72 id=72 data-nosnippet>72</a>
+<a href=#73 id=73 data-nosnippet>73</a>        <span class="macro">assert_eq!</span>(
+<a href=#74 id=74 data-nosnippet>74</a>            client_id.deserialize().unwrap().to_string(),
+<a href=#75 id=75 data-nosnippet>75</a>            expected,
+<a href=#76 id=76 data-nosnippet>76</a>            <span class="string">"rendering a deserialized client id must reproduce the client id"
+<a href=#77 id=77 data-nosnippet>77</a>        </span>);
+<a href=#78 id=78 data-nosnippet>78</a>    }
+<a href=#79 id=79 data-nosnippet>79</a>}
 </code></pre></div></section></main></body></html>
