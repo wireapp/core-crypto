@@ -122,7 +122,10 @@ async fn do_migration_step(from: u32, name: &str, key: &DatabaseKey) -> CryptoKe
 mod tests {
     use std::sync::LazyLock;
 
-    use idb::builder::{DatabaseBuilder, ObjectStoreBuilder};
+    use idb::{
+        Event as _, Request as _,
+        builder::{DatabaseBuilder, ObjectStoreBuilder},
+    };
     use rand::{
         Rng as _,
         distr::{Alphanumeric, SampleString as _},
@@ -138,7 +141,7 @@ mod tests {
             traits::{Entity, EntityBase as _, EntityDatabaseMutation as _},
         },
         entities::ProteusPrekey,
-        migrations::historical::StoredCredentialV36,
+        migrations::historical::{StoredCredentialV36, StoredSignatureKeypair, V6Credential},
     };
 
     pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(DatabaseKey::generate);
@@ -201,6 +204,81 @@ mod tests {
         migrated_db.close().await.expect("closing connection");
         let factory = Factory::new().expect("factory");
         factory.delete(&name).expect("delete request").await.expect("wiping db");
+    }
+
+    #[wasm_bindgen_test::wasm_bindgen_test]
+    async fn v6_upgrade_can_resume_after_credential_conversion_commits() {
+        let name = store_name();
+        let factory = Factory::new().expect("factory");
+        let credential = V6Credential {
+            session_id: b"session id".to_vec(),
+            credential: b"serialized credential".to_vec(),
+            created_at: 2025,
+            signature_scheme: openmls::prelude::SignatureScheme::ECDSA_SECP256R1_SHA256 as u16,
+            public_key: b"public key".to_vec(),
+            private_key: b"private key".to_vec(),
+        };
+
+        // Reproduce the state committed by the old converter before it opened the version-change transaction.
+        let conn = Database::migration_connection(v05::get_builder(&name), &TEST_ENCRYPTION_KEY)
+            .await
+            .expect("opening v5");
+        Database::migration_transaction(conn, async |tx| credential.save(tx).await)
+            .await
+            .expect("committing the converted credential under v5");
+
+        let mut interrupted_upgrade = factory.open(&name, Some(DB_VERSION_6)).expect("opening v6");
+        interrupted_upgrade.on_upgrade_needed(|event| {
+            let request = event.target().expect("upgrade request");
+            request
+                .database()
+                .expect("database")
+                .delete_object_store(StoredSignatureKeypair::TABLE_NAME)
+                .expect("removing the obsolete store");
+            request
+                .transaction()
+                .expect("version-change transaction")
+                .abort()
+                .expect("aborting the version change");
+        });
+        let Err(idb::Error::DomException(error)) = interrupted_upgrade.await else {
+            panic!("the interrupted upgrade should fail with a DOM exception");
+        };
+        assert_eq!(error.name(), "AbortError");
+
+        let db = factory.open(&name, None).unwrap().await.unwrap();
+        let version = db.version().unwrap();
+        assert_eq!(version, DB_VERSION_5);
+        assert!(
+            db.store_names()
+                .iter()
+                .any(|name| name == StoredSignatureKeypair::TABLE_NAME)
+        );
+        db.close();
+
+        assert_eq!(
+            do_migration_step(version, &name, &TEST_ENCRYPTION_KEY)
+                .await
+                .expect("retrying the v5 to v6 migration"),
+            DB_VERSION_6
+        );
+
+        let db = factory.open(&name, None).unwrap().await.unwrap();
+        assert_eq!(db.version().unwrap(), DB_VERSION_6);
+        assert!(
+            !db.store_names()
+                .iter()
+                .any(|name| name == StoredSignatureKeypair::TABLE_NAME)
+        );
+        db.close();
+
+        let mut conn = Database::migration_connection(v06::get_builder(&name), &TEST_ENCRYPTION_KEY)
+            .await
+            .expect("reopening v6");
+        let actual = V6Credential::load_all(&mut conn).await.expect("loading credentials");
+        assert_eq!(actual, [credential]);
+        conn.close().await.expect("closing connection");
+        factory.delete(&name).unwrap().await.unwrap();
     }
 
     #[wasm_bindgen_test::wasm_bindgen_test]
