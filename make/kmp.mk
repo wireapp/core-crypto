@@ -121,3 +121,23 @@ $(STAMPS)/kmp-ios-test: $(kmp-ios-test-deps) $(KMP_SIMULATOR_FILES) $(if $(RELEA
 	./gradlew core-crypto-kmp:linkDebugTestIosSimulatorArm64 $(KMP_GRADLE_ARGS)
 	$(SHELL) scripts/run-kmp-ios-tests.sh $(KMP_IOS_TEST_EXECUTABLE)
 	$(TOUCH_STAMP)
+
+# With a debug library, the macOS tests overflow the stack of the threads Kotlin/Native polls
+# futures on, so they always use a release library, as the iOS tests do.
+KMP_MACOS_TEST_LIB := target/aarch64-apple-darwin/release/libcore_crypto_ffi.dylib
+ifneq ($(RELEASE_MODE),release)
+$(KMP_MACOS_TEST_LIB): $(RUST_SOURCES)
+	cargo rustc --locked \
+	  --target aarch64-apple-darwin \
+	  --package core-crypto-ffi \
+	  --crate-type=cdylib --crate-type=staticlib \
+	  $(DARWIN_CARGO_BUILD_ARGS) --release -- -C strip=symbols $(NATIVE_STATIC_LIBS_FLAGS)
+$(call kmp-apple-files,$(KMP_MACOS_TEST_LIB)): $(KMP_MACOS_TEST_LIB) ;
+endif
+
+kmp-macos-test-deps := $(RUST_SOURCES) $(KT_FILES) $(KT_BUILD_FILES)
+
+$(STAMPS)/kmp-macos-test: $(kmp-macos-test-deps) $(call kmp-apple-files,$(KMP_MACOS_TEST_LIB)) | $(OXIKT_BINDGEN)
+	cd crypto-ffi/bindings && \
+	./gradlew core-crypto-kmp:macosArm64Test --rerun -Pbindgen=$(abspath $(OXIKT_BINDGEN)) -PreleaseBuild=true
+	$(TOUCH_STAMP)
