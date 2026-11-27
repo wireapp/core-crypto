@@ -76,8 +76,11 @@ class DatabaseTest {
             Database.open(path.toString(), key)
 
             val key2 = genDatabaseKey()
-            assertFailsWith<CoreCryptoException.Other> { Database.open(path.toString(), key2) }
-                .also { assertEquals("msg=file is not a database", it.message) }
+            val exception = assertFailsWith<CoreCryptoException.Other> { Database.open(path.toString(), key2) }
+            // On iOS, the start of the file is left unencrypted, and while another connection has
+            // the database open, a wrong key only shows when the database is written to.
+            val messages = setOf("msg=file is not a database", "msg=attempt to write a readonly database")
+            assertContains(messages, exception.message)
         }
     }
 }
