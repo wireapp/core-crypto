@@ -24,7 +24,7 @@ use crate::{
         Database,
         idb_migration::legacy::connection::{
             Database as LegacyDatabase, KeystoreDatabaseConnection,
-            platform::wasm::migrations::{TARGET_VERSION, open_at},
+            platform::wasm::migrations::{DB_VERSION_6, TARGET_VERSION, open_at},
             storage::{WasmEncryptedStorage, WasmStorageWrapper},
         },
         os_unknown,
@@ -34,6 +34,7 @@ use crate::{
         StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef, StoredKeyPackage, WaitingFor, X509Crl,
         X509IntermediateCert, X509TrustAnchor,
     },
+    migrations::historical::V6Credential,
     traits::FetchFromDatabase as _,
 };
 
@@ -930,6 +931,65 @@ async fn v6_migrates_readable_credentials_alongside_unreadable_records() {
     let credentials = db.load_all::<StoredCredential>().await.unwrap();
     assert_eq!(credentials.len(), 1);
     assert_eq!(credentials[0].session_id, captured::CLIENT_ID);
+    Arc::into_inner(db).unwrap().wipe().await.unwrap();
+}
+
+#[wasm_bindgen_test::wasm_bindgen_test]
+async fn v7_imports_readable_groups_and_credentials_alongside_corrupt_rows() {
+    let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
+    let key = restore_legacy_fixture(&name, LEGACY_FIXTURE_V9_3_4).await;
+    let idb = open_at(&name, &key, DB_VERSION_6).await;
+
+    let transaction = idb
+        .transaction(&["mls_groups", "mls_credentials"], TransactionMode::ReadWrite)
+        .unwrap();
+    for store in ["mls_groups", "mls_credentials"] {
+        transaction
+            .object_store(store)
+            .unwrap()
+            .put(
+                &JsValue::NULL,
+                Some(&Uint8Array::from(b"unreadable v6 row".as_slice()).into()),
+            )
+            .unwrap()
+            .await
+            .unwrap();
+    }
+    transaction.commit().unwrap().await.unwrap();
+
+    let conn =
+        KeystoreDatabaseConnection::from_inner(WasmEncryptedStorage::new(&key, WasmStorageWrapper::Persistent(idb)));
+    LegacyDatabase::migration_transaction(conn, async |tx| {
+        let group = LegacyPersistedMlsGroup {
+            id: b"invalid MLS state".to_vec(),
+            state: Vec::new(),
+            parent_id: None,
+        };
+        tx.save(&group).await?;
+        let credential = V6Credential {
+            session_id: b"unknown signature scheme".to_vec(),
+            credential: vec![1],
+            created_at: 1,
+            signature_scheme: u16::MAX,
+            public_key: vec![2],
+            private_key: vec![3],
+        };
+        tx.save(&credential).await
+    })
+    .await
+    .unwrap();
+
+    let db = Database::open(&name, &key).await.unwrap();
+    let credentials = db.load_all::<StoredCredential>().await.unwrap();
+    assert_eq!(credentials.len(), 1);
+    assert_eq!(credentials[0].session_id, captured::CLIENT_ID);
+    assert_eq!(credentials[0].ciphersuite, captured::CIPHERSUITE);
+    assert!(
+        db.get_borrowed::<PersistedMlsGroup>(ConversationIdRef::new(captured::ESTABLISHED_CONVERSATION_ID))
+            .await
+            .unwrap()
+            .is_some()
+    );
     Arc::into_inner(db).unwrap().wipe().await.unwrap();
 }
 
