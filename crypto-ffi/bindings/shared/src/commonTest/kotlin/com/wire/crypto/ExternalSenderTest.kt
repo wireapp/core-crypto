@@ -3,11 +3,13 @@
 package com.wire.crypto
 
 import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import testutils.*
 import kotlin.test.*
 
 class ExternalSenderTest {
+    @AfterTest
+    fun deleteTestDatabases() = deleteDatabases()
+
     companion object {
         private val id: ConversationId = genConversationId()
 
@@ -31,14 +33,14 @@ class ExternalSenderTest {
             ctx.getExternalSender(id)
         }
 
-        assertThat(retrievedKey).isEqualTo(externalSender)
+        assertEquals(externalSender, retrievedKey)
     }
 
     @Test
     fun parsePublicKey_accepts_the_bytes_produced_by_serialize() {
         val fromJwk = ExternalSender.parseJwk(FIXTURE_JWK)
         val fromBytes = ExternalSender.parsePublicKey(fromJwk.serialize(), SignatureScheme.ED25519)
-        assertThat(fromJwk).isEqualTo(fromBytes)
+        assertEquals(fromBytes, fromJwk)
     }
 
     @Test

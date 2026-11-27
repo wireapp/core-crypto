@@ -88,8 +88,7 @@ KMP_LIBS := $(if $(RELEASE),$(KMP_RELEASE_LIBS),$(JVM_LIB) $(ANDROID_TEST_LIB)) 
 	$(if $(filter Darwin,$(UNAME_S)),$(foreach lib,$(IOS_DEVICE) $(JVM_DARWIN_LIB),$(call kmp-apple-files,$(lib))) \
 	$(KMP_SIMULATOR_FILES))
 
-# What the package publishes. Not `assemble`, which also compiles the native tests, and those use
-# JVM-only APIs.
+# What the package publishes. Not `assemble`, which also links the native test executables.
 KMP_ARTIFACT_TASKS := allMetadataJar jvmJar bundleAndroidMainAar iosArm64MainKlibrary \
 	iosSimulatorArm64MainKlibrary macosArm64MainKlibrary
 
@@ -107,4 +106,46 @@ $(STAMPS)/kmp-jvm-test: $(kmp-jvm-test-deps) $(if $(RELEASE),$(KMP_JVM_RELEASE_L
 	| $(OXIKT_BINDGEN)
 	cd crypto-ffi/bindings && \
 	./gradlew core-crypto-kmp:jvmTest --rerun $(KMP_GRADLE_ARGS)
+	$(TOUCH_STAMP)
+
+kmp-android-test-deps := $(RUST_SOURCES) $(KT_FILES) $(KT_BUILD_FILES)
+
+$(STAMPS)/kmp-android-test: $(kmp-android-test-deps) \
+	$(if $(RELEASE),$(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) $(FFI_LIBRARY),$(JVM_LIB) $(ANDROID_TEST_LIB)) \
+	| $(OXIKT_BINDGEN)
+	$(SHELL) scripts/run-android-tests.sh core-crypto-kmp:connectedAndroidDeviceTest --rerun $(KMP_GRADLE_ARGS)
+	$(TOUCH_STAMP)
+
+# Kotlin/Native runs a test executable on the simulator by itself, but opening a database on iOS
+# uses the keychain, which only apps can access. So the script runs it inside an app. Like the
+# Swift tests, it uses the simulator library, which is always a release build.
+KMP_IOS_TEST_EXECUTABLE := crypto-ffi/bindings/kmp/build/bin/iosSimulatorArm64/debugTest/test.kexe
+kmp-ios-test-deps := $(RUST_SOURCES) $(KT_FILES) $(KT_BUILD_FILES) scripts/run-kmp-ios-tests.sh \
+	$(wildcard crypto-ffi/bindings/kmp/ios-test-host/*)
+
+$(STAMPS)/kmp-ios-test: $(kmp-ios-test-deps) $(KMP_SIMULATOR_FILES) $(if $(RELEASE),$(FFI_LIBRARY),$(JVM_LIB)) \
+	| $(OXIKT_BINDGEN)
+	cd crypto-ffi/bindings && \
+	./gradlew core-crypto-kmp:linkDebugTestIosSimulatorArm64 $(KMP_GRADLE_ARGS)
+	$(SHELL) scripts/run-kmp-ios-tests.sh $(KMP_IOS_TEST_EXECUTABLE)
+	$(TOUCH_STAMP)
+
+# With a debug library, the macOS tests overflow the stack of the threads Kotlin/Native polls
+# futures on, so they always use a release library, as the iOS tests do.
+KMP_MACOS_TEST_LIB := target/aarch64-apple-darwin/release/libcore_crypto_ffi.dylib
+ifneq ($(RELEASE_MODE),release)
+$(KMP_MACOS_TEST_LIB): $(RUST_SOURCES)
+	cargo rustc --locked \
+	  --target aarch64-apple-darwin \
+	  --package core-crypto-ffi \
+	  --crate-type=cdylib --crate-type=staticlib \
+	  $(DARWIN_CARGO_BUILD_ARGS) --release -- -C strip=symbols $(NATIVE_STATIC_LIBS_FLAGS)
+$(call kmp-apple-files,$(KMP_MACOS_TEST_LIB)): $(KMP_MACOS_TEST_LIB) ;
+endif
+
+kmp-macos-test-deps := $(RUST_SOURCES) $(KT_FILES) $(KT_BUILD_FILES)
+
+$(STAMPS)/kmp-macos-test: $(kmp-macos-test-deps) $(call kmp-apple-files,$(KMP_MACOS_TEST_LIB)) | $(OXIKT_BINDGEN)
+	cd crypto-ffi/bindings && \
+	./gradlew core-crypto-kmp:macosArm64Test --rerun -Pbindgen=$(abspath $(OXIKT_BINDGEN)) -PreleaseBuild=true
 	$(TOUCH_STAMP)

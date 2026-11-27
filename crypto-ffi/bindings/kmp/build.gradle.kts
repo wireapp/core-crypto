@@ -51,7 +51,17 @@ kotlin {
 
     // iOS targets
     iosArm64()
-    iosSimulatorArm64()
+    iosSimulatorArm64 {
+        // Opening a database on iOS uses the keychain, which only apps can access. So
+        // scripts/run-kmp-ios-tests.sh runs the tests inside an app, and on the simulator, an app's
+        // entitlements are a section of its executable.
+        binaries.getTest("DEBUG").linkerOpts(
+            "-sectcreate",
+            "__TEXT",
+            "__entitlements",
+            layout.projectDirectory.file("ios-test-host/test.entitlements").asFile.path,
+        )
+    }
 
     // macOS ARM64 target
     macosArm64()
@@ -73,18 +83,18 @@ kotlin {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.coroutines.test)
+                implementation(libs.kotlinx.io.core)
             }
+        }
+
+        getByName("jvmTest") {
+            // The shared tests that only run on the JVM.
+            kotlin.srcDir("../shared/src/jvmTest/kotlin")
         }
 
         getByName("jvmMain") {
             dependencies {
                 implementation(libs.jna)
-            }
-        }
-
-        getByName("jvmTest") {
-            dependencies {
-                implementation(libs.assertj.core)
             }
         }
 
@@ -99,7 +109,6 @@ kotlin {
             dependencies {
                 implementation(libs.android.junit)
                 implementation(libs.espresso)
-                implementation(libs.assertj.core)
             }
         }
     }
@@ -135,6 +144,12 @@ providers.gradleProperty("bindgen").orNull?.let { path ->
         bindgen.set(bindgenFile)
         bindgenReadyFile.set(bindgenFile)
     }
+}
+
+// Kotlin/Native runs the simulator tests outside an app, where the keychain isn't available.
+// scripts/run-kmp-ios-tests.sh runs them inside one.
+tasks.named("iosSimulatorArm64Test") {
+    enabled = false
 }
 
 afterEvaluate {

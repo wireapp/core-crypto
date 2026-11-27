@@ -3,62 +3,59 @@
 package com.wire.crypto
 
 import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
 import testutils.MockMlsTransportSuccessProvider
+import testutils.deleteRecursively
 import testutils.genClientId
 import testutils.genDatabaseKey
-import java.nio.file.Path
-import java.util.UUID
-import kotlin.io.path.*
+import testutils.newTempDirectory
 import kotlin.test.*
+import kotlin.uuid.Uuid as KotlinUuid
 
 class GeneralTest {
     @Test
     fun uuid_to_string() = runTest {
-        val rawUuid = UUID.randomUUID().toString()
+        val rawUuid = KotlinUuid.random().toString()
         val uuid = Uuid(rawUuid)
 
-        assertThat(uuid.toString()).isEqualTo(rawUuid)
+        assertEquals(rawUuid, uuid.toString())
     }
 
     @Test
     fun get_version() = runTest {
         val version = version()
 
-        assertThat(version).isNotNull()
-        assertThat(version).isNotEmpty()
+        assertTrue(version.isNotEmpty())
     }
 
     @Test
     fun get_build_metadata() = runTest {
         val metadata = buildMetadata()
 
-        assertThat(metadata).isNotNull()
-        assertThat(metadata.gitDescribe).isNotNull()
-        assertThat(metadata.gitDescribe).isNotEmpty()
+        assertTrue(metadata.gitDescribe.isNotEmpty())
     }
 }
 
 class DatabaseTest {
     suspend fun <T> withDatabase(block: suspend (Path, DatabaseKey) -> T): T {
-        val tmpdir = createTempDirectory("cc-test-")
-        val path = tmpdir / "keystore"
+        val tmpdir = newTempDirectory("cc-test-")
+        val path = Path(tmpdir, "keystore")
         val key = genDatabaseKey()
         return try {
             block(path, key)
         } finally {
-            tmpdir.toFile().deleteRecursively()
+            deleteRecursively(tmpdir)
         }
     }
 
     @Test
     fun givenDatabase_getLocation_shouldSucceed() = runTest {
         withDatabase { path, key ->
-            val pathStr = path.absolutePathString()
-            val db = Database.open(pathStr, key)
+            val db = Database.open(path.toString(), key)
             val location = db.getLocation()
             assertNotNull(location)
-            assert(location.endsWith(pathStr))
+            assertEquals(SystemFileSystem.resolve(path), SystemFileSystem.resolve(Path(location)))
             db.close()
         }
     }
@@ -66,7 +63,7 @@ class DatabaseTest {
     @Test
     fun givenDatabase_whenUsingSameNameAndKey_thenOpenShouldSucceed() = runTest {
         withDatabase { path, key ->
-            val db = Database.open(path.absolutePathString(), key)
+            val db = Database.open(path.toString(), key)
             db.close()
 
             openDatabase(path.toString(), key)
@@ -76,11 +73,14 @@ class DatabaseTest {
     @Test
     fun givenDatabase_whenUsingWrongKey_thenOpenShouldFail() = runTest {
         withDatabase { path, key ->
-            Database.open(path.absolutePathString(), key)
+            Database.open(path.toString(), key)
 
             val key2 = genDatabaseKey()
-            assertFailsWith<CoreCryptoException.Other> { Database.open(path.toString(), key2) }
-                .also { assertEquals("msg=file is not a database", it.message) }
+            val exception = assertFailsWith<CoreCryptoException.Other> { Database.open(path.toString(), key2) }
+            // On iOS, the start of the file is left unencrypted, and while another connection has
+            // the database open, a wrong key only shows when the database is written to.
+            val messages = setOf("msg=file is not a database", "msg=attempt to write a readonly database")
+            assertContains(messages, exception.message)
         }
     }
 }
@@ -89,37 +89,16 @@ class DatabaseKeyTest {
     @Test
     fun invalid_length() = runTest {
         val exc = assertFailsWith<CoreCryptoException.Other> { DatabaseKey(ByteArray(48)) }
-        assertThat(exc.msg.contains("Invalid database key size, expected 32, got 48")).isTrue
-    }
-
-    @Test
-    fun migrating_key_type_to_bytes_works() = runTest {
-        // Skip this test on Android.
-        if (System.getProperty("java.vm.name") == "Dalvik") {
-            return@runTest
-        }
-
-        val oldKey = "secret"
-        val tmpdir = createTempDirectory("cc-test-")
-        var path = Path(object {}.javaClass.getResource("/db-v10002003.sqlite")!!.getPath())
-        path = path.copyTo(tmpdir / path.name)
-
-        val newKey = genDatabaseKey()
-        migrateDatabaseKeyTypeToBytes(path.absolutePathString(), oldKey, newKey)
-        val db = openDatabase(path.absolutePathString(), newKey)
-
-        CoreCrypto(db)
-
-        tmpdir.toFile().deleteRecursively()
+        assertTrue(exc.msg.contains("Invalid database key size, expected 32, got 48"))
     }
 
     @Test
     fun update_database_key_works() = runTest {
-        val tmpdir = createTempDirectory("cc-test-")
-        val path = tmpdir / "keystore"
+        val tmpdir = newTempDirectory("cc-test-")
+        val path = Path(tmpdir, "keystore")
         val oldKey = genDatabaseKey()
         val clientId = genClientId()
-        val db = openDatabase(path.absolutePathString(), oldKey)
+        val db = openDatabase(path.toString(), oldKey)
         var cc = CoreCrypto(db)
         val transport = MockMlsTransportSuccessProvider()
         cc.transaction { ctx ->
@@ -141,6 +120,6 @@ class DatabaseKeyTest {
         cc.close()
         assertContentEquals(credentialRef1.publicKeyHash(), credentialRef2.publicKeyHash())
 
-        tmpdir.toFile().deleteRecursively()
+        deleteRecursively(tmpdir)
     }
 }

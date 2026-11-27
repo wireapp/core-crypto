@@ -10,7 +10,7 @@ coroutines:
 
 comments:
   active: true
-  excludes: &testBenchSources ['**/commonTest/**', '**/src/jmh/**']
+  excludes: &testBenchSources ['**/commonTest/**', '**/jvmTest/**', '**/src/jmh/**']
   KDocReferencesNonPublicProperty:
     active: true
     excludes: *testBenchSources

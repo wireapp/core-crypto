@@ -6,33 +6,22 @@ import com.wire.crypto.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
-import java.io.File
-import java.nio.ByteBuffer
-import java.nio.file.Files
-import java.security.SecureRandom
-import java.util.Collections
-import java.util.Locale
-import java.util.UUID
+import kotlinx.io.files.Path
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.random.Random
+import kotlin.random.nextULong
 import kotlin.test.*
+import kotlin.uuid.Uuid as KotlinUuid
 
-fun genDatabaseKey(): DatabaseKey {
-    val bytes = ByteArray(32)
-    val random = SecureRandom()
-    random.nextBytes(bytes)
-    return DatabaseKey(bytes)
-}
+fun genDatabaseKey(): DatabaseKey = DatabaseKey(Random.nextBytes(32))
 
-private fun uuidBytes(): ByteArray {
-    val uuid = UUID.randomUUID()
-    return ByteBuffer.allocate(16).putLong(uuid.mostSignificantBits).putLong(uuid.leastSignificantBits).array()
-}
+private fun uuidBytes(): ByteArray = KotlinUuid.random().toByteArray()
 
 fun genClientId(): ClientId {
-    val deviceId = SecureRandom().nextLong().toULong()
     return ClientId(
-        userId = Uuid(UUID.randomUUID().toString()),
-        deviceId = DeviceId(deviceId),
+        userId = Uuid(KotlinUuid.random().toString()),
+        deviceId = DeviceId(Random.nextULong()),
         domain = "wire.com"
     )
 }
@@ -84,13 +73,9 @@ interface MockDeliveryService : MlsTransport {
 // We use a singleton to easily access the mocked provider
 class MockMlsTransportSuccessProvider : MockDeliveryService {
     companion object {
-        @Volatile
-        private var instance: MockMlsTransportSuccessProvider? = null
+        private val shared by lazy { MockMlsTransportSuccessProvider() }
 
-        fun getInstance() =
-            instance ?: synchronized(this) {
-                instance ?: MockMlsTransportSuccessProvider().also { instance = it }
-            }
+        fun getInstance() = shared
     }
 
     private var latestCommitBundle: CommitBundle? = null
@@ -197,14 +182,20 @@ suspend fun ccInit(
     return cc
 }
 
-private val databaseDirectories = Collections.synchronizedList(mutableListOf<File>())
+// The benchmarks create databases from several threads.
+@OptIn(ExperimentalAtomicApi::class)
+private val databaseDirectories = AtomicReference(emptyList<Path>())
 
+@OptIn(ExperimentalAtomicApi::class)
 suspend fun newDatabase(): Database {
-    val root = Files.createTempDirectory("mls").toFile()
-    databaseDirectories += root
-    val path = root.resolve("keystore-${randomIdentifier()}")
+    val root = newTempDirectory("mls")
+    while (true) {
+        val directories = databaseDirectories.load()
+        if (databaseDirectories.compareAndSet(directories, directories + root)) break
+    }
+    val path = Path(root, "keystore-${randomIdentifier()}")
     val key = genDatabaseKey()
-    return openDatabase(path.absolutePath, key)
+    return openDatabase(path.toString(), key)
 }
 
 /**
@@ -212,11 +203,9 @@ suspend fun newDatabase(): Database {
  *
  * Only call this once nothing uses those databases anymore.
  */
+@OptIn(ExperimentalAtomicApi::class)
 fun deleteDatabases() {
-    synchronized(databaseDirectories) {
-        databaseDirectories.forEach { it.deleteRecursively() }
-        databaseDirectories.clear()
-    }
+    databaseDirectories.exchange(emptyList()).forEach(::deleteRecursively)
 }
 
 suspend fun createConversation(cc: CoreCrypto): ConversationId {
