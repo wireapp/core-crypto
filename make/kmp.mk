@@ -108,6 +108,14 @@ $(STAMPS)/kmp-jvm-test: $(kmp-jvm-test-deps) $(if $(RELEASE),$(KMP_JVM_RELEASE_L
 	./gradlew core-crypto-kmp:jvmTest --rerun $(KMP_GRADLE_ARGS)
 	$(TOUCH_STAMP)
 
+kmp-android-test-deps := $(RUST_SOURCES) $(KT_FILES) $(KT_BUILD_FILES)
+
+$(STAMPS)/kmp-android-test: $(kmp-android-test-deps) \
+	$(if $(RELEASE),$(ANDROID_ARMv7) $(ANDROID_ARMv8) $(ANDROID_X86) $(FFI_LIBRARY),$(JVM_LIB) $(ANDROID_TEST_LIB)) \
+	| $(OXIKT_BINDGEN)
+	$(SHELL) scripts/run-android-tests.sh core-crypto-kmp:connectedAndroidDeviceTest --rerun $(KMP_GRADLE_ARGS)
+	$(TOUCH_STAMP)
+
 # Kotlin/Native runs a test executable on the simulator by itself, but opening a database on iOS
 # uses the keychain, which only apps can access. So the script runs it inside an app. Like the
 # Swift tests, it uses the simulator library, which is always a release build.
