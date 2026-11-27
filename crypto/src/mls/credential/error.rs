@@ -24,6 +24,8 @@ pub enum Error {
     CredentialNotFound(SignaturePublicKey),
     #[error("No credential found matching public key hash {0}")]
     CredentialRefNotFound(Sha256Hash),
+    #[error("the authentication service rejected a credential: {0}")]
+    CredentialRejected(wire_e2e_identity::pki_env::CredentialAuthenticationStatus),
     #[error("missing PKI environment")]
     MissingPKIEnvironment,
     /// Unsupported credential type.

@@ -10,6 +10,7 @@ mod export_pem;
 pub(crate) mod ext;
 pub(crate) mod identity;
 mod persistence;
+pub(crate) mod validation;
 pub(crate) mod x509;
 
 use std::sync::Arc;
