@@ -227,7 +227,6 @@ impl PartialEq for Credential {
 
 #[cfg(test)]
 mod tests {
-    use openmls_traits::OpenMlsCryptoProvider as _;
     use rusty_jwt_tools::jsonwebtoken::DecodingKey;
     use wire_e2e_identity::{CiphersuiteExt as _, pki_env::PkiEnvironment};
     use x509_cert::der::Encode as _;
@@ -341,7 +340,7 @@ mod tests {
 
         assert!(innermost_source_matches!(
             err,
-            crate::OpenMlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::MismatchKeypair),
+            crate::mls::credential::Error::SignatureKeyMismatch,
         ));
     }
 
@@ -516,8 +515,6 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn should_fail_when_certificate_not_valid_yet(case: TestContext) {
-        use crate::OpenMlsErrorKind;
-
         if !case.is_x509() {
             return;
         }
@@ -543,7 +540,7 @@ mod tests {
 
         assert!(innermost_source_matches!(
             err,
-            OpenMlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::ExpiredCertificate),
+            crate::mls::credential::Error::ExpiredCertificate,
         ))
     }
 

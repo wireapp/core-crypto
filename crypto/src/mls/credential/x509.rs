@@ -1,10 +1,11 @@
 use std::fmt;
 
 use derive_more::derive;
-use openmls::prelude::Credential as MlsCredential;
-use openmls_traits::types::SignatureScheme;
-use openmls_x509_credential::CertificateKeyPair;
+use openmls::prelude::{Certificate as MlsCertificate, Credential as MlsCredential, X509Credential};
+use openmls_basic_credential::SignatureKeyPair;
+use openmls_traits::{crypto::OpenMlsCrypto as _, signatures::Signer as _, types::SignatureScheme};
 use wire_e2e_identity::{WireIdentityReader, pki_env::PkiEnvironment};
+use x509_cert::der::Decode as _;
 #[cfg(test)]
 use x509_cert::der::Encode;
 use zeroize::Zeroize;
@@ -13,8 +14,9 @@ use super::{Error, Result};
 #[cfg(test)]
 use crate::test_utils::x509::{PkiKeypair, X509Certificate};
 use crate::{
-    CipherSuite, ClientId, Credential, CredentialType, OpenMlsError, RecursiveError,
-    mls::credential::ext::CredentialExt as _,
+    CipherSuite, ClientId, Credential, CredentialType, RecursiveError, TlsCodecError,
+    mls::credential::{ext::CredentialExt as _, identity},
+    mls_provider::CRYPTO,
 };
 
 #[derive(core_crypto_macros::Debug, Clone, Zeroize, derive::Constructor)]
@@ -105,22 +107,47 @@ impl Credential {
         let earliest_validity = cert.get_created_at().map_err(RecursiveError::context(
             "getting credential 'not before' claim from leaf cert in Credential::x509",
         ))?;
-        let sk = cert.private_key.into_inner();
+        let signature_scheme = cert.signature_scheme;
+        let private_key = cert.private_key.into_inner();
         let chain = cert.certificate_chain;
 
-        let kp =
-            CertificateKeyPair::new(sk, chain.clone()).map_err(OpenMlsError::wrap("creating certificate key pair"))?;
+        // Every certificate in the chain has to decode and be valid now.
+        let certificates = chain
+            .iter()
+            .map(|certificate| x509_cert::Certificate::from_der(certificate).map_err(Error::DecodeX509))
+            .collect::<Result<Vec<_>>>()?;
+        if !certificates.iter().all(identity::is_time_valid) {
+            return Err(Error::ExpiredCertificate);
+        }
+        let leaf = certificates.first().ok_or(Error::InvalidIdentity)?;
+        let public_key = leaf.extract_public_key().map_err(|_| Error::InvalidIdentity)?;
 
-        let credential = MlsCredential::new_x509(chain).map_err(OpenMlsError::wrap("creating x509 credential"))?;
+        let signature_key_pair = SignatureKeyPair::from_raw(signature_scheme, private_key, public_key.clone());
 
-        let cb = Credential {
+        // openmls doesn't check that a private key belongs to the public key it's paired with. Check it by signing
+        // something with the private key and verifying the signature with the certificate's public key.
+        const KEY_CHECK_MESSAGE: &[u8] = b"core-crypto x509 credential key check";
+        let signature = signature_key_pair
+            .sign(KEY_CHECK_MESSAGE)
+            .map_err(|_| Error::SignatureKeyMismatch)?;
+        CRYPTO
+            .verify_signature(signature_scheme, KEY_CHECK_MESSAGE, &public_key, &signature)
+            .map_err(|_| Error::SignatureKeyMismatch)?;
+
+        let mls_credential = MlsCredential::try_from(X509Credential::new(
+            chain.into_iter().map(MlsCertificate::new).collect(),
+        ))
+        .map_err(TlsCodecError::serialize("x509 credential"))?;
+        let client_id = super::client_id_of(&mls_credential)?;
+
+        Ok(Credential {
             cipher_suite,
             credential_type: CredentialType::X509,
-            mls_credential: credential,
-            signature_key_pair: kp.0,
+            mls_credential,
+            signature_key_pair,
+            client_id,
             earliest_validity,
-        };
-        Ok(cb)
+        })
     }
 
     /// Check an X509 Credential for expiration or revocation
