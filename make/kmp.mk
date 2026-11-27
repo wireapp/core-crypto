@@ -88,8 +88,7 @@ KMP_LIBS := $(if $(RELEASE),$(KMP_RELEASE_LIBS),$(JVM_LIB) $(ANDROID_TEST_LIB)) 
 	$(if $(filter Darwin,$(UNAME_S)),$(foreach lib,$(IOS_DEVICE) $(JVM_DARWIN_LIB),$(call kmp-apple-files,$(lib))) \
 	$(KMP_SIMULATOR_FILES))
 
-# What the package publishes. Not `assemble`, which also compiles the native tests, and those use
-# JVM-only APIs.
+# What the package publishes. Not `assemble`, which also links the native test executables.
 KMP_ARTIFACT_TASKS := allMetadataJar jvmJar bundleAndroidMainAar iosArm64MainKlibrary \
 	iosSimulatorArm64MainKlibrary macosArm64MainKlibrary
 
