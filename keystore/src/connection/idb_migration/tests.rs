@@ -1059,6 +1059,124 @@ async fn imports_a_database_captured_from_v9_3_4() {
         .expect("wiping the new database");
 }
 
+const UNREADABLE_GROUP_ID: &[u8] = b"unreadable legacy test group";
+const LARGE_VALUE_READ_ERROR: &str = "Failed to read large IndexedDB value";
+
+async fn restore_fixture_with_unreadable_group(name: &str) -> DatabaseKey {
+    let key = restore_legacy_fixture(name, LEGACY_FIXTURE_V9_3_4).await;
+    let db = Factory::new().unwrap().open(name, None).unwrap().await.unwrap();
+    let tx = db.transaction(&["mls_groups"], TransactionMode::ReadWrite).unwrap();
+    let store = tx.object_store("mls_groups").unwrap();
+    let group_key = Uint8Array::from(UNREADABLE_GROUP_ID).into();
+    // The fault injector recognizes null as the unreadable value. The other group has real MLS state.
+    store.put(&JsValue::NULL, Some(&group_key)).unwrap().await.unwrap();
+    tx.commit().unwrap().await.unwrap();
+    db.close();
+    key
+}
+
+// Use a real IndexedDB request so the same onerror handler runs as for a browser read failure.
+// A key-only or count request can still inspect a record whose value cannot be read.
+const FAIL_GROUP_READ_JS: &str = r#"(function (dbName, message) {
+  const prototype = IDBObjectStore.prototype;
+  const { getAll, get } = prototype;
+  const failures = { bulk: 0, individual: 0 };
+
+  function isTarget(store) {
+    return store.name === "mls_groups" && store.transaction.db.name === dbName;
+  }
+
+  function failUnreadableValue(request, isUnreadable, kind) {
+    request.addEventListener("success", event => {
+      if (!isUnreadable(request.result)) return;
+      failures[kind]++;
+      event.stopImmediatePropagation();
+      Object.defineProperty(request, "error", { value: new DOMException(message, "UnknownError") });
+      if (request.dispatchEvent(new Event("error", { cancelable: true }))) {
+        request.transaction.abort();
+      }
+    }, { once: true });
+    return request;
+  }
+
+  prototype.getAll = function (...args) {
+    const request = getAll.apply(this, args);
+    return isTarget(this) ? failUnreadableValue(request, rows => rows.includes(null), "bulk") : request;
+  };
+
+  prototype.get = function (query) {
+    const request = get.call(this, query);
+    return isTarget(this) ? failUnreadableValue(request, row => row === null, "individual") : request;
+  };
+
+  return function () {
+    prototype.getAll = getAll;
+    prototype.get = get;
+    return [failures.bulk, failures.individual];
+  };
+})"#;
+
+fn inject_group_read_failure(name: &str, message: &str) -> impl FnOnce() -> [u32; 2] {
+    let arm: js_sys::Function = js_sys::eval(FAIL_GROUP_READ_JS).unwrap().into();
+    let disarm: js_sys::Function = arm
+        .call2(&JsValue::NULL, &JsValue::from_str(name), &JsValue::from_str(message))
+        .unwrap()
+        .into();
+    move || serde_wasm_bindgen::from_value(disarm.call0(&JsValue::NULL).unwrap()).unwrap()
+}
+
+#[wasm_bindgen_test::wasm_bindgen_test]
+async fn import_automatically_omits_only_the_unreadable_group() {
+    let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
+    let key = restore_fixture_with_unreadable_group(&name).await;
+
+    let stop_fault = inject_group_read_failure(&name, LARGE_VALUE_READ_ERROR);
+    let migration = Database::open(&name, &key).await;
+    let [bulk_failures, individual_failures] = stop_fault();
+    assert!(bulk_failures > 0, "migration must hit the injected bulk-read error");
+    let db = migration.expect("migration must finish with the unreadable group omitted");
+    assert!(
+        individual_failures > 0,
+        "migration must identify the unreadable group by reading its key individually"
+    );
+
+    let group = db
+        .get_borrowed::<PersistedMlsGroup>(ConversationIdRef::new(captured::ESTABLISHED_CONVERSATION_ID))
+        .await
+        .unwrap()
+        .expect("the readable group survives");
+    assert!(
+        db.get_borrowed::<PersistedMlsGroup>(ConversationIdRef::new(UNREADABLE_GROUP_ID))
+            .await
+            .unwrap()
+            .is_none()
+    );
+    let credentials = db.load_all::<StoredCredential>().await.unwrap();
+    assert_eq!(credentials.len(), 1);
+    let credential = &credentials[0];
+    assert_eq!(credential.session_id, captured::CLIENT_ID);
+    assert_eq!(credential.ciphersuite, captured::CIPHERSUITE);
+    assert_eq!(group.credential_id, Sha256Hash::hash_from(&credential.public_key));
+    Arc::into_inner(db).unwrap().wipe().await.unwrap();
+}
+
+#[wasm_bindgen_test::wasm_bindgen_test]
+async fn unrelated_indexeddb_read_errors_still_block_import() {
+    let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
+    let key = restore_fixture_with_unreadable_group(&name).await;
+    const UNRELATED_ERROR: &str = "injected IndexedDB storage failure";
+
+    let stop_fault = inject_group_read_failure(&name, UNRELATED_ERROR);
+    let blocked = Database::open(&name, &key).await;
+    let [bulk_failures, individual_failures] = stop_fault();
+    let error = blocked.expect_err("an unrelated read failure must block migration");
+    assert!(error.to_string().contains(UNRELATED_ERROR), "{error}");
+    assert!(bulk_failures > 0, "the migration must hit the injected error");
+    assert_eq!(individual_failures, 0, "an unrelated error must propagate immediately");
+    assert!(legacy_idb_exists(&name).await);
+    Factory::new().unwrap().delete(&name).unwrap().await.unwrap();
+}
+
 /// A database captured from v10.1.0, the last IndexedDB-writing release, is imported in full.
 ///
 /// Its rows are the ones [`seed`] describes, so the shared assertions apply; the credential's `created_at` is
