@@ -4,10 +4,7 @@ package com.wire.crypto
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlinx.io.files.Path
-import testutils.genClientId
-import testutils.genDatabaseKey
-import testutils.newTempDirectory
+import testutils.newDatabase
 import kotlin.test.*
 
 typealias SessionId = String
@@ -45,18 +42,12 @@ suspend fun CoreCryptoContext.proteusEncryptWithPreKey(
 
 internal class ProteusClientTest {
     companion object {
-        private val alice = genClientId()
-        private val bob = genClientId()
         private const val ALICE_SESSION_ID = "alice1_session1"
         private const val BOB_SESSION_ID = "bob1_session1"
     }
 
-    private fun newProteusClient(clientId: ClientId): CoreCrypto = runBlocking {
-        val root = newTempDirectory("mls")
-        val path = Path(root, "keystore-$clientId")
-        val key = genDatabaseKey()
-        val db = openDatabase(path.toString(), key)
-        val cc = CoreCrypto(db)
+    private fun newProteusClient(): CoreCrypto = runBlocking {
+        val cc = CoreCrypto(newDatabase())
         cc.transaction { it.proteusInit() }
         cc
     }
@@ -69,15 +60,15 @@ internal class ProteusClientTest {
 
     @Test
     fun givenProteusClient_whenCallingNewPreKeys_thenItReturnsAListOfPreKeys() = runTest {
-        val aliceClient = newProteusClient(alice)
+        val aliceClient = newProteusClient()
         val preKeyList = aliceClient.transaction { ctx -> ctx.proteusNewPreKeys(0, 10) }
         assertEquals(preKeyList.size, 10)
     }
 
     @Test
     fun givenIncomingPreKeyMessage_whenCallingDecrypt_thenMessageIsDecrypted() = runTest {
-        val aliceClient = newProteusClient(alice)
-        val bobClient = newProteusClient(bob)
+        val aliceClient = newProteusClient()
+        val bobClient = newProteusClient()
 
         val message = "Hi Alice!"
         val aliceKey = aliceClient.transaction { ctx -> ctx.proteusNewPreKeys(0, 10).first() }
@@ -92,8 +83,8 @@ internal class ProteusClientTest {
 
     @Test
     fun givenSessionAlreadyExists_whenCallingDecrypt_thenMessageIsDecrypted() = runTest {
-        val aliceClient = newProteusClient(alice)
-        val bobClient = newProteusClient(bob)
+        val aliceClient = newProteusClient()
+        val bobClient = newProteusClient()
         val aliceKey = aliceClient.transaction { ctx -> ctx.proteusNewPreKeys(0, 10).first() }
         val message1 = "Hi Alice!"
         val encryptedMessage1 = bobClient.transaction {
@@ -116,8 +107,8 @@ internal class ProteusClientTest {
 
     @Test
     fun givenReceivingSameMessageTwice_whenCallingDecrypt_thenDuplicateMessageError() = runTest {
-        val aliceClient = newProteusClient(alice)
-        val bobClient = newProteusClient(bob)
+        val aliceClient = newProteusClient()
+        val bobClient = newProteusClient()
         val aliceKey = aliceClient.transaction { ctx -> ctx.proteusNewPreKeys(0, 10).first() }
         val message1 = "Hi Alice!"
         val encryptedMessage1 = bobClient.transaction {
@@ -133,8 +124,8 @@ internal class ProteusClientTest {
 
     @Test
     fun givenMissingSession_whenCallingEncryptBatched_thenMissingSessionAreIgnored() = runTest {
-        val aliceClient = newProteusClient(alice)
-        val bobClient = newProteusClient(bob)
+        val aliceClient = newProteusClient()
+        val bobClient = newProteusClient()
         val aliceKey = aliceClient.transaction { ctx -> ctx.proteusNewPreKeys(0, 10).first() }
         val message1 = "Hi Alice!"
         bobClient.transaction { ctx -> ctx.proteusSessionFromPrekey(ALICE_SESSION_ID, aliceKey) }
@@ -151,8 +142,8 @@ internal class ProteusClientTest {
 
     @Test
     fun givenNoSessionExists_whenCallingCreateSession_thenSessionIsCreated() = runTest {
-        val aliceClient = newProteusClient(alice)
-        val bobClient = newProteusClient(bob)
+        val aliceClient = newProteusClient()
+        val bobClient = newProteusClient()
 
         val aliceKey = aliceClient.transaction { ctx -> ctx.proteusNewPreKeys(0, 10).first() }
         bobClient.transaction { ctx -> ctx.proteusSessionFromPrekey(ALICE_SESSION_ID, aliceKey) }
@@ -165,7 +156,7 @@ internal class ProteusClientTest {
 
     @Test
     fun givenNoSessionExists_whenGettingRemoteFingerprint_thenReturnSessionNotFound() = runTest {
-        val aliceClient = newProteusClient(alice)
+        val aliceClient = newProteusClient()
 
         assertFailsWith<CoreCryptoException.Proteus> {
             aliceClient.transaction { ctx ->
