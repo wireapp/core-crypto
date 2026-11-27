@@ -10,7 +10,7 @@ use crate::{
         connection::Database,
         traits::{EntityBase as _, EntityDatabaseMutation as _},
     },
-    migrations::historical::{StoredSignatureKeypair, V5Credential, migrate_to_new_credential},
+    migrations::historical::{StoredSignatureKeypair, V5Credential, V6Credential, migrate_to_new_credential},
 };
 
 /// Open IDB once with the new builder and close it, this will apply the update.
@@ -37,6 +37,10 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
             // The IndexedDB wrapper also returns None for a stored null or undefined value.
             Ok(None) => credential_keys_to_delete.push(key),
             Err(err) => {
+                // Credential conversion can commit before the database version changes.
+                if let Ok(Some(_)) = storage.get::<V6Credential>(&key).await {
+                    continue;
+                }
                 log::warn!("Dropping an unreadable IndexedDB v5 credential: {err}");
                 credential_keys_to_delete.push(key);
             }
