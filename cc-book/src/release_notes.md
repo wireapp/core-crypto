@@ -62,6 +62,8 @@
 - CRL handling has been fixed such that revoked X509 certificates immediately cause credentials relying on them to be
   invalidated. Previously revocation was having an effect only after reconstructing the `PkiEnvironment`.
 - Recreating a `PkiEnvironment` now preserves revocations from stored CRLs.
+- Browser: the legacy IndexedDB v5-to-v6 migration skips unreadable credentials and signature keypairs. Credentials with
+  no surviving matching keypair are dropped.
 
 ## CoreCrypto 11
 

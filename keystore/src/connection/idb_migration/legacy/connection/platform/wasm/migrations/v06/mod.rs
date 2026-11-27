@@ -1,8 +1,6 @@
 //! This migration merges signature keypair and credential data
 mod v5_entities;
 
-use std::collections::HashSet;
-
 use idb::builder::DatabaseBuilder;
 
 use super::DB_VERSION_6;
@@ -10,7 +8,7 @@ use crate::{
     CryptoKeystoreResult, DatabaseKey,
     connection::idb_migration::legacy::{
         connection::Database,
-        traits::{Entity as _, EntityBase as _, EntityDatabaseMutation as _},
+        traits::{EntityBase as _, EntityDatabaseMutation as _},
     },
     migrations::historical::{StoredSignatureKeypair, V5Credential, migrate_to_new_credential},
 };
@@ -18,28 +16,48 @@ use crate::{
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
     let previous_builder = super::v05::get_builder(name);
-    let mut db_during_migration = Database::migration_connection(previous_builder, key).await?;
-    let signature_keys = StoredSignatureKeypair::load_all(&mut db_during_migration).await?;
-    let v5_credentials = V5Credential::load_all(&mut db_during_migration).await?;
+    let db_during_migration = Database::migration_connection(previous_builder, key).await?;
+    let storage = db_during_migration.storage();
+
+    let mut signature_keys = Vec::new();
+    for key in storage.get_all_storage_keys::<StoredSignatureKeypair>().await? {
+        match storage.get::<StoredSignatureKeypair>(&key).await {
+            Ok(Some(keypair)) => signature_keys.push(keypair),
+            Ok(None) => {}
+            Err(err) => log::warn!("Skipping an unreadable IndexedDB v5 signature keypair: {err}"),
+        }
+    }
+
+    // load everything into memory before editing anything, so we don't break the iteration due to mutation
+    let mut v5_credentials = Vec::new();
+    let mut credential_keys_to_delete = Vec::new();
+    for key in storage.get_all_storage_keys::<V5Credential>().await? {
+        match storage.get::<V5Credential>(&key).await {
+            Ok(Some(credential)) => v5_credentials.push((key, credential)),
+            // The IndexedDB wrapper also returns None for a stored null or undefined value.
+            Ok(None) => credential_keys_to_delete.push(key),
+            Err(err) => {
+                log::warn!("Dropping an unreadable IndexedDB v5 credential: {err}");
+                credential_keys_to_delete.push(key);
+            }
+        }
+    }
 
     Database::migration_transaction(db_during_migration, async |tx| {
-        let mut session_ids_to_clean_up = HashSet::<Vec<u8>>::new();
-        'credential: for v5_credential in v5_credentials.iter() {
-            for signature_key in signature_keys.iter() {
-                if let Some(new_credential) = migrate_to_new_credential(v5_credential, signature_key)? {
+        'credential: for (key, v5_credential) in v5_credentials {
+            for signature_key in &signature_keys {
+                if let Some(new_credential) = migrate_to_new_credential(&v5_credential, signature_key)? {
                     new_credential.save(tx).await?;
-                    super::delete_credential_by_session_id(tx, v5_credential.id.clone()).await?;
+                    tx.delete::<V5Credential>(key).await?;
                     continue 'credential;
                 }
             }
-            session_ids_to_clean_up.insert(v5_credential.id.clone());
+            log::warn!("Dropping an IndexedDB v5 credential with no matching signature keypair");
+            credential_keys_to_delete.push(key);
         }
 
-        if !session_ids_to_clean_up.is_empty() {
-            log::warn!("expected to migrate all v5 credentials");
-            for session_id in session_ids_to_clean_up {
-                super::delete_credential_by_session_id(tx, session_id).await?;
-            }
+        for key in credential_keys_to_delete {
+            tx.delete::<V5Credential>(key).await?;
         }
 
         Ok(())

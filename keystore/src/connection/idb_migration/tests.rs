@@ -885,6 +885,54 @@ fn certificate_common_name(der: &[u8]) -> String {
     certificate.tbs_certificate().subject().to_string()
 }
 
+#[wasm_bindgen_test::wasm_bindgen_test]
+async fn v6_migrates_readable_credentials_alongside_unreadable_records() {
+    let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
+    let key = restore_legacy_fixture(&name, LEGACY_FIXTURE_V9_3_4).await;
+    let captured = fixture(LEGACY_FIXTURE_V9_3_4);
+    let idb = Factory::new().unwrap().open(&name, None).unwrap().await.unwrap();
+    let transaction = idb
+        .transaction(
+            &["mls_credentials", "mls_signature_keypairs"],
+            TransactionMode::ReadWrite,
+        )
+        .unwrap();
+    for (store, encrypted_field) in [("mls_credentials", "credential"), ("mls_signature_keypairs", "keypair")] {
+        let row = fixture_value_to_js(&captured["stores"][store][0]["value"]);
+        Reflect::set(
+            &row,
+            &JsValue::from_str(encrypted_field),
+            &Uint8Array::from([0xff; 48].as_slice()).into(),
+        )
+        .unwrap();
+        transaction
+            .object_store(store)
+            .unwrap()
+            .put(&row, Some(&Uint8Array::from(b"unreadable v5 record".as_slice()).into()))
+            .unwrap()
+            .await
+            .unwrap();
+    }
+    transaction
+        .object_store("mls_credentials")
+        .unwrap()
+        .put(
+            &JsValue::NULL,
+            Some(&Uint8Array::from(b"null v5 credential".as_slice()).into()),
+        )
+        .unwrap()
+        .await
+        .unwrap();
+    transaction.commit().unwrap().await.unwrap();
+    idb.close();
+
+    let db = Database::open(&name, &key).await.unwrap();
+    let credentials = db.load_all::<StoredCredential>().await.unwrap();
+    assert_eq!(credentials.len(), 1);
+    assert_eq!(credentials[0].session_id, captured::CLIENT_ID);
+    Arc::into_inner(db).unwrap().wipe().await.unwrap();
+}
+
 /// A database captured from a v9.3.4 client is upgraded through the legacy chain and imported in full.
 ///
 /// [`imports_every_legacy_entity`] proves the import handles what the legacy entities write today. This proves
