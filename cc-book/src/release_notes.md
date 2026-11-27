@@ -64,6 +64,13 @@
 - Recreating a `PkiEnvironment` now preserves revocations from stored CRLs.
 - Browser: the legacy IndexedDB v5-to-v6 migration skips unreadable credentials and signature keypairs. Credentials with
   no surviving matching keypair are dropped.
+- Browser: the legacy IndexedDB v6-to-v7 migration drops unreadable MLS groups and credentials, including credentials
+  whose ciphersuite cannot be determined from the surviving groups.
+- Browser: the legacy IndexedDB v7-to-v8 migration drops unreadable MLS groups and credentials so later migrations can
+  proceed with the surviving records.
+- Browser: the legacy IndexedDB v8-to-v9 migration skips unreadable credentials and copies the surviving credentials
+  into the replacement store.
+- Browser: the legacy IndexedDB v10-to-v11 migration drops unreadable MLS groups and preserves readable groups.
 
 ## CoreCrypto 11
 

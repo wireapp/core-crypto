@@ -5,13 +5,10 @@ use idb::{
     builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder},
 };
 
-use super::DB_VERSION_8;
+use super::{DB_VERSION_8, load_group_ciphersuites};
 use crate::{
     CryptoKeystoreResult, DatabaseKey,
-    connection::idb_migration::legacy::{
-        connection::Database,
-        traits::{Entity as _, EntityBase as _},
-    },
+    connection::idb_migration::legacy::{connection::Database, traits::EntityBase as _},
     migrations::historical::{
         LegacyPersistedMlsGroup, StoredCredentialV36, detect_duplicate_credentials, make_least_used_ciphersuite,
     },
@@ -20,14 +17,32 @@ use crate::{
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
     let previous_builder = super::v07::get_builder(name);
-    let mut db_during_migration = Database::migration_connection(previous_builder, key).await?;
-    let persisted_mls_groups = LegacyPersistedMlsGroup::load_all(&mut db_during_migration).await?;
+    let db_during_migration = Database::migration_connection(previous_builder, key).await?;
+    let storage = db_during_migration.storage();
+    let (ciphersuites, group_keys_to_delete) = load_group_ciphersuites(storage).await?;
+    let least_used_ciphersuite = make_least_used_ciphersuite(ciphersuites.into_iter().map(Ok))?;
 
-    let least_used_ciphersuite = make_least_used_ciphersuite(persisted_mls_groups)?;
-    let credentials = StoredCredentialV36::load_all(&mut db_during_migration).await?;
+    let mut credentials = Vec::new();
+    let mut credential_keys_to_delete = Vec::new();
+    for key in storage.get_all_storage_keys::<StoredCredentialV36>().await? {
+        match storage.get::<StoredCredentialV36>(&key).await {
+            Ok(Some(credential)) => credentials.push(credential),
+            Ok(None) => credential_keys_to_delete.push(key),
+            Err(err) => {
+                log::warn!("Dropping an unreadable IndexedDB v7 credential: {err}");
+                credential_keys_to_delete.push(key);
+            }
+        }
+    }
     let duplicates = detect_duplicate_credentials(&credentials);
 
     Database::migration_transaction(db_during_migration, async |tx| {
+        for key in group_keys_to_delete {
+            tx.delete::<LegacyPersistedMlsGroup>(key).await?;
+        }
+        for key in credential_keys_to_delete {
+            tx.delete::<StoredCredentialV36>(key).await?;
+        }
         for (cred_a, cred_b) in duplicates.into_iter() {
             let least_used_ciphersuite = least_used_ciphersuite(cred_a.ciphersuite, cred_b.ciphersuite);
             match least_used_ciphersuite {

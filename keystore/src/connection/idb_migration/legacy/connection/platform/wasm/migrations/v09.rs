@@ -1,5 +1,4 @@
-//! This migration queries all credentials from the credential store, inserts them into the new one, then removes the
-//! old store and renames the new one.
+//! This migration copies readable credentials into a new store, then swaps it in for the old one.
 
 use idb::builder::DatabaseBuilder;
 use serde::Serialize as _;
@@ -9,7 +8,7 @@ use crate::{
     CryptoKeystoreResult, DatabaseKey,
     connection::idb_migration::legacy::{
         connection::{Database, platform::wasm::WasmStorageTransaction},
-        traits::{Encrypting as _, Entity as _, EntityBase as _},
+        traits::{Encrypting as _, EntityBase as _},
     },
     migrations::historical::StoredCredentialV36,
 };
@@ -17,8 +16,16 @@ use crate::{
 /// Open IDB once with the new builder and close it, this will apply the update.
 pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
     let previous_builder = super::v08::get_builder(name);
-    let mut db_during_migration = Database::migration_connection(previous_builder, key).await?;
-    let credentials = StoredCredentialV36::load_all(&mut db_during_migration).await?;
+    let db_during_migration = Database::migration_connection(previous_builder, key).await?;
+    let storage = db_during_migration.storage();
+    let mut credentials = Vec::new();
+    for key in storage.get_all_storage_keys::<StoredCredentialV36>().await? {
+        match storage.get::<StoredCredentialV36>(&key).await {
+            Ok(Some(credential)) => credentials.push(credential),
+            Ok(None) => {}
+            Err(err) => log::warn!("Dropping an unreadable IndexedDB v8 credential: {err}"),
+        }
+    }
 
     let collection_name = format!(
         "{collection_name}_new",
@@ -30,6 +37,8 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
             WasmStorageTransaction::Persistent { tx, cipher } => {
                 let serializer = serde_wasm_bindgen::Serializer::json_compatible();
                 let store = tx.object_store(&collection_name)?;
+                // An interrupted upgrade can leave a previous copy here. Rebuild from the source store.
+                store.clear()?.await?;
                 for credential in credentials {
                     let key = &js_sys::Uint8Array::from(credential.public_key.as_slice()).into();
                     let js_value = credential.encrypt(cipher)?.serialize(&serializer)?;

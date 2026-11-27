@@ -24,7 +24,10 @@ use crate::{
         Database,
         idb_migration::legacy::connection::{
             Database as LegacyDatabase, KeystoreDatabaseConnection,
-            platform::wasm::migrations::{TARGET_VERSION, open_at},
+            platform::wasm::migrations::{
+                DB_VERSION_6, DB_VERSION_7, DB_VERSION_8, DB_VERSION_9, DB_VERSION_10, DB_VERSION_11, TARGET_VERSION,
+                open_at,
+            },
             storage::{WasmEncryptedStorage, WasmStorageWrapper},
         },
         os_unknown,
@@ -34,6 +37,7 @@ use crate::{
         StoredEpochEncryptionKeypair, StoredEpochEncryptionKeypairPkRef, StoredKeyPackage, WaitingFor, X509Crl,
         X509IntermediateCert, X509TrustAnchor,
     },
+    migrations::historical::V6Credential,
     traits::FetchFromDatabase as _,
 };
 
@@ -931,6 +935,240 @@ async fn v6_migrates_readable_credentials_alongside_unreadable_records() {
     assert_eq!(credentials.len(), 1);
     assert_eq!(credentials[0].session_id, captured::CLIENT_ID);
     Arc::into_inner(db).unwrap().wipe().await.unwrap();
+}
+
+#[wasm_bindgen_test::wasm_bindgen_test]
+async fn v7_imports_readable_groups_and_credentials_alongside_corrupt_rows() {
+    let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
+    let key = restore_legacy_fixture(&name, LEGACY_FIXTURE_V9_3_4).await;
+    let idb = open_at(&name, &key, DB_VERSION_6).await;
+
+    let transaction = idb
+        .transaction(&["mls_groups", "mls_credentials"], TransactionMode::ReadWrite)
+        .unwrap();
+    for store in ["mls_groups", "mls_credentials"] {
+        transaction
+            .object_store(store)
+            .unwrap()
+            .put(
+                &JsValue::NULL,
+                Some(&Uint8Array::from(b"unreadable v6 row".as_slice()).into()),
+            )
+            .unwrap()
+            .await
+            .unwrap();
+    }
+    transaction.commit().unwrap().await.unwrap();
+
+    let conn =
+        KeystoreDatabaseConnection::from_inner(WasmEncryptedStorage::new(&key, WasmStorageWrapper::Persistent(idb)));
+    LegacyDatabase::migration_transaction(conn, async |tx| {
+        let group = LegacyPersistedMlsGroup {
+            id: b"invalid MLS state".to_vec(),
+            state: Vec::new(),
+            parent_id: None,
+        };
+        tx.save(&group).await?;
+        let credential = V6Credential {
+            session_id: b"unknown signature scheme".to_vec(),
+            credential: vec![1],
+            created_at: 1,
+            signature_scheme: u16::MAX,
+            public_key: vec![2],
+            private_key: vec![3],
+        };
+        tx.save(&credential).await
+    })
+    .await
+    .unwrap();
+
+    let db = Database::open(&name, &key).await.unwrap();
+    let credentials = db.load_all::<StoredCredential>().await.unwrap();
+    assert_eq!(credentials.len(), 1);
+    assert_eq!(credentials[0].session_id, captured::CLIENT_ID);
+    assert_eq!(credentials[0].ciphersuite, captured::CIPHERSUITE);
+    assert!(
+        db.get_borrowed::<PersistedMlsGroup>(ConversationIdRef::new(captured::ESTABLISHED_CONVERSATION_ID))
+            .await
+            .unwrap()
+            .is_some()
+    );
+    Arc::into_inner(db).unwrap().wipe().await.unwrap();
+}
+
+#[wasm_bindgen_test::wasm_bindgen_test]
+async fn v8_deletes_unreadable_rows_before_later_migrations() {
+    let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
+    let key = restore_legacy_fixture(&name, LEGACY_FIXTURE_V9_3_4).await;
+    let idb = open_at(&name, &key, DB_VERSION_7).await;
+    let corrupt_key = b"unreadable v7 row".as_slice();
+
+    let transaction = idb
+        .transaction(&["mls_credentials"], TransactionMode::ReadWrite)
+        .unwrap();
+    transaction
+        .object_store("mls_credentials")
+        .unwrap()
+        .put(
+            &JsValue::from_str("invalid credential"),
+            Some(&Uint8Array::from(corrupt_key).into()),
+        )
+        .unwrap()
+        .await
+        .unwrap();
+    transaction.commit().unwrap().await.unwrap();
+
+    let conn =
+        KeystoreDatabaseConnection::from_inner(WasmEncryptedStorage::new(&key, WasmStorageWrapper::Persistent(idb)));
+    LegacyDatabase::migration_transaction(conn, async |tx| {
+        let group = LegacyPersistedMlsGroup {
+            id: corrupt_key.to_vec(),
+            state: Vec::new(),
+            parent_id: None,
+        };
+        tx.save(&group).await
+    })
+    .await
+    .unwrap();
+
+    let idb = open_at(&name, &key, DB_VERSION_8).await;
+    for table in ["mls_groups", "mls_credentials"] {
+        let transaction = idb.transaction(&[table], TransactionMode::ReadOnly).unwrap();
+        let row = transaction
+            .object_store(table)
+            .unwrap()
+            .get(JsValue::from(Uint8Array::from(corrupt_key)))
+            .unwrap()
+            .await
+            .unwrap();
+        assert!(row.is_none(), "v8 must remove the unreadable row from {table}");
+    }
+    idb.close();
+
+    let db = Database::open(&name, &key).await.unwrap();
+    let credentials = db.load_all::<StoredCredential>().await.unwrap();
+    assert_eq!(credentials.len(), 1);
+    assert_eq!(credentials[0].session_id, captured::CLIENT_ID);
+    assert!(
+        db.get_borrowed::<PersistedMlsGroup>(ConversationIdRef::new(captured::ESTABLISHED_CONVERSATION_ID))
+            .await
+            .unwrap()
+            .is_some()
+    );
+    Arc::into_inner(db).unwrap().wipe().await.unwrap();
+}
+
+#[wasm_bindgen_test::wasm_bindgen_test]
+async fn v9_copies_readable_credentials_and_discards_stale_staging_rows() {
+    use serde::Serialize as _;
+
+    use super::legacy::traits::Encrypting as _;
+
+    let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
+    let key = restore_legacy_fixture(&name, LEGACY_FIXTURE_V9_3_4).await;
+    let idb = open_at(&name, &key, DB_VERSION_8).await;
+    let storage = WasmEncryptedStorage::new(&key, WasmStorageWrapper::Persistent(idb));
+    let WasmStorageWrapper::Persistent(idb) = storage.wrapper() else {
+        unreachable!();
+    };
+    let stale = StoredCredentialV36 {
+        session_id: b"stale session".to_vec(),
+        credential: b"stale credential".to_vec(),
+        created_at: 1,
+        ciphersuite: captured::CIPHERSUITE,
+        public_key: b"stale public key".to_vec(),
+        private_key: b"stale private key".to_vec(),
+    };
+    let stale_value = stale
+        .encrypt(&storage.cipher)
+        .unwrap()
+        .serialize(&serde_wasm_bindgen::Serializer::json_compatible())
+        .unwrap();
+    let source_key = Uint8Array::from(Sha256Hash::hash_from(&stale.public_key).as_ref());
+    let staged_key = Uint8Array::from(stale.public_key.as_slice()).into();
+    let transaction = idb
+        .transaction(&["mls_credentials", "mls_credentials_new"], TransactionMode::ReadWrite)
+        .unwrap();
+    transaction
+        .object_store("mls_credentials")
+        .unwrap()
+        .put(&JsValue::from_str("unreadable credential"), Some(&source_key.into()))
+        .unwrap()
+        .await
+        .unwrap();
+    transaction
+        .object_store("mls_credentials_new")
+        .unwrap()
+        .put(&stale_value, Some(&staged_key))
+        .unwrap()
+        .await
+        .unwrap();
+    transaction.commit().unwrap().await.unwrap();
+    drop(storage);
+
+    let idb = open_at(&name, &key, DB_VERSION_9).await;
+    let transaction = idb
+        .transaction(&["mls_credentials"], TransactionMode::ReadOnly)
+        .unwrap();
+    let store = transaction.object_store("mls_credentials").unwrap();
+    assert!(store.get(staged_key).unwrap().await.unwrap().is_none());
+    assert_eq!(store.count(None).unwrap().await.unwrap(), 1);
+    idb.close();
+
+    let db = Database::open(&name, &key).await.unwrap();
+    let credentials = db.load_all::<StoredCredential>().await.unwrap();
+    assert_eq!(credentials.len(), 1);
+    assert_eq!(credentials[0].session_id, captured::CLIENT_ID);
+    Arc::into_inner(db).unwrap().wipe().await.unwrap();
+}
+
+#[wasm_bindgen_test::wasm_bindgen_test]
+async fn v11_rewrites_readable_groups_and_deletes_unreadable_groups() {
+    use super::legacy::traits::EncryptData as _;
+
+    let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
+    let key = restore_legacy_fixture(&name, LEGACY_FIXTURE_V9_3_4).await;
+    let idb = open_at(&name, &key, DB_VERSION_10).await;
+    let storage = WasmEncryptedStorage::new(&key, WasmStorageWrapper::Persistent(idb));
+    let WasmStorageWrapper::Persistent(idb) = storage.wrapper() else {
+        unreachable!();
+    };
+    let group = LegacyPersistedMlsGroup {
+        id: captured::ESTABLISHED_CONVERSATION_ID.to_vec(),
+        state: Vec::new(),
+        parent_id: None,
+    };
+    let parent_id = b"parent group";
+    let encrypted_parent = group.encrypt_data(&storage.cipher, parent_id).unwrap();
+    let group_key = JsValue::from(Uint8Array::from(group.id.as_slice()));
+    let corrupt_key = JsValue::from(Uint8Array::from(b"unreadable v10 group".as_slice()));
+
+    let transaction = idb.transaction(&["mls_groups"], TransactionMode::ReadWrite).unwrap();
+    let store = transaction.object_store("mls_groups").unwrap();
+    let row = store.get(group_key.clone()).unwrap().await.unwrap().unwrap();
+    let parent_field = JsValue::from_str("parent_id");
+    Reflect::set(&row, &parent_field, &Uint8Array::from(encrypted_parent.as_slice())).unwrap();
+    store.put(&row, Some(&group_key)).unwrap().await.unwrap();
+    Reflect::set(
+        &row,
+        &JsValue::from_str("id"),
+        &Uint8Array::from(b"corrupt v10 group id".as_slice()),
+    )
+    .unwrap();
+    Reflect::set(&row, &parent_field, &Uint8Array::from([0xff; 48].as_slice())).unwrap();
+    store.put(&row, Some(&corrupt_key)).unwrap().await.unwrap();
+    transaction.commit().unwrap().await.unwrap();
+    drop(storage);
+
+    let idb = open_at(&name, &key, DB_VERSION_11).await;
+    let transaction = idb.transaction(&["mls_groups"], TransactionMode::ReadOnly).unwrap();
+    let store = transaction.object_store("mls_groups").unwrap();
+    let row = store.get(group_key).unwrap().await.unwrap().unwrap();
+    let parent: Vec<u8> = serde_wasm_bindgen::from_value(Reflect::get(&row, &parent_field).unwrap()).unwrap();
+    assert_eq!(parent, parent_id);
+    assert!(store.get(corrupt_key).unwrap().await.unwrap().is_none());
+    idb.close();
+    Factory::new().unwrap().delete(&name).unwrap().await.unwrap();
 }
 
 /// A database captured from a v9.3.4 client is upgraded through the legacy chain and imported in full.

@@ -303,13 +303,12 @@ impl CiphersuiteOccurences {
 
 /// Count occurences of ciphersuites ambiguous with regard to the signature scheme.
 fn count_ciphersuite_occurences(
-    persisted_mls_groups: impl IntoIterator<Item = LegacyPersistedMlsGroup>,
+    ciphersuites: impl IntoIterator<Item = CryptoKeystoreResult<Ciphersuite>>,
 ) -> CryptoKeystoreResult<CiphersuiteOccurences> {
     let mut occurences = CiphersuiteOccurences::default();
 
-    for mls_group in persisted_mls_groups {
-        let mls_group = deser::<MlsGroup>(&mls_group.state)?;
-        match mls_group.ciphersuite() {
+    for ciphersuite in ciphersuites {
+        match ciphersuite? {
             Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 => occurences.ed25519_aes += 1,
             Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 => occurences.ed25519_chacha += 1,
             Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 => occurences.ed448_aes += 1,
@@ -319,6 +318,14 @@ fn count_ciphersuite_occurences(
     }
 
     Ok(occurences)
+}
+
+fn group_ciphersuites(
+    groups: impl IntoIterator<Item = LegacyPersistedMlsGroup>,
+) -> impl Iterator<Item = CryptoKeystoreResult<Ciphersuite>> {
+    groups
+        .into_iter()
+        .map(|group| deser::<MlsGroup>(&group.state).map(|group| group.ciphersuite()))
 }
 
 /// Make a function which inverts [`Credential::signature_algorithm`](https://github.com/wireapp/openmls/blob/c9cde17076508968c9cbead5728454f0a1f60c4f/traits/src/types.rs#L472-L474)
@@ -341,7 +348,14 @@ fn count_ciphersuite_occurences(
 pub(crate) fn make_ciphersuite_for_signature_scheme(
     persisted_mls_groups: impl IntoIterator<Item = LegacyPersistedMlsGroup>,
 ) -> CryptoKeystoreResult<impl Fn(u16) -> Option<u16>> {
-    let occurences = count_ciphersuite_occurences(persisted_mls_groups)?;
+    make_ciphersuite_for_signature_scheme_from_ciphersuites(group_ciphersuites(persisted_mls_groups))
+}
+
+/// Infer ciphersuites from the groups the caller was able to read.
+pub(crate) fn make_ciphersuite_for_signature_scheme_from_ciphersuites(
+    ciphersuites: impl IntoIterator<Item = CryptoKeystoreResult<Ciphersuite>>,
+) -> CryptoKeystoreResult<impl Fn(u16) -> Option<u16>> {
+    let occurences = count_ciphersuite_occurences(ciphersuites)?;
 
     let ed25519 = match (occurences.ed25519_aes, occurences.ed25519_chacha) {
         (0, 0) => None,
@@ -377,7 +391,7 @@ pub(crate) fn make_ciphersuite_for_signature_scheme(
     Ok(ciphersuite_for_signature_scheme)
 }
 
-/// Make a function that determines the least used ciphersuite dependeing on usages in the given mls groups.
+/// Make a function that determines the least used ciphersuite from the ciphersuites observed in MLS groups.
 ///
 /// Behavioral notes of the resulting function:
 /// * Ciphersuites that are not considered will cause `None` to be returned.
@@ -386,9 +400,9 @@ pub(crate) fn make_ciphersuite_for_signature_scheme(
 /// * If both ciphersuites have equal occurence, the numerically higher ciphersuite is returned.
 #[cfg(target_os = "unknown")]
 pub(crate) fn make_least_used_ciphersuite(
-    persisted_mls_groups: impl IntoIterator<Item = LegacyPersistedMlsGroup>,
+    ciphersuites: impl IntoIterator<Item = CryptoKeystoreResult<Ciphersuite>>,
 ) -> CryptoKeystoreResult<impl Fn(u16, u16) -> Option<u16>> {
-    let occurences = count_ciphersuite_occurences(persisted_mls_groups)?;
+    let occurences = count_ciphersuite_occurences(ciphersuites)?;
 
     let least_used_ciphersuite = move |ciphersuite_a: u16, ciphersuite_b: u16| -> Option<u16> {
         let occurence_a = occurences.of(ciphersuite_a);
