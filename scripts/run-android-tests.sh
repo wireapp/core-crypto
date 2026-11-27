@@ -1,7 +1,17 @@
 #!/usr/bin/env bash
+# Runs Android device tests on a new emulator.
+#
+# Usage: run-android-tests.sh <Gradle arguments>
+
 # pipefail matters: without it, a failure in `start-android-emulator.sh` is
 # hidden behind `tee`'s exit status and we carry on with no emulator.
 set -eo pipefail
+
+if [[ $# -eq 0 ]]; then
+    echo "Usage: $0 <Gradle arguments>" >&2
+    exit 1
+fi
+
 scripts="$(realpath "$(dirname "$0")")"
 cd "$scripts"
 
@@ -25,4 +35,4 @@ eval "$(printf "%s" "$script_stdout" | grep '^ADB_DEVICE=')"
 
 cd ../crypto-ffi/bindings
 
-./gradlew android:connectedAndroidTest --rerun
+./gradlew "$@"
