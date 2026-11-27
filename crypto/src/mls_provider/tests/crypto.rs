@@ -8,10 +8,10 @@ use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::HpkeKeyP
 use rand::{Rng, RngExt as _};
 
 use super::fixtures::*;
-use crate::mls_provider::{CryptoProvider, EntropySeed};
+use crate::mls_provider::{EntropySeed, MlsProvider};
 
 #[apply(use_provider)]
-async fn cipher_suite_support_is_consistent(backend: CryptoProvider) {
+async fn cipher_suite_support_is_consistent(backend: MlsProvider) {
     let backend = backend.await;
     let crypto = backend.crypto();
     let supported = crypto.supported_ciphersuites();
@@ -21,7 +21,7 @@ async fn cipher_suite_support_is_consistent(backend: CryptoProvider) {
 }
 
 #[apply(all_storage_types_and_ciphersuites)]
-async fn hkdf_is_consistent(backend: CryptoProvider, cipher_suite: Ciphersuite, entropy_seed: Option<EntropySeed>) {
+async fn hkdf_is_consistent(backend: MlsProvider, cipher_suite: Ciphersuite, entropy_seed: Option<EntropySeed>) {
     let backend = backend.await;
     backend.reseed(entropy_seed).unwrap();
     let len = rand::rng().random_range(LEN_RANGE);
@@ -47,7 +47,7 @@ async fn hkdf_is_consistent(backend: CryptoProvider, cipher_suite: Ciphersuite, 
 }
 
 #[apply(all_storage_types_and_ciphersuites)]
-async fn hash_is_consistent(backend: CryptoProvider, cipher_suite: Ciphersuite, entropy_seed: Option<EntropySeed>) {
+async fn hash_is_consistent(backend: MlsProvider, cipher_suite: Ciphersuite, entropy_seed: Option<EntropySeed>) {
     let backend = backend.await;
     backend.reseed(entropy_seed).unwrap();
     let len = rand::rng().random_range(LEN_RANGE);
@@ -60,7 +60,7 @@ async fn hash_is_consistent(backend: CryptoProvider, cipher_suite: Ciphersuite, 
 
 #[apply(all_storage_types_and_ciphersuites)]
 async fn aead_is_consistent_and_can_roundtrip(
-    backend: CryptoProvider,
+    backend: MlsProvider,
     cipher_suite: Ciphersuite,
     entropy_seed: Option<EntropySeed>,
 ) {
@@ -90,7 +90,7 @@ async fn aead_is_consistent_and_can_roundtrip(
 }
 
 #[apply(all_storage_types_and_ciphersuites)]
-async fn hpke_is_consistent(backend: CryptoProvider, cipher_suite: Ciphersuite, entropy_seed: Option<EntropySeed>) {
+async fn hpke_is_consistent(backend: MlsProvider, cipher_suite: Ciphersuite, entropy_seed: Option<EntropySeed>) {
     let provider = backend.await;
     provider.reseed(entropy_seed).unwrap();
 

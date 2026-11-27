@@ -17,7 +17,7 @@ use wire_e2e_identity::pki_env::PkiEnvironment;
 use crate::{
     ClientId, ConversationId, CoreCrypto, KeystoreError, MlsTransport, OpenMlsError, RecursiveError, Session,
     mls::{self, conversation_cache::ConversationCache},
-    mls_provider::CryptoProvider,
+    mls_provider::MlsProvider,
 };
 pub mod conversation;
 mod credential;
@@ -137,8 +137,8 @@ impl TransactionContext {
             )
     }
 
-    /// Clones the [CryptoProvider].
-    pub async fn crypto_provider(&self) -> Result<CryptoProvider> {
+    /// Clones the [MlsProvider].
+    pub async fn mls_provider(&self) -> Result<MlsProvider> {
         let inner = self.inner()?;
         inner
             .core_crypto
@@ -146,7 +146,7 @@ impl TransactionContext {
             .read()
             .await
             .as_ref()
-            .map(|s| s.crypto_provider.clone())
+            .map(|s| s.mls_provider.clone())
             .ok_or(
                 RecursiveError::context("Getting mls session from transaction context")(
                     mls::session::Error::MlsNotInitialized,
@@ -250,7 +250,7 @@ impl TransactionContext {
     pub async fn mls_init(&self, session_id: ClientId, transport: Arc<dyn MlsTransport>) -> Result<()> {
         let database = self.database()?;
         let pki_env = self.pki_environment().await.ok();
-        let crypto_provider = CryptoProvider::new_with_pki_env(database.clone(), pki_env);
+        let crypto_provider = MlsProvider::new_with_pki_env(database.clone(), pki_env);
         let session = Session::new(session_id.clone(), crypto_provider, database.into(), transport);
         self.set_mls_session(session).await?;
 
@@ -274,7 +274,7 @@ impl TransactionContext {
     /// Generates a random byte array of the specified size
     pub async fn random_bytes(&self, len: usize) -> Result<Vec<u8>> {
         use openmls_traits::random::OpenMlsRand as _;
-        self.crypto_provider()
+        self.mls_provider()
             .await?
             .rand()
             .random_vec(len)

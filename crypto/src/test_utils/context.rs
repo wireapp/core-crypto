@@ -209,7 +209,7 @@ impl SessionContext {
             &expected_credential.mls_credential().mls_credential()
         {
             let session = self.session().await;
-            let pki_env = session.crypto_provider.authentication_service().pki_env().await;
+            let pki_env = session.mls_provider.authentication_service().pki_env().await;
             assert!(pki_env.is_some());
 
             let mls_identity = certificate
@@ -279,7 +279,7 @@ impl SessionContext {
     pub async fn rand_external_sender(&self, case: &TestContext) -> ExternalSender {
         let sc = case.signature_scheme();
 
-        let provider = self.transaction.crypto_provider().await.unwrap();
+        let provider = self.transaction.mls_provider().await.unwrap();
         let crypto = provider.crypto();
         let (_, pk) = crypto.signature_key_gen(sc).unwrap();
 

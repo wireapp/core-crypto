@@ -83,7 +83,7 @@ impl TransactionContext {
         configuration: ConversationConfiguration,
     ) -> Result<()> {
         let database = self.database()?;
-        let provider = self.crypto_provider().await?;
+        let provider = self.mls_provider().await?;
         if self.conversation_exists(id, None).await? {
             return Err(Error::ConversationAlreadyExists(id.to_owned()));
         }

@@ -73,7 +73,7 @@ pub use crate::{
             user_id::UserId,
         },
     },
-    mls_provider::{CryptoProvider, EntropySeed, RawEntropySeed, RustCrypto},
+    mls_provider::{EntropySeed, MlsProvider, RawEntropySeed, RustCrypto},
     transaction_context::{
         e2e_identity::conversation_state::E2eiConversationState, key_package::KEYPACKAGE_DEFAULT_LIFETIME,
     },
@@ -150,7 +150,7 @@ impl CoreCrypto {
     pub async fn set_pki_environment(&self, pki_environment: Option<Arc<PkiEnvironment>>) {
         *self.pki_environment.write().await = pki_environment.clone();
         if let Some(mls_session) = self.mls.read().await.as_ref() {
-            mls_session.crypto_provider.set_pki_environment(pki_environment).await;
+            mls_session.mls_provider.set_pki_environment(pki_environment).await;
         }
     }
 

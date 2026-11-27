@@ -3,7 +3,7 @@ pub(crate) use rstest::*;
 pub(crate) use rstest_reuse::{self, *};
 use tempfile::NamedTempFile;
 
-use crate::{CryptoProvider, mls_provider::EntropySeed};
+use crate::{MlsProvider, mls_provider::EntropySeed};
 
 pub(crate) fn store_name() -> String {
     NamedTempFile::new()
@@ -16,7 +16,7 @@ pub(crate) fn store_name() -> String {
 }
 
 #[fixture]
-pub(crate) async fn setup(#[default(false)] in_memory: bool) -> CryptoProvider {
+pub(crate) async fn setup(#[default(false)] in_memory: bool) -> MlsProvider {
     let store = if !in_memory {
         let store_name = store_name();
         let key = core_crypto_keystore::DatabaseKey::generate();
@@ -26,7 +26,7 @@ pub(crate) async fn setup(#[default(false)] in_memory: bool) -> CryptoProvider {
     }
     .unwrap();
 
-    CryptoProvider::new(store)
+    MlsProvider::new(store)
 }
 
 #[template]

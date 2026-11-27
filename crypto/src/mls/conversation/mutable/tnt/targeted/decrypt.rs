@@ -13,7 +13,7 @@ use tls_codec::{Deserialize as _, Serialize as _, VLBytes};
 
 use super::{HpkeContextData, PskId, TargetedMessageContext, derive_targeted_message_psk, extract_hpke_context_data};
 use crate::{
-    CryptoProvider, DecryptedMessage, DecryptionOutcome, KeystoreError, OpenMlsError, RejectionReason, TlsCodecError,
+    DecryptedMessage, DecryptionOutcome, KeystoreError, MlsProvider, OpenMlsError, RejectionReason, TlsCodecError,
     mls::conversation::{
         ConversationMut, Error, MlsGroupState, Result, TargetedMessagePolicy,
         mutable::tnt::{ProtocolVersion, TargetedMessage, TntWireFormat},
@@ -125,7 +125,7 @@ impl ConversationMut {
     async fn load_hpke_decryption_data(
         &self,
         mls_group: &MlsGroupState,
-        crypto_provider: &CryptoProvider,
+        crypto_provider: &MlsProvider,
         message: &TargetedMessage,
         policy: TargetedMessagePolicy,
         protocol_version: ProtocolVersion,

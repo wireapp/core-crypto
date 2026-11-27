@@ -2,7 +2,7 @@ use openmls::prelude::OpenMlsCrypto;
 use tls_codec::Serialize as _;
 
 use crate::{
-    CryptoProvider, OpenMlsError, RecursiveError, TlsCodecError,
+    MlsProvider, OpenMlsError, RecursiveError, TlsCodecError,
     mls::conversation::{
         ConversationMut, MlsGroupState, Result,
         mutable::tnt::{
@@ -22,7 +22,7 @@ impl ConversationMut {
     pub async fn encrypt_transient(&mut self, message: Vec<u8>) -> Result<Vec<u8>> {
         let crypto_provider = self
             .tx_context
-            .crypto_provider()
+            .mls_provider()
             .await
             .map_err(RecursiveError::transaction("obtaining crypto provider"))?;
 
@@ -38,7 +38,7 @@ impl ConversationMut {
 
     fn create_transient_message(
         group_state: &mut MlsGroupState,
-        crypto_provider: &CryptoProvider,
+        crypto_provider: &MlsProvider,
         message: &[u8],
     ) -> Result<TransientMessage> {
         let counter = group_state.obtain_tnt_message_tx_counter()?;

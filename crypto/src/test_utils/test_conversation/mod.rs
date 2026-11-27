@@ -93,7 +93,7 @@ impl<'a> TestConversation<'a> {
 
         let gi = group
             .export_group_info(
-                &self.actor().session().await.crypto_provider,
+                &self.actor().session().await.mls_provider,
                 &credential.signature_key_pair,
                 true,
             )
@@ -360,7 +360,7 @@ impl<'a> TestConversation<'a> {
         let mls_credential_with_key = credential.to_mls_credential_with_key();
         let signature_scheme = self.case.signature_scheme();
         let session = self.actor().session().await;
-        let pki_env = session.crypto_provider.authentication_service().pki_env().await;
+        let pki_env = session.mls_provider.authentication_service().pki_env().await;
         let local_identity = mls_credential_with_key
             .extract_identity(signature_scheme, pki_env.as_deref())
             .await

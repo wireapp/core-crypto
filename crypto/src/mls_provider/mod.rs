@@ -125,13 +125,13 @@ impl AuthenticationService {
 
 /// The MLS crypto provider
 #[derive(Debug, Clone)]
-pub struct CryptoProvider {
+pub struct MlsProvider {
     crypto: Arc<RustCrypto>,
     key_store: Arc<Database>,
     auth_service: Arc<AuthenticationService>,
 }
 
-impl CryptoProvider {
+impl MlsProvider {
     /// Construct a crypto provider with defaults and a given [Database].
     ///
     /// See also:
@@ -258,7 +258,7 @@ impl<'a> OpenMlsProvider for MlsProviderRef<'a> {
 }
 
 /// Passthrough implementation of crypto functionality for references to `MlsCryptoProvider`.
-impl OpenMlsCrypto for &CryptoProvider {
+impl OpenMlsCrypto for &MlsProvider {
     fn supports(&self, ciphersuite: Ciphersuite) -> Result<(), CryptoError> {
         self.crypto.supports(ciphersuite)
     }

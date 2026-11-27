@@ -558,7 +558,7 @@ mod tests {
             .session
             .read()
             .await
-            .crypto_provider
+            .mls_provider
             .authentication_service()
             .pki_env()
             .await
@@ -591,7 +591,7 @@ mod tests {
             .session
             .read()
             .await
-            .crypto_provider
+            .mls_provider
             .authentication_service()
             .pki_env()
             .await

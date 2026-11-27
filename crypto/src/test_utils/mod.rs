@@ -271,7 +271,7 @@ impl SessionContext {
         let mut guard = self.mls_transport.write().await;
         *guard = new_transport.clone();
         let session = self.session().await;
-        let crypto_provider = session.crypto_provider.clone();
+        let crypto_provider = session.mls_provider.clone();
         let database = self.transaction.database().unwrap().into();
         let new_session = Session::new(self.get_client_id().await, crypto_provider, database, new_transport);
         self.set_session(&new_session).await;
@@ -339,7 +339,7 @@ impl SessionContext {
                 let cert = CertificateBundle::rand(&session_id, signer);
                 let session = self.session.read().await;
                 let pki_env = session
-                    .crypto_provider
+                    .mls_provider
                     .authentication_service()
                     .pki_env()
                     .await

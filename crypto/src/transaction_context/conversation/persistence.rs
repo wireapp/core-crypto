@@ -75,7 +75,7 @@ impl TransactionContext {
             .as_openmls_default_configuration()
             .map_err(RecursiveError::context("converting configuration to openmls default"))?;
 
-        let crypto_provider = self.crypto_provider().await?;
+        let crypto_provider = self.mls_provider().await?;
 
         let group = MlsGroup::new_from_welcome(&crypto_provider, &mls_group_config, welcome, None)
             .await

@@ -21,7 +21,7 @@ use crate::{
         conversation::{Conversation, ConversationIdRef},
         conversation_cache::ConversationCache,
     },
-    mls_provider::{CryptoProvider, EntropySeed},
+    mls_provider::{EntropySeed, MlsProvider},
 };
 
 /// An MLS Session enables a user device to communicate via the MLS protocol.
@@ -35,7 +35,7 @@ use crate::{
 #[derive(derive_more::Debug)]
 pub struct Session {
     id: ClientId,
-    pub(crate) crypto_provider: CryptoProvider,
+    pub(crate) mls_provider: MlsProvider,
     pub(crate) transport: Arc<dyn MlsTransport + 'static>,
     database: ImmutableDatabase,
     #[debug("EpochObserver")]
@@ -53,13 +53,13 @@ impl Session {
     /// Create a new `Session`
     pub fn new(
         id: ClientId,
-        crypto_provider: CryptoProvider,
+        mls_provider: MlsProvider,
         database: ImmutableDatabase,
         transport: Arc<dyn MlsTransport>,
     ) -> Arc<Self> {
         Arc::new(Self {
             id,
-            crypto_provider,
+            mls_provider,
             transport,
             database,
             epoch_observer: RwLock::new(None),
@@ -91,7 +91,7 @@ impl Session {
     /// Generates a random byte array of the specified size
     pub fn random_bytes(&self, len: usize) -> crate::Result<Vec<u8>> {
         use openmls_traits::random::OpenMlsRand as _;
-        self.crypto_provider
+        self.mls_provider
             .rand()
             .random_vec(len)
             .map_err(OpenMlsError::wrap("generating random vector"))
@@ -103,9 +103,9 @@ impl Session {
         &self.database
     }
 
-    /// see [crate::mls_provider::CryptoProvider::reseed]
+    /// see [crate::mls_provider::MlsProvider::reseed]
     pub fn reseed(&self, seed: Option<EntropySeed>) -> crate::Result<()> {
-        self.crypto_provider
+        self.mls_provider
             .reseed(seed)
             .map_err(OpenMlsError::wrap("reseeding mls backend"))
             .map_err(Into::into)
@@ -120,7 +120,7 @@ impl Session {
         // store the key package
         let key_package = history_secret
             .key_package
-            .store(&self.crypto_provider)
+            .store(&self.mls_provider)
             .await
             .map_err(OpenMlsError::wrap("storing key package encapsulation"))?;
 

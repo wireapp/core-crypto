@@ -5,7 +5,7 @@ use tls_codec::{Serialize as _, TlsSerialize, TlsSize};
 
 use super::{TargetedMessage, TargetedMessageContext, extract_hpke_context_data};
 use crate::{
-    ClientIdRef, CryptoProvider, OpenMlsError, RecursiveError, TlsCodecError,
+    ClientIdRef, MlsProvider, OpenMlsError, RecursiveError, TlsCodecError,
     mls::conversation::{
         ConversationMut, Error, MlsGroupState, Result,
         mutable::tnt::{TntMessageTBS, tls_serialize_padded},
@@ -43,7 +43,7 @@ impl ConversationMut {
     ) -> Result<Vec<u8>> {
         let crypto_provider = self
             .tx_context
-            .crypto_provider()
+            .mls_provider()
             .await
             .map_err(RecursiveError::transaction("obtaining crypto provider"))?;
 
@@ -68,7 +68,7 @@ impl ConversationMut {
     fn create_targeted_message(
         policy: TargetedMessagePolicy,
         group_state: &mut MlsGroupState,
-        crypto_provider: &CryptoProvider,
+        crypto_provider: &MlsProvider,
         recipient: &Member,
         message: &[u8],
     ) -> Result<TargetedMessage> {

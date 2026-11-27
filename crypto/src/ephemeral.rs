@@ -29,7 +29,7 @@ use openmls::prelude::KeyPackageSecretEncapsulation;
 
 use crate::{
     CipherSuite, ClientId, ClientIdRef, CoreCrypto, CoreCryptoTransportNotImplementedProvider, Credential, Error,
-    OpenMlsError, RecursiveError, Result, Session, mls_provider::CryptoProvider,
+    OpenMlsError, RecursiveError, Result, Session, mls_provider::MlsProvider,
 };
 
 /// We always instantiate history clients with this prefix in their client id, so
@@ -97,7 +97,7 @@ pub(crate) async fn generate_history_secret(cipher_suite: CipherSuite) -> Result
         .generate_key_package(&credential_ref, None)
         .await
         .map_err(RecursiveError::context("generating keypackage"))?;
-    let key_package = KeyPackageSecretEncapsulation::load(&session.crypto_provider, key_package)
+    let key_package = KeyPackageSecretEncapsulation::load(&session.mls_provider, key_package)
         .await
         .map_err(OpenMlsError::wrap("encapsulating key package"))?;
 
@@ -139,7 +139,7 @@ impl CoreCrypto {
             .map_err(RecursiveError::context("creating new transaction"))?;
 
         // store the client id (with some other stuff)
-        let mls_backend = CryptoProvider::new(database.clone());
+        let mls_backend = MlsProvider::new(database.clone());
         let transport = Arc::new(CoreCryptoTransportNotImplementedProvider::default());
         let session = Session::new(
             history_secret.client_id.clone(),

@@ -19,7 +19,7 @@ pub use self::tnt::TargetedMessagePolicy;
 pub(crate) use self::tnt::TntMessageCounter;
 use super::{Error, Result};
 use crate::{
-    CryptoProvider, GroupInfoBundle, MlsTransport, RecursiveError, Session,
+    GroupInfoBundle, MlsProvider, MlsTransport, RecursiveError, Session,
     mls::{conversation::Conversation, credential::Credential},
     transaction_context::TransactionContext,
 };
@@ -56,9 +56,9 @@ impl ConversationMut {
             .map_err(Into::into)
     }
 
-    async fn crypto_provider(&self) -> Result<CryptoProvider> {
+    async fn crypto_provider(&self) -> Result<MlsProvider> {
         self.tx_context
-            .crypto_provider()
+            .mls_provider()
             .await
             .map_err(RecursiveError::context(
                 "acquiring crypto provider for conversation guard from tx context",

@@ -130,7 +130,7 @@ impl TransactionContext {
     ) -> Result<(CommitBundle, ConversationMut)> {
         let inner = self.inner()?;
         let cipher_suite = group_info.ciphersuite().into();
-        let mls_provider = self.crypto_provider().await?;
+        let mls_provider = self.mls_provider().await?;
         let credential = credential_ref
             .load(&inner.transaction)
             .await
@@ -664,7 +664,7 @@ mod tests {
                 (cipher_suite, credential_type)
             };
             let credential = alice.find_any_credential(cipher_suite.into(), credential_type).await;
-            let mls_provider = alice.transaction.crypto_provider().await.unwrap();
+            let mls_provider = alice.transaction.mls_provider().await.unwrap();
             conversation
                 .mutate_group_test(async move |_, group, _| {
                     let gi = group

@@ -212,7 +212,7 @@ mod tests {
         Box::pin(async move {
             let (_sk, pk) = cc
                 .transaction
-                .crypto_provider()
+                .mls_provider()
                 .await
                 .unwrap()
                 .crypto()

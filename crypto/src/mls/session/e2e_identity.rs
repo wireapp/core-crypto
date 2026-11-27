@@ -15,7 +15,7 @@ impl Session {
     /// Verifies a Group state before joining it
     pub async fn e2ei_verify_group_state(&self, group_info: VerifiableGroupInfo) -> Result<E2eiConversationState> {
         let is_sender = true; // verify the ratchet tree as sender to turn on hardened verification
-        let Ok(rt) = group_info.take_ratchet_tree(&self.crypto_provider, is_sender).await else {
+        let Ok(rt) = group_info.take_ratchet_tree(&self.mls_provider, is_sender).await else {
             return Ok(E2eiConversationState::NotVerified);
         };
 
@@ -27,7 +27,7 @@ impl Session {
         Ok(Self::compute_conversation_state(
             credentials,
             CredentialType::X509,
-            self.crypto_provider.authentication_service(),
+            self.mls_provider.authentication_service(),
         )
         .await)
     }
@@ -44,10 +44,10 @@ impl Session {
         // participants once joining it.
         // This 👇 verifies the GroupInfo and the RatchetTree btw
         let rt = group_info
-            .take_ratchet_tree(&self.crypto_provider, false)
+            .take_ratchet_tree(&self.mls_provider, false)
             .await
             .map_err(OpenMlsError::wrap("taking ratchet tree"))?;
-        Self::get_credential_in_use_in_ratchet_tree(rt, credential_type, self.crypto_provider.authentication_service())
+        Self::get_credential_in_use_in_ratchet_tree(rt, credential_type, self.mls_provider.authentication_service())
             .await
     }
     pub(crate) async fn get_credential_in_use_in_ratchet_tree(
