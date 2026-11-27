@@ -107,3 +107,17 @@ $(STAMPS)/kmp-jvm-test: $(kmp-jvm-test-deps) $(if $(RELEASE),$(KMP_JVM_RELEASE_L
 	cd crypto-ffi/bindings && \
 	./gradlew core-crypto-kmp:jvmTest --rerun $(KMP_GRADLE_ARGS)
 	$(TOUCH_STAMP)
+
+# Kotlin/Native runs a test executable on the simulator by itself, but opening a database on iOS
+# uses the keychain, which only apps can access. So the script runs it inside an app. Like the
+# Swift tests, it uses the simulator library, which is always a release build.
+KMP_IOS_TEST_EXECUTABLE := crypto-ffi/bindings/kmp/build/bin/iosSimulatorArm64/debugTest/test.kexe
+kmp-ios-test-deps := $(RUST_SOURCES) $(KT_FILES) $(KT_BUILD_FILES) scripts/run-kmp-ios-tests.sh \
+	$(wildcard crypto-ffi/bindings/kmp/ios-test-host/*)
+
+$(STAMPS)/kmp-ios-test: $(kmp-ios-test-deps) $(KMP_SIMULATOR_FILES) $(if $(RELEASE),$(FFI_LIBRARY),$(JVM_LIB)) \
+	| $(OXIKT_BINDGEN)
+	cd crypto-ffi/bindings && \
+	./gradlew core-crypto-kmp:linkDebugTestIosSimulatorArm64 $(KMP_GRADLE_ARGS)
+	$(SHELL) scripts/run-kmp-ios-tests.sh $(KMP_IOS_TEST_EXECUTABLE)
+	$(TOUCH_STAMP)
