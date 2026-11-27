@@ -66,6 +66,8 @@
   no surviving matching keypair are dropped.
 - Browser: the legacy IndexedDB v6-to-v7 migration drops unreadable MLS groups and credentials, including credentials
   whose ciphersuite cannot be determined from the surviving groups.
+- Browser: the legacy IndexedDB v7-to-v8 migration drops unreadable MLS groups and credentials so later migrations can
+  proceed with the surviving records.
 
 ## CoreCrypto 11
 

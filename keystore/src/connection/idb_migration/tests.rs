@@ -24,7 +24,7 @@ use crate::{
         Database,
         idb_migration::legacy::connection::{
             Database as LegacyDatabase, KeystoreDatabaseConnection,
-            platform::wasm::migrations::{DB_VERSION_6, TARGET_VERSION, open_at},
+            platform::wasm::migrations::{DB_VERSION_6, DB_VERSION_7, DB_VERSION_8, TARGET_VERSION, open_at},
             storage::{WasmEncryptedStorage, WasmStorageWrapper},
         },
         os_unknown,
@@ -984,6 +984,68 @@ async fn v7_imports_readable_groups_and_credentials_alongside_corrupt_rows() {
     assert_eq!(credentials.len(), 1);
     assert_eq!(credentials[0].session_id, captured::CLIENT_ID);
     assert_eq!(credentials[0].ciphersuite, captured::CIPHERSUITE);
+    assert!(
+        db.get_borrowed::<PersistedMlsGroup>(ConversationIdRef::new(captured::ESTABLISHED_CONVERSATION_ID))
+            .await
+            .unwrap()
+            .is_some()
+    );
+    Arc::into_inner(db).unwrap().wipe().await.unwrap();
+}
+
+#[wasm_bindgen_test::wasm_bindgen_test]
+async fn v8_deletes_unreadable_rows_before_later_migrations() {
+    let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
+    let key = restore_legacy_fixture(&name, LEGACY_FIXTURE_V9_3_4).await;
+    let idb = open_at(&name, &key, DB_VERSION_7).await;
+    let corrupt_key = b"unreadable v7 row".as_slice();
+
+    let transaction = idb
+        .transaction(&["mls_credentials"], TransactionMode::ReadWrite)
+        .unwrap();
+    transaction
+        .object_store("mls_credentials")
+        .unwrap()
+        .put(
+            &JsValue::from_str("invalid credential"),
+            Some(&Uint8Array::from(corrupt_key).into()),
+        )
+        .unwrap()
+        .await
+        .unwrap();
+    transaction.commit().unwrap().await.unwrap();
+
+    let conn =
+        KeystoreDatabaseConnection::from_inner(WasmEncryptedStorage::new(&key, WasmStorageWrapper::Persistent(idb)));
+    LegacyDatabase::migration_transaction(conn, async |tx| {
+        let group = LegacyPersistedMlsGroup {
+            id: corrupt_key.to_vec(),
+            state: Vec::new(),
+            parent_id: None,
+        };
+        tx.save(&group).await
+    })
+    .await
+    .unwrap();
+
+    let idb = open_at(&name, &key, DB_VERSION_8).await;
+    for table in ["mls_groups", "mls_credentials"] {
+        let transaction = idb.transaction(&[table], TransactionMode::ReadOnly).unwrap();
+        let row = transaction
+            .object_store(table)
+            .unwrap()
+            .get(JsValue::from(Uint8Array::from(corrupt_key)))
+            .unwrap()
+            .await
+            .unwrap();
+        assert!(row.is_none(), "v8 must remove the unreadable row from {table}");
+    }
+    idb.close();
+
+    let db = Database::open(&name, &key).await.unwrap();
+    let credentials = db.load_all::<StoredCredential>().await.unwrap();
+    assert_eq!(credentials.len(), 1);
+    assert_eq!(credentials[0].session_id, captured::CLIENT_ID);
     assert!(
         db.get_borrowed::<PersistedMlsGroup>(ConversationIdRef::new(captured::ESTABLISHED_CONVERSATION_ID))
             .await

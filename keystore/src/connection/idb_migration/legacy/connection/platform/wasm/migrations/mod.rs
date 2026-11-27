@@ -17,8 +17,38 @@ mod v11;
 pub(crate) use db_key_type_to_bytes::migrate_db_key_type_to_bytes;
 pub(super) use delete_credential_by_session_id::delete_credential_by_session_id;
 use idb::{Database, Factory};
+use openmls::{group::MlsGroup, prelude::Ciphersuite};
 
-use crate::{CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey};
+use crate::{
+    CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
+    connection::idb_migration::legacy::connection::storage::WasmEncryptedStorage, deser,
+    migrations::historical::LegacyPersistedMlsGroup,
+};
+
+/// Read the ciphersuites used by readable MLS groups and return the storage keys of unreadable groups.
+async fn load_group_ciphersuites(
+    storage: &WasmEncryptedStorage,
+) -> CryptoKeystoreResult<(Vec<Ciphersuite>, Vec<Vec<u8>>)> {
+    let mut ciphersuites = Vec::new();
+    let mut group_keys_to_delete = Vec::new();
+    for key in storage.get_all_storage_keys::<LegacyPersistedMlsGroup>().await? {
+        let ciphersuite = storage.get::<LegacyPersistedMlsGroup>(&key).await.and_then(|group| {
+            group
+                .map(|group| deser::<MlsGroup>(&group.state).map(|group| group.ciphersuite()))
+                .transpose()
+        });
+        match ciphersuite {
+            Ok(Some(ciphersuite)) => ciphersuites.push(ciphersuite),
+            // The IndexedDB wrapper also returns None for a stored null or undefined value.
+            Ok(None) => group_keys_to_delete.push(key),
+            Err(err) => {
+                log::warn!("Dropping an unreadable legacy IndexedDB MLS group: {err}");
+                group_keys_to_delete.push(key);
+            }
+        }
+    }
+    Ok((ciphersuites, group_keys_to_delete))
+}
 
 const fn db_version_number(counter: u32) -> u32 {
     // When the DB version was tied to core crypto, the version counter was the sum of 10_000_000

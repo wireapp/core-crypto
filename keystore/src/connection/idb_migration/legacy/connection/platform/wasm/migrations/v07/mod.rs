@@ -1,13 +1,11 @@
 mod v6_entities;
 
 use idb::builder::DatabaseBuilder;
-use openmls::group::MlsGroup;
 
-use super::DB_VERSION_7;
+use super::{DB_VERSION_7, load_group_ciphersuites};
 use crate::{
     CryptoKeystoreResult, DatabaseKey,
     connection::idb_migration::legacy::{connection::Database, traits::EntityDatabaseMutation as _},
-    deser,
     migrations::historical::{
         LegacyPersistedMlsGroup, StoredCredentialV36, V6Credential,
         make_ciphersuite_for_signature_scheme_from_ciphersuites,
@@ -20,24 +18,7 @@ pub(super) async fn migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResu
     let db_during_migration = Database::migration_connection(previous_builder, key).await?;
     let storage = db_during_migration.storage();
 
-    let mut ciphersuites = Vec::new();
-    let mut group_keys_to_delete = Vec::new();
-    for key in storage.get_all_storage_keys::<LegacyPersistedMlsGroup>().await? {
-        let ciphersuite = storage.get::<LegacyPersistedMlsGroup>(&key).await.and_then(|group| {
-            group
-                .map(|group| deser::<MlsGroup>(&group.state).map(|group| group.ciphersuite()))
-                .transpose()
-        });
-        match ciphersuite {
-            Ok(Some(ciphersuite)) => ciphersuites.push(ciphersuite),
-            // The IndexedDB wrapper also returns None for a stored null or undefined value.
-            Ok(None) => group_keys_to_delete.push(key),
-            Err(err) => {
-                log::warn!("Dropping an unreadable IndexedDB v6 MLS group: {err}");
-                group_keys_to_delete.push(key);
-            }
-        }
-    }
+    let (ciphersuites, group_keys_to_delete) = load_group_ciphersuites(storage).await?;
     let ciphersuite_for_signature_scheme =
         make_ciphersuite_for_signature_scheme_from_ciphersuites(ciphersuites.into_iter().map(Ok))?;
 

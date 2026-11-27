@@ -391,7 +391,7 @@ pub(crate) fn make_ciphersuite_for_signature_scheme_from_ciphersuites(
     Ok(ciphersuite_for_signature_scheme)
 }
 
-/// Make a function that determines the least used ciphersuite dependeing on usages in the given mls groups.
+/// Make a function that determines the least used ciphersuite from the ciphersuites observed in MLS groups.
 ///
 /// Behavioral notes of the resulting function:
 /// * Ciphersuites that are not considered will cause `None` to be returned.
@@ -400,9 +400,9 @@ pub(crate) fn make_ciphersuite_for_signature_scheme_from_ciphersuites(
 /// * If both ciphersuites have equal occurence, the numerically higher ciphersuite is returned.
 #[cfg(target_os = "unknown")]
 pub(crate) fn make_least_used_ciphersuite(
-    persisted_mls_groups: impl IntoIterator<Item = LegacyPersistedMlsGroup>,
+    ciphersuites: impl IntoIterator<Item = CryptoKeystoreResult<Ciphersuite>>,
 ) -> CryptoKeystoreResult<impl Fn(u16, u16) -> Option<u16>> {
-    let occurences = count_ciphersuite_occurences(group_ciphersuites(persisted_mls_groups))?;
+    let occurences = count_ciphersuite_occurences(ciphersuites)?;
 
     let least_used_ciphersuite = move |ciphersuite_a: u16, ciphersuite_b: u16| -> Option<u16> {
         let occurence_a = occurences.of(ciphersuite_a);
