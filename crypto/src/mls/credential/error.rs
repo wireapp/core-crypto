@@ -12,6 +12,8 @@ pub(crate) type Result<T, E = Error> = core::result::Result<T, E>;
 pub enum Error {
     #[error("decoding X509 certificate")]
     DecodeX509(#[source] x509_cert::der::Error),
+    #[error("decoding the certificate chain of an X509 credential")]
+    DecodeX509Chain(#[source] openmls::prelude::X509CredentialError),
     #[error("client presented an invalid identity")]
     InvalidIdentity,
     #[error("No credential found for public key {0:?}")]
