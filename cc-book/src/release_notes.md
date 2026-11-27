@@ -68,6 +68,8 @@
   whose ciphersuite cannot be determined from the surviving groups.
 - Browser: the legacy IndexedDB v7-to-v8 migration drops unreadable MLS groups and credentials so later migrations can
   proceed with the surviving records.
+- Browser: the legacy IndexedDB v8-to-v9 migration skips unreadable credentials and copies the surviving credentials
+  into the replacement store.
 
 ## CoreCrypto 11
 

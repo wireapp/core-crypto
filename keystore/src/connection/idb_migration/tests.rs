@@ -24,7 +24,9 @@ use crate::{
         Database,
         idb_migration::legacy::connection::{
             Database as LegacyDatabase, KeystoreDatabaseConnection,
-            platform::wasm::migrations::{DB_VERSION_6, DB_VERSION_7, DB_VERSION_8, TARGET_VERSION, open_at},
+            platform::wasm::migrations::{
+                DB_VERSION_6, DB_VERSION_7, DB_VERSION_8, DB_VERSION_9, TARGET_VERSION, open_at,
+            },
             storage::{WasmEncryptedStorage, WasmStorageWrapper},
         },
         os_unknown,
@@ -1052,6 +1054,70 @@ async fn v8_deletes_unreadable_rows_before_later_migrations() {
             .unwrap()
             .is_some()
     );
+    Arc::into_inner(db).unwrap().wipe().await.unwrap();
+}
+
+#[wasm_bindgen_test::wasm_bindgen_test]
+async fn v9_copies_readable_credentials_and_discards_stale_staging_rows() {
+    use serde::Serialize as _;
+
+    use super::legacy::traits::Encrypting as _;
+
+    let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
+    let key = restore_legacy_fixture(&name, LEGACY_FIXTURE_V9_3_4).await;
+    let idb = open_at(&name, &key, DB_VERSION_8).await;
+    let storage = WasmEncryptedStorage::new(&key, WasmStorageWrapper::Persistent(idb));
+    let WasmStorageWrapper::Persistent(idb) = storage.wrapper() else {
+        unreachable!();
+    };
+    let stale = StoredCredentialV36 {
+        session_id: b"stale session".to_vec(),
+        credential: b"stale credential".to_vec(),
+        created_at: 1,
+        ciphersuite: captured::CIPHERSUITE,
+        public_key: b"stale public key".to_vec(),
+        private_key: b"stale private key".to_vec(),
+    };
+    let stale_value = stale
+        .encrypt(&storage.cipher)
+        .unwrap()
+        .serialize(&serde_wasm_bindgen::Serializer::json_compatible())
+        .unwrap();
+    let source_key = Uint8Array::from(Sha256Hash::hash_from(&stale.public_key).as_ref());
+    let staged_key = Uint8Array::from(stale.public_key.as_slice()).into();
+    let transaction = idb
+        .transaction(&["mls_credentials", "mls_credentials_new"], TransactionMode::ReadWrite)
+        .unwrap();
+    transaction
+        .object_store("mls_credentials")
+        .unwrap()
+        .put(&JsValue::from_str("unreadable credential"), Some(&source_key.into()))
+        .unwrap()
+        .await
+        .unwrap();
+    transaction
+        .object_store("mls_credentials_new")
+        .unwrap()
+        .put(&stale_value, Some(&staged_key))
+        .unwrap()
+        .await
+        .unwrap();
+    transaction.commit().unwrap().await.unwrap();
+    drop(storage);
+
+    let idb = open_at(&name, &key, DB_VERSION_9).await;
+    let transaction = idb
+        .transaction(&["mls_credentials"], TransactionMode::ReadOnly)
+        .unwrap();
+    let store = transaction.object_store("mls_credentials").unwrap();
+    assert!(store.get(staged_key).unwrap().await.unwrap().is_none());
+    assert_eq!(store.count(None).unwrap().await.unwrap(), 1);
+    idb.close();
+
+    let db = Database::open(&name, &key).await.unwrap();
+    let credentials = db.load_all::<StoredCredential>().await.unwrap();
+    assert_eq!(credentials.len(), 1);
+    assert_eq!(credentials[0].session_id, captured::CLIENT_ID);
     Arc::into_inner(db).unwrap().wipe().await.unwrap();
 }
 
