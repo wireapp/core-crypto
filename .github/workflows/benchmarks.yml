@@ -16,7 +16,6 @@ jobs:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
       runs_on: '["self-hosted", "benchmark", "core-crypto"]'
     secrets:
-      METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
       METRICS_WRITER_PASSWORD_NEXUS: ${{ secrets.METRICS_WRITER_PASSWORD_NEXUS }}
 
   benchmark-ts-browser:
@@ -26,7 +25,6 @@ jobs:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
       runs_on: '["self-hosted", "benchmark", "core-crypto"]'
     secrets:
-      METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
       METRICS_WRITER_PASSWORD_NEXUS: ${{ secrets.METRICS_WRITER_PASSWORD_NEXUS }}
 
   benchmark-ts-native:
@@ -36,5 +34,4 @@ jobs:
       artifact_generation: ${{ needs.artifact-generation.outputs.generation }}
       runs_on: '["self-hosted", "benchmark", "core-crypto"]'
     secrets:
-      METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
       METRICS_WRITER_PASSWORD_NEXUS: ${{ secrets.METRICS_WRITER_PASSWORD_NEXUS }}

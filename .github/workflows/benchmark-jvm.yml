@@ -34,9 +34,6 @@ on:
         type: string
         default: '"ubuntu-latest"'
     secrets:
-      METRICS_WRITER_PASSWORD:
-        description: Password for the metrics writer used to publish to Prometheus
-        required: false
       METRICS_WRITER_PASSWORD_NEXUS:
         description: Password for the metrics writer used to publish to Prometheus on Nexus
         required: false
@@ -128,5 +125,4 @@ jobs:
       - benchmark
     uses: ./.github/workflows/benchmark-jvm-publish.yml
     secrets:
-      METRICS_WRITER_PASSWORD: ${{ secrets.METRICS_WRITER_PASSWORD }}
       METRICS_WRITER_PASSWORD_NEXUS: ${{ secrets.METRICS_WRITER_PASSWORD_NEXUS }}
