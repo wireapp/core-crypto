@@ -1116,6 +1116,36 @@ async fn rejects_a_database_captured_from_v10_5_3() {
         .expect("wiping the shared v10 VFS database");
 }
 
+#[wasm_bindgen_test::wasm_bindgen_test]
+async fn missing_id_error_names_the_object_store() {
+    let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
+    let key = DatabaseKey::generate();
+    let idb = open_at(&name, &key, TARGET_VERSION).await;
+    let transaction = idb
+        .transaction(&["mls_pending_groups"], TransactionMode::ReadWrite)
+        .unwrap();
+    let row = js_sys::JSON::parse(r#"{"state":[],"custom_configuration":[]}"#).unwrap();
+    transaction
+        .object_store("mls_pending_groups")
+        .unwrap()
+        .put(&row, Some(&Uint8Array::from(seed::PENDING_GROUP_ID).into()))
+        .unwrap()
+        .await
+        .unwrap();
+    transaction.commit().unwrap().await.unwrap();
+    idb.close();
+
+    let mut conn = Connection::open_in_memory().unwrap();
+    let error = maybe_migrate(&name, &key, &mut conn)
+        .await
+        .expect_err("a pending group without an ID cannot be imported")
+        .to_string();
+    assert!(error.contains("mls_pending_groups"), "{error}");
+    assert!(error.contains("missing field `id`"), "{error}");
+
+    delete_legacy_idb(&name).await.unwrap();
+}
+
 /// The key under which [`plant_corrupt_pending_message`] stores its row.
 const CORRUPT_ROW_KEY: &[u8] = b"a row the import cannot read";
 

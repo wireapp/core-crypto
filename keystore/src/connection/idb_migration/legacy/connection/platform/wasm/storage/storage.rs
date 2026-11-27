@@ -7,7 +7,7 @@ use wasm_bindgen::JsValue;
 
 use super::{super::WasmConnection, WasmStorageWrapper};
 use crate::{
-    CryptoKeystoreResult, DatabaseKey,
+    CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
     connection::idb_migration::legacy::traits::{Decryptable, Decrypting, Entity},
 };
 
@@ -138,10 +138,7 @@ impl WasmEncryptedStorage {
             }
         };
 
-        let decryptable_entity = serde_wasm_bindgen::from_value::<E::DecryptableFrom>(js_value)?;
-        let entity = decryptable_entity.decrypt(&self.cipher)?;
-
-        Ok(Some(entity))
+        self.decode::<E>(js_value).map(Some)
     }
 
     /// Get all instances of `E` from the database.
@@ -180,13 +177,20 @@ impl WasmEncryptedStorage {
             }
         };
 
-        js_values
-            .into_iter()
-            .map(|js_value| {
-                serde_wasm_bindgen::from_value::<E::DecryptableFrom>(js_value)
-                    .map_err(Into::into)
-                    .and_then(|decryptable| decryptable.decrypt(&self.cipher))
-            })
-            .collect()
+        js_values.into_iter().map(|value| self.decode::<E>(value)).collect()
+    }
+
+    fn decode<'a, E>(&self, value: JsValue) -> CryptoKeystoreResult<E>
+    where
+        E: Entity<ConnectionType = WasmConnection> + Decryptable<'a>,
+        <E as Decryptable<'a>>::DecryptableFrom: DeserializeOwned,
+    {
+        let decryptable = serde_wasm_bindgen::from_value::<E::DecryptableFrom>(value).map_err(|err| {
+            CryptoKeystoreError::SerdeWasmBindgenError(format!(
+                "while reading IndexedDB object store {}: {err}",
+                E::TABLE_NAME
+            ))
+        })?;
+        decryptable.decrypt(&self.cipher)
     }
 }
