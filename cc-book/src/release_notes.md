@@ -70,6 +70,7 @@
   proceed with the surviving records.
 - Browser: the legacy IndexedDB v8-to-v9 migration skips unreadable credentials and copies the surviving credentials
   into the replacement store.
+- Browser: the legacy IndexedDB v10-to-v11 migration drops unreadable MLS groups and preserves readable groups.
 
 ## CoreCrypto 11
 

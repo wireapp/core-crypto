@@ -25,7 +25,8 @@ use crate::{
         idb_migration::legacy::connection::{
             Database as LegacyDatabase, KeystoreDatabaseConnection,
             platform::wasm::migrations::{
-                DB_VERSION_6, DB_VERSION_7, DB_VERSION_8, DB_VERSION_9, TARGET_VERSION, open_at,
+                DB_VERSION_6, DB_VERSION_7, DB_VERSION_8, DB_VERSION_9, DB_VERSION_10, DB_VERSION_11, TARGET_VERSION,
+                open_at,
             },
             storage::{WasmEncryptedStorage, WasmStorageWrapper},
         },
@@ -1119,6 +1120,55 @@ async fn v9_copies_readable_credentials_and_discards_stale_staging_rows() {
     assert_eq!(credentials.len(), 1);
     assert_eq!(credentials[0].session_id, captured::CLIENT_ID);
     Arc::into_inner(db).unwrap().wipe().await.unwrap();
+}
+
+#[wasm_bindgen_test::wasm_bindgen_test]
+async fn v11_rewrites_readable_groups_and_deletes_unreadable_groups() {
+    use super::legacy::traits::EncryptData as _;
+
+    let name = format!("corecrypto.{}.test", Alphanumeric.sample_string(&mut rand::rng(), 12));
+    let key = restore_legacy_fixture(&name, LEGACY_FIXTURE_V9_3_4).await;
+    let idb = open_at(&name, &key, DB_VERSION_10).await;
+    let storage = WasmEncryptedStorage::new(&key, WasmStorageWrapper::Persistent(idb));
+    let WasmStorageWrapper::Persistent(idb) = storage.wrapper() else {
+        unreachable!();
+    };
+    let group = LegacyPersistedMlsGroup {
+        id: captured::ESTABLISHED_CONVERSATION_ID.to_vec(),
+        state: Vec::new(),
+        parent_id: None,
+    };
+    let parent_id = b"parent group";
+    let encrypted_parent = group.encrypt_data(&storage.cipher, parent_id).unwrap();
+    let group_key = JsValue::from(Uint8Array::from(group.id.as_slice()));
+    let corrupt_key = JsValue::from(Uint8Array::from(b"unreadable v10 group".as_slice()));
+
+    let transaction = idb.transaction(&["mls_groups"], TransactionMode::ReadWrite).unwrap();
+    let store = transaction.object_store("mls_groups").unwrap();
+    let row = store.get(group_key.clone()).unwrap().await.unwrap().unwrap();
+    let parent_field = JsValue::from_str("parent_id");
+    Reflect::set(&row, &parent_field, &Uint8Array::from(encrypted_parent.as_slice())).unwrap();
+    store.put(&row, Some(&group_key)).unwrap().await.unwrap();
+    Reflect::set(
+        &row,
+        &JsValue::from_str("id"),
+        &Uint8Array::from(b"corrupt v10 group id".as_slice()),
+    )
+    .unwrap();
+    Reflect::set(&row, &parent_field, &Uint8Array::from([0xff; 48].as_slice())).unwrap();
+    store.put(&row, Some(&corrupt_key)).unwrap().await.unwrap();
+    transaction.commit().unwrap().await.unwrap();
+    drop(storage);
+
+    let idb = open_at(&name, &key, DB_VERSION_11).await;
+    let transaction = idb.transaction(&["mls_groups"], TransactionMode::ReadOnly).unwrap();
+    let store = transaction.object_store("mls_groups").unwrap();
+    let row = store.get(group_key).unwrap().await.unwrap().unwrap();
+    let parent: Vec<u8> = serde_wasm_bindgen::from_value(Reflect::get(&row, &parent_field).unwrap()).unwrap();
+    assert_eq!(parent, parent_id);
+    assert!(store.get(corrupt_key).unwrap().await.unwrap().is_none());
+    idb.close();
+    Factory::new().unwrap().delete(&name).unwrap().await.unwrap();
 }
 
 /// A database captured from a v9.3.4 client is upgraded through the legacy chain and imported in full.
