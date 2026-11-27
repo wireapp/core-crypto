@@ -51,7 +51,17 @@ kotlin {
 
     // iOS targets
     iosArm64()
-    iosSimulatorArm64()
+    iosSimulatorArm64 {
+        // Opening a database on iOS uses the keychain, which only apps can access. So
+        // scripts/run-kmp-ios-tests.sh runs the tests inside an app, and on the simulator, an app's
+        // entitlements are a section of its executable.
+        binaries.getTest("DEBUG").linkerOpts(
+            "-sectcreate",
+            "__TEXT",
+            "__entitlements",
+            layout.projectDirectory.file("ios-test-host/test.entitlements").asFile.path,
+        )
+    }
 
     // macOS ARM64 target
     macosArm64()
