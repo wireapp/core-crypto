@@ -4,6 +4,7 @@ package com.wire.crypto
 
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import testutils.deleteDatabases
 import testutils.newDatabase
 import kotlin.test.*
 
@@ -45,6 +46,9 @@ internal class ProteusClientTest {
         private const val ALICE_SESSION_ID = "alice1_session1"
         private const val BOB_SESSION_ID = "bob1_session1"
     }
+
+    @AfterTest
+    fun deleteTestDatabases() = deleteDatabases()
 
     private fun newProteusClient(): CoreCrypto = runBlocking {
         val cc = CoreCrypto(newDatabase())

@@ -9,6 +9,9 @@ import kotlin.test.Test
 import kotlin.test.fail
 
 internal class E2EITest {
+    @AfterTest
+    fun deleteTestDatabases() = deleteDatabases()
+
     companion object {
         private val testCaPem: String =
             """

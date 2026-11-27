@@ -13,6 +13,9 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @Suppress("LargeClass")
 class MLSTest {
+    @AfterTest
+    fun deleteTestDatabases() = deleteDatabases()
+
     @Test
     fun set_client_data_persists() = runTest {
         val cc = CoreCrypto(newDatabase())

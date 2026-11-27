@@ -7,6 +7,9 @@ import testutils.*
 import kotlin.test.*
 
 class ExternalSenderTest {
+    @AfterTest
+    fun deleteTestDatabases() = deleteDatabases()
+
     companion object {
         private val id: ConversationId = genConversationId()
 
