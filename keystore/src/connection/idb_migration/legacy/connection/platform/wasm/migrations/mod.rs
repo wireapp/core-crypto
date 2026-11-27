@@ -371,6 +371,46 @@ mod tests {
     }
 
     #[wasm_bindgen_test::wasm_bindgen_test]
+    async fn enumerated_storage_keys_can_read_and_delete_records() {
+        let name = store_name();
+        let prekey = ProteusPrekey::from_raw(12345, vec![0, 255]);
+        let conn = Database::migration_connection(v11::get_builder(&name), &TEST_ENCRYPTION_KEY)
+            .await
+            .unwrap();
+        Database::migration_transaction(conn, async |tx| prekey.save(tx).await)
+            .await
+            .unwrap();
+
+        let conn = Database::migration_connection(v11::get_builder(&name), &TEST_ENCRYPTION_KEY)
+            .await
+            .unwrap();
+        let keys = conn.storage().get_all_storage_keys::<ProteusPrekey>().await.unwrap();
+        assert_eq!(keys, [prekey.id.to_le_bytes().to_vec()]);
+        let key = &keys[0];
+        let stored = conn.storage().get::<ProteusPrekey>(key).await.unwrap();
+        assert_eq!(stored.as_ref(), Some(&prekey));
+        Database::migration_transaction(conn, async |tx| {
+            tx.delete::<ProteusPrekey>(key).await?;
+            Ok(())
+        })
+        .await
+        .unwrap();
+
+        let conn = Database::migration_connection(v11::get_builder(&name), &TEST_ENCRYPTION_KEY)
+            .await
+            .unwrap();
+        assert!(
+            conn.storage()
+                .get_all_storage_keys::<ProteusPrekey>()
+                .await
+                .unwrap()
+                .is_empty()
+        );
+        conn.close().await.unwrap();
+        Factory::new().unwrap().delete(&name).unwrap().await.unwrap();
+    }
+
+    #[wasm_bindgen_test::wasm_bindgen_test]
     pub(crate) async fn data_is_preserved_through_migrations() {
         let db_name = store_name();
         // this entity type is simple, stable from v0 through v10, and we do not expect
@@ -450,6 +490,12 @@ mod tests {
             assert_eq!(prekey, ENTITY_VALUE);
             database.close();
         }
+
+        let conn = Database::migration_connection(v11::get_builder(&db_name), &TEST_ENCRYPTION_KEY)
+            .await
+            .unwrap();
+        assert!(conn.storage().get_all_storage_keys::<ProteusPrekey>().await.is_err());
+        conn.close().await.unwrap();
 
         factory.delete(&db_name).unwrap().await.unwrap();
     }

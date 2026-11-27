@@ -1,13 +1,13 @@
 use aes_gcm::KeyInit as _;
 use idb::TransactionMode;
-use js_sys::Uint8Array;
+use js_sys::{ArrayBuffer, Uint8Array};
 use serde::de::DeserializeOwned;
 use sha2::Digest as _;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{JsCast as _, JsValue};
 
 use super::{super::WasmConnection, WasmStorageWrapper};
 use crate::{
-    CryptoKeystoreResult, DatabaseKey,
+    CryptoKeystoreError, CryptoKeystoreResult, DatabaseKey,
     connection::idb_migration::legacy::traits::{Decryptable, Decrypting, Entity},
 };
 
@@ -90,6 +90,39 @@ impl WasmEncryptedStorage {
                 .borrow()
                 .get(E::TABLE_NAME)
                 .map(|v| v.values().len() as _)
+                .unwrap_or_default()),
+        }
+    }
+
+    /// Load the binary keys stored in the object store for `E`.
+    pub(crate) async fn get_all_storage_keys<E>(&self) -> CryptoKeystoreResult<Vec<Vec<u8>>>
+    where
+        E: Entity<ConnectionType = WasmConnection>,
+    {
+        match &self.storage {
+            WasmStorageWrapper::Persistent(idb) => {
+                let transaction = idb.transaction(&[E::TABLE_NAME], TransactionMode::ReadOnly)?;
+                let store = transaction.object_store(E::TABLE_NAME)?;
+                store
+                    .get_all_keys(None, None)?
+                    .await?
+                    .into_iter()
+                    .map(|key| {
+                        // IndexedDB returns binary keys as ArrayBuffers, including keys written as Uint8Arrays.
+                        let key = key.dyn_into::<ArrayBuffer>().map_err(|_| {
+                            CryptoKeystoreError::MigrationFailed(format!(
+                                "non-binary IndexedDB storage key in {}",
+                                E::TABLE_NAME
+                            ))
+                        })?;
+                        Ok(Uint8Array::new(&key).to_vec())
+                    })
+                    .collect()
+            }
+            WasmStorageWrapper::InMemory(map) => Ok(map
+                .borrow()
+                .get(E::TABLE_NAME)
+                .map(|store| store.keys().cloned().collect())
                 .unwrap_or_default()),
         }
     }
