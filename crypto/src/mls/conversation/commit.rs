@@ -30,7 +30,7 @@ impl CommitBundle {
     /// 1 -> message
     /// 2 -> public group state
     pub fn to_bytes_triple(self) -> Result<(Option<WelcomeMessage>, Vec<u8>, GroupInfoBundle)> {
-        use openmls::prelude::TlsSerializeTrait as _;
+        use openmls::prelude::tls_codec::Serialize as _;
         let welcome = self.welcome.map(Into::into);
         let commit = self
             .commit
@@ -101,18 +101,14 @@ mod tests {
                 let conversation = case.create_conversation([&alice]).await;
                 let id = conversation.id.clone();
                 let bob_keypackage = bob.new_keypackage(&case).await;
-                let signature_key_pair = bob
-                    .find_any_credential(case.cipher_suite(), case.credential_type)
-                    .await
-                    .signature_key_pair
-                    .clone();
+                let bob_credential = bob.find_any_credential(case.cipher_suite(), case.credential_type).await;
+                let carol_id = carol.get_client_id().await;
                 let credential = Credential {
                     cipher_suite: case.cipher_suite(),
                     credential_type: CredentialType::Basic,
-                    mls_credential: openmls::credentials::Credential::new_basic(
-                        carol.get_client_id().await.into_inner(),
-                    ),
-                    signature_key_pair,
+                    mls_credential: openmls::prelude::BasicCredential::new(carol_id.clone().into_inner()).into(),
+                    signature_key_pair: bob_credential.signature_key_pair.clone(),
+                    client_id: carol_id,
                     earliest_validity: 0,
                 };
                 let cred_ref = carol.add_credential(credential).await.unwrap();

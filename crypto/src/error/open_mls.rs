@@ -27,12 +27,10 @@ pub enum OpenMlsErrorKind {
     MlsRemoveMembersError(#[from] openmls::prelude::RemoveMembersError<core_crypto_keystore::CryptoKeystoreError>),
     /// Parse message error
     #[error(transparent)]
-    MlsMessageError(#[from] openmls::prelude::ProcessMessageError),
+    MlsMessageError(#[from] openmls::prelude::ProcessMessageError<core_crypto_keystore::CryptoKeystoreError>),
     /// `KeyPackageBundle` new error
     #[error(transparent)]
-    MlsKeyPackageBundleNewError(
-        #[from] openmls::prelude::KeyPackageNewError<core_crypto_keystore::CryptoKeystoreError>,
-    ),
+    MlsKeyPackageBundleNewError(#[from] openmls::prelude::KeyPackageNewError),
     /// Self update error
     #[error(transparent)]
     MlsSelfUpdateError(#[from] openmls::prelude::SelfUpdateError<core_crypto_keystore::CryptoKeystoreError>),
@@ -41,10 +39,12 @@ pub enum OpenMlsErrorKind {
     MlsGroupStateError(#[from] openmls::prelude::MlsGroupStateError),
     /// Propose add members error
     #[error(transparent)]
-    ProposeAddMemberError(#[from] openmls::prelude::ProposeAddMemberError),
+    ProposeAddMemberError(#[from] openmls::prelude::ProposeAddMemberError<core_crypto_keystore::CryptoKeystoreError>),
     /// Propose remove members error
     #[error(transparent)]
-    ProposeRemoveMemberError(#[from] openmls::prelude::ProposeRemoveMemberError),
+    ProposeRemoveMemberError(
+        #[from] openmls::prelude::ProposeRemoveMemberError<core_crypto_keystore::CryptoKeystoreError>,
+    ),
     /// Commit to pending proposals error
     #[error(transparent)]
     MlsCommitToPendingProposalsError(
@@ -57,9 +57,6 @@ pub enum OpenMlsErrorKind {
     /// deserializing JSON data.
     #[error(transparent)]
     MlsKeystoreSerializationError(#[from] serde_json::Error),
-    /// External Commit error
-    #[error(transparent)]
-    MlsExternalCommitError(#[from] openmls::prelude::ExternalCommitError),
     /// OpenMls crypto error
     #[error(transparent)]
     MlsCryptoError(#[from] openmls::prelude::CryptoError),
@@ -86,6 +83,33 @@ pub enum OpenMlsErrorKind {
     /// Keystore Error
     #[error(transparent)]
     KeystoreError(#[from] core_crypto_keystore::CryptoKeystoreError),
+    /// Verifying a group or building an external commit failed
+    #[error(transparent)]
+    MlsExternalCommitBuilderError(
+        #[from] openmls::prelude::ExternalCommitBuilderError<core_crypto_keystore::CryptoKeystoreError>,
+    ),
+    /// Finalizing an external commit failed
+    #[error(transparent)]
+    MlsExternalCommitBuilderFinalizeError(
+        #[from] openmls::prelude::ExternalCommitBuilderFinalizeError<core_crypto_keystore::CryptoKeystoreError>,
+    ),
+    /// A key package failed validation
+    #[error(transparent)]
+    MlsKeyPackageVerifyError(#[from] openmls::prelude::KeyPackageVerifyError),
+    /// Creating a commit failed
+    #[error(transparent)]
+    MlsCreateCommitError(#[from] openmls::prelude::CreateCommitError),
+    /// Staging a commit failed
+    #[error(transparent)]
+    MlsCommitBuilderStageError(
+        #[from] openmls::prelude::CommitBuilderStageError<core_crypto_keystore::CryptoKeystoreError>,
+    ),
+    /// Removing a pending proposal failed
+    #[error(transparent)]
+    MlsRemoveProposalError(#[from] openmls::group::RemoveProposalError<core_crypto_keystore::CryptoKeystoreError>),
+    /// An extension is invalid where it was used
+    #[error(transparent)]
+    MlsInvalidExtensionError(#[from] openmls::prelude::InvalidExtensionError),
     /// Signature Error
     #[error(transparent)]
     SignatureError(#[from] openmls::prelude::SignatureError),

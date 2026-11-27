@@ -8,13 +8,15 @@ pub(crate) mod crl;
 mod error;
 mod export_pem;
 pub(crate) mod ext;
+pub(crate) mod identity;
 mod persistence;
+pub(crate) mod validation;
 pub(crate) mod x509;
 
 use std::sync::Arc;
 
 use core_crypto_keystore::entities::StoredCredential;
-use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, KeyPackage, SignatureScheme};
+use openmls::prelude::{BasicCredential, Credential as MlsCredential, CredentialWithKey, KeyPackage, SignatureScheme};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::crypto::OpenMlsCrypto;
 use tls_codec::Deserialize as _;
@@ -45,6 +47,10 @@ pub struct Credential {
     /// Public and private keys, and the signature scheme.
     #[sensitive]
     pub(crate) signature_key_pair: SignatureKeyPair,
+    /// The client id in `mls_credential`.
+    ///
+    /// For an X509 credential this has to be read out of the leaf certificate, so it's done once, here.
+    pub(crate) client_id: ClientId,
     /// Earliest point at which this credential is valid, in seconds since the unix epoch.
     ///
     /// For an X509 credential this is the leaf certificate's `not_before` claim. A basic credential has
@@ -64,6 +70,7 @@ impl TryFrom<Arc<StoredCredential>> for Credential {
             stored_credential.private_key.to_owned(),
             stored_credential.public_key.to_owned(),
         );
+        let client_id = client_id_of(&mls_credential)?;
         let credential_type = mls_credential
             .credential_type()
             .try_into()
@@ -77,6 +84,7 @@ impl TryFrom<Arc<StoredCredential>> for Credential {
         Ok(Credential {
             cipher_suite,
             signature_key_pair,
+            client_id,
             credential_type,
             mls_credential,
             earliest_validity,
@@ -101,8 +109,9 @@ impl Credential {
         Ok(Self {
             cipher_suite,
             credential_type: CredentialType::Basic,
-            mls_credential: MlsCredential::new_basic(client_id.into_inner()),
+            mls_credential: BasicCredential::new(client_id.clone().into_inner()).into(),
             signature_key_pair,
+            client_id,
             earliest_validity: 0,
         })
     }
@@ -123,12 +132,14 @@ impl Credential {
             Vec::new(),
             leaf_node.signature_key().as_slice().to_vec(),
         );
+        let client_id = client_id_of(&mls_credential)?;
 
         Ok(Self {
             cipher_suite,
             credential_type,
             mls_credential,
             signature_key_pair,
+            client_id,
             earliest_validity: 0,
         })
     }
@@ -183,8 +194,15 @@ impl Credential {
 
     /// Get the client ID associated with this credential
     pub fn client_id(&self) -> &ClientIdRef {
-        self.mls_credential.identity().into()
+        &self.client_id
     }
+}
+
+/// The client id in an MLS credential.
+///
+/// Not every client id is qualified: a history client's isn't, so this doesn't check the format.
+fn client_id_of(credential: &MlsCredential) -> Result<ClientId> {
+    Ok(identity::credential_identity(credential)?.into_owned())
 }
 
 impl From<Credential> for CredentialWithKey {
@@ -210,7 +228,6 @@ impl PartialEq for Credential {
 
 #[cfg(test)]
 mod tests {
-    use openmls_traits::OpenMlsCryptoProvider as _;
     use rusty_jwt_tools::jsonwebtoken::DecodingKey;
     use wire_e2e_identity::{CiphersuiteExt as _, pki_env::PkiEnvironment};
     use x509_cert::der::Encode as _;
@@ -324,7 +341,7 @@ mod tests {
 
         assert!(innermost_source_matches!(
             err,
-            crate::OpenMlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::MismatchKeypair),
+            crate::mls::credential::Error::SignatureKeyMismatch,
         ));
     }
 
@@ -499,8 +516,6 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     async fn should_fail_when_certificate_not_valid_yet(case: TestContext) {
-        use crate::OpenMlsErrorKind;
-
         if !case.is_x509() {
             return;
         }
@@ -526,7 +541,7 @@ mod tests {
 
         assert!(innermost_source_matches!(
             err,
-            OpenMlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::ExpiredCertificate),
+            crate::mls::credential::Error::ExpiredCertificate,
         ))
     }
 

@@ -10,12 +10,9 @@ use std::sync::{Arc, Weak};
 
 use async_lock::{RwLock, RwLockReadGuard};
 use core_crypto_keystore::{
-    Transaction,
-    ancillary::ConversationIdRef as KeystoreConversationIdRef,
-    entities::{PersistedMlsGroup, StoredCredentialPk},
-    traits::{EntityDatabaseMutation as _, FetchFromDatabase},
+    Transaction, ancillary::ConversationIdRef as KeystoreConversationIdRef, entities::PersistedMlsGroup,
 };
-use openmls::group::{InnerState, MlsGroup};
+use openmls::group::MlsGroup;
 
 use super::{ConversationIdRef, Error, Result, SecretKey, group_metadata};
 use crate::{
@@ -45,74 +42,42 @@ impl MlsGroupState {
         &self.group
     }
 
-    pub(in crate::mls::conversation) fn mls_group_mut(&mut self) -> &mut MlsGroup {
-        &mut self.group
-    }
-
     /// Get the transient message sender (tx) counter bound to this conversation after incrementing it.
     pub(in crate::mls::conversation) fn obtain_tnt_message_tx_counter(&mut self) -> Result<TntMessageCounter> {
         self.tnt_message_tx_counter.increment()?;
-        self.group.set_state(InnerState::Changed);
-
         Ok(self.tnt_message_tx_counter)
     }
 
     pub(in crate::mls::conversation) fn reset_tnt_message_tx_counter(&mut self) {
         self.tnt_message_tx_counter = Default::default();
-        self.group.set_state(InnerState::Changed);
     }
 
-    pub(crate) async fn persist(&mut self, tx: &Transaction) -> Result<()> {
-        // We must change the mls group persisted state before persisting, otherwise it will never reach the DB.
-        self.mls_group_mut().set_state(InnerState::Persisted);
-        let id = self.group.group_id();
+    /// Write what core-crypto keeps about this group to its row.
+    ///
+    /// openmls writes the group's own state as it changes, so this only covers the credential we present, whether
+    /// the group is pending, and the tnt message counter. The row must already exist.
+    pub(crate) async fn persist(&self, tx: &Transaction) -> Result<()> {
         let group = self.mls_group();
 
         // While we are an active member the group itself tells us which credential we present. Once
         // we have been evicted it no longer does: our leaf is gone from the ratchet tree, and our
         // former slot may even have been recycled by a member added in the same commit, in which
         // case `own_leaf_index` resolves to *their* leaf and we would link this conversation to
-        // their credential. So rather than derive, reuse what the row already records: the
-        // credential we held while we were a member is the one we used, and being evicted does not
-        // change that. Handling our own eviction wipes the conversation immediately afterwards, so
-        // this value is seldom durable — but `persist` still has to produce a valid one, because
-        // every mutation of a group reaches the keystore through here.
+        // their credential. Being evicted doesn't change which credential we used, so we leave the
+        // recorded one alone.
         let credential = if group.is_active() {
-            group_metadata::current_credential_pk(group, tx).await?
+            Some(group_metadata::current_credential_pk(group, tx).await?)
         } else {
-            let persisted = tx
-                .get_borrowed::<PersistedMlsGroup>(KeystoreConversationIdRef::new(id.as_slice()))
-                .await
-                .map_err(KeystoreError::wrap(
-                    "finding the existing row of an evicted conversation",
-                ))?
-                // We can only have been evicted from a conversation we were a member of, and
-                // joining one always persists it, so the row is always already there: the only
-                // other caller of this function performs the first persist of a group we have just
-                // joined or created, which is necessarily still active.
-                .ok_or(Error::MlsGroupInvalidState(
-                    "an evicted conversation must already have been persisted",
-                ))?;
-            StoredCredentialPk::new(
-                persisted.credential_id,
-                persisted.credential_type,
-                persisted.credential_not_before,
-            )
+            None
         };
 
-        PersistedMlsGroup {
-            id: id.as_slice().into(),
-            state: core_crypto_keystore::ser(group).map_err(KeystoreError::wrap("serializing group state"))?,
-            epoch: group.epoch().as_u64(),
-            ciphersuite: group.ciphersuite() as u16,
-            credential_id: credential.public_key_hash,
-            credential_type: credential.credential_type,
-            credential_not_before: credential.not_before,
-            own_leaf_index: group.own_leaf_index().u32(),
-            is_pending: self.pending_status.is_pending(),
-            tnt_tx_counter: self.tnt_message_tx_counter.into(),
-        }
-        .save(tx)
+        PersistedMlsGroup::update_own_columns(
+            tx,
+            KeystoreConversationIdRef::new(group.group_id().as_slice()),
+            credential.as_ref(),
+            self.pending_status.is_pending(),
+            self.tnt_message_tx_counter.into(),
+        )
         .map_err(KeystoreError::wrap("persisting mls group"))?;
 
         Ok(())
@@ -186,12 +151,12 @@ impl Conversation {
         self.group()
             .await
             .export_secret(
-                &self.session()?.mls_provider,
+                self.session()?.mls_provider.crypto(),
                 EXPORTER_LABEL,
                 EXPORTER_CONTEXT,
                 key_length,
             )
-            .map(Into::into)
+            .map(|secret| secret.as_slice().to_vec().into())
             .map_err(OpenMlsError::wrap("exporting secret key"))
             .map_err(Into::into)
     }
@@ -199,7 +164,7 @@ impl Conversation {
     /// Returns an iterator over all external senders present in an `MlsGroupState`.
     fn get_external_sender_from_group(group: &MlsGroup) -> impl Iterator<Item = ExternalSender> {
         group
-            .group_context_extensions()
+            .extensions()
             .external_senders()
             .into_iter()
             .flatten()
@@ -239,9 +204,9 @@ mod test_utils {
             group.members().map(|m| m.encryption_key).collect()
         }
 
-        pub async fn extensions(&self) -> openmls::prelude::Extensions {
+        pub async fn extensions(&self) -> openmls::prelude::Extensions<openmls::prelude::GroupContext> {
             let group = self.group().await;
-            group.export_group_context().extensions().to_owned()
+            group.extensions().to_owned()
         }
     }
 }

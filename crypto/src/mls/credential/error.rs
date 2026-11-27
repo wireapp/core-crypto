@@ -12,12 +12,20 @@ pub(crate) type Result<T, E = Error> = core::result::Result<T, E>;
 pub enum Error {
     #[error("decoding X509 certificate")]
     DecodeX509(#[source] x509_cert::der::Error),
+    #[error("decoding the certificate chain of an X509 credential")]
+    DecodeX509Chain(#[source] openmls::prelude::X509CredentialError),
     #[error("client presented an invalid identity")]
     InvalidIdentity,
+    #[error("a certificate in the chain is expired or not yet valid")]
+    ExpiredCertificate,
+    #[error("the private signature key doesn't belong to the certificate's public key")]
+    SignatureKeyMismatch,
     #[error("No credential found for public key {0:?}")]
     CredentialNotFound(SignaturePublicKey),
     #[error("No credential found matching public key hash {0}")]
     CredentialRefNotFound(Sha256Hash),
+    #[error("the authentication service rejected a credential: {0}")]
+    CredentialRejected(wire_e2e_identity::pki_env::CredentialAuthenticationStatus),
     #[error("missing PKI environment")]
     MissingPKIEnvironment,
     /// Unsupported credential type.

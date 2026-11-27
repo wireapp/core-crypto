@@ -11,7 +11,6 @@ use core_crypto_keystore::{
 };
 pub use error::{Error, Result};
 use log::info;
-use openmls_traits::OpenMlsCryptoProvider as _;
 use wire_e2e_identity::pki_env::PkiEnvironment;
 
 use crate::{
@@ -276,7 +275,7 @@ impl TransactionContext {
         use openmls_traits::random::OpenMlsRand as _;
         self.mls_provider()
             .await?
-            .rand()
+            .crypto()
             .random_vec(len)
             .map_err(OpenMlsError::wrap("generating random vector"))
             .map_err(Into::into)

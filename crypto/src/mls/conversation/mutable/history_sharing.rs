@@ -4,7 +4,7 @@ use itertools::{Either, Itertools as _};
 use openmls::prelude::Sender;
 
 use super::{ConversationMut, Error, Result};
-use crate::{ClientIdRef, CommitBundle, HistorySecret, RecursiveError};
+use crate::{CommitBundle, HistorySecret, RecursiveError, mls::conversation::member_identity};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum HistoryClientUpdateOutcome {
@@ -25,7 +25,7 @@ impl ConversationMut {
 
         // Create a commit that adds a history client
         let history_secret = self.generate_history_secret().await?;
-        let key_package = history_secret.key_package.clone().into();
+        let key_package = history_secret.key_package.key_package().clone().into();
         let commit = self.add_members_inner(vec![key_package]).await?;
 
         self.send_new_history_client_commit(commit, history_secret).await
@@ -99,7 +99,7 @@ impl ConversationMut {
         // this scope exists because we need to get read access to the group to do some more checks,
         // but then we need to give up that access to drop all temporaries
         // which reference the group so that we can get mutable access to `self` again
-        let (pending_commit, existing_history_clients) = {
+        let (mut proposals, existing_history_clients) = {
             let group = self.group().await;
             let Some(pending_commit) = group.pending_commit() else {
                 return Err(Error::PendingCommitNotFound);
@@ -117,8 +117,9 @@ impl ConversationMut {
             // Distinguish between history clients and other clients for the following operations
             let (existing_history_clients, other_clients): (HashSet<_>, HashSet<_>) =
                 group.members().partition_map(|member| {
-                    let is_history_client =
-                        crate::ephemeral::is_history_client(ClientIdRef::new(member.credential.identity()));
+                    // History clients have basic credentials, whose identity can always be read.
+                    let is_history_client = member_identity(&member.credential)
+                        .is_ok_and(|identity| crate::ephemeral::is_history_client(&*identity));
                     let member_index = member.index;
                     if is_history_client {
                         Either::Left(member_index)
@@ -140,22 +141,21 @@ impl ConversationMut {
                 return Ok(HistoryClientUpdateOutcome::NoUpdateNeeded);
             }
 
-            (pending_commit.clone(), existing_history_clients)
+            // Keep the proposals from the pending commit, to restore them once it's cleared.
+            let proposals = pending_commit
+                .queued_proposals()
+                .map(|proposal| proposal.proposal())
+                .cloned()
+                .collect::<Vec<_>>();
+
+            (proposals, existing_history_clients)
         };
 
         // If we're still here, all conditions are met to update the history client.
-
-        // First, restore the proposals from the pending commit before clearing it.
-        let mut proposals = pending_commit
-            .queued_proposals()
-            .map(|proposal| proposal.proposal())
-            .cloned()
-            .collect::<Vec<_>>();
-
         self.clear_pending_commit().await?;
 
         let history_secret = self.generate_history_secret().await?;
-        let key_package = history_secret.key_package.clone().into();
+        let key_package = history_secret.key_package.key_package().clone().into();
 
         // propose to remove the old history client(s)
         for history_client in existing_history_clients {

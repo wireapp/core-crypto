@@ -1,25 +1,23 @@
-use openmls::prelude::ConfirmationTag;
-
 use super::{ConversationMut, Error, Result};
 use crate::DecryptedMessage;
 
 impl ConversationMut {
-    /// Ensure that a pending commit exists and has the correct confirmation tag, then merge it.
-    pub(crate) async fn handle_own_commit(&mut self, confirmation_tag: &ConfirmationTag) -> Result<DecryptedMessage> {
-        {
-            let group = self.group().await;
-            let Some(pending_commit) = group.pending_commit() else {
+    /// Handle a commit of ours which the delivery service fanned back out to us.
+    ///
+    /// openmls compares it with our pending commit and tells us whether it matches.
+    pub(crate) async fn handle_own_commit(&mut self, matches_pending_commit: bool) -> Result<DecryptedMessage> {
+        if !matches_pending_commit {
+            return Err(if self.group().await.pending_commit().is_none() {
                 // This either means the DS replayed one of our commit OR we cleared a commit accepted by the DS
                 // In both cases, CoreCrypto cannot be of any help since it cannot decrypt self commits
                 // => deflect this case and let the caller handle it
-                return Err(Error::SelfCommitIgnored);
-            };
-            if pending_commit.get_confirmation_tag() != confirmation_tag {
+                Error::SelfCommitIgnored
+            } else {
                 // this would mean we created a commit that got accepted by the DS but we cleared it locally
                 // then somehow retried and created another commit. This is a manifest client error
                 // and should be identified as such
-                return Err(Error::ClearingPendingCommitError);
-            }
+                Error::ClearingPendingCommitError
+            });
         }
 
         // incoming is from ourselves and it's the same as the local pending commit
@@ -140,6 +138,61 @@ mod tests {
             assert!(matches!(decrypt_self.unwrap_err(), Error::SelfCommitIgnored));
         })
         .await
+    }
+
+    /// Have Alice commit to adding Bob, and clear the commit. With only an add, it has no update path.
+    async fn cleared_add_only_commit<'a>(
+        conversation: TestConversation<'a>,
+        bob: &'a SessionContext,
+    ) -> (Vec<u8>, TestConversation<'a>) {
+        let commit_guard = conversation
+            .invite_proposal(bob)
+            .await
+            .finish()
+            .commit_pending_proposals_unmerged()
+            .await;
+        let commit = commit_guard.message().to_bytes().unwrap();
+        let conversation = commit_guard.finish();
+        conversation.guard().await.clear_pending_commit().await.unwrap();
+        (commit, conversation)
+    }
+
+    // Unlike `should_ignore_self_incoming_commit_when_no_pending_commit`: openmls can stage a commit of ours without an
+    // update path, so with nothing pending, the commit the delivery service accepted is merged
+    #[apply(all_cred_cipher)]
+    async fn a_cleared_own_commit_without_an_update_path_is_merged(case: TestContext) {
+        let [alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice]).await;
+        let epoch = conversation.guard().await.epoch().await;
+
+        let (commit, conversation) = cleared_add_only_commit(conversation, &bob).await;
+
+        conversation.guard().await.decrypt_message(&commit).await.unwrap();
+
+        assert_eq!(conversation.guard().await.epoch().await, epoch + 1);
+        assert_eq!(conversation.members_counted_by(&alice).await, 2);
+    }
+
+    // Like `should_succeed_when_incoming_commit_mismatches_pending_commit`, for a commit without an update path
+    #[apply(all_cred_cipher)]
+    async fn a_cleared_own_commit_without_an_update_path_does_not_replace_the_pending_one(case: TestContext) {
+        let [alice, bob, charlie] = case.sessions().await;
+        let conversation = case.create_conversation([&alice]).await;
+
+        let (commit, conversation) = cleared_add_only_commit(conversation, &bob).await;
+        // A different commit: committing only Bob again would make exactly the same commit.
+        let conversation = conversation
+            .invite_proposal(&charlie)
+            .await
+            .finish()
+            .commit_pending_proposals_unmerged()
+            .await
+            .finish();
+
+        let decrypt = conversation.guard().await.decrypt_message(&commit).await;
+
+        assert!(matches!(decrypt.unwrap_err(), Error::ClearingPendingCommitError));
+        assert!(conversation.has_pending_commit().await);
     }
 
     #[apply(all_cred_cipher)]

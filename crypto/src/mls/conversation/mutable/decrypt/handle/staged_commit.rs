@@ -3,7 +3,7 @@ use obfuscate::Obfuscated;
 use openmls::group::StagedCommit;
 
 use crate::{
-    Commit, DecryptedMessage, OpenMlsError, RecursiveError, WireIdentity,
+    Commit, DecryptedMessage, DecryptionOutcome, OpenMlsError, RecursiveError, WireIdentity,
     mls::conversation::{ConversationMut, Result},
 };
 
@@ -12,12 +12,17 @@ pub(in crate::mls::conversation::mutable::decrypt) async fn handle(
     conversation: &mut ConversationMut,
     staged_commit: StagedCommit,
     identity: WireIdentity,
-) -> Result<DecryptedMessage> {
-    conversation.validate_commit(&staged_commit).await?;
-    let provider = conversation.crypto_provider().await?;
+) -> Result<DecryptionOutcome> {
+    if let Some(rejection) = conversation.validate_commit(&staged_commit).await? {
+        return Ok(rejection.into());
+    }
+
+    // Merging consumes the staged commit, so take what we log about it first.
+    let epoch = staged_commit.group_context().epoch().as_u64();
+    let proposals = staged_commit.queued_proposals().cloned().collect::<Vec<_>>();
 
     let (is_active, removed_members, added_members, group_id) = conversation
-        .mutate_group(async |_, group, id| {
+        .mutate_group(async |provider, group, id| {
             let removed_indices = staged_commit
                 .remove_proposals()
                 .map(|p| p.remove_proposal().removed())
@@ -25,14 +30,13 @@ pub(in crate::mls::conversation::mutable::decrypt) async fn handle(
 
             let added_credentials = staged_commit
                 .add_proposals()
-                .map(|p| p.add_proposal().key_package.leaf_node().credential().to_owned())
+                .map(|p| p.add_proposal().key_package().leaf_node().credential().to_owned())
                 .collect::<Vec<_>>();
 
             let removed_members = ConversationMut::members_at_indices(removed_indices, group);
 
             group
-                .merge_staged_commit(&provider, staged_commit.clone())
-                .await
+                .merge_staged_commit(provider, staged_commit)
                 .map_err(OpenMlsError::wrap("merge staged commit"))?;
 
             let added_members = group
@@ -47,13 +51,12 @@ pub(in crate::mls::conversation::mutable::decrypt) async fn handle(
         })
         .await?;
 
-    let epoch = staged_commit.staged_context().epoch().as_u64();
     info!(
         added = Obfuscated::from(&added_members),
         removed = Obfuscated::from(&removed_members),
         group_id,
         epoch,
-        proposals:? = staged_commit.queued_proposals().map(Obfuscated::from).collect::<Vec<_>>();
+        proposals:? = proposals.iter().map(Obfuscated::from).collect::<Vec<_>>();
         "Epoch advanced"
     );
     conversation
@@ -64,5 +67,5 @@ pub(in crate::mls::conversation::mutable::decrypt) async fn handle(
             "queueing epoch change notice handling staged commit",
         ))?;
 
-    Ok(DecryptedMessage::Commit(Commit { is_active, identity }))
+    Ok(DecryptedMessage::Commit(Commit { is_active, identity }).into())
 }

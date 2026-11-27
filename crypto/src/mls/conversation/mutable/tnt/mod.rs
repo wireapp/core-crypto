@@ -1,3 +1,4 @@
+use crate::mls::conversation::member_identity;
 mod targeted;
 mod tnt_message_counter;
 mod transient;
@@ -14,7 +15,6 @@ use openmls::prelude::{
     Credential as MlsCredential, CredentialWithKey, LeafNodeIndex, Member, OpenMlsSignaturePublicKey, Signable as _,
     Signature, Verifiable as _,
 };
-use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Deserialize as _, Serialize, TlsDeserialize, TlsSerialize, TlsSize, VLBytes};
 
 use self::targeted::TargetedMessage;
@@ -250,7 +250,11 @@ impl openmls::prelude::Signable for TntMessageTBS {
 }
 
 impl openmls::prelude::SignedStruct<TntMessageTBS> for TntMessage {
-    fn from_payload(payload: TntMessageTBS, signature: openmls::prelude::Signature) -> Self {
+    fn from_payload(
+        payload: TntMessageTBS,
+        signature: openmls::prelude::Signature,
+        _serialized_payload: Vec<u8>,
+    ) -> Self {
         Self {
             content: payload,
             signature,
@@ -258,7 +262,25 @@ impl openmls::prelude::SignedStruct<TntMessageTBS> for TntMessage {
     }
 }
 
+/// We only ever check a [TntMessage]'s signature with [`Verifiable::verify_no_out`], which leaves the message as it
+/// is, so [`Verifiable::verify`] hands back the message itself.
+///
+/// [`Verifiable::verify_no_out`]: openmls::prelude::Verifiable::verify_no_out
+/// [`Verifiable::verify`]: openmls::prelude::Verifiable::verify
+impl openmls::prelude::VerifiedStruct for TntMessage {}
+
 impl openmls::prelude::Verifiable for TntMessage {
+    type VerifiedStruct = Self;
+
+    fn verify(
+        self,
+        crypto: &impl openmls::prelude::OpenMlsCrypto,
+        pk: &openmls::prelude::OpenMlsSignaturePublicKey,
+    ) -> Result<Self, openmls::prelude::SignatureError> {
+        self.verify_no_out(crypto, pk)?;
+        Ok(self)
+    }
+
     fn unsigned_payload(&self) -> Result<Vec<u8>, tls_codec::Error> {
         self.content.tls_serialize_detached()
     }
@@ -345,7 +367,7 @@ impl ConversationMut {
             let credential = MlsCredential::tls_deserialize_exact(&oemd.credential)
                 .map_err(TlsCodecError::deserialize("deserializing old epoch member credential"))?;
             Member {
-                index: oemd.leaf_node_index.into(),
+                index: LeafNodeIndex::new(oemd.leaf_node_index),
                 signature_key: oemd.signature_key,
                 credential,
                 // we don't attempt to encrypt anything with this member, only decrypt
@@ -460,9 +482,8 @@ impl ConversationMut {
             .extract_identity(self.cipher_suite().await.signature_algorithm(), pki_env.as_deref())
             .await
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
-        let sender_client_id = sender
-            .credential
-            .identity()
+        let sender_client_id = member_identity(&sender.credential)?
+            .as_slice()
             .try_into()
             .map_err(RecursiveError::mls_client("client id from credential"))?;
         let decrypted_bytes = DecryptedBytes {

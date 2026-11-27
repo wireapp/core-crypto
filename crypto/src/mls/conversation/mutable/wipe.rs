@@ -1,4 +1,5 @@
 use core_crypto_keystore::{entities::PersistedMlsGroup, traits::EntityDeleteBorrowed};
+use openmls_traits::OpenMlsProvider as _;
 
 use super::Result;
 use crate::{KeystoreError, OpenMlsError, RecursiveError, mls::conversation::ConversationMut};
@@ -16,18 +17,17 @@ impl ConversationMut {
             .await
             .map_err(RecursiveError::context("getting mls conversation cache"))?;
 
-        self.mutate_group(async |transaction, group, _| {
+        self.mutate_group(async |provider, group, _| {
             // collect all the relevant proposal refs without holding onto the group;
             // we'll need to mutate the group in shortly
             let proposals = group
                 .pending_proposals()
-                .map(|proposal| proposal.proposal_reference().to_owned())
+                .map(|proposal| proposal.proposal_reference_ref().to_owned())
                 .collect::<Vec<_>>();
             for proposal in proposals {
                 // Update proposals rekey the own leaf node. Hence the associated encryption keypair has to be cleared
                 group
-                    .remove_pending_proposal(transaction, &proposal)
-                    .await
+                    .remove_pending_proposal(provider.storage(), &proposal)
                     .map_err(OpenMlsError::wrap("removing pending proposal"))?;
             }
 

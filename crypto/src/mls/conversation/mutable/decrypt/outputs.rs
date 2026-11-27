@@ -118,10 +118,12 @@ pub enum RejectionReason {
     IncompatibleWireFormat,
     /// This message's signature doesn't match its sender's signature key.
     InvalidSignature,
-    /// The sender's X509 certificate chain could not be parsed.
-    MalformedCredential(openmls::prelude::CredentialError),
-    /// The sender's X509 certificate chain is not correctly signed.
-    UntrustedCredential(openmls_traits::types::CryptoError),
+    /// A credential this message brings into the conversation could not be read.
+    #[from(skip)]
+    MalformedCredential(crate::mls::credential::Error),
+    /// The authentication service doesn't accept a credential this message brings into the conversation.
+    #[from(skip)]
+    UntrustedCredential(crate::mls::credential::Error),
     /// This message belongs to a different conversation.
     WrongGroupId,
     /// This message's sender is not a member of the conversation in the message's epoch.

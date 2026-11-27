@@ -4,10 +4,10 @@ pub(super) mod encrypt;
 use const_format::concatcp;
 use derive_more::Constructor;
 use openmls::{
-    group::{GroupEpoch, GroupId, MlsGroup, group_context::GroupContext},
+    group::{GroupContext, GroupEpoch, GroupId, MlsGroup},
     prelude::{HpkeCiphertext, LeafNodeIndex},
 };
-use openmls_traits::OpenMlsCryptoProvider;
+use openmls_traits::crypto::OpenMlsCrypto;
 use tls_codec::{Serialize as _, TlsDeserialize, TlsSerialize, TlsSize};
 
 use self::encrypt::TargetedMessagePolicy;
@@ -93,7 +93,7 @@ struct HpkeContextData {
 }
 
 fn extract_hpke_context_data(
-    crypto_provider: &impl OpenMlsCryptoProvider,
+    crypto: &impl OpenMlsCrypto,
     context: &TargetedMessageContext,
     mls_group: &MlsGroup,
 ) -> Result<HpkeContextData> {
@@ -101,7 +101,7 @@ fn extract_hpke_context_data(
         .tls_serialize_detached()
         .map_err(TlsCodecError::serialize("TargetedMessageContext"))?;
 
-    let psk = derive_targeted_message_psk(crypto_provider, mls_group)?;
+    let psk = derive_targeted_message_psk(crypto, mls_group)?;
     let psk_id = PskId::new(mls_group.group_id().clone(), mls_group.epoch());
     let psk_id = psk_id
         .tls_serialize_detached()
@@ -111,19 +111,14 @@ fn extract_hpke_context_data(
 }
 
 fn derive_targeted_message_psk(
-    crypto_provider: &impl OpenMlsCryptoProvider,
+    crypto: &impl OpenMlsCrypto,
     mls_group: &MlsGroup,
 ) -> Result<zeroize::Zeroizing<Vec<u8>>> {
     let cipher_suite = mls_group.ciphersuite();
     // We can use an empty context because we're using a unique label.
     mls_group
-        .export_secret(
-            crypto_provider,
-            TargetedMessage::PSK_LABEL,
-            &[],
-            cipher_suite.hash_length(),
-        )
-        .map(zeroize::Zeroizing::new)
+        .export_secret(crypto, TargetedMessage::PSK_LABEL, &[], cipher_suite.hash_length())
+        .map(|psk| zeroize::Zeroizing::new(psk.as_slice().to_vec()))
         .map_err(OpenMlsError::wrap("exporting targeted message psk"))
         .map_err(Into::into)
 }

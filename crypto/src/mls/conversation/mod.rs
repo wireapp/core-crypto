@@ -44,6 +44,15 @@ pub use self::{
 };
 use crate::bytes_wrapper;
 
+/// The identity in a group member's credential.
+pub(crate) fn member_identity(
+    credential: &openmls::prelude::Credential,
+) -> Result<std::borrow::Cow<'_, crate::ClientIdRef>> {
+    crate::mls::credential::identity::credential_identity(credential)
+        .map_err(crate::RecursiveError::mls_credential("reading a member's identity"))
+        .map_err(Into::into)
+}
+
 bytes_wrapper!(
     /// A secret key derived from the group secret.
     ///
@@ -410,7 +419,7 @@ mod tests {
                     .await;
 
                 let alice_ext_sender = conversation.guard().await.get_external_sender().await.unwrap();
-                let signature_key: Vec<u8> = alice_ext_sender.signature_key().as_slice().to_vec();
+                let signature_key: Vec<u8> = alice_ext_sender.serialize();
                 assert!(!signature_key.is_empty());
                 assert_eq!(
                     Sha256Hash::hash_from(&signature_key),

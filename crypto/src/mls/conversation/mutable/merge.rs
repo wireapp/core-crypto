@@ -25,7 +25,8 @@
 //! | 0 pend. Proposal  | ❌              | ✅              |
 //! | 1+ pend. Proposal | ❌              | ✅              |
 
-use core_crypto_keystore::{entities::StoredEncryptionKeyPair, traits::EntityDeleteBorrowed};
+use openmls::prelude::LeafNode;
+use openmls_traits::{OpenMlsProvider as _, storage::StorageProvider as _};
 
 use super::{ConversationMut, Result};
 use crate::{KeystoreError, OpenMlsError, PendingStatus, RecursiveError, mls::conversation::Error};
@@ -33,23 +34,24 @@ use crate::{KeystoreError, OpenMlsError, PendingStatus, RecursiveError, mls::con
 impl ConversationMut {
     /// Apply a pending commit
     pub(super) async fn commit_accepted(&mut self) -> Result<()> {
-        let provider = &self.crypto_provider().await?;
         let was_pending = self
-            .mutate_group(async |tx, group, _| {
+            .mutate_group(async |provider, group, _| {
                 let was_pending = std::mem::replace(&mut group.pending_status, PendingStatus::Operational).is_pending();
 
-                // openmls stores here all the encryption keypairs used for update proposals..
-                let previous_own_leaf_nodes = group.own_leaf_nodes.clone();
+                // openmls keeps the leaf nodes of our own update proposals, and the encryption keypairs they use.
+                // Merging drops the leaf nodes but not their keypairs, so we delete those ourselves afterwards.
+                let storage = provider.storage();
+                let previous_own_leaf_nodes = storage
+                    .own_leaf_nodes::<_, LeafNode>(group.group_id())
+                    .map_err(KeystoreError::wrap("loading our own leaf nodes"))?;
 
                 group
                     .merge_pending_commit(provider)
-                    .await
                     .map_err(OpenMlsError::wrap("merging pending commit"))?;
 
-                // ..so if there's any, we clear them after the commit is merged
-                for oln in &previous_own_leaf_nodes {
-                    let ek = oln.encryption_key().as_slice();
-                    StoredEncryptionKeyPair::delete_borrowed(tx, ek)
+                for leaf_node in &previous_own_leaf_nodes {
+                    storage
+                        .delete_encryption_key_pair(leaf_node.encryption_key())
                         .map_err(KeystoreError::wrap("deleting stored encryption keypair"))?;
                 }
 
@@ -75,11 +77,13 @@ impl ConversationMut {
     /// # Errors
     /// When there is no pending commit
     pub(crate) async fn clear_pending_commit(&mut self) -> Result<()> {
-        self.mutate_group(async |_, group, id| {
+        self.mutate_group(async |provider, group, id| {
             if group.pending_commit().is_none() {
                 return Err(Error::PendingCommitNotFound);
             }
-            group.clear_pending_commit();
+            group
+                .clear_pending_commit(provider.storage())
+                .map_err(KeystoreError::wrap("clearing pending commit"))?;
             log::info!(group_id = id.to_owned(); "Cleared pending commit.");
             Ok(())
         })

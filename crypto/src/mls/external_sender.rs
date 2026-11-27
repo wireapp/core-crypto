@@ -1,6 +1,6 @@
 use openmls::{
     extensions::ExternalSender as MlsExternalSender,
-    prelude::{Credential as MlsCredential, OpenMlsCrypto as _, OpenMlsSignaturePublicKey, SignatureScheme},
+    prelude::{BasicCredential, OpenMlsSignaturePublicKey, SignatureScheme},
 };
 use rusty_jwt_tools::{
     jsonwebtoken::{
@@ -67,7 +67,7 @@ impl ExternalSender {
             .map_err(OpenMlsError::wrap("validating signature key"))?;
         let key = OpenMlsSignaturePublicKey::new(key.into(), signature_scheme)
             .map_err(OpenMlsError::wrap("creating new signature public key"))?;
-        Ok(MlsExternalSender::new(key.into(), MlsCredential::new_basic(WIRE_SERVER_IDENTITY.into())).into())
+        Ok(MlsExternalSender::new(key.into(), BasicCredential::new(WIRE_SERVER_IDENTITY.into()).into()).into())
     }
 
     /// Parse an external sender.

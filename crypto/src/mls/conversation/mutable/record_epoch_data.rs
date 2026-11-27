@@ -46,6 +46,12 @@ impl ConversationMut {
 
     /// Idempotently record per-epoch durable data for TNT messages.
     pub(crate) async fn record_epoch_data(&self, group: &MlsGroup) -> Result<()> {
+        // Once we have been evicted, we have no leaf in the group, and openmls keeps no keys for us in this epoch.
+        // There is nothing to record.
+        if !group.is_active() {
+            return Ok(());
+        }
+
         let tx = self.tx_context.inner().map_err(RecursiveError::context(
             "getting conversation's tx context for idempotence check for recording epoch data",
         ))?;

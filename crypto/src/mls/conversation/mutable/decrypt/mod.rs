@@ -15,15 +15,20 @@ mod incoming_message;
 mod outputs;
 mod process_message;
 
-use std::{borrow::Cow, collections::VecDeque};
+use std::{
+    borrow::{Borrow, Cow},
+    collections::VecDeque,
+};
 
 use core_crypto_keystore::entities::{InboxMessage, WaitingFor};
 use log::warn;
 use openmls::{
     group::MlsGroup,
-    prelude::{CredentialType, LeafNodeIndex, Member, ProcessedMessageContent, ProtocolMessage, StagedCommit},
+    prelude::{
+        Credential as MlsCredential, CredentialType, CredentialWithKey, LeafNodeIndex, Member, ProcessedMessageContent,
+        ProtocolMessage, StagedCommit,
+    },
 };
-use openmls_traits::OpenMlsCryptoProvider as _;
 
 pub(in crate::mls::conversation) use self::incoming_message::{IncomingMessage, ParsedMessage};
 pub use self::outputs::{
@@ -37,7 +42,10 @@ use super::{ConversationMut, Result};
 use crate::{
     E2eiConversationState, RecursiveError, Session,
     error::infrastructure::Infrastructural as _,
-    mls::{conversation::Error, credential::ext::CredentialExt as _},
+    mls::{
+        conversation::Error,
+        credential::{self, ext::CredentialExt as _, identity::credential_identity, validation::validate_credentials},
+    },
 };
 
 impl ConversationMut {
@@ -193,9 +201,11 @@ impl ConversationMut {
     /// If the group is pending, we generally need to simply defer it.
     /// In that case, returns `Some(DecryptionOutcome::Deferred(PendingJoin))`.
     ///
-    /// There is one exception: if the group is pending, and the message is a public message whose confirmation tag
-    /// matches the confirmation tag of the group's existing pending commit, we need to merge that pending commit,
-    /// returning the decryption outcome of that operation.
+    /// There is one exception: if the group is pending, and the message is our own join commit, the Delivery Service
+    /// has accepted it. Then we need to establish the group, returning the decryption outcome of that operation.
+    ///
+    /// openmls merges an external commit as soon as it builds it, so the pending group is already in the epoch our
+    /// join commit starts, and its confirmation tag is that commit's.
     ///
     /// In every other case, returns `Ok(None)`.
     async fn try_resolve_pending(&mut self, message: &IncomingMessage) -> Result<Option<DecryptionOutcome>> {
@@ -205,20 +215,13 @@ impl ConversationMut {
             return Ok(None);
         }
 
-        if let ParsedMessage::Mls(mls) = &message.parsed
-            && let ProtocolMessage::PublicMessage(public_message) = mls
+        if let ParsedMessage::Mls(ProtocolMessage::PublicMessage(public_message)) = &message.parsed
+            && public_message
+                .confirmation_tag()
+                .is_some_and(|message_tag| message_tag == group.mls_group().confirmation_tag())
         {
-            let pending_confirmation_tag = group
-                .mls_group()
-                .pending_commit()
-                .map(|pending| pending.get_confirmation_tag());
-            if pending_confirmation_tag
-                .zip(public_message.confirmation_tag())
-                .is_some_and(|(pending_ct, message_ct)| pending_ct == message_ct)
-            {
-                drop(group);
-                return self.merge_commit().await.map(Into::into).map(Some);
-            }
+            drop(group);
+            return self.merge_commit().await.map(Into::into).map(Some);
         }
         Ok(Some(DeferralReason::PendingJoin.into()))
     }
@@ -230,15 +233,18 @@ impl ConversationMut {
             ProcessedMessage::Content(message) => message,
 
             // Handles the case where we receive our own commits.
-            ProcessedMessage::OwnCommit(confirmation_tag) => {
-                let decrypted_message = self.handle_own_commit(&confirmation_tag).await?;
+            ProcessedMessage::OwnCommit { matches_pending_commit } => {
+                let decrypted_message = self.handle_own_commit(matches_pending_commit).await?;
                 return Ok(decrypted_message.into());
             }
             ProcessedMessage::Deferred(reason) => return Ok(reason.into()),
             ProcessedMessage::Rejected(reason) => return Ok(reason.into()),
         };
 
-        let credential = message.credential();
+        let credential = CredentialWithKey {
+            credential: message.credential().clone(),
+            signature_key: message.signature_key().clone(),
+        };
         let epoch = message.epoch();
 
         let pki_env = self.crypto_provider().await?.authentication_service().pki_env().await;
@@ -249,11 +255,14 @@ impl ConversationMut {
 
         // We only need this in the ProcessedMessageContent::ApplicationMessage match arm below, however, at that point
         // we cannot borrow from `message` anymore, because it is moved by `message.into_content()`.
-        let sender_client_id_result = credential
-            .credential
-            .identity()
-            .try_into()
-            .map_err(RecursiveError::context("client id from credential"));
+        let sender_client_id_result = credential_identity(&credential.credential)
+            .map_err(RecursiveError::mls_credential("reading the sender's identity"))
+            .and_then(|identity| {
+                identity
+                    .as_slice()
+                    .try_into()
+                    .map_err(RecursiveError::context("client id from credential"))
+            });
 
         let decrypted = match message.into_content() {
             ProcessedMessageContent::ApplicationMessage(app_msg) => {
@@ -261,10 +270,15 @@ impl ConversationMut {
             }
             ProcessedMessageContent::ProposalMessage(proposal)
             | ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
-                handle::proposal(self, *proposal, identity).await?
+                return handle::proposal(self, *proposal, identity).await;
             }
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
-                handle::staged_commit(self, *staged_commit, identity).await?
+                return handle::staged_commit(self, *staged_commit, identity).await;
+            }
+            ProcessedMessageContent::OwnPendingCommit | ProcessedMessageContent::OwnPrivateMessage => {
+                return Err(Error::MlsMessageInvalidState(
+                    "process_message turns messages of our own into other outcomes",
+                ));
             }
         };
 
@@ -278,8 +292,39 @@ impl ConversationMut {
             .collect::<Vec<_>>()
     }
 
-    async fn validate_commit(&self, commit: &StagedCommit) -> Result<()> {
+    /// Check the credentials an incoming message brings into the conversation.
+    ///
+    /// A credential we can't read, or one the authentication service doesn't accept, rejects the message. Anything else
+    /// that goes wrong is an error.
+    async fn validate_incoming_credentials(
+        &self,
+        credentials: &[impl Borrow<MlsCredential> + Sync],
+    ) -> Result<Option<RejectionReason>> {
         let backend = self.crypto_provider().await?;
+        match validate_credentials(backend.authentication_service(), credentials).await {
+            Ok(()) => Ok(None),
+            Err(
+                err @ (credential::Error::DecodeX509(_)
+                | credential::Error::DecodeX509Chain(_)
+                | credential::Error::InvalidIdentity
+                | credential::Error::UnsupportedCredentialType(_)),
+            ) => Ok(Some(RejectionReason::MalformedCredential(err))),
+            Err(err @ credential::Error::CredentialRejected(_)) => Ok(Some(RejectionReason::UntrustedCredential(err))),
+            Err(err) => Err(RecursiveError::mls_credential("checking the credentials a message brings in")(err).into()),
+        }
+    }
+
+    /// Check a commit before merging it, returning why it's rejected if it is.
+    async fn validate_commit(&self, commit: &StagedCommit) -> Result<Option<RejectionReason>> {
+        if let Some(rejection) = self
+            .validate_incoming_credentials(&commit.credentials_to_verify().collect::<Vec<_>>())
+            .await?
+        {
+            return Ok(Some(rejection));
+        }
+
+        let backend = self.crypto_provider().await?;
+
         if backend.is_pki_env_setup().await {
             let credentials: Vec<_> = commit
                 .add_proposals()
@@ -301,7 +346,7 @@ impl ConversationMut {
                 // return Err(Error::InvalidCertificateChain);
             }
         }
-        Ok(())
+        Ok(None)
     }
 }
 
@@ -570,9 +615,10 @@ mod tests {
                         let decrypted = &decrypt.as_application_message().unwrap().plaintext;
                         assert_eq!(decrypted, original.as_bytes());
                     } else {
+                        // too far behind to decrypt, and never decrypted, so not a duplicate
                         assert!(matches!(
                             decrypt.unwrap().into_single_rejected(),
-                            RejectionReason::DuplicateMessage
+                            RejectionReason::MessageEpochTooOld { .. }
                         ))
                     }
                 }
@@ -603,9 +649,37 @@ mod tests {
             })
             .await
         }
+
+        #[apply(all_cred_cipher)]
+        async fn app_message_from_a_member_removed_since_names_its_sender(case: TestContext) {
+            let [alice, bob, charlie] = case.sessions().await;
+            let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
+
+            let encrypted = conversation
+                .guard_of(&charlie)
+                .await
+                .encrypt_message(b"Hello from the previous epoch")
+                .await
+                .unwrap();
+            let conversation = conversation.remove_notify(&charlie).await;
+
+            let decrypted = conversation
+                .guard_of(&bob)
+                .await
+                .decrypt_message(encrypted)
+                .await
+                .unwrap()
+                .into_single_decrypted();
+
+            let message = decrypted.as_application_message().unwrap();
+            assert_eq!(message.plaintext, b"Hello from the previous epoch");
+            assert_eq!(message.sender_client_id, charlie.get_client_id().await);
+        }
     }
 
     mod epoch_sync {
+        use openmls_traits::OpenMlsProvider as _;
+
         use super::*;
         use crate::mls::conversation::config::MAX_FUTURE_EPOCHS;
 
@@ -733,8 +807,10 @@ mod tests {
                 conversation
                     .guard()
                     .await
-                    .mutate_group(async |_, group, _| {
-                        group.clear_pending_proposals();
+                    .mutate_group(async |provider, group, _| {
+                        group
+                            .clear_pending_proposals(provider.storage())
+                            .map_err(crate::KeystoreError::wrap("clearing pending proposals"))?;
                         Ok(())
                     })
                     .await

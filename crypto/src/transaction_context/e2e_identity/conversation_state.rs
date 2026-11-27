@@ -1,8 +1,7 @@
-use openmls::{messages::group_info::VerifiableGroupInfo, prelude::Node};
-use openmls_traits::OpenMlsCryptoProvider;
+use openmls::messages::group_info::VerifiableGroupInfo;
 
 use crate::{
-    CredentialType, OpenMlsError, RecursiveError, Session,
+    CredentialType, RecursiveError,
     transaction_context::{Result, TransactionContext},
 };
 
@@ -25,32 +24,12 @@ pub enum E2eiConversationState {
 impl TransactionContext {
     /// See [crate::mls::session::Session::e2ei_verify_group_state].
     pub async fn e2ei_verify_group_state(&self, group_info: VerifiableGroupInfo) -> Result<E2eiConversationState> {
-        let mls_provider = self
-            .mls_provider()
+        self.session()
+            .await?
+            .e2ei_verify_group_state(group_info)
             .await
-            .map_err(RecursiveError::context("getting mls provider"))?;
-        let auth_service = mls_provider.authentication_service();
-
-        let is_sender = true; // verify the ratchet tree as sender to turn on hardened verification
-        let Ok(rt) = group_info
-            .take_ratchet_tree(
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::context("getting mls provider"))?,
-                is_sender,
-            )
-            .await
-        else {
-            return Ok(E2eiConversationState::NotVerified);
-        };
-
-        let credentials = rt.iter().filter_map(|n| match n {
-            Some(Node::LeafNode(ln)) => Some(ln.credential()),
-            _ => None,
-        });
-
-        Ok(Session::compute_conversation_state(credentials, CredentialType::X509, auth_service).await)
+            .map_err(RecursiveError::context("verifying group state"))
+            .map_err(Into::into)
     }
 
     /// See [crate::mls::session::Session::get_credential_in_use].
@@ -59,28 +38,11 @@ impl TransactionContext {
         group_info: VerifiableGroupInfo,
         credential_type: CredentialType,
     ) -> Result<E2eiConversationState> {
-        // Not verifying the supplied the GroupInfo here could let attackers lure the clients about
-        // the e2ei state of a conversation and as a consequence degrade this conversation for all
-        // participants once joining it.
-        // This 👇 verifies the GroupInfo and the RatchetTree btw
-        let rt = group_info
-            .take_ratchet_tree(
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::context("getting mls provider"))?,
-                false,
-            )
+        self.session()
+            .await?
+            .get_credential_in_use(group_info, credential_type)
             .await
-            .map_err(OpenMlsError::wrap("taking ratchet tree"))?;
-        let mls_provider = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::context("getting mls provider"))?;
-        let auth_service = mls_provider.authentication_service();
-        Session::get_credential_in_use_in_ratchet_tree(rt, credential_type, auth_service)
-            .await
-            .map_err(RecursiveError::context("getting credentials in use"))
+            .map_err(RecursiveError::context("getting the credential in use"))
             .map_err(Into::into)
     }
 }

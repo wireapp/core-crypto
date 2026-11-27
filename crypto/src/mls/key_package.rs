@@ -41,7 +41,7 @@ impl KeypackageExt for Keypackage {
 
         let cipher_suite = <Self as KeypackageExt>::cipher_suite(self);
         let credential_type = self.credential_type();
-        let lifetime = self.leaf_node().life_time().cloned();
+        let lifetime = Some(*self.life_time());
 
         Ok(KeypackageRef {
             hash_ref,
@@ -64,9 +64,8 @@ impl KeypackageExt for Keypackage {
     }
 
     fn is_valid(&self) -> bool {
-        self.leaf_node()
-            .life_time()
-            .is_none_or(|lifetime| lifetime.has_acceptable_range() && lifetime.is_valid())
+        let lifetime = self.life_time();
+        lifetime.has_acceptable_range() && lifetime.validate().is_ok()
     }
 }
 
@@ -116,7 +115,7 @@ impl KeypackageRef {
     /// lifetime longer than that is never valid, not merely expired.
     pub fn is_valid(&self) -> bool {
         self.lifetime()
-            .is_none_or(|lifetime| lifetime.has_acceptable_range() && lifetime.is_valid())
+            .is_none_or(|lifetime| lifetime.has_acceptable_range() && lifetime.validate().is_ok())
     }
 }
 

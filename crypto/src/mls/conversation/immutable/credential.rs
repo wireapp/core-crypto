@@ -3,7 +3,10 @@ use std::{collections::HashMap, sync::Arc};
 use openmls::prelude::{Credential as MlsCredential, CredentialWithKey, SignaturePublicKey};
 
 use super::{Error, Result};
-use crate::{ClientId, Credential, RecursiveError, mls::conversation::group_metadata};
+use crate::{
+    ClientId, Credential, RecursiveError,
+    mls::conversation::{group_metadata, member_identity},
+};
 
 impl super::Conversation {
     /// Find the current leaf node, then load it scredential.
@@ -26,10 +29,17 @@ impl super::Conversation {
         // this fold is the compact way to express this:
         // a normal `.map().collect()` would preserve later instances of duplicated keys,
         // but this preserves the first instance of each key
-        self.group().await.members().fold(HashMap::new(), |mut acc, kp| {
-            let credential = kp.credential;
-            let id = credential.identity().to_vec();
-            acc.entry(id).or_insert(credential);
+        self.group().await.members().fold(HashMap::new(), |mut acc, member| {
+            let credential = member.credential;
+            match member_identity(&credential) {
+                Ok(id) => {
+                    acc.entry(id.into_owned().into()).or_insert(credential);
+                }
+                Err(err) => log::warn!(
+                    member_index:% = member.index, err:%;
+                    "leaving out a member whose identity can't be read"
+                ),
+            }
             acc
         })
     }
@@ -41,8 +51,8 @@ impl super::Conversation {
             .members()
             .map(|member| {
                 let credential = member.credential;
-                let id: ClientId = credential
-                    .identity()
+                let id: ClientId = member_identity(&credential)?
+                    .as_slice()
                     .try_into()
                     .map_err(RecursiveError::context("client id from bytes"))?;
 
